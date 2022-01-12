@@ -1,0 +1,58 @@
+{
+    "name": "@ohos/js_sys_module",
+    "version": "",
+    "description": "Provide system basic ability query API, including process information, CPU load information, etc. | js_sys_module, 提供系统基础能力查询API，包括进程信息，CPU负载信息等",
+    "homePage": "https://gitee.com/openharmony",
+    "license": "Apache V2",
+    "repository": "https://gitee.com/openharmony/js_sys_module",
+    "domain": "os",
+    "language": "",
+    "publishAs": "code-segment",
+    "private": false,
+    "scripts": {},
+    "tags": [
+        "js"
+    ],
+    "keywords": [
+        "js",
+        "sys",
+        "module"
+    ],
+    "envs": {},
+    "dirs": {},
+    "author": {
+        "name": "",
+        "email": "",
+        "url": ""
+    },
+    "contributors": [
+        {
+            "name": "",
+            "email": "",
+            "url": ""
+        }
+    ],
+    "segment": {
+        "destPath": "base/compileruntime/js_sys_module"
+    },
+    "component": {
+        "name": "js_sys_module",
+        "subsystem": "ccruntime",
+        "syscap": [],
+        "features": [],
+        "adapted_system_type": [],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [
+                "//base/compileruntime/js_sys_module/process:process_packages"
+            ],
+            "inner_kits": [],
+            "test": []
+        }
+    }
+}
