@@ -18,8 +18,8 @@
         "api",
         "module"
     ],
-    "envs": [],
-    "dirs": [],
+    "envs": {},
+    "dirs": {},
     "author": {
         "name": "",
         "email": "",
