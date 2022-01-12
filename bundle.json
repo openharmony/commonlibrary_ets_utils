@@ -1,0 +1,64 @@
+{
+    "name": "@ohos/js_api_module",
+    "version": "",
+    "description": "js_api_module, used to store the basic class library JSAPI, such as url, uri, etc.| 用于存放基础类库JSAPI，比如url、uri等",
+    "homePage": "https://gitee.com/openharmony",
+    "license": "Apache V2",
+    "repository": "https://gitee.com/openharmony/js_api_module",
+    "domain": "os",
+    "language": "",
+    "publishAs": "code-segment",
+    "private": false,
+    "scripts": {},
+    "tags": [
+        "js"
+    ],
+    "keywords": [
+        "js",
+        "api",
+        "module"
+    ],
+    "envs": {},
+    "dirs": {},
+    "author": {
+        "name": "",
+        "email": "",
+        "url": ""
+    },
+    "contributors": [
+        {
+            "name": "",
+            "email": "",
+            "url": ""
+        }
+    ],
+    "segment": {
+        "destPath": "base/compileruntime/js_api_module"
+    },
+    "component": {
+        "name": "js_api_module",
+        "subsystem": "ccruntime",
+        "syscap": [],
+        "features": [],
+        "adapted_system_type": [],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [
+                "//base/compileruntime/js_api_module/uri:uri_packages",
+                "//base/compileruntime/js_api_module/url:url_packages",
+                "//base/compileruntime/js_api_module/convertxml:convertxml_packages",
+                "//base/compileruntime/js_api_module/xml:xml_packages"
+            ],
+            "inner_kits": [],
+            "test": [
+                "//base/compileruntime/js_api_module/test_uri/unittest:unittest",
+                "//base/compileruntime/js_api_module/test_xml/unittest:unittest"
+            ]
+        }
+    }
+}
