@@ -70,7 +70,9 @@ if (flag || fastQueue == undefined) {
       }
       return;
     }
-    
+    setPrototypeOf(obj: any, prop: any): any {
+      throw new Error("Can setPrototype on Queue Object");  
+    }
   }
   interface IterableIterator<T> {
     next: () => {
@@ -125,11 +127,12 @@ if (flag || fastQueue == undefined) {
     }
     [Symbol.iterator](): IterableIterator<T> {
       let count = this._front;
+      let queue = this;
       return {
         next: function () {
-          var done = count == this._rear;
-          var value = !done ? this[count] : undefined;
-          count = (count + 1) % this._capacity;
+          var done = count == queue._rear;
+          var value = !done ? queue[count] : undefined;
+          count = (count + 1) % queue._capacity;
           return {
             done: done,
             value: value,

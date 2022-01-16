@@ -88,6 +88,9 @@ if (flag || fastList == undefined) {
       }
       return;
     }
+    setPrototypeOf(obj: any, prop: any): any {
+      throw new Error("Can setPrototype on List Object");  
+    }
   }
   interface IterableIterator<T> {
     next: () => {
@@ -180,7 +183,7 @@ if (flag || fastList == undefined) {
       }
       return false;
     }
-    equals(obj: Object): boolean {
+    equal(obj: Object): boolean {
       if (obj === this) {
         return true;
       }
@@ -326,6 +329,9 @@ if (flag || fastList == undefined) {
         arr[++index] = newNode.element;
       }
       return arr;
+    }
+    isEmpty(): boolean {
+      return this._length == 0;
     }
     forEach(callbackfn: (value: T, index?: number, list?: List<T>) => void,
       thisArg?: Object): void {

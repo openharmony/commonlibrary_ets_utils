@@ -74,6 +74,9 @@ if (flag || fastStack == undefined) {
       }
       return;
     }
+    setPrototypeOf(obj: any, prop: any): any {
+      throw new Error("Can setPrototype on Stack Object");  
+    }
   }
   interface IterableIterator<T> {
     next: () => {

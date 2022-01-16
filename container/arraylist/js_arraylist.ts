@@ -265,12 +265,15 @@ if (flag || fastArrayList == undefined) {
     private resize(): void {
       this._capacity = 1.5 * this._capacity;
     }
+    isEmpty(): boolean {
+      return this._length == 0;
+    }
     increaseCapacityTo(newCapacity: number): void {
       if (newCapacity >= this._length) {
         this._capacity = newCapacity;
       }
     }
-    trimToCurrentSize(): void {
+    trimToCurrentLength(): void {
       this._capacity = this._length;
     }
     [Symbol.iterator](): IterableIterator<T> {
