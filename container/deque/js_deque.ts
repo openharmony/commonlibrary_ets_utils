@@ -73,8 +73,8 @@ if (flag || fastDeque == undefined) {
       }
       return;
     }
-    setPrototypeOf(obj: any, prop: any): T {
-      throw new Error("Can setPrototype on ArrayList Object");  
+    setPrototypeOf(obj: any, prop: any): any {
+      throw new Error("Can setPrototype on Deque Object");  
     }
   }
   interface IterableIterator<T> {
@@ -171,13 +171,13 @@ if (flag || fastDeque == undefined) {
       return (this._rear + 1) % this._capacity === this._front;
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let _this = this;
-      let count = _this._front;
+      let deque = this;
+      let count = deque._front;
       return {
         next: function () {
-          var done = count == _this._rear;
-          var value = !done ? _this[count] : undefined;
-          count = (count + 1) % _this._capacity;
+          var done = count == deque._rear;
+          var value = !done ? deque[count] : undefined;
+          count = (count + 1) % deque._capacity;
           return {
             done: done,
             value: value,

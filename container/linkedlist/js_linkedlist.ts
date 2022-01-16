@@ -36,12 +36,11 @@ if (flag || fastLinkedList == undefined) {
       return obj[prop];
     }
     set(obj: LinkedList<T>, prop: any, value: any) {
-      if (
-        prop === "_length" ||
-        prop === "_capacity" ||
-        prop === "_head" ||
-        prop == "next" ||
-        prop == "_tail") {
+      if (prop === "_length" ||
+          prop === "_capacity" ||
+          prop === "_head" ||
+          prop == "next" ||
+          prop == "_tail" ) {
         obj[prop] = value;
         return true;
       }
@@ -94,6 +93,9 @@ if (flag || fastLinkedList == undefined) {
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
       return;
+    }
+    setPrototypeOf(obj: any, prop: any): any {
+      throw new Error("Can setPrototype on LinkedList Object");  
     }
   }
   interface IterableIterator<T> {

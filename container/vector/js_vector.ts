@@ -84,6 +84,9 @@ if (flag || fastVector == undefined) {
       }
       return;
     }
+    setPrototypeOf(obj: any, prop: any): any {
+      throw new Error("Can setPrototype on Vector Object");  
+    }
   }
   interface IterableIterator<T> {
     next: () => {
@@ -170,7 +173,7 @@ if (flag || fastVector == undefined) {
       }
       return -1;
     }
-    getLastIndexOfFrom(element: T, index: number): number {
+    getLastIndexFrom(element: T, index: number): number {
       if (this.has(element)) {
         for (let i = index; i >= 0; i--) {
           if (this[i] === element) {
@@ -180,7 +183,7 @@ if (flag || fastVector == undefined) {
       }
       return -1;
     }
-    getIndexOfFrom(element: T, index: number): number {
+    getIndexFrom(element: T, index: number): number {
       if (this.has(element)) {
         for (let i = index; i < this._length; i++) {
           if (this[i] === element) {
@@ -315,11 +318,14 @@ if (flag || fastVector == undefined) {
         this._capacity = newCapacity;
       }
     }
-    trimToCurrentSize(): void {
+    trimToCurrentLength(): void {
       this._capacity = this._length;
     }
     setSize(newSize: number): void {
       this._length = newSize;
+    }
+    isEmpty(): boolean {
+      return this._length == 0;
     }
     [Symbol.iterator](): IterableIterator<T> {
       let count = 0;
