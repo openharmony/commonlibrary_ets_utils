@@ -31,7 +31,6 @@ if (flag || fastLightWeightMap === undefined) {
       done: boolean;
     };
   }
-
   class HandlerLightWeightMap<K, V> {
     set(target: LightWeightMap<K, V>, p: any, value: any): boolean {
       if (p in target) {
@@ -41,22 +40,20 @@ if (flag || fastLightWeightMap === undefined) {
       return false;
     }
     defineProperty(target: LightWeightMap<K, V>, p: any): boolean {
-      throw new Error("Can't defineProperty on LightWeightMap Object");
+      throw new Error("Can't define Property on LightWeightMap Object");
     }
     deleteProperty(target: LightWeightMap<K, V>, p: any): boolean {
-      throw new Error("Can't deleteProperty on LightWeightMap Object");
+      throw new Error("Can't delete Property on LightWeightMap Object");
     }
     setPrototypeOf(target: LightWeightMap<K, V>, p: any): boolean {
-      throw new Error("Can't setPrototype on LightWeightMap Object");
+      throw new Error("Can't set Prototype on LightWeightMap Object");
     }
   }
-
   class LightWeightMap<K, V> extends LightWeightAbility.LightWeightClass<K, V> {
     constructor() {
       super();
       return new Proxy(this, new HandlerLightWeightMap());
     }
-
     get length() {
       return this.memberNumber;
     }
@@ -166,9 +163,9 @@ if (flag || fastLightWeightMap === undefined) {
     }
     forEach(callbackfn: (value?: V, key?: K, map?: LightWeightMap<K, V>) => void,
       thisArg?: Object): void {
-      let _this = this;
-      for (let i = 0; i < _this.memberNumber; i++) {
-        callbackfn.call(thisArg, _this.members.values[i], _this.members.keys[i], _this);
+      let data = this;
+      for (let i = 0; i < data.memberNumber; i++) {
+        callbackfn.call(thisArg, data.members.values[i], data.members.keys[i], data);
       }
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
@@ -212,10 +209,10 @@ if (flag || fastLightWeightMap === undefined) {
       };
     }
   }
-
   Object.freeze(LightWeightMap);
   fastLightWeightMap = LightWeightMap;
 }
+
 export default {
   LightWeightMap: fastLightWeightMap,
 };

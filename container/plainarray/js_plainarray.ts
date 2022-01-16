@@ -31,7 +31,6 @@ if (flag || fastPlainArray === undefined) {
       done: boolean;
     };
   }
-
   class HandlerPlainArray<T> {
     set(target: PlainArray<T>, p: any, value: any): boolean {
       if (p in target) {
@@ -41,13 +40,13 @@ if (flag || fastPlainArray === undefined) {
       return false;
     }
     defineProperty(target: PlainArray<T>, p: any): boolean {
-      throw new Error("Can't PlainArray on HashMap Object");
+      throw new Error("Can't define Property on PlainArray Object");
     }
     deleteProperty(target: PlainArray<T>, p: any): boolean {
-      throw new Error("Can't PlainArray on HashMap Object");
+      throw new Error("Can't delete Property on PlainArray Object");
     }
     setPrototypeOf(target: PlainArray<T>, p: any): boolean {
-      throw new Error("Can't PlainArray on HashMap Object");
+      throw new Error("Can't set Prototype on PlainArray Object");
     }
   }
   class PlainArray<T> extends PlainAbility.PlainArrayClass<T> {
@@ -55,12 +54,11 @@ if (flag || fastPlainArray === undefined) {
       super();
       return new Proxy(this, new HandlerPlainArray());
     }
-
     get length() {
       return this.memberNumber;
     }
     add(key: number, value: T): void {
-      if(typeof key !== "number") {
+      if (typeof key !== "number") {
         throw new Error("PlainArray's only number is allowed");
       }
       this.addmember(key, value);
@@ -77,19 +75,18 @@ if (flag || fastPlainArray === undefined) {
       clone.memberNumber = this.memberNumber;
       clone.members.keys = this.members.keys.slice();
       clone.members.values = this.members.values.slice();
-
       return clone;
     }
     has(key: number): boolean {
-      return this.binarySearch_Plain(key) > -1;
+      return this.binarySearchAtPlain(key) > -1;
     }
     get(key: number): T {
-      let index = this.binarySearch_Plain(key);
+      let index = this.binarySearchAtPlain(key);
       if (index < 0) throw new Error("Key error found");
       return this.members.values[index];
     }
     getIndexOfKey(key: number): number {
-      let result = this.binarySearch_Plain(key);
+      let result = this.binarySearchAtPlain(key);
       return result < 0 ? -1 : result;
     }
     getIndexOfValue(value: T): number {
@@ -102,7 +99,7 @@ if (flag || fastPlainArray === undefined) {
       return this.members.keys[index];
     }
     remove(key: number): T {
-      let index = this.binarySearch_Plain(key);
+      let index = this.binarySearchAtPlain(key);
       if (index < 0) throw new Error(" element not in this plainarray");
       return this.deletemember(index);
     }
@@ -140,12 +137,12 @@ if (flag || fastPlainArray === undefined) {
       }
     }
     [Symbol.iterator](): IterableIterator<[number, T]> {
-      let _this = this;
+      let data = this;
       let count = 0;
       return {
         next: function () {
-          var done = count >= _this.memberNumber;
-          var value = !done ? [_this.members.keys[count], _this.members.values[count]] as [number, T] : undefined;
+          var done = count >= data.memberNumber;
+          var value = !done ? [data.members.keys[count], data.members.values[count]] as [number, T] : undefined;
           count++;
           return {
             done: done,
@@ -154,11 +151,11 @@ if (flag || fastPlainArray === undefined) {
         },
       };
     }
-
   }
   Object.freeze(PlainArray);
   fastPlainArray = PlainArray;
 }
+
 export default {
   PlainArray: fastPlainArray,
 };

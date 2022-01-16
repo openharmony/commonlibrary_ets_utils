@@ -31,7 +31,6 @@ if (flag || fastLightWeightSet === undefined) {
       done: boolean;
     };
   }
-
   class HandlerLightWeightSet<T> {
     set(target: LightWeightSet<T>, p: any, value: any): boolean {
       if (p in target) {
@@ -41,22 +40,20 @@ if (flag || fastLightWeightSet === undefined) {
       return false;
     }
     defineProperty(target: LightWeightSet<T>, p: any): boolean {
-      throw new Error("Can't LightWeightSet on HashMap Object");
+      throw new Error("Can't define Property on LightWeightSet Object");
     }
     deleteProperty(target: LightWeightSet<T>, p: any): boolean {
-      throw new Error("Can't LightWeightSet on HashMap Object");
+      throw new Error("Can't delete Property on LightWeightSet Object");
     }
     setPrototypeOf(target: LightWeightSet<T>, p: any): boolean {
-      throw new Error("Can't LightWeightSet on HashMap Object");
+      throw new Error("Can't set Prototype on LightWeightSet Object");
     }
   }
-  
   class LightWeightSet<T> extends LightWeightAbility.LightWeightClass<T, T> {
     constructor() {
       super();
       return new Proxy(this, new HandlerLightWeightSet());
     }
-
     get length() {
       return this.memberNumber;
     }
@@ -127,9 +124,9 @@ if (flag || fastLightWeightSet === undefined) {
     }
     forEach(callbackfn: (value?: T, key?: T, set?: LightWeightSet<T>) => void,
       thisArg?: Object): void {
-      let _this = this;
-      for (let i = 0; i < _this.memberNumber; i++) {
-        callbackfn.call(thisArg, _this.members.keys[i], _this.members.keys[i], _this);
+      let data = this;
+      for (let i = 0; i < data.memberNumber; i++) {
+        callbackfn.call(thisArg, data.members.keys[i], data.members.keys[i], data);
       }
     }
     [Symbol.iterator](): IterableIterator<T> {
@@ -175,10 +172,10 @@ if (flag || fastLightWeightSet === undefined) {
       };
     }
   }
-
   Object.freeze(LightWeightSet);
   fastLightWeightSet = LightWeightSet;
 }
+
 export default {
   LightWeightSet: fastLightWeightSet,
 };

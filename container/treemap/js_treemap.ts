@@ -22,6 +22,7 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
+
 if (flag || fastTreeMap === undefined) {
   const RBTreeAbility = requireNapi("struct")
   interface IterableIterator<T> {
@@ -30,7 +31,6 @@ if (flag || fastTreeMap === undefined) {
       done: boolean;
     };
   }
-
   class HandlerTreeMap<K, V> {
     set(target: TreeMap<K, V>, p: any, value: any): boolean {
       if (p in target) {
@@ -40,23 +40,21 @@ if (flag || fastTreeMap === undefined) {
       return false;
     }
     defineProperty(target: TreeMap<K, V>, p: any): boolean {
-      throw new Error("Can't defineProperty on TreeMap Object");
+      throw new Error("Can't define Property on TreeMap Object");
     }
     deleteProperty(target: TreeMap<K, V>, p: any): boolean {
-      throw new Error("Can't deleteProperty on TreeMap Object");
+      throw new Error("Can't delete Property on TreeMap Object");
     }
     setPrototypeOf(target: TreeMap<K, V>, p: any): boolean {
-      throw new Error("Can't setPrototype on TreeMap Object");
+      throw new Error("Can't set Prototype on TreeMap Object");
     }
   }
-
   class TreeMap<K, V> {
     private _constitute: any;
     constructor() {
       this._constitute = new RBTreeAbility.RBTreeClass();
       return new Proxy(this, new HandlerTreeMap());
-    }
-
+    } 
     get length() {
       return this._constitute.memberNumber;
     }
@@ -88,7 +86,6 @@ if (flag || fastTreeMap === undefined) {
       this._constitute.setAll(map._constitute);
     }
     set(key: K, value: V): Object {
-      // If the user enters key other than number and string, a comparison function is required
       return this._constitute.addNode(key, value);
     }
     remove(key: K): V | null {
@@ -111,7 +108,6 @@ if (flag || fastTreeMap === undefined) {
     }
     getHigherKey(key: K): K {
       let tempNode = this._constitute.getNode(key);
-
       if (tempNode === null)
         throw new Error("don't find this key,this node is undefine");
       if (tempNode.right !== null) return tempNode.right.key;
@@ -120,16 +116,15 @@ if (flag || fastTreeMap === undefined) {
         if (node.parent.left === node) return node.parent.key;
         node = node.parent;
       }
-
       throw new Error("don't find a key meet the conditions");
     }
     keys(): IterableIterator<K> {
-      let _this = this._constitute;
+      let data = this._constitute;
       let i = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].key : undefined;
+          var done = i >= data.memberNumber;
+          var value = !done ? data.keyValueArray[i++].key : undefined;
           return {
             done: done,
             value: value,
@@ -138,12 +133,12 @@ if (flag || fastTreeMap === undefined) {
       };
     }
     values(): IterableIterator<V> {
-      let _this = this._constitute;
+      let data = this._constitute;
       let i = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].value as V : undefined;
+          var done = i >= data.memberNumber;
+          var value = !done ? data.keyValueArray[i++].value as V : undefined;
           return {
             done: done,
             value: value,
@@ -159,19 +154,19 @@ if (flag || fastTreeMap === undefined) {
     }
     forEach(callbackfn: (value?: V, key?: K, map?: TreeMap<K, V>) => void,
       thisArg?: Object): void {
-      let _this = this._constitute;
-      let tagetArray = _this.keyValueArray;
-      for (let i = 0; i < _this.memberNumber; i++) {
+      let data = this._constitute;
+      let tagetArray = data.keyValueArray;
+      for (let i = 0; i < data.memberNumber; i++) {
         callbackfn.call(thisArg, tagetArray[i].value as V, tagetArray[i].key);
       }
     }
     entries(): IterableIterator<[K, V]> {
-      let _this = this._constitute;
+      let data = this._constitute;
       let i = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].entry() : undefined;
+          var done = i >= data.memberNumber;
+          var value = !done ? data.keyValueArray[i++].entry() : undefined;
           return {
             done: done,
             value: value,
@@ -180,12 +175,12 @@ if (flag || fastTreeMap === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
-      let _this = this._constitute;
+      let data = this._constitute;
       let i = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].entry() : undefined;
+          var done = i >= data.memberNumber;
+          var value = !done ? data.keyValueArray[i++].entry() : undefined;
           return {
             done: done,
             value: value,
@@ -194,10 +189,10 @@ if (flag || fastTreeMap === undefined) {
       };
     }
   }
-
   Object.freeze(TreeMap);
   fastTreeMap = TreeMap;
 }
+
 export default {
   TreeMap: fastTreeMap,
 };

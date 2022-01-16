@@ -31,7 +31,6 @@ if (flag || fastTreeSet === undefined) {
       done: boolean;
     };
   }
-
   class HandlerTreeSet<T> {
     set(target: TreeSet<T>, p: any, value: any): boolean {
       if (p in target) {
@@ -41,23 +40,21 @@ if (flag || fastTreeSet === undefined) {
       return false;
     }
     defineProperty(target: TreeSet<T>, p: any): boolean {
-      throw new Error("Can't TreeSet on HashMap Object");
+      throw new Error("Can't define Property on TreeSet Object");
     }
     deleteProperty(target: TreeSet<T>, p: any): boolean {
-      throw new Error("Can't TreeSet on HashMap Object");
+      throw new Error("Can't delete Property on TreeSet Object");
     }
     setPrototypeOf(target: TreeSet<T>, p: any): boolean {
-      throw new Error("Can't TreeSet on HashMap Object");
+      throw new Error("Can't set Prototype on TreeSet Object");
     }
   }
-
   class TreeSet<T> {
     private _constitute: any;
     constructor() {
       this._constitute = new RBTreeAbility.RBTreeClass();
       return new Proxy(this, new HandlerTreeSet());
     }
-
     get length() {
       return this._constitute.memberNumber;
     }
@@ -92,7 +89,6 @@ if (flag || fastTreeSet === undefined) {
     }
     getLowerValue(key: T): T {
       let tempNode = this._constitute.getNode(key);
-
       if (tempNode === null)
         throw new Error("don't find this key,this node is undefine");
       if (tempNode.left !== null) return tempNode.left.key;
@@ -101,12 +97,10 @@ if (flag || fastTreeSet === undefined) {
         if (node.parent.right === node) return node.parent.key;
         node = node.parent; // node.parent.left === node is true;
       }
-
       throw new Error("don't find a key meet the conditions");
     }
     getHigherValue(key: T): T {
       let tempNode = this._constitute.getNode(key);
-
       if (tempNode === null)
         throw new Error("don't find this key,this node is undefine");
       if (tempNode.right !== null) return tempNode.right.key;
@@ -115,7 +109,6 @@ if (flag || fastTreeSet === undefined) {
         if (node.parent.left === node) return node.parent.key;
         node = node.parent; // node.parent.right === node is true;
       }
-
       throw new Error("don't find a key meet the conditions");
     }
     popFirst(): T {
@@ -135,12 +128,12 @@ if (flag || fastTreeSet === undefined) {
       return value as T;
     }
     values(): IterableIterator<T> {
-      let _this = this._constitute;
-      let i = 0;
+      let data = this._constitute;
+      let count = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].value as T : undefined;
+          var done = count >= data.memberNumber;
+          var value = !done ? data.keyValueArray[count++].value as T : undefined;
           return {
             done: done,
             value: value,
@@ -150,19 +143,19 @@ if (flag || fastTreeSet === undefined) {
     }
     forEach(callbackfn: (value?: T, key?: T, set?: TreeSet<T>) => void,
       thisArg?: Object): void {
-      let _this = this._constitute;
-      let tagetArray = _this.keyValueArray;
-      for (let i = 0; i < _this.memberNumber; i++) {
+      let data = this._constitute;
+      let tagetArray = data.keyValueArray;
+      for (let i = 0; i < data.memberNumber; i++) {
         callbackfn.call(thisArg, tagetArray[i].value as T, tagetArray[i].key);
       }
     }
     entries(): IterableIterator<[T, T]> {
-      let _this = this._constitute;
-      let i = 0;
+      let data = this._constitute;
+      let count = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].entry() : undefined;
+          var done = count >= data.memberNumber;
+          var value = !done ? data.keyValueArray[count++].entry() : undefined;
           return {
             done: done,
             value: value,
@@ -171,12 +164,12 @@ if (flag || fastTreeSet === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let _this = this._constitute;
-      let i = 0;
+      let data = this._constitute;
+      let count = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].key : undefined;
+          var done = count >= data.memberNumber;
+          var value = !done ? data.keyValueArray[count++].key : undefined;
           return {
             done: done,
             value: value,
@@ -185,10 +178,10 @@ if (flag || fastTreeSet === undefined) {
       };
     }
   }
-
   Object.freeze(TreeSet);
   fastTreeSet = TreeSet;
 }
+
 export default {
   TreeSet: fastTreeSet,
 };

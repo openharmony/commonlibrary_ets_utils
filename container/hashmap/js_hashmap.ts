@@ -31,7 +31,6 @@ if (flag || fastHashMap === undefined) {
       done: boolean;
     };
   }
-
   class HandlerHashMap<K, V> {
     set(target: HashMap<K, V>, p: any, value: any): boolean {
       if (p in target) {
@@ -41,22 +40,20 @@ if (flag || fastHashMap === undefined) {
       return false;
     }
     defineProperty(target: HashMap<K, V>, p: any): boolean {
-      throw new Error("Can't defineProperty on HashMap Object");
+      throw new Error("Can't define Property on HashMap Object");
     }
     deleteProperty(target: HashMap<K, V>, p: any): boolean {
-      throw new Error("Can't deleteProperty on HashMap Object");
+      throw new Error("Can't delete Property on HashMap Object");
     }
     setPrototypeOf(target: HashMap<K, V>, p: any): boolean {
-      throw new Error("Can't setPrototype on HashMap Object");
+      throw new Error("Can't set Prototype on HashMap Object");
     }
   }
-
   class HashMap<K, V> extends HashMapAbility.DictionaryClass<K, V> {
     constructor() {
       super();
       return new Proxy(this, new HandlerHashMap());
     }
-
     get length() {
       return this.memberNumber;
     }
@@ -161,7 +158,6 @@ if (flag || fastHashMap === undefined) {
       };
     }
   }
-
   Object.freeze(HashMap);
   fastHashMap = HashMap;
 }

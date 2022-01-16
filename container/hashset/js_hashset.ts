@@ -23,6 +23,7 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
+
 if (flag || fastHashSet === undefined) {
   const HashSetAbility = requireNapi("struct");
   interface IterableIterator<T> {
@@ -31,7 +32,6 @@ if (flag || fastHashSet === undefined) {
       done: boolean;
     };
   }
-
   class HandlerHashSet<T> {
     set(target: HashSet<T>, p: any, value: any): boolean {
       if (p in target) {
@@ -41,22 +41,20 @@ if (flag || fastHashSet === undefined) {
       return false;
     }
     defineProperty(target: HashSet<T>, p: any): boolean {
-      throw new Error("Can't defineProperty on HashMap Object");
+      throw new Error("Can't define Property on HashSet Object");
     }
     deleteProperty(target: HashSet<T>, p: any): boolean {
-      throw new Error("Can't deleteProperty on HashMap Object");
+      throw new Error("Can't delete Property on HashSet Object");
     }
     setPrototypeOf(target: HashSet<T>, p: any): boolean {
-      throw new Error("Can't setPrototype on HashMap Object");
+      throw new Error("Can't set Prototype on HashSet Object");
     }
   }
-
   class HashSet<T> extends HashSetAbility.DictionaryClass<T, T> {
     constructor() {
       super();
       return new Proxy(this, new HandlerHashSet());
     }
-
     get length() {
       return this.memberNumber;
     }
@@ -85,12 +83,12 @@ if (flag || fastHashSet === undefined) {
       }
     }
     values(): IterableIterator<T> {
-      let _this = this;
-      let i = 0;
+      let data = this;
+      let count = 0;
       return {
         next: function () {
-          var done = i >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[i++].key : undefined;
+          var done = count >= data.memberNumber;
+          var value = !done ? data.keyValueArray[count++].key : undefined;
           return {
             done: done,
             value: value,
@@ -99,12 +97,12 @@ if (flag || fastHashSet === undefined) {
       };
     }
     entries(): IterableIterator<[T, T]> {
-      let _this = this;
+      let data = this;
       let count = 0;
       return {
         next: function () {
-          var done = count >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[count++].entry() : undefined;
+          var done = count >= data.memberNumber;
+          var value = !done ? data.keyValueArray[count++].entry() : undefined;
           return {
             done: done,
             value: value,
@@ -113,12 +111,12 @@ if (flag || fastHashSet === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let _this = this;
+      let data = this;
       let count = 0;
       return {
         next: function () {
-          var done = count >= _this.memberNumber;
-          var value = !done ? _this.keyValueArray[count++].key : undefined;
+          var done = count >= data.memberNumber;
+          var value = !done ? data.keyValueArray[count++].key : undefined;
           return {
             done: done,
             value: value,
@@ -127,7 +125,6 @@ if (flag || fastHashSet === undefined) {
       };
     }
   }
-
   Object.freeze(HashSet);
   fastHashSet = HashSet;
 }

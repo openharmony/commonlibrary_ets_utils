@@ -42,24 +42,20 @@ function compareToString(string1: String, string2: String) {
   let len1 = string1.length;
   let len2 = string2.length;
   let lim = (len1 > len2 ? len2 : len1);
-
   let k = 0;
   while (k < lim) {
     if (string1.charCodeAt(k) === string2.charCodeAt(k)) {
       k++;
-      if(k === lim) {
+      if (k === lim) {
         return len1 > len2 ? ComparResult.BIGGER_THAN : ComparResult.LESS_THAN;
       }
       continue;
     }
     return string1.charCodeAt(k) > string2.charCodeAt(k) ? ComparResult.BIGGER_THAN : ComparResult.LESS_THAN;
   }
-
   throw new Error("this function run error");
-
 }
 
-// There is type judgment in comparison, and the input parameter type cannot be defined directly
 function currencyCompare(a: any, b: any, compareFn?: Function): number {
   if (a === b) return ComparResult.EQUALS;
   if (compareFn != undefined) {
@@ -90,7 +86,6 @@ function isIncludeToArray(array1: Array<any>, array2: Array<any>): boolean {
   if (newlist.length == array2.length) return true;
   return false;
 }
-
 
 class Pair<K, V>{
   key: K;
@@ -126,7 +121,7 @@ class PlainArrayClass<T> {
   }
 
   protected addmember(key: number, value: T) {
-    let index = this.binarySearch_Plain(key);
+    let index = this.binarySearchAtPlain(key);
     if (index > 0) {
       this.members.keys[index] = key;
       this.members.values[index] = value;
@@ -145,10 +140,9 @@ class PlainArrayClass<T> {
     return removeValue;
   }
 
-  protected binarySearch_Plain(key: number, startIndex: number = 0, endIndex: number = this.memberNumber): number {
+  protected binarySearchAtPlain(key: number, startIndex: number = 0, endIndex: number = this.memberNumber): number {
     let low = startIndex;
     let high = endIndex - 1;
-
     while (low <= high) {
       let mid = (low + high) >>> 1;
       let midVal = this.members.keys[mid];
@@ -161,10 +155,8 @@ class PlainArrayClass<T> {
         high = mid - 1;
       }
     }
-
     return -(low + 1);
   }
-
 }
 
 class LightWeightMembers<K, V> {
@@ -188,7 +180,7 @@ class LightWeightClass<K, V> {
 
   protected addmember(key: K, value: V = key as unknown as V) {
     let hash = hashCode(key);
-    let index = this.binarySearch_LightWeight(hash);
+    let index = this.binarySearchAtLightWeight(hash);
     if (index > 0) {
       this.members.keys[index] = key;
       this.members.values[index] = value;
@@ -199,13 +191,12 @@ class LightWeightClass<K, V> {
       insert(this.members.values, index, value);
       this.memberNumber++;
     }
-
     if (this.capacity < this.memberNumber) this.ensureCapacity(1);
   }
 
   protected getIndexByKey(key: K): number {
     let hash = hashCode(key);
-    let index = this.binarySearch_LightWeight(hash);
+    let index = this.binarySearchAtLightWeight(hash);
     if (index < 0 || index >= this.memberNumber) return -1;
     return index;
   }
@@ -221,8 +212,6 @@ class LightWeightClass<K, V> {
   }
 
   protected ensureCapacity(addCapacity: number = 1) {
-    // The TS terminal does not need to realize the capacity expansion function
-    // capacity ensure consistency with ark side
     let tempCapacity = this.capacity + addCapacity;
     while (this.capacity < tempCapacity) {
       this.capacity = 2 * this.capacity;
@@ -231,7 +220,7 @@ class LightWeightClass<K, V> {
 
   protected getIndex(key: K): number {
     let hash = hashCode(key);
-    let index = this.binarySearch_LightWeight(hash);
+    let index = this.binarySearchAtLightWeight(hash);
     if (index < 0) index = ~index;
     return index;
   }
@@ -244,10 +233,9 @@ class LightWeightClass<K, V> {
     return resultArray;
   }
 
-  protected binarySearch_LightWeight(hash: number, startIndex: number = 0, endIndex: number = this.memberNumber): number {
+  protected binarySearchAtLightWeight(hash: number, startIndex: number = 0, endIndex: number = this.memberNumber): number {
     let low = startIndex;
     let high = endIndex - 1;
-
     while (low <= high) {
       let mid = (low + high) >>> 1;
       let midVal = this.members.hashs[mid];
@@ -260,10 +248,8 @@ class LightWeightClass<K, V> {
         high = mid - 1;
       }
     }
-
     return -(low + 1);
   }
-
 }
 
 type RBTreeNodeColor = "black" | "red";
@@ -274,21 +260,18 @@ class RBTreeNode<K, V> extends Pair<K, V>{
   left: RBTreeNode<K, V> | null;
   right: RBTreeNode<K, V> | null;
   parent: RBTreeNode<K, V> | null;
-  constructor(
-    key: K,
+  constructor(key: K,
     value?: V,
     color: RBTreeNodeColor = RED,
     parent: RBTreeNode<K, V> | null = null,
     left: RBTreeNode<K, V> | null = null,
-    right: RBTreeNode<K, V> | null = null
-  ) {
+    right: RBTreeNode<K, V> | null = null) {
     super(key, value);
     this.color = color;
     this.left = left;
     this.right = right;
     this.parent = parent;
   }
-
 }
 class RBTreeClass<K, V> {
   private _root: RBTreeNode<K, V> | null;
@@ -316,7 +299,6 @@ class RBTreeClass<K, V> {
     } else {
       this.addProcess(key, value)
     }
-
     return this;
   }
 
@@ -324,7 +306,6 @@ class RBTreeClass<K, V> {
     let leafNode: RBTreeNode<K, V> | null = this._root;
     let parentNode: RBTreeNode<K, V> = this._root as RBTreeNode<K, V>;
     let comp: number = 0;
-
     while (leafNode !== null) {
       parentNode = leafNode;
       comp = currencyCompare(leafNode.key, key);
@@ -337,20 +318,16 @@ class RBTreeClass<K, V> {
         leafNode = leafNode.left;
       }
     }
-
     leafNode = new RBTreeNode<K, V>(key, value)
     leafNode.parent = parentNode;
-
     if (comp < 0) {
       parentNode.right = leafNode;
     } else {
       parentNode.left = leafNode;
     }
-
     this.insertRebalance(leafNode);
     this.memberNumber++;
     this._isChange = true;
-
     return this;
   }
 
@@ -373,7 +350,6 @@ class RBTreeClass<K, V> {
       }
       removeNode = successor;
     }
-
     let replacementNode = (removeNode.right === null ? removeNode.left : removeNode.right);
     if (replacementNode !== null) {
       replacementNode.parent = removeNode.parent;
@@ -394,14 +370,12 @@ class RBTreeClass<K, V> {
       if (this.getColor(removeNode) === BLACK) {
         this.deleteRebalance(removeNode)
       }
-
       if (removeNode === removeNode.parent.left) {
         removeNode.parent.left = null;
       } else if (removeNode === removeNode.parent.right) {
         removeNode.parent.right = null;
       }
     }
-
     this.memberNumber--;
     this._isChange = true;
   }
@@ -448,7 +422,7 @@ class RBTreeClass<K, V> {
 
   setAll(map: RBTreeClass<K, V>) {
     this.recordByMinToMax();
-    for(let i = 0; i < this.memberNumber; i++) {
+    for (let i = 0; i < this.memberNumber; i++) {
       map.addNode(this._treeArray[i].key, this._treeArray[i].value);
     }
   }
@@ -458,7 +432,6 @@ class RBTreeClass<K, V> {
     this.memberNumber = 0;
   }
 
-  // inorder traversal
   private recordByMinToMax(): Array<RBTreeNode<K, V>> {
     if (!this._isChange) return this._treeArray;
     let stack = [];
@@ -476,7 +449,6 @@ class RBTreeClass<K, V> {
       this._treeArray.push(node);
       node = node.right;
     }
-
     this._isChange = false;
     this.memberNumber = this._treeArray.length;
     return this._treeArray;
@@ -486,10 +458,8 @@ class RBTreeClass<K, V> {
     let newTopNode = datumPointNode.right;
     if (newTopNode === null)
       throw new Error("[rotate right error]: the right child node of the base node === null")
-
     datumPointNode.right = newTopNode.left;
     datumPointNode.right !== null ? datumPointNode.right.parent = datumPointNode : "";
-
     newTopNode.parent = datumPointNode.parent;
     if (datumPointNode.parent === null) {
       this._root = newTopNode;
@@ -498,10 +468,8 @@ class RBTreeClass<K, V> {
     } else if (datumPointNode.parent.right === datumPointNode) {
       datumPointNode.parent.right = newTopNode;
     }
-
     datumPointNode.parent = newTopNode;
     newTopNode.left = datumPointNode;
-
     return this;
   }
 
@@ -510,7 +478,6 @@ class RBTreeClass<K, V> {
     if (newTopNode === null) {
       throw new Error("[rotate right error]: the left child node of the base node === null")
     }
-
     datumPointNode.left = newTopNode.right;
     datumPointNode.left !== null ? datumPointNode.left.parent = datumPointNode : "";
     newTopNode.parent = datumPointNode.parent
@@ -521,10 +488,8 @@ class RBTreeClass<K, V> {
     } else if (datumPointNode === datumPointNode.parent.right) {
       datumPointNode.parent.right = newTopNode;
     }
-
     datumPointNode.parent = newTopNode;
     newTopNode.right = datumPointNode;
-
     return this;
   }
 
@@ -685,7 +650,6 @@ class RBTreeClass<K, V> {
     }
     return this;
   }
-
 }
 
 const MAX_CAPACITY = 1 << 30;
@@ -696,7 +660,6 @@ class DictionaryClass<K, V>  {
   private _isChange: boolean;
   private _memberArray: Array<Pair<K, V>>;
   private _capacity: number;
-
   constructor() {
     this._tableLink = {};
     this.memberNumber = 0;
@@ -734,7 +697,6 @@ class DictionaryClass<K, V>  {
     const keys = Object.keys(this._tableLink).map((item) => parseInt(item));
     for (let i = 0; i < keys.length; i++) {
       const members = this._tableLink[keys[i]];
-
       if (members instanceof RBTreeClass) {
         let tempArray = members.keyValueArray;
         for (let i = 0; i < members.memberNumber; i++) {
@@ -756,8 +718,6 @@ class DictionaryClass<K, V>  {
   }
 
   protected expandCapacity() {
-    // The TS terminal does not need to realize the _capacity expansion function
-    // _capacity ensure consistency with ark side
     while (this._capacity < this.memberNumber / LOADER_FACTOR && this._capacity < MAX_CAPACITY) {
       this._capacity = 2 * this._capacity;
     }
@@ -767,15 +727,13 @@ class DictionaryClass<K, V>  {
     if (key != null && value != null) {
       this._isChange = true;
       this.memberNumber++;
-
       const position = this.getHashIndex(key);
       let members = this._tableLink[position];
-
       if (members instanceof LinkedList && members.count >= 8) {
         let newElement = new RBTreeClass<K, V>();
         let current = members.getHead();
         while (current != null || current != undefined) {
-          if (!(current.element instanceof Pair)) 
+          if (!(current.element instanceof Pair))
             throw new Error("this hashtable member save error");
           newElement.addNode(current.element.key, current.element.value);
           current = current.next;
@@ -798,7 +756,6 @@ class DictionaryClass<K, V>  {
         return true;
       }
     }
-
     return false;
   }
 
@@ -839,7 +796,7 @@ class DictionaryClass<K, V>  {
     return undefined;
   }
 
-  protected removeMember(key: K): V | null{
+  protected removeMember(key: K): V | null {
     const position = this.getHashIndex(key);
     const members = this._tableLink[position];
     if (members instanceof RBTreeClass) {
@@ -922,7 +879,6 @@ class LinkedList<T> {
   public count: number;
   protected next: Node<T> | null;
   protected head: Node<T> | null;
-
   constructor() {
     this.count = 0;
     this.next = null;
@@ -983,7 +939,7 @@ class LinkedList<T> {
         this.head = node;
       } else {
         const previous = this.getElementAt(index--);
-        if (previous === null) 
+        if (previous === null)
           throw new Error("data storage error");
         node.next = previous.next;
         previous.next = node;
@@ -1021,6 +977,7 @@ class LinkedList<T> {
   getHead() {
     return this.head;
   }
+
   toString() {
     if (this.head == null) {
       return "";
