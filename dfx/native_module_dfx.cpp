@@ -101,6 +101,60 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_get_boolean(env, stopResult, &result));
         return result;
     }
+    
+    static napi_value PrintStatisticResult(napi_env env, napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        engine->PrintStatisticResult();
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+        return result;
+    }
+   
+    static napi_value StartRuntimeStat(napi_env env, napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        engine->StartRuntimeStat();
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+        return result;
+    }
+    
+    static napi_value StopRuntimeStat(napi_env env, napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        engine->StopRuntimeStat();
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+        return result;
+    }
+    
+    static napi_value GetArrayBufferSize(napi_env env, napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        auto value = static_cast<uint32_t>(engine->GetArrayBufferSize());
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_create_uint32(env, value, &result));
+        return result;
+    }
+    
+    static napi_value GetHeapTotalSize(napi_env env, napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        auto value = static_cast<uint32_t>(engine->GetHeapTotalSize());
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_create_uint32(env, value, &result));
+        return result;
+    }
+    
+    static napi_value GetHeapUsedSize(napi_env env, napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        auto value = static_cast<uint32_t>(engine->GetHeapUsedSize());
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_create_uint32(env, value, &result));
+        return result;
+    }
 
     static napi_value DfxInit(napi_env env, napi_value exports)
     {
@@ -109,6 +163,12 @@ namespace OHOS::Js_sys_module::Dfx {
             DECLARE_NAPI_FUNCTION("buildNativeAndJsBackStackTrace", BuildNativeAndJsBackStackTrace),
             DECLARE_NAPI_FUNCTION("startHeapTracking", StartHeapTracking),
             DECLARE_NAPI_FUNCTION("stopHeapTracking", StopHeapTracking),
+            DECLARE_NAPI_FUNCTION("printStatisticResult", PrintStatisticResult),
+            DECLARE_NAPI_FUNCTION("startRuntimeStat", StartRuntimeStat),
+            DECLARE_NAPI_FUNCTION("stopRuntimeStat", StopRuntimeStat),
+            DECLARE_NAPI_FUNCTION("getArrayBufferSize", GetArrayBufferSize),
+            DECLARE_NAPI_FUNCTION("getHeapTotalSize", GetHeapTotalSize),
+            DECLARE_NAPI_FUNCTION("getHeapUsedSize", GetHeapUsedSize),
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         return exports;
