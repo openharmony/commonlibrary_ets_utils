@@ -24,7 +24,7 @@ namespace OHOS::Js_sys_module::Dfx {
         size_t argc = 2;
         size_t requireArgc = 2;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
-        NAPI_ASSERT(env, argc > requireArgc, "Wrong number of arguments");
+        NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
         napi_value *argv = nullptr;
         argv = new napi_value[argc];
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
@@ -61,7 +61,7 @@ namespace OHOS::Js_sys_module::Dfx {
         size_t argc = 2;
         size_t requireArgc = 2;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
-        NAPI_ASSERT(env, argc > requireArgc, "Wrong number of arguments");
+        NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
         napi_value *argv = nullptr;
         argv = new napi_value[argc];
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
@@ -81,7 +81,7 @@ namespace OHOS::Js_sys_module::Dfx {
         size_t argc = 1;
         size_t requireArgc = 1;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
-        NAPI_ASSERT(env, argc > requireArgc, "Wrong number of arguments");
+        NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
         napi_value *argv = nullptr;
         argv = new napi_value[argc];
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
