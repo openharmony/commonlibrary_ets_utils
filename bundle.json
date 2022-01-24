@@ -36,8 +36,8 @@
         "destPath": "base/compileruntime/js_util_module"
     },
     "component": {
-        "name": "js_util_module",
-        "subsystem": "ccruntime",
+        "name": "jsapi_util",
+        "subsystem": "compileruntime",
         "syscap": [],
         "features": [],
         "adapted_system_type": [],
@@ -49,7 +49,8 @@
         },
         "build": {
             "sub_component": [
-                "//base/compileruntime/js_util_module/util:util_packages"
+                "//base/compileruntime/js_util_module/util:util_packages",
+                "//base/compileruntime/js_util_module/container:container_packages"
             ],
             "inner_kits": [],
             "test": []
