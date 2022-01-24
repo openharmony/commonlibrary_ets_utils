@@ -36,8 +36,8 @@
         "destPath": "base/compileruntime/js_sys_module"
     },
     "component": {
-        "name": "js_sys_module",
-        "subsystem": "ccruntime",
+        "name": "jsapi_sys",
+        "subsystem": "compileruntime",
         "syscap": [],
         "features": [],
         "adapted_system_type": [],
