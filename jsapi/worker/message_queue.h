@@ -19,6 +19,7 @@
 #include <mutex>
 #include <queue>
 #include "napi/native_api.h"
+#include "napi/native_node_api.h"
 
 namespace OHOS::CCRuntime::Worker {
 using MessageDataType = napi_value;

@@ -21,6 +21,7 @@
 #include <mutex>
 #include <uv.h>
 #include "message_queue.h"
+#include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 #include "utils/log.h"
