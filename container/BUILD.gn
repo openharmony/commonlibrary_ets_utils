@@ -121,7 +121,7 @@ template("container_lib") {
     } else {
       external_deps = [ "hilog:libhilog" ]
     }
-    subsystem_name = "ccruntime"
+    subsystem_name = "compileruntime"
     part_name = "jsapi_util"
 
     relative_install_dir = "module"
