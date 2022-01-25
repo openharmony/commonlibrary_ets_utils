@@ -37,7 +37,7 @@ ohos_shared_library("dfx") {
   } else {
     external_deps = [ "hilog:libhilog" ]
   }
-  subsystem_name = "ccruntime"
+  subsystem_name = "compileruntime"
   part_name = "jsapi_sys"
 
   relative_install_dir = "module"

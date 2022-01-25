@@ -39,7 +39,7 @@ ohos_shared_library("process") {
   } else {
     external_deps = [ "hilog:libhilog" ]
   }
-  subsystem_name = "ccruntime"
+  subsystem_name = "compileruntime"
   part_name = "jsapi_sys"
 
   relative_install_dir = "module"
