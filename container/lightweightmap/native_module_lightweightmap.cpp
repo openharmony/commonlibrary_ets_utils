@@ -29,7 +29,7 @@ static napi_value LightWeightMapInit(napi_env env, napi_value exports)
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_lightweightmap_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_LightWeightMap_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_lightweightmap_js_start;
@@ -41,7 +41,7 @@ __attribute__((visibility("default"))) void NAPI_lightweightmap_GetJSCode(const 
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_lightweightmap_GetABCCode(const char** buf, int* buflen)
+__attribute__((visibility("default"))) void NAPI_util_LightWeightMap_GetABCCode(const char** buf, int* buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_lightweightmap_abc_start;

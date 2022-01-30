@@ -24,7 +24,7 @@ if (arkPritvate !== undefined) {
 }
 
 if (flag || fastTreeSet === undefined) {
-  const RBTreeAbility = requireNapi("struct");
+  const RBTreeAbility = requireNapi("util.struct");
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;

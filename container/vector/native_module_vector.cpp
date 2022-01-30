@@ -27,7 +27,7 @@ static napi_value VectorInit(napi_env env, napi_value exports)
     return exports;
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_vector_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_Vector_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_vector_js_start;
@@ -39,7 +39,7 @@ __attribute__((visibility("default"))) void NAPI_vector_GetJSCode(const char **b
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_vector_GetABCCode(const char **buf, int *buflen)
+__attribute__((visibility("default"))) void NAPI_util_Vector_GetABCCode(const char **buf, int *buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_vector_abc_start;

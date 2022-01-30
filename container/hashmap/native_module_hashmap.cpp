@@ -29,7 +29,7 @@ static napi_value HashMapInit(napi_env env, napi_value exports)
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_hashmap_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_HashMap_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_hashmap_js_start;
@@ -40,7 +40,7 @@ __attribute__((visibility("default"))) void NAPI_hashmap_GetJSCode(const char **
     }
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_hashmap_GetABCCode(const char** buf, int* buflen)
+__attribute__((visibility("default"))) void NAPI_util_HashMap_GetABCCode(const char** buf, int* buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_hashmap_abc_start;

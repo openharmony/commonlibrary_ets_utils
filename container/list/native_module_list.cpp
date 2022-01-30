@@ -27,7 +27,7 @@ static napi_value ListInit(napi_env env, napi_value exports)
     return exports;
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_list_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_List_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_list_js_start;
@@ -38,7 +38,7 @@ __attribute__((visibility("default"))) void NAPI_list_GetJSCode(const char **buf
     }
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_list_GetABCCode(const char **buf, int *buflen)
+__attribute__((visibility("default"))) void NAPI_util_List_GetABCCode(const char **buf, int *buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_list_abc_start;

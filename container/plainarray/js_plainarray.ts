@@ -24,7 +24,7 @@ if (arkPritvate !== undefined) {
 }
 
 if (flag || fastPlainArray === undefined) {
-  const PlainAbility = requireNapi("struct");
+  const PlainAbility = requireNapi("util.struct");
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;

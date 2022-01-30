@@ -29,7 +29,7 @@ static napi_value LinkedListInit(napi_env env, napi_value exports)
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_linkedlist_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_LinkedList_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_linkedlist_js_start;
@@ -40,7 +40,7 @@ __attribute__((visibility("default"))) void NAPI_linkedlist_GetJSCode(const char
     }
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_linkedlist_GetABCCode(const char **buf, int *buflen)
+__attribute__((visibility("default"))) void NAPI_util_LinkedList_GetABCCode(const char **buf, int *buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_linkedlist_abc_start;

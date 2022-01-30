@@ -24,7 +24,7 @@ if (arkPritvate !== undefined) {
 }
 
 if (flag || fastHashMap === undefined) {
-  const HashMapAbility = requireNapi("struct");
+  const HashMapAbility = requireNapi("util.struct");
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;

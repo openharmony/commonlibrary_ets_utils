@@ -29,7 +29,7 @@ static napi_value PlainArrayInit(napi_env env, napi_value exports)
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_plainarray_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_PlainArray_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_plainarray_js_start;
@@ -41,7 +41,7 @@ __attribute__((visibility("default"))) void NAPI_plainarray_GetJSCode(const char
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_plainarray_GetABCCode(const char** buf, int* buflen)
+__attribute__((visibility("default"))) void NAPI_util_PlainArray_GetABCCode(const char** buf, int* buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_plainarray_abc_start;

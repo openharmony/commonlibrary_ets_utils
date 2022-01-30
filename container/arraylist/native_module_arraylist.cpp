@@ -28,7 +28,7 @@ static napi_value ArrayListInit(napi_env env, napi_value exports)
     return exports;
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_arraylist_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_ArrayList_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
             *buf = _binary_js_arraylist_js_start;
@@ -38,7 +38,7 @@ __attribute__((visibility("default"))) void NAPI_arraylist_GetJSCode(const char 
     }
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_arraylist_GetABCCode(const char **buf, int *buflen)
+__attribute__((visibility("default"))) void NAPI_util_ArrayList_GetABCCode(const char **buf, int *buflen)
 {
     if (buf != nullptr) {
             *buf = _binary_arraylist_abc_start;

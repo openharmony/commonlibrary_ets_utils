@@ -24,7 +24,7 @@ if (arkPritvate !== undefined) {
 }
 
 if (flag || fastLightWeightSet === undefined) {
-  const LightWeightAbility = requireNapi("struct");
+  const LightWeightAbility = requireNapi("util.struct");
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;

@@ -124,7 +124,7 @@ template("container_lib") {
     subsystem_name = "compileruntime"
     part_name = "jsapi_util"
 
-    relative_install_dir = "module"
+    relative_install_dir = "module/util"
   }
 }
 

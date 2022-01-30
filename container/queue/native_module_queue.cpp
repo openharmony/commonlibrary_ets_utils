@@ -27,7 +27,7 @@ static napi_value QueueInit(napi_env env, napi_value exports)
     return exports;
 }
 extern "C"
-__attribute__((visibility("default"))) void NAPI_queue_GetJSCode(const char **buf, int *bufLen)
+__attribute__((visibility("default"))) void NAPI_util_Queue_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_queue_js_start;
@@ -39,7 +39,7 @@ __attribute__((visibility("default"))) void NAPI_queue_GetJSCode(const char **bu
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_queue_GetABCCode(const char **buf, int *buflen)
+__attribute__((visibility("default"))) void NAPI_util_Queue_GetABCCode(const char **buf, int *buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_queue_abc_start;
