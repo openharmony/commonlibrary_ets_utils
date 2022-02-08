@@ -82,7 +82,6 @@ if (flag || fastPlainArray === undefined) {
     }
     get(key: number): T {
       let index = this.binarySearchAtPlain(key);
-      if (index < 0) throw new Error("Key error found");
       return this.members.values[index];
     }
     getIndexOfKey(key: number): number {
@@ -100,7 +99,7 @@ if (flag || fastPlainArray === undefined) {
     }
     remove(key: number): T {
       let index = this.binarySearchAtPlain(key);
-      if (index < 0) throw new Error(" element not in this plainarray");
+      if (index < 0) throw new Error("element not in this plainarray");
       return this.deletemember(index);
     }
     removeAt(index: number): T {
@@ -109,7 +108,7 @@ if (flag || fastPlainArray === undefined) {
     }
     removeRangeFrom(index: number, size: number): number {
       if (index >= this.memberNumber || index < 0) throw new Error("index not in this plainarray range");
-      let safeSize = (this.memberNumber - (index + size) < 0) ? this.memberNumber - size : size;
+      let safeSize = (this.memberNumber - (index + size) < 0) ? this.memberNumber - index : size;
       this.deletemember(index, safeSize);
       return safeSize;
     }

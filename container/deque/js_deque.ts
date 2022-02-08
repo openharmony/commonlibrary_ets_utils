@@ -35,7 +35,7 @@ if (flag || fastDeque == undefined) {
       return obj[prop];
     }
     set(obj: Deque<T>, prop: any, value: T): boolean {
-      if (prop === "_front" || prop === "_capacity" || prop === "_rear") {
+      if (prop === "front" || prop === "capacity" || prop === "rear") {
         obj[prop] = value;
         return true;
       }
@@ -84,38 +84,38 @@ if (flag || fastDeque == undefined) {
     };
   }
   class Deque<T> {
-    private _front: number;
-    private _capacity: number;
-    private _rear: number;
+    private front: number;
+    private capacity: number;
+    private rear: number;
     constructor() {
-      this._front = 0;
-      this._capacity = 8;
-      this._rear = 0;
+      this.front = 0;
+      this.capacity = 8;
+      this.rear = 0;
       return new Proxy(this, new HandlerDeque());
     }
     get length(){
-      let result = (this._rear - this._front + this._capacity) % this._capacity;
+      let result = (this.rear - this.front + this.capacity) % this.capacity;
       return result;
     }
     insertFront(element: T): void {
       if (this.isFull()) {
         this.increaseCapacity();
       }
-      this._front = (this._front - 1 + this._capacity) % this._capacity;
-      this[this._front] = element;
+      this.front = (this.front - 1 + this.capacity) % this.capacity;
+      this[this.front] = element;
     }
     insertEnd(element: T): void {
       if (this.isFull()) {
         this.increaseCapacity();
       }
-      this[this._rear] = element;
-      this._rear = (this._rear + 1) % (this._capacity + 1);
+      this[this.rear] = element;
+      this.rear = (this.rear + 1) % (this.capacity + 1);
     }
     getFirst(): T {
-      return this[this._front];
+      return this[this.front];
     }
     getLast(): T {
-      return this[this._rear - 1];
+      return this[this.rear - 1];
     }
     has(element: T): boolean {
       let result = false;
@@ -127,24 +127,24 @@ if (flag || fastDeque == undefined) {
       return result;
     }
     popFirst(): T {
-      let result = this[this._front];
-      this._front = (this._front + 1) % (this._capacity + 1);
+      let result = this[this.front];
+      this.front = (this.front + 1) % (this.capacity + 1);
       return result;
     }
     popLast(): T {
-      let result = this[this._rear - 1];
-      this._rear = (this._rear + this._capacity) % (this._capacity + 1);
+      let result = this[this.rear - 1];
+      this.rear = (this.rear + this.capacity) % (this.capacity + 1);
       return result;
     }
     forEach(callbackfn: (value: T, index?: number, deque?: Deque<T>) => void,
       thisArg?: Object): void {
       let k = 0;
-      let i = this._front;
+      let i = this.front;
       while (true) {
         callbackfn.call(thisArg, this[i], k, this);
-        i = (i + 1) % this._capacity;
+        i = (i + 1) % this.capacity;
         k++;
-        if (i === this._rear) {
+        if (i === this.rear) {
           break;
         }
       }
@@ -154,30 +154,30 @@ if (flag || fastDeque == undefined) {
       let arr = [];
       let length = this.length;
       while (true) {
-        arr[count++] = this[this._front];
-        this._front = (this._front + 1) % this._capacity;
-        if (this._front === this._rear) {
+        arr[count++] = this[this.front];
+        this.front = (this.front + 1) % this.capacity;
+        if (this.front === this.rear) {
           break;
         }
       }
       for (let i = 0; i < length; i++) {
         this[i] = arr[i];
       }
-      this._capacity = 2 * this._capacity;
-      this._front = 0;
-      this._rear = length;
+      this.capacity = 2 * this.capacity;
+      this.front = 0;
+      this.rear = length;
     }
     private isFull(): boolean {
-      return (this._rear + 1) % this._capacity === this._front;
+      return (this.rear + 1) % this.capacity === this.front;
     }
     [Symbol.iterator](): IterableIterator<T> {
       let deque = this;
-      let count = deque._front;
+      let count = deque.front;
       return {
         next: function () {
-          var done = count == deque._rear;
+          var done = count == deque.rear;
           var value = !done ? deque[count] : undefined;
-          count = (count + 1) % deque._capacity;
+          count = (count + 1) % deque.capacity;
           return {
             done: done,
             value: value,

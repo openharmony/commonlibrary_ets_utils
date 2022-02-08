@@ -65,17 +65,12 @@ if (flag || fastLightWeightSet === undefined) {
     addAll(set: LightWeightSet<T>): boolean {
       let change = false;
       if (set.memberNumber == 0) {
-        set.memberNumber = this.memberNumber;
-        set.members.hashs = this.members.hashs.slice();
-        set.members.keys = this.members.keys.slice();
-        set.members.values = this.members.values.slice();
-        set.memberNumber = this.memberNumber;
-        change = true;
+        change = false;
       } else {
-        for (let i = 0; i < this.memberNumber; i++) {
-          change = set.add(this.members.keys[i]) || change;
+        for (let i = 0; i < set.memberNumber; i++) {
+          change = this.add(set.members.keys[i]) || change;
         }
-      }
+      } 
       return change;
     }
     hasAll(set: LightWeightSet<T>): boolean {
@@ -90,7 +85,7 @@ if (flag || fastLightWeightSet === undefined) {
     }
     equal(obj: Object): boolean {
       if (this.memberNumber === 0) return false;
-      if (obj.toString() === this.members.keys.toString()) return true;
+      if (JSON.stringify(obj) === JSON.stringify(this.members.keys)) return true;
       return false;
     }
     increaseCapacityTo(minimumCapacity: number): void {
@@ -136,6 +131,7 @@ if (flag || fastLightWeightSet === undefined) {
         next: function () {
           var done = count >= data.memberNumber;
           var value = !done ? data.members.keys[count] : undefined;
+          count++;
           return {
             done: done,
             value: value,

@@ -36,7 +36,7 @@ if (flag || fastStack == undefined) {
       return obj[prop];
     }
     set(obj: Stack<T>, prop: any, value: T) {
-      if (prop === "_length" || prop === "_capacity") {
+      if (prop === "elementNum" || prop === "capacity") {
         obj[prop] = value;
         return true;
       }
@@ -85,24 +85,24 @@ if (flag || fastStack == undefined) {
     };
   }
   class Stack<T> {
-    private _length: number = 0;
-    private _capacity: number = 10;
+    private elementNum: number = 0;
+    private capacity: number = 10;
     constructor() {
       return new Proxy(this, new HandlerStack());
     }
     get length() {
-      return this._length;
+      return this.elementNum;
     }
     push(item: T): T {
       if (this.isFull()) {
         this.increaseCapacity();
       }
-      this[this._length++] = item;
+      this[this.elementNum++] = item;
       return item;
     }
     pop(): T {
       let result = this[this.length - 1];
-      this._length--;
+      this.elementNum--;
       return result;
     }
     peek(): T {
@@ -117,7 +117,7 @@ if (flag || fastStack == undefined) {
       return -1;
     }
     isEmpty(): boolean {
-      return this._length == 0;
+      return this.elementNum == 0;
     }
     forEach(callbackfn: (value: T, index?: number, stack?: Stack<T>) => void,
       thisArg?: Object): void {
@@ -126,17 +126,17 @@ if (flag || fastStack == undefined) {
       }
     }
     private isFull(): boolean {
-      return this._length === this._capacity;
+      return this.elementNum === this.capacity;
     }
     private increaseCapacity(): void {
-      this._capacity = 1.5 * this._capacity;
+      this.capacity = 1.5 * this.capacity;
     }
     [Symbol.iterator](): IterableIterator<T> {
       let count = 0;
       let stack = this;
       return {
         next: function () {
-          var done = count >= stack._length;
+          var done = count >= stack.elementNum;
           var value = !done ? stack[count++] : undefined;
           return {
             done: done,

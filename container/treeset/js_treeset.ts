@@ -50,90 +50,91 @@ if (flag || fastTreeSet === undefined) {
     }
   }
   class TreeSet<T> {
-    private _constitute: any;
-    constructor() {
-      this._constitute = new RBTreeAbility.RBTreeClass();
+    private constitute: any;
+    constructor(comparator?: (firstValue: T, secondValue: T) => boolean) {
+      this.constitute = new RBTreeAbility.RBTreeClass(comparator);
       return new Proxy(this, new HandlerTreeSet());
     }
     get length() {
-      return this._constitute.memberNumber;
+      return this.constitute.memberNumber;
     }
     isEmpty(): boolean {
-      return this._constitute.isEmpty();
+      return this.constitute.isEmpty();
     }
     has(value: T): boolean {
-      return this._constitute.getNode(value) !== null;
+      return this.constitute.getNode(value) !== undefined;
     }
     add(value: T): boolean {
-      this._constitute.addNode(value);
+      this.constitute.addNode(value);
       return true;
     }
     remove(value: T): boolean {
-      let result = this._constitute.removeNode(value);
-      return result !== null;
+      let result = this.constitute.removeNode(value);
+      return result !== undefined;
     }
     clear() {
-      this._constitute.clearTree();
+      this.constitute.clearTree();
     }
     getFirstValue(): T {
-      let tempNode = this._constitute.firstNode();
-      if (tempNode === null)
-        throw new Error("don't find this key,this tree is null");
+      let tempNode = this.constitute.firstNode();
+      if (tempNode === undefined)
+        throw new Error("don't find this key,this tree is empty");
       return tempNode.key;
     }
     getLastValue(): T {
-      let tempNode = this._constitute.lastNode();
-      if (tempNode === null)
-        throw new Error("don't find this key,this tree is null");
+      let tempNode = this.constitute.lastNode();
+      if (tempNode === undefined)
+        throw new Error("don't find this key,this tree is empty");
       return tempNode.key;
     }
     getLowerValue(key: T): T {
-      let tempNode = this._constitute.getNode(key);
-      if (tempNode === null)
+      let tempNode = this.constitute.getNode(key);
+      if (tempNode === undefined)
         throw new Error("don't find this key,this node is undefine");
-      if (tempNode.left !== null) return tempNode.left.key;
+      if (tempNode.left !== undefined) return tempNode.left.key;
       let node = tempNode;
-      while (node.parent !== null) {
+      while (node.parent !== undefined) {
         if (node.parent.right === node) return node.parent.key;
         node = node.parent; // node.parent.left === node is true;
       }
       throw new Error("don't find a key meet the conditions");
     }
     getHigherValue(key: T): T {
-      let tempNode = this._constitute.getNode(key);
-      if (tempNode === null)
+      let tempNode = this.constitute.getNode(key);
+      if (tempNode === undefined)
         throw new Error("don't find this key,this node is undefine");
-      if (tempNode.right !== null) return tempNode.right.key;
+      if (tempNode.right !== undefined) return tempNode.right.key;
       let node = tempNode;
-      while (node.parent !== null) {
+      while (node.parent !== undefined) {
         if (node.parent.left === node) return node.parent.key;
         node = node.parent; // node.parent.right === node is true;
       }
       throw new Error("don't find a key meet the conditions");
     }
     popFirst(): T {
-      let firstNode = this._constitute.firstNode();
-      if (firstNode === null)
+      let firstNode = this.constitute.firstNode();
+      if (firstNode === undefined)
         throw new Error("don't find first node,this tree is empty");
       let value = firstNode.value;
-      this._constitute.removeNodeProcess(firstNode);
+      this.constitute.removeNodeProcess(firstNode);
       return value as T;
     }
     popLast(): T {
-      let lastNode = this._constitute.lastNode();
-      if (lastNode === null)
+      let lastNode = this.constitute.lastNode();
+      if (lastNode === undefined)
         throw new Error("don't find last node,this tree is empty");
       let value = lastNode.value;
-      this._constitute.removeNodeProcess(lastNode);
+      this.constitute.removeNodeProcess(lastNode);
       return value as T;
     }
     values(): IterableIterator<T> {
-      let data = this._constitute;
+      let data = this.constitute;
       let count = 0;
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].value as T : undefined;
+          var value = !done ? data.keyValueArray[count].value as T : undefined;
+          count++;
           return {
             done: done,
             value: value,
@@ -143,19 +144,20 @@ if (flag || fastTreeSet === undefined) {
     }
     forEach(callbackfn: (value?: T, key?: T, set?: TreeSet<T>) => void,
       thisArg?: Object): void {
-      let data = this._constitute;
+      let data = this.constitute;
       let tagetArray = data.keyValueArray;
       for (let i = 0; i < data.memberNumber; i++) {
         callbackfn.call(thisArg, tagetArray[i].value as T, tagetArray[i].key);
       }
     }
     entries(): IterableIterator<[T, T]> {
-      let data = this._constitute;
+      let data = this.constitute;
       let count = 0;
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].entry() : undefined;
+          var value = !done ? data.keyValueArray[count].entry() : undefined;
+          count++;
           return {
             done: done,
             value: value,
@@ -164,12 +166,13 @@ if (flag || fastTreeSet === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let data = this._constitute;
+      let data = this.constitute;
       let count = 0;
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].key : undefined;
+          var value = !done ? data.keyValueArray[count].key : undefined;
+          count++;
           return {
             done: done,
             value: value,

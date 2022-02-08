@@ -59,8 +59,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     hasAll(map: LightWeightMap<K, V>): boolean {
       if (map.memberNumber > this.memberNumber) return false;
-      if (LightWeightAbility.isIncludeToArray(this.members.keys, map.members.keys) &&
-          LightWeightAbility.isIncludeToArray(this.members.values, map.members.values)) {
+      if (LightWeightAbility.isIncludeToArray(this.keyValueStringArray(), map.keyValueStringArray()) ) {
         return true;
       }
       return false;
@@ -121,14 +120,14 @@ if (flag || fastLightWeightMap === undefined) {
       };
     }
     setAll(map: LightWeightMap<K, V>): void {
-      if (map.memberNumber === 0) {
-        map.members.hashs = this.members.hashs.slice();
-        map.members.keys = this.members.keys.slice();
-        map.members.values = this.members.values.slice();
-        map.memberNumber = this.memberNumber;
+      if (this.memberNumber === 0) {
+        this.members.hashs = map.members.hashs.slice();
+        this.members.keys = map.members.keys.slice();
+        this.members.values = map.members.values.slice();
+        this.memberNumber = map.memberNumber;
       } else {
-        for (let i = 0; i < this.memberNumber; i++) {
-          map.addmember(this.members.keys[i], this.members.values[i]);
+        for (let i = 0; i < map.memberNumber; i++) {
+          this.addmember(map.members.keys[i], map.members.values[i]);
         }
       }
     }
@@ -191,7 +190,7 @@ if (flag || fastLightWeightMap === undefined) {
       return result.join(",");
     }
     getValueAt(index: number): V {
-      return this.members.values[index] as V;
+      return this.members.values[index];
     }
     values(): IterableIterator<V> {
       let data = this;

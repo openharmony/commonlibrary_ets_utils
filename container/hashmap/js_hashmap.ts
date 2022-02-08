@@ -67,15 +67,12 @@ if (flag || fastHashMap === undefined) {
       return super.Values().indexOf(value) > -1;
     }
     get(key: K): V {
-      let result = super.getValueByKey(key);
-      if (result === undefined)
-        throw new Error("this hashmap don't find the key");
-      return result;
+      return this.getValueByKey(key);
     }
     setAll(map: HashMap<K, V>): void {
-      let memebers = this.keyValueArray;
+      let memebers = map.keyValueArray;
       for (let i = 0; i < memebers.length; i++) {
-        map.put(memebers[i].key, memebers[i].value);
+        this.put(memebers[i].key, memebers[i].value);
       }
     }
     set(key: K, value: V): Object {
@@ -83,7 +80,7 @@ if (flag || fastHashMap === undefined) {
     }
     remove(key: K): V {
       let result = this.removeMember(key);
-      if (result === null) {
+      if (result === undefined) {
         throw new Error("The removed element does not exist in this container");
       }
       return result;
@@ -97,7 +94,8 @@ if (flag || fastHashMap === undefined) {
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].key : undefined;
+          var value = !done ? data.keyValueArray[count].key : undefined;
+          count++;
           return {
             done: done,
             value: value,
@@ -111,7 +109,8 @@ if (flag || fastHashMap === undefined) {
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].value : undefined;
+          var value = !done ? data.keyValueArray[count].value : undefined;
+          count++;
           return {
             done: done,
             value: value,
@@ -135,7 +134,8 @@ if (flag || fastHashMap === undefined) {
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].entry() : undefined;
+          var value = !done ? data.keyValueArray[count].entry() : undefined;
+          count++;
           return {
             done: done,
             value: value,
@@ -149,7 +149,8 @@ if (flag || fastHashMap === undefined) {
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].entry() : undefined;
+          var value = !done ? data.keyValueArray[count].entry() : undefined;
+          count++;
           return {
             done: done,
             value: value,

@@ -35,7 +35,7 @@ if (flag || fastVector == undefined) {
       return obj[prop];
     }
     set(obj: Vector<T>, prop: any, value: T) {
-      if (prop === "_length" || prop === "_capacity") {
+      if (prop === "elementNum" || prop === "capacity") {
         obj[prop] = value;
         return true;
       }
@@ -95,33 +95,33 @@ if (flag || fastVector == undefined) {
     };
   }
   class Vector<T> {
-    private _length: number = 0;
-    private _capacity: number = 10;
+    private elementNum: number = 0;
+    private capacity: number = 10;
     constructor() {
       return new Proxy(this, new HandlerVector());
     }
     get length() {
-      return this._length;
+      return this.elementNum;
     }
     add(element: T): boolean {
       if (this.isFull()) {
         this.resize();
       }
-      this[this._length++] = element;
+      this[this.elementNum++] = element;
       return true;
     }
     insert(element: T, index: number): void {
       if (this.isFull()) {
         this.resize();
       }
-      for (let i = this._length; i > index; i--) {
+      for (let i = this.elementNum; i > index; i--) {
         this[i] = this[i - 1];
       }
       this[index] = element;
-      this._length++;
+      this.elementNum++;
     }
     has(element: T): boolean {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this.elementNum; i++) {
         if (this[i] === element) {
           return true;
         }
@@ -132,7 +132,7 @@ if (flag || fastVector == undefined) {
       return this[index];
     }
     getIndexOf(element: T): number {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this.elementNum; i++) {
         if (element === this[i]) {
           return i;
         }
@@ -145,28 +145,30 @@ if (flag || fastVector == undefined) {
     set(index: number, element: T): void {
       this[index] = element;
     }
-    removeByIndex(index: number): void {
-      for (let i = index; i < this._length - 1; i++) {
+    removeByIndex(index: number): T {
+      let result = this[index];
+      for (let i = index; i < this.elementNum - 1; i++) {
         this[i] = this[i + 1];
       }
-      this._length--;
+      this.elementNum--;
+      return result;
     }
     remove(element: T): boolean {
       if (this.has(element)) {
         let index = this.getIndexOf(element);
-        for (let i = index; i < this._length - 1; i++) {
+        for (let i = index; i < this.elementNum - 1; i++) {
           this[i] = this[i + 1];
         }
-        this._length--;
+        this.elementNum--;
         return true;
       }
       return false;
     }
     getLastElement(): T {
-      return this[this._length - 1];
+      return this[this.elementNum - 1];
     }
     getLastIndexOf(element: T): number {
-      for (let i = this._length - 1; i >= 0; i--) {
+      for (let i = this.elementNum - 1; i >= 0; i--) {
         if (element === this[i]) {
           return i;
         }
@@ -185,7 +187,7 @@ if (flag || fastVector == undefined) {
     }
     getIndexFrom(element: T, index: number): number {
       if (this.has(element)) {
-        for (let i = index; i < this._length; i++) {
+        for (let i = index; i < this.elementNum; i++) {
           if (this[i] === element) {
             return i;
           }
@@ -194,7 +196,7 @@ if (flag || fastVector == undefined) {
       return -1;
     }
     clear(): void {
-      this._length = 0;
+      this.elementNum = 0;
     }
     removeByRange(fromIndex: number, toIndex: number): void {
       if (fromIndex >= toIndex) {
@@ -202,32 +204,32 @@ if (flag || fastVector == undefined) {
       }
       toIndex = toIndex >= this.length - 1 ? this.length - 1 : toIndex;
       let i = fromIndex;
-      for (let j = toIndex; j < this._length; j++) {
+      for (let j = toIndex; j < this.elementNum; j++) {
         this[i] = this[j];
         i++;
       }
-      this._length -= toIndex - fromIndex;
+      this.elementNum -= toIndex - fromIndex;
     }
     setLength(newSize: number): void {
-      this._length = newSize;
+      this.elementNum = newSize;
     }
     replaceAllElements(callbackfn: (value: T, index?: number, vector?: Vector<T>) => T,
       thisArg?: Object): void {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this.elementNum; i++) {
         this[i] = callbackfn.call(thisArg, this[i], i, this);
       }
     }
     forEach(callbackfn: (value: T, index?: number, vector?: Vector<T>) => void,
       thisArg?: Object): void {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this.elementNum; i++) {
         callbackfn.call(thisArg, this[i], i, this);
       }
     }
     sort(comparator?: (firstValue: T, secondValue: T) => number): void {
       let isSort = true;
       if (comparator) {
-        for (let i = 0; i < this._length; i++) {
-          for (let j = 0; j < this._length - 1 - i; j++) {
+        for (let i = 0; i < this.elementNum; i++) {
+          for (let j = 0; j < this.elementNum - 1 - i; j++) {
             if (comparator(this[j], this[j + 1]) > 0) {
               isSort = false;
               let temp = this[j];
@@ -238,7 +240,7 @@ if (flag || fastVector == undefined) {
         }
       } else {
         for (var i = 0; i < this.length - 1; i++) {
-          for (let j = 0; j < this._length - 1 - i; j++) {
+          for (let j = 0; j < this.elementNum - 1 - i; j++) {
             if (this.asciSort(this[j], this[j + 1])) {
               isSort = false;
               let temp = this[j];
@@ -270,7 +272,10 @@ if (flag || fastVector == undefined) {
       if (fromIndex >= toIndex) {
         throw new Error(`fromIndex cannot be less than or equal to toIndex`);
       }
-      toIndex = toIndex >= this._length - 1 ? this._length - 1 : toIndex;
+      if (fromIndex >= this.elementNum || fromIndex < 0 || toIndex < 0) {
+        throw new Error(`fromIndex or toIndex is out-of-bounds`);
+      }
+      toIndex = toIndex >= this.elementNum - 1 ? this.elementNum - 1 : toIndex;
       let vector = new Vector<T>();
       for (let i = fromIndex; i < toIndex; i++) {
         vector.add(this[i]);
@@ -279,7 +284,7 @@ if (flag || fastVector == undefined) {
     }
     convertToArray(): Array<T> {
       let arr = [];
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this.elementNum; i++) {
         arr[i] = this[i];
       }
       return arr;
@@ -292,47 +297,44 @@ if (flag || fastVector == undefined) {
     }
     toString(): string {
       let str = `${this[0]}`;
-      for (let i = 1; i < this._length; i++) {
+      for (let i = 1; i < this.elementNum; i++) {
         str = `${str},${this[i]}`;
       }
       return str;
     }
     clone(): Vector<T> {
       let clone = new Vector<T>();
-      for (let i = 0; i < this._length; i++) {
-        this.add(this[i]);
+      for (let i = 0; i < this.elementNum; i++) {
+        clone.add(this[i]);
       }
       return clone;
     }
     getCapacity(): number {
-      return this._capacity;
+      return this.capacity;
     }
     private isFull(): boolean {
-      return this._length === this._capacity;
+      return this.elementNum === this.capacity;
     }
     private resize(): void {
-      this._capacity = 2 * this._capacity;
+      this.capacity = 2 * this.capacity;
     }
     increaseCapacityTo(newCapacity: number): void {
-      if (newCapacity >= this._length) {
-        this._capacity = newCapacity;
+      if (newCapacity >= this.elementNum) {
+        this.capacity = newCapacity;
       }
     }
     trimToCurrentLength(): void {
-      this._capacity = this._length;
-    }
-    setSize(newSize: number): void {
-      this._length = newSize;
+      this.capacity = this.elementNum;
     }
     isEmpty(): boolean {
-      return this._length == 0;
+      return this.elementNum == 0;
     }
     [Symbol.iterator](): IterableIterator<T> {
       let count = 0;
-      let vector = this
+      let vector = this;
       return {
         next: function () {
-          var done = count >= vector._length;
+          var done = count >= vector.elementNum;
           var value = !done ? vector[count++] : undefined;
           return {
             done: done,

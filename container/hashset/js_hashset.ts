@@ -62,14 +62,14 @@ if (flag || fastHashSet === undefined) {
       return this.memberNumber === 0;
     }
     has(value: T): boolean {
-      return super.hasKey(value);
+      return this.hasKey(value);
     }
     add(value: T): boolean {
       if (this.has(value)) return false;
       return this.put(value);
     }
     remove(value: T): boolean {
-      if (this.removeMember(value) !== null) return true;
+      if (this.removeMember(value) !== undefined) return true;
       return false;
     }
     clear(): void {
@@ -88,7 +88,8 @@ if (flag || fastHashSet === undefined) {
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].key : undefined;
+          var value = !done ? data.keyValueArray[count].key : undefined;
+          count++;
           return {
             done: done,
             value: value,
@@ -102,7 +103,8 @@ if (flag || fastHashSet === undefined) {
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].entry() : undefined;
+          var value = !done ? data.keyValueArray[count].entry() : undefined;
+          count++;
           return {
             done: done,
             value: value,
@@ -116,7 +118,8 @@ if (flag || fastHashSet === undefined) {
       return {
         next: function () {
           var done = count >= data.memberNumber;
-          var value = !done ? data.keyValueArray[count++].key : undefined;
+          var value = !done ? data.keyValueArray[count].key : undefined;
+          count++;
           return {
             done: done,
             value: value,

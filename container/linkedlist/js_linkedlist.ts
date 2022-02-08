@@ -32,26 +32,26 @@ if (flag || fastLinkedList == undefined) {
         if (index < 0 || index >= length) {
           throw new Error("LinkedList: get out-of-bounds");
         }
+        return obj.get(index);
       }
       return obj[prop];
     }
     set(obj: LinkedList<T>, prop: any, value: any) {
-      if (prop === "_length" ||
-          prop === "_capacity" ||
-          prop === "_head" ||
+      if (prop === "elementNum" ||
+          prop === "capacity" ||
+          prop === "head" ||
           prop == "next" ||
-          prop == "_tail" ) {
+          prop == "tail" ) {
         obj[prop] = value;
         return true;
       }
-
       var index = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         let length = obj.length;
         if (index < 0 || index >= length) {
           throw new Error("LinkedList: set out-of-bounds");
         } else {
-          obj[index] = value;
+          obj.set(index, value);
           return true;
         }
       }
@@ -144,58 +144,58 @@ if (flag || fastLinkedList == undefined) {
     }
   }
   class LinkedList<T> {
-    private _head?: any;
-    private _tail?: any;
-    private _length : number;
-    private _capacity: number;
-    constructor(_head?: NodeObj<T>, _tail?: NodeObj<T>) {
-      this._head = _head || null;
-      this._tail = _tail || null;
-      this._length = 0;
-      this._capacity = 10;
+    private head?: any;
+    private tail?: any;
+    private elementNum : number;
+    private capacity: number;
+    constructor(head?: NodeObj<T>, tail?: NodeObj<T>) {
+      this.head = head || null;
+      this.tail = tail || null;
+      this.elementNum = 0;
+      this.capacity = 10;
       return new Proxy(this, new HandlerLinkedList());
     }
     get length() {
-      return this._length;
+      return this.elementNum;
     }
     private getNode(index: number): NodeObj<T> {
-      let current = this._head;
+      let current = this.head;
       for (let i = 0; i < index; i++) {
         current = current["next"];
       }
       return current;
     }
     get(index: number): T {
-      let current = this._head;
+      let current = this.head;
       for (let i = 0; i < index; i++) {
         current = current["next"];
       }
       return current.element;
     }
     add(element: T): boolean {
-      if (this._length === 0) {
-        let head = this._head;
-        let tail = this._tail;
-        this._head = this._tail = new NodeObj(element, head, tail);
+      if (this.elementNum === 0) {
+        let head = this.head;
+        let tail = this.tail;
+        this.head = this.tail = new NodeObj(element, head, tail);
       } else {
-        let prevNode = this.getNode(this._length - 1);
-        prevNode.next = new NodeObj(element, prevNode["next"], this._tail);
+        let prevNode = this.getNode(this.elementNum - 1);
+        prevNode.next = new NodeObj(element, prevNode["next"], this.tail);
       }
-      this._length++;
+      this.elementNum++;
       return true;
     }
     addFirst(element: T): void {
       if (!element) {
         throw new Error("element cannot be null");
       }
-      let node = new NodeObj(element, this._head, this._tail);
-      if (this._length === 0) {
-        this._head = this._tail = node;
+      let node = new NodeObj(element, this.head, this.tail);
+      if (this.elementNum === 0) {
+        this.head = this.tail = node;
       } else {
-        node.next = this._head;
-        this._head = node;
+        node.next = this.head;
+        this.head = node;
       }
-      this._length++;
+      this.elementNum++;
     }
     removeFirst(): T {
       let result = this.getNode(0).element;
@@ -208,25 +208,25 @@ if (flag || fastLinkedList == undefined) {
       return result;
     }
     popLast(): T {
-      let result = this.getNode(this._length - 1).element;
-      this.removeByIndex(this._length - 1);
+      let result = this.getNode(this.elementNum - 1).element;
+      this.removeByIndex(this.elementNum - 1);
       return result;
     }
     removeLast(): T {
-      let result = this.getNode(this._length - 1).element;
-      this.removeByIndex(this._length - 1);
+      let result = this.getNode(this.elementNum - 1).element;
+      this.removeByIndex(this.elementNum - 1);
       return result;
     }
     clear(): void {
-      this._head = null;
-      this._tail = null;
-      this._length = 0;
+      this.head = null;
+      this.tail = null;
+      this.elementNum = 0;
     }
     has(element: T): boolean {
-      if (this._head.element === element) {
+      if (this.head.element === element) {
         return true;
       }
-      const linkIterator = new LinkIterator<T>(this._head);
+      const linkIterator = new LinkIterator<T>(this.head);
       while (linkIterator.hasNext()) {
         const newNode = linkIterator.next();
         if (newNode.element === element) {
@@ -236,7 +236,7 @@ if (flag || fastLinkedList == undefined) {
       return false;
     }
     getIndexOf(element: T): number {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this.elementNum; i++) {
         const curNode = this.getNode(i);
         if (curNode.element === element) {
           return i;
@@ -245,7 +245,7 @@ if (flag || fastLinkedList == undefined) {
       return -1;
     }
     getLastIndexOf(element: T): number {
-      for (let i = this._length - 1; i >= 0; i--) {
+      for (let i = this.elementNum - 1; i >= 0; i--) {
         const curNode = this.getNode(i);
         if (curNode.element === element) {
           return i;
@@ -254,17 +254,20 @@ if (flag || fastLinkedList == undefined) {
       return -1;
     }
     removeByIndex(index: number): T {
-      let current = this._head;
+      if (index < 0 || index >= this.elementNum) {
+        throw new Error("removeByIndex is out-of-bounds");
+      }
+      let current = this.head;
       if (index === 0) {
-        this._head = current && current.next;
-        if (this._length == 1) {
-          this._head = this._tail = null;
+        this.head = current && current.next;
+        if (this.elementNum == 1) {
+          this.head = this.tail = null;
         } else {
-          this._head.prev = null;
+          this.head.prev = null;
         }
-      } else if (index == this._length - 1) {
+      } else if (index == this.elementNum - 1) {
         current = this.getNode(index - 1);
-        this._tail = current;
+        this.tail = current;
         current.next = null;
       } else {
         const prevNode = this.getNode(index - 1);
@@ -272,10 +275,13 @@ if (flag || fastLinkedList == undefined) {
         prevNode.next = nextNode;
         nextNode.prev = prevNode;
       }
-      this._length--;
+      this.elementNum--;
       return current && current.element;
     }
     remove(element: T): boolean {
+      if(this.isEmpty()){
+        return false;
+      }
       if (this.has(element)) {
         let index = this.getIndexOf(element);
         this.removeByIndex(index);
@@ -307,22 +313,22 @@ if (flag || fastLinkedList == undefined) {
       return element;
     }
     getLast(): T {
-      let newNode = this.getNode(this._length - 1);
+      let newNode = this.getNode(this.elementNum - 1);
       let element = newNode.element;
       return element;
     }
     insert(index: number, element: T): void {
-      if (index >= 0 && index < this._length) {
+      if (index >= 0 && index < this.elementNum) {
         let newNode = new NodeObj(element);
-        let current = this._head;
+        let current = this.head;
         if (index === 0) {
-          if (this._head === null) {
-            this._head = newNode;
-            this._tail = newNode;
+          if (this.head === null) {
+            this.head = newNode;
+            this.tail = newNode;
           } else {
-            newNode.next = this._head;
-            this._head.prev = newNode;
-            this._head = newNode;
+            newNode.next = this.head;
+            this.head.prev = newNode;
+            this.head = newNode;
           }
         } else {
           const prevNode = this.getNode(index - 1);
@@ -332,13 +338,13 @@ if (flag || fastLinkedList == undefined) {
           current.prev = newNode;
           newNode.prev = prevNode;
         }
-      } else if (index === this._length) {
-        let prevNode = this.getNode(this._length - 1);
-        prevNode.next = new NodeObj(element, prevNode["next"], this._tail);
+      } else if (index === this.elementNum) {
+        let prevNode = this.getNode(this.elementNum - 1);
+        prevNode.next = new NodeObj(element, prevNode["next"], this.tail);
       } else {
         throw new Error("index cannot Less than 0 and more than this length");
       }
-      this._length++;
+      this.elementNum++;
     }
     set(index: number, element: T): T {
       const current = this.getNode(index);
@@ -348,11 +354,11 @@ if (flag || fastLinkedList == undefined) {
     convertToArray(): Array<T> {
       let arr: Array<T> = [];
       let index = 0;
-      if (this._length <= 0) {
+      if (this.elementNum <= 0) {
         return arr;
       }
-      arr[index] = this._head.element;
-      const linkIterator = new LinkIterator<T>(this._head);
+      arr[index] = this.head.element;
+      const linkIterator = new LinkIterator<T>(this.head);
       while (linkIterator.hasNext()) {
         const newNode = linkIterator.next();
         arr[++index] = newNode.element;
@@ -368,12 +374,15 @@ if (flag || fastLinkedList == undefined) {
       }
       return clone;
     }
+    private isEmpty(): boolean {
+      return this.elementNum == 0;
+    }
     forEach(callbackfn: (value: T,index?: number,linkedlist?: LinkedList<T>) => void,
       thisArg?: Object): void {
       let index = 0;
-      const linkIterator = new LinkIterator<T>(this._head);
-      if (this._length > 0) {
-        callbackfn.call(thisArg, this._head.element, index, this);
+      const linkIterator = new LinkIterator<T>(this.head);
+      if (this.elementNum > 0) {
+        callbackfn.call(thisArg, this.head.element, index, this);
       }
       while (linkIterator.hasNext()) {
         const newNode = linkIterator.next();
@@ -382,10 +391,10 @@ if (flag || fastLinkedList == undefined) {
     }
     [Symbol.iterator](): IterableIterator<T> {
       let count = 0;
-      let linkedlist = this
+      let linkedlist = this;
       return {
         next: function () {
-          var done = count >= linkedlist._length;
+          var done = count >= linkedlist.elementNum;
           var value = !done ? linkedlist.getNode(count++).element : undefined;
           return {
             done: done,

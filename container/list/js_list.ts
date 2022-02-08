@@ -31,14 +31,15 @@ if (flag || fastList == undefined) {
         if (index < 0 || index >= obj.length) {
           throw new Error("List: get out-of-bounds");
         }
+        return obj.get(index);
       }
       return obj[prop];
     }
     set(obj: List<T>, prop: any, value: T) {
       if (
-        prop === "_length" ||
-        prop === "_capacity" ||
-        prop === "_head" ||
+        prop === "elementNum" ||
+        prop === "capacity" ||
+        prop === "head" ||
         prop == "next") {
         obj[prop] = value;
         return true;
@@ -48,7 +49,7 @@ if (flag || fastList == undefined) {
         if (index < 0 || index >= obj.length) {
           throw new Error("List: set out-of-bounds");
         } else {
-          obj[index] = value;
+          obj.set(index, value);
           return true;
         }
       }
@@ -129,52 +130,52 @@ if (flag || fastList == undefined) {
   class List<T> {
     /* If 'any' is changed to 'NodeObj<T> | null ' here, an error will be reported:
        Object may be 'null' */
-    private _head: any;
-    private _length: number;
-    private _capacity: number;
-    constructor(_head?: NodeObj<T>) {
-      this._head = _head || null;
-      this._length = 0;
-      this._capacity = 10;
+    private head: any;
+    private elementNum: number;
+    private capacity: number;
+    constructor(head?: NodeObj<T>) {
+      this.head = head || null;
+      this.elementNum = 0;
+      this.capacity = 10;
       return new Proxy(this, new HandlerList());
     }
     get length() {
-      return this._length;
+      return this.elementNum;
     }
     private getNode(index: number): NodeObj<T> {
-      let current = this._head;
+      let current = this.head;
       for (let i = 0; i < index; i++) {
         current = current["next"];
       }
       return current;
     }
     get(index: number): T {
-      let current = this._head;
+      let current = this.head;
       for (let i = 0; i < index; i++) {
         current = current["next"];
       }
       return current.element;
     }
     add(element: T): boolean {
-      if (this._length === 0) {
-        let head = this._head;
-        this._head = new NodeObj(element, head);
+      if (this.elementNum === 0) {
+        let head = this.head;
+        this.head = new NodeObj(element, head);
       } else {
-        let prevNode = this.getNode(this._length - 1);
+        let prevNode = this.getNode(this.elementNum - 1);
         prevNode.next = new NodeObj(element, prevNode["next"]);
       }
-      this._length++;
+      this.elementNum++;
       return true;
     }
     clear(): void {
-      this._head = null;
-      this._length = 0;
+      this.head = null;
+      this.elementNum = 0;
     }
     has(element: T): boolean {
-      if (this._head.element === element) {
+      if (this.head.element === element) {
         return true;
       }
-      const linkIterator = new LinkIterator<T>(this._head);
+      const linkIterator = new LinkIterator<T>(this.head);
       while (linkIterator.hasNext()) {
         const newNode = linkIterator.next();
         if (newNode.element === element) {
@@ -190,8 +191,8 @@ if (flag || fastList == undefined) {
       if (!(obj instanceof List)) {
         return false;
       } else {
-        let e1 = new LinkIterator<T>(this._head);
-        let e2 = new LinkIterator<T>(obj._head);
+        let e1 = new LinkIterator<T>(this.head);
+        let e2 = new LinkIterator<T>(obj.head);
         while (e1.hasNext() && e2.hasNext()) {
           const newNode1 = e1.next();
           const newNode2 = e2.next();
@@ -204,7 +205,7 @@ if (flag || fastList == undefined) {
       return true;
     }
     getIndexOf(element: T): number {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this.elementNum; i++) {
         const curNode = this.getNode(i);
         if (curNode.element === element) {
           return i;
@@ -213,7 +214,7 @@ if (flag || fastList == undefined) {
       return -1;
     }
     getLastIndexOf(element: T): number {
-      for (let i = this._length - 1; i >= 0; i--) {
+      for (let i = this.elementNum - 1; i >= 0; i--) {
         const curNode = this.getNode(i);
         if (curNode.element === element) {
           return i;
@@ -222,16 +223,19 @@ if (flag || fastList == undefined) {
       return -1;
     }
     removeByIndex(index: number): T {
-      let oldNode = this._head;
+      if (index < 0 || index >= this.elementNum) {
+        throw new Error("removeByIndex is out-of-bounds");
+      }
+      let oldNode = this.head;
       if (index === 0) {
-        oldNode = this._head;
-        this._head = oldNode && oldNode.next;
+        oldNode = this.head;
+        this.head = oldNode && oldNode.next;
       } else {
         let prevNode = this.getNode(index - 1);
         oldNode = prevNode.next;
         prevNode.next = oldNode.next;
       }
-      this._length--;
+      this.elementNum--;
       return oldNode && oldNode.element;
     }
     remove(element: T): boolean {
@@ -245,10 +249,10 @@ if (flag || fastList == undefined) {
     replaceAllElements(callbackfn: (value: T, index?: number, list?: List<T>) => T,
       thisArg?: Object): void {
       let index = 0;
-      const linkIterator = new LinkIterator<T>(this._head);
-      if (this._length > 0) {
-        const linkIterator = new LinkIterator<T>(this._head);
-        this.getNode(index).element = callbackfn.call(thisArg, this._head.element, index, this);
+      const linkIterator = new LinkIterator<T>(this.head);
+      if (this.elementNum > 0) {
+        const linkIterator = new LinkIterator<T>(this.head);
+        this.getNode(index).element = callbackfn.call(thisArg, this.head.element, index, this);
       }
       while (linkIterator.hasNext()) {
         const newNode = linkIterator.next();
@@ -261,23 +265,23 @@ if (flag || fastList == undefined) {
       return element;
     }
     getLast(): T {
-      let newNode = this.getNode(this._length - 1);
+      let newNode = this.getNode(this.elementNum - 1);
       let element = newNode.element;
       return element;
     }
     insert(element: T, index: number): void {
       let newNode = new NodeObj(element);
-      if (index >= 0 && index < this._length) {
+      if (index >= 0 && index < this.elementNum) {
         if (index === 0) {
-          const current = this._head;
+          const current = this.head;
           newNode.next = current;
-          this._head = newNode;
+          this.head = newNode;
         } else {
           const prevNode = this.getNode(index - 1);
           newNode.next = prevNode.next;
           prevNode.next = newNode;
         }
-        this._length++;
+        this.elementNum++;
       }
     }
     set(index: number, element: T): T {
@@ -287,8 +291,8 @@ if (flag || fastList == undefined) {
     }
     sort(comparator: (firstValue: T, secondValue: T) => number): void {
       let isSort = true;
-      for (let i = 0; i < this._length; i++) {
-        for (let j = 0; j < this._length - 1 - i; j++) {
+      for (let i = 0; i < this.elementNum; i++) {
+        for (let j = 0; j < this.elementNum - 1 - i; j++) {
           if (comparator(this.getNode(j).element, this.getNode(j + 1).element) > 0) {
             isSort = false;
             let temp = this.getNode(j).element;
@@ -305,7 +309,10 @@ if (flag || fastList == undefined) {
       if (toIndex <= fromIndex) {
         throw new Error("toIndex cannot be less than or equal to fromIndex");
       }
-      toIndex = toIndex > this._length ? this._length - 1 : toIndex;
+      if (fromIndex >= this.elementNum || fromIndex < 0 || toIndex < 0) {
+        throw new Error(`fromIndex or toIndex is out-of-bounds`);
+      }
+      toIndex = toIndex > this.elementNum ? this.elementNum - 1 : toIndex;
       let list = new List<T>();
       for (let i = fromIndex; i < toIndex; i++) {
         let element = this.getNode(i).element;
@@ -319,11 +326,11 @@ if (flag || fastList == undefined) {
     convertToArray(): Array<T> {
       let arr: Array<T> = [];
       let index = 0;
-      if (this._length <= 0) {
+      if (this.elementNum <= 0) {
         return arr;
       }
-      arr[index] = this._head.element;
-      const linkIterator = new LinkIterator<T>(this._head);
+      arr[index] = this.head.element;
+      const linkIterator = new LinkIterator<T>(this.head);
       while (linkIterator.hasNext()) {
         const newNode = linkIterator.next();
         arr[++index] = newNode.element;
@@ -331,15 +338,15 @@ if (flag || fastList == undefined) {
       return arr;
     }
     isEmpty(): boolean {
-      return this._length == 0;
+      return this.elementNum == 0;
     }
     forEach(callbackfn: (value: T, index?: number, list?: List<T>) => void,
       thisArg?: Object): void {
       let index = 0;
-      const linkIterator = new LinkIterator<T>(this._head);
-      if (this._length > 0) {
-        const linkIterator = new LinkIterator<T>(this._head);
-        callbackfn.call(thisArg, this._head.element, index, this);
+      const linkIterator = new LinkIterator<T>(this.head);
+      if (this.elementNum > 0) {
+        const linkIterator = new LinkIterator<T>(this.head);
+        callbackfn.call(thisArg, this.head.element, index, this);
       }
       while (linkIterator.hasNext()) {
         const newNode = linkIterator.next();
@@ -348,10 +355,10 @@ if (flag || fastList == undefined) {
     }
     [Symbol.iterator](): IterableIterator<T> {
       let count = 0;
-      let list = this
+      let list = this;
       return {
         next: function () {
-          var done = count >= list._length;
+          var done = count >= list.elementNum;
           var value = !done ? list.getNode(count++).element : undefined;
           return {
             done: done,

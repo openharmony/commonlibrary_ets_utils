@@ -35,7 +35,7 @@ if (flag || fastQueue == undefined) {
       return obj[prop];
     }
     set(obj: Queue<T>, prop: any, value: T): boolean {
-      if (prop === "_front" || prop === "_capacity" || prop === "_rear") {
+      if (prop === "front" || prop === "capacity" || prop === "rear") {
         obj[prop] = value;
         return true;
       }
@@ -81,58 +81,58 @@ if (flag || fastQueue == undefined) {
     };
   }
   class Queue<T> {
-    private _front: number;
-    private _capacity: number;
-    private _rear: number;
+    private front: number;
+    private capacity: number;
+    private rear: number;
     constructor() {
-      this._front = 0;
-      this._capacity = 8;
-      this._rear = 0;
+      this.front = 0;
+      this.capacity = 8;
+      this.rear = 0;
       return new Proxy(this, new HandlerQueue());
     }
     get length(){
-      return this._rear - this._front;
+      return this.rear - this.front;
     }
     add(element: T): boolean {
       if (this.isFull()) {
         this.increaseCapacity();
       }
-      this[this._rear] = element;
-      this._rear = (this._rear + 1) % (this._capacity + 1);
+      this[this.rear] = element;
+      this.rear = (this.rear + 1) % (this.capacity + 1);
       return true;
     }
     getFirst(): T {
-      return this[this._front];
+      return this[this.front];
     }
     pop(): T {
-      let result = this[this._front];
-      this._front = (this._front + 1) % (this._capacity + 1);
+      let result = this[this.front];
+      this.front = (this.front + 1) % (this.capacity + 1);
       return result;
     }
     forEach(callbackfn: (value: T, index?: number, queue?: Queue<T>) => void,
       thisArg?: Object): void {
       let k = 0;
-      let i = this._front;
+      let i = this.front;
       while (true) {
         callbackfn.call(thisArg,this[i], k,this);
-        i = (i + 1) % this._capacity;
+        i = (i + 1) % this.capacity;
         k++;
-        if (i === this._rear) {
+        if (i === this.rear) {
           break;
         }
       }
     }
     private isFull(): boolean {
-      return this.length === this._capacity;
+      return this.length === this.capacity;
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let count = this._front;
+      let count = this.front;
       let queue = this;
       return {
         next: function () {
-          var done = count == queue._rear;
+          var done = count == queue.rear;
           var value = !done ? queue[count] : undefined;
-          count = (count + 1) % queue._capacity;
+          count = (count + 1) % queue.capacity;
           return {
             done: done,
             value: value,
@@ -141,7 +141,7 @@ if (flag || fastQueue == undefined) {
       };
     }
     private increaseCapacity(): void {
-      this._capacity = 2 * this._capacity;
+      this.capacity = 2 * this.capacity;
     }
   }
   Object.freeze(Queue);
