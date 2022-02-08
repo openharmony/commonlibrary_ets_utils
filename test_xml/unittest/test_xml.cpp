@@ -701,7 +701,7 @@ HWTEST_F(NativeEngineTest, SetCDataTest001, testing::ext::TestSize.Level0)
     size_t size = 1024;
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
-    xmlSerializer.SetCData("root SYSTEM");
+    xmlSerializer.SetCDATA("root SYSTEM");
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[root SYSTEM]]>");
 }
 
@@ -717,7 +717,7 @@ HWTEST_F(NativeEngineTest, SetCDataTest002, testing::ext::TestSize.Level0)
     size_t size = 1024;
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
-    xmlSerializer.SetCData("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.SetCDATA("root SYSTEM \"http://www.test.org/test.dtd\"");
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>");
 }
 
@@ -735,7 +735,7 @@ HWTEST_F(NativeEngineTest, SetCDataTest003, testing::ext::TestSize.Level0)
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
     xmlSerializer.StartElement("note");
     xmlSerializer.EndElement();
-    xmlSerializer.SetCData("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.SetCDATA("root SYSTEM \"http://www.test.org/test.dtd\"");
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer),
                  "<note/>\r\n<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>");
 }
@@ -752,7 +752,7 @@ HWTEST_F(NativeEngineTest, SetCDataTest004, testing::ext::TestSize.Level0)
     size_t size = 1024;
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
-    xmlSerializer.SetCData("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.SetCDATA("root SYSTEM \"http://www.test.org/test.dtd\"");
     xmlSerializer.StartElement("note");
     xmlSerializer.EndElement();
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer),
@@ -772,7 +772,7 @@ HWTEST_F(NativeEngineTest, SetCDataTest005, testing::ext::TestSize.Level0)
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
     xmlSerializer.StartElement("note");
-    xmlSerializer.SetCData("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.SetCDATA("root SYSTEM \"http://www.test.org/test.dtd\"");
     xmlSerializer.EndElement();
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer),
                  "<note>\r\n  <![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>\r\n</note>");
