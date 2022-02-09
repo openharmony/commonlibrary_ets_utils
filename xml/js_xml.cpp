@@ -239,7 +239,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetCommnet(std::string comment)
+    void XmlSerializer::SetComment(std::string comment)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {

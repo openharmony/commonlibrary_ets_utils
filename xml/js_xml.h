@@ -36,7 +36,7 @@ namespace OHOS::xml {
         void StartElement(std::string name);
         void EndElement();
         void SetNamespace(std::string prefix, std::string nsTemp);
-        void SetCommnet(std::string comment);
+        void SetComment(std::string comment);
         void SetCData(std::string data);
         void SetText(std::string text);
         void SetDocType(std::string text);

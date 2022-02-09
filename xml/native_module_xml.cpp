@@ -245,7 +245,7 @@ namespace OHOS::xml {
         return result;
     }
 
-    static napi_value SetCommnet(napi_env env, napi_callback_info info)
+    static napi_value SetComment(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
         size_t argc = 0;
@@ -261,7 +261,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string comment;
         object->DealNapiStrValue(env, args[0], comment);
-        object->SetCommnet(comment);
+        object->SetComment(comment);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -356,8 +356,8 @@ namespace OHOS::xml {
             DECLARE_NAPI_FUNCTION("startElement", StartElement),
             DECLARE_NAPI_FUNCTION("endElement", EndElement),
             DECLARE_NAPI_FUNCTION("setNamespace", SetNamespace),
-            DECLARE_NAPI_FUNCTION("setCommnet", SetCommnet),
-            DECLARE_NAPI_FUNCTION("setCData", SetCData),
+            DECLARE_NAPI_FUNCTION("setComment", SetComment),
+            DECLARE_NAPI_FUNCTION("setCDATA", SetCData),
             DECLARE_NAPI_FUNCTION("setText", SetText),
             DECLARE_NAPI_FUNCTION("setDocType", SetDocType),
             DECLARE_NAPI_FUNCTION("XmlSerializerError", XmlSerializerError)

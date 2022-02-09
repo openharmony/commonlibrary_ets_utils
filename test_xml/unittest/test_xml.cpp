@@ -603,11 +603,11 @@ HWTEST_F(NativeEngineTest, SetNamespaceTest005, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), strEnd.c_str());
 }
 
-/* @tc.name: SetCommnetTest001
- * @tc.desc: Test write the commnet successfully.
+/* @tc.name: SetCommentTest001
+ * @tc.desc: Test write the comment successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCommnetTest001, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCommentTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -616,16 +616,16 @@ HWTEST_F(NativeEngineTest, SetCommnetTest001, testing::ext::TestSize.Level0)
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
     xmlSerializer.StartElement("note");
-    xmlSerializer.SetCommnet("Hi!");
+    xmlSerializer.SetComment("Hi!");
     xmlSerializer.EndElement();
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<note>\r\n  <!--Hi!-->\r\n</note>");
 }
 
-/* @tc.name: SetCommnetTest002
- * @tc.desc: Test write the commnet successfully.
+/* @tc.name: SetCommentTest002
+ * @tc.desc: Test write the comment successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCommnetTest002, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCommentTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -634,16 +634,16 @@ HWTEST_F(NativeEngineTest, SetCommnetTest002, testing::ext::TestSize.Level0)
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
     xmlSerializer.StartElement("note");
-    xmlSerializer.SetCommnet("Hello, World!");
+    xmlSerializer.SetComment("Hello, World!");
     xmlSerializer.EndElement();
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<note>\r\n  <!--Hello, World!-->\r\n</note>");
 }
 
-/* @tc.name: SetCommnetTest003
- * @tc.desc: Test write the commnet successfully.
+/* @tc.name: SetCommentTest003
+ * @tc.desc: Test write the comment successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCommnetTest003, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCommentTest003, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -651,15 +651,15 @@ HWTEST_F(NativeEngineTest, SetCommnetTest003, testing::ext::TestSize.Level0)
     size_t size = 1024;
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
-    xmlSerializer.SetCommnet("Hello, World!");
+    xmlSerializer.SetComment("Hello, World!");
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<!--Hello, World!-->");
 }
 
-/* @tc.name: SetCommnetTest004
- * @tc.desc: Test write the commnet successfully.
+/* @tc.name: SetCommentTest004
+ * @tc.desc: Test write the comment successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCommnetTest004, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCommentTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -667,15 +667,15 @@ HWTEST_F(NativeEngineTest, SetCommnetTest004, testing::ext::TestSize.Level0)
     size_t size = 1024;
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
-    xmlSerializer.SetCommnet("Hello, World!");
+    xmlSerializer.SetComment("Hello, World!");
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<!--Hello, World!-->");
 }
 
-/* @tc.name: SetCommnetTest005
- * @tc.desc: Test write the commnet successfully.
+/* @tc.name: SetCommentTest005
+ * @tc.desc: Test write the comment successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCommnetTest005, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCommentTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -683,7 +683,7 @@ HWTEST_F(NativeEngineTest, SetCommnetTest005, testing::ext::TestSize.Level0)
     size_t size = 1024;
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
-    xmlSerializer.SetCommnet("Hello, World!");
+    xmlSerializer.SetComment("Hello, World!");
     xmlSerializer.StartElement("note");
     xmlSerializer.EndElement();
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<!--Hello, World!-->\r\n<note/>");
@@ -693,7 +693,7 @@ HWTEST_F(NativeEngineTest, SetCommnetTest005, testing::ext::TestSize.Level0)
  * @tc.desc: Test .
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest001, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -705,11 +705,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[root SYSTEM]]>");
 }
 
-/* @tc.name: SetCDataTest002
+/* @tc.name: SetCDATATest002
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest002, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -721,11 +721,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest002, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>");
 }
 
-/* @tc.name: SetCDataTest003
+/* @tc.name: SetCDATATest003
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest003, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest003, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -740,11 +740,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest003, testing::ext::TestSize.Level0)
                  "<note/>\r\n<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>");
 }
 
-/* @tc.name: SetCDataTest004
+/* @tc.name: SetCDATATest004
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest004, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -759,11 +759,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest004, testing::ext::TestSize.Level0)
                  "<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>\r\n<note/>");
 }
 
-/* @tc.name: SetCDataTest005
+/* @tc.name: SetCDATATest005
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest005, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;

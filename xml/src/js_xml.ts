@@ -26,8 +26,8 @@ interface NativeXMLSerializer{
     startElement(name : string) : void;
     endElement() : void;
     setNamespace(prefix : string, namespace : string) : void;
-    setCommnet(text : string) : void;
-    setCData(text : string) : void;
+    setComment(text : string) : void;
+    setCDATA(text : string) : void;
     setText(text : string) : void;
     setDocType(text : string) : void;
     XmlSerializerError() : string;
@@ -115,21 +115,21 @@ class XmlSerializer {
             throw new Error(errStr);
         }
     }
-    setCommnet(text : string) {
+    setComment(text : string) {
         if (typeof text !== 'string' || text.length === 0) {
             throw new Error("text type err");
         }
-        this.xmlSerializerClass.setCommnet(text);
+        this.xmlSerializerClass.setComment(text);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
         if (errStr.length !== 0) {
             throw new Error(errStr);
         }
     }
-    setCData(text : string) {
+    setCDATA(text : string) {
         if (typeof text !== 'string' || text.length === 0) {
             throw new Error("text type err");
         }
-        this.xmlSerializerClass.setCData(text);
+        this.xmlSerializerClass.setCDATA(text);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
         if (errStr.length !== 0) {
             throw new Error(errStr);

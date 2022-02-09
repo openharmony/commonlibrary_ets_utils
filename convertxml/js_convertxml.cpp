@@ -377,7 +377,7 @@ namespace OHOS::Xml {
     void ConvertXml::DealIgnore(const napi_value napiObj)
     {
         std::vector<std::string> vctIgnore = {"compact", "trim", "ignoreDeclaration", "ignoreInstruction",
-                                              "ignoreAttributes", "ignoreComment", "ignoreCdata",
+                                              "ignoreAttributes", "ignoreComment", "ignoreCDATA",
                                               "ignoreDoctype", "ignoreText"};
         size_t vctLength = vctIgnore.size();
         for (size_t i = 0; i < vctLength; ++i) {
