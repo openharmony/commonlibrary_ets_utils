@@ -78,13 +78,13 @@ namespace OHOS::Js_sys_module::Process {
             HILOG_ERROR("pipe2 faile %{public}d", errno);
             return;
         }
+        std::string strCommnd = RequireStrValue(command);
         pid_t pid = fork();
         if (pid == 0) {
             close(stdErrFd_[0]);
             close(stdOutFd_[0]);
             dup2(stdOutFd_[1], 1);
             dup2(stdErrFd_[1], 2); // 2:The value of parameter
-            std::string strCommnd = RequireStrValue(command);
             if (execl("/bin/sh", "sh", "-c", strCommnd.c_str(), NULL) == -1) {
                 HILOG_ERROR("execl command failed");
                 exit(127); // 127:The parameter value
@@ -92,8 +92,7 @@ namespace OHOS::Js_sys_module::Process {
         } else if (pid > 0) {
             optionsInfo_->pid = pid;
             ppid_ = getpid();
-            CreatePromise();
-
+            CreateWorker();
             napi_value resourceName = nullptr;
             napi_create_string_utf8(env_, "TimeoutListener", strlen("TimeoutListener"), &resourceName);
             napi_create_async_work(
@@ -126,7 +125,7 @@ namespace OHOS::Js_sys_module::Process {
         }
         isNeedRun_ = false;
         napi_value result = nullptr;
-        napi_create_int32(env_, exitCode_, &result);
+        napi_create_int32(env_, static_cast<int8_t>(exitCode_), &result);
         napi_resolve_deferred(env_, waitInfo->deferred, result);
         delete waitInfo;
         waitInfo = nullptr;
@@ -136,11 +135,45 @@ namespace OHOS::Js_sys_module::Process {
 
     napi_value ChildProcess::GetOutput() const
     {
+        NAPI_CALL(env_, napi_create_promise(env_, &stdOutInfo_->deferred, &stdOutInfo_->promise));
+        void* data = nullptr;
+        napi_value arrayBuffer = nullptr;
+        size_t bufferSize = stdOutInfo_->stdData.size() + 1;
+        NAPI_CALL(env_, napi_create_arraybuffer(env_, bufferSize, &data, &arrayBuffer));
+        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdOutInfo_->stdData.c_str()),
+            stdOutInfo_->stdData.size()) != 0) {
+            HILOG_ERROR("getOutput memcpy_s failed");
+            NAPI_CALL(env_, napi_delete_async_work(env_, stdOutInfo_->worker));
+            napi_value res = nullptr;
+            NAPI_CALL(env_, napi_get_undefined(env_, &res));
+            return res;
+        }
+
+        napi_value result = nullptr;
+        NAPI_CALL(env_, napi_create_typedarray(env_, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
+        NAPI_CALL(env_, napi_resolve_deferred(env_, stdOutInfo_->deferred, result));
         return stdOutInfo_->promise;
     }
 
     napi_value ChildProcess::GetErrorOutput() const
     {
+        NAPI_CALL(env_, napi_create_promise(env_, &stdErrInfo_->deferred, &stdErrInfo_->promise));
+        void* data = nullptr;
+        napi_value arrayBuffer = nullptr;
+        size_t bufferSize = stdErrInfo_->stdData.size() + 1;
+        NAPI_CALL(env_, napi_create_arraybuffer(env_, bufferSize, &data, &arrayBuffer));
+        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdErrInfo_->stdData.c_str()),
+            stdErrInfo_->stdData.size()) != 0) {
+            HILOG_ERROR("getErrOutput memcpy_s failed");
+            NAPI_CALL(env_, napi_delete_async_work(env_, stdErrInfo_->worker));
+            napi_value res = nullptr;
+            NAPI_CALL(env_, napi_get_undefined(env_, &res));
+            return res;
+        }
+
+        napi_value result = nullptr;
+        NAPI_CALL(env_, napi_create_typedarray(env_, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
+        NAPI_CALL(env_, napi_resolve_deferred(env_, stdErrInfo_->deferred, result));
         return stdErrInfo_->promise;
     }
 
@@ -171,12 +204,12 @@ namespace OHOS::Js_sys_module::Process {
     napi_value ChildProcess::GetExitCode() const
     {
         napi_value result = nullptr;
-        NAPI_CALL(env_, napi_create_int32(env_, exitCode_, &result));
+        NAPI_CALL(env_, napi_create_int32(env_, static_cast<int8_t>(exitCode_), &result));
 
         return result;
     }
 
-    void ChildProcess::CreatePromise()
+    void ChildProcess::CreateWorker()
     {
         // getstdout
         napi_value resourceName = nullptr;
@@ -185,20 +218,17 @@ namespace OHOS::Js_sys_module::Process {
         stdOutInfo_->fd = stdOutFd_[0];
         stdOutInfo_->pid = optionsInfo_->pid;
         stdOutInfo_->maxBuffSize = optionsInfo_->maxBuffer;
-        napi_create_promise(env_, &stdOutInfo_->deferred, &stdOutInfo_->promise);
         napi_create_string_utf8(env_, "ReadStdOut", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env_, nullptr, resourceName, ReadStdOut, EndStdOut,
                                reinterpret_cast<void*>(stdOutInfo_), &stdOutInfo_->worker);
         napi_queue_async_work(env_, stdOutInfo_->worker);
 
         // getstderr
-        resourceName = nullptr;
         stdErrInfo_ = new StdInfo();
         stdErrInfo_->isNeedRun = &isNeedRun_;
         stdErrInfo_->fd = stdErrFd_[0];
         stdErrInfo_->pid = optionsInfo_->pid;
         stdErrInfo_->maxBuffSize = optionsInfo_->maxBuffer;
-        napi_create_promise(env_, &stdErrInfo_->deferred, &stdErrInfo_->promise);
         napi_create_string_utf8(env_, "ReadStdErr", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env_, nullptr, resourceName, ReadStdErr, EndStdErr,
                                reinterpret_cast<void*>(stdErrInfo_), &stdErrInfo_->worker);
@@ -235,20 +265,6 @@ namespace OHOS::Js_sys_module::Process {
     void ChildProcess::EndStdOut(napi_env env, napi_status status, void* buffer)
     {
         auto stdOutInfo = reinterpret_cast<StdInfo*>(buffer);
-        void* data = nullptr;
-        napi_value arrayBuffer = nullptr;
-        size_t bufferSize = stdOutInfo->stdData.size() + 1;
-        napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
-        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdOutInfo->stdData.c_str()),
-            stdOutInfo->stdData.size()) != 0) {
-            HILOG_ERROR("getOutput memcpy_s failed");
-            napi_delete_async_work(env, stdOutInfo->worker);
-            return;
-        }
-
-        napi_value result = nullptr;
-        napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
-        napi_resolve_deferred(env, stdOutInfo->deferred, result);
         napi_delete_async_work(env, stdOutInfo->worker);
         delete stdOutInfo;
     }
@@ -283,20 +299,6 @@ namespace OHOS::Js_sys_module::Process {
     void ChildProcess::EndStdErr(napi_env env, napi_status status, void* buffer)
     {
         auto stdErrInfo = reinterpret_cast<StdInfo*>(buffer);
-        void* data = nullptr;
-        napi_value arrayBuffer = nullptr;
-        size_t bufferSize = stdErrInfo->stdData.size() + 1;
-        napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
-        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdErrInfo->stdData.c_str()),
-            stdErrInfo->stdData.size()) != 0) {
-            HILOG_ERROR("getErrOutput memcpy_s failed");
-            napi_delete_async_work(env, stdErrInfo->worker);
-            return;
-        }
-
-        napi_value result = nullptr;
-        napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
-        napi_resolve_deferred(env, stdErrInfo->deferred, result);
         napi_delete_async_work(env, stdErrInfo->worker);
         delete stdErrInfo;
     }

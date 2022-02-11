@@ -72,7 +72,7 @@ namespace OHOS::Js_sys_module::Process {
         static void TimeoutListener(napi_env env, void* data);
         std::string RequireStrValue(const napi_value strValue);
         int GetValidSignal(const napi_value signo);
-        void CreatePromise();
+        void CreateWorker();
 
         napi_env env_ = nullptr;
         OptionsInfo* optionsInfo_ = nullptr;
