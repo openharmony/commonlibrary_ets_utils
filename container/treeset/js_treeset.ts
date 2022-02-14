@@ -184,7 +184,4 @@ if (flag || fastTreeSet === undefined) {
   Object.freeze(TreeSet);
   fastTreeSet = TreeSet;
 }
-
-export default {
-  TreeSet: fastTreeSet,
-};
+export default fastTreeSet;

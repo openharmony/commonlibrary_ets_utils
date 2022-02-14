@@ -189,6 +189,4 @@ if (flag || fastDeque == undefined) {
   Object.freeze(Deque);
   fastDeque = Deque;
 }
-export default {
-  Deque: fastDeque,
-};
+export default fastDeque;

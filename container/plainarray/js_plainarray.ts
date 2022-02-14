@@ -154,7 +154,4 @@ if (flag || fastPlainArray === undefined) {
   Object.freeze(PlainArray);
   fastPlainArray = PlainArray;
 }
-
-export default {
-  PlainArray: fastPlainArray,
-};
+export default fastPlainArray;

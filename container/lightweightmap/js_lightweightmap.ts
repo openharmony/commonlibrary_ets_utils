@@ -211,7 +211,4 @@ if (flag || fastLightWeightMap === undefined) {
   Object.freeze(LightWeightMap);
   fastLightWeightMap = LightWeightMap;
 }
-
-export default {
-  LightWeightMap: fastLightWeightMap,
-};
+export default fastLightWeightMap;

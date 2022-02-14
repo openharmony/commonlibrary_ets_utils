@@ -347,6 +347,4 @@ if (flag || fastVector == undefined) {
   Object.freeze(Vector);
   fastVector = Vector;
 }
-export default {
-  Vector: fastVector,
-};
+export default fastVector;

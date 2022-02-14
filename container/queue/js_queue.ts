@@ -147,6 +147,4 @@ if (flag || fastQueue == undefined) {
   Object.freeze(Queue);
   fastQueue = Queue;
 }
-export default {
-  Queue: fastQueue,
-};
+export default fastQueue;

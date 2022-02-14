@@ -162,7 +162,4 @@ if (flag || fastHashMap === undefined) {
   Object.freeze(HashMap);
   fastHashMap = HashMap;
 }
-
-export default {
-  HashMap: fastHashMap,
-};
+export default fastHashMap;

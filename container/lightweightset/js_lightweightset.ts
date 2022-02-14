@@ -171,7 +171,4 @@ if (flag || fastLightWeightSet === undefined) {
   Object.freeze(LightWeightSet);
   fastLightWeightSet = LightWeightSet;
 }
-
-export default {
-  LightWeightSet: fastLightWeightSet,
-};
+export default fastLightWeightSet;

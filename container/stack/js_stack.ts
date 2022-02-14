@@ -149,6 +149,4 @@ if (flag || fastStack == undefined) {
   Object.freeze(Stack);
   fastStack = Stack;
 }
-export default {
-  Stack: fastStack,
-};
+export default fastStack;

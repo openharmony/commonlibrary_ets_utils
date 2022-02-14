@@ -131,7 +131,4 @@ if (flag || fastHashSet === undefined) {
   Object.freeze(HashSet);
   fastHashSet = HashSet;
 }
-
-export default {
-  HashSet: fastHashSet,
-};
+export default fastHashSet;

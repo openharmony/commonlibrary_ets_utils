@@ -302,6 +302,5 @@ if (flag || fastArrayList == undefined) {
   Object.freeze(ArrayList);
   fastArrayList = ArrayList;
 }
-export default {
-  ArrayList: fastArrayList,
-};
+export default fastArrayList;
+

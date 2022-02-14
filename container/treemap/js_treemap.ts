@@ -199,7 +199,4 @@ if (flag || fastTreeMap === undefined) {
   Object.freeze(TreeMap);
   fastTreeMap = TreeMap;
 }
-
-export default {
-  TreeMap: fastTreeMap,
-};
+export default fastTreeMap;

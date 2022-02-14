@@ -371,6 +371,4 @@ if (flag || fastList == undefined) {
   Object.freeze(List);
   fastList = List;
 }
-export default {
-  List: fastList,
-};
+export default fastList;

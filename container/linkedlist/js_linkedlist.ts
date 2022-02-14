@@ -407,6 +407,4 @@ if (flag || fastLinkedList == undefined) {
   Object.freeze(LinkedList);
   fastLinkedList = LinkedList;
 }
-export default {
-  LinkedList: fastLinkedList,
-};
+export default fastLinkedList;
