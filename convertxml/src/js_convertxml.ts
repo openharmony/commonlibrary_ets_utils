@@ -129,8 +129,4 @@ function DealLaterReplace(strXml : string, idx : any, idxThir : any)
     return strXml;
 }
 
-export default {
-    ConvertXML : ConvertXML
-}
-
-
+export default ConvertXML
