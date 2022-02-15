@@ -100,6 +100,4 @@ function createNewUri(uriStr : string) {
     return new URI(uriStr);
 }
 
-export default {
-    URI: URI,
-}
+export default URI
