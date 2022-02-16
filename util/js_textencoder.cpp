@@ -72,7 +72,7 @@ namespace OHOS::Util {
         char *writeResult = static_cast<char*>(resultData) + byteOffset;
 
         int32_t nchars = 0;
-        int32_t written = 0;
+        uint32_t written = 0;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env_);
         NativeValue *nativeValue = reinterpret_cast<NativeValue*>(src);
         engine->EncodeToUtf8(nativeValue, writeResult, &written, length, &nchars);

@@ -73,7 +73,7 @@ namespace OHOS::Util {
         NAPI_CALL(env_, napi_get_typedarray_info(env_, src, &type, &length, &data1, &arrayBuffer, &byteOffset));
         const char *source = static_cast<char*>(data1);
         UErrorCode codeFlag = U_ZERO_ERROR;
-        size_t limit = GetMinByteSize() * length;
+        int32_t limit = GetMinByteSize() * length;
         size_t len = limit * sizeof(UChar);
         UChar *arr = nullptr;
         if (limit > 0) {
@@ -146,12 +146,12 @@ namespace OHOS::Util {
         return result;
     }
 
-    size_t TextDecoder::GetMinByteSize() const
+    int32_t TextDecoder::GetMinByteSize() const
     {
         if (tranTool_ == nullptr) {
             return -1;
         }
-        size_t res = ucnv_getMinCharSize(tranTool_.get());
+        int32_t res = ucnv_getMinCharSize(tranTool_.get());
         return res;
     }
 

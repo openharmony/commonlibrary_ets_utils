@@ -191,8 +191,8 @@ namespace OHOS::Util {
         size_t argc = 1;
         napi_value argv = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &argv, &thisVar, nullptr));
-        uint32_t err = 0;
-        NAPI_CALL(env, napi_get_value_uint32(env, argv, &err));
+        int32_t err = 0;
+        NAPI_CALL(env, napi_get_value_int32(env, argv, &err));
         errInfo = strerror(err);
         NAPI_CALL(env, napi_create_string_utf8(env, errInfo.c_str(), errInfo.size(), &result));
         return result;

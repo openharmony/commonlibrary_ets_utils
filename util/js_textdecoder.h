@@ -26,7 +26,7 @@
 using TransformToolPointer = std::unique_ptr<UConverter, void(*)(UConverter*)>;
 namespace OHOS::Util {
     struct DecodeArr {
-        DecodeArr(UChar *tarPos, size_t tarStaPos, size_t limLen)
+        DecodeArr(UChar *tarPos, size_t tarStaPos, int32_t limLen)
         {
             this->target = tarPos;
             this->tarStartPos = tarStaPos;
@@ -34,7 +34,7 @@ namespace OHOS::Util {
         }
         UChar *target = 0;
         size_t tarStartPos = 0;
-        size_t limitLen = 0;
+        int32_t limitLen = 0;
     };
 
     class TextDecoder {
@@ -53,7 +53,7 @@ namespace OHOS::Util {
         napi_value GetEncoding() const;
         napi_value GetFatal() const;
         napi_value GetIgnoreBOM() const;
-        size_t GetMinByteSize() const;
+        int32_t GetMinByteSize() const;
         void Reset() const;
         UConverter *GetConverterPtr() const
         {
