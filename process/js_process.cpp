@@ -87,7 +87,7 @@ namespace OHOS::Js_sys_module::Process {
         if (progroups == -1) {
             napi_throw_error(env_, "-1", "getgroups");
         }
-        pgrous.resize(progroups);
+        pgrous.resize(static_cast<size_t>(progroups));
         gid_t proegid = getegid();
         if (std::find(pgrous.begin(), pgrous.end(), proegid) == pgrous.end()) {
             pgrous.push_back(proegid);
@@ -408,32 +408,16 @@ namespace OHOS::Js_sys_module::Process {
         if (res1 != 0) {
             return 0;
         }
-        double whenpro = ConvertTime(timespro.tv_sec, timespro.tv_nsec);
-        double whensys = ConvertTime(timessys.tv_sec, timessys.tv_nsec);
+        int whenpro = ConvertTime(timespro.tv_sec, timespro.tv_nsec);
+        int whensys = ConvertTime(timessys.tv_sec, timessys.tv_nsec);
         auto timedif = (whensys - whenpro);
-        napi_create_double(env_, timedif, &result);
+        napi_create_int32(env_, timedif, &result);
         return result;
     }
 
-    napi_value Process::GetAvailableCores() const
+    int Process::ConvertTime(time_t tvsec, long tvnsec) const
     {
-        napi_value result = nullptr;
-        auto numcpus = static_cast<int32_t>(sysconf(_SC_NPROCESSORS_ONLN));
-        NAPI_CALL(env_, napi_create_array(env_, &result));
-        for (int i = 0; i <= numcpus; i++) {
-            napi_value numvalue = nullptr;
-            napi_create_uint32(env_, i, &numvalue);
-            napi_status status = napi_set_element(env_, result, i, numvalue);
-            if (status != napi_ok) {
-                HILOG_ERROR("set element error");
-            }
-        }
-        return result;
-    }
-
-    double Process::ConvertTime(time_t tvsec, long tvnsec) const
-    {
-        return double(tvsec * 1000) + double(tvnsec / 1000000); // 98999:Only converttime numbers is 1000 and 1000000.
+        return int(tvsec * 1000) + int(tvnsec / 1000000); // 98999:Only converttime numbers is 1000 and 1000000.
     }
 
     napi_value Process::GetPastCputime() const
@@ -444,8 +428,8 @@ namespace OHOS::Js_sys_module::Process {
         if (res != 0) {
             return 0;
         }
-        double when =  ConvertTime(times.tv_sec, times.tv_nsec);
-        napi_create_double(env_, when, &result);
+        int when =  ConvertTime(times.tv_sec, times.tv_nsec);
+        napi_create_int32(env_, when, &result);
         return result;
     }
 

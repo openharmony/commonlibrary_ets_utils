@@ -500,12 +500,6 @@ namespace OHOS::Js_sys_module::Process {
         return object.GetEnvironmentVar(args);
     }
 
-    static napi_value GetAvailableCores(napi_env env, napi_callback_info info)
-    {
-        Process object(env);
-        return object.GetAvailableCores();
-    }
-
     static napi_value Init(napi_env env, napi_value exports)
     {
         Process object(env);
@@ -529,7 +523,6 @@ namespace OHOS::Js_sys_module::Process {
             DECLARE_NAPI_FUNCTION("exit", Exit),
             DECLARE_NAPI_GETTER("tid", GetTid),
             DECLARE_NAPI_FUNCTION("getStartRealtime", GetStartRealtime),
-            DECLARE_NAPI_FUNCTION("getAvailableCores", GetAvailableCores),
             DECLARE_NAPI_FUNCTION("getPastCputime",  GetPastCputime),
             DECLARE_NAPI_FUNCTION("isIsolatedProcess", IsIsolatedProcess),
             DECLARE_NAPI_FUNCTION("is64Bit", Is64Bit),

@@ -31,7 +31,9 @@ namespace OHOS::Js_sys_module::Dfx {
         char *tempStr = nullptr;
         size_t tempStrsize = 0;
         napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempStrsize);
-        tempStr = new char[tempStrsize + 1];
+        if (tempStrsize > 0) {
+            tempStr = new char[tempStrsize + 1];
+        }
         napi_get_value_string_utf8(env, argv[0], tempStr, tempStrsize + 1, &tempStrsize);
         std::string pathStr = tempStr;
         bool isVmMode = true;
@@ -88,7 +90,9 @@ namespace OHOS::Js_sys_module::Dfx {
         char *tempStr = nullptr;
         size_t tempStrsize = 0;
         napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempStrsize);
-        tempStr = new char[tempStrsize + 1];
+        if (tempStrsize > 0) {
+            tempStr = new char[tempStrsize + 1];
+        }
         napi_get_value_string_utf8(env, argv[0], tempStr, tempStrsize + 1, &tempStrsize);
         std::string filePath = tempStr;
         delete []tempStr;

@@ -228,7 +228,7 @@ namespace OHOS::Js_sys_module::Process {
         stdErrInfo_->isNeedRun = &isNeedRun_;
         stdErrInfo_->fd = stdErrFd_[0];
         stdErrInfo_->pid = optionsInfo_->pid;
-        stdErrInfo_->maxBuffSize = optionsInfo_->maxBuffer;
+        stdErrInfo_->maxBuffSize = static_cast<size_t>(optionsInfo_->maxBuffer);
         napi_create_string_utf8(env_, "ReadStdErr", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env_, nullptr, resourceName, ReadStdErr, EndStdErr,
                                reinterpret_cast<void*>(stdErrInfo_), &stdErrInfo_->worker);
@@ -327,7 +327,7 @@ namespace OHOS::Js_sys_module::Process {
 
     void ChildProcess::Kill(const napi_value signo)
     {
-        size_t signal = GetValidSignal(signo);
+        int signal = GetValidSignal(signo);
         std::vector<int32_t> signalType = {SIGINT, SIGQUIT, SIGKILL, SIGTERM};
         if (!kill(optionsInfo_->pid, signal)) {
             auto res = std::find(signalType.begin(), signalType.end(), static_cast<int32_t>(signal));
@@ -359,7 +359,7 @@ namespace OHOS::Js_sys_module::Process {
         auto temp = reinterpret_cast<OptionsInfo*>(data);
         int32_t timeout = temp->timeout * TIME_EXCHANGE;
         if (timeout > 0) {
-            usleep(timeout);
+            usleep(static_cast<size_t>(timeout));
             if (*(temp->isNeedRun)) {
                 if (!kill(temp->pid, temp->killSignal)) {
                     auto res = std::find(signalType.begin(), signalType.end(), temp->killSignal);

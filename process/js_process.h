@@ -54,13 +54,12 @@ namespace OHOS::Js_sys_module::Process {
         napi_value GetStartRealtime() const;
         napi_value GetPastCputime() const;
         napi_value GetSystemConfig(napi_value name) const;
-        napi_value GetAvailableCores() const;
         napi_value GetEnvironmentVar(napi_value name) const;
         napi_value SetRejectionCallback() const;
 
         static void ClearReference(napi_env env);
     private:
-        double ConvertTime(time_t tvsec, long tvnsec) const;
+        int ConvertTime(time_t tvsec, long tvnsec) const;
     private:
         napi_env env_ { nullptr };
         int FIRST_APPLICATION_UID = 10000;
