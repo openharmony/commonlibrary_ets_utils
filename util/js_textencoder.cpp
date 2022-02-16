@@ -72,7 +72,7 @@ namespace OHOS::Util {
         char *writeResult = static_cast<char*>(resultData) + byteOffset;
 
         int32_t nchars = 0;
-        uint32_t written = 0;
+        int32_t written = 0;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env_);
         NativeValue *nativeValue = reinterpret_cast<NativeValue*>(src);
         engine->EncodeToUtf8(nativeValue, writeResult, &written, length, &nchars);
@@ -81,12 +81,12 @@ namespace OHOS::Util {
         NAPI_CALL(env_, napi_create_object(env_, &result));
 
         napi_value read = nullptr;
-        NAPI_CALL(env_, napi_create_uint32(env_, nchars, &read));
+        NAPI_CALL(env_, napi_create_int32(env_, nchars, &read));
 
         NAPI_CALL(env_, napi_set_named_property(env_, result, "read", read));
 
         napi_value resWritten = nullptr;
-        NAPI_CALL(env_, napi_create_uint32(env_, written, &resWritten));
+        NAPI_CALL(env_, napi_create_int32(env_, written, &resWritten));
 
         NAPI_CALL(env_, napi_set_named_property(env_, result, "written", resWritten));
 
