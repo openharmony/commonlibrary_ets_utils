@@ -36,7 +36,7 @@ ohos_shared_library("worker") {
     external_deps = [ "hilog:libhilog" ]
   }
 
-  subsystem_name = "compileruntime"
+  subsystem_name = "utils"
   part_name = "jsapi_worker"
 
   relative_install_dir = "module"

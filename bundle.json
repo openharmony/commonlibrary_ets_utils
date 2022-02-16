@@ -37,7 +37,7 @@
     },
     "component": {
         "name": "jsapi_worker",
-        "subsystem": "compileruntime",
+        "subsystem": "utils",
         "syscap": [],
         "features": [],
         "adapted_system_type": [],
