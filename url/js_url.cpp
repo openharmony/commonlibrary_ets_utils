@@ -163,7 +163,7 @@ namespace OHOS::Url {
             for (size_t i = 0; i < strlen - 1; ++i) {
                 if ((isalnum(input[i]) || input[i] == '+' || input[i] == '-' || input[i] == '.') &&
                     isupper(input[i])) {
-                        input[i] = tolower(input[i]);
+                        input[i] = static_cast<size_t>(tolower(input[i]));
                 }
                 if (!isalnum(input[i]) && input[i] != '+' && input[i] != '-' && input[i] != '.') {
                     flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
@@ -195,7 +195,7 @@ namespace OHOS::Url {
     void AnalysisUsernameAndPasswd(std::string& input, std::string& username, std::string& password,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
-        int pos = input.size() - 1;
+        int pos = static_cast<int>(input.size()) - 1;
         for (; pos >= 0; pos--) {
             if (input[pos] == '@') {
                 break;
@@ -435,7 +435,7 @@ namespace OHOS::Url {
         size_t strLen = str.size();
         for (size_t i = 0; i < strLen; ++i) {
             if (isupper(str[i])) {
-                str[i] = tolower(str[i]);
+                str[i] = static_cast<size_t>(tolower(str[i]));
         }
     }
     }
@@ -575,7 +575,7 @@ namespace OHOS::Url {
             nums.push_back(std::to_string(num));
             val /= 256; // 256:ipv4 max value
             }
-        for (int i = nums.size() - 1; i >= 0; --i) {
+        for (int i = static_cast<int>(nums.size()) - 1; i >= 0; --i) {
             res += nums[i] + ".";
         }
         number = nums.size();
@@ -1559,7 +1559,7 @@ namespace OHOS::Url {
         } else {
                 std::string usname = input;
             size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
-            for (int i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
+            for (size_t i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
             ReplaceSpecialSymbols(usname, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
                 urlData_.username = usname;
@@ -1575,7 +1575,7 @@ namespace OHOS::Url {
         } else {
                 std::string keyWord = input;
             size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
-            for (int i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
+            for (size_t i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
             ReplaceSpecialSymbols(keyWord, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
                 urlData_.password = keyWord;
@@ -1736,7 +1736,7 @@ namespace OHOS::Url {
         size_t strLen = strlen(inputStr.c_str());
         wchar_t *strPtr = nullptr;
         std::wstring winput = L"";
-        int strSize = mbstowcs(strPtr, inputStr.c_str(), 0) + 1;
+        size_t strSize = mbstowcs(strPtr, inputStr.c_str(), 0) + 1;
         if (strSize > 0) {
             strPtr = new wchar_t[strSize];
             mbstowcs(strPtr, inputStr.c_str(), strLen);
@@ -1745,7 +1745,7 @@ namespace OHOS::Url {
         const char *expr = "(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])";
         size_t exprLen = strlen(expr);
         wchar_t *exprPtr = nullptr;
-        int exprSize = mbstowcs(exprPtr, expr, 0) + 1;
+        size_t exprSize = mbstowcs(exprPtr, expr, 0) + 1;
         if (exprSize > 0) {
             exprPtr = new wchar_t[exprSize];
             mbstowcs(exprPtr, expr, exprLen);
@@ -1763,7 +1763,7 @@ namespace OHOS::Url {
         size_t inputLen = wcslen(winput.c_str());
         char *rePtr = nullptr;
         std::string reStr = "";
-        int reSize = wcstombs(rePtr, winput.c_str(), 0) + 1;
+        size_t reSize = wcstombs(rePtr, winput.c_str(), 0) + 1;
         if (reSize > 0) {
             rePtr = new char[reSize];
             if (memset_s(rePtr, reSize, 0, reSize) != 0) {

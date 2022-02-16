@@ -133,7 +133,7 @@ namespace OHOS::xml {
             SrcLinkList* next;
             std::string strBuffer;
             int position;
-            int max;
+            size_t max;
             SrcLinkList()
             {
                 this->next = nullptr;
@@ -174,7 +174,7 @@ namespace OHOS::xml {
         void SkipText(std::string chars);
         int PriorDealChar();
         void SkipChar(char expected);
-        std::string ParseNameInner(int start);
+        std::string ParseNameInner(size_t start);
         std::string ParseName();
         void SkipInvalidChar();
         void ParseEntity(std::string& out, bool isEntityToken, bool throwOnResolveFailure, TextEnum textEnum);
@@ -206,15 +206,15 @@ namespace OHOS::xml {
         void ParseNspFunc(size_t &i, std::string &attrName, bool &any);
         void ParseInnerAttriDeclFunc(int &c);
         TagEnum DealExclamationGroup();
-        void ParseEntityFunc(int start, std::string &out, bool isEntityToken, TextEnum textEnum);
+        void ParseEntityFunc(size_t start, std::string &out, bool isEntityToken, TextEnum textEnum);
         bool ParseStartTagFuncDeal(bool throwOnResolveFailure);
         bool ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure);
         TagEnum ParseOneTagFunc();
-        int ParseTagValueInner(size_t &start, std::string &result, char delimiter, TextEnum textEnum, bool bFlag);
+        size_t ParseTagValueInner(size_t &start, std::string &result, char delimiter, TextEnum textEnum, bool bFlag);
         bool ParseTagValueFunc(char c, bool bFlag, TextEnum textEnum, size_t &start, std::string &result);
         void MakeStrUpper(std::string &src) const;
         TagEnum DealLtGroup();
-        void DealWhiteSpace(char c);
+        void DealWhiteSpace(unsigned char c);
     private:
         napi_env env_;
         bool bDoctype_ = false;

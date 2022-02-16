@@ -300,8 +300,8 @@ namespace OHOS::xml {
 
     void XmlSerializer::WriteEscaped(std::string s)
     {
-        int len = s.length();
-        for (int i = 0; i < len; i++) {
+        size_t len = s.length();
+        for (size_t i = 0; i < len; ++i) {
             char c = s[i];
             switch (c) {
                 case '\'':
@@ -635,7 +635,7 @@ namespace OHOS::xml {
             xmlPullParserError_ = "expected: '" + chars + "' but was EOF";
             return;
         }
-        int len = chars.length();
+        size_t len = chars.length();
         if (strXml_.substr(position_, len) != chars) {
             xmlPullParserError_ = "expected: \"" + chars + "\" but was \"" + strXml_.substr(position_, len) + "...\"";
         }
@@ -661,7 +661,7 @@ namespace OHOS::xml {
         position_++;
     }
 
-    std::string XmlPullParser::ParseNameInner(int start)
+    std::string XmlPullParser::ParseNameInner(size_t start)
     {
         std::string result = "";
         char c = 0;
@@ -696,7 +696,7 @@ namespace OHOS::xml {
             xmlPullParserError_ = "name expected";
             return "";
         }
-        int start = position_;
+        size_t start = position_;
         char c = strXml_[position_];
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
             c == '_' || c == ':' || relaxed) {
@@ -719,7 +719,7 @@ namespace OHOS::xml {
         }
     }
 
-    void XmlPullParser::ParseEntityFunc(int start, std::string &out, bool isEntityToken, TextEnum textEnum)
+    void XmlPullParser::ParseEntityFunc(size_t start, std::string &out, bool isEntityToken, TextEnum textEnum)
     {
         std::string strEntity = out.substr(start + 1, out.length() - 1);
         if (isEntityToken) {
@@ -766,7 +766,7 @@ namespace OHOS::xml {
 
     void XmlPullParser::ParseEntity(std::string &out, bool isEntityToken, bool throwOnResolveFailure, TextEnum textEnum)
     {
-        int start = out.length();
+        size_t start = out.length();
         if (strXml_[position_++] != '&') {
             xmlPullParserError_ = "Should not be reached";
         }
@@ -829,7 +829,7 @@ namespace OHOS::xml {
         return true;
     }
 
-    void XmlPullParser::DealWhiteSpace(char c)
+    void XmlPullParser::DealWhiteSpace(unsigned char c)
     {
         if (bWhitespace_ && c <= ' ') {
             bWhitespace_ = true;
@@ -838,7 +838,7 @@ namespace OHOS::xml {
         }
     }
 
-    int XmlPullParser::ParseTagValueInner(size_t &start, std::string &result,
+    size_t XmlPullParser::ParseTagValueInner(size_t &start, std::string &result,
         char delimiter, TextEnum textEnum, bool bFlag)
     {
         if (position_ >= max_) {
@@ -851,7 +851,7 @@ namespace OHOS::xml {
             }
             start = position_;
         }
-        char c = strXml_[position_];
+        unsigned char c = strXml_[position_];
         if (c == delimiter ||
             (delimiter == ' ' && (c <= ' ' || c == '>')) ||
             (c == '&' && !bFlag)) {
@@ -944,10 +944,10 @@ namespace OHOS::xml {
         int i = (attriCount_ << 2) - 4; // 4: number of args 2: number of args
         for (; i >= 0; i -= 4) { // 4: number of args
             std::string attrName = attributes[i + 2]; // 2: number of args
-            int cut = attrName.find(':');
+            size_t cut = attrName.find(':');
             if (cut == 0 && !relaxed) {
                 xmlPullParserError_ = "illegal attribute name: ";
-            } else if (cut != -1) {
+            } else if (cut != std::string::npos) {
                 std::string attrPrefix = attrName.substr(0, cut);
                 attrName = attrName.substr(cut + 1);
                 std::string attrNs = GetNamespace(attrPrefix);
@@ -965,9 +965,9 @@ namespace OHOS::xml {
         bool any = false;
         for (size_t i = 0; i < (attriCount_ << 2); i += 4) { // 2 and 4: number of args
             std::string attrName = attributes[i + 2]; // 2: number of args
-            int cut = attrName.find(':');
+            size_t cut = attrName.find(':');
             std::string prefix;
-            if (cut != -1) {
+            if (cut != std::string::npos) {
                 prefix = attrName.substr(0, cut);
                 attrName = attrName.substr(cut + 1);
             } else if (attrName == ("xmlns")) {
@@ -985,11 +985,11 @@ namespace OHOS::xml {
         if (any) {
             ParseNspFunction();
         }
-        int cut = name_.find(':');
+        size_t cut = name_.find(':');
         if (cut == 0) {
             xmlPullParserError_ = "illegal tag name: " + name_;
         }
-        if (cut != -1) {
+        if (cut != std::string::npos) {
             prefix_ = name_.substr(0, cut);
             name_ = name_.substr(cut + 1);
         }
@@ -1153,12 +1153,12 @@ namespace OHOS::xml {
         name_ = ParseName();
         SkipInvalidChar();
         SkipChar('>');
-        int sp = (depth - 1) * 4; // 4: number of args
         if (depth == 0) {
             xmlPullParserError_ = "read end tag " + name_ + " with no tags open";
             type = TagEnum::COMMENT;
             return;
         }
+        size_t sp = (depth - 1) * 4; // 4: number of args
         if (name_ == elementStack_[sp + 3]) { // 3: number of args
             namespace_ = elementStack_[sp];
             prefix_ = elementStack_[sp + 1];
@@ -1198,7 +1198,7 @@ namespace OHOS::xml {
                 bFlag = false;
             }
         }
-        int end = position_;
+        size_t end = position_;
         position_ += delimiter.length();
         if (!returnText) {
             return "";
@@ -1470,7 +1470,7 @@ namespace OHOS::xml {
     void XmlPullParser::ParseDoctype(bool saveDtdText)
     {
         SkipText(tagText_.START_DOCTYPE);
-        int startPosition = -1;
+        size_t startPosition = 0;
         if (saveDtdText) {
             keyInfo_ = "";
             startPosition = position_;

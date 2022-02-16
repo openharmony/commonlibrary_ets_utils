@@ -223,9 +223,10 @@ namespace OHOS::Xml {
     void ConvertXml::SetPrevInfo(const napi_value &recvElement, int flag, int32_t &index1) const
     {
         if (!prevObj_.empty() && !flag) {
-            for (int i = (prevObj_.size() - 1); i >= 0; --i) {
+            for (size_t i = (prevObj_.size() - 1); i > 0; --i) {
                 napi_set_element(env_, recvElement, index1++, prevObj_[i]);
             }
+            napi_set_element(env_, recvElement, index1++, prevObj_[0]);
         }
     }
 
@@ -534,7 +535,7 @@ namespace OHOS::Xml {
         xmlDocPtr doc = nullptr;
         xmlNodePtr curNode = nullptr;
         size_t len = strXml.size();
-        doc = xmlParseMemory(strXml.c_str(), len);
+        doc = xmlParseMemory(strXml.c_str(), static_cast<int>(len));
         if (!doc) {
             xmlFreeDoc(doc);
         }
