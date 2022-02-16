@@ -1073,7 +1073,7 @@ void Worker::WorkerOnErrorInner(napi_value error)
     CallWorkerFunction(1, argv, "onerror", false);
 }
 
-bool Worker::CallWorkerFunction(int argc, const napi_value* argv, const char* methodName, bool tryCatch)
+bool Worker::CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch)
 {
     if (workerEnv_ == nullptr) {
         return false;
@@ -1110,7 +1110,7 @@ void Worker::CloseWorkerCallback()
     }
 }
 
-void Worker::CallHostFunction(int argc, const napi_value* argv, const char* methodName) const
+void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const
 {
     if (hostEnv_ == nullptr || HostIsStop()) {
         HILOG_ERROR("worker:: host thread maybe is over");
