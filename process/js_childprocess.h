@@ -34,7 +34,7 @@ namespace OHOS::Js_sys_module::Process {
         napi_value promise = nullptr;
         std::string stdData = "";
         bool *isNeedRun = nullptr;
-        size_t maxBuffSize;
+        int64_t maxBuffSize;
         int fd = 0;
         int pid = 0;
     };
