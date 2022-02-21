@@ -284,16 +284,14 @@ namespace OHOS::Util {
     /* Memory cleanup function */
     void Base64::FreeMemory(unsigned char *address)
     {
-        unsigned char *temp = address;
-        if (temp != nullptr) {
+        if (address != nullptr) {
             delete[] temp;
             temp = nullptr;
         }
     }
     void Base64::FreeMemory(char *address)
     {
-        char *temp = address;
-        if (temp != nullptr) {
+        if (address != nullptr) {
             delete[] temp;
             temp = nullptr;
         }
@@ -601,8 +599,7 @@ namespace OHOS::Util {
 
     void FreeMemory(unsigned char *address)
     {
-        unsigned char *temp = address;
-        if (temp != nullptr) {
+        if (address != nullptr) {
             delete[] temp;
             temp = nullptr;
         }
