@@ -31,6 +31,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     uv_loop_t* loop = engine->GetUVLoop();
     if (loop == nullptr) {
         napi_throw_error(env, nullptr, "worker::engine loop is null");
+        CloseHelp::DeletePointer(script, true);
         return;
     }
     uv_async_init(loop, &hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
