@@ -210,7 +210,7 @@ namespace OHOS::Js_sys_module::Process {
 
     void Process::Abort() const
     {
-        abort();
+        exit(0);
     }
 
     void Process::On(napi_value str, napi_value function)
@@ -250,10 +250,14 @@ namespace OHOS::Js_sys_module::Process {
         size_t bufferSize = 0;
         bool flag = false;
         NAPI_CALL(env_, napi_get_value_string_utf8(env_, str, buffer, 0, &bufferSize));
-        if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
+        NAPI_ASSERT(env_, bufferSize > 0, "bufferSize == 0");
+        buffer = new char[bufferSize + 1];
+        if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != 0) {
+            HILOG_ERROR("buffer memset error");
+            delete []buffer;
+            return nullptr;
         }
-        NAPI_CALL(env_, napi_get_value_string_utf8(env_, str, buffer, bufferSize + 1, &bufferSize));
+        napi_get_value_string_utf8(env_, str, buffer, bufferSize + 1, &bufferSize);
         std::string temp = "";
         if (buffer != nullptr) {
             temp = buffer;
@@ -330,8 +334,9 @@ namespace OHOS::Js_sys_module::Process {
     napi_value Process::GetEnvironmentVar(napi_value name) const
     {
         char *buffer = nullptr;
-        char *envvar = nullptr;
         napi_value result = nullptr;
+        char buf[260 * NUM_OF_DATA] = { 0 }; // 260:Only numbers path String size is 260.
+        size_t length = sizeof(buf);
         size_t bufferSize = 0;
         napi_get_value_string_utf8(env_, name, buffer, 0, &bufferSize);
         if (bufferSize > 0) {
@@ -344,12 +349,12 @@ namespace OHOS::Js_sys_module::Process {
             delete []buffer;
             buffer = nullptr;
         }
-        envvar = getenv(temp.c_str());
-        if (envvar == nullptr) {
+        auto envNum = uv_os_getenv(temp.c_str(), buf, &length);
+        if (envNum == UV_ENOENT) {
             NAPI_CALL(env_, napi_get_undefined(env_, &result));
             return result;
         }
-        napi_create_string_utf8(env_, envvar, strlen(envvar), &result);
+        napi_create_string_utf8(env_, buf, strlen(buf), &result);
         return result;
     }
 

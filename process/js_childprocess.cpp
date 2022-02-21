@@ -228,7 +228,7 @@ namespace OHOS::Js_sys_module::Process {
         stdErrInfo_->isNeedRun = &isNeedRun_;
         stdErrInfo_->fd = stdErrFd_[0];
         stdErrInfo_->pid = optionsInfo_->pid;
-        stdErrInfo_->maxBuffSize = static_cast<size_t>(optionsInfo_->maxBuffer);
+        stdErrInfo_->maxBuffSize = optionsInfo_->maxBuffer;
         napi_create_string_utf8(env_, "ReadStdErr", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env_, nullptr, resourceName, ReadStdErr, EndStdErr,
                                reinterpret_cast<void*>(stdErrInfo_), &stdErrInfo_->worker);
@@ -243,8 +243,8 @@ namespace OHOS::Js_sys_module::Process {
             return;
         }
         while (*(stdOutInfo->isNeedRun)) {
-            read(stdOutInfo->fd, childStdout, sizeof(childStdout) - 1);
-            if (strlen(childStdout) > 0) {
+            auto readSize = read(stdOutInfo->fd, childStdout, sizeof(childStdout) - 1);
+            if (readSize >= 0) {
                 stdOutInfo->stdData += childStdout;
             }
             if (stdOutInfo->stdData.size() > stdOutInfo->maxBuffSize && *(stdOutInfo->isNeedRun)) {
@@ -277,8 +277,8 @@ namespace OHOS::Js_sys_module::Process {
             return;
         }
         while (*(stdErrInfo->isNeedRun)) {
-            read(stdErrInfo->fd, childStderr, sizeof(childStderr) - 1);
-            if (strlen(childStderr) > 0) {
+            auto readSize = read(stdErrInfo->fd, childStderr, sizeof(childStderr) - 1);
+            if (readSize >= 0) {
                 stdErrInfo->stdData += childStderr;
             }
             if (stdErrInfo->stdData.size() > stdErrInfo->maxBuffSize && *(stdErrInfo->isNeedRun)) {
