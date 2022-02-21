@@ -23,6 +23,7 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "securec.h"
 #include "utils/log.h"
 
 extern const char _binary_util_js_js_start[];
@@ -30,6 +31,17 @@ extern const char _binary_util_js_js_end[];
 extern const char _binary_util_abc_start[];
 extern const char _binary_util_abc_end[];
 namespace OHOS::Util {
+    static char* ApplyMemory(const size_t length)
+    {
+        char *type = new char[length + 1];
+        if (memset_s(type, length + 1, '\0', length + 1) != 0) {
+                HILOG_ERROR("type memset_s failed");
+                delete[] type;
+                return nullptr;
+        }
+        return type;
+    }
+
     static std::string temp = "cdfijoOs";
     static std::string DealWithPrintf(const std::string &format, const std::vector<std::string> &value)
     {
@@ -112,26 +124,31 @@ namespace OHOS::Util {
         size_t argc = 0;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         napi_value *argv = nullptr;
-        if (argc > 0) {
-            argv = new napi_value[argc];
-            napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-            char *format = nullptr;
-            size_t formatsize = 0;
-            napi_get_value_string_utf8(env, argv[0], nullptr, 0, &formatsize);
-            if (formatsize > 0) {
-                format = new char[formatsize + 1];
-                napi_get_value_string_utf8(env, argv[0], format, formatsize + 1, &formatsize);
-                std::string str = format;
-                delete []format;
-                delete []argv;
-                argv = nullptr;
-                format = nullptr;
-                return FormatString(env, str);
-            }
+        NAPI_ASSERT(env, argc > 0, "argc == 0");
+        argv = new napi_value[argc + 1];
+        if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
+            HILOG_ERROR("argv memset error");
+            delete []argv;
+            return nullptr;
         }
-        napi_value res = nullptr;
-        NAPI_CALL(env, napi_get_undefined(env, &res));
-        return res;
+        napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+        char *format = nullptr;
+        size_t formatsize = 0;
+        napi_get_value_string_utf8(env, argv[0], nullptr, 0, &formatsize);
+        NAPI_ASSERT(env, formatsize > 0, "formatsize == 0");
+        format = new char[formatsize + 1];
+        if (memset_s(format, formatsize + 1, 0, formatsize + 1) != 0) {
+            HILOG_ERROR("format memset error");
+            delete []format;
+            return nullptr;
+        }
+        napi_get_value_string_utf8(env, argv[0], format, formatsize + 1, &formatsize);
+        std::string str = format;
+        delete []format;
+        delete []argv;
+        argv = nullptr;
+        format = nullptr;
+        return FormatString(env, str);
     }
 
     static std::string PrintfString(const std::string &format, const std::vector<std::string> &value)
@@ -259,9 +276,9 @@ namespace OHOS::Util {
             // first para
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv, nullptr, 0, &typeLen));
             if (typeLen > 0) {
-                type = new char[typeLen + 1]();
+                type = ApplyMemory(typeLen);
             }
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen));
+            napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
             napi_value argv[2] = { 0 };
@@ -269,9 +286,9 @@ namespace OHOS::Util {
             // first para
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typeLen));
             if (typeLen > 0) {
-                type = new char[typeLen + 1]();
+                type = ApplyMemory(typeLen);
             }
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typeLen + 1, &typeLen));
+            napi_get_value_string_utf8(env, argv[0], type, typeLen + 1, &typeLen);
             // second para
             GetSecPara(env, argv[1], paraVec);
         }

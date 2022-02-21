@@ -41,14 +41,19 @@ namespace OHOS::Util {
         NAPI_CALL(env_, napi_get_value_string_utf8(env_, src, buffer, 0, &bufferSize));
         NAPI_ASSERT(env_, bufferSize > 0, "bufferSize == 0");
         buffer = new char[bufferSize + 1];
-
-        NAPI_CALL(env_, napi_get_value_string_utf8(env_, src, buffer, bufferSize + 1, &bufferSize));
+        if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != 0) {
+            HILOG_ERROR("buffer memset error");
+            delete []buffer;
+            return nullptr;
+        }
+        napi_get_value_string_utf8(env_, src, buffer, bufferSize + 1, &bufferSize);
 
         void *data = nullptr;
         napi_value arrayBuffer = nullptr;
-        NAPI_CALL(env_, napi_create_arraybuffer(env_, bufferSize, &data, &arrayBuffer));
+        napi_create_arraybuffer(env_, bufferSize, &data, &arrayBuffer);
         if (memcpy_s(data, bufferSize, reinterpret_cast<void*>(buffer), bufferSize) != 0) {
             HILOG_ERROR("copy buffer to arraybuffer error");
+            delete []buffer;
             return nullptr;
         }
 

@@ -55,14 +55,14 @@ namespace OHOS::Util {
         void *data = nullptr;
         napi_value arrayBuffer = nullptr;
         size_t bufferSize = outputLen;
-        NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
+        napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(rets), bufferSize) != 0) {
             FreeMemory(rets);
             HILOG_ERROR("copy ret to arraybuffer error");
             return nullptr;
         }
         napi_value result = nullptr;
-        NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
+        napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
         FreeMemory(rets);
         return result;
     }
@@ -174,7 +174,7 @@ namespace OHOS::Util {
         void *data = nullptr;
         napi_value arrayBuffer = nullptr;
         size_t bufferSize = decodeOutLen;
-        NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
+        napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(pret), bufferSize) != 0) {
             FreeMemory(inputString);
             FreeMemory(pret);
@@ -182,7 +182,7 @@ namespace OHOS::Util {
             return nullptr;
         }
         napi_value result = nullptr;
-        NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
+        napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
         FreeMemory(inputString);
         FreeMemory(pret);
         return result;
@@ -284,18 +284,16 @@ namespace OHOS::Util {
     /* Memory cleanup function */
     void Base64::FreeMemory(unsigned char *address)
     {
-        unsigned char *temp = address;
-        if (temp != nullptr) {
-            delete[] temp;
-            temp = nullptr;
+        if (address != nullptr) {
+            delete[] address;
+            address = nullptr;
         }
     }
     void Base64::FreeMemory(char *address)
     {
-        char *temp = address;
-        if (temp != nullptr) {
-            delete[] temp;
-            temp = nullptr;
+        if (address != nullptr) {
+            delete[] address;
+            address = nullptr;
         }
     }
     napi_value Base64::Encode(napi_value src)
@@ -367,6 +365,7 @@ namespace OHOS::Util {
         if (outputLen > 0) {
             ret = new unsigned char[outputLen + 1];
             if (memset_s(ret, outputLen + 1, '\0', outputLen + 1) != 0) {
+                FreeMemory(ret);
                 napi_throw_error(encodeInfo->env, "-1", "ret path memset_s failed");
             }
         } else {
@@ -544,6 +543,7 @@ namespace OHOS::Util {
         if (retLen > 0) {
             retDecode = new unsigned char[retLen + 1];
             if (memset_s(retDecode, retLen + 1, '\0', retLen + 1) != 0) {
+                FreeMemory(retDecode);
                 napi_throw_error(decodeInfo->env, "-1", "decode retDecode memset_s failed");
             }
         } else {
@@ -595,5 +595,13 @@ namespace OHOS::Util {
         napi_delete_async_work(env, stdDecodeInfo->worker);
         delete[] stdDecodeInfo->sinputDecoding;
         delete stdDecodeInfo;
+    }
+
+    void FreeMemory(unsigned char *address)
+    {
+        if (address != nullptr) {
+            delete[] address;
+            address = nullptr;
+        }
     }
 }

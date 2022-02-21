@@ -46,11 +46,12 @@ namespace OHOS::Util {
         napi_env env;
     };
 
-        enum ConverterFlags {
-            BIT_FLG = 0x40,
-            SIXTEEN_FLG = 0x3F,
-            XFF_FLG = 0xFF,
-        };
+    enum ConverterFlags {
+        BIT_FLG = 0x40,
+        SIXTEEN_FLG = 0x3F,
+        XFF_FLG = 0xFF,
+    };
+    void FreeMemory(unsigned char *address);
     unsigned char *EncodeAchieves(EncodeInfo *encodeInfo);
     unsigned char *DecodeAchieves(DecodeInfo *decodeInfo);
     class Base64 {
