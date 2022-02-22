@@ -1910,7 +1910,7 @@ namespace OHOS::Url {
         napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize);
         if (bufferSize > 0) {
             buffer = new char[bufferSize + 1];
-            if(memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != 0) {
+            if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] buffer;
                 return nullptr;

@@ -91,7 +91,7 @@ namespace OHOS::Url {
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
             if (typelen > 0) {
                 type = new char[typelen + 1];
-                if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+                if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                     HILOG_ERROR("type memset error");
                     delete [] type;
                     return nullptr;
@@ -241,7 +241,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -273,7 +273,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -305,7 +305,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -337,7 +337,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -369,7 +369,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -401,7 +401,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -433,7 +433,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -465,7 +465,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -529,7 +529,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
@@ -584,7 +584,7 @@ namespace OHOS::Url {
             napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize);
             if (arraySize > 0) {
                 cstr = new char[arraySize + 1];
-                if(memset_s(cstr, arraySize + 1, 0, arraySize + 1) != 0) {
+                if (memset_s(cstr, arraySize + 1, 0, arraySize + 1) != 0) {
                     HILOG_ERROR("type memset error");
                     delete [] cstr;
                     return nullptr;
@@ -872,7 +872,7 @@ namespace OHOS::Url {
         napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen);
         if (typelen > 0) {
             type = new char[typelen + 1];
-            if(memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
                 HILOG_ERROR("type memset error");
                 delete [] type;
                 return nullptr;
