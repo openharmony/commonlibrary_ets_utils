@@ -76,7 +76,7 @@ namespace OHOS::Url {
         } else if (pram >= 'a' && pram <= 'f') {
             return pram - 'a' + 10; // 10:Convert to hexadecimal
         }
-        return static_cast<unsigned>(-1);
+        return static_cast<unsigned>(pram);
     }
 
     std::string DecodePercent(const char *input, size_t len)
@@ -1910,6 +1910,11 @@ namespace OHOS::Url {
         napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize);
         if (bufferSize > 0) {
             buffer = new char[bufferSize + 1];
+            if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != 0) {
+                HILOG_ERROR("type memset error");
+                delete [] buffer;
+                return nullptr;
+            }
             napi_get_value_string_utf8(env, name, buffer, bufferSize + 1, &bufferSize);
             buf = buffer;
         }

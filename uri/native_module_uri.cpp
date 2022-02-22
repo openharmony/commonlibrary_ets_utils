@@ -15,6 +15,7 @@
 
 
 #include "js_uri.h"
+#include "securec.h"
 #include "utils/log.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -42,6 +43,11 @@ namespace OHOS::Uri {
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
             if (typelen > 0) {
                 type = new char[typelen + 1];
+                if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
+                    HILOG_ERROR("type memset error");
+                    delete [] type;
+                    return nullptr;
+                }
                 NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
                 input = type;
                 delete[] type;

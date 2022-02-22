@@ -114,17 +114,19 @@ namespace OHOS::Xml {
             if (curNode->type == xmlElementType::XML_PI_NODE && !options_.ignoreInstruction) {
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
                 SetKeyValue(elementsObject, options_.name, reinterpret_cast<const char*>(curNode->name));
-                if (xmlNodeGetContent(curNode) != nullptr) {
-                    SetKeyValue(elementsObject, options_.instruction,
-                                reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
+                if (curContent != nullptr) {
+                    SetKeyValue(elementsObject, options_.instruction, curContent);
+                    xmlFree(reinterpret_cast<void*>(curContent));
                 }
                 prevObj_.push_back(elementsObject);
             }
             if (curNode->type == xmlElementType::XML_COMMENT_NODE && !options_.ignoreComment) {
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
-                if (xmlNodeGetContent(curNode) != nullptr) {
-                    SetKeyValue(elementsObject, options_.comment,
-                                reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
+                if (curContent != nullptr) {
+                    SetKeyValue(elementsObject, options_.comment, curContent);
+                    xmlFree(reinterpret_cast<void*>(curContent));
                 }
                 prevObj_.push_back(elementsObject);
             }
@@ -154,24 +156,25 @@ namespace OHOS::Xml {
 
     void ConvertXml::SetXmlElementType(xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const
     {
+        char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
         if (curNode->type == xmlElementType::XML_PI_NODE && !options_.ignoreInstruction) {
-            if (xmlNodeGetContent(curNode) != nullptr) {
-                SetKeyValue(elementsObject, options_.instruction.c_str(),
-                            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+            if (curContent != nullptr) {
+                SetKeyValue(elementsObject, options_.instruction.c_str(), curContent);
                 bFlag = true;
             }
         } else if (curNode->type == xmlElementType::XML_COMMENT_NODE && !options_.ignoreComment) {
-            if (xmlNodeGetContent(curNode) != nullptr) {
-                SetKeyValue(elementsObject, options_.comment.c_str(),
-                            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+            if (curContent != nullptr) {
+                SetKeyValue(elementsObject, options_.comment.c_str(), curContent);
                 bFlag = true;
             }
         } else if (curNode->type == xmlElementType::XML_CDATA_SECTION_NODE && !options_.ignoreCdata) {
-            if (xmlNodeGetContent(curNode) != nullptr) {
-                SetKeyValue(elementsObject, options_.cdata,
-                            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+            if (curContent != nullptr) {
+                SetKeyValue(elementsObject, options_.cdata, curContent);
                 bFlag = true;
             }
+        }
+        if (curContent != nullptr) {
+            xmlFree(reinterpret_cast<void*>(curContent));
         }
     }
     void ConvertXml::SetNodeInfo(xmlNodePtr curNode, const napi_value &elementsObject) const
@@ -203,16 +206,19 @@ namespace OHOS::Xml {
                         reinterpret_cast<const char*>(curNode->name));
             bFlag = true;
         } else if (curNode->type == xmlElementType::XML_TEXT_NODE) {
+            char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
             if (options_.trim) {
-                if (xmlNodeGetContent(curNode) != nullptr) {
+                if (curContent != nullptr) {
                     SetKeyValue(elementsObject, options_.text,
-                                Trim(reinterpret_cast<const char*>(xmlNodeGetContent(curNode))));
+                                Trim(curContent));
                 }
             } else {
-                if (xmlNodeGetContent(curNode) != nullptr) {
-                    SetKeyValue(elementsObject, options_.text,
-                                reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                if (curContent != nullptr) {
+                    SetKeyValue(elementsObject, options_.text, curContent);
                 }
+            }
+            if (curContent != nullptr) {
+                xmlFree(reinterpret_cast<void*>(curContent));
             }
             if (!options_.ignoreText) {
                 bFlag = true;
@@ -250,7 +256,8 @@ namespace OHOS::Xml {
             napi_create_array(env_, &tempElement);
             napi_value elementObj = nullptr;
             napi_create_object(env_, &elementObj);
-            if (xmlNodeGetContent(pNode) != nullptr) {
+            char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(pNode));
+            if (curContent != nullptr) {
                 if (pNode->children != nullptr) {
                     curNode = pNode->children;
                     GetXMLInfo(curNode, elementsObject, 1);
@@ -259,6 +266,7 @@ namespace OHOS::Xml {
                     SetXmlElementType(pNode, elementsObject, bFlag);
                     SetEndInfo(pNode, elementsObject, bFlag);
                 }
+                xmlFree(reinterpret_cast<void*>(curContent));
             }
             SetPrevInfo(recvElement, flag, index1);
             if (elementsObject != nullptr && bFlag) {
@@ -579,8 +587,9 @@ namespace OHOS::Xml {
         if (bCData && curNode->type == xmlElementType::XML_CDATA_SECTION_NODE &&
             curNode->next && curNode->next->type == xmlElementType::XML_TEXT_NODE &&
             curNode->next->next && curNode->next->next->type == xmlElementType::XML_CDATA_SECTION_NODE) {
-                if (xmlNodeGetContent(curNode->next) != nullptr) {
-                    std::string strTemp = reinterpret_cast<char*>(xmlNodeGetContent(curNode->next));
+                char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode->next));
+                if (curContent != nullptr) {
+                    std::string strTemp = reinterpret_cast<char*>(curContent);
                     Replace(strTemp, " ", "");
                     Replace(strTemp, "\v", "");
                     Replace(strTemp, "\t", "");
@@ -588,6 +597,7 @@ namespace OHOS::Xml {
                     if (strTemp == "") {
                         curNode = curNode->next->next;
                     }
+                    xmlFree(reinterpret_cast<void*>(curContent));
                 }
             } else {
                 curNode = curNode->next;
