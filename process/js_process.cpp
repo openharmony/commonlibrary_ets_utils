@@ -148,7 +148,7 @@ namespace OHOS::Js_sys_module::Process {
         }
     }
 
-    napi_value Process::Kill(napi_value proid, napi_value signal)
+    napi_value Process::Kill(napi_value signal, napi_value proid)
     {
         int32_t pid = 0;
         int32_t sig = 0;

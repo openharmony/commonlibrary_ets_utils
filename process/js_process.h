@@ -39,7 +39,7 @@ namespace OHOS::Js_sys_module::Process {
         napi_value GetPpid() const;
         void Chdir(napi_value args) const;
         napi_value Uptime() const;
-        napi_value Kill(napi_value proid, napi_value signal);
+        napi_value Kill(napi_value signal, napi_value proid);
         void Abort() const;
         void On(napi_value str, napi_value function);
         napi_value Off(napi_value str);
