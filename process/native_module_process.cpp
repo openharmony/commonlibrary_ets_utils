@@ -523,7 +523,7 @@ namespace OHOS::Js_sys_module::Process {
             DECLARE_NAPI_FUNCTION("exit", Exit),
             DECLARE_NAPI_GETTER("tid", GetTid),
             DECLARE_NAPI_FUNCTION("getStartRealtime", GetStartRealtime),
-            DECLARE_NAPI_FUNCTION("getPastCputime",  GetPastCputime),
+            DECLARE_NAPI_FUNCTION("getPastCpuTime",  GetPastCputime),
             DECLARE_NAPI_FUNCTION("isIsolatedProcess", IsIsolatedProcess),
             DECLARE_NAPI_FUNCTION("is64Bit", Is64Bit),
             DECLARE_NAPI_FUNCTION("isAppUid", IsAppUid),
