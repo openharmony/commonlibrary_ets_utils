@@ -12,16 +12,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-declare function requireInternal(s : string) : any;
+
+interface HelpUtil{
+    TextEncoder : Object;
+    TextDecoder : Object;
+    Base64 : Object;
+    Types : Object;
+    dealwithformatstring(formatString : string | Array<string | number | Fn>) : string;
+    printf(formatString : string | Array<string | number | Fn>,
+           ...valueString : Array<Object>) : string;
+    getErrorString(errnum : number) : string;
+    createExternalType() : Object;
+}
+
+interface Fn{
+    () : void;
+}
+declare function requireInternal(s : string) : HelpUtil;
 const helpUtil = requireInternal('util');
 let TextEncoder = helpUtil.TextEncoder;
 let TextDecoder = helpUtil.TextDecoder;
 let Base64 = helpUtil.Base64;
 let Types = helpUtil.Types;
-
-function switchLittleObject(enter : string, obj : any, count : number)
+function switchLittleObject(enter : string, obj : Object, count : number) : string | Object
 {
-    var str = '';
+    var str : string = '';
     if (obj === null) {
         str += obj;
     } else if (obj instanceof Array) {
@@ -33,8 +48,8 @@ function switchLittleObject(enter : string, obj : any, count : number)
             + '[prototype]: ' + obj.name + ' { [constructor]: [Circular] } }';
     } else if (typeof obj === 'object') {
         str += '{ ';
-        let i;
-        let flag = false;
+        let i : string;
+        let flag : boolean = false;
         for (i in obj) {
             flag = true;
             str += switchLittleValue(enter, i, obj, count);
@@ -52,9 +67,9 @@ function switchLittleObject(enter : string, obj : any, count : number)
     return str;
 }
 
-function switchLittleValue(enter : string, protoName : any, obj : any, count : number)
+function switchLittleValue(enter : string, protoName : string, obj : Object, count : number) : string
 {
-    var str = '';
+    var str : string = '';
     if (obj[protoName] === null) {
         str += protoName + ': null,' + enter;
     } else if (obj[protoName] instanceof Array) {
@@ -69,7 +84,7 @@ function switchLittleValue(enter : string, protoName : any, obj : any, count : n
             str += switchLittleObject(enter + '  ', obj[protoName], count + 1) + ',' + enter;
         }
     } else if (typeof obj[protoName] === 'function') {
-        var space = enter;
+        var space : string= enter;
         if (obj[protoName].name !== '') {
             str += obj[protoName].name + ':' + space;
         }
@@ -86,53 +101,53 @@ function switchLittleValue(enter : string, protoName : any, obj : any, count : n
             str += protoName + ': ' + obj[protoName] + ',' + enter;
         }
     }
-    return str;
+    return str; 
 }
 
-function arrayToString(enter : string, arr : any, count : number)
+function arrayToString(enter : string, arr : Array<string | number | Fn>, count : number) : string
 {
-    var str = '';
+    var str : string = '';
     if (!arr.length) {
         return '';
     }
-    var arrayEnter = ', ';
+    var arrayEnter : string = ', ';
     for (let k in arr) {
         if (arr[k] !== null && (typeof arr[k] === 'function' || typeof arr[k] === 'object') && count <= 2) {
             arrayEnter += enter;
             break;
         }
     }
-    for (let i in arr) {
-        if (typeof arr[i] === 'string') {
-            str += '\'' + arr[i].toString() + '\'' + arrayEnter;
-        } else if (typeof arr[i] === 'object') {
-            str += switchLittleObject(enter + '  ', arr[i], count + 1);
+    for (let i of arr) {
+        if (typeof i === 'string') {
+            str += '\'' + i.toString() + '\'' + arrayEnter;
+        } else if (typeof i === 'object') {
+            str += switchLittleObject(enter + '  ', i, count + 1);
             str += arrayEnter;
-        } else if (typeof arr[i] === 'function') {
-            var space = enter;
+        } else if (typeof i === 'function') {
+            var space : string = enter;
             space += '  ';
-            var end = '';
-            if (arr[i].name !== '') {
-                str += '{ [Function: ' + arr[i].name + ']' + space;
-                end = arr[i].name + ' { [constructor]: [Circular] } }' + arrayEnter;
+            var end : string = '';
+            if (i.name !== '') {
+                str += '{ [Function: ' + i.name + ']' + space;
+                end = i.name + ' { [constructor]: [Circular] } }' + arrayEnter;
             } else {
                 str += '{ [Function]' + space;
                 end = '{ [constructor]: [Circular] } }' + arrayEnter;
             }
             str += '[length]: '
-                + arr[i].length + ',' + space
-                + '[name] :\'' + arr[i].name + '\',' + space
+                + i.length + ',' + space
+                + '[name] :\'' + i.name + '\',' + space
                 + '[prototype]: ' + end;
         } else {
-            str += arr[i] + arrayEnter;
+            str += i + arrayEnter;
         }
     }
     return str;
 }
 
-function switchBigObject(enter : string, obj : any, count : number)
+function switchBigObject(enter : string, obj : Object, count : number) : string | Object
 {
-    var str = '';
+    var str : string = '';
     if (obj === null) {
         str += obj;
     } else if (obj instanceof Array) {
@@ -141,8 +156,8 @@ function switchBigObject(enter : string, obj : any, count : number)
         str += '{ [Function: ' + obj.name + '] }';
     } else if (typeof obj === 'object') {
         str += '{ ';
-        let i;
-        let flag = false;
+        let i : string;
+        let flag : boolean = false;
         for (i in obj) {
             flag = true;
             str += switchBigValue(enter, i, obj, count);
@@ -160,9 +175,9 @@ function switchBigObject(enter : string, obj : any, count : number)
     return str;
 }
 
-function switchBigValue(enter : string, protoName : any, obj : any, count : number)
+function switchBigValue(enter : string, protoName : string, obj : Object, count : number) : string
 {
-    var str = '';
+    var str : string = '';
     if (obj[protoName] === null) {
         str += protoName + ': null,' + enter;
     } else if (obj[protoName] instanceof Array) {
@@ -189,44 +204,42 @@ function switchBigValue(enter : string, protoName : any, obj : any, count : numb
     }
     return str;
 }
-
-function arrayToBigString(enter : string, arr : any, count : number)
+function arrayToBigString(enter : string, arr : Array<string | number | Fn>, count : number) : string
 {
-    var str = '';
+    var str : string = '';
     if (!arr.length) {
         return '';
     }
 
     var arrayEnter = ', ';
-    for (let i in arr) {
-        if (arr[i] !== null && (typeof arr[i] === 'object') && count <= 2) {
+    for (let i of arr) {
+        if (i !== null && (typeof i === 'object') && count <= 2) {
             arrayEnter += enter;
             break;
         }
     }
-    for (let j in arr) {
-        if (typeof arr[j] === 'string') {
-            str += '\'' + arr[j] + '\'' + arrayEnter;
-        } else if (typeof arr[j] === 'object') {
-            str += switchBigObject(enter + '  ', arr[j], count + 1);
+    for (let j of arr) {
+        if (typeof j === 'string') {
+            str += '\'' + j + '\'' + arrayEnter;
+        } else if (typeof j === 'object') {
+            str += switchBigObject(enter + '  ', j, count + 1);
             str += arrayEnter;
-        } else if (typeof arr[j] === 'function') {
-            if (arr[j].name !== '') {
-                str += '[Function: ' + arr[j].name + ']' + arrayEnter;
+        } else if (typeof j === 'function') {
+            if (j.name !== '') {
+                str += '[Function: ' + j.name + ']' + arrayEnter;
             } else {
                 str += '[Function]' + arrayEnter;
             }
         } else {
-            str += arr[j] + arrayEnter;
+            str += j + arrayEnter;
         }
     }
     str = str.substr(0, str.length - arrayEnter.length);
     return str;
 }
-
-function switchIntValue(value : any)
+function switchIntValue(value : Object | symbol) : string
 {
-    var str = '';
+    var str : string = '';
     if (value === '') {
         str += 'NaN';
     } else if (typeof value === 'bigint') {
@@ -234,19 +247,19 @@ function switchIntValue(value : any)
     } else if (typeof value === 'symbol') {
         str += 'NaN';
     } else if (typeof value === 'number') {
-        str += parseInt(<any>value, 10); // 10:The function uses decimal.
+        str += parseInt(value.toString(), 10); // 10:The function uses decimal.
     } else if (value instanceof Array) {
         if (typeof value[0] === 'number') {
-            str += parseInt(<any>value[0], 10); // 10:The function uses decimal.
+            str += parseInt(value[0].toString(), 10); // 10:The function uses decimal.
         } else if (typeof value[0] === 'string') {
-            if (isNaN(<any>value[0])) {
+            if (isNaN(Number(value[0]))) {
                 str += 'NaN';
             } else {
                 str += parseInt(value[0], 10); // 10:The function uses decimal.
             }
         }
     } else if (typeof value === 'string') {
-        if (isNaN(<any>value)) {
+        if (isNaN(Number(value))) {
             str += 'NaN';
         } else {
             str += parseInt(value, 10); // 10:The function uses decimal.
@@ -256,10 +269,9 @@ function switchIntValue(value : any)
     }
     return str;
 }
-
-function switchFloatValue(value : any)
+function switchFloatValue(value : Object | symbol) : string
 {
-    var str = '';
+    var str : string = '';
     if (value === '') {
         str += 'NaN';
     } else if (typeof value === 'symbol') {
@@ -268,16 +280,16 @@ function switchFloatValue(value : any)
         str += value;
     } else if (value instanceof Array) {
         if (typeof value[0] === 'number') {
-            str += parseFloat(<any>value);
+            str += parseFloat(value.toString());
         } else if (typeof value[0] === 'string') {
-            if (isNaN(<any>value[0])) {
+            if (isNaN(Number(value[0]))) {
                 str += 'NaN';
             } else {
                 str += parseFloat(value[0]);
             }
         }
     } else if (typeof value === 'string') {
-        if (isNaN(<any>value)) {
+        if (isNaN(Number(value))) {
             str += 'NaN';
         } else {
             str += parseFloat(value);
@@ -290,9 +302,9 @@ function switchFloatValue(value : any)
     return str;
 }
 
-function switchNumberValue(value : any)
+function switchNumberValue(value : Object | symbol) : string
 {
-    var str = '';
+    var str : string = '';
     if (value === '') {
         str += '0';
     } else if (typeof value === 'symbol') {
@@ -302,7 +314,7 @@ function switchNumberValue(value : any)
     } else if (value instanceof Array) {
         str += 'NaN';
     } else if (typeof value === 'string') {
-        if (isNaN(<any>value)) {
+        if (isNaN(Number(value))) {
             str += 'NaN';
         } else {
             str += Number(value);
@@ -315,9 +327,9 @@ function switchNumberValue(value : any)
     return str;
 }
 
-function switchStringValue(value : any)
+function switchStringValue(value : Object | symbol) : string
 {
-    var str = '';
+    var str : string = '';
     if (typeof value === 'undefined') {
         str += 'undefined';
     } else if (typeof value === 'object') {
@@ -333,77 +345,84 @@ function switchStringValue(value : any)
     }
     return str;
 }
-
-function printf(formatString : any, ...valueString : any)
+//    printf(formatString : string | Array<string | number | Fn>, 
+//           ...valueString : Array<string | number | Fn | object>) : string;
+function printf(formatString : Array<string | number | Fn>, ...valueString : Array<Object>) : string
 {
-    var formats = helpUtil.dealwithformatstring(formatString);
-    var arr = [];
+    var formats : string = helpUtil.dealwithformatstring(formatString);
+    var arr : Array<Object>= [];
     arr = formats.split(' ');
-    var switchString = [];
-    var valueLength = valueString.length;
-    var arrLength = arr.length;
-    var i = 0;
-    for (; i < valueLength && i < arrLength; i++) {
-        if (arr[i] === 'o') {
-            switchString.push(switchLittleObject('\n  ', valueString[i], 1));
-        } else if (arr[i] === 'O') {
-            switchString.push(switchBigObject('\n  ', valueString[i], 1));
-        } else if (arr[i] === 'i') {
-            switchString.push(switchIntValue(valueString[i]));
-        } else if (arr[i] === 'j') {
-            switchString.push(JSON.stringify(valueString[i]));
-        } else if (arr[i] === 'd') {
-            switchString.push(switchNumberValue(valueString[i]));
-        } else if (arr[i] === 's') {
-            switchString.push(switchStringValue(valueString[i]));
-        } else if (arr[i] === 'f') {
-            switchString.push(switchFloatValue(valueString[i]));
-        } else if (arr[i] === 'c') {
-            switchString.push(valueString[i].toString());
+    var switchString : Array<Object>= [];
+    var valueLength : number = valueString.length;
+    var arrLength : number = arr.length;
+    var i : number= 0;
+    for (let sub of valueString) {
+        if (i >= arrLength) {
+            break;
         }
+        if (arr[i] === 'o') {
+            switchString.push(switchLittleObject('\n  ', sub, 1));
+        } else if (arr[i] === 'O') {
+            switchString.push(switchBigObject('\n  ', sub, 1));
+        } else if (arr[i] === 'i') {
+            switchString.push(switchIntValue(sub));
+        } else if (arr[i] === 'j') {
+            switchString.push(JSON.stringify(sub));
+        } else if (arr[i] === 'd') {
+            switchString.push(switchNumberValue(sub));
+        } else if (arr[i] === 's') {
+            switchString.push(switchStringValue(sub));
+        } else if (arr[i] === 'f') {
+            switchString.push(switchFloatValue(sub));
+        } else if (arr[i] === 'c') {
+            switchString.push(sub.toString());
+        }
+        ++i;
     }
     while (i < valueLength) {
         switchString.push(valueString[i].toString());
         i++;
     }
-    var helpUtilString = helpUtil.printf(formatString, ...switchString);
+    var helpUtilString : string = helpUtil.printf(formatString, ...switchString);
     return helpUtilString;
 }
 
-function getErrorString(errnum : number)
+function getErrorString(errnum : number) : string
 {
-    var errorString = helpUtil.geterrorstring(errnum);
+    var errorString : string = helpUtil.getErrorString(errnum);
     return errorString;
 }
 
-function createExternalType()
+function createExternalType() : Object
 {
-    var externalType = helpUtil.createExternalType();
+    var externalType : Object = helpUtil.createExternalType();
     return externalType;
 }
 
-function callbackified(original : any, ...args : any)
+function callbackified(original : Fn, ...args : Array<string | number | Fn>) : void
 {
     const maybeCb = args.pop();
     if (typeof maybeCb !== 'function') {
         throw new Error('maybe is not function');
     }
-    const cb = (...args : any) => {
+    const cb = (...args : Array<null>) => {
         Reflect.apply(maybeCb, this, args);
     };
-    Reflect.apply(original, this, args).then((ret : any) => cb(null, ret), (rej : any) => cb(rej));
+    Reflect.apply(original, this, args).then((ret : null) => cb(null, ret), (rej : null) => cb(rej));
 }
 
-function getOwnPropertyDescriptors(obj : any)
+function getOwnPropertyDescriptors(obj : Fn) : PropertyDescriptorMap
 {
-    const result : any = {};
-        for (let key of Reflect.ownKeys(obj)) {
-        result[key] = Object.getOwnPropertyDescriptor(obj, key);
+    const result : PropertyDescriptorMap = {};
+    for (let key of Reflect.ownKeys(obj)) {
+        if (typeof key === 'string') {
+            result[key] = Object.getOwnPropertyDescriptor(obj, key);
+        }
     }
     return result;
 }
 
-function callbackWrapper(original : any)
+function callbackWrapper(original : Fn) : void
 {
     if (typeof original !== 'function') {
         throw new Error('original is not function');
@@ -416,18 +435,17 @@ function callbackWrapper(original : any)
         descriptors.name.value += 'callbackified';
     }
 
-    function cb(...args : any) {
+    function cb(...args : Array<string | number | Fn>) {
         callbackified(original, ...args);
     }
     Object.defineProperties(cb, descriptors);
-    return cb;
 }
 
-function promiseWrapper(func : any) {
-    // promiseWrapper
-    return function (...args : any) {
+function promiseWrapper(func : Function) : Object
+{
+    return function (...args : Array<Object>) {
         return new Promise((resolve, reject) => {
-            let callback = function (err : any, ...values : any) {
+            let callback : Function = function (err : Object | string, ...values : Array<Object>) {
                 if (err) {
                     reject(err);
                 } else {
@@ -441,7 +459,7 @@ function promiseWrapper(func : any) {
 
 class LruBuffer
 {
-    private cache: Map<Object|undefined, Object|undefined>;
+    private cache: Map<Object | undefined, Object | undefined>;
     private maxSize : number = 64;
     private maxNumber : number = 2147483647;
     private putCount : number = 0;
@@ -461,7 +479,8 @@ class LruBuffer
         }
         this.cache = new Map();
     }
-    public updateCapacity(newCapacity : number)
+
+    public updateCapacity(newCapacity : number) : void
     {
         if (newCapacity <= 0 || newCapacity%1 !== 0 || newCapacity > this.maxNumber) {
             throw new Error('data error');
@@ -471,12 +490,13 @@ class LruBuffer
         this.length = this.cache.size;
         this.maxSize = newCapacity;
     }
-    public get(key : any)
+
+    public get(key : Object) : Object
     {
         if (key === null) {
             throw new Error('key not be null');
         }
-        let value;
+        let value : Object;
         if (this.cache.has(key)) {
             value = this.cache.get(key);
             this.hitCount++;
@@ -484,8 +504,9 @@ class LruBuffer
             this.cache.set(key, value);
             return value;
         }
+
         this.missCount++;
-        let createValue = this.createDefault(key);
+        let createValue : Object = this.createDefault(key);
         if (createValue === undefined) {
             return undefined;
         } else {
@@ -499,12 +520,13 @@ class LruBuffer
             return createValue;
         }
     }
-    public put(key : any, value : any)
+
+    public put(key : Object, value : Object) : Object
     {
         if (key === null || value === null) {
             throw new Error('key or value not be null');
         }
-        let former;
+        let former : Object;
         this.putCount++;
         if (this.cache.has(key)) {
             former = this.cache.get(key);
@@ -518,37 +540,45 @@ class LruBuffer
         this.length = this.cache.size;
         return former;
     }
-    public getCreateCount()
+
+    public getCreateCount() : number
     {
         return this.createCount;
     }
-    public getMissCount()
+
+    public getMissCount() : number
     {
         return this.missCount;
     }
-    public getRemovalCount()
+
+    public getRemovalCount() : number
     {
         return this.evictionCount;
     }
-    public getMatchCount()
+
+    public getMatchCount() : number
     {
         return this.hitCount;
     }
-    public getPutCount()
+
+    public getPutCount() : number
     {
         return this.putCount;
     }
-    public getCapacity()
+
+    public getCapacity() : number
     {
          return this.maxSize;
     }
-    public clear()
+
+    public clear() : void
     {
         this.cache.clear();
         this.afterRemoval(false, this.cache.keys(), this.cache.values(), null);
         this.length = this.cache.size;
     }
-    public isEmpty()
+
+    public isEmpty() :boolean
     {
         let temp : boolean = false;
         if (this.cache.size === 0) {
@@ -556,12 +586,13 @@ class LruBuffer
         }
         return temp;
     }
-    public contains(key : any)
+
+    public contains(key : Object) : boolean
     {
         let flag : boolean = false;
         if (this.cache.has(key)) {
             flag = true;
-            let value;
+            let value : Object;
             this.hitCount++;
             value = this.cache.get(key);
             this.cache.delete(key);
@@ -572,12 +603,13 @@ class LruBuffer
         this.missCount++;
         return flag;
     }
-    public remove(key : any)
+
+    public remove(key : Object) : Object
     {
         if (key === null) {
             throw new Error('key not be null');
         } else if (this.cache.has(key)) {
-            let former;
+            let former : Object;
             former = this.cache.get(key);
             this.cache.delete(key);
             if (former !== null) {
@@ -589,7 +621,8 @@ class LruBuffer
         this.length = this.cache.size;
         return undefined;
     }
-    public toString()
+
+    public toString() : string
     {
         let peek : number = 0;
         let hitRate : number = 0;
@@ -604,47 +637,47 @@ class LruBuffer
             + ', hitRate = ' + hitRate + '% ]';
         return str;
     }
-    public values()
+
+    public values() : Object[]
     {
-        let arr = [];
+        let arr : Array<Object> = [];
         for(let value of this.cache.values()) {
             arr.push(value);
         }
         return arr;
     }
-    public keys()
+
+    public keys() : Object[]
     {
-        let arr = [];
+        let arr : Array<Object> = [];
         for(let key of this.cache.keys()) {
             arr.push(key);
         }
         return arr;
     }
-    protected afterRemoval(isEvict : boolean, key : any, value : any, newValue : any)
+
+    protected afterRemoval(isEvict : boolean, key : Object | undefined | null, value : Object | undefined | null,
+                           newValue : Object | undefined | null) : void
     {
 
     }
-    protected createDefault(key : any)
+
+    protected createDefault(key : Object) : Object
     {
         return undefined;
     }
-    public entries()
+
+    public entries() : IterableIterator<[Object, Object]>
     {
-        let arr = [];
-        for (let entry of this.cache.entries()) {
-            arr.push(entry);
-        }
-        return arr;
+        return this.cache.entries();
     }
-    public [Symbol.iterator]()
+
+    public [Symbol.iterator] () : IterableIterator<[Object, Object]>
     {
-        let arr = [];
-        for (let [key, value] of this.cache) {
-            arr.push([key, value]);
-        }
-        return arr;
+        return this.cache.entries();
     }
-    private changeCapacity(newCapacity : number)
+
+    private changeCapacity(newCapacity : number) : void
     {
         while(this.cache.size >newCapacity) {
             this.cache.delete(this.cache.keys().next().value);
@@ -686,7 +719,7 @@ class RationalNumber
         }
     }
 
-    public createRationalFromString(str : string)
+    public createRationalFromString(str : string): RationalNumber
     {
         if (str == null) {
             throw new Error('string invalid!');
@@ -707,7 +740,7 @@ class RationalNumber
         return new RationalNumber(num1, num2);
     }
 
-    public compareTo(other : RationalNumber)
+    public compareTo(other : RationalNumber) : number
     {
         if (this.mnum == other.mnum && this.mden == other.mden) {
             return 0;
@@ -731,7 +764,7 @@ class RationalNumber
         }
     }
 
-    public equals(obj : object)
+    public equals(obj : object) :boolean
     {
         if (!(obj instanceof RationalNumber)) {
             return false;
@@ -753,7 +786,7 @@ class RationalNumber
         }
     }
 
-    public valueOf()
+    public valueOf() : number
     {
         if (this.mnum > 0 && this.mden == 0) {
             return Number.POSITIVE_INFINITY;
@@ -766,7 +799,7 @@ class RationalNumber
         }
     }
 
-    public getCommonDivisor(number1 : number, number2 : number)
+    public getCommonDivisor(number1 : number, number2 : number) : number
     {
         if (number1 == 0 || number2 == 0) {
             throw new Error("Parameter cannot be zero!");
@@ -785,32 +818,32 @@ class RationalNumber
         return number2;
     }
 
-    public getDenominator()
+    public getDenominator() :number
     {
         return this.mden;
     }
 
-    public getNumerator()
+    public getNumerator() : number
     {
         return this.mnum;
     }
 
-    public isFinite()
+    public isFinite() : boolean
     {
         return this.mden != 0;
     }
 
-    public isNaN()
+    public isNaN() : boolean
     {
         return this.mnum == 0 && this.mden == 0;
     }
 
-    public isZero()
+    public isZero() : boolean
     {
         return this.mnum == 0 && this.mden != 0;
     }
 
-    public toString()
+    public toString() : string
     {
         let buf : string;
         if (this.mnum == 0 && this.mden == 0) {
@@ -831,8 +864,8 @@ interface ScopeComparable {
 }
 
 type ScopeType = ScopeComparable;
-class Scope {
 
+class Scope {
     private readonly _lowerLimit: ScopeType;
     private readonly _upperLimit: ScopeType;
 
@@ -850,14 +883,18 @@ class Scope {
     public getLower(): ScopeType {
         return this._lowerLimit;
     }
-
+    
     public getUpper(): ScopeType {
         return this._upperLimit;
+    }
+    
+    public compareTo(): boolean {
+        return false;
     }
 
     public contains(value: ScopeType): boolean;
     public contains(scope: Scope): boolean;
-    public contains(x: any): boolean {
+    public contains(x: Scope|ScopeType): boolean {
         let resLower: boolean;
         let resUpper: boolean;
         this.checkNull(x, 'value must not be null');
@@ -885,7 +922,7 @@ class Scope {
 
     public intersect(scope: Scope): Scope;
     public intersect(lowerObj: ScopeType, upperObj: ScopeType): Scope;
-    public intersect(x: any, y?: any): Scope {
+    public intersect(x: Scope, y?: Scope|ScopeType): Scope {
         let reLower: boolean;
         let reUpper: boolean;
         let mLower: ScopeType;
@@ -922,7 +959,7 @@ class Scope {
     public expand(obj: ScopeType): Scope;
     public expand(scope: Scope): Scope;
     public expand(lowerObj: ScopeType, upperObj: ScopeType): Scope;
-    public expand(x: any, y?: any): Scope {
+    public expand(x: ScopeType, y?: ScopeType): Scope {
         let reLower: boolean;
         let reUpper: boolean;
         let mLower: ScopeType;
@@ -933,35 +970,35 @@ class Scope {
                 this.checkNull(x, 'value must not be null');
                 return this.expand(x, x);
             }
-
-            let reLower = x._lowerLimit.compareTo(this._lowerLimit);
-            let reUpper = this._upperLimit.compareTo(x._upperLimit);
+            reLower = x._lowerLimit.compareTo(this._lowerLimit);
+            reUpper = this._upperLimit.compareTo(x._upperLimit);
             if (reLower && reUpper) {
                  return this;
             } else if (!reLower && !reUpper) {
                  return x;
             } else {
-                let mLower = reLower ? this._lowerLimit : x._lowerLimit;
-                let mUpper = reUpper ? this._upperLimit : x._upperLimit;
+                mLower = reLower ? this._lowerLimit : x._lowerLimit;
+                mUpper = reUpper ? this._upperLimit : x._upperLimit;
                 return new Scope(mLower, mUpper);
             }
+
         } else {
             this.checkNull(x, 'lower limit must not be null');
             this.checkNull(y, "upper limit must not be null");
-            let reLower = x.compareTo(this._lowerLimit);
-            let reUpper = this._upperLimit.compareTo(y);
+            reLower = x.compareTo(this._lowerLimit);
+            reUpper = this._upperLimit.compareTo(y);
             if (reLower && reUpper) {
                 return this;
             }
-            let mLower = reLower ? this._lowerLimit : x;
-            let mUpper = reUpper ? this._upperLimit : y;
+            mLower = reLower ? this._lowerLimit : x;
+            mUpper = reUpper ? this._upperLimit : y;
             return new Scope(mLower, mUpper);
         }
     }
 
     public toString(): string {
-        let strLower = this._lowerLimit.toString();
-        let strUpper = this._upperLimit.toString();
+        let strLower : string = this._lowerLimit.toString();
+        let strUpper : string = this._upperLimit.toString();
         return `[${strLower}, ${strUpper}]`;
     }
 
