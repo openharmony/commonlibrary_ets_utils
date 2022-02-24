@@ -1702,7 +1702,7 @@ namespace OHOS::Url {
     }
     std::string URLSearchParams::ToUSVString(std::string inputStr)
     {
-        std::wstring winput = L"";
+        std::wstring winput(inputStr.length() * 2, L' ');
         std::copy(inputStr.begin(), inputStr.end(), winput.begin());
         const char *expr = "(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])";
         size_t exprLen = strlen(expr);
