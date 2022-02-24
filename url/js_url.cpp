@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 #include "js_url.h"
-#include <cctype>
 #include <regex>
 #include <sstream>
 #include "securec.h"
+#include "unicode/stringpiece.h"
+#include "unicode/unistr.h"
 #include "utils/log.h"
 namespace OHOS::Url {
     std::map<std::string, int> g_head = {
@@ -1586,27 +1587,6 @@ namespace OHOS::Url {
 
     URLSearchParams::URLSearchParams(napi_env env) : env(env)
     {}
-    std::wstring StrToWstr(const std::string& str)
-    {
-        char *p = setlocale(LC_ALL, "");
-        if (p == nullptr) {
-            return L"";
-        }
-        std::wstring wstr = L"";
-        size_t len = str.size() + 1;
-        if (len > 0) {
-            auto wch = new wchar_t[len];
-            mbstowcs(wch, str.c_str(), len);
-            wstr = wch;
-            delete[] wch;
-            p = setlocale(LC_ALL, "");
-            if (p == nullptr) {
-            return L"";
-            }
-            return wstr;
-        }
-        return wstr;
-    }
 
     bool IsEscapeRange(const char ch)
     {
@@ -1617,19 +1597,11 @@ namespace OHOS::Url {
         return false;
     }
 
-    size_t CharToUnicode(std::string str, size_t &i)
-    {
-        size_t bytOfSpeChar = 3; // 3:Bytes of special characters in Linux
-        std::string subStr = str.substr(i, bytOfSpeChar);
-        i += 2; // 2:Searching for the number and number of keys and values
-        std::wstring wstr = StrToWstr(subStr.c_str());
-        wchar_t wch = wstr[0];
-        auto charaEncode = static_cast<size_t>(wch);
-        return charaEncode;
-    }
     std::string ReviseStr(std::string str, std::string *reviseChar)
     {
-        const size_t lenStr = str.length();
+        icu::StringPiece sp(str.c_str());
+        icu::UnicodeString wstr = icu::UnicodeString::fromUTF8(sp);
+        const size_t lenStr = wstr.length();
         if (lenStr == 0) {
             return "";
         }
@@ -1637,10 +1609,7 @@ namespace OHOS::Url {
         size_t numOfAscii = 128; // 128:Number of ASCII characters
         size_t i = 0;
         for (; i < lenStr; i++) {
-            auto charaEncode = static_cast<size_t>(str[i]);
-            if (charaEncode < 0 || charaEncode >= numOfAscii) {
-                charaEncode = CharToUnicode(str, i);
-            }
+            auto charaEncode = static_cast<size_t>(wstr[i]);
             if (charaEncode >= 0 && charaEncode < numOfAscii) {
                 // 2:Defines the escape range of ASCII characters
                 if (IsEscapeRange(charaEncode)) {
@@ -1733,15 +1702,8 @@ namespace OHOS::Url {
     }
     std::string URLSearchParams::ToUSVString(std::string inputStr)
     {
-        size_t strLen = strlen(inputStr.c_str());
-        wchar_t *strPtr = nullptr;
-        std::wstring winput = L"";
-        size_t strSize = mbstowcs(strPtr, inputStr.c_str(), 0) + 1;
-        if (strSize > 0) {
-            strPtr = new wchar_t[strSize];
-            mbstowcs(strPtr, inputStr.c_str(), strLen);
-            winput = strPtr;
-        }
+        std::wstring winput(inputStr.length(), L' ');
+        std::copy(inputStr.begin(), inputStr.end(), winput.begin());
         const char *expr = "(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])";
         size_t exprLen = strlen(expr);
         wchar_t *exprPtr = nullptr;
@@ -1753,7 +1715,6 @@ namespace OHOS::Url {
         std::wregex wexpr(exprPtr);
         delete[] exprPtr;
         std::wsmatch result;
-        delete[] strPtr;
         std::wstring::const_iterator iterStart = winput.begin();
         std::wstring::const_iterator iterEnd = winput.end();
         if (!regex_search(iterStart, iterEnd, result, wexpr)) {
