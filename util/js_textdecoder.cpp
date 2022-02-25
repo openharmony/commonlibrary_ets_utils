@@ -62,7 +62,7 @@ namespace OHOS::Util {
     napi_value TextDecoder::Decode(napi_value src, bool iflag)
     {
         uint32_t flags = 0;
-        flags |= iflag ? 0 : static_cast<uint32_t>(ConverterFlags::FLUSH_FLG);
+        flags |= (iflag ? 0 : static_cast<uint32_t>(ConverterFlags::FLUSH_FLG));
         UBool flush = ((flags & static_cast<uint32_t>(ConverterFlags::FLUSH_FLG))) ==
         static_cast<uint32_t>(ConverterFlags::FLUSH_FLG);
         napi_typedarray_type type;
