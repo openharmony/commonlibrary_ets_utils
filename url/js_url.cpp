@@ -701,7 +701,13 @@ namespace OHOS::Url {
     {
         std::vector<std::string> temp;
         size_t pos = 0;
-        while (((pos = input.find('/')) != std::string::npos) || ((pos = input.find('\\')) != std::string::npos)) {
+        while (input.find('/') != std::string::npos) {
+            pos = input.find('/');
+            temp.push_back(input.substr(0, pos));
+            input = input.substr(pos + 1);
+        }
+        while (input.find('/') == std::string::npos && input.find('\\') != std::string::npos) {
+            pos = input.find('\\');
             temp.push_back(input.substr(0, pos));
             input = input.substr(pos + 1);
         }
@@ -769,9 +775,12 @@ namespace OHOS::Url {
                 ((pos = temp.find('\\')) != std::string::npos)) && pos == 0) {
                 temp = temp.substr(1);
                 AnalysisFilePath(temp, urlinfo, flags);
-            } else if ((((pos = temp.find('/')) != std::string::npos) ||
-                ((pos = temp.find('\\')) != std::string::npos)) && pos != 0) {
-                    AnalysisSpecialFile(temp, pos, urlinfo, flags);
+            } else if ((temp.find('/') != std::string::npos) && pos != 0) {
+                pos = temp.find('/');
+                AnalysisSpecialFile(temp, pos, urlinfo, flags);
+            } else if (temp.find('\\') != std::string::npos && pos != 0) {
+                pos = temp.find('\\');
+                AnalysisSpecialFile(temp, pos, urlinfo, flags);
             } else {
                 if (!temp.empty() && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
                     AnalysisHost(temp, urlinfo.host, flags, special);
@@ -813,7 +822,8 @@ namespace OHOS::Url {
         UrlData& urlinfo)
     {
         size_t pos = 0;
-        if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos) {
+        if (strHost[strHost.size() - 1] != ']' && (strHost.find_last_of(':') != std::string::npos)) {
+            pos = strHost.find_last_of(':');
             std::string port = strHost.substr(pos + 1);
             strHost = strHost.substr(0, pos);
             AnalysisPort(port, urlinfo, flags);
@@ -865,8 +875,9 @@ namespace OHOS::Url {
                     strHost = strHost.substr(0, pos);
                     AnalysisPort(port, urlinfo, flags);
                 }
-                if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
+                if (strHost[strHost.size() - 1] != ']' && strHost.find_last_of(':') != std::string::npos &&
                     flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
+                    pos = strHost.find_last_of(':');
                     return;
                 }
                 AnalysisHost(strHost, urlinfo.host, flags, special);
@@ -953,8 +964,9 @@ namespace OHOS::Url {
                     strHost = strHost.substr(0, pos);
                     AnalysisPort(port, urlinfo, flags);
                 }
-                if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
+                if (strHost[strHost.size() - 1] != ']' && strHost.find_last_of(':') != std::string::npos &&
                     flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
+                    pos = strHost.find_last_of(':');
                     return;
                 }
                 AnalysisHost(strHost, urlinfo.host, flags, special);
@@ -1601,7 +1613,7 @@ namespace OHOS::Url {
     {
         icu::StringPiece sp(str.c_str());
         icu::UnicodeString wstr = icu::UnicodeString::fromUTF8(sp);
-        const size_t lenStr = wstr.length();
+        const size_t lenStr = static_cast<size_t>(wstr.length());
         if (lenStr == 0) {
             return "";
         }
@@ -1853,7 +1865,6 @@ namespace OHOS::Url {
         for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             napi_value result = nullptr;
             napi_create_array(env, &result);
-
             napi_create_string_utf8(env, searchParams[i].c_str(), searchParams[i].length(), &firNapiStr);
             napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &secNapiStr);
             napi_set_element(env, result, 0, firNapiStr);
@@ -1886,6 +1897,7 @@ namespace OHOS::Url {
             if (searchParams[i] == buf) {
                 flag = true;
                 napi_get_boolean(env, flag, &result);
+                delete []buffer;
                 return result;
             }
         }

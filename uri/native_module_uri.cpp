@@ -48,7 +48,7 @@ namespace OHOS::Uri {
                     delete [] type;
                     return nullptr;
                 }
-                NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+                napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
                 input = type;
                 delete[] type;
             }
