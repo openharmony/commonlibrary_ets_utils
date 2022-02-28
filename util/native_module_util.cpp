@@ -33,6 +33,9 @@ extern const char _binary_util_abc_end[];
 namespace OHOS::Util {
     static char* ApplyMemory(const size_t length)
     {
+        if (length <= 0) {
+            return nullptr;
+        }
         char *type = new char[length + 1];
         if (memset_s(type, length + 1, '\0', length + 1) != 0) {
                 HILOG_ERROR("type memset_s failed");
@@ -124,22 +127,30 @@ namespace OHOS::Util {
         size_t argc = 0;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         napi_value *argv = nullptr;
-        NAPI_ASSERT(env, argc > 0, "argc == 0");
-        argv = new napi_value[argc + 1];
-        if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
-            HILOG_ERROR("argv memset error");
-            delete []argv;
+        if (argc > 0) {
+            argv = new napi_value[argc + 1];
+            if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
+                HILOG_ERROR("argv memset error");
+                delete []argv;
+                return nullptr;
+            }
+        } else {
             return nullptr;
         }
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
         char *format = nullptr;
         size_t formatsize = 0;
         napi_get_value_string_utf8(env, argv[0], nullptr, 0, &formatsize);
-        NAPI_ASSERT(env, formatsize > 0, "formatsize == 0");
-        format = new char[formatsize + 1];
-        if (memset_s(format, formatsize + 1, 0, formatsize + 1) != 0) {
-            HILOG_ERROR("format memset error");
-            delete []format;
+        if (formatsize > 0) {
+            format = new char[formatsize + 1];
+            if (memset_s(format, formatsize + 1, 0, formatsize + 1) != 0) {
+                HILOG_ERROR("format memset error");
+                delete []format;
+                delete []argv;
+                return nullptr;
+            }
+        } else {
+            delete []argv;
             return nullptr;
         }
         napi_get_value_string_utf8(env, argv[0], format, formatsize + 1, &formatsize);
