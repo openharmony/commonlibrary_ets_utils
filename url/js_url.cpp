@@ -243,7 +243,7 @@ namespace OHOS::Url {
         size_t pos = 0;
         while (((pos = input.find('/')) != std::string::npos) ||
             (input.find('\\') != std::string::npos && isSpecial)) {
-            if (input.find('\\') != std::string::npos && isSpecial) {
+            if (input.find('/') == std::string::npos) {
                 pos = input.find('\\');
             }
             temp.push_back(input.substr(0, pos));
@@ -705,7 +705,7 @@ namespace OHOS::Url {
         std::vector<std::string> temp;
         size_t pos = 0;
         while ((pos = input.find('/') != std::string::npos) || (input.find('\\') != std::string::npos)) {
-            if (input.find('\\') != std::string::npos) {
+            if (input.find('/') == std::string::npos) {
                 pos = input.find('\\');
             }
             temp.push_back(input.substr(0, pos));
