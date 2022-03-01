@@ -241,8 +241,14 @@ namespace OHOS::Url {
     {
         std::vector<std::string> temp;
         size_t pos = 0;
-        while (((pos = input.find('/')) != std::string::npos) ||
-            ((pos = input.find('\\')) != std::string::npos && isSpecial)) {
+        while (input.find('/') != std::string::npos) {
+            pos = input.find('/');
+            temp.push_back(input.substr(0, pos));
+            input = input.substr(pos + 1);
+        }
+        while ((input.find('/') == std::string::npos) &&
+            (input.find('\\') != std::string::npos && isSpecial)) {
+            pos = input.find('\\');
             temp.push_back(input.substr(0, pos));
             input = input.substr(pos + 1);
         }
@@ -771,8 +777,13 @@ namespace OHOS::Url {
         if ((input[0] == '/' || input[0] == '\\') && (input[1] == '/' || input[1] == '\\')) {
             std::string temp = input.substr(2); // 2:Intercept from 2 subscripts
             size_t pos = 0;
-            if ((((pos = temp.find('/')) != std::string::npos) ||
-                ((pos = temp.find('\\')) != std::string::npos)) && pos == 0) {
+            if (temp.find('/') != std::string::npos && pos == 0) {
+                pos = temp.find('/');
+                temp = temp.substr(1);
+                AnalysisFilePath(temp, urlinfo, flags);
+            } else if ((((pos = temp.find('/')) == std::string::npos) ||
+                (temp.find('\\') != std::string::npos)) && pos == 0) {
+                pos = temp.find('\\');
                 temp = temp.substr(1);
                 AnalysisFilePath(temp, urlinfo, flags);
             } else if ((temp.find('/') != std::string::npos) && pos != 0) {
