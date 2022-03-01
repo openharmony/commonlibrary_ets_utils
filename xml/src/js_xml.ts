@@ -45,8 +45,7 @@ class XmlSerializer {
             throw new Error("input type err");
         }
         if (arguments.length === 1) {
-            let str = 'utf-8';
-            this.xmlSerializerClass = new XML.XmlSerializer(arguments[0], str);
+            this.xmlSerializerClass = new XML.XmlSerializer(arguments[0], 'utf-8');
         } else if (arguments.length === 2 && (typeof arguments[1] === 'string' && arguments[1].length !== 0)) {
             var strTemp = arguments[1];
             if (strTemp.toLowerCase() !== 'utf-8') {
