@@ -241,14 +241,11 @@ namespace OHOS::Url {
     {
         std::vector<std::string> temp;
         size_t pos = 0;
-        while (input.find('/') != std::string::npos) {
-            pos = input.find('/');
-            temp.push_back(input.substr(0, pos));
-            input = input.substr(pos + 1);
-        }
-        while ((input.find('/') == std::string::npos) &&
+        while (((pos = input.find('/')) != std::string::npos) ||
             (input.find('\\') != std::string::npos && isSpecial)) {
-            pos = input.find('\\');
+            if (input.find('\\') != std::string::npos && isSpecial) {
+                pos = input.find('\\');
+            }
             temp.push_back(input.substr(0, pos));
             input = input.substr(pos + 1);
         }
@@ -707,13 +704,10 @@ namespace OHOS::Url {
     {
         std::vector<std::string> temp;
         size_t pos = 0;
-        while (input.find('/') != std::string::npos) {
-            pos = input.find('/');
-            temp.push_back(input.substr(0, pos));
-            input = input.substr(pos + 1);
-        }
-        while (input.find('/') == std::string::npos && input.find('\\') != std::string::npos) {
-            pos = input.find('\\');
+        while ((pos = input.find('/') != std::string::npos) || (input.find('\\') != std::string::npos)) {
+            if (input.find('\\') != std::string::npos) {
+                pos = input.find('\\');
+            }
             temp.push_back(input.substr(0, pos));
             input = input.substr(pos + 1);
         }
