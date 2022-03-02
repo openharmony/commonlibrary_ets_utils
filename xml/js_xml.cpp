@@ -680,13 +680,8 @@ namespace OHOS::xml {
                 position_++;
                 continue;
             }
-            if (result == "") {
-                result.append(strXml_, start, position_ - start);
-                return result;
-            } else {
-                result.append(strXml_, start, position_ - start);
-                return result;
-            }
+            result.append(strXml_, start, position_ - start);
+            return result;
         }
     }
 
@@ -1033,8 +1028,6 @@ namespace OHOS::xml {
             if (delimiter != ' ' && PriorDealChar() == delimiter) {
                 position_++;
             }
-        } else if (relaxed) {
-            attributes[i + 3] = attrName; // 3: number of args
         } else {
             attributes[i + 3] = attrName; // 3: number of args
         }
