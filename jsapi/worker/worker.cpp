@@ -77,6 +77,7 @@ void CallWorkCallback(napi_env env, napi_value recv, size_t argc, const napi_val
 bool Worker::PrepareForWorkerInstance()
 {
     std::vector<uint8_t> scriptContent;
+    std::string workerAmi;
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop()) {
@@ -95,14 +96,14 @@ bool Worker::PrepareForWorkerInstance()
             return false;
         }
         // 3. get uril content
-        if (!hostEngine->CallGetAssetFunc(script_, scriptContent)) {
+        if (!hostEngine->CallGetAssetFunc(script_, scriptContent, workerAmi)) {
             HILOG_ERROR("worker:: CallGetAssetFunc error");
             return false;
         }
     }
     HILOG_INFO("worker:: stringContent size is %{public}zu", scriptContent.size());
     napi_value execScriptResult = nullptr;
-    napi_run_buffer_script(workerEnv_, scriptContent, &execScriptResult);
+    napi_run_actor(workerEnv_, scriptContent, workerAmi.c_str(), &execScriptResult);
     if (execScriptResult == nullptr) {
         // An exception occurred when running the script.
         HILOG_ERROR("worker:: run script exception occurs, will handle exception");
