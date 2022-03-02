@@ -242,10 +242,7 @@ namespace OHOS::Url {
         std::vector<std::string> temp;
         size_t pos = 0;
         while (((pos = input.find('/')) != std::string::npos) ||
-            (input.find('\\') != std::string::npos && isSpecial)) {
-            if (input.find('/') == std::string::npos) {
-                pos = input.find('\\');
-            }
+            ((pos = input.find('\\')) != std::string::npos && isSpecial)) {
             temp.push_back(input.substr(0, pos));
             input = input.substr(pos + 1);
         }
@@ -704,10 +701,7 @@ namespace OHOS::Url {
     {
         std::vector<std::string> temp;
         size_t pos = 0;
-        while ((pos = input.find('/') != std::string::npos) || (input.find('\\') != std::string::npos)) {
-            if (input.find('/') == std::string::npos) {
-                pos = input.find('\\');
-            }
+        while (((pos = input.find('/')) != std::string::npos) || ((pos = input.find('\\')) != std::string::npos)) {
             temp.push_back(input.substr(0, pos));
             input = input.substr(pos + 1);
         }
@@ -771,20 +765,12 @@ namespace OHOS::Url {
         if ((input[0] == '/' || input[0] == '\\') && (input[1] == '/' || input[1] == '\\')) {
             std::string temp = input.substr(2); // 2:Intercept from 2 subscripts
             size_t pos = 0;
-            if (temp.find('/') != std::string::npos && pos == 0) {
-                pos = temp.find('/');
+            if ((((pos = temp.find('/')) != std::string::npos) ||
+                ((pos = temp.find('\\')) != std::string::npos)) && pos == 0) {
                 temp = temp.substr(1);
                 AnalysisFilePath(temp, urlinfo, flags);
-            } else if ((((pos = temp.find('/')) == std::string::npos) ||
-                (temp.find('\\') != std::string::npos)) && pos == 0) {
-                pos = temp.find('\\');
-                temp = temp.substr(1);
-                AnalysisFilePath(temp, urlinfo, flags);
-            } else if ((temp.find('/') != std::string::npos) && pos != 0) {
-                pos = temp.find('/');
-                AnalysisSpecialFile(temp, pos, urlinfo, flags);
-            } else if (temp.find('\\') != std::string::npos && pos != 0) {
-                pos = temp.find('\\');
+            } else if ((((pos = temp.find('/')) != std::string::npos) ||
+                ((pos = temp.find('\\')) != std::string::npos)) && pos != 0) {
                 AnalysisSpecialFile(temp, pos, urlinfo, flags);
             } else {
                 if (!temp.empty() && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
@@ -827,8 +813,7 @@ namespace OHOS::Url {
         UrlData& urlinfo)
     {
         size_t pos = 0;
-        if (strHost[strHost.size() - 1] != ']' && (strHost.find_last_of(':') != std::string::npos)) {
-            pos = strHost.find_last_of(':');
+        if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos) {
             std::string port = strHost.substr(pos + 1);
             strHost = strHost.substr(0, pos);
             AnalysisPort(port, urlinfo, flags);
@@ -880,9 +865,8 @@ namespace OHOS::Url {
                     strHost = strHost.substr(0, pos);
                     AnalysisPort(port, urlinfo, flags);
                 }
-                if (strHost[strHost.size() - 1] != ']' && strHost.find_last_of(':') != std::string::npos &&
+                if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
                     flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
-                    pos = strHost.find_last_of(':');
                     return;
                 }
                 AnalysisHost(strHost, urlinfo.host, flags, special);
@@ -969,9 +953,8 @@ namespace OHOS::Url {
                     strHost = strHost.substr(0, pos);
                     AnalysisPort(port, urlinfo, flags);
                 }
-                if (strHost[strHost.size() - 1] != ']' && strHost.find_last_of(':') != std::string::npos &&
+                if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
                     flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
-                    pos = strHost.find_last_of(':');
                     return;
                 }
                 AnalysisHost(strHost, urlinfo.host, flags, special);
