@@ -70,12 +70,12 @@ namespace OHOS::Js_sys_module::Process {
     {
         int ret = pipe(stdOutFd_);
         if (ret < 0) {
-            HILOG_ERROR("pipe1 faile %{public}d", errno);
+            HILOG_ERROR("pipe1 failed %{public}d", errno);
             return;
         }
         ret = pipe(stdErrFd_);
         if (ret < 0) {
-            HILOG_ERROR("pipe2 faile %{public}d", errno);
+            HILOG_ERROR("pipe2 failed %{public}d", errno);
             return;
         }
         std::string strCommnd = RequireStrValue(command);

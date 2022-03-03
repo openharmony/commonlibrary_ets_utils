@@ -16,6 +16,7 @@
 #include "napi/native_api.h"
 #include "native_engine.h"
 #include "napi/native_node_api.h"
+#include "securec.h"
 #include "utils/log.h"
 
 namespace OHOS::Js_sys_module::Dfx {
@@ -53,9 +54,14 @@ namespace OHOS::Js_sys_module::Dfx {
     {
         napi_value result = nullptr;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-        std::string stackTraceResult = engine->BuildNativeAndJsBackStackTrace();
+        std::string stackTraceResult = "";
+        bool temp = engine->BuildNativeAndJsBackStackTrace(stackTraceResult);
         NAPI_CALL(env, napi_create_string_utf8(env, stackTraceResult.c_str(), stackTraceResult.size(), &result));
-        return result;
+        if (temp) {
+            return result;
+        } else {
+            return nullptr;
+        }
     }
 
     static napi_value StartHeapTracking(napi_env env, napi_callback_info info)
@@ -66,11 +72,21 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
         napi_value *argv = nullptr;
         argv = new napi_value[argc];
+        NAPI_ASSERT(env, argc > 0, "argc == 0");
+        argv = new napi_value[argc + 1];
+        if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
+            HILOG_ERROR("argv memset error");
+            delete []argv;
+            argv = nullptr;
+            return nullptr;
+        }
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
         double timeInterval = 0;
         napi_get_value_double(env, argv[0], &timeInterval);
         bool isVmMode = true;
         napi_get_value_bool(env, argv[1], &isVmMode);
+        delete []argv;
+        argv = nullptr;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         auto startResult = engine->StartHeapTracking(timeInterval, isVmMode);
         napi_value result = nullptr;
