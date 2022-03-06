@@ -92,16 +92,16 @@ namespace OHOS::Js_sys_module::Process {
         if (std::find(pgrous.begin(), pgrous.end(), proegid) == pgrous.end()) {
             pgrous.push_back(proegid);
         }
-        std::vector<uint32_t> arry;
+        std::vector<uint32_t> array;
         for (auto iter = pgrous.begin(); iter != pgrous.end(); iter++) {
             auto recive = static_cast<uint32_t>(*iter);
-            arry.push_back(recive);
+            array.push_back(recive);
         }
         NAPI_CALL(env_, napi_create_array(env_, &result));
-        size_t len = arry.size();
+        size_t len = array.size();
         for (size_t i = 0; i < len; i++) {
             napi_value numvalue = nullptr;
-            NAPI_CALL(env_, napi_create_uint32(env_, arry[i], &numvalue));
+            NAPI_CALL(env_, napi_create_uint32(env_, array[i], &numvalue));
             NAPI_CALL(env_, napi_set_element(env_, result, i, numvalue));
         }
         return result;
@@ -290,7 +290,7 @@ namespace OHOS::Js_sys_module::Process {
         auto prouid = static_cast<int32_t>(getuid());
         auto uid = prouid % PER_USER_RANGE;
         if ((uid >= 99000 && uid <= 99999) || // 99999:Only isolateuid numbers between 99000 and 99999.
-            (uid >= 9000 && uid <= 98999)) { // 98999:Only appuid numbers betweeen 9000 and 98999.
+            (uid >= 9000 && uid <= 98999)) { // 98999:Only appuid numbers between 9000 and 98999.
             NAPI_CALL(env_, napi_get_boolean(env_, flag, &result));
             return result;
         }
