@@ -106,7 +106,7 @@ base/compileruntime/js_api_module/
 | new URLSearchParams(string) | URLSearchParams(string) 构造器的入参为string数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
 | new URLSearchParams(obj) | URLSearchParams(obj) 构造器的入参为obj数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
 | new URLSearchParams(iterable) | URLSearchParams(iterable) 构造器的入参为iterable数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
-| has(name: string): boolean | 检索searchParams对象中是否含有name。有则返回ture，否则返回false。 |
+| has(name: string): boolean | 检索searchParams对象中是否含有name。有则返回true，否则返回false。 |
 | set(name: string, value string): void |  检索searchParams对象中是否含有key为name的键值对。没有的话则添加该键值对，有的话则修改对象中第一个key所对应的value，并删除键为name的其余键值对。 |
 | sort(): void | 根据键的Unicode代码点，对包含在此对象中的所有键/值对进行排序，并返回undefined。 |
 | toString(): string | 根据searchParams对象,返回适用在URL中的查询字符串。 |
@@ -209,7 +209,7 @@ console.log(params.toString());
 ```
 8、has(name: string): boolean
 ```
-console.log(params.has('bar')); // =>ture
+console.log(params.has('bar')); // =>true
 ```
 9、set(name: string, value string): void
 ```
@@ -273,7 +273,7 @@ for (const [name, value] of params) {
 }
 // Prints:
 // foo bar
-// xyz ba
+// xyz bar
 ```
 
 
@@ -413,8 +413,8 @@ var strXml =
             '<?xml version="1.0" encoding="utf-8"?>' +
             '<note importance="high" logged="true">' +
             '    <title>Happy</title>' +
-            '    <todo>Work</todo>' +
-            '    <todo>Play</todo>' +
+            '    <title>Work</title>' +
+            '    <title>Play</title>' +
             '</note>';
 var arrayBuffer = new ArrayBuffer(strXml.length*2);
 var bufView = new Uint8Array(arrayBuffer);
@@ -431,8 +431,8 @@ var strXml =
             '<?xml version="1.0" encoding="utf-8"?>' +
             '<note importance="high" logged="true">' +
             '    <title>Happy</title>' +
-            '    <todo>Work</todo>' +
-            '    <todo>Play</todo>' +
+            '    <title>Work</title>' +
+            '    <title>Play</title>' +
             '</note>';
 var arrayBuffer = new ArrayBuffer(strXml.length*2);
 var bufView = new Uint8Array(arrayBuffer);
@@ -451,11 +451,9 @@ function func(key, value){
 }
 var options = {supportDoctype:true, ignoreNameSpace:true, tokenValueCallbackFunction:func}
 that.parse(options);
-
+```
 ## 相关仓
-[js_api_module子系统](https://gitee.com/OHOS_STD/js_api_module)
-
-[base/compileruntime/js_api_module/](base/compileruntime/js_api_module/readme.md)
+[js_api_module子系统](base/compileruntime/js_api_module/readme.md)
 
 ### 许可证
 
