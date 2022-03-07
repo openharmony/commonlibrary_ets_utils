@@ -210,7 +210,7 @@ console.log(params.toString());
 ```
 8、has(name: string): boolean
 ```
-console.log(params.has('bar')); // =>ture
+console.log(params.has('bar')); // =>true
 ```
 9、set(name: string, value string): void
 ```
@@ -274,7 +274,7 @@ for (const [name, value] of params) {
 }
 // Prints:
 // foo bar
-// xyz ba
+// xyz bar
 ```
 
 
@@ -454,9 +454,7 @@ var options = {supportDoctype:true, ignoreNameSpace:true, tokenValueCallbackFunc
 that.parse(options);
 ```
 ## Related warehouse
-[js_api_module Subsystem](https://gitee.com/OHOS_STD/js_api_module)
-
-[base/compileruntime/js_api_module/](base/compileruntime/js_api_module-readme.md)
+[js_api_module Subsystem](base/compileruntime/js_api_module-readme.md)
 
 ## License
 

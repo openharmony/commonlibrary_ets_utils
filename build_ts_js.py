@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2022 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,12 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 import shutil
 import platform
 import argparse
 import subprocess
-
 
 def run_command(in_cmd):
     print(" ".join(in_cmd))
@@ -30,8 +30,6 @@ def run_command(in_cmd):
         raise Exception(stdout)
 
 if __name__ == '__main__':
-
-
     PARSER_INST = argparse.ArgumentParser()
     PARSER_INST.add_argument('--dst-file',
                         help='the converted target file')

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H
 #define FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H
 
@@ -164,7 +165,7 @@ namespace OHOS::xml {
         bool IsWhitespace() const;
         void PushSrcLinkList(std::string strBuffer);
         void PopSrcLinkList();
-        bool DealLength(size_t minimun);
+        bool DealLength(size_t minimum);
         void Replace(std::string &strTemp, std::string strSrc, std::string strDes) const;
         size_t GetNSCount(size_t iTemp);
         void Parse(napi_value thisVar);
