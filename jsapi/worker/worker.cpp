@@ -475,11 +475,7 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
         worker->HostOnMessageErrorInner();
         return nullptr;
     }
-
-    if (data != nullptr) {
-        worker->PostMessageInner(data);
-    }
-
+    worker->PostMessageInner(data);
     return NapiValueHelp::GetUndefinedValue(env);
 }
 
@@ -522,11 +518,7 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
         worker->WorkerOnMessageErrorInner();
         return nullptr;
     }
-
-    if (data != nullptr) {
-        worker->PostMessageToHostInner(data);
-    }
-
+    worker->PostMessageToHostInner(data);
     return NapiValueHelp::GetUndefinedValue(env);
 }
 
