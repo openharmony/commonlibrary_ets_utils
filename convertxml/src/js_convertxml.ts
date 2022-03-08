@@ -13,23 +13,36 @@
  * limitations under the License.
  */
 
-declare function requireInternal(s : string) : any;
+interface MyRecv{
+    obj : Object;
+    spaces ?: string|number;
+}
+
+interface NativeConvertXml {
+    new() : NativeConvertXml;
+    convert(strXml : string, options ?: Object) : MyRecv;
+}
+interface ConvertXML {
+    ConvertXml : NativeConvertXml;
+}
+declare function requireInternal(s : string) : ConvertXML;
 const convertXml = requireInternal("ConvertXML");
+
 class ConvertXML {
-    convertxmlclass : any;
+    convertxmlclass : NativeConvertXml;
     constructor() {
         this.convertxmlclass = new convertXml.ConvertXml();
     }
-    convert(strXml : string, options : any) {
+    convert(strXml : string, options ?: Object) {
         strXml = DealXml(strXml);
         let converted = this.convertxmlclass.convert(strXml, options);
-        let space = 0;
+        var strEnd : string = '';
         if (converted.hasOwnProperty("spaces")) {
-            space = converted.spaces;
+            let space = converted.spaces;
             delete converted.spaces;
+            strEnd = JSON.stringify(converted, null, space);
         }
-        var strEnd = JSON.stringify(converted, null, space);
-        var idx = 0;
+        var idx : number = 0;
         while ((idx = strEnd.indexOf('\\t')) != -1) {
             strEnd = strEnd.substring(0, idx) + '\t' + strEnd.substring(idx + 2);
         }
@@ -45,11 +58,11 @@ class ConvertXML {
 
 function DealXml(strXml : string)
 {
-    var idx = 0;
-    var idxSec = 0;
-    var idxThir = 0;
-    var idxCData = 0;
-    var idxCDataSec = 0;
+    var idx : number = 0;
+    var idxSec : number = 0;
+    var idxThir : number = 0;
+    var idxCData : number = 0;
+    var idxCDataSec : number = 0;
     while ((idx = strXml.indexOf(']]><![CDATA')) != -1) {
         strXml = strXml.substring(0, idx + 3) + ' ' + strXml.substring(idx + 3);
     }
@@ -72,19 +85,19 @@ function DealXml(strXml : string)
     return strXml;
 }
 
-function DealPriorReplace(strXml : string, idx : any, idxThir : any)
+function DealPriorReplace(strXml : string, idx : number, idxThir : number)
 {
-    var i = idx + 1;
+    var i : number = idx + 1;
     for (; i < idxThir ; i++) {
-        var cXml = strXml.charAt(i);
+        var cXml : string = strXml.charAt(i);
         if (cXml != '\n' && cXml != '\v' && cXml != '\t' && cXml != ' ')
         {
             break;
         }
     }
-    var j = idx + 1;
+    var j : number = idx + 1;
     for (; j < strXml.indexOf('<', idx) ; j++) {
-        var cXml = strXml.charAt(j);
+        var cXml : string = strXml.charAt(j);
         if (i != idxThir) {
             switch (cXml) {
                 case '\n':
@@ -107,11 +120,11 @@ function DealPriorReplace(strXml : string, idx : any, idxThir : any)
     return strXml;
 }
 
-function DealLaterReplace(strXml : string, idx : any, idxThir : any)
+function DealLaterReplace(strXml : string, idx : number, idxThir : number)
 {
-    var i = idx + 1;
+    var i : number = idx + 1;
     for (; i < idxThir ; i++) {
-        var cXml = strXml.charAt(i)
+        var cXml : string = strXml.charAt(i)
         switch (cXml) {
             case '\n':
                 strXml = strXml.substring(0, i) + '\\n' + strXml.substring(i + 1);

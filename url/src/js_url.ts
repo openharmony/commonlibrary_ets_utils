@@ -13,17 +13,53 @@
  * limitations under the License.
  */
 
-declare function requireInternal(s : string) : any;
-const urlUtil = requireInternal('url');
+interface NativeURLSearchParams{
+    new(input?:object|string|Iterable<[]>|null|undefined) : NativeURLSearchParams;
+    append(params1:string, params2:string) : void;
+    set(setname:string, setvalues:string) : void;
+    sort() : void;
+    has(hasname:string) : boolean;
+    toString() : string;
+    keys() : Object;
+    values(): Object;
+    getAll(getAllname:string) : string[];
+    get(getname:string) : string;
+    entries():Object;
+    delete(deletename:string) : void;
+    array: string[]|number[];
+}
+interface NativeURL{
+    new(input : string, base ?: string | NativeURL) : NativeURL;
+    protocol : string;
+    username : string;
+    password : string;
+    hash : string;
+    search : string;
+    hostname : string;
+    host : string;
+    port : string;
+    href(input : string) : void;
+    pathname : string;
+    onOrOff : boolean;
+    GetIsIpv6 : boolean;
+}
+interface urlNative{
+    URLSearchParams1 : NativeURLSearchParams;
+    Url : NativeURL;
+    stringParmas(input:string):string[];
+}
 
-let seachParamsArr:Array<number> = [];
+declare function requireInternal(s : string) : urlNative;
+const urlNative = requireInternal('url');
 
+
+var seachParamsArr:Array<string> = [];
 class URLSearchParams {
-    urlcalss:any;
-    constructor(input:any) {
+    urlcalss:NativeURLSearchParams;
+    constructor(input:object|string|Iterable<[]>|null|undefined) {
         let out = [];
         out = parameterProcessing(input);
-        this.urlcalss = new urlUtil.URLSearchParams1();
+        this.urlcalss = new urlNative.URLSearchParams1();
         this.urlcalss.array = out;
     }
     append(params1:string, params2:string) {
@@ -71,7 +107,7 @@ class URLSearchParams {
         this.urlcalss.delete(deletename);
     }
 
-    forEach(objfun:any, thisArg = undefined) {
+    forEach(objfun:Function, thisArg ?: Object) {
         let array = this.urlcalss.array;
         if (array.length == 0) {
             return;
@@ -89,18 +125,18 @@ class URLSearchParams {
         return this.urlcalss.entries();
     }
 
-    updateParams(input:any) {
+    updateParams(input: string) {
         let out = [];
         out = parameterProcessing(input);
         this.urlcalss.array = out;
     }
 }
 
-function toHleString(arg:any) {
+function toHleString(arg:string|symbol|number) {
     return arg.toString();
 }
 
-function parameterProcessing(input:any) {
+function parameterProcessing(input:object|string|Iterable<[]>) {
     if (input === null || typeof input === 'undefined') {
         seachParamsArr = [];
         return  seachParamsArr;
@@ -111,14 +147,14 @@ function parameterProcessing(input:any) {
     }
 }
 
-function initObjectSeachParams(input:any) {
+function initObjectSeachParams(input:object|Iterable<[]>) {
     if (typeof input[Symbol.iterator] === 'function') {
-        return iteratorMethod(input);
+        return iteratorMethod(input as Iterable<[string]>);
     }
     return recordMethod(input);
 }
 
-function recordMethod(input:any) {
+function recordMethod(input:object) {
     const keys = Reflect.ownKeys(input);
     seachParamsArr = [];
     for (let i = 0; i <= keys.length; i++) {
@@ -133,7 +169,7 @@ function recordMethod(input:any) {
     return  seachParamsArr;
 }
 
-function iteratorMethod(input:any) {
+function iteratorMethod(input: Iterable<[string]>) {
     let pairs = [];
     seachParamsArr = [];
     for (const pair of input) {
@@ -153,12 +189,12 @@ function iteratorMethod(input:any) {
     return  seachParamsArr;
 }
 
-function initToStringSeachParams(input:any) {
+function initToStringSeachParams(input: string) {
     if (input[0] === '?') {
         input = input.slice(1);
     }
     let strVal = decodeURI(input);
-    seachParamsArr = urlUtil.stringParmas(strVal);
+    seachParamsArr = urlNative.stringParmas(strVal);
     return seachParamsArr;
 }
 
@@ -174,17 +210,17 @@ class URL {
     protocol_:string = '';
     pathname_:string = '';
     port_:string = '';
-    searchParamsClass_:any;
-    c_info:any;
+    searchParamsClass_!:URLSearchParams;
+    c_info!:NativeURL;
     constructor() {
-        let nativeUrl:any;
+        let nativeUrl!:NativeURL;
         let inputUrl:string = '';
-        let inputBase:any;
+        let inputBase :string | URL;
 
         if (arguments.length === 1) {
             inputUrl = arguments[0];
             if (typeof inputUrl === 'string' && inputUrl.length > 0) {
-                nativeUrl = new urlUtil.Url(inputUrl);
+                nativeUrl = new urlNative.Url(inputUrl);
             } else {
                 console.log('Input parameter error');
             }
@@ -196,15 +232,14 @@ class URL {
             if (typeof inputUrl === 'string') {
                 if (typeof inputBase === 'string') {
                     if (inputBase.length > 0) {
-                        nativeUrl = new urlUtil.Url(inputUrl, inputBase);
+                        nativeUrl = new urlNative.Url(inputUrl, inputBase);
                     } else {
                         console.log('Input parameter error');
                         return;
                     }
-                }
-                if (typeof inputBase === 'object') {
+                } else if (typeof inputBase === 'object') {  //if (typeof inputBase === typeof nativeUrl)
                     let nativeBase = inputBase.getInfo();
-                    nativeUrl = new urlUtil.Url(inputUrl, nativeBase);
+                    nativeUrl = new urlNative.Url(inputUrl, nativeBase);
                 }
             }
         }

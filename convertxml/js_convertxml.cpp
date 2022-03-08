@@ -320,6 +320,7 @@ namespace OHOS::Xml {
         if (!doc) {
             xmlFreeDoc(doc);
             DealSingleLine(strXml, object);
+            SetSpacesInfo(object);
             return object;
         }
         napi_value subObject = nullptr;

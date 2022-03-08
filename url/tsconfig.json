@@ -9,5 +9,7 @@
     "strict": true,
     "skipLibCheck": true,
     "noImplicitThis": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "strictNullChecks": false,
  }
 }

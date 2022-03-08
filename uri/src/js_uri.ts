@@ -12,18 +12,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-declare function requireInternal(s : string) : any;
+interface NativeURI{
+    new(input : string) : NativeURI;
+    normalize() : string;
+    equals(other : NativeURI) : boolean;
+    checkIsAbsolute() : boolean;
+    toString() : string;
+    scheme : string;
+    authority : string;
+    ssp : string;
+    userinfo : string;
+    host : string;
+    port : string;
+    path : string;
+    query : string;
+    fragment : string;
+    isFailed : string;
+}
+interface uriNative{
+    Uri : NativeURI;
+}
+declare function requireInternal(s : string) : uriNative;
 const uri = requireInternal("uri");
 
 class URI {
-    uricalss : any
-    constructor(input:any) {
+    uricalss : NativeURI
+    constructor(input : string) {
         if (typeof input !== 'string' || input.length === 0) {
             throw new Error("input type err");
         }
         this.uricalss = new uri.Uri(input);
-        let errStr = this.uricalss.isFailed;
+        let errStr : string = this.uricalss.isFailed;
         if (errStr.length !== 0) {
             throw new Error(errStr);
         }
@@ -32,7 +51,7 @@ class URI {
         return toAscllString(this.uricalss.toString());
     }
 
-    equals(other:any) {
+    equals(other:URI) {
         return this.uricalss.equals(other.uricalss);
     }
 
@@ -41,7 +60,7 @@ class URI {
     }
 
     normalize() {
-        let uriStr = this.uricalss.normalize();
+        let uriStr : string = this.uricalss.normalize();
         return createNewUri(uriStr);
     }
 
@@ -83,10 +102,10 @@ class URI {
 
 }
 
-function toAscllString(uriStr:any) {
+function toAscllString(uriStr:string) {
     if (uriStr.indexOf('[') !== -1) {
-        let arr = uriStr.split("[");
-        let brr = arr[1].split("]");
+        let arr : string[] = uriStr.split("[");
+        let brr : string[] = arr[1].split("]");
         arr[1] = '[' + brr[0] + ']';
         arr[2] = brr[1];
         arr[0] = encodeURI(arr[0]);
