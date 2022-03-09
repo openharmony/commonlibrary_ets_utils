@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-interface ConvertXmlNative{
+interface ReceiveObject{
     obj : Object;
     spaces ?: string | number;
 }
 
 interface NativeConvertXml {
     new() : NativeConvertXml;
-    convert(strXml : string, options ?: Object) : ConvertXmlNative;
+    convert(strXml : string, options ?: Object) : ReceiveObject;
 }
 interface ConvertXML {
     ConvertXml : NativeConvertXml;

@@ -28,8 +28,8 @@ interface NativeURLSearchParams{
     delete(deletename : string) : void;
     array : string[] | number[];
 }
-interface UrlInterface{
-    new(input : string, base ?: string | UrlInterface) : UrlInterface;
+interface NativeUrl{
+    new(input : string, base ?: string | NativeUrl) : NativeUrl;
     protocol : string;
     username : string;
     password : string;
@@ -43,14 +43,14 @@ interface UrlInterface{
     onOrOff : boolean;
     GetIsIpv6 : boolean;
 }
-interface UrlNative{
+interface UrlInterface{
     URLSearchParams1 : NativeURLSearchParams;
-    Url : UrlInterface;
+    Url : NativeUrl;
     stringParmas(input : string) : string[];
 }
 
-declare function requireInternal(s : string) : UrlNative;
-const UrlNative = requireInternal('url');
+declare function requireInternal(s : string) : UrlInterface;
+const UrlInterface = requireInternal('url');
 
 
 var seachParamsArr : Array<string> = [];
@@ -59,7 +59,7 @@ class URLSearchParams {
     constructor(input : object | string | Iterable<[]> | null | undefined) {
         let out = [];
         out = parameterProcessing(input);
-        this.urlcalss = new UrlNative.URLSearchParams1();
+        this.urlcalss = new UrlInterface.URLSearchParams1();
         this.urlcalss.array = out;
     }
     append(params1 : string, params2 : string) {
@@ -194,7 +194,7 @@ function initToStringSeachParams(input : string) {
         input = input.slice(1);
     }
     let strVal = decodeURI(input);
-    seachParamsArr = UrlNative.stringParmas(strVal);
+    seachParamsArr = UrlInterface.stringParmas(strVal);
     return seachParamsArr;
 }
 
@@ -211,16 +211,16 @@ class URL {
     pathname_ : string = '';
     port_ : string = '';
     searchParamsClass_ !: URLSearchParams;
-    c_info !: UrlInterface;
+    c_info !: NativeUrl;
     constructor() {
-        let nativeUrl !: UrlInterface;
+        let nativeUrl !: NativeUrl;
         let inputUrl : string = '';
         let inputBase : string | URL;
 
         if (arguments.length === 1) {
             inputUrl = arguments[0];
             if (typeof inputUrl === 'string' && inputUrl.length > 0) {
-                nativeUrl = new UrlNative.Url(inputUrl);
+                nativeUrl = new UrlInterface.Url(inputUrl);
             } else {
                 console.log('Input parameter error');
             }
@@ -232,14 +232,14 @@ class URL {
             if (typeof inputUrl === 'string') {
                 if (typeof inputBase === 'string') {
                     if (inputBase.length > 0) {
-                        nativeUrl = new UrlNative.Url(inputUrl, inputBase);
+                        nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
                     } else {
                         console.log('Input parameter error');
                         return;
                     }
                 } else if (typeof inputBase === 'object') {  //if (typeof inputBase === typeof nativeUrl)
                     let nativeBase = inputBase.getInfo();
-                    nativeUrl = new UrlNative.Url(inputUrl, nativeBase);
+                    nativeUrl = new UrlInterface.Url(inputUrl, nativeBase);
                 }
             }
         }
