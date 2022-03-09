@@ -12,10 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-interface NativeURI{
-    new(input : string) : NativeURI;
+interface NativeUri{
+    new(input : string) : NativeUri;
     normalize() : string;
-    equals(other : NativeURI) : boolean;
+    equals(other : NativeUri) : boolean;
     checkIsAbsolute() : boolean;
     toString() : string;
     scheme : string;
@@ -29,14 +29,14 @@ interface NativeURI{
     fragment : string;
     isFailed : string;
 }
-interface uriNative{
-    Uri : NativeURI;
+interface UriInterface{
+    Uri : NativeUri;
 }
-declare function requireInternal(s : string) : uriNative;
+declare function requireInternal(s : string) : UriInterface;
 const uri = requireInternal("uri");
 
 class URI {
-    uricalss : NativeURI
+    uricalss : NativeUri
     constructor(input : string) {
         if (typeof input !== 'string' || input.length === 0) {
             throw new Error("input type err");
