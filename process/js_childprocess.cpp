@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -80,7 +80,7 @@ namespace OHOS::Js_sys_module::Process {
         }
         std::string strCommnd = RequireStrValue(command);
         pid_t pid = fork();
-        if (pid == 0) {
+        if (!pid) {
             close(stdErrFd_[0]);
             close(stdOutFd_[0]);
             dup2(stdOutFd_[1], 1);
@@ -255,7 +255,7 @@ namespace OHOS::Js_sys_module::Process {
                     HILOG_ERROR("stdOut maxBuff kill signal failed");
                 }
             }
-            if (memset_s(childStdout, sizeof(childStdout), '\0', MAXSIZE) != 0) {
+            if (memset_s(childStdout, sizeof(childStdout), '\0', MAXSIZE) != EOK) {
                 HILOG_ERROR("getOutput memset_s failed");
                 return;
             }
@@ -289,7 +289,7 @@ namespace OHOS::Js_sys_module::Process {
                     HILOG_ERROR("stdErr maxBuff kill signal failed");
                 }
             }
-            if (memset_s(childStderr, sizeof(childStderr), '\0', MAXSIZE) != 0) {
+            if (memset_s(childStderr, sizeof(childStderr), '\0', MAXSIZE) != EOK) {
                 HILOG_ERROR("getOutput memset_s failed");
                 return;
             }
@@ -341,7 +341,7 @@ namespace OHOS::Js_sys_module::Process {
     void ChildProcess::Close()
     {
         int32_t status = 0;
-        if (isWait_ && (waitpid(optionsInfo_->pid, &status, WNOHANG) == 0) && isNeedRun_) {
+        if (isWait_ && !(waitpid(optionsInfo_->pid, &status, WNOHANG)) && isNeedRun_) {
             if (!kill(optionsInfo_->pid, SIGKILL)) {
                 waitpid(optionsInfo_->pid, &status, 0);
                 isWait_ = false;

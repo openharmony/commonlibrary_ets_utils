@@ -114,7 +114,7 @@ gid(){
 3.euid()
 ```
 euid(){
-    var ans = Process.euid;
+    var and = Process.euid;
 }
 ```
 4.egid()
@@ -357,10 +357,9 @@ getSystemConfig(){
     var ansu = Process.getSystemConfig(_SC_ARG_MAX)
 }
 ```
-
-
 ## Related warehouse
+[js_sys_module](base/compileruntime/js_sys_module/readme.md)
 
-[js_sys_module subsystem](https://gitee.com/OHOS_STD/js_sys_module)
+### License
 
-[base/compileruntime/js_sys_module/](base/compileruntime/js_sys_module-readme.md)
+SYS is available under [Mozilla license](https://www.mozilla.org/en-US/MPL/), and the documentation is detailed in [documentation](https://gitee.com/openharmony/js_sys_module/blob/master/mozilla_docs.txt). See [LICENSE](https://gitee.com/openharmony/js_sys_module/blob/master/LICENSE) for the full license text.
