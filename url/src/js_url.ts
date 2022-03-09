@@ -28,8 +28,8 @@ interface NativeURLSearchParams{
     delete(deletename : string) : void;
     array : string[] | number[];
 }
-interface NativeUrl{
-    new(input : string, base ?: string | NativeUrl) : NativeUrl;
+interface UrlInterface{
+    new(input : string, base ?: string | UrlInterface) : UrlInterface;
     protocol : string;
     username : string;
     password : string;
@@ -45,7 +45,7 @@ interface NativeUrl{
 }
 interface UrlNative{
     URLSearchParams1 : NativeURLSearchParams;
-    Url : NativeUrl;
+    Url : UrlInterface;
     stringParmas(input : string) : string[];
 }
 
@@ -211,9 +211,9 @@ class URL {
     pathname_ : string = '';
     port_ : string = '';
     searchParamsClass_ !: URLSearchParams;
-    c_info !: NativeUrl;
+    c_info !: UrlInterface;
     constructor() {
-        let nativeUrl !: NativeUrl;
+        let nativeUrl !: UrlInterface;
         let inputUrl : string = '';
         let inputBase : string | URL;
 
