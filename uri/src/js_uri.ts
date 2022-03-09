@@ -51,7 +51,7 @@ class URI {
         return toAscllString(this.uricalss.toString());
     }
 
-    equals(other:URI) {
+    equals(other : URI) {
         return this.uricalss.equals(other.uricalss);
     }
 
@@ -102,7 +102,7 @@ class URI {
 
 }
 
-function toAscllString(uriStr:string) {
+function toAscllString(uriStr : string) {
     if (uriStr.indexOf('[') !== -1) {
         let arr : string[] = uriStr.split("[");
         let brr : string[] = arr[1].split("]");

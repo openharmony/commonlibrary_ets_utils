@@ -14,19 +14,19 @@
  */
 
 interface NativeURLSearchParams{
-    new(input?:object|string|Iterable<[]>|null|undefined) : NativeURLSearchParams;
-    append(params1:string, params2:string) : void;
-    set(setname:string, setvalues:string) : void;
+    new(input ?: object | string | Iterable<[]> | null | undefined) : NativeURLSearchParams;
+    append(params1 : string, params2 : string) : void;
+    set(setname : string, setvalues : string) : void;
     sort() : void;
     has(hasname:string) : boolean;
     toString() : string;
     keys() : Object;
     values(): Object;
-    getAll(getAllname:string) : string[];
-    get(getname:string) : string;
-    entries():Object;
-    delete(deletename:string) : void;
-    array: string[]|number[];
+    getAll(getAllname : string) : string[];
+    get(getname : string) : string;
+    entries() : Object;
+    delete(deletename : string) : void;
+    array : string[] | number[];
 }
 interface NativeURL{
     new(input : string, base ?: string | NativeURL) : NativeURL;
@@ -46,27 +46,27 @@ interface NativeURL{
 interface urlNative{
     URLSearchParams1 : NativeURLSearchParams;
     Url : NativeURL;
-    stringParmas(input:string):string[];
+    stringParmas(input : string) : string[];
 }
 
 declare function requireInternal(s : string) : urlNative;
 const urlNative = requireInternal('url');
 
 
-var seachParamsArr:Array<string> = [];
+var seachParamsArr : Array<string> = [];
 class URLSearchParams {
     urlcalss:NativeURLSearchParams;
-    constructor(input:object|string|Iterable<[]>|null|undefined) {
+    constructor(input : object | string | Iterable<[]> | null | undefined) {
         let out = [];
         out = parameterProcessing(input);
         this.urlcalss = new urlNative.URLSearchParams1();
         this.urlcalss.array = out;
     }
-    append(params1:string, params2:string) {
+    append(params1 : string, params2 : string) {
         this.urlcalss.append(params1, params2);
     }
 
-    set(setname:string, setvalues:string) {
+    set(setname : string, setvalues : string) {
         this.urlcalss.set(setname, setvalues);
     }
 
@@ -74,7 +74,7 @@ class URLSearchParams {
         this.urlcalss.sort();
     }
 
-    has(hasname:string) {
+    has(hasname : string) {
         return this.urlcalss.has(hasname);
     }
 
@@ -90,11 +90,11 @@ class URLSearchParams {
         return this.urlcalss.values();
     }
 
-    getAll(getAllname:string) {
+    getAll(getAllname : string) {
         return this.urlcalss.getAll(getAllname);
     }
 
-    get(getname:string) {
+    get(getname : string) {
         return this.urlcalss.get(getname);
     }
 
@@ -103,11 +103,11 @@ class URLSearchParams {
         return this.urlcalss.entries();
     }
 
-    delete(deletename:string) {
+    delete(deletename : string) {
         this.urlcalss.delete(deletename);
     }
 
-    forEach(objfun:Function, thisArg ?: Object) {
+    forEach(objfun : Function, thisArg ?: Object) {
         let array = this.urlcalss.array;
         if (array.length == 0) {
             return;
@@ -125,18 +125,18 @@ class URLSearchParams {
         return this.urlcalss.entries();
     }
 
-    updateParams(input: string) {
+    updateParams(input : string) {
         let out = [];
         out = parameterProcessing(input);
         this.urlcalss.array = out;
     }
 }
 
-function toHleString(arg:string|symbol|number) {
+function toHleString(arg : string | symbol | number) {
     return arg.toString();
 }
 
-function parameterProcessing(input:object|string|Iterable<[]>) {
+function parameterProcessing(input : object | string | Iterable<[]>) {
     if (input === null || typeof input === 'undefined') {
         seachParamsArr = [];
         return  seachParamsArr;
@@ -147,14 +147,14 @@ function parameterProcessing(input:object|string|Iterable<[]>) {
     }
 }
 
-function initObjectSeachParams(input:object|Iterable<[]>) {
+function initObjectSeachParams(input : object | Iterable<[]>) {
     if (typeof input[Symbol.iterator] === 'function') {
         return iteratorMethod(input as Iterable<[string]>);
     }
     return recordMethod(input);
 }
 
-function recordMethod(input:object) {
+function recordMethod(input : object) {
     const keys = Reflect.ownKeys(input);
     seachParamsArr = [];
     for (let i = 0; i <= keys.length; i++) {
@@ -169,7 +169,7 @@ function recordMethod(input:object) {
     return  seachParamsArr;
 }
 
-function iteratorMethod(input: Iterable<[string]>) {
+function iteratorMethod(input : Iterable<[string]>) {
     let pairs = [];
     seachParamsArr = [];
     for (const pair of input) {
@@ -189,7 +189,7 @@ function iteratorMethod(input: Iterable<[string]>) {
     return  seachParamsArr;
 }
 
-function initToStringSeachParams(input: string) {
+function initToStringSeachParams(input : string) {
     if (input[0] === '?') {
         input = input.slice(1);
     }
@@ -199,22 +199,22 @@ function initToStringSeachParams(input: string) {
 }
 
 class URL {
-    href_:string = '';
-    search_:string = '';
-    origin_:string = '';
-    username_:string = '';
-    password_:string = '';
-    hostname_:string = '';
-    host_:string = '';
-    hash_:string = '';
-    protocol_:string = '';
-    pathname_:string = '';
-    port_:string = '';
-    searchParamsClass_!:URLSearchParams;
-    c_info!:NativeURL;
+    href_ :string = '';
+    search_ :string = '';
+    origin_ :string = '';
+    username_ :string = '';
+    password_ :string = '';
+    hostname_ :string = '';
+    host_ :string = '';
+    hash_ :string = '';
+    protocol_ :string = '';
+    pathname_ :string = '';
+    port_ :string = '';
+    searchParamsClass_ !: URLSearchParams;
+    c_info !: NativeURL;
     constructor() {
-        let nativeUrl!:NativeURL;
-        let inputUrl:string = '';
+        let nativeUrl !: NativeURL;
+        let inputUrl : string = '';
         let inputBase :string | URL;
 
         if (arguments.length === 1) {

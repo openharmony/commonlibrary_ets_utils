@@ -15,7 +15,7 @@
 
 interface MyRecv{
     obj : Object;
-    spaces ?: string|number;
+    spaces ?: string | number;
 }
 
 interface NativeConvertXml {
