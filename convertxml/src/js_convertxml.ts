@@ -36,13 +36,13 @@ class ConvertXML {
     convert(strXml : string, options ?: Object) {
         strXml = DealXml(strXml);
         let converted = this.convertxmlclass.convert(strXml, options);
-        var strEnd : string = '';
+        let strEnd : string = '';
         if (converted.hasOwnProperty("spaces")) {
             let space : string | number | undefined = converted.spaces;
             delete converted.spaces;
             strEnd = JSON.stringify(converted, null, space);
         }
-        var idx : number = 0;
+        let idx : number = 0;
         while ((idx = strEnd.indexOf('\\t')) != -1) {
             strEnd = strEnd.substring(0, idx) + '\t' + strEnd.substring(idx + 2);
         }
@@ -58,11 +58,11 @@ class ConvertXML {
 
 function DealXml(strXml : string)
 {
-    var idx : number = 0;
-    var idxSec : number = 0;
-    var idxThir : number = 0;
-    var idxCData : number = 0;
-    var idxCDataSec : number = 0;
+    let idx : number = 0;
+    let idxSec : number = 0;
+    let idxThir : number = 0;
+    let idxCData : number = 0;
+    let idxCDataSec : number = 0;
     while ((idx = strXml.indexOf(']]><![CDATA')) != -1) {
         strXml = strXml.substring(0, idx + 3) + ' ' + strXml.substring(idx + 3);
     }
@@ -87,17 +87,17 @@ function DealXml(strXml : string)
 
 function DealPriorReplace(strXml : string, idx : number, idxThir : number)
 {
-    var i : number = idx + 1;
+    let i : number = idx + 1;
     for (; i < idxThir ; i++) {
-        var cXml : string = strXml.charAt(i);
+        let cXml : string = strXml.charAt(i);
         if (cXml != '\n' && cXml != '\v' && cXml != '\t' && cXml != ' ')
         {
             break;
         }
     }
-    var j : number = idx + 1;
+    let j : number = idx + 1;
     for (; j < strXml.indexOf('<', idx) ; j++) {
-        var cXml : string = strXml.charAt(j);
+        let cXml : string = strXml.charAt(j);
         if (i != idxThir) {
             switch (cXml) {
                 case '\n':
@@ -122,9 +122,9 @@ function DealPriorReplace(strXml : string, idx : number, idxThir : number)
 
 function DealLaterReplace(strXml : string, idx : number, idxThir : number)
 {
-    var i : number = idx + 1;
+    let i : number = idx + 1;
     for (; i < idxThir ; i++) {
-        var cXml : string = strXml.charAt(i)
+        let cXml : string = strXml.charAt(i)
         switch (cXml) {
             case '\n':
                 strXml = strXml.substring(0, i) + '\\n' + strXml.substring(i + 1);
