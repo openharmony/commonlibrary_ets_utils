@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -71,14 +71,15 @@ namespace OHOS::Js_sys_module::Dfx {
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
         napi_value *argv = nullptr;
-        argv = new napi_value[argc];
         NAPI_ASSERT(env, argc > 0, "argc == 0");
-        argv = new napi_value[argc + 1];
-        if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
-            HILOG_ERROR("argv memset error");
-            delete []argv;
-            argv = nullptr;
-            return nullptr;
+        if (argc > 0) {
+            argv = new napi_value[argc + 1];
+            if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
+                HILOG_ERROR("argv memset error");
+                delete []argv;
+                argv = nullptr;
+                return nullptr;
+            }
         }
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
         double timeInterval = 0;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -94,8 +94,8 @@ namespace OHOS::Js_sys_module::Process {
         }
         std::vector<uint32_t> array;
         for (auto iter = pgrous.begin(); iter != pgrous.end(); iter++) {
-            auto recive = static_cast<uint32_t>(*iter);
-            array.push_back(recive);
+            auto receive = static_cast<uint32_t>(*iter);
+            array.push_back(receive);
         }
         NAPI_CALL(env_, napi_create_array(env_, &result));
         size_t len = array.size();
@@ -130,7 +130,7 @@ namespace OHOS::Js_sys_module::Process {
         char* path = nullptr;
         if (prolen > 0) {
             path = new char[prolen + 1];
-            if (memset_s(path, prolen + 1, '\0', prolen + 1) != 0) {
+            if (memset_s(path, prolen + 1, '\0', prolen + 1) != EOK) {
                 napi_throw_error(env_, "-1", "chdir path memset_s failed");
             }
         } else {
@@ -156,7 +156,7 @@ namespace OHOS::Js_sys_module::Process {
         napi_get_value_int32(env_, signal, &sig);
         uv_pid_t ownPid = uv_os_getpid();
         // 64:The maximum valid signal value is 64.
-        if (sig > 64 && (pid == 0 || pid == -1 || pid == ownPid || pid == -ownPid)) {
+        if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
             napi_throw_error(env_, "0", "process exit");
         }
         bool flag = false;
@@ -252,7 +252,7 @@ namespace OHOS::Js_sys_module::Process {
         NAPI_CALL(env_, napi_get_value_string_utf8(env_, str, buffer, 0, &bufferSize));
         NAPI_ASSERT(env_, bufferSize > 0, "bufferSize == 0");
         buffer = new char[bufferSize + 1];
-        if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != 0) {
+        if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != EOK) {
             HILOG_ERROR("buffer memset error");
             delete []buffer;
             return nullptr;
@@ -393,7 +393,7 @@ namespace OHOS::Js_sys_module::Process {
         napi_value result = nullptr;
         napi_get_value_int32(env_, tid, &proTid);
         int32_t pri = getpriority(PRIO_PROCESS, proTid);
-        if (errno != 0) {
+        if (errno) {
             napi_throw_error(env_, "-1", "Invalid tid");
         }
         napi_create_int32(env_, pri, &result);
@@ -406,11 +406,11 @@ namespace OHOS::Js_sys_module::Process {
         struct timespec timessys = {0, 0};
         napi_value result = nullptr;
         auto res = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespro);
-        if (res != 0) {
+        if (res) {
             return 0;
         }
         auto res1 = clock_gettime(CLOCK_MONOTONIC, &timessys);
-        if (res1 != 0) {
+        if (res1) {
             return 0;
         }
         int whenpro = ConvertTime(timespro.tv_sec, timespro.tv_nsec);
@@ -430,7 +430,7 @@ namespace OHOS::Js_sys_module::Process {
         struct timespec times = {0, 0};
         napi_value result = nullptr;
         auto res = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &times);
-        if (res != 0) {
+        if (res) {
             return 0;
         }
         int when =  ConvertTime(times.tv_sec, times.tv_nsec);
