@@ -238,7 +238,7 @@ namespace OHOS::Js_sys_module::Process {
             HILOG_ERROR("napi_create_reference is failed");
             return;
         }
-        if (temp.empty()) {
+        if (!temp.empty()) {
             size_t pos = events.find(temp);
             if (pos == std::string::npos) {
                 HILOG_ERROR("illegal event");
