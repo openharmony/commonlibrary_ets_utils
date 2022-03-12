@@ -688,14 +688,7 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
             if (strcmp("classic", typeStr) == 0) {
                 worker->SetScriptMode(CLASSIC);
                 CloseHelp::DeletePointer(typeStr, true);
-            } else if (strcmp("module", typeStr) == 0) {
-                worker->SetScriptMode(MODULE);
-                napi_throw_error(env, nullptr, "unsupport module");
-                CloseHelp::DeletePointer(typeStr, true);
-                CloseHelp::DeletePointer(worker, false);
-                return nullptr;
             } else {
-                worker->SetScriptMode(MODULE);
                 napi_throw_error(env, nullptr, "unsupport module");
                 CloseHelp::DeletePointer(typeStr, true);
                 CloseHelp::DeletePointer(worker, false);
