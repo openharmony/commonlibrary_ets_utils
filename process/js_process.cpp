@@ -215,18 +215,18 @@ namespace OHOS::Js_sys_module::Process {
 
     void Process::On(napi_value str, napi_value function)
     {
-        char *buffer = nullptr;
+        std::string result = "";
         size_t bufferSize = 0;
-        napi_get_value_string_utf8(env_, str, buffer, 0, &bufferSize);
-        if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
+        if (napi_get_value_string_utf8(env_, str, nullptr, NAPI_RETURN_ZERO, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get str size");
+            return;
         }
-        napi_get_value_string_utf8(env_, str, buffer, bufferSize + 1, &bufferSize);
-        std::string temp = "";
-        if (buffer != nullptr) {
-            temp = buffer;
-            delete []buffer;
-            buffer = nullptr;
+        result.reserve(bufferSize + NAPI_RETURN_ONE);
+        result.resize(bufferSize);
+        if (napi_get_value_string_utf8(env_, str, result.data(), bufferSize + NAPI_RETURN_ONE,
+                                       &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get str value");
+            return;
         }
         if (function == nullptr) {
             HILOG_ERROR("function is nullptr");
@@ -238,13 +238,13 @@ namespace OHOS::Js_sys_module::Process {
             HILOG_ERROR("napi_create_reference is failed");
             return;
         }
-        if (!temp.empty()) {
-            size_t pos = events.find(temp);
+        if (!result.empty()) {
+            size_t pos = events.find(result);
             if (pos == std::string::npos) {
                 HILOG_ERROR("illegal event");
                 return;
             }
-            eventMap.insert(std::make_pair(temp, myCallRef));
+            eventMap.insert(std::make_pair(result, myCallRef));
         }
     }
 
