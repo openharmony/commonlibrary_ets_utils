@@ -230,24 +230,18 @@ namespace OHOS::Js_sys_module::Process {
         }
         if (function == nullptr) {
             HILOG_ERROR("function is nullptr");
-            delete []buffer;
-            buffer = nullptr;
             return;
         }
         napi_ref myCallRef = nullptr;
         napi_status status = napi_create_reference(env_, function, 1, &myCallRef);
         if (status != napi_ok) {
             HILOG_ERROR("napi_create_reference is failed");
-            delete []buffer;
-            buffer = nullptr;
             return;
         }
         if (temp.empty()) {
             size_t pos = events.find(temp);
             if (pos == std::string::npos) {
                 HILOG_ERROR("illegal event");
-                delete []buffer;
-                buffer = nullptr;
                 return;
             }
             eventMap.insert(std::make_pair(temp, myCallRef));
