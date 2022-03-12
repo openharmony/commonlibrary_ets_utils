@@ -222,6 +222,12 @@ namespace OHOS::Js_sys_module::Process {
             buffer = new char[bufferSize + 1];
         }
         napi_get_value_string_utf8(env_, str, buffer, bufferSize + 1, &bufferSize);
+        std::string temp = "";
+        if (buffer != nullptr) {
+            temp = buffer;
+            delete []buffer;
+            buffer = nullptr;
+        }
         if (function == nullptr) {
             HILOG_ERROR("function is nullptr");
             delete []buffer;
@@ -236,17 +242,15 @@ namespace OHOS::Js_sys_module::Process {
             buffer = nullptr;
             return;
         }
-        if (buffer != nullptr) {
-            size_t pos = events.find(buffer);
+        if (temp.empty()) {
+            size_t pos = events.find(temp);
             if (pos == std::string::npos) {
                 HILOG_ERROR("illegal event");
                 delete []buffer;
                 buffer = nullptr;
                 return;
             }
-            eventMap.insert(std::make_pair(buffer, myCallRef));
-            delete []buffer;
-            buffer = nullptr;
+            eventMap.insert(std::make_pair(temp, myCallRef));
         }
     }
 
