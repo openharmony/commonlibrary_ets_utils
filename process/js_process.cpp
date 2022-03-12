@@ -36,6 +36,8 @@ namespace OHOS::Js_sys_module::Process {
     namespace {
         constexpr int NUM_OF_DATA = 4;
         constexpr int PER_USER_RANGE = 100000;
+        constexpr int32_t NAPI_RETURN_ZERO = 0;
+        constexpr int32_t NAPI_RETURN_ONE = 1;
     }
     thread_local std::multimap<std::string, napi_ref> eventMap;
     thread_local std::map<napi_ref, napi_ref> pendingUnHandledRejections;
@@ -215,13 +217,19 @@ namespace OHOS::Js_sys_module::Process {
 
     void Process::On(napi_value str, napi_value function)
     {
-        char *buffer = nullptr;
+        std::string result = "";
         size_t bufferSize = 0;
-        napi_get_value_string_utf8(env_, str, buffer, 0, &bufferSize);
-        if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
+        if (napi_get_value_string_utf8(env_, str, nullptr, NAPI_RETURN_ZERO, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get str size");
+            return;
         }
-        napi_get_value_string_utf8(env_, str, buffer, bufferSize + 1, &bufferSize);
+        result.reserve(bufferSize + NAPI_RETURN_ONE);
+        result.resize(bufferSize);
+        if (napi_get_value_string_utf8(env_, str, result.data(), bufferSize + NAPI_RETURN_ONE,
+                                       &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get str value");
+            return;
+        }
         if (function == nullptr) {
             HILOG_ERROR("function is nullptr");
             return;
@@ -232,15 +240,13 @@ namespace OHOS::Js_sys_module::Process {
             HILOG_ERROR("napi_create_reference is failed");
             return;
         }
-        if (buffer != nullptr) {
-            size_t pos = events.find(buffer);
+        if (!result.empty()) {
+            size_t pos = events.find(result);
             if (pos == std::string::npos) {
                 HILOG_ERROR("illegal event");
                 return;
             }
-            eventMap.insert(std::make_pair(buffer, myCallRef));
-            delete []buffer;
-            buffer = nullptr;
+            eventMap.insert(std::make_pair(result, myCallRef));
         }
     }
 
