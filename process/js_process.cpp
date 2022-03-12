@@ -36,6 +36,8 @@ namespace OHOS::Js_sys_module::Process {
     namespace {
         constexpr int NUM_OF_DATA = 4;
         constexpr int PER_USER_RANGE = 100000;
+        constexpr int32_t NAPI_RETURN_ZERO = 0;
+        constexpr int32_t NAPI_RETURN_ONE = 1;
     }
     thread_local std::multimap<std::string, napi_ref> eventMap;
     thread_local std::map<napi_ref, napi_ref> pendingUnHandledRejections;
