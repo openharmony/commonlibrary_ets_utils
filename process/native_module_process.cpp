@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
+#include <assert.h>
 #include <vector>
-
 #include <grp.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 #include "js_childprocess.h"
 #include "js_process.h"
 #include "securec.h"
@@ -261,43 +260,43 @@ namespace OHOS::Js_sys_module::Process {
         return result;
     }
 
-    static napi_value GetUid(napi_env env, napi_callback_info info)
+    static napi_value GetUid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetUid();
     }
 
-    static napi_value GetGid(napi_env env, napi_callback_info info)
+    static napi_value GetGid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetGid();
     }
 
-    static napi_value GetEUid(napi_env env, napi_callback_info info)
+    static napi_value GetEUid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetEUid();
     }
 
-    static napi_value GetEGid(napi_env env, napi_callback_info info)
+    static napi_value GetEGid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetEGid();
     }
 
-    static napi_value GetGroups(napi_env env, napi_callback_info info)
+    static napi_value GetGroups(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetGroups();
     }
 
-    static napi_value GetPid(napi_env env, napi_callback_info info)
+    static napi_value GetPid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetPid();
     }
 
-    static napi_value GetPpid(napi_env env, napi_callback_info info)
+    static napi_value GetPpid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetPpid();
@@ -321,7 +320,7 @@ namespace OHOS::Js_sys_module::Process {
         return result;
     }
 
-    static napi_value Abort(napi_env env, napi_callback_info info)
+    static napi_value Abort(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         object.Abort();
@@ -330,7 +329,7 @@ namespace OHOS::Js_sys_module::Process {
         return res;
     }
 
-    static napi_value Cwd(napi_env env, napi_callback_info info)
+    static napi_value Cwd(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.Cwd();
@@ -387,7 +386,7 @@ namespace OHOS::Js_sys_module::Process {
         return result;
     }
 
-    static napi_value Uptime(napi_env env, napi_callback_info info)
+    static napi_value Uptime(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.Uptime();
@@ -405,13 +404,13 @@ namespace OHOS::Js_sys_module::Process {
         result = object.Kill(argv[0], argv[1]);
         return result;
     }
-    static napi_value GetTid(napi_env env, napi_callback_info info)
+    static napi_value GetTid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetTid();
     }
 
-    static napi_value IsIsolatedProcess(napi_env env, napi_callback_info info)
+    static napi_value IsIsolatedProcess(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.IsIsolatedProcess();
@@ -430,7 +429,7 @@ namespace OHOS::Js_sys_module::Process {
         return object.IsAppUid(args);
     }
 
-    static napi_value Is64Bit(napi_env env, napi_callback_info info)
+    static napi_value Is64Bit(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.Is64Bit();
@@ -462,13 +461,13 @@ namespace OHOS::Js_sys_module::Process {
         return object.GetThreadPriority(args);
     }
 
-    static napi_value GetStartRealtime(napi_env env, napi_callback_info info)
+    static napi_value GetStartRealtime(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetStartRealtime();
     }
 
-    static napi_value GetPastCputime(napi_env env, napi_callback_info info)
+    static napi_value GetPastCputime(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object(env);
         return object.GetPastCputime();
