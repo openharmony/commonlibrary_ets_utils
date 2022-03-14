@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <assert.h>
+#include <cassert>
 #include <vector>
 #include <grp.h>
 #include <sys/types.h>

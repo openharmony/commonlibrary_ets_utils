@@ -405,22 +405,12 @@ namespace OHOS::Js_sys_module::Process {
 
     std::string ChildProcess::RequireStrValue(const napi_value strValue)
     {
-        char* buffer = nullptr;
         size_t bufferSize = 0;
-
-        napi_get_value_string_utf8(env_, strValue, buffer, -1, &bufferSize);
-        if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
-        }
-
-        napi_get_value_string_utf8(env_, strValue, buffer, bufferSize + 1, &bufferSize);
-
-        std::string result;
-        if (buffer != nullptr) {
-            result = buffer;
-        }
-        delete []buffer;
-        buffer = nullptr;
+        napi_get_value_string_utf8(env_, strValue, nullptr, 0, &bufferSize);
+        std::string result = "";
+        result.reserve(bufferSize + 1);
+        result.resize(bufferSize);
+        napi_get_value_string_utf8(env_, strValue, result.data(), bufferSize + 1, &bufferSize);
         return result;
     }
 
