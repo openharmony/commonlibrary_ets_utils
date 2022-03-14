@@ -247,7 +247,7 @@ namespace OHOS::Js_sys_module::Process {
             if (readSize >= 0) {
                 stdOutInfo->stdData += childStdout;
             }
-            if (stdOutInfo->stdData.size() > stdOutInfo->maxBuffSize && *(stdOutInfo->isNeedRun)) {
+            if (stdOutInfo->stdData.size() > static_cast<size_t>(stdOutInfo->maxBuffSize) && *(stdOutInfo->isNeedRun)) {
                 if (!kill(stdOutInfo->pid, SIGKILL)) {
                     *(stdOutInfo->isNeedRun) = false;
                     stdOutInfo->stdData = stdOutInfo->stdData.substr(0, stdOutInfo->maxBuffSize);
@@ -281,7 +281,7 @@ namespace OHOS::Js_sys_module::Process {
             if (readSize >= 0) {
                 stdErrInfo->stdData += childStderr;
             }
-            if (stdErrInfo->stdData.size() > stdErrInfo->maxBuffSize && *(stdErrInfo->isNeedRun)) {
+            if (stdErrInfo->stdData.size() > static_cast<size_t>(stdErrInfo->maxBuffSize) && *(stdErrInfo->isNeedRun)) {
                 if (!kill(stdErrInfo->pid, SIGKILL)) {
                     *(stdErrInfo->isNeedRun) = false;
                     stdErrInfo->stdData = stdErrInfo->stdData.substr(0, stdErrInfo->maxBuffSize);
@@ -406,11 +406,17 @@ namespace OHOS::Js_sys_module::Process {
     std::string ChildProcess::RequireStrValue(const napi_value strValue)
     {
         size_t bufferSize = 0;
-        napi_get_value_string_utf8(env_, strValue, nullptr, 0, &bufferSize);
+        if (napi_get_value_string_utf8(env_, strValue, nullptr, 0, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get strValue size");
+            return nullptr;
+        }
         std::string result = "";
         result.reserve(bufferSize + 1);
         result.resize(bufferSize);
-        napi_get_value_string_utf8(env_, strValue, result.data(), bufferSize + 1, &bufferSize);
+        if (napi_get_value_string_utf8(env_, strValue, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get strValue value");
+            return nullptr;
+        }
         return result;
     }
 
