@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -45,7 +45,11 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     if (!runner_) {
         runner_ = std::make_unique<WorkerRunner>(WorkerStartCallback(ExecuteInThread, this));
     }
-    runner_->Execute(); // start a new thread
+    if (runner_) {
+        runner_->Execute(); // start a new thread
+    } else {
+        HILOG_ERROR("runner_ is nullptr");
+    }
 }
 
 void Worker::CloseInner()
@@ -394,7 +398,7 @@ void Worker::WorkerOnMessageInner()
     }
     MessageDataType data = nullptr;
     while (workerMessageQueue_.DeQueue(&data)) {
-        if (data == NULL || IsTerminating()) {
+        if (data == nullptr || IsTerminating()) {
             HILOG_INFO("worker:: worker reveive terminate signal");
             TerminateWorker();
             return;

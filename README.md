@@ -71,8 +71,7 @@ worker.on("alert", (e)=>{
 
 - name
 
-| once(type:string, listener:EventListener)  | Adds an event listener to the worker and 
-    removes the event listener automically after it is invoked once  |
+| once(type:string, listener:EventListener)  | Adds an event listener to the worker and removes the event listener automically after it is invoked once  |
 |---|---|
 
 - example
@@ -166,8 +165,7 @@ worker.removeAllListener();
 
 - name
 
-| onexit?:(code:number)=>void  | The onexit attribute of the worker specifies the event handler to be called
-    when the worker exits. The handler is executed in the host thread  |
+| onexit?:(code:number)=>void  | The onexit attribute of the worker specifies the event handler to be called when the worker exits. The handler is executed in the host thread  |
 |---|---|
 
 - example
@@ -184,8 +182,7 @@ worker.onexit = function(e) {
 
 - name
 
-| onerror?:(ev:ErrorEvent)=>void  |  The onerror attribute of the worker specifies the event handler to be called
-    when an exception occurs during worker execution. The event handler is executed in the host thread |
+| onerror?:(ev:ErrorEvent)=>void  |  The onerror attribute of the worker specifies the event handler to be called when an exception occurs during worker execution. The event handler is executed in the host thread |
 |---|---|
 
 - example
@@ -202,9 +199,7 @@ worker.onerror = function(e) {
 
 - name
 
-| onmessage?:(ev:MessageEvent)=>void  | The onmessage attribute of the worker specifies the event handler to be called
-    then the host thread receives a  message created by itself and sent by the worker through the parentPort.postMessage.
-    The event handler is executed in the host thread  |
+| onmessage?:(ev:MessageEvent)=>void  | The onmessage attribute of the worker specifies the event handler to be called then the host thread receives a  message created by itself and sent by the worker through the parentPort.postMessage. The event handler is executed in the host thread  |
 |---|---|
 
 - example
@@ -221,8 +216,7 @@ worker.onmessage = function(e) {
 
 - name
 
-| onmessageerror?:(event:MessageEvent)=>void  | The onmessage attribute of the worker specifies the event handler
-    when the worker receives a message that   cannot be serialized. The event handler is executed in the host thread |
+| onmessageerror?:(event:MessageEvent)=>void  | The onmessage attribute of the worker specifies the event handler when the worker receives a message that   cannot be serialized. The event handler is executed in the host thread |
 |---|---|
 
 - example
@@ -294,9 +288,7 @@ parentPort.onmessage = function(e) {
 
 - name
 
-| onmessage?:(event:MessageEvent)=>void  | The onmessage attribute of parentPort specifies the event handler to be called
-    then the worker thread receives a message sent by the host thread through worker postMessage.
-    The event handler is executed in the worker thread  |
+| onmessage?:(event:MessageEvent)=>void  | The onmessage attribute of parentPort specifies the event handler to be called then the worker thread receives a message sent by the host thread through worker postMessage. The event handler is executed in the worker thread  |
 |---|---|
 
 - example
@@ -319,8 +311,7 @@ parentPort.onmessage = function(e) {
 
 - name
 
-| onerror?:(ev: ErrorEvent)=>void  | The onerror attribute of parentPort specifies the event handler to be called
-    when an exception occurs during worker execution. The event handler is executed in the worker thread  |
+| onerror?:(ev: ErrorEvent)=>void  | The onerror attribute of parentPort specifies the event handler to be called when an exception occurs during worker execution. The event handler is executed in the worker thread  |
 |---|---|
 
 - example
@@ -344,8 +335,7 @@ parentPort.onerror = function(e) {
 
 - name
 
-| onmessageerror?:(event: MessageEvent)=>void  | The onmessage attribute of parentPort specifies the event handler to be called
-    then the worker receives a message that cannot be deserialized. The event handler is executed in the worker thread.  |
+| onmessageerror?:(event: MessageEvent)=>void  | The onmessage attribute of parentPort specifies the event handler to be called then the worker receives a message that cannot be deserialized. The event handler is executed in the worker thread.  |
 |---|---|
 
 - example
@@ -366,8 +356,11 @@ parentPort.onmessageerror = function(e) {
 
 ### Repositories Involved
 
-- ace_ace_engine
-- ace_napi
+- ace_ace_engine(foundation/ace/ace_engine-readme.md)
+- ace_napi(foundation/ace/napi-readme.md)
+
+## Related warehouse
+[js_worker_module Subsystem](base/compileruntime/js_worker_module-readme.md)
 
 ### License
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,6 +14,7 @@
  */
 
 #include "message_queue.h"
+#include "utils/log.h"
 
 namespace OHOS::CCRuntime::Worker {
 void MessageQueue::EnQueue(MessageDataType data)
@@ -30,9 +31,13 @@ bool MessageQueue::DeQueue(MessageDataType *data)
         queueLock_.unlock();
         return false;
     }
-    *data = queue_.front();
-    queue_.pop();
-    queueLock_.unlock();
+    if (data != nullptr) {
+        *data = queue_.front();
+        queue_.pop();
+        queueLock_.unlock();
+    } else {
+        HILOG_ERROR("worker:: data is nullptr.");
+    }
     return true;
 }
 

@@ -288,8 +288,7 @@ parentPort.onmessage = function(e) {
 
 - 属性名
 
-| onmessage?:(event:MessageEvent)=>void  | 宿主线程收到来自其创建的worker通过worker.postMessage接口发送的消息时被调用的事件处理程序，
-    处理程序在worker线程中执行  |
+| onmessage?:(event:MessageEvent)=>void  | 宿主线程收到来自其创建的worker通过worker.postMessage接口发送的消息时被调用的事件处理程序，处理程序在worker线程中执行  |
 |---|---|
 
 - 使用示例
@@ -357,8 +356,12 @@ parentPort.onmessageerror = function(e) {
 
 ### 涉及仓
 
-- ace_ace_engine
-- ace_napi
+- ace_ace_engine(foundation/ace/ace_engine-readme_zh.md)
+- ace_napi(foundation/ace/napi-readme_zh.md)
+
+## 相关仓
+[js_worker_module 子系统](base/compileruntime/js_worker_module-readme_zh.md)
+
 
 ### 许可证
 
