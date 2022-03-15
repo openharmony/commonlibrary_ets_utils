@@ -85,7 +85,7 @@ namespace OHOS::Js_sys_module::Process {
             close(stdOutFd_[0]);
             dup2(stdOutFd_[1], 1);
             dup2(stdErrFd_[1], 2); // 2:The value of parameter
-            if (execl("/bin/sh", "sh", "-c", strCommnd.c_str(), NULL) == -1) {
+            if (execl("/bin/sh", "sh", "-c", strCommnd.c_str(), nullptr) == -1) {
                 HILOG_ERROR("execl command failed");
                 exit(127); // 127:The parameter value
             }
@@ -247,7 +247,7 @@ namespace OHOS::Js_sys_module::Process {
             if (readSize >= 0) {
                 stdOutInfo->stdData += childStdout;
             }
-            if (stdOutInfo->stdData.size() > stdOutInfo->maxBuffSize && *(stdOutInfo->isNeedRun)) {
+            if (stdOutInfo->stdData.size() > static_cast<size_t>(stdOutInfo->maxBuffSize) && *(stdOutInfo->isNeedRun)) {
                 if (!kill(stdOutInfo->pid, SIGKILL)) {
                     *(stdOutInfo->isNeedRun) = false;
                     stdOutInfo->stdData = stdOutInfo->stdData.substr(0, stdOutInfo->maxBuffSize);
@@ -281,7 +281,7 @@ namespace OHOS::Js_sys_module::Process {
             if (readSize >= 0) {
                 stdErrInfo->stdData += childStderr;
             }
-            if (stdErrInfo->stdData.size() > stdErrInfo->maxBuffSize && *(stdErrInfo->isNeedRun)) {
+            if (stdErrInfo->stdData.size() > static_cast<size_t>(stdErrInfo->maxBuffSize) && *(stdErrInfo->isNeedRun)) {
                 if (!kill(stdErrInfo->pid, SIGKILL)) {
                     *(stdErrInfo->isNeedRun) = false;
                     stdErrInfo->stdData = stdErrInfo->stdData.substr(0, stdErrInfo->maxBuffSize);
@@ -393,7 +393,7 @@ namespace OHOS::Js_sys_module::Process {
                 case 2: // 2:The parameter value
                     status = napi_get_value_int64(env_, property, &optionsInfo_->maxBuffer);
                     if (status != napi_ok) {
-                        optionsInfo_->maxBuffer = MAXSIZE * MAXSIZE;
+                        optionsInfo_->maxBuffer = static_cast<int64_t>(MAXSIZE) * static_cast<int64_t>(MAXSIZE);
                     }
                     break;
                 default:
@@ -405,22 +405,18 @@ namespace OHOS::Js_sys_module::Process {
 
     std::string ChildProcess::RequireStrValue(const napi_value strValue)
     {
-        char* buffer = nullptr;
         size_t bufferSize = 0;
-
-        napi_get_value_string_utf8(env_, strValue, buffer, -1, &bufferSize);
-        if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
+        if (napi_get_value_string_utf8(env_, strValue, nullptr, 0, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get strValue size");
+            return nullptr;
         }
-
-        napi_get_value_string_utf8(env_, strValue, buffer, bufferSize + 1, &bufferSize);
-
-        std::string result;
-        if (buffer != nullptr) {
-            result = buffer;
+        std::string result = "";
+        result.reserve(bufferSize + 1);
+        result.resize(bufferSize);
+        if (napi_get_value_string_utf8(env_, strValue, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get strValue value");
+            return nullptr;
         }
-        delete []buffer;
-        buffer = nullptr;
         return result;
     }
 
