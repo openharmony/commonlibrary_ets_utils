@@ -28,9 +28,9 @@ ohos_unittest("test_process_unittest") {
     "//foundation/ace/napi/interfaces/kits",
     "//foundation/ace/napi/native_engine",
     "//foundation/ace/napi/native_engine/impl/ark",
+    "//third_party/bounds_checking_function/include",
     "//third_party/googletest/include",
     "//third_party/node/src",
-    "//utils/native/base/include",
   ]
 
   cflags = [ "-g3" ]
@@ -45,12 +45,12 @@ ohos_unittest("test_process_unittest") {
     "//base/compileruntime/js_sys_module/process:process_packages",
     "//foundation/ace/napi/:ace_napi",
     "//foundation/ace/napi/:ace_napi_ark",
+    "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
     "//third_party/icu/icu4c:static_icuuc",
     "//third_party/libuv:uv_static",
     "//utils/native/base:utils",
-    "//utils/native/base:utilsecurec",
   ]
 
   if (is_standard_system) {
