@@ -706,8 +706,8 @@ namespace OHOS::xml {
     void XmlPullParser::SkipInvalidChar()
     {
         while (position_ < max_ || DealLength(1)) {
-            int c = strXml_[position_];
-            if (c > ' ') {
+            unsigned char temp = strXml_[position_];
+            if (temp > ' ') {
                 break;
             }
             position_++;
@@ -892,14 +892,18 @@ namespace OHOS::xml {
 
     std::string XmlPullParser::GetNamespace(std::string prefix)
     {
-        int i = (GetNSCount(depth) << 1) - 2; // 2: number of args
-        for (; i >= 0; i -= 2) { // 2: number of args
-            if (prefix == "") {
-                if (nspStack_[i] == "") {
+        size_t temp = GetNSCount(depth) << 1;
+        if (temp) {
+            size_t i = temp - 2; // 2: number of args
+            for (; i >= 0; i -= 2) { // 2: number of args
+                if (prefix == "" && nspStack_[i] == "") {
+                    return nspStack_[i + 1];
+                } else if (prefix == nspStack_[i]) {
                     return nspStack_[i + 1];
                 }
-            } else if (prefix == nspStack_[i]) {
-                return nspStack_[i + 1];
+                if (!i) {
+                    break;
+                }
             }
         }
         return "";
@@ -1042,21 +1046,21 @@ namespace OHOS::xml {
                 xmlPullParserError_ = "UNEXPECTED_EOF";
                 return false;
             }
-            int c = strXml_[position_];
+            unsigned char temp = strXml_[position_];
             if (xmldecl) {
-                if (c == '?') {
+                if (temp == '?') {
                     position_++;
                     SkipChar('>');
                     return false;
                 }
             } else {
-                if (c == '/') {
+                if (temp == '/') {
                     bEndFlag_ = true;
                     position_++;
                     SkipInvalidChar();
                     SkipChar('>');
                     break;
-                } else if (c == '>') {
+                } else if (temp == '>') {
                     position_++;
                     break;
                 }
