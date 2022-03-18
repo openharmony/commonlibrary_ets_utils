@@ -101,6 +101,7 @@ namespace OHOS::Js_sys_module::Process {
                     OptionsInfo* optionsInfo = reinterpret_cast<OptionsInfo*>(data);
                     napi_delete_async_work(env, optionsInfo->worker);
                     delete optionsInfo;
+                    optionsInfo = nullptr;
                 },
                 reinterpret_cast<void*>(optionsInfo_), &optionsInfo_->worker);
             napi_queue_async_work(env_, optionsInfo_->worker);
@@ -267,6 +268,7 @@ namespace OHOS::Js_sys_module::Process {
         auto stdOutInfo = reinterpret_cast<StdInfo*>(buffer);
         napi_delete_async_work(env, stdOutInfo->worker);
         delete stdOutInfo;
+        stdOutInfo = nullptr;
     }
 
     void ChildProcess::ReadStdErr(napi_env env, void* data)
@@ -301,6 +303,7 @@ namespace OHOS::Js_sys_module::Process {
         auto stdErrInfo = reinterpret_cast<StdInfo*>(buffer);
         napi_delete_async_work(env, stdErrInfo->worker);
         delete stdErrInfo;
+        stdErrInfo = nullptr;
     }
 
     int ChildProcess::GetValidSignal(const napi_value signo)
