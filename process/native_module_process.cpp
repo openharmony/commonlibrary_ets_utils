@@ -97,6 +97,7 @@ namespace OHOS::Js_sys_module::Process {
                 auto objectInfo = (ChildProcess*)data;
                 if (objectInfo != nullptr) {
                     delete objectInfo;
+                    objectInfo = nullptr;
                 }
             },
             nullptr, nullptr));
