@@ -210,9 +210,9 @@ namespace OHOS::Url {
         }
         if (userAndPasswd.find('@') != std::string::npos) {
             while (true) {
-                size_t i = 0;
-                if ((i = userAndPasswd.find('@')) != std::string::npos) {
-                    userAndPasswd = userAndPasswd.replace(i, 1, "%40");
+                size_t pos = 0;
+                if ((pos = userAndPasswd.find('@')) != std::string::npos) {
+                    userAndPasswd = userAndPasswd.replace(pos, 1, "%40");
                 } else {
                     break;
                 }
@@ -220,9 +220,9 @@ namespace OHOS::Url {
         }
 
         if (userAndPasswd.find(':') != std::string::npos) {
-            size_t i = userAndPasswd.find(':');
-            std::string user = userAndPasswd.substr(0, i);
-            std::string keyWord = userAndPasswd.substr(i + 1);
+            size_t pos_ = userAndPasswd.find(':');
+            std::string user = userAndPasswd.substr(0, pos_);
+            std::string keyWord = userAndPasswd.substr(pos_ + 1);
             if (!user.empty()) {
                 username = user;
                 flags.set(static_cast<size_t>(BitsetStatusFlag::BIT2));
@@ -519,12 +519,12 @@ namespace OHOS::Url {
     {
         int val = 0;
         if (radix == 16) { // 16:hex
-            if (sscanf_s(num.c_str(), "%x", &val) == 0) {
+            if (sscanf_s(num.c_str(), "%x", &val) == EOK) {
                 HILOG_ERROR("sscanf_s is falie");
         }
             return std::to_string(val);
         } else if (radix == 8) { // 8:octal
-            if (sscanf_s(num.c_str(), "%o", &val) == 0) {
+            if (sscanf_s(num.c_str(), "%o", &val) == EOK) {
                 HILOG_ERROR("sscanf_s is falie");
         }
             return std::to_string(val);
@@ -873,14 +873,14 @@ namespace OHOS::Url {
                 AnalysisHost(strHost, urlinfo.host, flags, special);
                 AnalysisPath(strPath, urlinfo.path, flags, special);
             } else {
-                std::string strHost = hostandpath;
-                AnalyStrHost(strHost, urlinfo, flags);
-                AnalyHostPath(strHost, flags, urlinfo);
-                AnalysisHost(strHost, urlinfo.host, flags, special);
+                std::string strHost_ = hostandpath;
+                AnalyStrHost(strHost_, urlinfo, flags);
+                AnalyHostPath(strHost_, flags, urlinfo);
+                AnalysisHost(strHost_, urlinfo.host, flags, special);
             }
         } else if (input[1] == '/') {
-            std::string strPath = input.substr(1);
-            AnalysisPath(strPath, urlinfo.path, flags, false);
+            std::string strPath_ = input.substr(1);
+            AnalysisPath(strPath_, urlinfo.path, flags, false);
         } else {
             AnalyInfoPath(flags, urlinfo, input);
         }
@@ -973,16 +973,16 @@ namespace OHOS::Url {
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         if (input.find('#') != std::string::npos) {
-            size_t i = input.find('#');
-            std::string fragment = input.substr(i);
+            size_t pos = input.find('#');
+            std::string fragment = input.substr(pos);
             AnalysisFragment(fragment, urlData.fragment, flags);
-            input = input.substr(0, i);
+            input = input.substr(0, pos);
         }
         if (input.find('?') != std::string::npos) {
-            size_t i = input.find('?');
-            std::string query = input.substr(i);
+            size_t pos_ = input.find('?');
+            std::string query = input.substr(pos_);
             AnalysisQuery(query, urlData.query, flags);
-            input = input.substr(0, i);
+            input = input.substr(0, pos_);
         }
         bool special = (flags.test(static_cast<size_t>(BitsetStatusFlag::BIT1)) ? true : false);
         AnalysisPath(input, urlData.path, flags, special);
@@ -1049,16 +1049,16 @@ namespace OHOS::Url {
                 return;
             }
             if (input.find('#') != std::string::npos) {
-                size_t i = input.find('#');
-                std::string fragment = input.substr(i);
+                size_t pos = input.find('#');
+                std::string fragment = input.substr(pos);
                 AnalysisFragment(fragment, urlData.fragment, flags);
-                input = input.substr(0, i);
+                input = input.substr(0, pos);
             }
             if (input.find('?') != std::string::npos) {
-                size_t i = input.find('?');
-                std::string query = input.substr(i);
+                size_t pos_ = input.find('?');
+                std::string query = input.substr(pos_);
                 AnalysisQuery(query, urlData.query, flags);
-                input = input.substr(0, i);
+                input = input.substr(0, pos_);
             }
             std::string str = input.substr(pos);
             if (urlData.scheme == "file:") {
@@ -1668,16 +1668,16 @@ namespace OHOS::Url {
         std::string firstStrValue = ReviseStr(searchParams[1], reviseChar);
         output = firstStrKey + "=" + firstStrValue;
         if (lenStr % 2 == 0) { // 2:Divisible by 2
-            size_t i = 2; // 2:Initial Position
-            for (; i < lenStr; i += 2) { // 2:Searching for the number and number of keys and values
-                std::string strKey = ReviseStr(searchParams[i], reviseChar);
-                std::string strValue = ReviseStr(searchParams[i + 1], reviseChar);
+            size_t pos = 2; // 2:Initial Position
+            for (; pos < lenStr; pos += 2) { // 2:Searching for the number and number of keys and values
+                std::string strKey = ReviseStr(searchParams[pos], reviseChar);
+                std::string strValue = ReviseStr(searchParams[pos + 1], reviseChar);
                 output += +"&" + strKey + "=" + strValue;
             }
         }
-        napi_value result = nullptr;
-        napi_create_string_utf8(env, output.c_str(), output.size(), &result);
-        return result;
+        napi_value result_ = nullptr;
+        napi_create_string_utf8(env, output.c_str(), output.size(), &result_);
+        return result_;
     }
     void URLSearchParams::HandleIllegalChar(std::wstring& inputStr, std::wstring::const_iterator it)
     {
@@ -1728,7 +1728,7 @@ namespace OHOS::Url {
         size_t reSize = wcstombs(rePtr, winput.c_str(), 0) + 1;
         if (reSize > 0) {
             rePtr = new char[reSize];
-            if (memset_s(rePtr, reSize, 0, reSize) != 0) {
+            if (memset_s(rePtr, reSize, 0, reSize) != EOK) {
                 HILOG_ERROR("ToUSVString memset_s failed");
                 delete[] rePtr;
                 return reStr;
@@ -1871,7 +1871,7 @@ namespace OHOS::Url {
         napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize);
         if (bufferSize > 0) {
             buffer = new char[bufferSize + 1];
-            if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != 0) {
+            if (memset_s(buffer, bufferSize + 1, 0, bufferSize + 1) != EOK) {
                 HILOG_ERROR("type memset error");
                 delete [] buffer;
                 return nullptr;

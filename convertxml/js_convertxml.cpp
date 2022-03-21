@@ -124,10 +124,10 @@ namespace OHOS::Xml {
             }
             if (curNode->type == xmlElementType::XML_COMMENT_NODE && !options_.ignoreComment) {
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
-                char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
-                if (curContent != nullptr) {
-                    SetKeyValue(elementsObject, options_.comment, curContent);
-                    xmlFree(reinterpret_cast<void*>(curContent));
+                char *curContent_ = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
+                if (curContent_ != nullptr) {
+                    SetKeyValue(elementsObject, options_.comment, curContent_);
+                    xmlFree(reinterpret_cast<void*>(curContent_));
                 }
                 prevObj_.push_back(elementsObject);
             }

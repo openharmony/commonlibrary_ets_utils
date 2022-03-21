@@ -195,10 +195,10 @@ namespace OHOS::xml {
         elementStack[depth_ * 3 + 1] = ""; // 3: number of args
         type = "isEndTag";
         out_.append(">");
-        size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
-                iPos_ += iLenTemp;
+        size_t iLenTemp_ = out_.length();
+        if (iLength_ > iPos_ + iLenTemp_ - 1) {
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp_)) {
+                iPos_ += iLenTemp_;
             }
         }
     }
@@ -421,8 +421,8 @@ namespace OHOS::xml {
 
         if (max_ != position_) {
             max_ -= position_;
-            for (size_t i = 0; i < max_; ++i) {
-                strXml_[i] = strXml_[position_ + i];
+            for (size_t j = 0; j < max_; ++j) {
+                strXml_[j] = strXml_[position_ + j];
             }
         } else {
             max_ = 0;
@@ -562,6 +562,8 @@ namespace OHOS::xml {
                         return TagEnum::ELEMENTDECL;
                     case 'N':
                         return TagEnum::ENTITYDECL;
+                    default:
+                        break;
                 }
                 xmlPullParserError_ = "Unexpected <!";
                 break;
@@ -569,6 +571,8 @@ namespace OHOS::xml {
                 return TagEnum::ATTLISTDECL;
             case 'N':
                 return TagEnum::NOTATIONDECL;
+            default:
+                break;
         }
         return TagEnum::ERROR1;
     }
@@ -984,13 +988,13 @@ namespace OHOS::xml {
         if (any) {
             ParseNspFunction();
         }
-        size_t cut = name_.find(':');
-        if (cut == 0) {
+        size_t cut_ = name_.find(':');
+        if (cut_ == 0) {
             xmlPullParserError_ = "illegal tag name: " + name_;
         }
-        if (cut != std::string::npos) {
-            prefix_ = name_.substr(0, cut);
-            name_ = name_.substr(cut + 1);
+        if (cut_ != std::string::npos) {
+            prefix_ = name_.substr(0, cut_);
+            name_ = name_.substr(cut_ + 1);
         }
         namespace_ = GetNamespace(prefix_);
         if (namespace_ == "") {
@@ -1456,11 +1460,11 @@ namespace OHOS::xml {
                     ParseComment(false);
                     break;
                 case TagEnum::PARAMETER_ENTITY_REF:
-                    break;
                     xmlPullParserError_ = "Parameter entity references are not supported ";
-                default:
                     break;
+                default:
                     xmlPullParserError_ = "Unexpected token";
+                    break;
             }
         }
     }
@@ -1572,15 +1576,6 @@ namespace OHOS::xml {
                 ParseOneTag();
             }
             return type;
-            if (type == TagEnum::WHITESPACE) {
-                text_ = "";
-            }
-            TagEnum typeTemp = ParseTagType(false);
-            if (text_ != "" && !(text_ == "") && typeTemp < TagEnum::TEXT) {
-                type = TagEnum::TEXT;
-                return type;
-            }
-            type = typeTemp;
         }
     }
 

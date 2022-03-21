@@ -104,7 +104,7 @@ namespace OHOS::Url {
         }
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
+            [](napi_env env_, void *data, void *hint) {
                 auto obj = (URL*)data;
                 if (obj != nullptr) {
                     delete obj;
@@ -552,7 +552,7 @@ namespace OHOS::Url {
         auto object = new URLSearchParams(env);
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
+            [](napi_env env_, void *data, void *hint) {
                 auto obj = (URLSearchParams*)data;
                 if (obj != nullptr) {
                     delete obj;

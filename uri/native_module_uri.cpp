@@ -56,7 +56,7 @@ namespace OHOS::Uri {
             napi_throw_error(env, nullptr, "parameter type is error");
         }
         NAPI_CALL(env, napi_wrap(env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
+            [](napi_env env_, void *data, void *hint) {
             auto obj = reinterpret_cast<Uri*>(data);
             if (obj != nullptr) {
                 delete obj;

@@ -32,7 +32,7 @@ namespace OHOS::Xml {
         auto objectInfo = new ConvertXml(env);
         napi_wrap(
             env, thisVar, objectInfo,
-            [](napi_env env, void *data, void *hint) {
+            [](napi_env env_, void *data, void *hint) {
                 auto obj = (ConvertXml*)data;
                 if (obj != nullptr) {
                     delete obj;

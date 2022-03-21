@@ -57,8 +57,7 @@ var seachParamsArr : Array<string> = [];
 class URLSearchParams {
     urlcalss : NativeURLSearchParams;
     constructor(input : object | string | Iterable<[]> | null | undefined) {
-        let out = [];
-        out = parameterProcessing(input);
+        let out : string[] = parameterProcessing(input);
         this.urlcalss = new UrlInterface.URLSearchParams1();
         this.urlcalss.array = out;
     }

@@ -26,7 +26,7 @@ interface ConvertXML {
     ConvertXml : NativeConvertXml;
 }
 declare function requireInternal(s : string) : ConvertXML;
-const convertXml = requireInternal("ConvertXML");
+const convertXml = requireInternal('ConvertXML');
 
 class ConvertXML {
     convertxmlclass : NativeConvertXml;
@@ -37,19 +37,19 @@ class ConvertXML {
         strXml = DealXml(strXml);
         let converted = this.convertxmlclass.convert(strXml, options);
         let strEnd : string = '';
-        if (converted.hasOwnProperty("spaces")) {
+        if (converted.hasOwnProperty('spaces')) {
             let space : string | number | undefined = converted.spaces;
             delete converted.spaces;
             strEnd = JSON.stringify(converted, null, space);
         }
         let idx : number = 0;
-        while ((idx = strEnd.indexOf('\\t')) != -1) {
+        while ((idx = strEnd.indexOf('\\t')) !== -1) {
             strEnd = strEnd.substring(0, idx) + '\t' + strEnd.substring(idx + 2);
         }
-        while ((idx = strEnd.indexOf('\\n')) != -1) {
+        while ((idx = strEnd.indexOf('\\n')) !== -1) {
             strEnd = strEnd.substring(0, idx) + '\n' + strEnd.substring(idx + 2);
         }
-        while ((idx = strEnd.indexOf('\\')) != -1) {
+        while ((idx = strEnd.indexOf('\\')) !== -1) {
             strEnd = strEnd.substring(0, idx) + '' + strEnd.substring(idx + 1);
         }
         return strEnd;
@@ -63,16 +63,16 @@ function DealXml(strXml : string)
     let idxThir : number = 0;
     let idxCData : number = 0;
     let idxCDataSec : number = 0;
-    while ((idx = strXml.indexOf(']]><![CDATA')) != -1) {
+    while ((idx = strXml.indexOf(']]><![CDATA')) !== -1) {
         strXml = strXml.substring(0, idx + 3) + ' ' + strXml.substring(idx + 3);
     }
-    while ((idx = strXml.indexOf('>', idxSec)) != -1) {
+    while ((idx = strXml.indexOf('>', idxSec)) !== -1) {
         idxThir = strXml.indexOf('<', idx);
         strXml = DealPriorReplace(strXml, idx, idxThir);
-        if (strXml.indexOf('<', idx) != -1) {
+        if (strXml.indexOf('<', idx) !== -1) {
             idxCData = strXml.indexOf('<![CDATA', idxCDataSec);
             idxSec = strXml.indexOf('<', idx);
-            if (idxSec == idxCData) {
+            if (idxSec === idxCData) {
                 idxSec = strXml.indexOf(']]>', idxCData);
                 strXml = DealLaterReplace(strXml, idx, idxThir);
                 idxCDataSec = idxSec;
@@ -90,7 +90,7 @@ function DealPriorReplace(strXml : string, idx : number, idxThir : number)
     let i : number = idx + 1;
     for (; i < idxThir ; i++) {
         let cXml : string = strXml.charAt(i);
-        if (cXml != '\n' && cXml != '\v' && cXml != '\t' && cXml != ' ')
+        if (cXml !== '\n' && cXml !== '\v' && cXml !== '\t' && cXml !== ' ')
         {
             break;
         }
@@ -98,7 +98,7 @@ function DealPriorReplace(strXml : string, idx : number, idxThir : number)
     let j : number = idx + 1;
     for (; j < strXml.indexOf('<', idx) ; j++) {
         let cXml : string = strXml.charAt(j);
-        if (i != idxThir) {
+        if (i !== idxThir) {
             switch (cXml) {
                 case '\n':
                     strXml = strXml.substring(0, j) + '\\n' + strXml.substring(j + 1);

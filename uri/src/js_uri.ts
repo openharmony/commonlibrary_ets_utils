@@ -33,13 +33,13 @@ interface UriInterface{
     Uri : NativeUri;
 }
 declare function requireInternal(s : string) : UriInterface;
-const uri = requireInternal("uri");
+const uri = requireInternal('uri');
 
 class URI {
     uricalss : NativeUri
     constructor(input : string) {
         if (typeof input !== 'string' || input.length === 0) {
-            throw new Error("input type err");
+            throw new Error('input type err');
         }
         this.uricalss = new uri.Uri(input);
         let errStr : string = this.uricalss.isFailed;
@@ -104,8 +104,8 @@ class URI {
 
 function toAscllString(uriStr : string) {
     if (uriStr.indexOf('[') !== -1) {
-        let arr : string[] = uriStr.split("[");
-        let brr : string[] = arr[1].split("]");
+        let arr : string[] = uriStr.split('[');
+        let brr : string[] = arr[1].split(']');
         arr[1] = '[' + brr[0] + ']';
         arr[2] = brr[1];
         arr[0] = encodeURI(arr[0]);

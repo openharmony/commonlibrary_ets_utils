@@ -414,8 +414,6 @@ var strXml =
             '<?xml version="1.0" encoding="utf-8"?>' +
             '<note importance="high" logged="true">' +
             '    <title>Happy</title>' +
-            '    <todo>Work</todo>' +
-            '    <todo>Play</todo>' +
             '</note>';
 var arrayBuffer = new ArrayBuffer(strXml.length*2);
 var bufView = new Uint8Array(arrayBuffer);
@@ -432,8 +430,6 @@ var strXml =
             '<?xml version="1.0" encoding="utf-8"?>' +
             '<note importance="high" logged="true">' +
             '    <title>Happy</title>' +
-            '    <todo>Work</todo>' +
-            '    <todo>Play</todo>' +
             '</note>';
 var arrayBuffer = new ArrayBuffer(strXml.length*2);
 var bufView = new Uint8Array(arrayBuffer);
