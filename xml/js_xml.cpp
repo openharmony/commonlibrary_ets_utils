@@ -1463,11 +1463,11 @@ namespace OHOS::xml {
                     ParseComment(false);
                     break;
                 case TagEnum::PARAMETER_ENTITY_REF:
-                    break;
                     xmlPullParserError_ = "Parameter entity references are not supported ";
-                default:
                     break;
+                default:
                     xmlPullParserError_ = "Unexpected token";
+                    break;
             }
         }
     }
@@ -1579,15 +1579,6 @@ namespace OHOS::xml {
                 ParseOneTag();
             }
             return type;
-            if (type == TagEnum::WHITESPACE) {
-                text_ = "";
-            }
-            TagEnum typeTemp = ParseTagType(false);
-            if (text_ != "" && !(text_ == "") && typeTemp < TagEnum::TEXT) {
-                type = TagEnum::TEXT;
-                return type;
-            }
-            type = typeTemp;
         }
     }
 
