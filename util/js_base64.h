@@ -19,8 +19,8 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-#ifndef BASE_COMPILERUNTIME_JS_UTIL_MODULE_BASE64_CLASS_H
-#define BASE_COMPILERUNTIME_JS_UTIL_MODULE_BASE64_CLASS_H
+#ifndef UTIL_JS_BASE64_H_
+#define UTIL_JS_BASE64_H_
 
 namespace OHOS::Util {
     struct EncodeInfo {
@@ -59,14 +59,60 @@ namespace OHOS::Util {
 
     class Base64 {
     public:
+        /**
+         * Constructor of Base64.
+         *
+         * @param env NAPI environment parameters.
+         */
         explicit Base64(napi_env env);
+
+        /**
+         * Destructor of Base64.
+         */
         virtual ~Base64() {}
+
+        /**
+         * Output the corresponding text after encoding the input parameters.
+         *
+         * @param src Encode the input uint8 array.
+         */
         napi_value EncodeSync(napi_value src);
+
+        /**
+         * Output the corresponding text after encoding the input parameters.
+         *
+         * @param src Encode the input uint8 array.
+         */
         napi_value EncodeToStringSync(napi_value src);
+
+        /**
+         * Output the corresponding text after encoding the input parameters.
+         *
+         * @param src Decode the input uint8 array or string.
+         */
         napi_value DecodeSync(napi_value src);
+
+        /**
+         * Output the corresponding text after asynchronously encoding the input parameters.
+         *
+         * @param src Asynchronously encoded input uint8 array.
+         */
         napi_value Encode(napi_value src);
+
+        /**
+         * Output the corresponding text after asynchronously encoding the input parameters.
+         *
+         * @param src Asynchronously encoded input uint8 array.
+         */
         napi_value EncodeToString(napi_value src);
+
+        /**
+         * Output the corresponding text after asynchronously encoding the input parameters.
+         *
+         * @param src Asynchronously decode the input uint8 array or string.
+         */
         napi_value Decode(napi_value src);
+
     private:
         napi_env env;
         unsigned char *DecodeAchieve(const char *input, size_t inputLen);
@@ -93,4 +139,4 @@ namespace OHOS::Util {
         static void EndStdDecode(napi_env env, napi_status status, void *buffer);
     };
 }
-#endif
+#endif // UTIL_JS_BASE64_H_

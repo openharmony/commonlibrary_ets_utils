@@ -37,7 +37,7 @@ namespace OHOS::Util {
             return nullptr;
         }
         char *type = new char[length + 1];
-        if (memset_s(type, length + 1, '\0', length + 1) != 0) {
+        if (memset_s(type, length + 1, '\0', length + 1) != EOK) {
                 HILOG_ERROR("type memset_s failed");
                 delete[] type;
                 return nullptr;
@@ -122,44 +122,32 @@ namespace OHOS::Util {
         return result;
     }
 
+    static void FreeMemory(napi_value *address)
+    {
+        delete[] address;
+        address = nullptr;
+    }
+
     static napi_value DealWithFormatString(napi_env env, napi_callback_info info)
     {
-        size_t argc = 0;
-        napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
-        napi_value *argv = nullptr;
-        if (argc > 0) {
-            argv = new napi_value[argc + 1];
-            if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
-                HILOG_ERROR("argv memset error");
-                delete []argv;
-                return nullptr;
-            }
-        } else {
-            return nullptr;
-        }
-        napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-        char *format = nullptr;
+        size_t argc = 1;
+        napi_value argv = nullptr;
+        napi_get_cb_info(env, info, &argc, 0, nullptr, nullptr);
+
+        napi_get_cb_info(env, info, &argc, &argv, nullptr, nullptr);
+        std::string format = "";
         size_t formatsize = 0;
-        napi_get_value_string_utf8(env, argv[0], nullptr, 0, &formatsize);
-        if (formatsize > 0) {
-            format = new char[formatsize + 1];
-            if (memset_s(format, formatsize + 1, 0, formatsize + 1) != 0) {
-                HILOG_ERROR("format memset error");
-                delete []format;
-                delete []argv;
-                return nullptr;
-            }
-        } else {
-            delete []argv;
+        if (napi_get_value_string_utf8(env, argv, nullptr, 0, &formatsize) != napi_ok) {
+            HILOG_ERROR("can not get argv size");
             return nullptr;
         }
-        napi_get_value_string_utf8(env, argv[0], format, formatsize + 1, &formatsize);
-        std::string str = format;
-        delete []format;
-        delete []argv;
-        argv = nullptr;
-        format = nullptr;
-        return FormatString(env, str);
+        format.reserve(formatsize + 1);
+        format.resize(formatsize);
+        if (napi_get_value_string_utf8(env, argv, format.data(), formatsize + 1, &formatsize) != napi_ok) {
+            HILOG_ERROR("can not get argv value");
+            return nullptr;
+        }
+        return FormatString(env, format);
     }
 
     static std::string PrintfString(const std::string &format, const std::vector<std::string> &value)
@@ -177,33 +165,42 @@ namespace OHOS::Util {
         if (argc > 0) {
             argv = new napi_value[argc];
             napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-            char *format = nullptr;
+            std::string format = "";
             size_t formatsize = 0;
-            napi_get_value_string_utf8(env, argv[0], nullptr, 0, &formatsize);
-            if (formatsize > 0) {
-                format = new char[formatsize + 1];
+            if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &formatsize) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] size");
+                FreeMemory(argv);
+                return nullptr;
             }
-            napi_get_value_string_utf8(env, argv[0], format, formatsize + 1, &formatsize);
-            std::string printInfo;
+            format.reserve(formatsize);
+            format.resize(formatsize);
+            if (napi_get_value_string_utf8(env, argv[0], format.data(), formatsize + 1, &formatsize) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] value");
+                FreeMemory(argv);
+                return nullptr;
+            }
             std::vector<std::string> value;
             for (size_t i = 1; i < argc; i++) {
-                char *valueString = nullptr;
+                std::string valueString = "";
                 size_t valuesize = 0;
-                napi_get_value_string_utf8(env, argv[i], nullptr, 0, &valuesize);
-                if (valuesize > 0) {
-                    valueString = new char[valuesize + 1];
+                if (napi_get_value_string_utf8(env, argv[i], nullptr, 0, &valuesize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[i] size");
+                    FreeMemory(argv);
+                    return nullptr;
                 }
-                napi_get_value_string_utf8(env, argv[i], valueString, valuesize + 1, &valuesize);
-                value.push_back(valueString);
-                delete []valueString;
-                valueString = nullptr;
+                valueString.reserve(valuesize);
+                valueString.resize(valuesize);
+                if (napi_get_value_string_utf8(env, argv[i], valueString.data(),
+                                               valuesize + 1, &valuesize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[i] value");
+                    FreeMemory(argv);
+                    return nullptr;
+                }
+                value.push_back(valueString.data());
             }
-            printInfo = PrintfString(format, value);
+            std::string printInfo = PrintfString(format.data(), value);
             napi_create_string_utf8(env, printInfo.c_str(), printInfo.size(), &result);
-            delete []format;
-            delete []argv;
-            argv = nullptr;
-            format = nullptr;
+            FreeMemory(argv);
             return result;
         }
         napi_value res = nullptr;
@@ -292,16 +289,16 @@ namespace OHOS::Util {
             napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
-            napi_value argv[2] = { 0 };
-            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, &data));
+            napi_value argvArr[2] = { 0 };
+            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argvArr, nullptr, &data));
             // first para
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typeLen));
+            NAPI_CALL(env, napi_get_value_string_utf8(env, argvArr[0], nullptr, 0, &typeLen));
             if (typeLen > 0) {
                 type = ApplyMemory(typeLen);
             }
-            napi_get_value_string_utf8(env, argv[0], type, typeLen + 1, &typeLen);
+            napi_get_value_string_utf8(env, argvArr[0], type, typeLen + 1, &typeLen);
             // second para
-            GetSecPara(env, argv[1], paraVec);
+            GetSecPara(env, argvArr[1], paraVec);
         }
         std::string enconding = "utf-8";
         if (type != nullptr) {
@@ -312,8 +309,8 @@ namespace OHOS::Util {
         auto objectInfo = new TextDecoder(env, enconding, paraVec);
         NAPI_CALL(env, napi_wrap(
             env, thisVar, objectInfo,
-            [](napi_env env, void *data, void *hint) {
-                auto objInfo = (TextDecoder*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto objInfo = reinterpret_cast<TextDecoder*>(data);
                 if (objInfo != nullptr) {
                     delete objInfo;
                 }
@@ -347,10 +344,10 @@ namespace OHOS::Util {
             valStr = textDecoder->Decode(argv, iStream);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
-            napi_value argv[2] = { 0 };
-            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, &dataPara));
+            napi_value argvArr[2] = { 0 };
+            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara));
             // first para
-            NAPI_CALL(env, napi_get_typedarray_info(env, argv[0], &type, &length, &data, &arraybuffer, &byteOffset));
+            NAPI_CALL(env, napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset));
             // second para
             napi_value messageKeyStream = nullptr;
             const char *messageKeyStrStream = "stream";
@@ -358,9 +355,9 @@ namespace OHOS::Util {
             napi_value resultStream = nullptr;
             NAPI_CALL(env, napi_create_string_utf8(env, messageKeyStrStream, strlen(messageKeyStrStream),
                 &messageKeyStream));
-            NAPI_CALL(env, napi_get_property(env, argv[1], messageKeyStream, &resultStream));
+            NAPI_CALL(env, napi_get_property(env, argvArr[1], messageKeyStream, &resultStream));
             NAPI_CALL(env, napi_get_value_bool(env, resultStream, &iStream));
-            valStr = textDecoder->Decode(argv[0], iStream);
+            valStr = textDecoder->Decode(argvArr[0], iStream);
         }
         return valStr;
     }
@@ -405,8 +402,8 @@ namespace OHOS::Util {
         auto object = new TextEncoder(env);
         NAPI_CALL(env, napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
-                auto obj = (TextEncoder*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<TextEncoder*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -523,8 +520,8 @@ namespace OHOS::Util {
         auto objectInfo = new Base64(env);
         napi_wrap(
             env, thisVar, objectInfo,
-            [](napi_env env, void *data, void *hint) {
-                auto objInfo = (Base64*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto objInfo = reinterpret_cast<Base64*>(data);
                 if (objInfo != nullptr) {
                     delete objInfo;
                 }
@@ -677,7 +674,7 @@ namespace OHOS::Util {
         const char testStr[] = "test";
         napi_status status = napi_create_external(
             env, (void*)testStr,
-            [](napi_env env, void* data, void* hint) {},
+            [](napi_env environment, void* data, void* hint) {},
             (void*)testStr, &result);
         if (status != napi_ok) {
             return  NULL;
@@ -693,10 +690,10 @@ namespace OHOS::Util {
         auto objectInfo = new Types(env);
         napi_wrap(
             env, thisVar, objectInfo,
-            [](napi_env env, void* data, void* hint) {
-                auto objectInfo = (Types*)data;
-                if (objectInfo != nullptr) {
-                    delete objectInfo;
+            [](napi_env environment, void* data, void* hint) {
+                auto objectInformation = reinterpret_cast<Types*>(data);
+                if (objectInformation != nullptr) {
+                    delete objectInformation;
                 }
             },
             nullptr, nullptr);

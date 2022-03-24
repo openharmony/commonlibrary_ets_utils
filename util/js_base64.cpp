@@ -460,6 +460,7 @@ namespace OHOS::Util {
             CreateDecodePromise(inputDecode, length);
         }
         delete[] inputString;
+        inputString = nullptr;
         return stdDecodeInfo_->promise;
     }
     void Base64::CreateDecodePromise(char *inputDecode, size_t length)
