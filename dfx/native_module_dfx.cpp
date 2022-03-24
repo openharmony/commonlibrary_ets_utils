@@ -122,7 +122,7 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_get_boolean(env, stopResult, &result));
         return result;
     }
-    
+
     static napi_value PrintStatisticResult(napi_env env, napi_callback_info info)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
@@ -131,7 +131,7 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
     }
-   
+
     static napi_value StartRuntimeStat(napi_env env, napi_callback_info info)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
@@ -140,7 +140,7 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
     }
-    
+
     static napi_value StopRuntimeStat(napi_env env, napi_callback_info info)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
@@ -149,7 +149,7 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
     }
-    
+
     static napi_value GetArrayBufferSize(napi_env env, napi_callback_info info)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
@@ -158,7 +158,7 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_create_uint32(env, value, &result));
         return result;
     }
-    
+
     static napi_value GetHeapTotalSize(napi_env env, napi_callback_info info)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
@@ -167,7 +167,7 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_create_uint32(env, value, &result));
         return result;
     }
-    
+
     static napi_value GetHeapUsedSize(napi_env env, napi_callback_info info)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
@@ -194,6 +194,7 @@ namespace OHOS::Js_sys_module::Dfx {
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         return exports;
     }
+
     // dfx module define
     static napi_module dfxModule = {
         .nm_version = 1,
@@ -201,7 +202,7 @@ namespace OHOS::Js_sys_module::Dfx {
         .nm_filename = nullptr,
         .nm_register_func = DfxInit,
         .nm_modname = "dfx",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = {0},
     };
 
@@ -211,4 +212,4 @@ namespace OHOS::Js_sys_module::Dfx {
     {
         napi_module_register(&dfxModule);
     }
-}
+} // namespace OHOS::Js_sys_module::Dfx
