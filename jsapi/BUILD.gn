@@ -25,10 +25,7 @@ ohos_shared_library("worker") {
     "worker/worker_runner.cpp",
   ]
 
-  deps = [
-    "//foundation/ace/napi:ace_napi",
-    "//foundation/ace/napi:ace_napi_quickjs",
-  ]
+  deps = [ "//foundation/ace/napi:ace_napi" ]
 
   if (is_standard_system) {
     external_deps = [ "hiviewdfx_hilog_native:libhilog" ]

@@ -16,7 +16,7 @@
 #include "worker.h"
 
 namespace OHOS::CCRuntime::Worker {
-const static int MAXWORKERS = 50;
+const static int MAXWORKERS = 8;
 static std::list<Worker*> g_workers;
 static std::mutex g_workersMutex;
 
