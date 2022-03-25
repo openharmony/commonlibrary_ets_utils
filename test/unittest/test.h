@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H
-#define FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H
+#ifndef TEST_UNITTEST_TEST_H_
+#define TEST_UNITTEST_TEST_H_
 
 #include "native_engine.h"
 
@@ -22,12 +22,29 @@
 
 class NativeEngineTest : public testing::Test {
 public:
+    /**
+     * NativeEngineTest constructor.
+     */
     NativeEngineTest();
+
+    /**
+     * NativeEngineTest destructor.
+     */
+
     virtual ~NativeEngineTest();
+
+    /**
+     * Set function.
+     */
     void SetUp() override {}
+
+    /**
+     * TearDown function.
+     */
     void TearDown() override {}
+
 protected:
     NativeEngine *engine_;
 };
 
-#endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H */
+#endif // TEST_UNITTEST_TEST_H_

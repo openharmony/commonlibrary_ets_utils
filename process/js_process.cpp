@@ -421,7 +421,7 @@ namespace OHOS::Js_sys_module::Process {
         return result;
     }
 
-    int Process::ConvertTime(time_t tvsec, long tvnsec) const
+    int Process::ConvertTime(time_t tvsec, int64_t tvnsec) const
     {
         return int(tvsec * 1000) + int(tvnsec / 1000000); // 98999:Only converttime numbers is 1000 and 1000000.
     }
@@ -574,4 +574,4 @@ namespace OHOS::Js_sys_module::Process {
         }
         eventMap.clear();
     }
-} // namespace
+} // namespace OHOS::Js_sys_module::Process

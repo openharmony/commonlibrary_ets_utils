@@ -94,10 +94,10 @@ namespace OHOS::Js_sys_module::Process {
         NAPI_CALL(env, napi_wrap(
             env, thisVar, objectInfo,
             [](napi_env env, void* data, void* hint) {
-                auto objectInfo = (ChildProcess*)data;
-                if (objectInfo != nullptr) {
-                    delete objectInfo;
-                    objectInfo = nullptr;
+                auto objectResult = reinterpret_cast<ChildProcess*>(data);
+                if (objectResult != nullptr) {
+                    delete objectResult;
+                    objectResult = nullptr;
                 }
             },
             nullptr, nullptr));
@@ -540,8 +540,10 @@ namespace OHOS::Js_sys_module::Process {
         NAPI_CALL(env, napi_wrap(
             env, obj, reinterpret_cast<void*>(Process::ClearReference),
             [](napi_env env, void* data, void* hint) {
-                ClearRefCallback clearReference = reinterpret_cast<ClearRefCallback>(data);
-                clearReference(env);
+                if (data != nullptr) {
+                    ClearRefCallback clearParameters = reinterpret_cast<ClearRefCallback>(data);
+                    clearParameters(env);
+                }
             },
             nullptr, nullptr));
         NAPI_CALL(env, napi_set_named_property(env, exports, "obj", obj));
@@ -555,7 +557,7 @@ namespace OHOS::Js_sys_module::Process {
         .nm_filename = nullptr,
         .nm_register_func = Init,
         .nm_modname = "process",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = { 0 },
     };
 
@@ -563,4 +565,4 @@ namespace OHOS::Js_sys_module::Process {
     {
         napi_module_register(&processModule);
     }
-} // namespace
+} // namespace OHOS::Js_sys_module::Process

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef BASE_COMPILERUNTIME_JS_SYS_MODULE_CHILD_PROCESS_CLASS_H
-#define BASE_COMPILERUNTIME_JS_SYS_MODULE_CHILD_PROCESS_CLASS_H
+#ifndef PROCESS_JS_CHILDPROCESS_H_
+#define PROCESS_JS_CHILDPROCESS_H_
 
 #include <string>
 #include <sys/types.h>
@@ -50,18 +50,78 @@ namespace OHOS::Js_sys_module::Process {
 
     class ChildProcess {
     public:
+        /**
+         * Create child process object.
+         *
+         * @param env NAPI environment parameters.
+         */
         explicit ChildProcess(napi_env env);
+
+        /**
+         * Close the target process.
+         */
         void Close();
+
+        /**
+         * Send a signal to process.
+         *
+         * @param signal Number or string represents the signal sent.
+         */
         void Kill(const napi_value signo);
+
+        /**
+         * Wait for the child process to finish running, and return a promise object
+         * whose value is the exit code of the child process.
+         */
         napi_value Wait();
+
+        /**
+         * Get the standard output of the child process.
+         */
         napi_value GetOutput() const;
+
+        /**
+         * Get the standard error output of the child process.
+         */
         napi_value GetErrorOutput() const;
+
+        /**
+         * Get kill status.
+         */
         napi_value GetKilled() const;
+
+        /**
+         * Get the specific pid value.
+         */
         napi_value Getpid() const;
+
+        /**
+         * Get the parent process ID.
+         */
         napi_value Getppid() const;
+
+        /**
+         * Get exit status.
+         */
         napi_value GetExitCode() const;
+
+        /**
+         * Initialization option information.
+         *
+         * @param options Option parameter.
+         */
         void InitOptionsInfo(napi_value options);
+
+        /**
+         * Start a subprocess to execute shell commands.
+         *
+         * @param command Command parameters.
+         */
         void Spawn(napi_value command);
+
+        /**
+         * ChildProcess destructor.
+         */
         virtual ~ChildProcess();
 
     private:
@@ -88,5 +148,5 @@ namespace OHOS::Js_sys_module::Process {
         bool killed_ = false;
         bool isWait_ = true;
     };
-} // namespace
-#endif
+} // namespace OHOS::Js_sys_module::Process
+#endif // PROCESS_JS_CHILDPROCESS_H_

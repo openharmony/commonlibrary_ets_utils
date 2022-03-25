@@ -90,6 +90,10 @@ namespace OHOS::Js_sys_module::Process {
                 exit(127); // 127:The parameter value
             }
         } else if (pid > 0) {
+            if (optionsInfo_ == nullptr) {
+                HILOG_ERROR("optionsInfo_ is nullptr");
+                return;
+            }
             optionsInfo_->pid = pid;
             ppid_ = getpid();
             CreateWorker();
@@ -121,6 +125,12 @@ namespace OHOS::Js_sys_module::Process {
         if (isWait_) {
             int32_t status;
             isWait_ = false;
+            if (optionsInfo_ == nullptr) {
+                napi_value res = nullptr;
+                NAPI_CALL(env_, napi_get_undefined(env_, &res));
+                HILOG_ERROR("optionsInfo_ is nullptr");
+                return res;
+            }
             waitpid(optionsInfo_->pid, &status, 0);
             exitCode_ = status;
         }
@@ -136,6 +146,12 @@ namespace OHOS::Js_sys_module::Process {
 
     napi_value ChildProcess::GetOutput() const
     {
+        if (stdOutInfo_ == nullptr) {
+            napi_value res = nullptr;
+            NAPI_CALL(env_, napi_get_undefined(env_, &res));
+            HILOG_ERROR("stdOutInfo_ is nullptr");
+            return res;
+        }
         NAPI_CALL(env_, napi_create_promise(env_, &stdOutInfo_->deferred, &stdOutInfo_->promise));
         void* data = nullptr;
         napi_value arrayBuffer = nullptr;
@@ -158,6 +174,12 @@ namespace OHOS::Js_sys_module::Process {
 
     napi_value ChildProcess::GetErrorOutput() const
     {
+        if (stdErrInfo_ == nullptr) {
+            napi_value res = nullptr;
+            NAPI_CALL(env_, napi_get_undefined(env_, &res));
+            HILOG_ERROR("stdErrInfo_ is nullptr");
+            return res;
+        }
         NAPI_CALL(env_, napi_create_promise(env_, &stdErrInfo_->deferred, &stdErrInfo_->promise));
         void* data = nullptr;
         napi_value arrayBuffer = nullptr;
@@ -189,6 +211,12 @@ namespace OHOS::Js_sys_module::Process {
     napi_value ChildProcess::Getpid() const
     {
         napi_value result = nullptr;
+        if (optionsInfo_ == nullptr) {
+            napi_value res = nullptr;
+            NAPI_CALL(env_, napi_get_undefined(env_, &res));
+            HILOG_ERROR("optionsInfo_ is nullptr");
+            return res;
+        }
         NAPI_CALL(env_, napi_create_int32(env_, optionsInfo_->pid, &result));
 
         return result;
@@ -215,8 +243,16 @@ namespace OHOS::Js_sys_module::Process {
         // getstdout
         napi_value resourceName = nullptr;
         stdOutInfo_ = new StdInfo();
+        if (stdOutInfo_ == nullptr) {
+            HILOG_ERROR("stdOutInfo_ is nullptr");
+            return;
+        }
         stdOutInfo_->isNeedRun = &isNeedRun_;
         stdOutInfo_->fd = stdOutFd_[0];
+        if (optionsInfo_ == nullptr) {
+            HILOG_ERROR("optionsInfo_ is nullptr");
+            return;
+        }
         stdOutInfo_->pid = optionsInfo_->pid;
         stdOutInfo_->maxBuffSize = optionsInfo_->maxBuffer;
         napi_create_string_utf8(env_, "ReadStdOut", NAPI_AUTO_LENGTH, &resourceName);
@@ -226,6 +262,10 @@ namespace OHOS::Js_sys_module::Process {
 
         // getstderr
         stdErrInfo_ = new StdInfo();
+        if (stdErrInfo_ == nullptr) {
+            HILOG_ERROR("stdErrInfo_ is nullptr");
+            return;
+        }
         stdErrInfo_->isNeedRun = &isNeedRun_;
         stdErrInfo_->fd = stdErrFd_[0];
         stdErrInfo_->pid = optionsInfo_->pid;
@@ -332,6 +372,10 @@ namespace OHOS::Js_sys_module::Process {
     {
         int signal = GetValidSignal(signo);
         std::vector<int32_t> signalType = {SIGINT, SIGQUIT, SIGKILL, SIGTERM};
+        if (optionsInfo_ == nullptr) {
+            HILOG_ERROR("optionsInfo_ is nullptr");
+            return;
+        }
         if (!kill(optionsInfo_->pid, signal)) {
             auto res = std::find(signalType.begin(), signalType.end(), static_cast<int32_t>(signal));
             (res != signalType.end()) ? isNeedRun_ = false : 0;
@@ -344,6 +388,10 @@ namespace OHOS::Js_sys_module::Process {
     void ChildProcess::Close()
     {
         int32_t status = 0;
+        if (optionsInfo_ == nullptr) {
+            HILOG_ERROR("optionsInfo_ is nullptr");
+            return;
+        }
         if (isWait_ && !(waitpid(optionsInfo_->pid, &status, WNOHANG)) && isNeedRun_) {
             if (!kill(optionsInfo_->pid, SIGKILL)) {
                 waitpid(optionsInfo_->pid, &status, 0);
@@ -378,6 +426,10 @@ namespace OHOS::Js_sys_module::Process {
     {
         std::vector<std::string> keyStr = {"timeout", "killSignal", "maxBuffer"};
         optionsInfo_ = new OptionsInfo();
+        if (optionsInfo_ == nullptr) {
+            HILOG_ERROR("optionsInfo_ is nullptr");
+            return;
+        }
         size_t size = keyStr.size();
         for (size_t i = 0; i < size; i++) {
             napi_status status = napi_ok;
@@ -433,4 +485,4 @@ namespace OHOS::Js_sys_module::Process {
         }
         isNeedRun_ = false;
     }
-} // namespace
+} // namespace OHOS::Js_sys_module::Process
