@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H
-#define FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H
+#ifndef XML_JS_XML_H_
+#define XML_JS_XML_H_
 
 #include <algorithm>
 #include <cstring>
@@ -28,24 +28,120 @@
 namespace OHOS::xml {
     class XmlSerializer {
     public:
+        /**
+         * Constructor for XmlSerializer.
+         *
+         * @param pStart is the pointer.
+         * @param bufferLengthis the length of the ArrayBuffer or
+         * DataView memory used to receive the written xml information.
+         */
         XmlSerializer(char *pStart, size_t bufferLength, std::string encoding = "utf-8") :pStart_(pStart),
             iLength_(bufferLength), encoding_(encoding) {};
+
+        /**
+         * XmlSerializer destructor.
+         */
         ~XmlSerializer() {}
+
+        /**
+         * Set the Attributes method.
+         *
+         * @param name The parameter is the key value of the property.
+         * @param value The parameter is the value of the property.
+         */
         void SetAttributes(std::string name, std::string value);
+
+        /**
+         * Writes an empty element.
+         *
+         * @param name The parameter is the element name of the empty element.
+         */
         void AddEmptyElement(std::string name);
+
+        /**
+         * Set the Declaration method.
+         */
         void SetDeclaration();
+
+        /**
+         * Writes the element start tag with the given name.
+         *
+         * @param name The parameter is the element name of the current element.
+         */
         void StartElement(std::string name);
+
+        /**
+         * Write element end tag.
+         */
         void EndElement();
+
+        /**
+         * The namespace into which the current element tag is written.
+         *
+         * @param prefix The parameter is the prefix of the current element and its children.
+         * @param nsTemp The parameter is the namespace of the current element and its children.
+         */
         void SetNamespace(std::string prefix, std::string nsTemp);
+
+        /**
+         * Write the comment property.
+         *
+         * @param comment The parameter is the comment content of the current element.
+         */
         void SetComment(std::string comment);
+
+        /**
+         * Write CDATA attributes.
+         *
+         * @param comment The parameter is the content of the CDATA attribute.
+         */
         void SetCData(std::string data);
+
+        /**
+         * Write CDATA attributes.
+         *
+         * @param comment The parameter is the content of the CDATA attribute.
+         */
         void SetText(std::string text);
+
+        /**
+         * Write DocType property.
+         *
+         * @param text The parameter is the content of the DocType property.
+         */
         void SetDocType(std::string text);
+
+        /**
+         * write an escape.
+         *
+         * @param s The parameter is the passed in escaped string.
+         */
         void WriteEscaped(std::string s);
+
+        /**
+         * SplicNsp functio.
+         */
         void SplicNsp();
+
+        /**
+         * NextItem function.
+         */
         void NextItem();
+
+        /**
+         * Throw exception function.
+         */
         std::string XmlSerializerError();
+
+        /**
+         * Process the value of the string passed by napi.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param napiStr The parameter is pass parameters.
+         * @param result The parameter is return the processed value.
+         */
         static napi_status DealNapiStrValue(napi_env env, const napi_value napiStr, std::string &result);
+
     private:
         char *pStart_;
         size_t iPos_ = 0;
@@ -92,15 +188,74 @@ namespace OHOS::xml {
     public:
         class ParseInfo {
         public:
+            /**
+             * Get the current depth of the element.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is the current depth of the returned element.
+             */
             static napi_value GetDepth(napi_env env, napi_callback_info info);
+
+            /**
+             * Get the current column number, starting at 1.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is to return the current line number.
+             */
             static napi_value GetColumnNumber(napi_env env, napi_callback_info info);
+
+            /**
+             * Get the current line number, starting at 1.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is to return the current column number.
+             */
             static napi_value GetLineNumber(napi_env env, napi_callback_info info);
+
+            /**
+             * Get the number of attributes of the current start tag.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is the number of attributes of the current start tag.
+             */
             static napi_value GetAttributeCount(napi_env env, napi_callback_info info);
+
+            /**
+             * Get the current element name.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is to return the current element name.
+             */
             static napi_value GetName(napi_env env, napi_callback_info info);
+
+            /**
+             * Get the namespace of the current element.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is the namespace that returns the current element.
+             */
             static napi_value GetNamespace(napi_env env, napi_callback_info info);
+
+            /**
+             * Get the current element prefix.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is to return the current element prefix.
+             */
             static napi_value GetPrefix(napi_env env, napi_callback_info info);
+
+            /**
+             * Get the text content of the current event.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is to return the text content of the current event.
+             */
             static napi_value GetText(napi_env env, napi_callback_info info);
+
+            /**
+             * Check whether the current element is an empty element.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is to returns true The current element is an empty element.
+             */
             static napi_value IsEmptyElementTag(napi_env env, napi_callback_info info);
+
+            /**
+             * Determines whether the current text event contains only space characters.
+             * @param env The parameter is NAPI environment variables.
+             * @param info The parameter is to returns true, the current text event contains only space characters.
+             */
             static napi_value IsWhitespace(napi_env env, napi_callback_info info);
         };
         struct TagText {
@@ -216,6 +371,7 @@ namespace OHOS::xml {
         void MakeStrUpper(std::string &src) const;
         TagEnum DealLtGroup();
         void DealWhiteSpace(unsigned char c);
+
     private:
         napi_env env_;
         bool bDoctype_ = false;
@@ -261,5 +417,5 @@ namespace OHOS::xml {
         bool bKeepNsAttri = false;
         bool bDocDecl = false;
     };
-} // namespace
-#endif /* FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H */
+} // namespace OHOS::Xml
+#endif // XML_JS_XML_H_

@@ -119,7 +119,7 @@ namespace OHOS::Uri {
             if (!errStr_.empty()) {
                 return;
             }
-        } else if (data_.find('/') == 0) {
+        } else if (data_[0] == '/') {
             uriData_.path = data_;
             uriData_.SchemeSpecificPart = data_ + uriData_.query;
             data_ = "";
@@ -531,4 +531,4 @@ namespace OHOS::Uri {
         }
         return uriData_.fragment;
     }
-} // namespace
+} // namespace OHOS::Uri

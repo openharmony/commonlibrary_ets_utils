@@ -32,8 +32,8 @@ namespace OHOS::Xml {
         auto objectInfo = new ConvertXml(env);
         napi_wrap(
             env, thisVar, objectInfo,
-            [](napi_env env_, void *data, void *hint) {
-                auto obj = (ConvertXml*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<ConvertXml*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -94,11 +94,11 @@ namespace OHOS::Xml {
         .nm_filename = nullptr,
         .nm_register_func = ConvertXmlInit,
         .nm_modname = "ConvertXML",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = { 0 },
     };
 
-    extern "C" __attribute__ ((constructor)) void RegisterModule()
+    extern "C" __attribute__((constructor)) void RegisterModule()
     {
         napi_module_register(&convertXmlModule);
     }
@@ -123,4 +123,4 @@ namespace OHOS::Xml {
             *buflen = _binary_convertxml_abc_end - _binary_convertxml_abc_start;
         }
     }
-} // namespace
+} // namespace OHOS::Xml

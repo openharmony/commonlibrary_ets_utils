@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef COMPILERUNTIME_JS_API_URI_H
-#define COMPILERUNTIME_JS_API_URI_H
+#ifndef URI_JS_URI_H_
+#define URI_JS_URI_H_
 
 #include <bitset>
 #include <cstdlib>
@@ -40,24 +40,91 @@ namespace OHOS::Uri {
 
     class Uri {
     public:
+        /**
+         * URI constructor, which is used to instantiate a URI object.
+         *
+         * @param env NAPI environment parameters.
+         * @param input Constructs a URI by parsing a given string.
+         */
         Uri(napi_env env, const std::string input);
+
+        /**
+         * The destructor of the Uri.
+         */
         virtual ~Uri() {}
 
+        /**
+         * Tests whether this URI is equivalent to other URI objects.
+         *
+         * @param other URI object to be compared
+         */
         bool Equals(const Uri other) const;
+
+        /**
+         * Indicates whether this URI is an absolute URI.
+         */
         bool IsAbsolute() const;
 
+        /**
+         * Determine whether parsing failed.
+         */
         std::string IsFailed() const;
+
+        /**
+         * Returns the serialized URI as a string.
+         */
         std::string ToString() const;
+
+        /**
+         * Normalize the path of this URI.
+         */
         std::string Normalize() const;
+
+        /**
+         * Gets the protocol part of the URI.
+         */
         std::string GetScheme() const;
+
+        /**
+         * Gets the decoding permission component part of this URI.
+         */
         std::string GetAuthority() const;
+
+        /**
+         * Gets the decoding scheme-specific part of the URI.
+         */
         std::string GetSsp() const;
+
+        /**
+         * Obtains the user information part of the URI.
+         */
         std::string GetUserinfo() const;
+
+        /**
+         * Gets the hostname portion of the URI without a port.
+         */
         std::string GetHost() const;
+
+        /**
+         * Gets the hostname portion of the URI without a port.
+         */
         std::string GetPort() const;
+
+        /**
+         * Gets the path portion of the URI.
+         */
         std::string GetPath() const;
+
+        /**
+         * Gets the query portion of the URI.
+         */
         std::string GetQuery() const;
+
+        /**
+         * Gets the fragment part of the URI.
+         */
         std::string GetFragment() const;
+
     private:
         void PreliminaryWork() const;
         void AnalysisUri();
@@ -75,6 +142,7 @@ namespace OHOS::Uri {
         bool AnalysisIPV4();
 
         std::string Split(std::string path) const;
+
     private:
         UriData uriData_;
         std::string data_;
@@ -82,5 +150,5 @@ namespace OHOS::Uri {
         std::string errStr_;
         napi_env env_ = nullptr;
     };
-} // namespace
-#endif /* COMPILERUNTIME_JS_API_URI_H */
+} // namespace OHOS::Uri
+#endif // URI_JS_URI_H_

@@ -32,31 +32,27 @@ namespace OHOS::Uri {
         size_t argc = 1;
         napi_value argv[1] = { 0 };
         Uri *object = nullptr;
-        std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
         if (valuetype == napi_string) {
-            char *type = nullptr;
+            std::string type = "";
             size_t typelen = 0;
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-            if (typelen > 0) {
-                type = new char[typelen + 1];
-                if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                    HILOG_ERROR("type memset error");
-                    delete [] type;
-                    return nullptr;
-                }
-                napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-                input = type;
-                delete[] type;
+            if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] size");
+                return nullptr;
             }
-            object = new Uri(env, input);
+            type.resize(typelen);
+            if (napi_get_value_string_utf8(env, argv[0], type.data(), typelen + 1, &typelen) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] value");
+                return nullptr;
+            }
+            object = new Uri(env, type);
         } else {
             napi_throw_error(env, nullptr, "parameter type is error");
         }
         NAPI_CALL(env, napi_wrap(env, thisVar, object,
-            [](napi_env env_, void *data, void *hint) {
+            [](napi_env environment, void *data, void *hint) {
             auto obj = reinterpret_cast<Uri*>(data);
             if (obj != nullptr) {
                 delete obj;
@@ -287,7 +283,7 @@ namespace OHOS::Uri {
         .nm_filename = nullptr,
         .nm_register_func = UriInit,
         .nm_modname = "uri",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = {0},
     };
     extern "C" __attribute__((constructor)) void RegisterModule()
@@ -314,4 +310,4 @@ namespace OHOS::Uri {
             *buflen = _binary_uri_abc_end - _binary_uri_abc_start;
         }
     }
-} // namespace
+} // namespace OHOS::Uri

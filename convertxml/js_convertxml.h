@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_ACE_CCRUNTIME_CONVERT_XML_CLASS_H
-#define FOUNDATION_ACE_CCRUNTIME_CONVERT_XML_CLASS_H
+#ifndef CONVERTXML_JS_CONVERTXML_H_
+#define CONVERTXML_JS_CONVERTXML_H_
 
 #include <string>
 #include <vector>
@@ -70,18 +70,48 @@ namespace OHOS::Xml {
 
     class ConvertXml {
     public:
+        /**
+         * To convert XML text to JavaScript object.
+         *
+         * @param env NAPI environment parameters.
+         */
         explicit ConvertXml(napi_env env);
+
+        /**
+         * The destructor of the ConvertXml.
+         */
         virtual ~ConvertXml() {}
+
+        /**
+         * To convert XML text to JavaScript object.
+         *
+         * @param strXml A string of XML text.
+         */
+        napi_value Convert(std::string strXml);
+
+        /**
+         * Converts the string of js to string of C++.
+         *
+         * @param napi_StrValue JS layer incoming stringing.
+         * @param result The C++ layer accepts stringing.
+         */
+        napi_status DealNapiStrValue(const napi_value napi_StrValue, std::string &result) const;
+
+        /**
+         * Handles user input of optional information
+         *
+         * @param napiObj Get the option parameter from js to the napi layer
+         */
+        void DealOptions(const napi_value napiObj);
+
+    private:
         void SetAttributes(xmlNodePtr curNode, const napi_value &elementsObject) const;
         void SetXmlElementType(xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
         void SetNodeInfo(xmlNodePtr curNode, const napi_value &elementsObject) const;
         void SetEndInfo(xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
         void GetXMLInfo(xmlNodePtr curNode, const napi_value &object, int flag = 0);
-        napi_value Convert(std::string strXml);
         std::string GetNodeType(const xmlElementType enumType) const;
-        napi_status DealNapiStrValue(const napi_value napi_StrValue, std::string &result) const;
         void SetKeyValue(const napi_value &object, const std::string strKey, const std::string strValue) const;
-        void DealOptions(const napi_value napiObj);
         std::string Trim(std::string strXmltrim) const;
         void GetPrevNodeList(xmlNodePtr curNode);
         void DealSpaces(const napi_value napiObj);
@@ -93,7 +123,7 @@ namespace OHOS::Xml {
         void DealComplex(std::string &strXml, const napi_value &object) const;
         void Replace(std::string &str, const std::string src, const std::string dst) const;
         void DealCDataInfo(bool bCData, xmlNodePtr &curNode) const;
-    private:
+
         napi_env env_;
         SpaceType spaceType_;
         int32_t iSpace_;
@@ -102,5 +132,5 @@ namespace OHOS::Xml {
         std::vector<napi_value> prevObj_;
         XmlInfo xmlInfo_;
     };
-} // namespace
-#endif
+} // namespace OHOS::Xml
+#endif // CONVERTXML_JS_CONVERTXML_H_

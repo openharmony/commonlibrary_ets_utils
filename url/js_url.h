@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef COMPILERUNTIME_JS_API_URL_H
-#define COMPILERUNTIME_JS_API_URL_H
+#ifndef URL_JS_URL_H_
+#define URL_JS_URL_H_
 
 #include <algorithm>
 #include <bitset>
@@ -55,34 +55,162 @@ namespace OHOS::Url {
 
     class URL {
     public:
+        /**
+         * URI constructor, which is used to instantiate a URI object.
+         *
+         * @param env NAPI environment parameters.
+         * @param input Constructs a URI by parsing a given string.
+         */
         URL(napi_env env, const std::string& input);
+
+        /**
+         * URI constructor, which is used to instantiate a URI object.
+         *
+         * @param env NAPI environment parameters.
+         * @param input Constructs a URI by parsing a given string.
+         * @param base The input parameter is a character string.
+         */
         URL(napi_env env, const std::string& input, const std::string& base);
+
+        /**
+         * URI constructor, which is used to instantiate a URI object.
+         *
+         * @param env NAPI environment parameters.
+         * @param input Constructs a URI by parsing a given string.
+         * @param base The input parameter is the URL object.
+         */
         URL(napi_env env, const std::string& input, const URL& base);
 
+        /**
+         * Gets the host name portion of the URL��not include the port.
+         */
         napi_value GetHostname() const;
+
+        /**
+         * Sets the host name portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetHostname(const std::string& input);
+
+        /**
+         * Sets the username name portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetUsername(const std::string& input);
+
+        /**
+         * Sets the password portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetPassword(const std::string& input);
+
+        /**
+         * Sets the scheme portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetScheme(const std::string& input);
+
+        /**
+         * Sets the fragment portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetFragment(const std::string& input);
+
+        /**
+         * Sets the search portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetSearch(const std::string& input);
+
+        /**
+         * Sets the host portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetHost(const std::string& input);
+
+        /**
+         * Sets the port portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetPort(const std::string& input);
+
+        /**
+         * Sets the href portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetHref(const std::string& input);
+
+        /**
+         * Sets the path portion of the URL��not include the port.
+         *
+         * @param input Constructs a URI by parsing a given string.
+         */
         void SetPath(const std::string& input);
 
+        /**
+         * Gets the search portion of the URL��not include the port.
+         */
         napi_value GetSearch() const;
+
+        /**
+         * Gets the username portion of the URL��not include the port.
+         */
         napi_value GetUsername() const;
+
+        /**
+         * Gets the password portion of the URL��not include the port.
+         */
         napi_value GetPassword() const;
+
+        /**
+         * Gets the fragment portion of the URL��not include the port.
+         */
         napi_value GetFragment() const;
+
+        /**
+         * Gets the scheme portion of the URL��not include the port.
+         */
         napi_value GetScheme() const;
+
+        /**
+         * Gets the path portion of the URL��not include the port.
+         */
         napi_value GetPath() const;
+
+        /**
+         * Gets the port portion of the URL��not include the port.
+         */
         napi_value GetPort() const;
+
+        /**
+         * Judge whether it's on or off.
+         */
         napi_value GetOnOrOff() const;
+
+        /**
+         * Judge whether it's Ipv6.
+         */
         napi_value GetIsIpv6() const;
+
+        /**
+         * Gets the host name portion of the URL��not include the port.
+         */
         napi_value GetHost() const;
 
+        /**
+         * The destructor of the url
+         */
         virtual ~URL() {}
+
     private:
         UrlData urlData_;
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> flags_;
@@ -92,27 +220,115 @@ namespace OHOS::Url {
 
     class URLSearchParams {
     public:
+        /**
+         * A parameterized constructor used to create an URLSearchParams instance.
+         *
+         * @param env NAPI environment parameters.
+         */
         explicit URLSearchParams(napi_env env);
+
+        /**
+         * Virtual destructor of URLSearchParams
+         */
         virtual ~URLSearchParams() {}
+
+        /**
+         * Returns a Boolean that indicates whether a parameter with the specified name exists.
+         *
+         * @param name Specifies the name of a key-value pair.
+         */
         napi_value IsHas(napi_value  name) const;
+
+        /**
+         * Returns the first value associated to the given search parameter.
+         *
+         * @param buffer Returns the first value associated to the given search parameter.
+         */
         napi_value Get(napi_value buffer);
+
+        /**
+         * Returns all key-value pairs associated with a given search parameter as an array.
+         *
+         * @param buffer Specifies the name of a key value.
+         */
         napi_value GetAll(napi_value buffer);
+
+        /**
+         * Appends a specified key/value pair as a new search parameter.
+         *
+         * @param buffer Key name of the search parameter to be inserted.
+         * @param temp Values of search parameters to be inserted.
+         */
         void Append(napi_value buffer, napi_value temp);
+
+        /**
+         * Deletes the given search parameter and its associated value,from the list of all search parameters.
+         *
+         * @param buffer Name of the key-value pair to be deleted.
+         */
         void Delete(napi_value buffer);
+
+        /**
+         * Returns an ES6 iterator. Each item of the iterator is a JavaScript Array.
+         */
         napi_value Entries() const;
+
+        /**
+         * Sets the value associated with a given search parameter to the
+         * given value. If there were several matching values, this method
+         * deletes the others. If the search parameter doesn't exist, this
+         * method creates it.
+         *
+         * @param name Key name of the parameter to be set.
+         * @param value Indicates the parameter value to be set.
+         */
         void Set(napi_value name, napi_value value);
+
+        /**
+         * Sort all key/value pairs contained in this object in place and return undefined.
+         */
         void Sort();
+
+        /**
+         * Returns a query string suitable for use in a URL.
+         */
         napi_value ToString();
+
+        /**
+         * Returns an iterator allowing to go through all keys contained in this object.
+         */
         napi_value IterByKeys();
+
+        /**
+         * Returns an iterator allowing to go through all values contained in this object.
+         */
         napi_value IterByValues();
+
+        /**
+         * Sets the string array of searchParams.
+         *
+         * @param input String array.
+         */
         void SetArray(std::vector<std::string> input);
+
+        /**
+         * Gets the string array of searchParams.
+         */
         napi_value GetArray() const;
+
+        /**
+         * This function will decode the string and put the parsed key and value values into the
+         * vector container of urlsearchparams class according to the rules.
+         *
+         * @param Stringpar The input parameter of urlsearchparams is string.
+         */
         std::vector<std::string> StringParmas(std::string Stringpar);
+
     private:
         std::string ToUSVString(std::string inputStr);
         void HandleIllegalChar(std::wstring& inputStr, std::wstring::const_iterator it);
         std::vector<std::string> searchParams;
         napi_env env;
     };
-} // namespace
-#endif /* COMPILERUNTIME_JS_API_URL_H */
+} // namespace OHOS::Url
+#endif // URL_JS_URL_H_

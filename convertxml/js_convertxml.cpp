@@ -605,4 +605,4 @@ namespace OHOS::Xml {
                 curNode = curNode->next;
             }
     }
-} // namespace
+} // namespace OHOS::Xml

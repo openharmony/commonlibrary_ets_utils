@@ -86,8 +86,10 @@ namespace OHOS::xml {
         type = "isDecl";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetDeclaration memcpy_s failed");
             }
         }
     }
@@ -106,8 +108,10 @@ namespace OHOS::xml {
         type = "isNsp";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetNamespace memcpy_s failed");
             }
         }
     }
@@ -141,8 +145,10 @@ namespace OHOS::xml {
         elementStack.push_back("");
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("StartElement memcpy_s failed");
             }
         }
     }
@@ -160,23 +166,28 @@ namespace OHOS::xml {
         type = "isAttri";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetAttributes memcpy_s failed");
             }
         }
     }
     void XmlSerializer::EndElement()
     {
         out_ = "";
+        size_t iLenTemp = 0;
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
             out_.append("/>");
             type = "isEndTag";
             --depth_;
-            size_t iLenTemp = out_.length();
+            iLenTemp = out_.length();
             if (iLength_ > iPos_ + iLenTemp - 1) {
-                if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                     iPos_ += iLenTemp;
+                } else {
+                HILOG_ERROR("StartElement memcpy_s failed");
                 }
             }
             return;
@@ -195,10 +206,12 @@ namespace OHOS::xml {
         elementStack[depth_ * 3 + 1] = ""; // 3: number of args
         type = "isEndTag";
         out_.append(">");
-        size_t iLenTemp_ = out_.length();
-        if (iLength_ > iPos_ + iLenTemp_ - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp_)) {
-                iPos_ += iLenTemp_;
+        iLenTemp = out_.length();
+        if (iLength_ > iPos_ + iLenTemp - 1) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
+                iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("EndElement memcpy_s failed");
             }
         }
     }
@@ -218,8 +231,10 @@ namespace OHOS::xml {
         type = "isAddEmpElem";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("AddEmptyElement memcpy_s failed");
             }
         }
     }
@@ -234,8 +249,10 @@ namespace OHOS::xml {
         type = "isText";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetText memcpy_s failed");
             }
         }
     }
@@ -253,8 +270,10 @@ namespace OHOS::xml {
         type = "isCom";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetComment memcpy_s failed");
             }
         }
     }
@@ -273,8 +292,10 @@ namespace OHOS::xml {
         type = "isCData";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetCData memcpy_s failed");
             }
         }
     }
@@ -292,8 +313,10 @@ namespace OHOS::xml {
         type = "isDocType";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetDocType memcpy_s failed");
             }
         }
     }
@@ -966,9 +989,10 @@ namespace OHOS::xml {
     bool XmlPullParser::ParseNsp()
     {
         bool any = false;
+        size_t cut = 0;
         for (size_t i = 0; i < (attriCount_ << 2); i += 4) { // 2 and 4: number of args
             std::string attrName = attributes[i + 2]; // 2: number of args
-            size_t cut = attrName.find(':');
+            cut = attrName.find(':');
             std::string prefix;
             if (cut != std::string::npos) {
                 prefix = attrName.substr(0, cut);
@@ -988,13 +1012,13 @@ namespace OHOS::xml {
         if (any) {
             ParseNspFunction();
         }
-        size_t cut_ = name_.find(':');
-        if (cut_ == 0) {
+        cut = name_.find(':');
+        if (cut == 0) {
             xmlPullParserError_ = "illegal tag name: " + name_;
         }
-        if (cut_ != std::string::npos) {
-            prefix_ = name_.substr(0, cut_);
-            name_ = name_.substr(cut_ + 1);
+        if (cut != std::string::npos) {
+            prefix_ = name_.substr(0, cut);
+            name_ = name_.substr(cut + 1);
         }
         namespace_ = GetNamespace(prefix_);
         if (namespace_ == "") {
@@ -1822,5 +1846,5 @@ namespace OHOS::xml {
         }
         return result;
     }
-} // namespace
+} // namespace OHOS::Xml
 

@@ -64,8 +64,8 @@ namespace OHOS::xml {
         }
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
-                auto obj = (XmlSerializer*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<XmlSerializer*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -101,7 +101,7 @@ namespace OHOS::xml {
             napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
         }
         if (data) {
-            std::string strEnd = (char*)data;
+            std::string strEnd = reinterpret_cast<char*>(data);
             if (argc == 1) {
                 object = new XmlPullParser(env, strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
@@ -114,8 +114,8 @@ namespace OHOS::xml {
         }
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
-                auto obj = (XmlPullParser*)data;
+            [](napi_env env_, void *data, void *hint) {
+                auto obj = reinterpret_cast<XmlPullParser*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -459,11 +459,11 @@ namespace OHOS::xml {
         .nm_filename = nullptr,
         .nm_register_func = Init,
         .nm_modname = "xml",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = {0},
     };
     extern "C" __attribute__((constructor)) void RegisterModule()
     {
         napi_module_register(&xmlModule);
     }
-} // namespace
+} // namespace OHOS::Xml

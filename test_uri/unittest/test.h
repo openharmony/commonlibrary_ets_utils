@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H
-#define FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H
+#ifndef TEST_URI_UNITTEST_TEST_H_
+#define TEST_URI_UNITTEST_TEST_H_
 
 #include "native_engine.h"
 
@@ -30,4 +30,4 @@ protected:
     NativeEngine *engine_;
 };
 
-#endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H */
+#endif // TEST_URI_UNITTEST_TEST_H_
