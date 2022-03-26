@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_CCRUNTIME_JSAPI_WORKER_H
-#define FOUNDATION_CCRUNTIME_JSAPI_WORKER_H
+#ifndef JSAPI_WORKER_WORKER_H_
+#define JSAPI_WORKER_WORKER_H_
 
 #include <list>
 #include <map>
@@ -93,38 +93,213 @@ public:
         napi_ref ref_ {nullptr};
     };
 
+    /**
+    * Creates a worker instance.
+    *
+    * @param env NAPI environment parameters.
+    * @param thisVar URL of the script to be executed by the worker.
+    */
     Worker(napi_env env, napi_ref thisVar);
+
+    /**
+        * The destructor of the Worker.
+        */
     ~Worker();
 
+    /**
+     * The host thread receives the information.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
     static void HostOnMessage(const uv_async_t* req);
+
+    /**
+     * The host thread receives the information.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
     static void HostOnError(const uv_async_t* req);
+
+    /**
+     * The worker thread receives the information.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
     static void WorkerOnMessage(const uv_async_t* req);
+
+    /**
+     * ExecuteIn in thread.
+     *
+     * @param data The worker pointer.
+     */
     static void ExecuteInThread(const void* data);
 
+    /**
+    * Post a message.
+    *
+    * @param env NAPI environment parameters.
+    * @param thisVar The callback information of the js layer.
+    */
     static napi_value PostMessage(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Add event listeners to host.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value PostMessageToHost(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Terminates the worker thread to stop the worker from receiving messages.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value Terminate(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Close the worker.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value CloseWorker(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Adds an event listener to the worker.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value On(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Adds an event listener to the worker and removes the event listener automatically after it is invoked once.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value Once(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Removes an event listener to the worker.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value Off(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Add event listeners.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value AddEventListener(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Dispatch the event.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value DispatchEvent(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Remove the event listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value RemoveEventListener(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Remove all listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value RemoveAllListener(napi_env env, napi_callback_info cbinfo);
 
+    /**
+     * Add the listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value AddListener(napi_env env, napi_callback_info cbinfo, ListenerMode mode);
+
+    /**
+     * Remove the listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value RemoveListener(napi_env env, napi_callback_info cbinfo);
 
+    /**
+     * The constructor of worker.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value WorkerConstructor(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Initialize the worker.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value InitWorker(napi_env env, napi_value exports);
 
+    /**
+     * Cancel the task.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value CancelTask(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * The parent port cancels the task.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value ParentPortCancelTask(napi_env env, napi_callback_info cbinfo);
 
+    /**
+     * The parent port adds an event listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value ParentPortAddEventListener(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * The parent port removes all event listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value ParentPortRemoveAllListener(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * The parent port dispatch the event listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value ParentPortDispatchEvent(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * The parent port removes the event listener.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
     static napi_value ParentPortRemoveEventListener(napi_env env, napi_callback_info cbinfo);
 
     void StartExecuteInThread(napi_env env, const char* script);
@@ -278,4 +453,4 @@ private:
     std::recursive_mutex liveStatusLock_ {};
 };
 } // namespace OHOS::CCRuntime::Worker
-#endif // FOUNDATION_CCRUNTIME_JSAPI_WORKER_H
+#endif // JSAPI_WORKER_WORKER_H_

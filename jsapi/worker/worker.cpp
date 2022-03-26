@@ -41,7 +41,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     script_ = std::string(script);
     CloseHelp::DeletePointer(script, true);
 
-    // 4. create WorkerRunner to Execute
+    // 3. create WorkerRunner to Execute
     if (!runner_) {
         runner_ = std::make_unique<WorkerRunner>(WorkerStartCallback(ExecuteInThread, this));
     }
@@ -320,8 +320,8 @@ void Worker::HostOnMessageInner()
         // receive close signal.
         if (data == nullptr) {
             HILOG_INFO("worker:: worker received close signal");
-            uv_close((uv_handle_t*)&hostOnMessageSignal_, nullptr);
-            uv_close((uv_handle_t*)&hostOnErrorSignal_, nullptr);
+            uv_close(reinterpret_cast<uv_handle_t*>(&hostOnMessageSignal_), nullptr);
+            uv_close(reinterpret_cast<uv_handle_t*>(&hostOnErrorSignal_), nullptr);
             CloseHostCallback();
             return;
         }
@@ -351,7 +351,7 @@ void Worker::HostOnMessageInner()
 void Worker::TerminateWorker()
 {
     // when there is no active handle, worker loop will stop automatic.
-    uv_close((uv_handle_t*)&workerOnMessageSignal_, nullptr);
+    uv_close(reinterpret_cast<uv_handle_t*>(&workerOnMessageSignal_), nullptr);
     CloseWorkerCallback();
     uv_loop_t* loop = GetWorkerLoop();
     if (loop != nullptr) {
@@ -451,7 +451,7 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
     Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
 
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when PostMessage, maybe worker is terminated");
@@ -492,7 +492,7 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
     napi_value* argv = new napi_value[argc];
     [[maybe_unused]] ObjectScope<napi_value> scope(argv, true);
     Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, argv, nullptr, (void**)&worker);
+    napi_get_cb_info(env, cbinfo, &argc, argv, nullptr, reinterpret_cast<void**>(&worker));
 
     if (worker == nullptr) {
         HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
@@ -553,7 +553,7 @@ napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when Terminate, maybe worker is terminated");
         return nullptr;
@@ -591,7 +591,7 @@ napi_value Worker::CancelTask(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when CancelTask, maybe worker is terminated");
         return nullptr;
@@ -611,7 +611,7 @@ napi_value Worker::CancelTask(napi_env env, napi_callback_info cbinfo)
 napi_value Worker::ParentPortCancelTask(napi_env env, napi_callback_info cbinfo)
 {
     Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, (void**)&worker);
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, reinterpret_cast<void**>(&worker));
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when CancelTask, maybe worker is terminated");
         return nullptr;
@@ -706,15 +706,15 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     napi_wrap(
         env, thisVar, worker,
         [](napi_env env, void* data, void* hint) {
-            Worker* worker = (Worker*)data;
+            Worker* worker = reinterpret_cast<Worker*>(data);
             {
                 std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
                 if (worker->UpdateHostState(INACTIVE)) {
-                    if (!uv_is_closing((uv_handle_t*)&worker->hostOnMessageSignal_)) {
-                        uv_close((uv_handle_t*)&worker->hostOnMessageSignal_, nullptr);
+                    if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(&worker->hostOnMessageSignal_))) {
+                        uv_close(reinterpret_cast<uv_handle_t*>(&worker->hostOnMessageSignal_), nullptr);
                     }
-                    if (!uv_is_closing((uv_handle_t*)&worker->hostOnErrorSignal_)) {
-                        uv_close((uv_handle_t*)&worker->hostOnErrorSignal_, nullptr);
+                    if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(&worker->hostOnErrorSignal_))) {
+                        uv_close(reinterpret_cast<uv_handle_t*>(&worker->hostOnErrorSignal_), nullptr);
                     }
                     worker->ReleaseHostThreadContent();
                 }
@@ -868,7 +868,7 @@ napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
     }
 
     Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when RemoveListener, maybe worker is terminated");
         return nullptr;
@@ -925,7 +925,7 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
     }
 
     Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when DispatchEvent, maybe worker is terminated");
         return NapiValueHelp::GetBooleanValue(env, false);
@@ -983,7 +983,7 @@ napi_value Worker::RemoveAllListener(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when RemoveAllListener, maybe worker is terminated");
         return nullptr;
@@ -1154,7 +1154,7 @@ void Worker::ReleaseHostThreadContent()
         napi_value thisVar = nullptr;
         napi_get_reference_value(hostEnv_, workerRef_, &thisVar);
         Worker* worker = nullptr;
-        napi_remove_wrap(hostEnv_, thisVar, (void**)&worker);
+        napi_remove_wrap(hostEnv_, thisVar, reinterpret_cast<void**>(&worker));
         // 4. set workerRef_ be null
         napi_delete_reference(hostEnv_, workerRef_);
     }
@@ -1173,7 +1173,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
     napi_value* args = new napi_value[argc];
     [[maybe_unused]] ObjectScope<napi_value> scope(args, true);
     Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, (void**)&worker);
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
     if (!NapiValueHelp::IsString(args[0])) {
         napi_throw_error(env, nullptr, "Worker 1st param must be string with on");
@@ -1221,7 +1221,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
 napi_value Worker::ParentPortRemoveAllListener(napi_env env, napi_callback_info cbinfo)
 {
     Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, (void**)&worker);
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, reinterpret_cast<void**>(&worker));
 
     if (worker == nullptr) {
         HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
@@ -1249,7 +1249,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
     napi_value* args = new napi_value[argc];
     [[maybe_unused]] ObjectScope<napi_value> scope(args, true);
     Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, (void**)&worker);
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
     if (!NapiValueHelp::IsObject(args[0])) {
         napi_throw_error(env, nullptr, "worker DispatchEvent 1st param must be Event");
@@ -1309,7 +1309,7 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
     napi_value* args = new napi_value[argc];
     [[maybe_unused]] ObjectScope<napi_value> scope(args, true);
     Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, (void**)&worker);
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
     if (!NapiValueHelp::IsString(args[0])) {
         napi_throw_error(env, nullptr, "Worker 1st param must be string with on");

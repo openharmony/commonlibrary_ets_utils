@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_CCRUNTIME_JSAPI_WORKER_MESSAGE_QUEUE_H
-#define FOUNDATION_CCRUNTIME_JSAPI_WORKER_MESSAGE_QUEUE_H
+#ifndef JSAPI_WORKER_MESSAGE_QUEUE_H_
+#define JSAPI_WORKER_MESSAGE_QUEUE_H_
 
 #include <mutex>
 #include <queue>
@@ -39,4 +39,4 @@ private:
     std::queue<MessageDataType> queue_;
 };
 }  // namespace OHOS::CCRuntime::Worker
-#endif // FOUNDATION_CCRUNTIME_JSAPI_WORKER_MESSAGE_QUEUE_H
+#endif // JSAPI_WORKER_MESSAGE_QUEUE_H_

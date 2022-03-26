@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_CCRUNTIME_JSAPI_WORKER_HELP_H
-#define FOUNDATION_CCRUNTIME_JSAPI_WORKER_HELP_H
+#ifndef JSAPI_WORKER_WORKER_HELPER_H_
+#define JSAPI_WORKER_WORKER_HELPER_H_
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -87,4 +87,4 @@ private:
     bool isArray_;
 };
 } // namespace OHOS::CCRuntime::Worker
-#endif // FOUNDATION_CCRUNTIME_JSAPI_NAPI_VALUE_HELP_H
+#endif // JSAPI_WORKER_WORKER_HELPER_H_

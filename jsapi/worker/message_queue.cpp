@@ -57,4 +57,4 @@ void MessageQueue::Clear(napi_env env)
     }
     queueLock_.unlock();
 }
-}  // namespace worker
+}  // namespace OHOS::CCRuntime::Worker

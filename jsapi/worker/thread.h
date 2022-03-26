@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_CCRUNTIME_JSAPI_WORKER_THREAD_H
-#define FOUNDATION_CCRUNTIME_JSAPI_WORKER_THREAD_H
+#ifndef JSAPI_WORKER_THREAD_H_
+#define JSAPI_WORKER_THREAD_H_
 
 #include <uv.h>
 
@@ -36,4 +36,4 @@ private:
 };
 }  // namespace OHOS::CCRuntime::Worker
 
-#endif // #define FOUNDATION_CCRUNTIME_JSAPI_WORKER_THREAD_H
+#endif // #define JSAPI_WORKER_THREAD_H_

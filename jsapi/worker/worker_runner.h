@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_CCRUNTIME_JSAPI_WORK_RUNNER_H
-#define FOUNDATION_CCRUNTIME_JSAPI_WORK_RUNNER_H
+#ifndef JSAPI_WORKER_WORKER_RUNNER_H_
+#define JSAPI_WORKER_WORKER_RUNNER_H_
 
 #include <functional>
 
@@ -59,4 +59,4 @@ private:
     uv_thread_t selfThreadId_ {0};
 };
 } // namespace OHOS::CCRuntime::Worker
-#endif // FOUNDATION_CCRUNTIME_JSAPI_WORK_RUNNER_H
+#endif // JSAPI_WORKER_WORKER_RUNNER_H_

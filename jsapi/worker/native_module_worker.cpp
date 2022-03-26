@@ -24,7 +24,7 @@ static napi_module g_workerModule = {
     .nm_filename = nullptr,
     .nm_register_func = OHOS::CCRuntime::Worker::Worker::InitWorker,
     .nm_modname = "worker",
-    .nm_priv = ((void*)0),
+    .nm_priv = reinterpret_cast<void*>(0),
     .reserved = { 0 },
 };
 /*
