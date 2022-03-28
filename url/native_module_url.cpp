@@ -34,35 +34,40 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
         napi_valuetype valuetype1 = napi_null;
         napi_valuetype valuetype2 = napi_null;
-        std::string input = "";
         napi_typeof(env, argv[0], &valuetype1);
         if (valuetype1 == napi_string) {
-            char *tem = nullptr;
-            size_t temlen = 0;
-            napi_get_value_string_utf8(env, argv[0], nullptr, 0, &temlen);
-            if (temlen > 0) {
-                tem = new char[temlen + 1];
-                napi_get_value_string_utf8(env, argv[0], tem, temlen + 1, &temlen);
-                input = tem;
-                delete[] tem;
+            std::string temp, tempType = "";
+            size_t tempSize, tempTypeSize = 0;
+            if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempSize) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] size");
+                return;
             }
+            temp.reserve(tempSize);
+            temp.resize(tempSize);
+            if (napi_get_value_string_utf8(env, argv[0], temp.data(), tempSize + 1, &tempSize) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] value");
+                return;
+            }
+            std::string input = temp;
             napi_typeof(env, argv[1], &valuetype2);
             if (valuetype2 == napi_string) {
-                std::string base = "";
-                char *type1 = nullptr;
-                size_t typelen1 = 0;
-                napi_get_value_string_utf8(env, argv[1], nullptr, 0, &typelen1);
-                if (typelen1 > 0) {
-                    type1 = new char[typelen1 + 1];
-                    napi_get_value_string_utf8(env, argv[1], type1, typelen1 + 1, &typelen1);
-                    base = type1;
-                    delete[] type1;
+                if (napi_get_value_string_utf8(env, argv[1], nullptr, 0, &tempTypeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[1] size");
+                    return;
                 }
+                tempType.reserve(tempTypeSize);
+                tempType.resize(tempTypeSize);
+                if (napi_get_value_string_utf8(env, argv[1], tempType.data(),
+                                               tempTypeSize + 1, &tempTypeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[1] value");
+                    return;
+                }
+                std::string base = tempType;
                 object = new URL(env, input, base);
             } else if (valuetype2 == napi_object) {
-                URL *temp = nullptr;
-                napi_unwrap(env, argv[1], reinterpret_cast<void**>(&temp));
-                object = new URL(env, input, *temp);
+                URL *tempUrl = nullptr;
+                napi_unwrap(env, argv[1], reinterpret_cast<void**>(&tempUrl));
+                object = new URL(env, input, *tempUrl);
             } else {
                 HILOG_INFO("secondParameter error");
             }
@@ -81,24 +86,27 @@ namespace OHOS::Url {
         URL *object = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
         if (argc == 1) {
-            std::string input = "";
             NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
             napi_valuetype valuetype = napi_null;
             NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
             if (valuetype == napi_string) {
-            char *type = nullptr;
-            size_t typelen = 0;
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-            if (typelen > 0) {
-                type = new char[typelen + 1];
-                napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-                input = type;
-                delete[] type;
+                std::string type = "";
+                size_t typeSize = 0;
+                if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[0] size");
+                    return nullptr;
+                }
+                type.reserve(typeSize);
+                type.resize(typeSize);
+                if (napi_get_value_string_utf8(env, argv[0], type.data(), typeSize + 1, &typeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[0] value");
+                    return nullptr;
+                }
+                std::string input = type;
+                object = new URL(env, input);
+            } else {
+                HILOG_INFO("Parameter error");
             }
-            object = new URL(env, input);
-        } else {
-            HILOG_INFO("Parameter error");
-        }
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             UrlStructor(env, info, object);
         }

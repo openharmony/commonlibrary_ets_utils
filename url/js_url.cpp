@@ -526,12 +526,12 @@ namespace OHOS::Url {
         } else if (radix == 8) { // 8:octal
             if (sscanf_s(num.c_str(), "%o", &val) == EOK) {
                 HILOG_ERROR("sscanf_s is falie");
-        }
+            }
             return std::to_string(val);
-            } else {
+        } else {
             return num;
         }
-        }
+    }
 
     bool RemovalIpv4(std::vector<std::string> &temp, std::string str)
     {
@@ -1743,17 +1743,20 @@ namespace OHOS::Url {
     }
     napi_value URLSearchParams::Get(napi_value buffer)
     {
-        char *name = nullptr;
+        std::string name = "";
         size_t nameSize = 0;
-        std::string temp = "";
-        napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize);
-        if (nameSize > 0) {
-            name = new char[nameSize + 1];
-            napi_get_value_string_utf8(env, buffer, name, nameSize + 1, &nameSize);
-            temp = name;
+        if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer size");
+            return nullptr;
         }
+        name.reserve(nameSize);
+        name.resize(nameSize);
+        if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer value");
+            return nullptr;
+        }
+        std::string temp = name;
         std::string sname = ToUSVString(temp);
-        delete[] name;
         napi_value result = nullptr;
         if (searchParams.size() == 0) {
             return result;
@@ -1770,16 +1773,20 @@ namespace OHOS::Url {
     }
     napi_value URLSearchParams::GetAll(napi_value buffer)
     {
-        char *name = nullptr;
+        std::string name = "";
         size_t nameSize = 0;
-        std::string sname = "";
-        napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize);
-        if (nameSize > 0) {
-            name = new char[nameSize + 1];
-            napi_get_value_string_utf8(env, buffer, name, nameSize + 1, &nameSize);
-            sname = ToUSVString(name);
+        if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer size");
+            return nullptr;
         }
-        delete[] name;
+        name.reserve(nameSize);
+        name.resize(nameSize);
+        if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer value");
+            return nullptr;
+        }
+        std::string sname = ToUSVString(name);
+
         napi_value result = nullptr;
         napi_value napiStr = nullptr;
         NAPI_CALL(env, napi_create_array(env, &result));
@@ -1799,41 +1806,50 @@ namespace OHOS::Url {
     }
     void URLSearchParams::Append(napi_value buffer, napi_value temp)
     {
-        char *name = nullptr;
+        std::string name = "";
         size_t nameSize = 0;
-        std::string tempName = "";
-        std::string tempValue = "";
-        napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize);
-        if (nameSize > 0) {
-            name = new char[nameSize + 1];
-            napi_get_value_string_utf8(env, buffer, name, nameSize + 1, &nameSize);
-            tempName = name;
+        if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer size");
+            return;
         }
-        char *value = nullptr;
+        name.reserve(nameSize);
+        name.resize(nameSize);
+        if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer value");
+            return;
+        }
+        std::string tempName = name;
+        std::string value = "";
         size_t valueSize = 0;
-        napi_get_value_string_utf8(env, temp, nullptr, 0, &valueSize);
-        if (valueSize > 0) {
-            value = new char[valueSize + 1];
-            napi_get_value_string_utf8(env, temp, value, valueSize + 1, &valueSize);
-            tempValue = value;
+        if (napi_get_value_string_utf8(env, temp, nullptr, 0, &valueSize) != napi_ok) {
+            HILOG_ERROR("can not get temp size");
+            return;
         }
+        value.reserve(valueSize);
+        value.resize(valueSize);
+        if (napi_get_value_string_utf8(env, temp, value.data(), valueSize + 1, &valueSize) != napi_ok) {
+            HILOG_ERROR("can not get temp value");
+            return;
+        }
+        std::string tempValue = value;
         searchParams.push_back(tempName);
         searchParams.push_back(tempValue);
-        delete[] name;
-        delete[] value;
     }
     void URLSearchParams::Delete(napi_value buffer)
     {
-        char *name = nullptr;
+        std::string name = "";
         size_t nameSize = 0;
-        std::string sname = "";
-        napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize);
-        if (nameSize > 0) {
-            name = new char[nameSize + 1];
-            napi_get_value_string_utf8(env, buffer, name, nameSize + 1, &nameSize);
-            sname = ToUSVString(name);
+        if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer size");
+            return;
         }
-        delete[] name;
+        name.reserve(nameSize);
+        name.resize(nameSize);
+        if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
+            HILOG_ERROR("can not get buffer value");
+            return;
+        }
+        std::string sname = ToUSVString(name);
         for (auto iter = searchParams.begin(); iter != searchParams.end();) {
             if (*iter == sname) {
                 iter = searchParams.erase(iter, iter + 2); // 2:Searching for the number and number of keys and values
@@ -1892,26 +1908,32 @@ namespace OHOS::Url {
     }
     void URLSearchParams::Set(napi_value name, napi_value value)
     {
-        char *buffer0 = nullptr;
-        size_t bufferSize0 = 0;
-        std::string cppName = "";
-        std::string cppValue = "";
-        napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize0);
-        if (bufferSize0 > 0) {
-            buffer0 = new char[bufferSize0 + 1];
-            napi_get_value_string_utf8(env, name, buffer0, bufferSize0 + 1, &bufferSize0);
-            cppName = buffer0;
-            delete[] buffer0;
+        std::string buffer = "";
+        size_t bufferSize = 0;
+        if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get name size");
+            return;
         }
-        char *buffer1 = nullptr;
-        size_t bufferSize1 = 0;
-        napi_get_value_string_utf8(env, value, nullptr, 0, &bufferSize1);
-        if (bufferSize1 > 0) {
-            buffer1 = new char[bufferSize1 + 1];
-            napi_get_value_string_utf8(env, value, buffer1, bufferSize1 + 1, &bufferSize1);
-            cppValue = buffer1;
-            delete[] buffer1;
+        buffer.reserve(bufferSize);
+        buffer.resize(bufferSize);
+        if (napi_get_value_string_utf8(env, name, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get name value");
+            return;
         }
+        std::string cppName = buffer;
+        std::string temp = "";
+        size_t tempSize = 0;
+        if (napi_get_value_string_utf8(env, value, nullptr, 0, &tempSize) != napi_ok) {
+            HILOG_ERROR("can not get value size");
+            return;
+        }
+        temp.reserve(tempSize);
+        temp.resize(tempSize);
+        if (napi_get_value_string_utf8(env, value, temp.data(), tempSize + 1, &tempSize) != napi_ok) {
+            HILOG_ERROR("can not get value value");
+            return;
+        }
+        std::string cppValue = temp;
         bool flag = false;
         for (auto it = searchParams.begin(); it < (searchParams.end() - 1);) {
             if (*it == cppName) {
