@@ -20,29 +20,30 @@
 #include "utils/log.h"
 
 namespace OHOS::Js_sys_module::Dfx {
+    constexpr int NUMBER_OF_PARAMETER_TWO = 2;
     static napi_value DumpHeapSnapShot(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
-        size_t requireArgc = 2;
+        size_t argc = NUMBER_OF_PARAMETER_TWO;
+        size_t requireArgc = NUMBER_OF_PARAMETER_TWO;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
-        napi_value *argv = nullptr;
-        argv = new napi_value[argc];
+        napi_value argv[NUMBER_OF_PARAMETER_TWO] = { 0 };
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-        char *tempStr = nullptr;
+        std::string tempStr = "";
         size_t tempStrsize = 0;
-        napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempStrsize);
-        if (tempStrsize > 0) {
-            tempStr = new char[tempStrsize + 1];
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempStrsize) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        napi_get_value_string_utf8(env, argv[0], tempStr, tempStrsize + 1, &tempStrsize);
+        tempStr.reserve(tempStrsize + 1);
+        tempStr.resize(tempStrsize);
+        if (napi_get_value_string_utf8(env, argv[0], tempStr.data(), tempStrsize + 1, &tempStrsize) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
+        }
         std::string pathStr = tempStr;
         bool isVmMode = true;
         napi_get_value_bool(env, argv[1], &isVmMode);
-        delete []tempStr;
-        delete []argv;
-        argv = nullptr;
-        tempStr = nullptr;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         engine->DumpHeapSnapShot(pathStr, isVmMode);
         napi_value result = nullptr;
@@ -66,28 +67,22 @@ namespace OHOS::Js_sys_module::Dfx {
 
     static napi_value StartHeapTracking(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
-        size_t requireArgc = 2;
+        size_t argc = NUMBER_OF_PARAMETER_TWO;
+        size_t requireArgc = NUMBER_OF_PARAMETER_TWO;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
-        napi_value *argv = nullptr;
-        NAPI_ASSERT(env, argc > 0, "argc == 0");
-        if (argc > 0) {
-            argv = new napi_value[argc + 1];
-            if (memset_s(argv, argc + 1, 0, argc + 1) != 0) {
-                HILOG_ERROR("argv memset error");
-                delete []argv;
-                argv = nullptr;
-                return nullptr;
-            }
-        }
+        napi_value argv[NUMBER_OF_PARAMETER_TWO] = { 0 };
         napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
         double timeInterval = 0;
-        napi_get_value_double(env, argv[0], &timeInterval);
+        if (napi_get_value_double(env, argv[0], &timeInterval) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
+        }
         bool isVmMode = true;
-        napi_get_value_bool(env, argv[1], &isVmMode);
-        delete []argv;
-        argv = nullptr;
+        if (napi_get_value_bool(env, argv[1], &isVmMode) != napi_ok) {
+            HILOG_ERROR("can not get argv[1] value");
+            return nullptr;
+        }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         auto startResult = engine->StartHeapTracking(timeInterval, isVmMode);
         napi_value result = nullptr;
@@ -101,21 +96,21 @@ namespace OHOS::Js_sys_module::Dfx {
         size_t requireArgc = 1;
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
-        napi_value *argv = nullptr;
-        argv = new napi_value[argc];
-        napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-        char *tempStr = nullptr;
+        napi_value argv = nullptr;
+        napi_get_cb_info(env, info, &argc, &argv, nullptr, nullptr);
+        std::string tempStr = "";
         size_t tempStrsize = 0;
-        napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempStrsize);
-        if (tempStrsize > 0) {
-            tempStr = new char[tempStrsize + 1];
+        if (napi_get_value_string_utf8(env, argv, nullptr, 0, &tempStrsize) != napi_ok) {
+            HILOG_ERROR("can not get argv size");
+            return nullptr;
         }
-        napi_get_value_string_utf8(env, argv[0], tempStr, tempStrsize + 1, &tempStrsize);
+        tempStr.reserve(tempStrsize);
+        tempStr.resize(tempStrsize);
+        if (napi_get_value_string_utf8(env, argv, tempStr.data(), tempStrsize + 1, &tempStrsize) != napi_ok) {
+            HILOG_ERROR("can not get argv value");
+            return nullptr;
+        }
         std::string filePath = tempStr;
-        delete []tempStr;
-        delete []argv;
-        argv = nullptr;
-        tempStr = nullptr;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         auto stopResult = engine->StopHeapTracking(filePath);
         napi_value result = nullptr;
