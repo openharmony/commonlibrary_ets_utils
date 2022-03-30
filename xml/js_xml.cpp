@@ -18,21 +18,25 @@
 namespace OHOS::xml {
     napi_status XmlSerializer::DealNapiStrValue(napi_env env, const napi_value napiStr, std::string &result)
     {
-        char *buffer = nullptr;
+        std::string buffer = "";
         size_t bufferSize = 0;
         napi_status status = napi_ok;
         status = napi_get_value_string_utf8(env, napiStr, nullptr, -1, &bufferSize);
+        buffer.reserve(bufferSize + 1);
+        buffer.resize(bufferSize);
         if (status != napi_ok) {
+            HILOG_ERROR("can not get buffer size");
             return status;
         }
         if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
-            napi_get_value_string_utf8(env, napiStr, buffer, bufferSize + 1, &bufferSize);
+            status = napi_get_value_string_utf8(env, napiStr, buffer.data(), bufferSize + 1, &bufferSize);
+            if (status != napi_ok) {
+                HILOG_ERROR("can not get buffer value");
+                return status;
+            }
         }
-        if (buffer != nullptr) {
+        if (buffer.data() != nullptr) {
             result = buffer;
-            delete []buffer;
-            buffer = nullptr;
         }
         return status;
     }

@@ -112,10 +112,11 @@ namespace OHOS::Xml {
             curNode = curNode->prev;
             napi_value elementsObject = nullptr;
             napi_create_object(env_, &elementsObject);
+            char *curContent = nullptr;
             if (curNode->type == xmlElementType::XML_PI_NODE && !options_.ignoreInstruction) {
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
                 SetKeyValue(elementsObject, options_.name, reinterpret_cast<const char*>(curNode->name));
-                char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
+                curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
                 if (curContent != nullptr) {
                     SetKeyValue(elementsObject, options_.instruction, curContent);
                     xmlFree(reinterpret_cast<void*>(curContent));
@@ -124,10 +125,10 @@ namespace OHOS::Xml {
             }
             if (curNode->type == xmlElementType::XML_COMMENT_NODE && !options_.ignoreComment) {
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
-                char *curContent_ = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
-                if (curContent_ != nullptr) {
-                    SetKeyValue(elementsObject, options_.comment, curContent_);
-                    xmlFree(reinterpret_cast<void*>(curContent_));
+                curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
+                if (curContent != nullptr) {
+                    SetKeyValue(elementsObject, options_.comment, curContent);
+                    xmlFree(reinterpret_cast<void*>(curContent));
                 }
                 prevObj_.push_back(elementsObject);
             }
@@ -348,21 +349,25 @@ namespace OHOS::Xml {
 
     napi_status ConvertXml::DealNapiStrValue(const napi_value napi_StrValue, std::string &result) const
     {
-        char *buffer = nullptr;
+        std::string buffer = "";
         size_t bufferSize = 0;
         napi_status status = napi_ok;
         status = napi_get_value_string_utf8(env_, napi_StrValue, nullptr, -1, &bufferSize);
         if (status != napi_ok) {
+            HILOG_ERROR("can not get buffer size");
             return status;
         }
+        buffer.reserve(bufferSize + 1);
+        buffer.resize(bufferSize);
         if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
-            napi_get_value_string_utf8(env_, napi_StrValue, buffer, bufferSize + 1, &bufferSize);
+            status = napi_get_value_string_utf8(env_, napi_StrValue, buffer.data(), bufferSize + 1, &bufferSize);
+            if (status != napi_ok) {
+                HILOG_ERROR("can not get buffer value");
+                return status;
+            }
         }
-        if (buffer != nullptr) {
+        if (buffer.data() != nullptr) {
             result = buffer;
-            delete []buffer;
-            buffer = nullptr;
         }
         return status;
     }
