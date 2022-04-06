@@ -13,22 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef JSAPI_WORKER_WORKER_H_
-#define JSAPI_WORKER_WORKER_H_
+#ifndef JS_WORKER_MODULE_WORKER_WORKER_H_
+#define JS_WORKER_MODULE_WORKER_WORKER_H_
 
 #include <list>
 #include <map>
 #include <mutex>
-#include <uv.h>
-#include "message_queue.h"
+#include "base/compileruntime/js_worker_module/worker/message_queue.h"
+#include "base/compileruntime/js_worker_module/helper/napi_helper.h"
+#include "base/compileruntime/js_worker_module/helper/object_helper.h"
+#include "base/compileruntime/js_worker_module/worker/worker_runner.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 #include "utils/log.h"
-#include "worker_helper.h"
-#include "worker_runner.h"
 
-namespace OHOS::CCRuntime::Worker {
+namespace CompilerRuntime::WorkerModule {
 class Worker {
 public:
     static const int8_t WORKERPARAMNUM = 2;
@@ -40,26 +40,19 @@ public:
     enum ScriptMode { CLASSIC, MODULE };
 
     struct WorkerListener {
-        WorkerListener() : callback_(nullptr), worker_(nullptr), mode_(PERMANENT) {}
-
-        explicit WorkerListener(Worker* worker) : callback_(nullptr), worker_(worker), mode_(PERMANENT) {}
-
-        WorkerListener(Worker* worker, ListenerMode mode) : callback_(nullptr), worker_(worker), mode_(mode) {}
+        WorkerListener(napi_env env, napi_ref callback, ListenerMode mode)
+            : env_(env), callback_(callback), mode_(mode)
+        {}
 
         ~WorkerListener()
         {
+            Helper::NapiHelper::DeleteReference(env_, callback_);
             callback_ = nullptr;
-            worker_ = nullptr;
         }
 
         bool NextIsAvailable() const
         {
             return mode_ != ONCE;
-        }
-
-        void SetCallable(napi_env env, napi_value value)
-        {
-            napi_create_reference(env, value, 1, &callback_);
         }
 
         void SetMode(ListenerMode mode)
@@ -69,8 +62,8 @@ public:
 
         bool operator==(const WorkerListener& listener) const;
 
+        napi_env env_ {NULL};
         napi_ref callback_ {NULL};
-        Worker* worker_ {nullptr};
         ListenerMode mode_ {PERMANENT};
     };
 
@@ -79,14 +72,10 @@ public:
 
         bool operator()(const WorkerListener* listener) const
         {
-            napi_value compareObj = nullptr;
-            napi_get_reference_value(env_, listener->callback_, &compareObj);
-
-            napi_value obj = nullptr;
-            napi_get_reference_value(env_, ref_, &obj);
-            bool isEqual = false;
-            napi_strict_equals(env_, compareObj, obj, &isEqual);
-            return isEqual;
+            napi_value compareObj = Helper::NapiHelper::GetReferenceValue(env_, listener->callback_);
+            napi_value obj = Helper::NapiHelper::GetReferenceValue(env_, ref_);
+            // the env of listener and cmp listener must be same env because of Synchronization method
+            return Helper::NapiHelper::StrictEqual(env_, compareObj, obj);
         }
 
         napi_env env_ {nullptr};
@@ -334,7 +323,7 @@ public:
     uv_loop_t* GetWorkerLoop() const
     {
         if (workerEnv_ != nullptr) {
-            return reinterpret_cast<NativeEngine*>(workerEnv_)->GetUVLoop();
+            return Helper::NapiHelper::GetLibUV(workerEnv_);
         }
         return nullptr;
     }
@@ -375,9 +364,8 @@ public:
 
     void Loop()
     {
-        if (workerEnv_ != nullptr) {
-            reinterpret_cast<NativeEngine*>(workerEnv_)->Loop(LOOP_DEFAULT);
-        }
+        uv_loop_t* loop = GetWorkerLoop();
+        uv_run(loop, UV_RUN_DEFAULT);
     }
 
 private:
@@ -452,5 +440,5 @@ private:
 
     std::recursive_mutex liveStatusLock_ {};
 };
-} // namespace OHOS::CCRuntime::Worker
-#endif // JSAPI_WORKER_WORKER_H_
+} // namespace CompilerRuntime::WorkerModule
+#endif // JS_WORKER_MODULE_WORKER_WORKER_H_

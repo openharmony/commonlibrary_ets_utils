@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef JSAPI_WORKER_WORKER_RUNNER_H_
-#define JSAPI_WORKER_WORKER_RUNNER_H_
+#ifndef JS_WORKER_MODULE_WORKER_WORKER_RUNNER_H_
+#define JS_WORKER_MODULE_WORKER_WORKER_RUNNER_H_
 
 #include <functional>
 
 #include "native_engine/native_engine.h"
-#include "thread.h"
+#include "base/compileruntime/js_worker_module/worker/thread.h"
 
-namespace OHOS::CCRuntime::Worker {
+namespace CompilerRuntime::WorkerModule {
 struct WorkerStartCallback {
     using CallbackFunction = std::function<void(void*)>;
 
@@ -58,5 +58,5 @@ private:
     WorkerStartCallback callback_;
     uv_thread_t selfThreadId_ {0};
 };
-} // namespace OHOS::CCRuntime::Worker
-#endif // JSAPI_WORKER_WORKER_RUNNER_H_
+} // namespace CompilerRuntime::WorkerModule
+#endif // JS_WORKER_MODULE_WORKER_WORKER_RUNNER_H_

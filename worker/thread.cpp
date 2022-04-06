@@ -13,27 +13,17 @@
  * limitations under the License.
  */
 
-#ifndef JSAPI_WORKER_THREAD_H_
-#define JSAPI_WORKER_THREAD_H_
+#include "base/compileruntime/js_worker_module/worker/thread.h"
 
-#include <uv.h>
+namespace CompilerRuntime::WorkerModule {
+Thread::Thread() : tId_() {}
 
-namespace OHOS::CCRuntime::Worker {
-class Thread {
-public:
-    Thread();
-    virtual ~Thread() = default;
-    bool Start();
-    virtual void Run() = 0;
-
-    uv_thread_t GetThreadId() const
-    {
-        return tId_;
-    }
-
-private:
-    uv_thread_t tId_ {0};
-};
-}  // namespace OHOS::CCRuntime::Worker
-
-#endif // #define JSAPI_WORKER_THREAD_H_
+bool Thread::Start()
+{
+    int ret = uv_thread_create(&tId_, [](void* arg) {
+        Thread* thread = reinterpret_cast<Thread*>(arg);
+        thread->Run();
+    }, this);
+    return ret != 0;
+}
+}  // namespace CompilerRuntime::WorkerModule

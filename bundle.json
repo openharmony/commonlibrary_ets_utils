@@ -49,7 +49,7 @@
         },
         "build": {
             "sub_component": [
-                "//base/compileruntime/js_worker_module/jsapi:jsapi_packages"
+                "//base/compileruntime/js_worker_module:jsapi_packages"
             ],
             "inner_kits": [],
             "test": []

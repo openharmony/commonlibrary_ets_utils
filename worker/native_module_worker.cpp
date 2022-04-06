@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "worker.h"
+#include "base/compileruntime/js_worker_module/worker/worker.h"
 
 /*
  * module define
@@ -22,7 +22,7 @@ static napi_module g_workerModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
-    .nm_register_func = OHOS::CCRuntime::Worker::Worker::InitWorker,
+    .nm_register_func = CompilerRuntime::WorkerModule::Worker::InitWorker,
     .nm_modname = "worker",
     .nm_priv = reinterpret_cast<void*>(0),
     .reserved = { 0 },
