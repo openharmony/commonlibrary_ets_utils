@@ -40,19 +40,8 @@ class ConvertXML {
         if (converted.hasOwnProperty('spaces')) {
             let space : string | number | undefined = converted.spaces;
             delete converted.spaces;
-            strEnd = JSON.stringify(converted, null, space);
         }
-        let idx : number = 0;
-        while ((idx = strEnd.indexOf('\\t')) !== -1) {
-            strEnd = strEnd.substring(0, idx) + '\t' + strEnd.substring(idx + 2);
-        }
-        while ((idx = strEnd.indexOf('\\n')) !== -1) {
-            strEnd = strEnd.substring(0, idx) + '\n' + strEnd.substring(idx + 2);
-        }
-        while ((idx = strEnd.indexOf('\\')) !== -1) {
-            strEnd = strEnd.substring(0, idx) + '' + strEnd.substring(idx + 1);
-        }
-        return strEnd;
+        return converted;
     }
 }
 
@@ -142,4 +131,6 @@ function DealLaterReplace(strXml : string, idx : number, idxThir : number)
     return strXml;
 }
 
-export default ConvertXML
+export default {
+    ConvertXML : ConvertXML
+}
