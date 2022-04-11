@@ -30,10 +30,8 @@ namespace OHOS::Js_sys_module::Process {
     public:
         /**
          * Create process object
-         *
-         * @param env NAPI environment parameters.
          */
-        explicit Process(napi_env env);
+        explicit Process() {}
 
         /**
          * Process destructor.
@@ -42,58 +40,76 @@ namespace OHOS::Js_sys_module::Process {
 
         /**
          * Get process uid.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetUid() const;
+        napi_value GetUid(napi_env env) const;
 
         /**
          * Get the user ID of the process.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetGid() const;
+        napi_value GetGid(napi_env env) const;
 
         /**
          * Get the effective user identity of the process.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetEUid() const;
+        napi_value GetEUid(napi_env env) const;
 
         /**
          * Get the effective group ID of the process.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetEGid() const;
+        napi_value GetEGid(napi_env env) const;
 
         /**
          * Get an array with supplementary group ids.
+         *
+         * @param env The parameter is NAPI environment variables.s
          */
-        napi_value GetGroups() const;
+        napi_value GetGroups(napi_env env) const;
 
         /**
          * Get the pid of the current process.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetPid() const;
+        napi_value GetPid(napi_env env) const;
 
         /**
          * Get the pid of the parent process of the current process.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetPpid() const;
+        napi_value GetPpid(napi_env env) const;
 
         /**
          * Change the current working directory of the process.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param args The parameter is the path.
          */
-        void Chdir(napi_value args) const;
+        void Chdir(napi_env env, napi_value args) const;
 
         /**
          * Get the number of seconds the current system has been running.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value Uptime() const;
+        napi_value Uptime(napi_env env) const;
 
         /**
          * Send a signal to the specified process and end the specified process.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param signal The parameter is the signal sent.
          * @param proid The parameter is the id of the process.
          */
-        napi_value Kill(napi_value signal, napi_value proid);
+        napi_value Kill(napi_env env, napi_value signal, napi_value proid);
 
         /**
          * Causes the process to exit immediately and generate a core file.
@@ -103,94 +119,114 @@ namespace OHOS::Js_sys_module::Process {
         /**
          * Store user-triggered events.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param str The parameter is type of storage event.
          * @param function The parameter is callback event.
          */
-        void On(napi_value str, napi_value function);
+        void On(napi_env env, napi_value str, napi_value function);
 
         /**
          * Delete user-stored events.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param str The parameter is the type of delete event.
          */
-        napi_value Off(napi_value str);
+        napi_value Off(napi_env env, napi_value str);
 
         /**
          * Terminate the program.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param number The parameter is the exit code of the process.
          */
-        void Exit(napi_value number) const;
+        void Exit(napi_env env, napi_value number) const;
 
         /**
          * Use this method to get the working directory of the process.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value Cwd() const;
+        napi_value Cwd(napi_env env) const;
 
         /**
          * Get the tid of the current process.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetTid() const;
+        napi_value GetTid(napi_env env) const;
 
         /**
          * Determines whether the process is isolated.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value IsIsolatedProcess() const;
+        napi_value IsIsolatedProcess(napi_env env) const;
 
         /**
          * Determine whether the uid belongs to the application.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param uid The parameter is the uid of the application.
          */
-        napi_value IsAppUid(napi_value uid) const;
+        napi_value IsAppUid(napi_env env, napi_value uid) const;
 
         /**
          * Determine whether the operating environment is 64-bit.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value Is64Bit() const;
+        napi_value Is64Bit(napi_env env) const;
 
         /**
          * Get process uid by process name.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param name The parameter is the process name.
          */
-        napi_value GetUidForName(napi_value name) const;
+        napi_value GetUidForName(napi_env env, napi_value name) const;
 
         /**
          * Get thread priority based on specified tid.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param tid The parameter is the specified thread tid.
          */
-        napi_value GetThreadPriority(napi_value tid) const;
+        napi_value GetThreadPriority(napi_env env, napi_value tid) const;
 
         /**
          * Get the real-time elapsed time from system startup to process startup.
          */
-        napi_value GetStartRealtime() const;
+        napi_value GetStartRealtime(napi_env env) const;
 
         /**
          * Get the CPU time from the process startup to the current time.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value GetPastCputime() const;
+        napi_value GetPastCputime(napi_env env) const;
 
         /**
          * Get system configuration information.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param name The parameter is the name of the specified system configuration parameter.
          */
-        napi_value GetSystemConfig(napi_value name) const;
+        napi_value GetSystemConfig(napi_env env, napi_value name) const;
 
         /**
          * Use this method to get the value corresponding to the environment variable.
          *
+         * @param env The parameter is NAPI environment variables.
          * @param name The parameter is the environment variable name.
          */
-        napi_value GetEnvironmentVar(napi_value name) const;
+        napi_value GetEnvironmentVar(napi_env env, napi_value name) const;
 
         /**
          * Set reject callback.
+         *
+         * @param env The parameter is NAPI environment variables.
          */
-        napi_value SetRejectionCallback() const;
+        napi_value SetRejectionCallback(napi_env env) const;
 
         /**
          * Clear references to callbacks.
@@ -203,7 +239,6 @@ namespace OHOS::Js_sys_module::Process {
         int ConvertTime(time_t tvsec, int64_t tvnsec) const;
 
     private:
-        napi_env env_ { nullptr };
         int FIRST_APPLICATION_UID = 10000;
         int LAST_APPLICATION_UID = 19999;
     };
