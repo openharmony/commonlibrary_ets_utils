@@ -85,11 +85,11 @@ namespace OHOS::Js_sys_module::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
 
         DealType(env, args, argc);
-        auto objectInfo = new ChildProcess(env);
+        auto objectInfo = new ChildProcess();
 
-        objectInfo->InitOptionsInfo(args[1]);
+        objectInfo->InitOptionsInfo(env, args[1]);
 
-        objectInfo->Spawn(args[0]);
+        objectInfo->Spawn(env, args[0]);
 
         NAPI_CALL(env, napi_wrap(
             env, thisVar, objectInfo,
@@ -112,7 +112,7 @@ namespace OHOS::Js_sys_module::Process {
 
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        napi_value result = object->Wait();
+        napi_value result = object->Wait(env);
 
         return result;
     }
@@ -124,7 +124,7 @@ namespace OHOS::Js_sys_module::Process {
 
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        napi_value result = object->GetOutput();
+        napi_value result = object->GetOutput(env);
 
         return result;
     }
@@ -151,7 +151,7 @@ namespace OHOS::Js_sys_module::Process {
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
 
-        napi_value result = object->GetErrorOutput();
+        napi_value result = object->GetErrorOutput(env);
 
         return result;
     }
@@ -174,7 +174,7 @@ namespace OHOS::Js_sys_module::Process {
 
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        object->Kill(args);
+        object->Kill(env, args);
 
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
@@ -188,7 +188,7 @@ namespace OHOS::Js_sys_module::Process {
 
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        napi_value result = object->GetKilled();
+        napi_value result = object->GetKilled(env);
 
         return result;
     }
@@ -200,7 +200,7 @@ namespace OHOS::Js_sys_module::Process {
 
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        napi_value result = object->Getpid();
+        napi_value result = object->Getpid(env);
 
         return result;
     }
@@ -212,7 +212,7 @@ namespace OHOS::Js_sys_module::Process {
 
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        napi_value result = object->Getppid();
+        napi_value result = object->Getppid(env);
 
         return result;
     }
@@ -224,7 +224,7 @@ namespace OHOS::Js_sys_module::Process {
 
         ChildProcess* object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        napi_value result = object->GetExitCode();
+        napi_value result = object->GetExitCode(env);
 
         return result;
     }
@@ -263,44 +263,44 @@ namespace OHOS::Js_sys_module::Process {
 
     static napi_value GetUid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetUid();
+        Process object;
+        return object.GetUid(env);
     }
 
     static napi_value GetGid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetGid();
+        Process object;
+        return object.GetGid(env);
     }
 
     static napi_value GetEUid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetEUid();
+        Process object;
+        return object.GetEUid(env);
     }
 
     static napi_value GetEGid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetEGid();
+        Process object;
+        return object.GetEGid(env);
     }
 
     static napi_value GetGroups(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetGroups();
+        Process object;
+        return object.GetGroups(env);
     }
 
     static napi_value GetPid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetPid();
+        Process object;
+        return object.GetPid(env);
     }
 
     static napi_value GetPpid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetPpid();
+        Process object;
+        return object.GetPpid(env);
     }
 
     static napi_value Chdir(napi_env env, napi_callback_info info)
@@ -314,8 +314,8 @@ namespace OHOS::Js_sys_module::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected");
-        Process object(env);
-        object.Chdir(args);
+        Process object;
+        object.Chdir(env, args);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -323,7 +323,7 @@ namespace OHOS::Js_sys_module::Process {
 
     static napi_value Abort(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
+        Process object;
         object.Abort();
         napi_value res = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &res));
@@ -332,8 +332,8 @@ namespace OHOS::Js_sys_module::Process {
 
     static napi_value Cwd(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.Cwd();
+        Process object;
+        return object.Cwd(env);
     }
 
     static napi_value Exit(napi_env env, napi_callback_info info)
@@ -345,8 +345,8 @@ namespace OHOS::Js_sys_module::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type.number error");
-        Process object(env);
-        object.Exit(args);
+        Process object;
+        object.Exit(env, args);
         napi_value res = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &res));
         return res;
@@ -370,8 +370,8 @@ namespace OHOS::Js_sys_module::Process {
         }
         napi_valuetype valuetype1;
         NAPI_CALL(env, napi_typeof(env, args[1], &valuetype1));
-        Process object(env);
-        object.On(args[0], args[1]);
+        Process object;
+        object.On(env, args[0], args[1]);
         NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         return result;
     }
@@ -382,15 +382,15 @@ namespace OHOS::Js_sys_module::Process {
         size_t argc = 1;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        Process object(env);
-        napi_value result = object.Off(args);
+        Process object;
+        napi_value result = object.Off(env, args);
         return result;
     }
 
     static napi_value Uptime(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.Uptime();
+        Process object;
+        return object.Uptime(env);
     }
 
     static napi_value KillSig(napi_env env, napi_callback_info info)
@@ -400,21 +400,21 @@ namespace OHOS::Js_sys_module::Process {
         napi_value thisVar = nullptr;
         void* data = nullptr;
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
-        Process object(env);
+        Process object;
         napi_value result = nullptr;
-        result = object.Kill(argv[0], argv[1]);
+        result = object.Kill(env, argv[0], argv[1]);
         return result;
     }
     static napi_value GetTid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetTid();
+        Process object;
+        return object.GetTid(env);
     }
 
     static napi_value IsIsolatedProcess(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.IsIsolatedProcess();
+        Process object;
+        return object.IsIsolatedProcess(env);
     }
 
     static napi_value IsAppUid(napi_env env, napi_callback_info info)
@@ -426,14 +426,14 @@ namespace OHOS::Js_sys_module::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type.String error");
-        Process object(env);
-        return object.IsAppUid(args);
+        Process object;
+        return object.IsAppUid(env, args);
     }
 
     static napi_value Is64Bit(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.Is64Bit();
+        Process object;
+        return object.Is64Bit(env);
     }
 
     static napi_value GetUidForName(napi_env env, napi_callback_info info)
@@ -445,8 +445,8 @@ namespace OHOS::Js_sys_module::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type.String error");
-        Process object(env);
-        return object.GetUidForName(args);
+        Process object;
+        return object.GetUidForName(env, args);
     }
 
     static napi_value GetThreadPriority(napi_env env, napi_callback_info info)
@@ -458,20 +458,20 @@ namespace OHOS::Js_sys_module::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type.String error");
-        Process object(env);
-        return object.GetThreadPriority(args);
+        Process object;
+        return object.GetThreadPriority(env, args);
     }
 
     static napi_value GetStartRealtime(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetStartRealtime();
+        Process object;
+        return object.GetStartRealtime(env);
     }
 
     static napi_value GetPastCputime(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
-        Process object(env);
-        return object.GetPastCputime();
+        Process object;
+        return object.GetPastCputime(env);
     }
 
     static napi_value GetSystemConfig(napi_env env, napi_callback_info info)
@@ -483,8 +483,8 @@ namespace OHOS::Js_sys_module::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type.String error");
-        Process object(env);
-        return object.GetSystemConfig(args);
+        Process object;
+        return object.GetSystemConfig(env, args);
     }
 
     static napi_value GetEnvironmentVar(napi_env env, napi_callback_info info)
@@ -496,14 +496,14 @@ namespace OHOS::Js_sys_module::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type.String error");
-        Process object(env);
-        return object.GetEnvironmentVar(args);
+        Process object;
+        return object.GetEnvironmentVar(env, args);
     }
 
     static napi_value Init(napi_env env, napi_value exports)
     {
-        Process object(env);
-        object.SetRejectionCallback();
+        Process object;
+        object.SetRejectionCallback(env);
         napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("runCmd", RunCommand),
             DECLARE_NAPI_GETTER("uid", GetUid),
