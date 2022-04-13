@@ -29,7 +29,7 @@ namespace OHOS::Xml {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
-        auto objectInfo = new ConvertXml(env);
+        auto objectInfo = new ConvertXml();
         napi_wrap(
             env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
@@ -61,12 +61,12 @@ namespace OHOS::Xml {
         } else {
             NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
             NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
-            object->DealNapiStrValue(args[0], strXml);
+            object->DealNapiStrValue(env, args[0], strXml);
         }
         if (args[1] != nullptr) {
-            object->DealOptions(args[1]);
+            object->DealOptions(env, args[1]);
         }
-        napi_value result = object->Convert(strXml);
+        napi_value result = object->Convert(env, strXml);
         return result;
     }
 

@@ -67,10 +67,9 @@ namespace OHOS::Uri {
         }
     }
 
-    Uri::Uri(napi_env env, const std::string input)
+    Uri::Uri(const std::string input)
     {
         PreliminaryWork();
-        env_ = env;
         errStr_ = "";
         if (input.empty()) {
             errStr_ = "uri is empty";

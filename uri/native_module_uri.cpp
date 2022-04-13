@@ -47,7 +47,7 @@ namespace OHOS::Uri {
                 HILOG_ERROR("can not get argv[0] value");
                 return nullptr;
             }
-            object = new Uri(env, type);
+            object = new Uri(type);
         } else {
             napi_throw_error(env, nullptr, "parameter type is error");
         }
