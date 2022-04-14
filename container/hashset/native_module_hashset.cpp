@@ -55,7 +55,7 @@ static napi_module hashSetModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = HashSetInit,
-    .nm_modname = "HashSet",
+    .nm_modname = "util.HashSet",
     .nm_priv = ((void*)0),
     .reserved = { 0 },
 };
@@ -64,4 +64,4 @@ extern "C" __attribute__ ((constructor)) void RegisterModule()
 {
     napi_module_register(&hashSetModule);
 }
-}
+} // namespace  OHOS::Util

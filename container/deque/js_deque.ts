@@ -12,40 +12,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let flag = false;
-let fastDeque = undefined;
-let arkPritvate = globalThis["ArkPrivate"] || undefined;
+interface ArkPrivate {
+  Deque: number;
+  Load(key: number): Object;
+}
+let flag: boolean = false;
+let fastDeque: Object = undefined;
+let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
 if (arkPritvate !== undefined) {
   fastDeque = arkPritvate.Load(arkPritvate.Deque);
 } else {
   flag = true;
 }
-if (flag || fastDeque == undefined) {
+if (flag || fastDeque === undefined) {
   class HandlerDeque<T> {
-    private isOutBounds(obj: Deque<T>, prop: any) {
-      let index = Number.parseInt(prop);
+    private isOutBounds(prop: any): void {
+      let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         if (index < 0) {
-          throw new RangeError("the index is out-of-bounds");
+          throw new RangeError('the index is out-of-bounds');
         }
       }
     }
     get(obj: Deque<T>, prop: any): T {
-      if (typeof prop === "symbol") {
+      if (typeof prop === 'symbol') {
         return obj[prop];
       }
-      this.isOutBounds(obj, prop);
+      this.isOutBounds(prop);
       return obj[prop];
     }
     set(obj: Deque<T>, prop: any, value: T): boolean {
-      if (prop === "front" || prop === "capacity" || prop === "rear") {
+      if (prop === 'front' || prop === 'capacity' || prop === 'rear') {
         obj[prop] = value;
         return true;
       }
-      let index = Number(prop);
+      let index: number = Number(prop);
       if (Number.isInteger(index)) {
         if (index < 0) {
-          throw new RangeError("index is out-of-bounds");
+          throw new RangeError('index is out-of-bounds');
         } else {
           obj[index] = value;
           return true;
@@ -53,29 +57,29 @@ if (flag || fastDeque == undefined) {
       }
       return false;
     }
-    has(obj: Deque<T>, prop: any) {
+    has(obj: Deque<T>, prop: any): boolean {
       return obj.has(prop);
     }
-    ownKeys(obj: Deque<T>) {
-      let keys = [];
-      for (let i = 0; i < obj.length; i++) {
+    ownKeys(obj: Deque<T>): Array<string> {
+      let keys: Array<string> = [];
+      for (let i: number = 0; i < obj.length; i++) {
         keys.push(i.toString());
       }
       return keys;
     }
-    defineProperty(obj: Deque<T>, prop: any, desc: any) {
+    defineProperty(): boolean {
       return true;
     }
-    getOwnPropertyDescriptor(obj: Deque<T>, prop: any) {
-      this.isOutBounds(obj, prop);
-      let index = Number.parseInt(prop);
+    getOwnPropertyDescriptor(obj: Deque<T>, prop: any): Object {
+      this.isOutBounds(prop);
+      let index: number = Number.parseInt(prop);
       if (index >= 0 && Number.isInteger(index)) {
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
       return
     }
-    setPrototypeOf(obj: any, prop: any): any {
-      throw new RangeError("Can setPrototype on Deque Object");
+    setPrototypeOf(): T {
+      throw new RangeError('Can setPrototype on Deque Object');
     }
   }
   interface IterableIterator<T> {
@@ -94,8 +98,9 @@ if (flag || fastDeque == undefined) {
       this.rear = 0;
       return new Proxy(this, new HandlerDeque());
     }
-    get length() {
-      let result = (this.rear - this.front + this.capacity) % this.capacity;
+    get length(): number {
+      let result: number = 0;
+      result = (this.rear - this.front + this.capacity) % this.capacity;
       return result;
     }
     insertFront(element: T): void {
@@ -125,9 +130,9 @@ if (flag || fastDeque == undefined) {
       return this[this.rear - 1];
     }
     has(element: T): boolean {
-      let result = false;
-      this.forEach(function (value, index) {
-        if (value == element) {
+      let result: boolean = false;
+      this.forEach(function (value) {
+        if (value === element) {
           result = true;
         }
       });
@@ -137,7 +142,8 @@ if (flag || fastDeque == undefined) {
       if (this.isEmpty()) {
         return undefined;
       }
-      let result = this[this.front];
+      let result: T = undefined;
+      result = this[this.front];
       this.front = (this.front + 1) % (this.capacity + 1);
       return result;
     }
@@ -145,14 +151,15 @@ if (flag || fastDeque == undefined) {
       if (this.isEmpty()) {
         return undefined;
       }
-      let result = this[this.rear - 1];
+      let result: T = undefined;
+      result = this[this.rear - 1];
       this.rear = (this.rear + this.capacity) % (this.capacity + 1);
       return result;
     }
     forEach(callbackfn: (value: T, index?: number, deque?: Deque<T>) => void,
       thisArg?: Object): void {
-      let k = 0;
-      let i = this.front;
+      let k: number = 0;
+      let i: number = this.front;
       while (true) {
         callbackfn.call(thisArg, this[i], k, this);
         i = (i + 1) % this.capacity;
@@ -163,9 +170,9 @@ if (flag || fastDeque == undefined) {
       }
     }
     private increaseCapacity(): void {
-      let count = 0;
-      let arr = [];
-      let length = this.length;
+      let count: number = 0;
+      let arr: Array<T> = [];
+      let length: number = this.length;
       while (true) {
         arr[count++] = this[this.front];
         this.front = (this.front + 1) % this.capacity;
@@ -173,7 +180,7 @@ if (flag || fastDeque == undefined) {
           break;
         }
       }
-      for (let i = 0; i < length; i++) {
+      for (let i: number = 0; i < length; i++) {
         this[i] = arr[i];
       }
       this.capacity = 2 * this.capacity;
@@ -184,15 +191,17 @@ if (flag || fastDeque == undefined) {
       return (this.rear + 1) % this.capacity === this.front;
     }
     private isEmpty(): boolean {
-      return this.length == 0;
+      return this.length === 0;
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let deque = this;
-      let count = deque.front;
+      let deque: Deque<T> = this;
+      let count: number = deque.front;
       return {
         next: function () {
-          let done = count == deque.rear;
-          let value = !done ? deque[count] : undefined;
+          let done: boolean = false;
+          let value: T = undefined;
+          done = count === deque.rear;
+          value = done ? undefined : deque[count];
           count = (count + 1) % deque.capacity;
           return {
             done: done,

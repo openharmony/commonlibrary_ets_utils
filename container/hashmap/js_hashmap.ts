@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 declare function requireNapi(s: string): any;
-
-let flag = false;
-let fastHashMap = undefined;
-let arkPritvate = globalThis["ArkPrivate"] || undefined;
+interface ArkPrivate {
+  HashMap: number;
+  Load(key: number): Object;
+}
+let flag: boolean = false;
+let fastHashMap: Object = undefined;
+let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
 if (arkPritvate !== undefined) {
   fastHashMap = arkPritvate.Load(arkPritvate.HashMap);
 } else {
   flag = true;
 }
-
 if (flag || fastHashMap === undefined) {
-  const HashMapAbility = requireNapi("util.struct");
+  let HashMapAbility: any = requireNapi('util.struct');
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -39,14 +41,14 @@ if (flag || fastHashMap === undefined) {
       }
       return false;
     }
-    defineProperty(target: HashMap<K, V>, p: any): boolean {
-      throw new Error("Can't define Property on HashMap Object");
+    defineProperty(): boolean {
+      throw new Error(`Can't define Property on HashMap Object`);
     }
-    deleteProperty(target: HashMap<K, V>, p: any): boolean {
-      throw new Error("Can't delete Property on HashMap Object");
+    deleteProperty(): boolean {
+      throw new Error(`Can't delete Property on HashMap Object`);
     }
-    setPrototypeOf(target: HashMap<K, V>, p: any): boolean {
-      throw new Error("Can't set Prototype on HashMap Object");
+    setPrototypeOf(): boolean {
+      throw new Error(`Can't set Prototype on HashMap Object`);
     }
   }
   class HashMap<K, V> extends HashMapAbility.DictionaryClass<K, V> {
@@ -54,7 +56,7 @@ if (flag || fastHashMap === undefined) {
       super();
       return new Proxy(this, new HandlerHashMap());
     }
-    get length() {
+    get length(): number {
       return this.memberNumber;
     }
     isEmpty(): boolean {
@@ -70,11 +72,12 @@ if (flag || fastHashMap === undefined) {
       return this.getValueByKey(key);
     }
     setAll(map: HashMap<K, V>): void {
-      if(!(map instanceof HashMap)) {
-        throw new TypeError("Incoming object is not JSAPIHashMap");
+      if (!(map instanceof HashMap)) {
+        throw new TypeError('Incoming object is not JSAPIHashMap');
       }
-      let memebers = map.keyValueArray;
-      for (let i = 0; i < memebers.length; i++) {
+      let memebers: Array<any> = [];
+      memebers = map.keyValueArray;
+      for (let i: number = 0; i < memebers.length; i++) {
         this.put(memebers[i].key, memebers[i].value);
       }
     }
@@ -82,19 +85,21 @@ if (flag || fastHashMap === undefined) {
       return super.put(key, value);
     }
     remove(key: K): V {
-      let result = this.removeMember(key);
+      let result: V = this.removeMember(key);
       return result;
     }
     clear(): void {
       super.clear();
     }
     keys(): IterableIterator<K> {
-      let data = this;
-      let count = 0;
+      let data: HashMap<K, V> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].key : undefined;
+          let done: boolean = false;
+          let value: K = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.keyValueArray[count].key;
           count++;
           return {
             done: done,
@@ -104,12 +109,14 @@ if (flag || fastHashMap === undefined) {
       };
     }
     values(): IterableIterator<V> {
-      let data = this;
-      let count = 0;
+      let data: HashMap<K, V> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].value : undefined;
+          let done: boolean = false;
+          let value: V = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.keyValueArray[count].value;
           count++;
           return {
             done: done,
@@ -123,18 +130,21 @@ if (flag || fastHashMap === undefined) {
     }
     forEach(callbackfn: (value?: V, key?: K, map?: HashMap<K, V>) => void,
       thisArg?: Object): void {
-      let tagetArray = this.keyValueArray;
-      for (let i = 0; i < tagetArray.length; i++) {
+      let tagetArray: Array<any> = [];
+      tagetArray = this.keyValueArray;
+      for (let i: number = 0; i < tagetArray.length; i++) {
         callbackfn.call(thisArg, tagetArray[i].value, tagetArray[i].key, this);
       }
     }
     entries(): IterableIterator<[K, V]> {
-      let data = this;
-      let count = 0;
+      let data: HashMap<K, V> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].entry() : undefined;
+          let done: boolean = false;
+          let value: [K, V] = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.keyValueArray[count].entry();
           count++;
           return {
             done: done,
@@ -144,19 +154,7 @@ if (flag || fastHashMap === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
-      let data = this;
-      let count = 0;
-      return {
-        next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].entry() : undefined;
-          count++;
-          return {
-            done: done,
-            value: value,
-          };
-        },
-      };
+      return this.entries();
     }
   }
   Object.freeze(HashMap);

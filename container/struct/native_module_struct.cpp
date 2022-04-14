@@ -56,7 +56,7 @@ static napi_module structModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = StructInit,
-    .nm_modname = "struct",
+    .nm_modname = "util.struct",
     .nm_priv = ((void*)0),
     .reserved = { 0 },
 };
@@ -65,4 +65,4 @@ extern "C" __attribute__ ((constructor)) void RegisterModule()
 {
     napi_module_register(&structModule);
 }
-}
+} // namespace  OHOS::Util

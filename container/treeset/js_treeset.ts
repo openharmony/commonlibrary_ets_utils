@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 declare function requireNapi(s: string): any;
-
-let flag = false;
-let fastTreeSet = undefined;
-let arkPritvate = globalThis["ArkPrivate"] || undefined;
+interface ArkPrivate {
+  TreeSet: number;
+  Load(key: number): Object;
+}
+let flag: boolean = false;
+let fastTreeSet: Object = undefined;
+let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
 if (arkPritvate !== undefined) {
   fastTreeSet = arkPritvate.Load(arkPritvate.TreeSet);
 } else {
   flag = true;
 }
-
 if (flag || fastTreeSet === undefined) {
-  const RBTreeAbility = requireNapi("util.struct");
+  const RBTreeAbility = requireNapi('util.struct');
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -39,14 +41,14 @@ if (flag || fastTreeSet === undefined) {
       }
       return false;
     }
-    defineProperty(target: TreeSet<T>, p: any): boolean {
-      throw new Error("Can't define Property on TreeSet Object");
+    defineProperty(): boolean {
+      throw new Error(`Can't define Property on TreeSet Object`);
     }
-    deleteProperty(target: TreeSet<T>, p: any): boolean {
-      throw new Error("Can't delete Property on TreeSet Object");
+    deleteProperty(): boolean {
+      throw new Error(`Can't delete Property on TreeSet Object`);
     }
-    setPrototypeOf(target: TreeSet<T>, p: any): boolean {
-      throw new Error("Can't set Prototype on TreeSet Object");
+    setPrototypeOf(): boolean {
+      throw new Error(`Can't set Prototype on TreeSet Object`);
     }
   }
   class TreeSet<T> {
@@ -55,7 +57,7 @@ if (flag || fastTreeSet === undefined) {
       this.constitute = new RBTreeAbility.RBTreeClass(comparator);
       return new Proxy(this, new HandlerTreeSet());
     }
-    get length() {
+    get length(): number {
       return this.constitute.memberNumber;
     }
     isEmpty(): boolean {
@@ -69,67 +71,94 @@ if (flag || fastTreeSet === undefined) {
       return true;
     }
     remove(value: T): boolean {
-      let result = this.constitute.removeNode(value);
+      let result: T = undefined;
+      result = this.constitute.removeNode(value);
       return result !== undefined;
     }
     clear() {
       this.constitute.clearTree();
     }
     getFirstValue(): T {
-      let tempNode = this.constitute.firstNode();
-      if (tempNode === undefined) return tempNode;
+      let tempNode: any = undefined;
+      tempNode = this.constitute.firstNode();
+      if (tempNode === undefined) {
+        return tempNode;
+      }
       return tempNode.key;
     }
     getLastValue(): T {
-      let tempNode = this.constitute.lastNode();
-      if (tempNode === undefined) return tempNode;
+      let tempNode: any = undefined;
+      tempNode = this.constitute.lastNode();
+      if (tempNode === undefined) {
+        return tempNode;
+      }
       return tempNode.key;
     }
     getLowerValue(key: T): T {
-      let result: any = undefined;
-      let tempNode = this.constitute.getNode(key);
-      if (tempNode === undefined) return tempNode;
-      if (tempNode.left !== undefined) return tempNode.left.key;
-      let node = tempNode;
+      let tempNode: any = undefined;
+      tempNode = this.constitute.getNode(key);
+      if (tempNode === undefined) {
+        return tempNode;
+      }
+      if (tempNode.left !== undefined) {
+        return tempNode.left.key;
+      }
+      let node: any = tempNode;
       while (node.parent !== undefined) {
-        if (node.parent.right === node) return node.parent.key;
+        if (node.parent.right === node) {
+          return node.parent.key;
+        }
         node = node.parent; // node.parent.left === node is true;
       }
-      return result;
+      return undefined;
     }
     getHigherValue(key: T): T {
-      let result: any = undefined;
-      let tempNode = this.constitute.getNode(key);
-      if (tempNode === undefined) return tempNode;
-      if (tempNode.right !== undefined) return tempNode.right.key;
-      let node = tempNode;
+      let tempNode: any = undefined;
+      tempNode = this.constitute.getNode(key);
+      if (tempNode === undefined) {
+        return tempNode;
+      }
+      if (tempNode.right !== undefined) {
+        return tempNode.right.key;
+      }
+      let node: any = tempNode;
       while (node.parent !== undefined) {
-        if (node.parent.left === node) return node.parent.key;
+        if (node.parent.left === node) {
+          return node.parent.key;
+        }
         node = node.parent; // node.parent.right === node is true;
       }
-      return result;
+      undefined;
     }
     popFirst(): T {
-      let firstNode = this.constitute.firstNode();
-      if (firstNode === undefined) return firstNode;
-      let value = firstNode.value;
+      let firstNode: any = undefined;
+      firstNode = this.constitute.firstNode();
+      if (firstNode === undefined) {
+        return firstNode;
+      }
+      let value: T = firstNode.value;
       this.constitute.removeNodeProcess(firstNode);
       return value;
     }
     popLast(): T {
-      let lastNode = this.constitute.lastNode();
-      if (lastNode === undefined) return lastNode;
-      let value = lastNode.value;
+      let lastNode: any = undefined;
+      lastNode = this.constitute.lastNode();
+      if (lastNode === undefined) {
+        return lastNode;
+      }
+      let value: T = lastNode.value;
       this.constitute.removeNodeProcess(lastNode);
       return value;
     }
     values(): IterableIterator<T> {
-      let data = this.constitute;
-      let count = 0;
+      let data: any = this.constitute;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].value as T : undefined;
+          let done: boolean = false;
+          let value: T = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.keyValueArray[count].value as T;
           count++;
           return {
             done: done,
@@ -140,19 +169,21 @@ if (flag || fastTreeSet === undefined) {
     }
     forEach(callbackfn: (value?: T, key?: T, set?: TreeSet<T>) => void,
       thisArg?: Object): void {
-      let data = this.constitute;
-      let tagetArray = data.keyValueArray;
-      for (let i = 0; i < data.memberNumber; i++) {
+      let data: any = this.constitute;
+      let tagetArray: Array<any> = data.keyValueArray;
+      for (let i: number = 0; i < data.memberNumber; i++) {
         callbackfn.call(thisArg, tagetArray[i].value as T, tagetArray[i].key);
       }
     }
     entries(): IterableIterator<[T, T]> {
-      let data = this.constitute;
-      let count = 0;
+      let data: any = this.constitute;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].entry() : undefined;
+          let done: boolean = false;
+          let value: [T, T] = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.keyValueArray[count].entry();
           count++;
           return {
             done: done,
@@ -162,19 +193,7 @@ if (flag || fastTreeSet === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let data = this.constitute;
-      let count = 0;
-      return {
-        next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].key : undefined;
-          count++;
-          return {
-            done: done,
-            value: value,
-          };
-        },
-      };
+      return this.values();
     }
   }
   Object.freeze(TreeSet);

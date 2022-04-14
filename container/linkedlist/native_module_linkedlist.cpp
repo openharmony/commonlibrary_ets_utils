@@ -55,7 +55,7 @@ static napi_module linkedListModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = LinkedListInit,
-    .nm_modname = "LinkedList",
+    .nm_modname = "util.LinkedList",
     .nm_priv = ((void *)0),
     .reserved = {0},
 };
@@ -64,4 +64,4 @@ extern "C" __attribute__((constructor)) void RegisterModule()
 {
     napi_module_register(&linkedListModule);
 }
-}
+} // namespace  OHOS::Util

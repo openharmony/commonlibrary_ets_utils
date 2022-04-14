@@ -12,40 +12,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let flag = false;
-let fastVector = undefined;
-let arkPritvate = globalThis["ArkPrivate"] || undefined;
+interface ArkPrivate {
+  Vector: number;
+  Load(key: number): Object;
+}
+let flag: boolean = false;
+let fastVector: object = undefined;
+let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
 if (arkPritvate !== undefined) {
   fastVector = arkPritvate.Load(arkPritvate.Vector);
 } else {
   flag = true;
 }
-if (flag || fastVector == undefined) {
+if (flag || fastVector === undefined) {
   class HandlerVector<T> {
-    private isOutBounds(obj: Vector<T>, prop: any) {
-      let index = Number.parseInt(prop);
+    private isOutBounds(obj: Vector<T>, prop: any): void {
+      let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         if (index < 0 || index >= obj.length) {
-          throw new RangeError("the index is out-of-bounds");
+          throw new RangeError('the index is out-of-bounds');
         }
       }
     }
-    get(obj: Vector<T>, prop: any) {
-      if (typeof prop === "symbol") {
+    get(obj: Vector<T>, prop: any): T {
+      if (typeof prop === 'symbol') {
         return obj[prop];
       }
       this.isOutBounds(obj, prop);
       return obj[prop];
     }
-    set(obj: Vector<T>, prop: any, value: T) {
-      if (prop === "elementNum" || prop === "capacity") {
+    set(obj: Vector<T>, prop: any, value: T): boolean {
+      if (prop === 'elementNum' || prop === 'capacity') {
         obj[prop] = value;
         return true;
       }
-      let index = Number.parseInt(prop);
+      let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         if (index < 0 || index > obj.length) {
-          throw new RangeError("the index is out-of-bounds");
+          throw new RangeError('the index is out-of-bounds');
         } else {
           obj[index] = value;
           return true;
@@ -53,38 +57,38 @@ if (flag || fastVector == undefined) {
       }
       return false;
     }
-    deleteProperty(obj: Vector<T>, prop: any) {
+    deleteProperty(obj: Vector<T>, prop: any): boolean {
       this.isOutBounds(obj, prop);
-      let index = Number.parseInt(prop);
+      let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
         obj.removeByIndex(index);
         return true;
       }
       return false;
     }
-    has(obj: Vector<T>, prop: any) {
+    has(obj: Vector<T>, prop: any): boolean {
       return obj.has(prop);
     }
-    ownKeys(obj: Vector<T>) {
-      let keys = [];
-      for (let i = 0; i < obj.length; i++) {
+    ownKeys(obj: Vector<T>): Array<string> {
+      let keys: string[] = [];
+      for (let i: number = 0; i < obj.length; i++) {
         keys.push(i.toString());
       }
       return keys;
     }
-    defineProperty(obj: Vector<T>, prop: any, desc: any) {
+    defineProperty(): boolean {
       return true;
     }
-    getOwnPropertyDescriptor(obj: Vector<T>, prop: any) {
+    getOwnPropertyDescriptor(obj: Vector<T>, prop: any): Object {
       this.isOutBounds(obj, prop);
-      let index = Number.parseInt(prop);
+      let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
       return;
     }
-    setPrototypeOf(obj: any, prop: any): any {
-      throw new RangeError("Can setPrototype on Vector Object");  
+    setPrototypeOf(): T {
+      throw new RangeError('Can setPrototype on Vector Object');
     }
   }
   interface IterableIterator<T> {
@@ -99,7 +103,7 @@ if (flag || fastVector == undefined) {
     constructor() {
       return new Proxy(this, new HandlerVector());
     }
-    get length() {
+    get length(): number {
       return this.elementNum;
     }
     add(element: T): boolean {
@@ -111,19 +115,19 @@ if (flag || fastVector == undefined) {
     }
     insert(element: T, index: number): void {
       if (index < 0 || index >= this.elementNum) {
-        throw new RangeError("the index is out-of-bounds");
+        throw new RangeError('the index is out-of-bounds');
       }
       if (this.isFull()) {
         this.resize();
       }
-      for (let i = this.elementNum; i > index; i--) {
+      for (let i: number = this.elementNum; i > index; i--) {
         this[i] = this[i - 1];
       }
       this[index] = element;
       this.elementNum++;
     }
     has(element: T): boolean {
-      for (let i = 0; i < this.elementNum; i++) {
+      for (let i: number = 0; i < this.elementNum; i++) {
         if (this[i] === element) {
           return true;
         }
@@ -134,7 +138,7 @@ if (flag || fastVector == undefined) {
       return this[index];
     }
     getIndexOf(element: T): number {
-      for (let i = 0; i < this.elementNum; i++) {
+      for (let i: number = 0; i < this.elementNum; i++) {
         if (element === this[i]) {
           return i;
         }
@@ -149,17 +153,17 @@ if (flag || fastVector == undefined) {
     }
     set(index: number, element: T): T {
       if (index < 0 || index >= this.elementNum) {
-        throw new RangeError("the index is out-of-bounds");
+        throw new RangeError('the index is out-of-bounds');
       }
       this[index] = element;
       return this[index];
     }
     removeByIndex(index: number): T {
       if (index < 0 || index >= this.elementNum) {
-        throw new RangeError("the index is out-of-bounds");
+        throw new RangeError('the index is out-of-bounds');
       }
-      let result = this[index];
-      for (let i = index; i < this.elementNum - 1; i++) {
+      let result: T = this[index];
+      for (let i: number = index; i < this.elementNum - 1; i++) {
         this[i] = this[i + 1];
       }
       this.elementNum--;
@@ -167,8 +171,8 @@ if (flag || fastVector == undefined) {
     }
     remove(element: T): boolean {
       if (this.has(element)) {
-        let index = this.getIndexOf(element);
-        for (let i = index; i < this.elementNum - 1; i++) {
+        let index: number = this.getIndexOf(element);
+        for (let i: number = index; i < this.elementNum - 1; i++) {
           this[i] = this[i + 1];
         }
         this.elementNum--;
@@ -183,7 +187,7 @@ if (flag || fastVector == undefined) {
       return this[this.elementNum - 1];
     }
     getLastIndexOf(element: T): number {
-      for (let i = this.elementNum - 1; i >= 0; i--) {
+      for (let i: number = this.elementNum - 1; i >= 0; i--) {
         if (element === this[i]) {
           return i;
         }
@@ -192,7 +196,7 @@ if (flag || fastVector == undefined) {
     }
     getLastIndexFrom(element: T, index: number): number {
       if (this.has(element)) {
-        for (let i = index; i >= 0; i--) {
+        for (let i: number = index; i >= 0; i--) {
           if (this[i] === element) {
             return i;
           }
@@ -202,7 +206,7 @@ if (flag || fastVector == undefined) {
     }
     getIndexFrom(element: T, index: number): number {
       if (this.has(element)) {
-        for (let i = index; i < this.elementNum; i++) {
+        for (let i: number = index; i < this.elementNum; i++) {
           if (this[i] === element) {
             return i;
           }
@@ -221,7 +225,7 @@ if (flag || fastVector == undefined) {
         throw new RangeError(`the fromIndex or the toIndex is out-of-bounds`);
       }
       toIndex = toIndex >= this.elementNum ? this.elementNum : toIndex;
-      let i = fromIndex;
+      let i: number = fromIndex;
       for (let j = toIndex; j < this.elementNum; j++) {
         this[i] = this[j];
         i++;
@@ -236,35 +240,35 @@ if (flag || fastVector == undefined) {
     }
     replaceAllElements(callbackfn: (value: T, index?: number, vector?: Vector<T>) => T,
       thisArg?: Object): void {
-      for (let i = 0; i < this.elementNum; i++) {
+      for (let i: number = 0; i < this.elementNum; i++) {
         this[i] = callbackfn.call(thisArg, this[i], i, this);
       }
     }
     forEach(callbackfn: (value: T, index?: number, vector?: Vector<T>) => void,
       thisArg?: Object): void {
-      for (let i = 0; i < this.elementNum; i++) {
+      for (let i: number = 0; i < this.elementNum; i++) {
         callbackfn.call(thisArg, this[i], i, this);
       }
     }
     sort(comparator?: (firstValue: T, secondValue: T) => number): void {
-      let isSort = true;
+      let isSort: boolean = true;
       if (comparator) {
-        for (let i = 0; i < this.elementNum; i++) {
-          for (let j = 0; j < this.elementNum - 1 - i; j++) {
+        for (let i: number = 0; i < this.elementNum; i++) {
+          for (let j: number = 0; j < this.elementNum - 1 - i; j++) {
             if (comparator(this[j], this[j + 1]) > 0) {
               isSort = false;
-              let temp = this[j];
+              let temp: T = this[j];
               this[j] = this[j + 1];
               this[j + 1] = temp;
             }
           }
         }
       } else {
-        for (let i = 0; i < this.elementNum - 1; i++) {
-          for (let j = 0; j < this.elementNum - 1 - i; j++) {
+        for (let i: number = 0; i < this.elementNum - 1; i++) {
+          for (let j: number = 0; j < this.elementNum - 1 - i; j++) {
             if (this.asciSort(this[j], this[j + 1])) {
               isSort = false;
-              let temp = this[j];
+              let temp: T = this[j];
               this[j] = this[j + 1];
               this[j + 1] = temp;
             }
@@ -276,16 +280,16 @@ if (flag || fastVector == undefined) {
       }
     }
     private asciSort(curElement: any, nextElement: any): boolean {
-      if ((Object.prototype.toString.call(curElement) === "[object String]" ||
-          Object.prototype.toString.call(curElement) === "[object Number]") &&
-          (Object.prototype.toString.call(nextElement) === "[object String]" ||
-          Object.prototype.toString.call(nextElement) === "[object Number]")) {
-          curElement = curElement.toString();
-          nextElement = nextElement.toString();
-          if(curElement > nextElement){
-            return true
-          }
-          return false
+      if ((Object.prototype.toString.call(curElement) === '[object String]' ||
+        Object.prototype.toString.call(curElement) === '[object Number]') &&
+        (Object.prototype.toString.call(nextElement) === '[object String]' ||
+        Object.prototype.toString.call(nextElement) === '[object Number]')) {
+        curElement = curElement.toString();
+        nextElement = nextElement.toString();
+        if (curElement > nextElement) {
+          return true
+        }
+        return false
       }
       return false;
     }
@@ -297,35 +301,36 @@ if (flag || fastVector == undefined) {
         throw new RangeError(`the fromIndex or the toIndex is out-of-bounds`);
       }
       toIndex = toIndex >= this.elementNum - 1 ? this.elementNum - 1 : toIndex;
-      let vector = new Vector<T>();
-      for (let i = fromIndex; i < toIndex; i++) {
+      let vector: Vector<T> = new Vector<T>();
+      for (let i: number = fromIndex; i < toIndex; i++) {
         vector.add(this[i]);
       }
       return vector;
     }
     convertToArray(): Array<T> {
-      let arr = [];
-      for (let i = 0; i < this.elementNum; i++) {
+      let arr: Array<T> = [];
+      for (let i: number = 0; i < this.elementNum; i++) {
         arr[i] = this[i];
       }
       return arr;
     }
     copyToArray(array: Array<T>): void {
-      let arr = this.convertToArray();
-      for (let i = 0; i < array.length; i++) {
+      let arr: Array<T> = this.convertToArray();
+      for (let i: number = 0; i < array.length; i++) {
         array[i] = arr[i];
       }
     }
     toString(): string {
-      let str = `${this[0]}`;
-      for (let i = 1; i < this.elementNum; i++) {
+      let str: string = '';
+      str = `${this[0]}`;
+      for (let i: number = 1; i < this.elementNum; i++) {
         str = `${str},${this[i]}`;
       }
       return str;
     }
     clone(): Vector<T> {
-      let clone = new Vector<T>();
-      for (let i = 0; i < this.elementNum; i++) {
+      let clone: Vector<T> = new Vector<T>();
+      for (let i: number = 0; i < this.elementNum; i++) {
         clone.add(this[i]);
       }
       return clone;
@@ -348,15 +353,17 @@ if (flag || fastVector == undefined) {
       this.capacity = this.elementNum;
     }
     isEmpty(): boolean {
-      return this.elementNum == 0;
+      return this.elementNum === 0;
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let count = 0;
-      let vector = this;
+      let count: number = 0;
+      let vector: Vector<T> = this;
       return {
         next: function () {
-          let done = count >= vector.elementNum;
-          let value = !done ? vector[count++] : undefined;
+          let done: boolean = false;
+          let value: T = undefined;
+          done = count >= vector.elementNum;
+          value = done ? undefined : vector[count++];
           return {
             done: done,
             value: value,

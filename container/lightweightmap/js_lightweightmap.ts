@@ -13,18 +13,20 @@
  * limitations under the License.
  */
 declare function requireNapi(s: string): any;
-
-let flag = false;
-let fastLightWeightMap = undefined;
-let arkPritvate = globalThis["ArkPrivate"] || undefined;
+interface ArkPrivate {
+  LightWeightMap: number;
+  Load(key: number): Object;
+}
+let flag: boolean = false;
+let fastLightWeightMap: Object = undefined;
+let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
 if (arkPritvate !== undefined) {
   fastLightWeightMap = arkPritvate.Load(arkPritvate.LightWeightMap);
 } else {
   flag = true;
 }
-
 if (flag || fastLightWeightMap === undefined) {
-  const LightWeightAbility = requireNapi("util.struct");
+  const LightWeightAbility = requireNapi('util.struct');
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -39,14 +41,14 @@ if (flag || fastLightWeightMap === undefined) {
       }
       return false;
     }
-    defineProperty(target: LightWeightMap<K, V>, p: any): boolean {
-      throw new Error("Can't define Property on LightWeightMap Object");
+    defineProperty(): boolean {
+      throw new Error(`Can't define Property on LightWeightMap Object`);
     }
-    deleteProperty(target: LightWeightMap<K, V>, p: any): boolean {
-      throw new Error("Can't delete Property on LightWeightMap Object");
+    deleteProperty(): boolean {
+      throw new Error(`Can't delete Property on LightWeightMap Object`);
     }
-    setPrototypeOf(target: LightWeightMap<K, V>, p: any): boolean {
-      throw new Error("Can't set Prototype on LightWeightMap Object");
+    setPrototypeOf(): boolean {
+      throw new Error(`Can't set Prototype on LightWeightMap Object`);
     }
   }
   class LightWeightMap<K, V> extends LightWeightAbility.LightWeightClass<K, V> {
@@ -54,15 +56,17 @@ if (flag || fastLightWeightMap === undefined) {
       super();
       return new Proxy(this, new HandlerLightWeightMap());
     }
-    get length() {
+    get length(): number {
       return this.memberNumber;
     }
     hasAll(map: LightWeightMap<K, V>): boolean {
-      if(!(map instanceof LightWeightMap)) {
-        throw new TypeError("map is not JSAPILightWeightMap");
+      if (!(map instanceof LightWeightMap)) {
+        throw new TypeError('map is not JSAPILightWeightMap');
       }
-      if (map.memberNumber > this.memberNumber) return false;
-      if (LightWeightAbility.isIncludeToArray(this.keyValueStringArray(), map.keyValueStringArray()) ) {
+      if (map.memberNumber > this.memberNumber) {
+        return false;
+      }
+      if (LightWeightAbility.isIncludeToArray(this.keyValueStringArray(), map.keyValueStringArray())) {
         return true;
       }
       return false;
@@ -74,18 +78,20 @@ if (flag || fastLightWeightMap === undefined) {
       return this.members.values.indexOf(value) > -1;
     }
     increaseCapacityTo(minimumCapacity: number): void {
-      if (typeof minimumCapacity !== "number") {
-        throw new TypeError("the size is not integer");
+      if (typeof minimumCapacity !== 'number') {
+        throw new TypeError('the size is not integer');
       }
       super.ensureCapacity(minimumCapacity);
     }
     entries(): IterableIterator<[K, V]> {
-      let data = this;
-      let count = 0;
+      let data: LightWeightMap<K, V> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? [data.members.keys[count], data.members.values[count]] as [K, V] : undefined;
+          let done: boolean = false;
+          let value: [K, V] = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : [data.members.keys[count], data.members.values[count]] as [K, V];
           count++;
           return {
             done: done,
@@ -95,7 +101,8 @@ if (flag || fastLightWeightMap === undefined) {
       };
     }
     get(key: K): V {
-      let index = this.getIndexByKey(key);
+      let index: number = 0;
+      index = this.getIndexByKey(key);
       return this.members.values[index];
     }
     getIndexOfKey(key: K): number {
@@ -108,18 +115,20 @@ if (flag || fastLightWeightMap === undefined) {
       return this.memberNumber === 0;
     }
     getKeyAt(index: number): K {
-      if (typeof index !== "number") {
-        throw new TypeError("the index is not integer");
+      if (typeof index !== 'number') {
+        throw new TypeError('the index is not integer');
       }
       return this.members.keys[index];
     }
     keys(): IterableIterator<K> {
-      let data = this;
-      let count = 0;
+      let data: LightWeightMap<K, V> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.members.keys[count] : undefined;
+          let done: boolean = false;
+          let value: K = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.members.keys[count];
           count++;
           return {
             done: done,
@@ -129,8 +138,8 @@ if (flag || fastLightWeightMap === undefined) {
       };
     }
     setAll(map: LightWeightMap<K, V>): void {
-      if(!(map instanceof LightWeightMap)) {
-        throw new TypeError("Incoming object is not JSAPILightWeightMap");
+      if (!(map instanceof LightWeightMap)) {
+        throw new TypeError('Incoming object is not JSAPILightWeightMap');
       }
       if (this.memberNumber === 0) {
         this.members.hashs = map.members.hashs.slice();
@@ -138,7 +147,7 @@ if (flag || fastLightWeightMap === undefined) {
         this.members.values = map.members.values.slice();
         this.memberNumber = map.memberNumber;
       } else {
-        for (let i = 0; i < map.memberNumber; i++) {
+        for (let i: number = 0; i < map.memberNumber; i++) {
           this.addmember(map.members.keys[i], map.members.values[i]);
         }
       }
@@ -151,7 +160,9 @@ if (flag || fastLightWeightMap === undefined) {
       return this.deletemember(key);
     }
     removeAt(index: number): boolean {
-      if (index > this.memberNumber--) return false;
+      if (index > this.memberNumber--) {
+        return false;
+      }
       this.members.hashs.splice(index, 1);
       this.members.values.splice(index, 1);
       this.members.keys.splice(index, 1);
@@ -168,49 +179,41 @@ if (flag || fastLightWeightMap === undefined) {
       }
     }
     setValueAt(index: number, newValue: V): boolean {
-      if (index > this.memberNumber || this.members.values[index] === undefined) return false;
+      if (index > this.memberNumber || this.members.values[index] === undefined) {
+        return false;
+      }
       this.members.values[index] = newValue;
       return true;
     }
     forEach(callbackfn: (value?: V, key?: K, map?: LightWeightMap<K, V>) => void,
       thisArg?: Object): void {
-      let data = this;
-      for (let i = 0; i < data.memberNumber; i++) {
+      let data: LightWeightMap<K, V> = this;
+      for (let i: number = 0; i < data.memberNumber; i++) {
         callbackfn.call(thisArg, data.members.values[i], data.members.keys[i], data);
       }
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
-      let data = this;
-      let count = 0;
-      return {
-        next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? [data.members.keys[count], data.members.values[count]] as [K, V] : undefined;
-          count++;
-          return {
-            done: done,
-            value: value,
-          };
-        },
-      };
+      return this.entries();
     }
     toString(): string {
-      let result = new Array<string>();
-      for (let i = 0; i < this.memberNumber; i++) {
-        result.push(this.members.keys[i] + ":" + this.members.values[i]);
+      let result: string[] = [];
+      for (let i: number = 0; i < this.memberNumber; i++) {
+        result.push(this.members.keys[i] + ':' + this.members.values[i]);
       }
-      return result.join(",");
+      return result.join(',');
     }
     getValueAt(index: number): V {
       return this.members.values[index];
     }
     values(): IterableIterator<V> {
-      let data = this;
-      let count = 0;
+      let data: LightWeightMap<K, V> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.members.values[count] : undefined;
+          let done: boolean = false;
+          let value: V = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.members.values[count];
           count++;
           return {
             done: done,

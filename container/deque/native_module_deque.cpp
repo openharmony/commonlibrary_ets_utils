@@ -53,7 +53,7 @@ static napi_module dequeModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = DequeInit,
-    .nm_modname = "Deque",
+    .nm_modname = "util.Deque",
     .nm_priv = ((void *)0),
     .reserved = {0},
 };
@@ -62,4 +62,4 @@ extern "C" __attribute__((constructor)) void RegisterModule()
 {
     napi_module_register(&dequeModule);
 }
-}
+} // namespace  OHOS::Util

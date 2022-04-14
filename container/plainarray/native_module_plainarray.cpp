@@ -56,7 +56,7 @@ static napi_module plainArrayModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = PlainArrayInit,
-    .nm_modname = "PlainArray",
+    .nm_modname = "util.PlainArray",
     .nm_priv = ((void*)0),
     .reserved = { 0 },
 };
@@ -65,4 +65,4 @@ extern "C" __attribute__ ((constructor)) void RegisterModule()
 {
     napi_module_register(&plainArrayModule);
 }
-}
+} // namespace  OHOS::Util

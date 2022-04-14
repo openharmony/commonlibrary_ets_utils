@@ -12,65 +12,69 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-let flag = false;
-let fastStack = undefined;
-let arkPritvate = globalThis["ArkPrivate"] || undefined;
+interface ArkPrivate {
+  Stack: number;
+  Load(key: number): Object;
+}
+let flag: boolean = false;
+let fastStack: Object = undefined;
+let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
 if (arkPritvate !== undefined) {
   fastStack = arkPritvate.Load(arkPritvate.Stack);
 } else {
   flag = true;
 }
-if (flag || fastStack == undefined) {
+if (flag || fastStack === undefined) {
   class HandlerStack<T> {
-    private isOutBounds(obj: Stack<T>, prop: any) {
-      let index = Number.parseInt(prop);
+    private isOutBounds(obj: Stack<T>, prop: any): void {
+      let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         if (index < 0 || index >= obj.length) {
-          throw new RangeError("the index is out-of-bounds");
+          throw new RangeError('the index is out-of-bounds');
         }
       }
     }
-    get(obj: Stack<T>, prop: any) {
-      if (typeof prop === "symbol") {
+    get(obj: Stack<T>, prop: any): T {
+      if (typeof prop === 'symbol') {
         return obj[prop];
       }
       this.isOutBounds(obj, prop);
       return obj[prop];
     }
-    set(obj: Stack<T>, prop: any, value: T) {
-      if (prop === "elementNum" || prop === "capacity") {
+    set(obj: Stack<T>, prop: any, value: T): boolean {
+      if (prop === 'elementNum' || prop === 'capacity') {
         obj[prop] = value;
         return true;
       }
       this.isOutBounds(obj, prop);
-      let index = Number.parseInt(prop);
+      let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
         obj[index] = value;
         return true;
       }
       return false;
     }
-    ownKeys(obj: Stack<T>) {
-      let keys = [];
-      let length = obj.length;
-      for (let i = 0; i < length; i++) {
+    ownKeys(obj: Stack<T>): Array<string> {
+      let keys: string[] = [];
+      let length: number = obj.length;
+      for (let i: number = 0; i < length; i++) {
         keys.push(i.toString());
       }
       return keys;
     }
-    defineProperty(obj: Stack<T>, prop: any, desc: any) {
+    defineProperty() {
       return true;
     }
     getOwnPropertyDescriptor(obj: Stack<T>, prop: any) {
       this.isOutBounds(obj, prop);
-      let index = Number.parseInt(prop);
+      let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
       return
     }
-    setPrototypeOf(obj: any, prop: any): any {
-      throw new RangeError("Can setPrototype on Stack Object");  
+    setPrototypeOf(): T {
+      throw new RangeError('Can setPrototype on Stack Object');
     }
   }
   interface IterableIterator<T> {
@@ -85,7 +89,7 @@ if (flag || fastStack == undefined) {
     constructor() {
       return new Proxy(this, new HandlerStack());
     }
-    get length() {
+    get length(): number {
       return this.elementNum;
     }
     push(item: T): T {
@@ -99,7 +103,8 @@ if (flag || fastStack == undefined) {
       if (this.isEmpty()) {
         return undefined;
       }
-      let result = this[this.length - 1];
+      let result: T = undefined;
+      result = this[this.length - 1];
       this.elementNum--;
       return result;
     }
@@ -110,7 +115,7 @@ if (flag || fastStack == undefined) {
       return this[this.length - 1];
     }
     locate(element: T): number {
-      for (let i = 0; i < this.length; i++) {
+      for (let i: number = 0; i < this.length; i++) {
         if (this[i] === element) {
           return i;
         }
@@ -118,11 +123,11 @@ if (flag || fastStack == undefined) {
       return -1;
     }
     isEmpty(): boolean {
-      return this.elementNum == 0;
+      return this.elementNum === 0;
     }
     forEach(callbackfn: (value: T, index?: number, stack?: Stack<T>) => void,
       thisArg?: Object): void {
-      for (let i = 0; i < this.length; i++) {
+      for (let i: number = 0; i < this.length; i++) {
         callbackfn.call(thisArg, this[i], i, this);
       }
     }
@@ -133,12 +138,14 @@ if (flag || fastStack == undefined) {
       this.capacity = 1.5 * this.capacity;
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let count = 0;
-      let stack = this;
+      let count: number = 0;
+      let stack: Stack<T> = this;
       return {
         next: function () {
-          let done = count >= stack.elementNum;
-          let value = !done ? stack[count++] : undefined;
+          let done: boolean = false;
+          let value: T = undefined;
+          done = count >= stack.elementNum;
+          value = done ? undefined : stack[count++];
           return {
             done: done,
             value: value,

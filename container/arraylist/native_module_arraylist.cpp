@@ -53,7 +53,7 @@ static napi_module arrayListModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = ArrayListInit,
-    .nm_modname = "ArrayList",
+    .nm_modname = "util.ArrayList",
     .nm_priv = ((void *)0),
     .reserved = {0},
 };
@@ -62,4 +62,4 @@ extern "C" __attribute__((constructor)) void RegisterModule()
 {
     napi_module_register(&arrayListModule);
 }
-}
+} // namespace  OHOS::Util

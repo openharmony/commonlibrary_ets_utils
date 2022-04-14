@@ -14,18 +14,20 @@
  */
 
 declare function requireNapi(s: string): any;
-
-let flag = false;
-let fastHashSet = undefined;
-let arkPritvate = globalThis["ArkPrivate"] || undefined;
+interface ArkPrivate {
+  HashSet: number;
+  Load(key: number): Object;
+}
+let flag: boolean = false;
+let fastHashSet: Object = undefined;
+let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
 if (arkPritvate !== undefined) {
   fastHashSet = arkPritvate.Load(arkPritvate.HashSet);
 } else {
   flag = true;
 }
-
 if (flag || fastHashSet === undefined) {
-  const HashSetAbility = requireNapi("util.struct");
+  let HashSetAbility: any = requireNapi('util.struct');
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -40,14 +42,14 @@ if (flag || fastHashSet === undefined) {
       }
       return false;
     }
-    defineProperty(target: HashSet<T>, p: any): boolean {
-      throw new Error("Can't define Property on HashSet Object");
+    defineProperty(): boolean {
+      throw new Error(`Can't define Property on HashSet Object`);
     }
-    deleteProperty(target: HashSet<T>, p: any): boolean {
-      throw new Error("Can't delete Property on HashSet Object");
+    deleteProperty(): boolean {
+      throw new Error(`Can't delete Property on HashSet Object`);
     }
-    setPrototypeOf(target: HashSet<T>, p: any): boolean {
-      throw new Error("Can't set Prototype on HashSet Object");
+    setPrototypeOf(): boolean {
+      throw new Error(`Can't set Prototype on HashSet Object`);
     }
   }
   class HashSet<T> extends HashSetAbility.DictionaryClass<T, T> {
@@ -55,7 +57,7 @@ if (flag || fastHashSet === undefined) {
       super();
       return new Proxy(this, new HandlerHashSet());
     }
-    get length() {
+    get length(): number {
       return this.memberNumber;
     }
     isEmpty(): boolean {
@@ -65,11 +67,15 @@ if (flag || fastHashSet === undefined) {
       return this.hasKey(value);
     }
     add(value: T): boolean {
-      if (this.has(value)) return false;
+      if (this.has(value)) {
+        return false;
+      }
       return this.put(value);
     }
     remove(value: T): boolean {
-      if (this.removeMember(value) !== undefined) return true;
+      if (this.removeMember(value) !== undefined) {
+        return true;
+      }
       return false;
     }
     clear(): void {
@@ -77,18 +83,21 @@ if (flag || fastHashSet === undefined) {
     }
     forEach(callbackfn: (value?: T, key?: T, set?: HashSet<T>) => void,
       thisArg?: Object): void {
-      let tagetArray = this.keyValueArray;
-      for (let i = 0; i < tagetArray.length; i++) {
+      let tagetArray: Array<any> = [];
+      tagetArray = this.keyValueArray;
+      for (let i: number = 0; i < tagetArray.length; i++) {
         callbackfn.call(thisArg, tagetArray[i].key, tagetArray[i].key, this);
       }
     }
     values(): IterableIterator<T> {
-      let data = this;
-      let count = 0;
+      let data: HashSet<T> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].key : undefined;
+          let done: boolean = false;
+          let value: T = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.keyValueArray[count].key;
           count++;
           return {
             done: done,
@@ -98,12 +107,14 @@ if (flag || fastHashSet === undefined) {
       };
     }
     entries(): IterableIterator<[T, T]> {
-      let data = this;
-      let count = 0;
+      let data: HashSet<T> = this;
+      let count: number = 0;
       return {
         next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].entry() : undefined;
+          let done: boolean = false;
+          let value: [T, T] = undefined;
+          done = count >= data.memberNumber;
+          value = done ? undefined : data.keyValueArray[count].entry();
           count++;
           return {
             done: done,
@@ -113,19 +124,7 @@ if (flag || fastHashSet === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<T> {
-      let data = this;
-      let count = 0;
-      return {
-        next: function () {
-          let done = count >= data.memberNumber;
-          let value = !done ? data.keyValueArray[count].key : undefined;
-          count++;
-          return {
-            done: done,
-            value: value,
-          };
-        },
-      };
+      return this.values();
     }
   }
   Object.freeze(HashSet);
