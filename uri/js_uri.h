@@ -43,10 +43,9 @@ namespace OHOS::Uri {
         /**
          * URI constructor, which is used to instantiate a URI object.
          *
-         * @param env NAPI environment parameters.
          * @param input Constructs a URI by parsing a given string.
          */
-        Uri(napi_env env, const std::string input);
+        explicit Uri(const std::string input);
 
         /**
          * The destructor of the Uri.
@@ -148,7 +147,6 @@ namespace OHOS::Uri {
         std::string data_;
         std::string inputUri_;
         std::string errStr_;
-        napi_env env_ = nullptr;
     };
 } // namespace OHOS::Uri
 #endif // URI_JS_URI_H_

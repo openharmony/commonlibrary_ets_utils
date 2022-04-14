@@ -1084,9 +1084,8 @@ namespace OHOS::Url {
         }
     }
 
-    URL::URL(napi_env env, const std::string& input)
+    URL::URL(const std::string& input)
     {
-        env_ = env;
         std::string str = input;
         DeleteC0OrSpace(str);
         DeleteTabOrNewline(str);
@@ -1103,9 +1102,8 @@ namespace OHOS::Url {
         InitOnlyInput(strBase, baseInfo, baseflags);
     }
 
-    URL::URL(napi_env env, const std::string& input, const std::string& base)
+    URL::URL(const std::string& input, const std::string& base)
     {
-        env_ = env;
         UrlData baseInfo;
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> baseflags;
         std::string strBase = base;
@@ -1152,9 +1150,8 @@ namespace OHOS::Url {
         }
     }
 
-    URL::URL(napi_env env, const std::string& input, const URL& base)
+    URL::URL(const std::string& input, const URL& base)
     {
-        env_ = env;
         std::string strInput = input;
         UrlData baseInfo = base.urlData_;
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> baseflags = base.flags_;
@@ -1198,73 +1195,73 @@ namespace OHOS::Url {
         }
     }
 
-    napi_value URL::GetHostname() const
+    napi_value URL::GetHostname(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT4))) {
             temp = urlData_.host;
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetSearch() const
+    napi_value URL::GetSearch(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT7)) && !(urlData_.query.size() == 1)) {
             temp = urlData_.query;
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetUsername() const
+    napi_value URL::GetUsername(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT2))) {
             temp = urlData_.username;
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetPassword() const
+    napi_value URL::GetPassword(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT3))) {
             temp = urlData_.password;
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetFragment() const
+    napi_value URL::GetFragment(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT8)) && !(urlData_.fragment.size() == 1)) {
             temp = urlData_.fragment;
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetScheme() const
+    napi_value URL::GetScheme(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (!urlData_.scheme.empty()) {
             temp = urlData_.scheme;
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetPath() const
+    napi_value URL::GetPath(napi_env env) const
     {
         napi_value result;
         std::string temp = "/";
@@ -1283,23 +1280,23 @@ namespace OHOS::Url {
                 temp = "";
             }
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
 
-    napi_value URL::GetPort() const
+    napi_value URL::GetPort(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
             temp = std::to_string(urlData_.port);
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetHost() const
+    napi_value URL::GetHost(napi_env env) const
     {
         napi_value result;
         std::string temp = urlData_.host;
@@ -1307,30 +1304,30 @@ namespace OHOS::Url {
             temp += ":";
             temp += std::to_string(urlData_.port);
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
 
-    napi_value URL::GetOnOrOff() const
+    napi_value URL::GetOnOrOff(napi_env env) const
     {
         napi_value result;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
             bool flag = false;
-            NAPI_CALL(env_, napi_get_boolean(env_, flag, &result));
+            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         } else {
             bool flag = true;
-            NAPI_CALL(env_, napi_get_boolean(env_, flag, &result));
+            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         }
         return result;
     }
 
-    napi_value URL::GetIsIpv6() const
+    napi_value URL::GetIsIpv6(napi_env env) const
     {
         napi_value result;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT10))) {
-            NAPI_CALL(env_, napi_get_boolean(env_, true, &result));
+            NAPI_CALL(env, napi_get_boolean(env, true, &result));
         } else {
-            NAPI_CALL(env_, napi_get_boolean(env_, false, &result));
+            NAPI_CALL(env, napi_get_boolean(env, false, &result));
         }
         return result;
     }
@@ -1587,10 +1584,6 @@ namespace OHOS::Url {
         }
     }
 
-
-    URLSearchParams::URLSearchParams(napi_env env) : env(env)
-    {}
-
     bool IsEscapeRange(const char ch)
     {
         if ((ch > 0 && ch < '*') || (ch > '*' && ch < '-') || (ch == '/') ||
@@ -1642,7 +1635,7 @@ namespace OHOS::Url {
         return output;
     }
 
-    napi_value URLSearchParams::ToString()
+    napi_value URLSearchParams::ToString(napi_env env)
     {
         std::string output = "";
         std::string reviseChar[256] = {""}; // 256:Array length
@@ -1741,7 +1734,7 @@ namespace OHOS::Url {
         delete[] rePtr;
         return reStr;
     }
-    napi_value URLSearchParams::Get(napi_value buffer)
+    napi_value URLSearchParams::Get(napi_env env, napi_value buffer)
     {
         std::string name = "";
         size_t nameSize = 0;
@@ -1771,7 +1764,7 @@ namespace OHOS::Url {
         }
         return result;
     }
-    napi_value URLSearchParams::GetAll(napi_value buffer)
+    napi_value URLSearchParams::GetAll(napi_env env, napi_value buffer)
     {
         std::string name = "";
         size_t nameSize = 0;
@@ -1804,7 +1797,7 @@ namespace OHOS::Url {
         }
         return result;
     }
-    void URLSearchParams::Append(napi_value buffer, napi_value temp)
+    void URLSearchParams::Append(napi_env env, napi_value buffer, napi_value temp)
     {
         std::string name = "";
         size_t nameSize = 0;
@@ -1835,7 +1828,7 @@ namespace OHOS::Url {
         searchParams.push_back(tempName);
         searchParams.push_back(tempValue);
     }
-    void URLSearchParams::Delete(napi_value buffer)
+    void URLSearchParams::Delete(napi_env env, napi_value buffer)
     {
         std::string name = "";
         size_t nameSize = 0;
@@ -1858,7 +1851,7 @@ namespace OHOS::Url {
             }
         }
     }
-    napi_value URLSearchParams::Entries() const
+    napi_value URLSearchParams::Entries(napi_env env) const
     {
         napi_value resend = nullptr;
         napi_value firNapiStr = nullptr;
@@ -1880,7 +1873,7 @@ namespace OHOS::Url {
         return resend;
     }
 
-    napi_value URLSearchParams::IsHas(napi_value name) const
+    napi_value URLSearchParams::IsHas(napi_env env, napi_value name) const
     {
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
@@ -1906,7 +1899,7 @@ namespace OHOS::Url {
         napi_get_boolean(env, flag, &result);
         return result;
     }
-    void URLSearchParams::Set(napi_value name, napi_value value)
+    void URLSearchParams::Set(napi_env env, napi_value name, napi_value value)
     {
         std::string buffer = "";
         size_t bufferSize = 0;
@@ -1975,7 +1968,7 @@ namespace OHOS::Url {
             }
         }
     }
-    napi_value URLSearchParams::IterByKeys()
+    napi_value URLSearchParams::IterByKeys(napi_env env)
     {
         std::vector<std::string> toKeys;
         napi_value result = nullptr;
@@ -1995,7 +1988,7 @@ namespace OHOS::Url {
         }
         return result;
     }
-    napi_value URLSearchParams::IterByValues()
+    napi_value URLSearchParams::IterByValues(napi_env env)
     {
         std::vector<std::string> toKeys;
         napi_value result = nullptr;
@@ -2017,11 +2010,11 @@ namespace OHOS::Url {
         }
         return result;
     }
-    void URLSearchParams::SetArray(const std::vector<std::string> vec)
+    void URLSearchParams::SetArray(napi_env env, const std::vector<std::string> vec)
     {
         searchParams = vec;
     }
-    napi_value URLSearchParams::GetArray() const
+    napi_value URLSearchParams::GetArray(napi_env env) const
     {
         napi_value arr = nullptr;
         napi_create_array(env, &arr);

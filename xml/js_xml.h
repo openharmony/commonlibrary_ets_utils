@@ -300,8 +300,8 @@ namespace OHOS::xml {
             SrcLinkList(SrcLinkList* pNext, std::string strTemp, int iPos, int iMax) :next(pNext),
                 strBuffer(strTemp), position(iPos), max(iMax) {}
         };
-        XmlPullParser(napi_env env, std::string strXml, std::string encoding) : env_(env),
-            strXml_(strXml), encoding_(encoding) {};
+        XmlPullParser(std::string strXml, std::string encoding) : strXml_(strXml),
+            encoding_(encoding) {};
         ~XmlPullParser()
         {
             while (srcLinkList_) {
@@ -323,9 +323,9 @@ namespace OHOS::xml {
         bool DealLength(size_t minimum);
         void Replace(std::string &strTemp, std::string strSrc, std::string strDes) const;
         size_t GetNSCount(size_t iTemp);
-        void Parse(napi_value thisVar);
+        void Parse(napi_env env, napi_value thisVar);
         std::string GetNamespace(std::string prefix);
-        napi_value DealOptionInfo(napi_value napiObj, napi_callback_info info);
+        napi_value DealOptionInfo(napi_env env, napi_value napiObj, napi_callback_info info);
         TagEnum ParseTagType(bool inDeclaration);
         void SkipText(std::string chars);
         int PriorDealChar();
@@ -356,8 +356,8 @@ namespace OHOS::xml {
         void ParseText();
         void ParseCdect();
         std::string XmlPullParserError() const;
-        bool ParseAttri(napi_value thisVar) const;
-        bool ParseToken(napi_value thisVar) const;
+        bool ParseAttri(napi_env env, napi_value thisVar) const;
+        bool ParseToken(napi_env env, napi_value thisVar) const;
         void ParseNspFunction();
         void ParseNspFunc(size_t &i, std::string &attrName, bool &any);
         void ParseInnerAttriDeclFunc(int &c);
@@ -373,7 +373,6 @@ namespace OHOS::xml {
         void DealWhiteSpace(unsigned char c);
 
     private:
-        napi_env env_;
         bool bDoctype_ = false;
         bool bIgnoreNS_ = false;
         bool bStartDoc_ = true;

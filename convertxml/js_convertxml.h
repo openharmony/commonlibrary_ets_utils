@@ -72,10 +72,8 @@ namespace OHOS::Xml {
     public:
         /**
          * To convert XML text to JavaScript object.
-         *
-         * @param env NAPI environment parameters.
          */
-        explicit ConvertXml(napi_env env);
+        explicit ConvertXml();
 
         /**
          * The destructor of the ConvertXml.
@@ -85,46 +83,49 @@ namespace OHOS::Xml {
         /**
          * To convert XML text to JavaScript object.
          *
+         * @param env NAPI environment parameters.
          * @param strXml A string of XML text.
          */
-        napi_value Convert(std::string strXml);
+        napi_value Convert(napi_env env, std::string strXml);
 
         /**
          * Converts the string of js to string of C++.
          *
+         * @param env NAPI environment parameters.
          * @param napi_StrValue JS layer incoming stringing.
          * @param result The C++ layer accepts stringing.
          */
-        napi_status DealNapiStrValue(const napi_value napi_StrValue, std::string &result) const;
+        napi_status DealNapiStrValue(napi_env env, const napi_value napi_StrValue, std::string &result) const;
 
         /**
          * Handles user input of optional information
          *
+         * @param env NAPI environment parameters.
          * @param napiObj Get the option parameter from js to the napi layer
          */
-        void DealOptions(const napi_value napiObj);
+        void DealOptions(napi_env env, const napi_value napiObj);
 
     private:
-        void SetAttributes(xmlNodePtr curNode, const napi_value &elementsObject) const;
-        void SetXmlElementType(xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
-        void SetNodeInfo(xmlNodePtr curNode, const napi_value &elementsObject) const;
-        void SetEndInfo(xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
-        void GetXMLInfo(xmlNodePtr curNode, const napi_value &object, int flag = 0);
+        void SetAttributes(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const;
+        void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
+        void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const;
+        void SetEndInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
+        void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object, int flag = 0);
         std::string GetNodeType(const xmlElementType enumType) const;
-        void SetKeyValue(const napi_value &object, const std::string strKey, const std::string strValue) const;
+        void SetKeyValue(napi_env env, const napi_value &object, const std::string strKey,
+                         const std::string strValue) const;
         std::string Trim(std::string strXmltrim) const;
-        void GetPrevNodeList(xmlNodePtr curNode);
-        void DealSpaces(const napi_value napiObj);
-        void DealIgnore(const napi_value napiObj);
-        void SetPrevInfo(const napi_value &recvElement, int flag, int32_t &index1) const;
+        void GetPrevNodeList(napi_env env, xmlNodePtr curNode);
+        void DealSpaces(napi_env env, const napi_value napiObj);
+        void DealIgnore(napi_env env, const napi_value napiObj);
+        void SetPrevInfo(napi_env env, const napi_value &recvElement, int flag, int32_t &index1) const;
         void SetDefaultKey(size_t i, const std::string strRecv);
-        void SetSpacesInfo(const napi_value &object) const;
-        void DealSingleLine(std::string &strXml, const napi_value &object);
-        void DealComplex(std::string &strXml, const napi_value &object) const;
+        void SetSpacesInfo(napi_env env, const napi_value &object) const;
+        void DealSingleLine(napi_env env, std::string &strXml, const napi_value &object);
+        void DealComplex(napi_env env, std::string &strXml, const napi_value &object) const;
         void Replace(std::string &str, const std::string src, const std::string dst) const;
         void DealCDataInfo(bool bCData, xmlNodePtr &curNode) const;
 
-        napi_env env_;
         SpaceType spaceType_;
         int32_t iSpace_;
         std::string strSpace_;

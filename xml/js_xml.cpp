@@ -357,7 +357,7 @@ namespace OHOS::xml {
         return xmlSerializerError_;
     }
 
-    napi_value XmlPullParser::DealOptionInfo(napi_value napiObj, napi_callback_info info)
+    napi_value XmlPullParser::DealOptionInfo(napi_env env, napi_value napiObj, napi_callback_info info)
     {
         std::vector<std::string> vctOptions = {
             "supportDoctype", "ignoreNameSpace", "tagValueCallbackFunction",
@@ -367,10 +367,10 @@ namespace OHOS::xml {
         for (size_t i = 0; i < vctLength; ++i) {
             napi_value recvTemp = nullptr;
             bool bRecv = false;
-            napi_get_named_property(env_, napiObj, vctOptions[i].c_str(), &recvTemp);
+            napi_get_named_property(env, napiObj, vctOptions[i].c_str(), &recvTemp);
             napi_valuetype valuetype;
-            NAPI_CALL(env_, napi_typeof(env_, recvTemp, &valuetype));
-            if (valuetype == napi_boolean && (napi_get_value_bool(env_, recvTemp, &bRecv)) == napi_ok) {
+            NAPI_CALL(env, napi_typeof(env, recvTemp, &valuetype));
+            if (valuetype == napi_boolean && (napi_get_value_bool(env, recvTemp, &bRecv)) == napi_ok) {
                 switch (i) {
                     case 0: // 0:supportDoctype
                         bDoctype_ = bRecv;
@@ -382,7 +382,7 @@ namespace OHOS::xml {
                         break;
                 }
             } else if (valuetype == napi_function) {
-                NAPI_ASSERT(env_, recvTemp != nullptr, "Parameter is empty.");
+                NAPI_ASSERT(env, recvTemp != nullptr, "Parameter is empty.");
                 switch (i) {
                     case 2: // 2:tagValueCallbackFunction
                         tagFunc_ = recvTemp;
@@ -479,16 +479,16 @@ namespace OHOS::xml {
         return xmlPullParserError_;
     }
 
-    bool XmlPullParser::ParseToken(napi_value thisVar) const
+    bool XmlPullParser::ParseToken(napi_env env, napi_value thisVar) const
     {
         napi_value returnVal = nullptr;
         size_t argc = 2; // 2: number of args
         napi_value key = nullptr;
-        napi_create_int32(env_, (int)type, &key);
+        napi_create_int32(env, (int)type, &key);
         napi_value parseInfo  = nullptr;
-        napi_create_object(env_, &parseInfo);
+        napi_create_object(env, &parseInfo);
         auto object = new ParseInfo();
-        napi_wrap(env_, parseInfo, object, nullptr, nullptr, nullptr);
+        napi_wrap(env, parseInfo, object, nullptr, nullptr, nullptr);
         static napi_property_descriptor xmlDesc[] = {
             DECLARE_NAPI_FUNCTION("getDepth", XmlPullParser::ParseInfo::GetDepth),
             DECLARE_NAPI_FUNCTION("getColumnNumber", XmlPullParser::ParseInfo::GetColumnNumber),
@@ -501,12 +501,12 @@ namespace OHOS::xml {
             DECLARE_NAPI_FUNCTION("isEmptyElementTag", XmlPullParser::ParseInfo::IsEmptyElementTag),
             DECLARE_NAPI_FUNCTION("isWhitespace", XmlPullParser::ParseInfo::IsWhitespace)
         };
-        napi_define_properties(env_, parseInfo, sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc);
-        napi_set_named_property(env_, parseInfo, "MainInfo", thisVar);
+        napi_define_properties(env, parseInfo, sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc);
+        napi_set_named_property(env, parseInfo, "MainInfo", thisVar);
         napi_value argv[2] = {key, parseInfo}; // 2: number of args
-        napi_call_function(env_, parseInfo, tokenFunc_, argc, argv, &returnVal);
+        napi_call_function(env, parseInfo, tokenFunc_, argc, argv, &returnVal);
         bool bRec = false;
-        napi_get_value_bool(env_, returnVal, &bRec);
+        napi_get_value_bool(env, returnVal, &bRec);
         if (object != nullptr) {
             delete object;
             object = nullptr;
@@ -514,29 +514,29 @@ namespace OHOS::xml {
         return bRec;
     }
 
-    bool XmlPullParser::ParseAttri(napi_value thisVar) const
+    bool XmlPullParser::ParseAttri(napi_env env, napi_value thisVar) const
     {
         for (size_t i = 0; i < attriCount_; ++i) {
             napi_value returnVal = nullptr;
             size_t argc = 3; // 3: number of args
             napi_value global = nullptr;
-            napi_get_global(env_, &global);
+            napi_get_global(env, &global);
             napi_value key = nullptr;
-            napi_create_string_utf8(env_, attributes[i * 4 + 2].c_str(), // 4 and 2: number of args
+            napi_create_string_utf8(env, attributes[i * 4 + 2].c_str(), // 4 and 2: number of args
                 attributes[i * 4 + 2].size(), &key); // 4 and 2: number of args
             napi_value value = nullptr;
-            napi_create_string_utf8(env_, attributes[i * 4 + 3].c_str(), // 4 and 3: number of args
+            napi_create_string_utf8(env, attributes[i * 4 + 3].c_str(), // 4 and 3: number of args
                 attributes[i * 4 + 3].size(), &value); // 3 and 4: number of args
             napi_value argv[3] = {key, value, thisVar};
-            napi_call_function(env_, global, attrFunc_, argc, argv, &returnVal);
+            napi_call_function(env, global, attrFunc_, argc, argv, &returnVal);
             bool bRec = false;
-            napi_get_value_bool(env_, returnVal, &bRec);
+            napi_get_value_bool(env, returnVal, &bRec);
             return bRec;
         }
         return true;
     }
 
-    void XmlPullParser::Parse(napi_value thisVar)
+    void XmlPullParser::Parse(napi_env env, napi_value thisVar)
     {
         if (tagFunc_ || attrFunc_ || tokenFunc_) {
             while (type != TagEnum::END_DOCUMENT) {
@@ -546,26 +546,26 @@ namespace OHOS::xml {
                     napi_value returnVal = nullptr;
                     size_t argc = 3; // 3: number of args
                     napi_value global = nullptr;
-                    napi_get_global(env_, &global);
+                    napi_get_global(env, &global);
                     napi_value key = nullptr;
-                    napi_create_string_utf8(env_, name_.c_str(), name_.size(), &key);
+                    napi_create_string_utf8(env, name_.c_str(), name_.size(), &key);
                     napi_value value = nullptr;
-                    napi_create_string_utf8(env_, text_.c_str(), text_.size(), &value);
+                    napi_create_string_utf8(env, text_.c_str(), text_.size(), &value);
                     napi_value argv[3] = {key, value, thisVar};
-                    napi_call_function(env_, global, tagFunc_, argc, argv, &returnVal);
-                    napi_get_value_bool(env_, returnVal, &bRec);
+                    napi_call_function(env, global, tagFunc_, argc, argv, &returnVal);
+                    napi_get_value_bool(env, returnVal, &bRec);
                 }
                 if (tagFunc_ && type == TagEnum::START_TAG && !bRec) {
                     break;
                 }
                 if (attrFunc_ && attriCount_) {
-                    bRec = ParseAttri(thisVar);
+                    bRec = ParseAttri(env, thisVar);
                 }
                 if (attrFunc_ && attriCount_ && !bRec) {
                     break;
                 }
                 if (tokenFunc_) {
-                    bRec = ParseToken(thisVar);
+                    bRec = ParseToken(env, thisVar);
                 }
                 if (tokenFunc_ && !bRec) {
                     break;
