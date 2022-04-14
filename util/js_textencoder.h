@@ -26,9 +26,8 @@ namespace OHOS::Util {
         /**
          * Constructor of textdecoder.
          *
-         * @param env NAPI environment parameters.
          */
-        explicit TextEncoder(napi_env env);
+        explicit TextEncoder() : encoding_("utf-8") {}
 
         /**
          * Destructor of textencoder.
@@ -37,26 +36,29 @@ namespace OHOS::Util {
 
         /**
          * Get encoding format.
+         *
+         * @param env NAPI environment parameters.
          */
-        napi_value GetEncoding() const;
+        napi_value GetEncoding(napi_env env) const;
 
         /**
          * Output the corresponding text after encoding the input parameters.
          *
+         * @param env NAPI environment parameters.
          * @param src A string that needs to be encoded.
          */
-        napi_value Encode(napi_value src) const;
+        napi_value Encode(napi_env env, napi_value src) const;
 
         /**
          * Place the generated UTF-8 encoded text.
          *
+         * @param env NAPI environment parameters.
          * @param src A string that needs to be encoded.
          * @param dest Uint8array object instance, which is used to put the generated UTF-8 encoded text into it.
          */
-        napi_value EncodeInto(napi_value src, napi_value dest) const;
+        napi_value EncodeInto(napi_env env, napi_value src, napi_value dest) const;
 
     private:
-        napi_env env_;
         std::string encoding_;
     };
 }

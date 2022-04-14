@@ -61,10 +61,8 @@ namespace OHOS::Util {
     public:
         /**
          * Constructor of Base64.
-         *
-         * @param env NAPI environment parameters.
          */
-        explicit Base64(napi_env env);
+        explicit Base64() {}
 
         /**
          * Destructor of Base64.
@@ -74,48 +72,53 @@ namespace OHOS::Util {
         /**
          * Output the corresponding text after encoding the input parameters.
          *
+         * @param env NAPI environment parameters.
          * @param src Encode the input uint8 array.
          */
-        napi_value EncodeSync(napi_value src);
+        napi_value EncodeSync(napi_env env, napi_value src);
 
         /**
          * Output the corresponding text after encoding the input parameters.
          *
+         * @param env NAPI environment parameters.
          * @param src Encode the input uint8 array.
          */
-        napi_value EncodeToStringSync(napi_value src);
+        napi_value EncodeToStringSync(napi_env env, napi_value src);
 
         /**
          * Output the corresponding text after encoding the input parameters.
          *
+         * @param env NAPI environment parameters.
          * @param src Decode the input uint8 array or string.
          */
-        napi_value DecodeSync(napi_value src);
+        napi_value DecodeSync(napi_env env, napi_value src);
 
         /**
          * Output the corresponding text after asynchronously encoding the input parameters.
          *
+         * @param env NAPI environment parameters.
          * @param src Asynchronously encoded input uint8 array.
          */
-        napi_value Encode(napi_value src);
+        napi_value Encode(napi_env env, napi_value src);
 
         /**
          * Output the corresponding text after asynchronously encoding the input parameters.
          *
+         * @param env NAPI environment parameters.
          * @param src Asynchronously encoded input uint8 array.
          */
-        napi_value EncodeToString(napi_value src);
+        napi_value EncodeToString(napi_env env, napi_value src);
 
         /**
          * Output the corresponding text after asynchronously encoding the input parameters.
          *
+         * @param env NAPI environment parameters.
          * @param src Asynchronously decode the input uint8 array or string.
          */
-        napi_value Decode(napi_value src);
+        napi_value Decode(napi_env env, napi_value src);
 
     private:
-        napi_env env;
-        unsigned char *DecodeAchieve(const char *input, size_t inputLen);
+        unsigned char *DecodeAchieve(napi_env env, const char *input, size_t inputLen);
         unsigned char *EncodeAchieve(const unsigned char *input, size_t inputLen);
         size_t Finds(char ch);
         size_t DecodeOut(size_t equalCount, size_t retLen);
@@ -126,9 +129,9 @@ namespace OHOS::Util {
         const unsigned char *inputEncode_ = nullptr;
         const char *inputDecode_ = nullptr;
         unsigned char *retDecode = nullptr;
-        void CreateEncodePromise(unsigned char *inputDecode, size_t length);
-        void CreateEncodeToStringPromise(unsigned char *inputDecode, size_t length);
-        void CreateDecodePromise(char *inputDecode, size_t length);
+        void CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length);
+        void CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length);
+        void CreateDecodePromise(napi_env env, char *inputDecode, size_t length);
         EncodeInfo *stdEncodeInfo_ = nullptr;
         DecodeInfo *stdDecodeInfo_ = nullptr;
         static void ReadStdEncode(napi_env env, void *data);
