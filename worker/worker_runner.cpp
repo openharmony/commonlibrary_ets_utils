@@ -13,18 +13,16 @@
  * limitations under the License.
  */
 
-#include "worker_runner.h"
+#include "base/compileruntime/js_worker_module/worker/worker_runner.h"
 
-#include <list>
-#include <mutex>
-#include "worker_helper.h"
+#include "base/compileruntime/js_worker_module/helper/object_helper.h"
 
-namespace OHOS::CCRuntime::Worker {
+namespace CompilerRuntime::WorkerModule {
 WorkerRunner::WorkerRunner(WorkerStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
 
 WorkerRunner::~WorkerRunner()
 {
-    CloseHelp::DeletePointer(workerInnerRunner_, false);
+    Helper::CloseHelp::DeletePointer(workerInnerRunner_, false);
 }
 
 void WorkerRunner::WorkerInnerRunner::Run()
@@ -48,4 +46,4 @@ bool WorkerRunner::Execute()
     workerInnerRunner_ = new WorkerInnerRunner(this);
     return workerInnerRunner_->Start();
 }
-} // namespace OHOS::CCRuntime::Worker
+} // namespace CompilerRuntime::WorkerModule

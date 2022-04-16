@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "message_queue.h"
+#include "base/compileruntime/js_worker_module/worker/message_queue.h"
 #include "utils/log.h"
 
-namespace OHOS::CCRuntime::Worker {
+namespace CompilerRuntime::WorkerModule {
 void MessageQueue::EnQueue(MessageDataType data)
 {
     queueLock_.lock();
@@ -57,4 +57,4 @@ void MessageQueue::Clear(napi_env env)
     }
     queueLock_.unlock();
 }
-}  // namespace OHOS::CCRuntime::Worker
+}  // namespace CompilerRuntime::WorkerModule

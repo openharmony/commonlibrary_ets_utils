@@ -13,17 +13,27 @@
  * limitations under the License.
  */
 
-#include "thread.h"
+#ifndef JS_WORKER_MODULE_WORKER_THREAD_H_
+#define JS_WORKER_MODULE_WORKER_THREAD_H_
 
-namespace OHOS::CCRuntime::Worker {
-Thread::Thread() : tId_() {}
+#include <uv.h>
 
-bool Thread::Start()
-{
-    int ret = uv_thread_create(&tId_, [](void* arg) {
-        Thread* thread = reinterpret_cast<Thread*>(arg);
-        thread->Run();
-    }, this);
-    return ret != 0;
-}
-}  // namespace OHOS::CCRuntime::Worker
+namespace CompilerRuntime::WorkerModule {
+class Thread {
+public:
+    Thread();
+    virtual ~Thread() = default;
+    bool Start();
+    virtual void Run() = 0;
+
+    uv_thread_t GetThreadId() const
+    {
+        return tId_;
+    }
+
+private:
+    uv_thread_t tId_ {0};
+};
+}  // namespace CompilerRuntime::WorkerModule
+
+#endif // #define JS_WORKER_MODULE_WORKER_THREAD_H_
