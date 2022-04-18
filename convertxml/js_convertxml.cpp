@@ -313,6 +313,7 @@ namespace OHOS::Xml {
         Replace(strXml, "\\r", "\r");
         Replace(strXml, "\\n", "\n");
         Replace(strXml, "\\v", "\v");
+        Replace(strXml, "\\t", "\t");
         Replace(strXml, "]]><![CDATA", "]]> <![CDATA");
         size_t len = strXml.size();
         doc = xmlParseMemory(strXml.c_str(), len);
