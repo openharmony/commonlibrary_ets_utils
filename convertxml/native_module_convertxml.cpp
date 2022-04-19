@@ -75,13 +75,13 @@ namespace OHOS::Xml {
     {
         const char *convertXmlClassName = "ConvertXml";
         napi_value convertXmlClass = nullptr;
-        static napi_property_descriptor convertXmlDesc[] = {
+        napi_property_descriptor convertXmlDesc[] = {
             DECLARE_NAPI_FUNCTION("convert", Convert)
         };
         NAPI_CALL(env, napi_define_class(env, convertXmlClassName, strlen(convertXmlClassName), ConvertXmlConstructor,
                                          nullptr, sizeof(convertXmlDesc) / sizeof(convertXmlDesc[0]), convertXmlDesc,
                                          &convertXmlClass));
-        static napi_property_descriptor desc[] = {
+        napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("ConvertXml", convertXmlClass)
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
