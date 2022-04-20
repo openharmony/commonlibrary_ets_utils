@@ -251,7 +251,7 @@ namespace OHOS::Uri {
     {
         const char *uriClassName = "uri";
         napi_value uriClass = nullptr;
-        static napi_property_descriptor uriDesc[] = {
+        napi_property_descriptor uriDesc[] = {
             DECLARE_NAPI_FUNCTION("normalize", Normalize),
             DECLARE_NAPI_FUNCTION("equals", Equals),
             DECLARE_NAPI_FUNCTION("checkIsAbsolute", IsAbsolute),
@@ -259,7 +259,7 @@ namespace OHOS::Uri {
             DECLARE_NAPI_GETTER("scheme", GetScheme),
             DECLARE_NAPI_GETTER("authority", GetAuthority),
             DECLARE_NAPI_GETTER("ssp", GetSsp),
-            DECLARE_NAPI_GETTER("userinfo", GetUserinfo),
+            DECLARE_NAPI_GETTER("userInfo", GetUserinfo),
             DECLARE_NAPI_GETTER("host", GetHost),
             DECLARE_NAPI_GETTER("port", GetPort),
             DECLARE_NAPI_GETTER("path", GetPath),
@@ -269,7 +269,7 @@ namespace OHOS::Uri {
         };
         NAPI_CALL(env, napi_define_class(env, uriClassName, strlen(uriClassName), UriConstructor,
                                          nullptr, sizeof(uriDesc) / sizeof(uriDesc[0]), uriDesc, &uriClass));
-        static napi_property_descriptor desc[] = {
+        napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Uri", uriClass)
         };
         napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
