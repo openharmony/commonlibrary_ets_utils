@@ -238,7 +238,7 @@ namespace OHOS::Js_sys_module::Process {
 
         const char* childProcessClassName = "ChildProcess";
         napi_value childProcessClass = nullptr;
-        static napi_property_descriptor childProcessDesc[] = {
+        napi_property_descriptor childProcessDesc[] = {
             DECLARE_NAPI_FUNCTION("close", Close),
             DECLARE_NAPI_FUNCTION("kill", Kill),
             DECLARE_NAPI_FUNCTION("getOutput", GetOutput),
