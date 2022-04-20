@@ -17,7 +17,7 @@ ohos_shared_library("process") {
   include_dirs = [
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
-    "//foundation/ace/napi/interfaces/kits",
+    "//foundation/arkui/napi/interfaces/kits",
     "//base/compileruntime/js_sys_module/process",
   ]
 
@@ -28,8 +28,8 @@ ohos_shared_library("process") {
   ]
 
   deps = [
-    "//foundation/ace/napi/:ace_napi",
-    "//foundation/ace/napi/:ace_napi_quickjs",
+    "//foundation/arkui/napi/:ace_napi",
+    "//foundation/arkui/napi/:ace_napi_quickjs",
     "//third_party/icu/icu4c:static_icuuc",
     "//utils/native/base:utils",
   ]

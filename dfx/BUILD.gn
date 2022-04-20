@@ -15,19 +15,19 @@ import("//build/ohos.gni")
 
 ohos_shared_library("dfx") {
   include_dirs = [
-    "//foundation/ace/napi",
-    "//foundation/ace/napi/native_engine",
+    "//foundation/arkui/napi",
+    "//foundation/arkui/napi/native_engine",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
-    "//foundation/ace/napi/interfaces/kits",
+    "//foundation/arkui/napi/interfaces/kits",
     "//base/compileruntime/js_api_module/dfx",
   ]
 
   sources = [ "native_module_dfx.cpp" ]
 
   deps = [
-    "//foundation/ace/napi/:ace_napi",
-    "//foundation/ace/napi/:ace_napi_quickjs",
+    "//foundation/arkui/napi/:ace_napi",
+    "//foundation/arkui/napi/:ace_napi_quickjs",
     "//third_party/icu/icu4c:static_icuuc",
     "//utils/native/base:utils",
   ]
