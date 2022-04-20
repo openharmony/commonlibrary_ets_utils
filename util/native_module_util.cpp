@@ -480,7 +480,7 @@ namespace OHOS::Util {
     {
         const char *textEncoderClassName = "TextEncoder";
         napi_value textEncoderClass = nullptr;
-        static napi_property_descriptor textEncoderDesc[] = {
+        napi_property_descriptor textEncoderDesc[] = {
             DECLARE_NAPI_GETTER("encoding", GetEncoding),
             DECLARE_NAPI_FUNCTION("encode", Encode),
             DECLARE_NAPI_FUNCTION("encodeInto", EncodeInto),
@@ -492,7 +492,7 @@ namespace OHOS::Util {
 
         const char *textDecoderClassName = "TextDecoder";
         napi_value textDecoderClass = nullptr;
-        static napi_property_descriptor textdecoderDesc[] = {
+        napi_property_descriptor textdecoderDesc[] = {
             DECLARE_NAPI_FUNCTION("decode", TextdecoderDecode),
             DECLARE_NAPI_GETTER("encoding", TextdecoderGetEncoding),
             DECLARE_NAPI_GETTER("fatal", TextdecoderGetFatal),
@@ -503,7 +503,7 @@ namespace OHOS::Util {
                                          sizeof(textdecoderDesc) / sizeof(textdecoderDesc[0]),
                                          textdecoderDesc, &textDecoderClass));
 
-        static napi_property_descriptor desc[] = {
+        napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("TextEncoder", textEncoderClass),
             DECLARE_NAPI_PROPERTY("TextDecoder", textDecoderClass),
         };
@@ -1220,7 +1220,7 @@ namespace OHOS::Util {
     {
         const char* typeofClassName = "Types";
         napi_value typeofClass = nullptr;
-        static napi_property_descriptor typeofDesc[] = {
+        napi_property_descriptor typeofDesc[] = {
             DECLARE_NAPI_FUNCTION("isBigInt64Array", IsBigInt64Array),
             DECLARE_NAPI_FUNCTION("isBigUint64Array", IsBigUint64Array),
             DECLARE_NAPI_FUNCTION("isBooleanObject", IsBooleanObject),
@@ -1264,7 +1264,7 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_define_class(env, typeofClassName, strlen(typeofClassName), TypesConstructor,
                                          nullptr, sizeof(typeofDesc) / sizeof(typeofDesc[0]), typeofDesc,
                                          &typeofClass));
-        static napi_property_descriptor desc[] = { DECLARE_NAPI_PROPERTY("Types", typeofClass) };
+        napi_property_descriptor desc[] = { DECLARE_NAPI_PROPERTY("Types", typeofClass) };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         return exports;
     }
@@ -1273,7 +1273,7 @@ namespace OHOS::Util {
     {
         const char *base64ClassName = "Base64";
         napi_value base64Class = nullptr;
-        static napi_property_descriptor base64Desc[] = {
+        napi_property_descriptor base64Desc[] = {
             DECLARE_NAPI_FUNCTION("encodeSync", EncodeBase64),
             DECLARE_NAPI_FUNCTION("encodeToStringSync", EncodeToString),
             DECLARE_NAPI_FUNCTION("decodeSync", DecodeBase64),
@@ -1284,7 +1284,7 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_define_class(env, base64ClassName, strlen(base64ClassName), Base64Constructor,
                                          nullptr, sizeof(base64Desc) / sizeof(base64Desc[0]), base64Desc,
                                          &base64Class));
-        static napi_property_descriptor desc[] = {
+        napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Base64", base64Class)
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
@@ -1293,7 +1293,7 @@ namespace OHOS::Util {
 
     static napi_value UtilInit(napi_env env, napi_value exports)
     {
-        static napi_property_descriptor desc[] = {
+        napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("printf", Printf),
             DECLARE_NAPI_FUNCTION("geterrorstring", GetErrorString),
             DECLARE_NAPI_FUNCTION("dealwithformatstring", DealWithFormatString),
