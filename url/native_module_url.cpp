@@ -892,7 +892,7 @@ namespace OHOS::Url {
     {
         const char *seachParamsClassName = "URLSearchParams";
         napi_value seachParamsInitClass = nullptr;
-        static napi_property_descriptor UrlDesc[] = {
+        napi_property_descriptor UrlDesc[] = {
             DECLARE_NAPI_FUNCTION("has", IsHas),
             DECLARE_NAPI_FUNCTION("set", Set),
             DECLARE_NAPI_FUNCTION("sort", Sort),
@@ -909,7 +909,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_define_class(env, seachParamsClassName, strlen(seachParamsClassName),
             SeachParamsConstructor, nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]),
             UrlDesc, &seachParamsInitClass));
-        static napi_property_descriptor desc[] = {
+        napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("URLSearchParams1", seachParamsInitClass)
         };
         napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
@@ -920,7 +920,7 @@ namespace OHOS::Url {
     {
         const char *urlClassName = "Url";
         napi_value urlClass = nullptr;
-        static napi_property_descriptor UrlDesc[] = {
+        napi_property_descriptor UrlDesc[] = {
             DECLARE_NAPI_GETTER_SETTER("hostname", GetHostname, SetHostname),
             DECLARE_NAPI_FUNCTION("href", SetHref),
             DECLARE_NAPI_GETTER_SETTER("search", GetSearch, SetSearch),
@@ -936,7 +936,7 @@ namespace OHOS::Url {
         };
         NAPI_CALL(env, napi_define_class(env, urlClassName, strlen(urlClassName), UrlConstructor,
                                          nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &urlClass));
-        static napi_property_descriptor desc[] = {
+        napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Url", urlClass)
         };
         napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);

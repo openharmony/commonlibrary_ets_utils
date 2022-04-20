@@ -56,8 +56,8 @@ class URI {
         return this.uricalss.ssp;
     }
 
-    get userinfo() {
-        return this.uricalss.userinfo;
+    get userInfo() {
+        return this.uricalss.userInfo;
     }
 
     get host() {
@@ -100,4 +100,6 @@ function createNewUri(uriStr : string) {
     return new URI(uriStr);
 }
 
-export default URI
+export default  {
+    URI : URI
+}
