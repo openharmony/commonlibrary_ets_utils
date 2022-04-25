@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,35 +34,40 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
         napi_valuetype valuetype1 = napi_null;
         napi_valuetype valuetype2 = napi_null;
-        std::string input = "";
         napi_typeof(env, argv[0], &valuetype1);
         if (valuetype1 == napi_string) {
-            char *tem = nullptr;
-            size_t temlen = 0;
-            napi_get_value_string_utf8(env, argv[0], nullptr, 0, &temlen);
-            if (temlen > 0) {
-                tem = new char[temlen + 1];
-                napi_get_value_string_utf8(env, argv[0], tem, temlen + 1, &temlen);
-                input = tem;
-                delete[] tem;
+            std::string temp, tempType = "";
+            size_t tempSize, tempTypeSize = 0;
+            if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempSize) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] size");
+                return;
             }
+            temp.reserve(tempSize);
+            temp.resize(tempSize);
+            if (napi_get_value_string_utf8(env, argv[0], temp.data(), tempSize + 1, &tempSize) != napi_ok) {
+                HILOG_ERROR("can not get argv[0] value");
+                return;
+            }
+            std::string input = temp;
             napi_typeof(env, argv[1], &valuetype2);
             if (valuetype2 == napi_string) {
-                std::string base = "";
-                char *type1 = nullptr;
-                size_t typelen1 = 0;
-                napi_get_value_string_utf8(env, argv[1], nullptr, 0, &typelen1);
-                if (typelen1 > 0) {
-                    type1 = new char[typelen1 + 1];
-                    napi_get_value_string_utf8(env, argv[1], type1, typelen1 + 1, &typelen1);
-                    base = type1;
-                    delete[] type1;
+                if (napi_get_value_string_utf8(env, argv[1], nullptr, 0, &tempTypeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[1] size");
+                    return;
                 }
-                object = new URL(env, input, base);
+                tempType.reserve(tempTypeSize);
+                tempType.resize(tempTypeSize);
+                if (napi_get_value_string_utf8(env, argv[1], tempType.data(),
+                                               tempTypeSize + 1, &tempTypeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[1] value");
+                    return;
+                }
+                std::string base = tempType;
+                object = new URL(input, base);
             } else if (valuetype2 == napi_object) {
-                URL *temp = nullptr;
-                napi_unwrap(env, argv[1], reinterpret_cast<void**>(&temp));
-                object = new URL(env, input, *temp);
+                URL *tempUrl = nullptr;
+                napi_unwrap(env, argv[1], reinterpret_cast<void**>(&tempUrl));
+                object = new URL(input, *tempUrl);
             } else {
                 HILOG_INFO("secondParameter error");
             }
@@ -81,31 +86,34 @@ namespace OHOS::Url {
         URL *object = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
         if (argc == 1) {
-            std::string input = "";
             NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
             napi_valuetype valuetype = napi_null;
             NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
             if (valuetype == napi_string) {
-            char *type = nullptr;
-            size_t typelen = 0;
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-            if (typelen > 0) {
-                type = new char[typelen + 1];
-                napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-                input = type;
-                delete[] type;
+                std::string type = "";
+                size_t typeSize = 0;
+                if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[0] size");
+                    return nullptr;
+                }
+                type.reserve(typeSize);
+                type.resize(typeSize);
+                if (napi_get_value_string_utf8(env, argv[0], type.data(), typeSize + 1, &typeSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv[0] value");
+                    return nullptr;
+                }
+                std::string input = type;
+                object = new URL(input);
+            } else {
+                HILOG_INFO("Parameter error");
             }
-            object = new URL(env, input);
-        } else {
-            HILOG_INFO("Parameter error");
-        }
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             UrlStructor(env, info, object);
         }
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
-                auto obj = (URL*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<URL*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -120,7 +128,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetHostname();
+        napi_value retVal = murl->GetHostname(env);
         return retVal;
     }
 
@@ -130,7 +138,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetSearch();
+        napi_value retVal = murl->GetSearch(env);
         return retVal;
     }
 
@@ -140,7 +148,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetUsername();
+        napi_value retVal = murl->GetUsername(env);
         return retVal;
     }
 
@@ -150,7 +158,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetPassword();
+        napi_value retVal = murl->GetPassword(env);
         return retVal;
     }
 
@@ -160,7 +168,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetFragment();
+        napi_value retVal = murl->GetFragment(env);
         return retVal;
     }
 
@@ -170,7 +178,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetScheme();
+        napi_value retVal = murl->GetScheme(env);
         return retVal;
     }
 
@@ -180,7 +188,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetPort();
+        napi_value retVal = murl->GetPort(env);
         return retVal;
     }
 
@@ -190,7 +198,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetHost();
+        napi_value retVal = murl->GetHost(env);
         return retVal;
     }
 
@@ -200,7 +208,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetPath();
+        napi_value retVal = murl->GetPath(env);
         return retVal;
     }
 
@@ -210,7 +218,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetOnOrOff();
+        napi_value retVal = murl->GetOnOrOff(env);
         return retVal;
     }
 
@@ -220,7 +228,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetIsIpv6();
+        napi_value retVal = murl->GetIsIpv6(env);
         return retVal;
     }
 
@@ -231,22 +239,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -263,22 +264,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -295,22 +289,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -327,22 +314,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -359,22 +339,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -391,22 +364,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -423,22 +389,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -455,22 +414,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -487,22 +439,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -519,22 +464,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char *type = nullptr;
         size_t typelen = 0;
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
         }
-        if (type != nullptr) {
-            delete[] type;
-            type = nullptr;
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
@@ -549,11 +487,11 @@ namespace OHOS::Url {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
-        auto object = new URLSearchParams(env);
+        auto object = new URLSearchParams();
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
-                auto obj = (URLSearchParams*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<URLSearchParams*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -574,27 +512,26 @@ namespace OHOS::Url {
         size_t arraySize = 0;
         napi_value napiStr = nullptr;
         for (size_t i = 0; i < length; i++) {
-            char *cstr = nullptr;
             napi_get_element(env, argv[0], i, &napiStr);
-            napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize);
+            if (napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize) != napi_ok) {
+            HILOG_ERROR("can not get napiStr size");
+            return nullptr;
+            }
             if (arraySize > 0) {
-                cstr = new char[arraySize + 1];
-                if (memset_s(cstr, arraySize + 1, 0, arraySize + 1) != 0) {
-                    HILOG_ERROR("type memset error");
-                    delete [] cstr;
-                    return nullptr;
+                std::string cstr = "";
+                cstr.resize(arraySize);
+                if (napi_get_value_string_utf8(env, napiStr, cstr.data(), arraySize + 1, &arraySize) != napi_ok) {
+                HILOG_ERROR("can not get name value");
+                return nullptr;
                 }
-                napi_get_value_string_utf8(env, napiStr, cstr, arraySize + 1, &arraySize);
                 vec.push_back(cstr);
-                delete []cstr;
-                cstr = nullptr;
             } else {
                 vec.push_back("");
             }
         }
         URLSearchParams *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        murl->SetArray(vec);
+        murl->SetArray(env, vec);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -606,7 +543,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         URLSearchParams *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
-        napi_value retVal = murl->GetArray();
+        napi_value retVal = murl->GetArray(env);
         return retVal;
     }
 
@@ -622,7 +559,7 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        napi_value result = object->Get(args);
+        napi_value result = object->Get(env, args);
         return result;
     }
 
@@ -638,7 +575,7 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        napi_value result = object->GetAll(args);
+        napi_value result = object->GetAll(env, args);
         return result;
     }
 
@@ -655,7 +592,7 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        object->Append(args[0], args[1]);
+        object->Append(env, args[0], args[1]);
         return nullptr;
     }
 
@@ -671,7 +608,7 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        object->Delete(args);
+        object->Delete(env, args);
 
         return nullptr;
     }
@@ -684,7 +621,7 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        napi_value result = object->Entries();
+        napi_value result = object->Entries(env);
         return result;
     }
 
@@ -696,7 +633,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr));
         URLSearchParams *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        napi_value result = object->IsHas(args);
+        napi_value result = object->IsHas(env, args);
         return result;
     }
 
@@ -708,7 +645,7 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        object->Set(args[0], args[1]);
+        object->Set(env, args[0], args[1]);
         return nullptr;
     }
 
@@ -732,7 +669,7 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        napi_value result = object->ToString();
+        napi_value result = object->ToString(env);
         return result;
     }
 
@@ -744,7 +681,7 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        napi_value result = object->IterByKeys();
+        napi_value result = object->IterByKeys(env);
         return result;
     }
 
@@ -756,7 +693,7 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        napi_value result = object->IterByValues();
+        napi_value result = object->IterByValues(env);
         return result;
     }
 
@@ -862,19 +799,15 @@ namespace OHOS::Url {
         size_t argc = 1;
         std::string input = "";
         napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
-        char *type = nullptr;
         size_t typelen = 0;
-        napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen);
-        if (typelen > 0) {
-            type = new char[typelen + 1];
-            if (memset_s(type, typelen + 1, 0, typelen + 1) != 0) {
-                HILOG_ERROR("type memset error");
-                delete [] type;
-                return nullptr;
-            }
-            napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-            input = type;
-            delete[] type;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] size");
+            return nullptr;
+        }
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("can not get argv[0] value");
+            return nullptr;
         }
         std::vector<std::string> seachParasmsString;
         seachParasmsString = StringParsing(input);
@@ -961,7 +894,7 @@ namespace OHOS::Url {
         .nm_filename = nullptr,
         .nm_register_func = Init,
         .nm_modname = "url",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = {0},
     };
     extern "C" __attribute__((constructor)) void RegisterModule()

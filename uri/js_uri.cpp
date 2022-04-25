@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "js_uri.h"
 #include "utils/log.h"
 namespace OHOS::Uri {
@@ -66,10 +67,9 @@ namespace OHOS::Uri {
         }
     }
 
-    Uri::Uri(napi_env env, const std::string input)
+    Uri::Uri(const std::string input)
     {
         PreliminaryWork();
-        env_ = env;
         errStr_ = "";
         if (input.empty()) {
             errStr_ = "uri is empty";
@@ -118,7 +118,7 @@ namespace OHOS::Uri {
             if (!errStr_.empty()) {
                 return;
             }
-        } else if (data_.find('/') == 0) {
+        } else if (data_[0] == '/') {
             uriData_.path = data_;
             uriData_.SchemeSpecificPart = data_ + uriData_.query;
             data_ = "";
@@ -530,4 +530,4 @@ namespace OHOS::Uri {
         }
         return uriData_.fragment;
     }
-} // namespace
+} // namespace OHOS::Uri

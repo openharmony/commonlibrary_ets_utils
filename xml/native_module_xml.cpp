@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -64,8 +64,8 @@ namespace OHOS::xml {
         }
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void *data, void *hint) {
-                auto obj = (XmlSerializer*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<XmlSerializer*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -101,21 +101,21 @@ namespace OHOS::xml {
             napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
         }
         if (data) {
-            std::string strEnd = (char*)data;
+            std::string strEnd = reinterpret_cast<char*>(data);
             if (argc == 1) {
-                object = new XmlPullParser(env, strEnd, "utf-8");
+                object = new XmlPullParser(strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
                 NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
                 NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
                 std::string strEncoding = "";
                 XmlSerializer::DealNapiStrValue(env, args[1], strEncoding);
-                object = new XmlPullParser(env, strEnd, strEncoding);
+                object = new XmlPullParser(strEnd, strEncoding);
             }
         }
         napi_wrap(
             env, thisVar, object,
             [](napi_env env, void *data, void *hint) {
-                auto obj = (XmlPullParser*)data;
+                auto obj = reinterpret_cast<XmlPullParser*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -385,8 +385,8 @@ namespace OHOS::xml {
         NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument typr. Object expected.");
         XmlPullParser *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        object->DealOptionInfo(args[0], info);
-        object->Parse(thisVar);
+        object->DealOptionInfo(env, args[0], info);
+        object->Parse(env, thisVar);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -459,11 +459,11 @@ namespace OHOS::xml {
         .nm_filename = nullptr,
         .nm_register_func = Init,
         .nm_modname = "xml",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = {0},
     };
     extern "C" __attribute__((constructor)) void RegisterModule()
     {
         napi_module_register(&xmlModule);
     }
-} // namespace
+} // namespace OHOS::Xml
