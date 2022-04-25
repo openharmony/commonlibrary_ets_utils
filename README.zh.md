@@ -356,8 +356,8 @@ parentPort.onmessageerror = function(e) {
 
 ### 涉及仓
 
-- ace_ace_engine(foundation/ace/ace_engine-readme_zh.md)
-- ace_napi(foundation/ace/napi-readme_zh.md)
+- ace_ace_engine(foundation/arkui/ace_engine-readme_zh.md)
+- ace_napi(foundation/arkui/napi-readme_zh.md)
 
 ## 相关仓
 [js_worker_module 子系统](base/compileruntime/js_worker_module-readme_zh.md)

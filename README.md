@@ -356,8 +356,8 @@ parentPort.onmessageerror = function(e) {
 
 ### Repositories Involved
 
-- ace_ace_engine(foundation/ace/ace_engine-readme.md)
-- ace_napi(foundation/ace/napi-readme.md)
+- ace_ace_engine(foundation/arkui/ace_engine-readme.md)
+- ace_napi(foundation/arkui/napi-readme.md)
 
 ## Related warehouse
 [js_worker_module Subsystem](base/compileruntime/js_worker_module-readme.md)

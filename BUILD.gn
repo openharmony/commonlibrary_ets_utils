@@ -17,20 +17,20 @@ ohos_shared_library("worker") {
   include_dirs = [
     "//base/compileruntime/js_worker_module/worker",
     "//base/compileruntime/js_worker_module/helper",
-    "//base/compileruntime/js_worker_module/plugin"
+    "//base/compileruntime/js_worker_module/plugin",
   ]
 
   sources = [
+    "helper/napi_helper.cpp",
+    "plugin/timer.cpp",
     "worker/message_queue.cpp",
     "worker/native_module_worker.cpp",
     "worker/thread.cpp",
     "worker/worker.cpp",
     "worker/worker_runner.cpp",
-    "helper/napi_helper.cpp",
-    "plugin/timer.cpp"
   ]
 
-  deps = [ "//foundation/ace/napi:ace_napi" ]
+  deps = [ "//foundation/arkui/napi:ace_napi" ]
 
   if (is_standard_system) {
     external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
