@@ -14,7 +14,7 @@
 import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
-import("//foundation/ace/ace_engine/ace_config.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
 
 container_names = [
   "arraylist",
@@ -100,7 +100,7 @@ template("container_lib") {
   ohos_shared_library(name) {
     include_dirs = [
       "//third_party/node/src",
-      "//foundation/ace/napi/interfaces/kits",
+      "//foundation/arkui/napi/interfaces/kits",
       "//base/compileruntime/js_util_module/container/" + name,
     ]
 
@@ -110,7 +110,7 @@ template("container_lib") {
     dep_js = ":js_" + name
     deps = [
       "//base/compileruntime/js_util_module/container/:js_" + name,
-      "//foundation/ace/napi/:ace_napi",
+      "//foundation/arkui/napi/:ace_napi",
       "//utils/native/base:utils",
     ]
     deps += [ dep_abc ]
