@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -42,19 +42,19 @@ class XmlSerializer {
     xmlSerializerClass : NativeXMLSerializer;
     constructor() {
         if(typeof arguments[0] !== 'object') {
-            throw new Error("input type err");
+            throw new Error('input type err');
         }
         if (arguments.length === 1) {
-            let str = 'utf-8';
-            this.xmlSerializerClass = new XML.XmlSerializer(arguments[0], str);
+            const inputType :string = 'utf-8';
+            this.xmlSerializerClass = new XML.XmlSerializer(arguments[0], inputType);
         } else if (arguments.length === 2 && (typeof arguments[1] === 'string' && arguments[1].length !== 0)) {
             var strTemp = arguments[1];
             if (strTemp.toLowerCase() !== 'utf-8') {
-                throw new Error("Just support utf-8");
+                throw new Error('Just support utf-8');
             }
             this.xmlSerializerClass = new XML.XmlSerializer(arguments[0], arguments[1]);
         } else {
-            throw new Error("input type err");
+            throw new Error('input type err');
         }
         let errStr = this.xmlSerializerClass.XmlSerializerError();
         if (errStr.length !== 0) {
@@ -63,7 +63,7 @@ class XmlSerializer {
     }
     setAttributes(name : string, value : string) {
         if (typeof name !== 'string' || name.length === 0 || typeof value !== 'string' || name.length === 0 ) {
-            throw new Error("name or value type err");
+            throw new Error('name or value type err');
         }
         this.xmlSerializerClass.setAttributes(name, value);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -73,7 +73,7 @@ class XmlSerializer {
     }
     addEmptyElement(name : string) {
         if (typeof name !== 'string' || name.length === 0) {
-            throw new Error("name type err");
+            throw new Error('name type err');
         }
         this.xmlSerializerClass.addEmptyElement(name);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -90,7 +90,7 @@ class XmlSerializer {
     }
     startElement(name : string) {
         if (typeof name !== 'string' || name.length === 0) {
-            throw new Error("name type err");
+            throw new Error('name type err');
         }
         this.xmlSerializerClass.startElement(name);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -107,7 +107,7 @@ class XmlSerializer {
     }
     setNamespace(prefix : string, ns : string) {
         if (typeof prefix !== 'string' || prefix.length === 0 || typeof ns !== 'string' || ns.length === 0 ) {
-            throw new Error("prefix or namespace type err");
+            throw new Error('prefix or namespace type err');
         }
         this.xmlSerializerClass.setNamespace(prefix, ns);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -117,7 +117,7 @@ class XmlSerializer {
     }
     setComment(text : string) {
         if (typeof text !== 'string' || text.length === 0) {
-            throw new Error("text type err");
+            throw new Error('text type err');
         }
         this.xmlSerializerClass.setComment(text);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -127,7 +127,7 @@ class XmlSerializer {
     }
     setCDATA(text : string) {
         if (typeof text !== 'string' || text.length === 0) {
-            throw new Error("text type err");
+            throw new Error('text type err');
         }
         this.xmlSerializerClass.setCDATA(text);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -137,7 +137,7 @@ class XmlSerializer {
     }
     setText(text : string) {
         if (typeof text !== 'string' || text.length === 0) {
-            throw new Error("text type err");
+            throw new Error('text type err');
         }
         this.xmlSerializerClass.setText(text);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -147,7 +147,7 @@ class XmlSerializer {
     }
     setDocType(text : string) {
         if (typeof text !== 'string' || text.length === 0) {
-            throw new Error("text type err");
+            throw new Error('text type err');
         }
         this.xmlSerializerClass.setDocType(text);
         let errStr = this.xmlSerializerClass.XmlSerializerError();
@@ -161,7 +161,7 @@ class XmlPullParser {
     xmlPullParserClass : NativeXmlPullParser;
     constructor() {
         if(typeof arguments[0] !== 'object') {
-            throw new Error("input type err");
+            throw new Error('input type err');
         }
         if (arguments.length === 1) {
             let str = 'utf-8';
@@ -169,11 +169,11 @@ class XmlPullParser {
         } else if (arguments.length === 2 && (typeof arguments[1] === 'string' && arguments[1].length !== 0)) {
             var strTemp = arguments[1];
             if (strTemp.toLowerCase() !== 'utf-8') {
-                throw new Error("Just support utf-8");
+                throw new Error('Just support utf-8');
             }
             this.xmlPullParserClass = new XML.XmlPullParser(arguments[0], arguments[1]);
         } else {
-            throw new Error("input type err");
+            throw new Error('input type err');
         }
         let errStr = this.xmlPullParserClass.XmlPullParserError();
         if (errStr.length !== 0) {
@@ -182,7 +182,7 @@ class XmlPullParser {
     }
     parse(options : object) {
         if(typeof options !== 'object') {
-            throw new Error("options type err");
+            throw new Error('options type err');
         }
         this.xmlPullParserClass.parse(options);
         let errStr = this.xmlPullParserClass.XmlPullParserError();

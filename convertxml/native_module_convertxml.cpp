@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,11 +29,11 @@ namespace OHOS::Xml {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
-        auto objectInfo = new ConvertXml(env);
+        auto objectInfo = new ConvertXml();
         napi_wrap(
             env, thisVar, objectInfo,
-            [](napi_env env, void *data, void *hint) {
-                auto obj = (ConvertXml*)data;
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<ConvertXml*>(data);
                 if (obj != nullptr) {
                     delete obj;
                 }
@@ -61,12 +61,12 @@ namespace OHOS::Xml {
         } else {
             NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
             NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
-            object->DealNapiStrValue(args[0], strXml);
+            object->DealNapiStrValue(env, args[0], strXml);
         }
         if (args[1] != nullptr) {
-            object->DealOptions(args[1]);
+            object->DealOptions(env, args[1]);
         }
-        napi_value result = object->Convert(strXml);
+        napi_value result = object->Convert(env, strXml);
         return result;
     }
 
@@ -94,11 +94,11 @@ namespace OHOS::Xml {
         .nm_filename = nullptr,
         .nm_register_func = ConvertXmlInit,
         .nm_modname = "ConvertXML",
-        .nm_priv = ((void*)0),
+        .nm_priv = reinterpret_cast<void*>(0),
         .reserved = { 0 },
     };
 
-    extern "C" __attribute__ ((constructor)) void RegisterModule()
+    extern "C" __attribute__((constructor)) void RegisterModule()
     {
         napi_module_register(&convertXmlModule);
     }
@@ -123,4 +123,4 @@ namespace OHOS::Xml {
             *buflen = _binary_convertxml_abc_end - _binary_convertxml_abc_start;
         }
     }
-} // namespace
+} // namespace OHOS::Xml

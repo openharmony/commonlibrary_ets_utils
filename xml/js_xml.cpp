@@ -18,21 +18,25 @@
 namespace OHOS::xml {
     napi_status XmlSerializer::DealNapiStrValue(napi_env env, const napi_value napiStr, std::string &result)
     {
-        char *buffer = nullptr;
+        std::string buffer = "";
         size_t bufferSize = 0;
         napi_status status = napi_ok;
         status = napi_get_value_string_utf8(env, napiStr, nullptr, -1, &bufferSize);
+        buffer.reserve(bufferSize + 1);
+        buffer.resize(bufferSize);
         if (status != napi_ok) {
+            HILOG_ERROR("can not get buffer size");
             return status;
         }
         if (bufferSize > 0) {
-            buffer = new char[bufferSize + 1];
-            napi_get_value_string_utf8(env, napiStr, buffer, bufferSize + 1, &bufferSize);
+            status = napi_get_value_string_utf8(env, napiStr, buffer.data(), bufferSize + 1, &bufferSize);
+            if (status != napi_ok) {
+                HILOG_ERROR("can not get buffer value");
+                return status;
+            }
         }
-        if (buffer != nullptr) {
+        if (buffer.data() != nullptr) {
             result = buffer;
-            delete []buffer;
-            buffer = nullptr;
         }
         return status;
     }
@@ -86,8 +90,10 @@ namespace OHOS::xml {
         type = "isDecl";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetDeclaration memcpy_s failed");
             }
         }
     }
@@ -106,8 +112,10 @@ namespace OHOS::xml {
         type = "isNsp";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetNamespace memcpy_s failed");
             }
         }
     }
@@ -141,8 +149,10 @@ namespace OHOS::xml {
         elementStack.push_back("");
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("StartElement memcpy_s failed");
             }
         }
     }
@@ -160,23 +170,28 @@ namespace OHOS::xml {
         type = "isAttri";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetAttributes memcpy_s failed");
             }
         }
     }
     void XmlSerializer::EndElement()
     {
         out_ = "";
+        size_t iLenTemp = 0;
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
             out_.append("/>");
             type = "isEndTag";
             --depth_;
-            size_t iLenTemp = out_.length();
+            iLenTemp = out_.length();
             if (iLength_ > iPos_ + iLenTemp - 1) {
-                if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                     iPos_ += iLenTemp;
+                } else {
+                HILOG_ERROR("StartElement memcpy_s failed");
                 }
             }
             return;
@@ -195,10 +210,12 @@ namespace OHOS::xml {
         elementStack[depth_ * 3 + 1] = ""; // 3: number of args
         type = "isEndTag";
         out_.append(">");
-        size_t iLenTemp = out_.length();
+        iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("EndElement memcpy_s failed");
             }
         }
     }
@@ -218,8 +235,10 @@ namespace OHOS::xml {
         type = "isAddEmpElem";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("AddEmptyElement memcpy_s failed");
             }
         }
     }
@@ -234,8 +253,10 @@ namespace OHOS::xml {
         type = "isText";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetText memcpy_s failed");
             }
         }
     }
@@ -253,8 +274,10 @@ namespace OHOS::xml {
         type = "isCom";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetComment memcpy_s failed");
             }
         }
     }
@@ -273,8 +296,10 @@ namespace OHOS::xml {
         type = "isCData";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetCData memcpy_s failed");
             }
         }
     }
@@ -292,8 +317,10 @@ namespace OHOS::xml {
         type = "isDocType";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
+            } else {
+                HILOG_ERROR("SetDocType memcpy_s failed");
             }
         }
     }
@@ -330,7 +357,7 @@ namespace OHOS::xml {
         return xmlSerializerError_;
     }
 
-    napi_value XmlPullParser::DealOptionInfo(napi_value napiObj, napi_callback_info info)
+    napi_value XmlPullParser::DealOptionInfo(napi_env env, napi_value napiObj, napi_callback_info info)
     {
         std::vector<std::string> vctOptions = {
             "supportDoctype", "ignoreNameSpace", "tagValueCallbackFunction",
@@ -340,10 +367,10 @@ namespace OHOS::xml {
         for (size_t i = 0; i < vctLength; ++i) {
             napi_value recvTemp = nullptr;
             bool bRecv = false;
-            napi_get_named_property(env_, napiObj, vctOptions[i].c_str(), &recvTemp);
+            napi_get_named_property(env, napiObj, vctOptions[i].c_str(), &recvTemp);
             napi_valuetype valuetype;
-            NAPI_CALL(env_, napi_typeof(env_, recvTemp, &valuetype));
-            if (valuetype == napi_boolean && (napi_get_value_bool(env_, recvTemp, &bRecv)) == napi_ok) {
+            NAPI_CALL(env, napi_typeof(env, recvTemp, &valuetype));
+            if (valuetype == napi_boolean && (napi_get_value_bool(env, recvTemp, &bRecv)) == napi_ok) {
                 switch (i) {
                     case 0: // 0:supportDoctype
                         bDoctype_ = bRecv;
@@ -355,7 +382,7 @@ namespace OHOS::xml {
                         break;
                 }
             } else if (valuetype == napi_function) {
-                NAPI_ASSERT(env_, recvTemp != nullptr, "Parameter is empty.");
+                NAPI_ASSERT(env, recvTemp != nullptr, "Parameter is empty.");
                 switch (i) {
                     case 2: // 2:tagValueCallbackFunction
                         tagFunc_ = recvTemp;
@@ -396,14 +423,14 @@ namespace OHOS::xml {
         }
     }
 
-    bool XmlPullParser::DealLength(size_t minimun)
+    bool XmlPullParser::DealLength(size_t minimum)
     {
         while (srcLinkList_->next != nullptr) {
             if (position_ < max_) {
                 xmlPullParserError_ = "Unbalanced entity!";
             }
             PopSrcLinkList();
-            if (max_ - position_ >= minimun) {
+            if (max_ - position_ >= minimum) {
                 return true;
             }
         }
@@ -421,8 +448,8 @@ namespace OHOS::xml {
 
         if (max_ != position_) {
             max_ -= position_;
-            for (size_t i = 0; i < max_; ++i) {
-                strXml_[i] = strXml_[position_ + i];
+            for (size_t j = 0; j < max_; ++j) {
+                strXml_[j] = strXml_[position_ + j];
             }
         } else {
             max_ = 0;
@@ -432,7 +459,7 @@ namespace OHOS::xml {
         }
         if (strXml_.size() - max_ > 0 && position_ == 0) {
             max_ += strXml_.size() - max_;
-            if (max_ >= minimun) {
+            if (max_ >= minimum) {
                 return true;
             }
         }
@@ -452,16 +479,16 @@ namespace OHOS::xml {
         return xmlPullParserError_;
     }
 
-    bool XmlPullParser::ParseToken(napi_value thisVar) const
+    bool XmlPullParser::ParseToken(napi_env env, napi_value thisVar) const
     {
         napi_value returnVal = nullptr;
         size_t argc = 2; // 2: number of args
         napi_value key = nullptr;
-        napi_create_int32(env_, (int)type, &key);
+        napi_create_int32(env, (int)type, &key);
         napi_value parseInfo  = nullptr;
-        napi_create_object(env_, &parseInfo);
+        napi_create_object(env, &parseInfo);
         auto object = new ParseInfo();
-        napi_wrap(env_, parseInfo, object, nullptr, nullptr, nullptr);
+        napi_wrap(env, parseInfo, object, nullptr, nullptr, nullptr);
         static napi_property_descriptor xmlDesc[] = {
             DECLARE_NAPI_FUNCTION("getDepth", XmlPullParser::ParseInfo::GetDepth),
             DECLARE_NAPI_FUNCTION("getColumnNumber", XmlPullParser::ParseInfo::GetColumnNumber),
@@ -474,12 +501,12 @@ namespace OHOS::xml {
             DECLARE_NAPI_FUNCTION("isEmptyElementTag", XmlPullParser::ParseInfo::IsEmptyElementTag),
             DECLARE_NAPI_FUNCTION("isWhitespace", XmlPullParser::ParseInfo::IsWhitespace)
         };
-        napi_define_properties(env_, parseInfo, sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc);
-        napi_set_named_property(env_, parseInfo, "MainInfo", thisVar);
+        napi_define_properties(env, parseInfo, sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc);
+        napi_set_named_property(env, parseInfo, "MainInfo", thisVar);
         napi_value argv[2] = {key, parseInfo}; // 2: number of args
-        napi_call_function(env_, parseInfo, tokenFunc_, argc, argv, &returnVal);
+        napi_call_function(env, parseInfo, tokenFunc_, argc, argv, &returnVal);
         bool bRec = false;
-        napi_get_value_bool(env_, returnVal, &bRec);
+        napi_get_value_bool(env, returnVal, &bRec);
         if (object != nullptr) {
             delete object;
             object = nullptr;
@@ -487,29 +514,29 @@ namespace OHOS::xml {
         return bRec;
     }
 
-    bool XmlPullParser::ParseAttri(napi_value thisVar) const
+    bool XmlPullParser::ParseAttri(napi_env env, napi_value thisVar) const
     {
         for (size_t i = 0; i < attriCount_; ++i) {
             napi_value returnVal = nullptr;
             size_t argc = 3; // 3: number of args
             napi_value global = nullptr;
-            napi_get_global(env_, &global);
+            napi_get_global(env, &global);
             napi_value key = nullptr;
-            napi_create_string_utf8(env_, attributes[i * 4 + 2].c_str(), // 4 and 2: number of args
+            napi_create_string_utf8(env, attributes[i * 4 + 2].c_str(), // 4 and 2: number of args
                 attributes[i * 4 + 2].size(), &key); // 4 and 2: number of args
             napi_value value = nullptr;
-            napi_create_string_utf8(env_, attributes[i * 4 + 3].c_str(), // 4 and 3: number of args
+            napi_create_string_utf8(env, attributes[i * 4 + 3].c_str(), // 4 and 3: number of args
                 attributes[i * 4 + 3].size(), &value); // 3 and 4: number of args
             napi_value argv[3] = {key, value, thisVar};
-            napi_call_function(env_, global, attrFunc_, argc, argv, &returnVal);
+            napi_call_function(env, global, attrFunc_, argc, argv, &returnVal);
             bool bRec = false;
-            napi_get_value_bool(env_, returnVal, &bRec);
+            napi_get_value_bool(env, returnVal, &bRec);
             return bRec;
         }
         return true;
     }
 
-    void XmlPullParser::Parse(napi_value thisVar)
+    void XmlPullParser::Parse(napi_env env, napi_value thisVar)
     {
         if (tagFunc_ || attrFunc_ || tokenFunc_) {
             while (type != TagEnum::END_DOCUMENT) {
@@ -519,26 +546,26 @@ namespace OHOS::xml {
                     napi_value returnVal = nullptr;
                     size_t argc = 3; // 3: number of args
                     napi_value global = nullptr;
-                    napi_get_global(env_, &global);
+                    napi_get_global(env, &global);
                     napi_value key = nullptr;
-                    napi_create_string_utf8(env_, name_.c_str(), name_.size(), &key);
+                    napi_create_string_utf8(env, name_.c_str(), name_.size(), &key);
                     napi_value value = nullptr;
-                    napi_create_string_utf8(env_, text_.c_str(), text_.size(), &value);
+                    napi_create_string_utf8(env, text_.c_str(), text_.size(), &value);
                     napi_value argv[3] = {key, value, thisVar};
-                    napi_call_function(env_, global, tagFunc_, argc, argv, &returnVal);
-                    napi_get_value_bool(env_, returnVal, &bRec);
+                    napi_call_function(env, global, tagFunc_, argc, argv, &returnVal);
+                    napi_get_value_bool(env, returnVal, &bRec);
                 }
                 if (tagFunc_ && type == TagEnum::START_TAG && !bRec) {
                     break;
                 }
                 if (attrFunc_ && attriCount_) {
-                    bRec = ParseAttri(thisVar);
+                    bRec = ParseAttri(env, thisVar);
                 }
                 if (attrFunc_ && attriCount_ && !bRec) {
                     break;
                 }
                 if (tokenFunc_) {
-                    bRec = ParseToken(thisVar);
+                    bRec = ParseToken(env, thisVar);
                 }
                 if (tokenFunc_ && !bRec) {
                     break;
@@ -562,6 +589,8 @@ namespace OHOS::xml {
                         return TagEnum::ELEMENTDECL;
                     case 'N':
                         return TagEnum::ENTITYDECL;
+                    default:
+                        break;
                 }
                 xmlPullParserError_ = "Unexpected <!";
                 break;
@@ -569,6 +598,8 @@ namespace OHOS::xml {
                 return TagEnum::ATTLISTDECL;
             case 'N':
                 return TagEnum::NOTATIONDECL;
+            default:
+                break;
         }
         return TagEnum::ERROR1;
     }
@@ -680,13 +711,8 @@ namespace OHOS::xml {
                 position_++;
                 continue;
             }
-            if (result == "") {
-                result.append(strXml_, start, position_ - start);
-                return result;
-            } else {
-                result.append(strXml_, start, position_ - start);
-                return result;
-            }
+            result.append(strXml_, start, position_ - start);
+            return result;
         }
     }
 
@@ -967,9 +993,10 @@ namespace OHOS::xml {
     bool XmlPullParser::ParseNsp()
     {
         bool any = false;
+        size_t cut = 0;
         for (size_t i = 0; i < (attriCount_ << 2); i += 4) { // 2 and 4: number of args
             std::string attrName = attributes[i + 2]; // 2: number of args
-            size_t cut = attrName.find(':');
+            cut = attrName.find(':');
             std::string prefix;
             if (cut != std::string::npos) {
                 prefix = attrName.substr(0, cut);
@@ -989,7 +1016,7 @@ namespace OHOS::xml {
         if (any) {
             ParseNspFunction();
         }
-        size_t cut = name_.find(':');
+        cut = name_.find(':');
         if (cut == 0) {
             xmlPullParserError_ = "illegal tag name: " + name_;
         }
@@ -1037,8 +1064,6 @@ namespace OHOS::xml {
             if (delimiter != ' ' && PriorDealChar() == delimiter) {
                 position_++;
             }
-        } else if (relaxed) {
-            attributes[i + 3] = attrName; // 3: number of args
         } else {
             attributes[i + 3] = attrName; // 3: number of args
         }
@@ -1825,5 +1850,5 @@ namespace OHOS::xml {
         }
         return result;
     }
-} // namespace
+} // namespace OHOS::Xml
 
