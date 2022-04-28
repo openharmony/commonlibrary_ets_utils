@@ -18,6 +18,9 @@
 
 #include <map>
 #include <uv.h>
+
+#include "base/compileruntime/js_worker_module/helper/napi_helper.h"
+#include "base/compileruntime/js_worker_module/helper/object_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
@@ -36,7 +39,10 @@ struct TimerCallbackInfo {
                      bool repeat, size_t argc, napi_ref* argv)
         : env_(env), tId_(tId), timeout_(timeout), callback_(callback),
           repeat_(repeat), argc_(argc), argv_(argv)
-    {}
+    {
+        uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env_);
+        uv_timer_init(loop, &timeReq_);
+    }
 
     ~TimerCallbackInfo();
 };

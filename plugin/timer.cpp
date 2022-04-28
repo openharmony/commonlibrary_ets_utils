@@ -15,8 +15,6 @@
 
 #include "base/compileruntime/js_worker_module/plugin/timer.h"
 
-#include "base/compileruntime/js_worker_module/helper/napi_helper.h"
-#include "base/compileruntime/js_worker_module/helper/object_helper.h"
 #include "utils/log.h"
 
 namespace CompilerRuntime::WorkerModule::Plugin {
@@ -165,8 +163,6 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, argv[0], 1);
     TimerCallbackInfo* callbackInfo =
         new TimerCallbackInfo(env, tId, timeout, callbackRef, repeat, callbackArgc, callbackArgv);
-    uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env);
-    uv_timer_init(loop, &callbackInfo->timeReq_);
     // 5. push callback info into timerTable
     timerTable[tId] = callbackInfo;
 
