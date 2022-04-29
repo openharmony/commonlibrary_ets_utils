@@ -21,7 +21,7 @@
 
 namespace OHOS::Js_sys_module::Dfx {
     constexpr int NUMBER_OF_PARAMETER_TWO = 2;
-    static napi_value DumpHeapSnapShot(napi_env env, napi_callback_info info)
+    static napi_value DumpHeapSnapshot(napi_env env, napi_callback_info info)
     {
         size_t argc = NUMBER_OF_PARAMETER_TWO;
         size_t requireArgc = NUMBER_OF_PARAMETER_TWO;
@@ -45,7 +45,7 @@ namespace OHOS::Js_sys_module::Dfx {
         bool isVmMode = true;
         napi_get_value_bool(env, argv[1], &isVmMode);
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-        engine->DumpHeapSnapShot(pathStr, isVmMode);
+        engine->DumpHeapSnapshot(pathStr, isVmMode);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -175,7 +175,7 @@ namespace OHOS::Js_sys_module::Dfx {
     static napi_value DfxInit(napi_env env, napi_value exports)
     {
         static napi_property_descriptor desc[] = {
-            DECLARE_NAPI_FUNCTION("dumpHeapSnapShot", DumpHeapSnapShot),
+            DECLARE_NAPI_FUNCTION("dumpHeapSnapshot", DumpHeapSnapshot),
             DECLARE_NAPI_FUNCTION("buildNativeAndJsBackStackTrace", BuildNativeAndJsBackStackTrace),
             DECLARE_NAPI_FUNCTION("startHeapTracking", StartHeapTracking),
             DECLARE_NAPI_FUNCTION("stopHeapTracking", StopHeapTracking),
