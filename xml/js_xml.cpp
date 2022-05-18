@@ -821,8 +821,8 @@ namespace OHOS::xml {
         ParseEntityFunc(start, out, isEntityToken, textEnum);
     }
 
-    bool XmlPullParser::ParseTagValueFunc(char c, bool bFlag, TextEnum textEnum,
-        size_t &start, std::string& result)
+    bool XmlPullParser::ParseTagValueFunc(char &c, bool bFlag, TextEnum textEnum,
+        size_t &start, std::string &result)
     {
         if (c == '\r') {
             if ((position_ + 1 < max_ || DealLength(2)) && strXml_[position_ + 1] == '\n') { // 2: number of args
@@ -903,18 +903,18 @@ namespace OHOS::xml {
             result.append(text_);
         }
         while (true) {
-            size_t iRecv = ParseTagValueInner(start, result, delimiter, textEnum, resolveEntities);
-            if (iRecv == 0) {
+            char cRecv = static_cast<char>(ParseTagValueInner(start, result, delimiter, textEnum, resolveEntities));
+            if (cRecv == 0) {
                 return result;
-            } else if (iRecv == 1) {
+            } else if (cRecv == 1) {
                 break;
-            } else if (iRecv == 2) { // 2: break flag
+            } else if (cRecv == 2) { // 2: break flag
                 continue;
-            } else if (!ParseTagValueFunc(static_cast<char>(iRecv), throwOnResolveFailure, textEnum, start, result)) {
+            } else if (!ParseTagValueFunc(cRecv, throwOnResolveFailure, textEnum, start, result)) {
                 continue;
             }
             ++position_;
-            result = result + static_cast<char>(iRecv);
+            result = result + static_cast<char>(cRecv);
             start = position_;
         }
         result.append(strXml_, start, position_ - start);
@@ -1442,6 +1442,9 @@ namespace OHOS::xml {
             }
         } else {
             xmlPullParserError_ = "Expected entity value or external ID";
+        }
+        if (generalEntity && bDocDecl) {
+            documentEntities[name] = entityValue;
         }
         SkipInvalidChar();
         SkipChar('>');
