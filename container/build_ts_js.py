@@ -36,10 +36,10 @@ if __name__ == '__main__':
                         help='the converted target file')
     input_arguments = parser.parse_args()
 
-    node = '../../../../prebuilts/build-tools/common/nodejs/\
+    NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-linux-x64/bin/node'
-    tsc = '../../../../ark/ts2abc/ts2panda/node_modules/typescript/bin/tsc'
-    cmd = [node, tsc]
+    TSC_PATH = '../../../../ark/ts2abc/ts2panda/node_modules/typescript/bin/tsc'
+    cmd = [NODE_PATH, TSC_PATH]
     run_command(cmd)
 
     for dirname in os.listdir("./jscode") :
