@@ -367,7 +367,7 @@ namespace OHOS::xml {
         bool ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure);
         TagEnum ParseOneTagFunc();
         size_t ParseTagValueInner(size_t &start, std::string &result, char delimiter, TextEnum textEnum, bool bFlag);
-        bool ParseTagValueFunc(char c, bool bFlag, TextEnum textEnum, size_t &start, std::string &result);
+        bool ParseTagValueFunc(char &c, bool bFlag, TextEnum textEnum, size_t &start, std::string &result);
         void MakeStrUpper(std::string &src) const;
         TagEnum DealLtGroup();
         void DealWhiteSpace(unsigned char c);
