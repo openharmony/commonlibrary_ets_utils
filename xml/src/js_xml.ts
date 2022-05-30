@@ -192,7 +192,22 @@ class XmlPullParser {
     }
 }
 
+enum EventType {
+    START_DOCUMENT,
+    END_DOCUMENT,
+    START_TAG,
+    END_TAG,
+    TEXT,
+    CDSECT,
+    COMMENT,
+    DOCDECL,
+    INSTRUCTION,
+    ENTITY_REFERENCE,
+    WHITESPACE
+}
+
 export default {
     XmlSerializer : XmlSerializer,
     XmlPullParser : XmlPullParser,
+    EventType,
 }
