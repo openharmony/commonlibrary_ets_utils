@@ -51,12 +51,12 @@ namespace OHOS::Js_sys_module::Dfx {
         return result;
     }
 
-    static napi_value BuildNativeAndJsBackStackTrace(napi_env env, napi_callback_info info)
+    static napi_value BuildNativeAndJsStackTrace(napi_env env, napi_callback_info info)
     {
         napi_value result = nullptr;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         std::string stackTraceResult = "";
-        bool temp = engine->BuildNativeAndJsBackStackTrace(stackTraceResult);
+        bool temp = engine->BuildNativeAndJsStackTrace(stackTraceResult);
         NAPI_CALL(env, napi_create_string_utf8(env, stackTraceResult.c_str(), stackTraceResult.size(), &result));
         if (temp) {
             return result;
@@ -176,7 +176,7 @@ namespace OHOS::Js_sys_module::Dfx {
     {
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("dumpHeapSnapshot", DumpHeapSnapshot),
-            DECLARE_NAPI_FUNCTION("buildNativeAndJsBackStackTrace", BuildNativeAndJsBackStackTrace),
+            DECLARE_NAPI_FUNCTION("buildNativeAndJsStackTrace", BuildNativeAndJsStackTrace),
             DECLARE_NAPI_FUNCTION("startHeapTracking", StartHeapTracking),
             DECLARE_NAPI_FUNCTION("stopHeapTracking", StopHeapTracking),
             DECLARE_NAPI_FUNCTION("printStatisticResult", PrintStatisticResult),
