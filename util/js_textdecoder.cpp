@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "ohos/init_data.h"
 #include "securec.h"
 #include "unicode/unistr.h"
 #include "utils/log.h"
@@ -41,6 +42,7 @@ namespace OHOS::Util {
             }
         }
         label_ = i32Flag;
+        SetHwIcuDirectory();
         bool fatal =
         (i32Flag & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
         static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
