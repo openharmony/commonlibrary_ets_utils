@@ -1123,6 +1123,7 @@ void Worker::ReleaseWorkerThreadContent()
     // 4. delete NativeEngine created in worker thread
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     workerEngine->CloseAsyncWork();
+    reinterpret_cast<NativeEngine*>(workerEnv_)->DeleteEngine();
     Helper::CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
     workerEnv_ = nullptr;
 }
