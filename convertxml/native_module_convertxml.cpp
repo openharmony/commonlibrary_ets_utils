@@ -93,7 +93,7 @@ namespace OHOS::Xml {
         .nm_flags = 0,
         .nm_filename = nullptr,
         .nm_register_func = ConvertXmlInit,
-        .nm_modname = "ConvertXML",
+        .nm_modname = "convertxml",
         .nm_priv = reinterpret_cast<void*>(0),
         .reserved = { 0 },
     };
