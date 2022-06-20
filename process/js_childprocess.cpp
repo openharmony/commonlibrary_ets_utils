@@ -125,7 +125,9 @@ namespace OHOS::Js_sys_module::Process {
             isWait_ = false;
             if (optionsInfo_ == nullptr) {
                 napi_value res = nullptr;
-                NAPI_CALL(env, napi_get_undefined(env, &res));
+                napi_get_undefined(env, &res);
+                delete waitInfo;
+                waitInfo = nullptr;
                 HILOG_ERROR("optionsInfo_ is nullptr");
                 return res;
             }
