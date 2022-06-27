@@ -365,7 +365,11 @@ public:
     void Loop()
     {
         uv_loop_t* loop = GetWorkerLoop();
-        uv_run(loop, UV_RUN_DEFAULT);
+        if (loop != nullptr) {
+            uv_run(loop, UV_RUN_DEFAULT);
+        } else {
+            HILOG_ERROR("worker:: Worker loop is nullptr when start worker loop");
+        }
     }
 
 private:
