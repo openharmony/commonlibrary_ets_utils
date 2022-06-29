@@ -27,14 +27,16 @@ def run_command(command):
         exit(1)
 
 if __name__ == '__main__':
-
-    build_path = os.path.abspath(os.path.join(os.getcwd(), "../.."))
-    os.chdir("%s/base/compileruntime/js_util_module/container/" % build_path)
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--dst-file',
                         help='the converted target file')
+    parser.add_argument('--relative-path',
+                        help='the code root path relative the root_build_dir')
     input_arguments = parser.parse_args()
+
+    build_path = os.path.abspath(os.path.join(os.getcwd(), input_arguments.relative_path))
+    os.chdir("%s/base/compileruntime/js_util_module/container/" % build_path)
+
 
     NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-linux-x64/bin/node'

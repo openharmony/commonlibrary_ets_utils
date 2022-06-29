@@ -40,6 +40,8 @@ action("build_js_ts") {
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/"),
+    "--relative-path",
+    rebase_path("//", root_build_dir),
   ]
   depfile = "$target_gen_dir/$target_name.d"
   outputs = []

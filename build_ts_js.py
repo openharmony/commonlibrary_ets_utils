@@ -37,9 +37,11 @@ if __name__ == '__main__':
                         help='the module path')
     PARSER_INST.add_argument('--out-file',
                         help='js output file')
+    PARSER_INST.add_argument('--relative-path',
+                        help='the code root path relative the root_build_dir')
     INPUT_ARGUMENTS = PARSER_INST.parse_args()
 
-    BUILD_PATH = os.path.abspath(os.path.join(os.getcwd(), "../.."))
+    BUILD_PATH = os.path.abspath(os.path.join(os.getcwd(), INPUT_ARGUMENTS.relative_path))
     os.chdir(("%s" + INPUT_ARGUMENTS.module_path) % BUILD_PATH)
     NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-linux-x64/bin/node'
