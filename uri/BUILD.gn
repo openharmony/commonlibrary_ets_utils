@@ -25,6 +25,8 @@ action("build_ts_js") {
     rebase_path("/base/compileruntime/js_api_module/uri"),
     "--out-file",
     rebase_path("./out/js_uri.js"),
+    "--relative-path",
+    rebase_path("//", root_build_dir),
   ]
   depfile = "$target_gen_dir/$target_name.d"
   outputs = [ target_out_dir + "/js_uri.js" ]
