@@ -531,7 +531,9 @@ namespace OHOS::xml {
             napi_call_function(env, global, attrFunc_, argc, argv, &returnVal);
             bool bRec = false;
             napi_get_value_bool(env, returnVal, &bRec);
-            return bRec;
+            if (!bRec) {
+                return bRec;
+            }
         }
         return true;
     }
@@ -560,6 +562,7 @@ namespace OHOS::xml {
                 }
                 if (attrFunc_ && attriCount_) {
                     bRec = ParseAttri(env, thisVar);
+                    attriCount_ = 0;
                 }
                 if (attrFunc_ && attriCount_ && !bRec) {
                     break;
@@ -898,7 +901,7 @@ namespace OHOS::xml {
         bool throwOnResolveFailure, TextEnum textEnum)
     {
         size_t start = position_;
-        std::string result = " ";
+        std::string result = "";
         if (textEnum == TextEnum::TEXT && text_ != "") {
             result.append(text_);
         }
