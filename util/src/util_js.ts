@@ -441,7 +441,7 @@ function callbackWrapper(original : Fn) : void
     Object.defineProperties(cb, descriptors);
 }
 
-function promiseWrapper(func : Function) : Object
+function promiseWrapper(func : Function) : Function
 {
     return function (...args : Array<Object>) {
         return new Promise((resolve, reject) => {
