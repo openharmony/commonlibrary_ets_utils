@@ -19,11 +19,11 @@ if (is_standard_system) {
 ohos_unittest("test_process_unittest") {
   module_out_path = module_output_path
 
-  configs = [ "//ark/js_runtime:ark_jsruntime_public_config" ]
+  configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
 
   include_dirs = [
     "//base/compileruntime/js_sys_module/process",
-    "//ark/js_runtime",
+    "//arkcompiler/ets_runtime",
     "//foundation/arkui/napi",
     "//foundation/arkui/napi/interfaces/kits",
     "//foundation/arkui/napi/native_engine",
@@ -41,7 +41,7 @@ ohos_unittest("test_process_unittest") {
   ]
 
   deps = [
-    "//ark/js_runtime:libark_jsruntime",
+    "//arkcompiler/ets_runtime:libark_jsruntime",
     "//base/compileruntime/js_sys_module/process:process_packages",
     "//foundation/arkui/napi/:ace_napi",
     "//foundation/arkui/napi/:ace_napi_ark",
