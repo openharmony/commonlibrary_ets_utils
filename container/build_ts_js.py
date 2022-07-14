@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-linux-x64/bin/node'
-    TSC_PATH = '../../../../ark/ts2abc/ts2panda/node_modules/typescript/bin/tsc'
+    TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/typescript/bin/tsc'
     cmd = [NODE_PATH, TSC_PATH]
     run_command(cmd)
 

@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//ark/ts2abc/ts2panda/ts2abc_config.gni")
+import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
@@ -43,7 +43,7 @@ gen_js_obj("util_js") {
 # compile .js to .abc.
 action("gen_util_abc") {
   visibility = [ ":*" ]
-  script = "//ark/ts2abc/ts2panda/scripts/generate_js_bytecode.py"
+  script = "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
 
   args = [
     "--src-js",
@@ -60,7 +60,7 @@ action("gen_util_abc") {
   ]
   deps = [
     ":build_ts_js",
-    "//ark/ts2abc/ts2panda:ark_ts2abc_build",
+    "//arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build",
   ]
 
   inputs = [ target_out_dir + "/util_js.js" ]

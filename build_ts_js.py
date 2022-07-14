@@ -47,7 +47,7 @@ if __name__ == '__main__':
 node-v12.18.4-linux-x64/bin/node'
     if not os.path.exists(NODE_PATH):
         raise Exception('NO souch file or directory')
-    TSC_PATH = '../../../../ark/ts2abc/ts2panda/node_modules/\
+    TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/\
 typescript/bin/tsc'
     CMD_INST = [NODE_PATH, TSC_PATH]
     run_command(CMD_INST)
