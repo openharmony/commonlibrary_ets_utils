@@ -1,0 +1,58 @@
+{
+    "name": "@ohos/js_worker_module",
+    "version": "",
+    "description": "Provide JS multi-threading capability | 提供JS多线程能力",
+    "homePage": "https://gitee.com/openharmony",
+    "license": "Apache V2",
+    "repository": "https://gitee.com/openharmony/js_worker_module",
+    "domain": "os",
+    "language": "",
+    "publishAs": "code-segment",
+    "private": false,
+    "scripts": {},
+    "tags": [
+        "js"
+    ],
+    "keywords": [
+        "js",
+        "worker",
+        "module"
+    ],
+    "envs": {},
+    "dirs": {},
+    "author": {
+        "name": "",
+        "email": "",
+        "url": ""
+    },
+    "contributors": [
+        {
+            "name": "",
+            "email": "",
+            "url": ""
+        }
+    ],
+    "segment": {
+        "destPath": "base/compileruntime/js_worker_module"
+    },
+    "component": {
+        "name": "jsapi_worker",
+        "subsystem": "utils",
+        "syscap": [],
+        "features": [],
+        "adapted_system_type": [],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [
+                "//base/compileruntime/js_worker_module:jsapi_packages"
+            ],
+            "inner_kits": [],
+            "test": []
+        }
+    }
+}
