@@ -456,8 +456,6 @@ namespace OHOS::Util {
             inputDecode = static_cast<char*>(resultData) + byteOffset;
             CreateDecodePromise(env, inputDecode, length);
         }
-        delete[] inputString;
-        inputString = nullptr;
         return stdDecodeInfo_->promise;
     }
     void Base64::CreateDecodePromise(napi_env env, char *inputDecode, size_t length)
