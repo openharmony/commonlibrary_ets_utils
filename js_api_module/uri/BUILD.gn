@@ -1,0 +1,113 @@
+# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
+import("//build/ohos.gni")
+import("//build/ohos/ace/ace.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
+
+# compile .ts to .js.
+action("build_ts_js") {
+  script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
+  args = [
+    "--dst-file",
+    rebase_path(target_out_dir + "/js_uri.js"),
+    "--module-path",
+    rebase_path("/commonlibrary/ets_utils/js_api_module/uri"),
+    "--out-file",
+    rebase_path("./out/js_uri.js"),
+    "--relative-path",
+    rebase_path("//", root_build_dir),
+  ]
+  depfile = "$target_gen_dir/$target_name.d"
+  outputs = [ target_out_dir + "/js_uri.js" ]
+}
+base_output_path = get_label_info(":js_uri", "target_out_dir")
+js_uri_obj_path = base_output_path + "/uri.o"
+gen_js_obj("js_uri") {
+  input = "$target_out_dir/js_uri.js"
+  output = js_uri_obj_path
+  dep = ":build_ts_js"
+}
+
+# compile .js to .abc.
+action("gen_uri_abc") {
+  visibility = [ ":*" ]
+  script = "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+
+  args = [
+    "--src-js",
+    rebase_path(target_out_dir + "/js_uri.js"),
+    "--dst-file",
+    rebase_path(target_out_dir + "/uri.abc"),
+    "--node",
+    rebase_path("${node_path}"),
+    "--frontend-tool-path",
+    rebase_path("${ts2abc_build_path}"),
+    "--node-modules",
+    rebase_path("${node_modules}"),
+    "--module",
+  ]
+  deps = [
+    ":build_ts_js",
+    "//arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build",
+  ]
+
+  inputs = [ target_out_dir + "/js_uri.js" ]
+  outputs = [ target_out_dir + "/uri.abc" ]
+}
+
+abc_output_path = get_label_info(":uri_abc", "target_out_dir")
+uri_abc_obj_path = abc_output_path + "/uri_abc.o"
+gen_js_obj("uri_abc") {
+  input = "$target_out_dir/uri.abc"
+  output = uri_abc_obj_path
+  dep = ":gen_uri_abc"
+}
+
+ohos_shared_library("uri") {
+  include_dirs = [
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/node/src",
+    "//foundation/arkui/napi/interfaces/kits",
+    "//commonlibrary/ets_utils/js_api_module/uri",
+  ]
+
+  sources = [
+    "js_uri.cpp",
+    "native_module_uri.cpp",
+  ]
+
+  deps = [
+    ":js_uri",
+    ":uri_abc",
+    "//commonlibrary/ets_utils/js_api_module/uri/:js_uri",
+    "//foundation/arkui/napi/:ace_napi",
+    "//foundation/arkui/napi/:ace_napi_quickjs",
+    "//third_party/icu/icu4c:static_icuuc",
+    "//utils/native/base:utils",
+  ]
+
+  if (is_standard_system) {
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps = [ "hilog:libhilog" ]
+  }
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+
+  relative_install_dir = "module"
+}
+
+group("uri_packages") {
+  deps = [ ":uri" ]
+}

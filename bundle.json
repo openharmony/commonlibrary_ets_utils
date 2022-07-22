@@ -1,7 +1,7 @@
 {
     "name": "@ohos/js_api_module",
     "version": "",
-    "description": "js_api_module, used to store the basic class library JSAPI, such as url, uri, etc.| 用于存放基础类库JSAPI，比如url、uri等",
+    "description": "commonlibrary_ets_utils, contains of 4 submodules:js_api_module,js_util_module,js_sys_module,js_worker_module",
     "homePage": "https://gitee.com/openharmony",
     "license": "Apache V2",
     "repository": "https://gitee.com/openharmony/js_api_module",
@@ -14,9 +14,8 @@
         "js"
     ],
     "keywords": [
-        "js",
-        "api",
-        "module"
+        "ets",
+        "utils"
     ],
     "envs": {},
     "dirs": {},
@@ -33,11 +32,11 @@
         }
     ],
     "segment": {
-        "destPath": "base/compileruntime/js_api_module"
+        "destPath": "commonlibrary/ets_utils"
     },
     "component": {
-        "name": "jsapi_api",
-        "subsystem": "utils",
+        "name": "ets_utils",
+        "subsystem": "commonlibrary",
         "syscap": [],
         "features": [],
         "adapted_system_type": [],
@@ -49,15 +48,20 @@
         },
         "build": {
             "sub_component": [
-                "//base/compileruntime/js_api_module/uri:uri_packages",
-                "//base/compileruntime/js_api_module/url:url_packages",
-                "//base/compileruntime/js_api_module/convertxml:convertxml_packages",
-                "//base/compileruntime/js_api_module/xml:xml_packages"
+                "//commonlibrary/ets_utils/js_api_module/uri:uri_packages",
+                "//commonlibrary/ets_utils/js_api_module/url:url_packages",
+                "//commonlibrary/ets_utils/js_api_module/convertxml:convertxml_packages",
+                "//commonlibrary/ets_utils/js_api_module/xml:xml_packages",
+                "//commonlibrary/ets_utils/js_sys_module/process:process_packages",
+                "//commonlibrary/ets_utils/js_sys_module/dfx:dfx_packages",
+                "//commonlibrary/ets_utils/js_util_module/util:util_packages",
+                "//commonlibrary/ets_utils/js_util_module/container:container_packages",
+                "//commonlibrary/ets_utils/js_worker_module:jsapi_packages"
             ],
             "inner_kits": [],
             "test": [
-                "//base/compileruntime/js_api_module/test_uri/unittest:unittest",
-                "//base/compileruntime/js_api_module/test_xml/unittest:unittest"
+                "//commonlibrary/ets_utils/js_api_module/test_uri/unittest:unittest",
+                "//commonlibrary/ets_utils/js_api_module/test_xml/unittest:unittest"
             ]
         }
     }

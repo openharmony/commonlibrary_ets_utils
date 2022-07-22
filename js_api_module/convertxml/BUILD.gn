@@ -1,0 +1,116 @@
+# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
+import("//build/ohos.gni")
+import("//build/ohos/ace/ace.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
+
+# compile .ts to .js.
+action("build_ts_js") {
+  script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
+  args = [
+    "--dst-file",
+    rebase_path(target_out_dir + "/js_convertxml.js"),
+    "--module-path",
+    rebase_path("/commonlibrary/ets_utils/js_api_module/convertxml"),
+    "--out-file",
+    rebase_path("./out/js_convertxml.js"),
+    "--relative-path",
+    rebase_path("//", root_build_dir),
+  ]
+  depfile = "$target_gen_dir/$target_name.d"
+  outputs = [ target_out_dir + "/js_convertxml.js" ]
+}
+base_output_path = get_label_info(":js_convertxml", "target_out_dir")
+js_xml_obj_path = base_output_path + "/convertxml.o"
+gen_js_obj("js_convertxml") {
+  input = "$target_out_dir/js_convertxml.js"
+  output = js_xml_obj_path
+  dep = ":build_ts_js"
+}
+
+# compile .js to .abc.
+action("gen_convertxml_abc") {
+  visibility = [ ":*" ]
+  script = "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+
+  args = [
+    "--src-js",
+    rebase_path(target_out_dir + "/js_convertxml.js"),
+    "--dst-file",
+    rebase_path(target_out_dir + "/convertxml.abc"),
+    "--node",
+    rebase_path("${node_path}"),
+    "--frontend-tool-path",
+    rebase_path("${ts2abc_build_path}"),
+    "--node-modules",
+    rebase_path("${node_modules}"),
+    "--module",
+  ]
+  deps = [
+    ":build_ts_js",
+    "//arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build",
+  ]
+
+  inputs = [ target_out_dir + "/js_convertxml.js" ]
+  outputs = [ target_out_dir + "/convertxml.abc" ]
+}
+
+abc_output_path = get_label_info(":convertxml_abc", "target_out_dir")
+convertxml_abc_obj_path = abc_output_path + "/convertxml_abc.o"
+gen_js_obj("convertxml_abc") {
+  input = "$target_out_dir/convertxml.abc"
+  output = convertxml_abc_obj_path
+  dep = ":gen_convertxml_abc"
+}
+
+ohos_shared_library("convertxml") {
+  include_dirs = [
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/node/src",
+    "//third_party/libxml2/include",
+    "//foundation/arkui/napi/interfaces/kits",
+    "//commonlibrary/ets_utils/js_api_module/convertxml",
+  ]
+
+  sources = [
+    "js_convertxml.cpp",
+    "native_module_convertxml.cpp",
+  ]
+
+  deps = [
+    ":convertxml_abc",
+    ":js_convertxml",
+    "//commonlibrary/ets_utils/js_api_module/convertxml/:js_convertxml",
+    "//foundation/arkui/napi/:ace_napi",
+    "//foundation/arkui/napi/:ace_napi_quickjs",
+    "//third_party/icu/icu4c:static_icuuc",
+    "//third_party/libxml2:xml2",
+    "//utils/native/base:utils",
+  ]
+
+  if (is_standard_system) {
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps = [ "hilog:libhilog" ]
+  }
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+
+  relative_install_dir = "module"
+}
+
+group("convertxml_packages") {
+  deps = [ ":convertxml" ]
+}

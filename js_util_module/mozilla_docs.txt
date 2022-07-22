@@ -1,0 +1,43 @@
+/*
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+The definitions of some interfaces implemented in jsapi/api/js_url.cpp are released under Mozilla license.
+
+The definitions and functions of these interfaces are consistent with the standard interfaces under mozilla license,
+but the implementation of specific functions is independent and self-developed. 
+
+All interfaces are described in d.ts, the following is the interface written in d.ts under to Mozilla license
+
+class TextDecoder {
+    readonly encoding: string;
+    readonly fatal: boolean;
+    readonly ignoreBOM = false;
+    constructor(
+        encoding?: string,
+        options?: { fatal?: boolean; ignoreBOM?: boolean },
+    );
+    decode(input: Uint8Array, options?: { stream?: false }): string;
+}
+
+class TextEncoder {
+
+    readonly encoding = "utf-8";
+    constructor();
+    encode(input?: string): Uint8Array;
+    encodeInto(
+        input: string,
+        dest: Uint8Array,
+    ): { read: number; written: number };
+}
