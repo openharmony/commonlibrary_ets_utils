@@ -42,7 +42,6 @@ namespace OHOS::Util {
             }
         }
         label_ = i32Flag;
-        SetHwIcuDirectory();
         bool fatal =
         (i32Flag & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
         static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
