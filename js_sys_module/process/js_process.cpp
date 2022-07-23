@@ -359,8 +359,6 @@ namespace OHOS::Js_sys_module::Process {
 
     napi_value Process::GetUidForName(napi_env env, napi_value name) const
     {
-        struct passwd *user = nullptr;
-        int32_t uid = 0;
         napi_value convertResult = nullptr;
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
@@ -374,11 +372,19 @@ namespace OHOS::Js_sys_module::Process {
             HILOG_ERROR("can not get name value");
             return nullptr;
         }
-        std::string temp = "";
-        temp = result;
-        user = getpwnam(temp.c_str());
-        if (user != nullptr) {
-            uid = static_cast<int32_t>(user->pw_uid);
+        struct passwd user;
+        int32_t uid = 0;
+        struct passwd *bufp = nullptr;
+        long bufLen = sysconf(_SC_GETPW_R_SIZE_MAX);
+        if (bufLen == -1) {
+            bufLen = 16384; // 16384:Should be more than enough
+        }
+
+        std::string buf;
+        buf.reserve(bufLen + 1);
+        buf.resize(bufLen);
+        if (getpwnam_r(result.c_str(), &user, buf.data(), bufLen, &bufp) == 0 && bufp != nullptr) {
+            uid = static_cast<int32_t>(bufp->pw_uid);
             napi_create_int32(env, uid, &convertResult);
             return convertResult;
         }
