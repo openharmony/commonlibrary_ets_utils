@@ -58,16 +58,15 @@ function DealXml(strXml : string)
     while ((idx = strXml.indexOf('>', idxSec)) !== -1) {
         idxThir = strXml.indexOf('<', idx);
         strXml = DealPriorReplace(strXml, idx, idxThir);
-        if (strXml.indexOf('<', idx) !== -1) {
+        idxSec = strXml.indexOf('<', idx);
+        if (idxSec !== -1) {
             idxCData = strXml.indexOf('<![CDATA', idxCDataSec);
-            idxSec = strXml.indexOf('<', idx);
             if (idxSec === idxCData) {
                 idxSec = strXml.indexOf(']]>', idxCData);
                 strXml = DealLaterReplace(strXml, idx, idxThir);
                 idxCDataSec = idxSec;
             }
-        }
-        else {
+        } else {
             break;
         }
     }
@@ -85,9 +84,11 @@ function DealPriorReplace(strXml : string, idx : number, idxThir : number)
         }
     }
     let j : number = idx + 1;
-    for (; j < strXml.indexOf('<', idx) ; j++) {
-        let cXml : string = strXml.charAt(j);
-        if (i !== idxThir) {
+    if (i == idxThir) {
+        strXml = strXml.substring(0, j) + strXml.substring(idxThir);
+    } else {
+        for (; j < strXml.indexOf('<', idx) ; j++) {
+            let cXml : string = strXml.charAt(j);
             switch (cXml) {
                 case '\n':
                     strXml = strXml.substring(0, j) + '\\n' + strXml.substring(j + 1);
@@ -101,9 +102,6 @@ function DealPriorReplace(strXml : string, idx : number, idxThir : number)
                 default:
                     break;
             }
-        } else {
-            strXml = strXml.substring(0, j) + strXml.substring(j + 1);
-            --j;
         }
     }
     return strXml;
