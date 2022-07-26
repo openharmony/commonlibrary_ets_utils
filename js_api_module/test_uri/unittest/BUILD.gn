@@ -50,13 +50,18 @@ ohos_unittest("test_uri_unittest") {
     "//third_party/googletest:gtest_main",
     "//third_party/icu/icu4c:static_icuuc",
     "//third_party/libuv:uv_static",
-    "//utils/native/base:utils",
   ]
 
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hiviewdfx_hilog_native:libhilog",
+    ]
   } else {
-    external_deps = [ "hilog:libhilog" ]
+    external_deps = [
+      "hilog:libhilog",
+      "utils_base:utils",
+    ]
   }
 }
 

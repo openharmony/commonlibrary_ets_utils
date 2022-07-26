@@ -114,15 +114,20 @@ template("container_lib") {
     deps = [
       "//commonlibrary/ets_utils/js_util_module/container/:js_" + name,
       "//foundation/arkui/napi/:ace_napi",
-      "//utils/native/base:utils",
     ]
     deps += [ dep_abc ]
     deps += [ dep_js ]
 
     if (is_standard_system) {
-      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      external_deps = [
+        "c_utils:utils",
+        "hiviewdfx_hilog_native:libhilog",
+      ]
     } else {
-      external_deps = [ "hilog:libhilog" ]
+      external_deps = [
+        "hilog:libhilog",
+        "utils_base:utils",
+      ]
     }
     subsystem_name = "commonlibrary"
     part_name = "ets_utils"
