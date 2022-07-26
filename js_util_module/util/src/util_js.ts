@@ -441,7 +441,7 @@ function callbackWrapper(original : Fn) : void
     Object.defineProperties(cb, descriptors);
 }
 
-function promiseWrapper(func : Function) : Function
+function promisify(func : Function) : Function
 {
     return function (...args : Array<Object>) {
         return new Promise((resolve, reject) => {
@@ -1011,7 +1011,7 @@ export default {
     printf: printf,
     getErrorString: getErrorString,
     callbackWrapper: callbackWrapper,
-    promiseWrapper: promiseWrapper,
+    promisify: promisify,
     createExternalType: createExternalType,
     TextEncoder: TextEncoder,
     TextDecoder: TextDecoder,
