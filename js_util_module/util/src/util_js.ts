@@ -21,7 +21,7 @@ interface HelpUtil{
     dealwithformatstring(formatString : string | Array<string | number | Fn>) : string;
     printf(formatString : string | Array<string | number | Fn>,
            ...valueString : Array<Object>) : string;
-    getErrorString(errnum : number) : string;
+    geterrorstring(errnum : number) : string;
     createExternalType() : Object;
 }
 
@@ -389,7 +389,7 @@ function printf(formatString : Array<string | number | Fn>, ...valueString : Arr
 
 function getErrorString(errnum : number) : string
 {
-    let errorString : string = helpUtil.getErrorString(errnum);
+    let errorString : string = helpUtil.geterrorstring(errnum);
     return errorString;
 }
 
