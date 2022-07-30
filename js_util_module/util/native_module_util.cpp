@@ -16,15 +16,17 @@
 #include <cstring>
 #include <vector>
 
-#include "js_textdecoder.h"
-#include "js_textencoder.h"
-#include "js_base64.h"
-#include "js_types.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_types.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_uuid.h"
+
+#include "securec.h"
+#include "utils/log.h"
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "securec.h"
-#include "utils/log.h"
 
 extern const char _binary_util_js_js_start[];
 extern const char _binary_util_js_js_end[];
@@ -220,6 +222,52 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_value_int32(env, argv, &err));
         errInfo = uv_strerror(err);
         NAPI_CALL(env, napi_create_string_utf8(env, errInfo.c_str(), errInfo.size(), &result));
+        return result;
+    }
+
+    static napi_value RandomUUID(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t requireArgc = 1;
+        size_t argc = 1;
+        napi_value args[1] = { 0 };
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
+        bool flag = false;
+        napi_get_value_bool(env, args[0], &flag);
+        std::string uuidString = GetStringUUID(env, flag);
+        napi_value result = nullptr;
+        size_t tempLen = uuidString.size();
+        napi_create_string_utf8(env, uuidString.c_str(), tempLen, &result);
+        return result;
+    }
+
+    static napi_value RandomBinaryUUID(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t requireArgc = 1;
+        size_t argc = 1;
+        napi_value args[1] = { 0 };
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
+        bool flag = false;
+        napi_get_value_bool(env, args[0], &flag);
+        napi_value result = GetBinaryUUID(env, flag);
+        return result;
+    }
+
+    static napi_value ParseUUID(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t requireArgc = 1;
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
+        napi_value result = DoParseUUID(env, args[0]);
         return result;
     }
 
@@ -1330,6 +1378,9 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("geterrorstring", GetErrorString),
             DECLARE_NAPI_FUNCTION("dealwithformatstring", DealWithFormatString),
             DECLARE_NAPI_FUNCTION("createExternalType", CreateExternalType),
+            DECLARE_NAPI_FUNCTION("randomUUID", RandomUUID),
+            DECLARE_NAPI_FUNCTION("randomBinaryUUID", RandomBinaryUUID),
+            DECLARE_NAPI_FUNCTION("parseUUID", ParseUUID)
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         TextcoderInit(env, exports);
