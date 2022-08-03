@@ -51,6 +51,10 @@ action("build_js_ts") {
   }
 }
 
+config("container_config") {
+  cflags = [ "-fstack-protector-all" ]
+}
+
 # libs
 template("container_lib") {
   forward_variables_from(invoker, "*")
@@ -118,6 +122,7 @@ template("container_lib") {
     deps += [ dep_abc ]
     deps += [ dep_js ]
 
+    configs = [ ":container_config" ]
     if (is_standard_system) {
       external_deps = [
         "c_utils:utils",
