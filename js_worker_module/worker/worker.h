@@ -369,6 +369,7 @@ public:
             uv_run(loop, UV_RUN_DEFAULT);
         } else {
             HILOG_ERROR("worker:: Worker loop is nullptr when start worker loop");
+            return;
         }
     }
 
