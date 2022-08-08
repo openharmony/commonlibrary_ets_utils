@@ -45,6 +45,8 @@ struct TimerCallbackInfo {
     }
 
     ~TimerCallbackInfo();
+
+    void DeleteTimerCallbackInfo();
 };
 
 class Timer {

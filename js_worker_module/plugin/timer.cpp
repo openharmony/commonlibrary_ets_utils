@@ -31,7 +31,21 @@ TimerCallbackInfo::~TimerCallbackInfo()
     Helper::CloseHelp::DeletePointer(argv_, true);
 
     uv_timer_stop(&timeReq_);
-    uv_close(reinterpret_cast<uv_handle_t*>(&timeReq_), nullptr);
+    uv_close(reinterpret_cast<uv_handle_t*>(&timeReq_), [](uv_handle_t* handle) {
+        if (handle != NULL) {
+            delete (uv_timer_t*)handle;
+        }
+    });
+}
+
+void TimerCallbackInfo::DeleteTimerCallbackInfo()
+{
+    Helper::NapiHelper::DeleteReference(env_, callback_);
+    for (size_t idx = 0; idx < argc_; idx++) {
+        Helper::NapiHelper::DeleteReference(env_, argv_[idx]);
+    }
+    Helper::CloseHelp::DeletePointer(argv_, true);
+    uv_timer_stop(&timeReq_);
 }
 
 bool Timer::RegisterTime(napi_env env)
@@ -86,7 +100,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
     }
     TimerCallbackInfo* callbackInfo = iter->second;
     timerTable.erase(tId);
-    Helper::CloseHelp::DeletePointer(callbackInfo, false);
+    callbackInfo->DeleteTimerCallbackInfo();
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
 
@@ -112,7 +126,7 @@ void Timer::TimerCallback(uv_timer_t* handle)
     }
     if (!callbackInfo->repeat_) {
         timerTable.erase(callbackInfo->tId_);
-        Helper::CloseHelp::DeletePointer(callbackInfo, false);
+        callbackInfo->DeleteTimerCallbackInfo();
     } else {
         uv_timer_again(handle);
     }

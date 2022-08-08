@@ -43,6 +43,7 @@ public:
             delete[] value;
         } else {
             delete value;
+            value = nullptr;
         }
     }
 };
@@ -60,6 +61,7 @@ public:
             delete[] data_;
         } else {
             delete data_;
+            data_ = nullptr;
         }
     }
 
