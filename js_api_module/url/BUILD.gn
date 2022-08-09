@@ -28,7 +28,6 @@ action("build_ts_js") {
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
-  depfile = "$target_gen_dir/$target_name.d"
   outputs = [ target_out_dir + "/js_url.js" ]
 }
 base_output_path = get_label_info(":js_url", "target_out_dir")
