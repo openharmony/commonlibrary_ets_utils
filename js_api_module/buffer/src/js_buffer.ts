@@ -1344,7 +1344,7 @@ class Buffer {
     let newBuf = Object.create(this);
     start = isNaN(start) ? 0 : Number(start);
     end = isNaN(end) ? 0 : Number(end);
-    if (end <= start) {
+    if (start < 0 || end < 0 || end <= start) {
       return new Buffer(0);
     }
     end = (end > this.length) ? this.length : end;
@@ -1556,7 +1556,7 @@ function concat(list: Buffer[] | Uint8Array[], totalLength?: number): Buffer {
   for (let i = 0, len = list.length; i < len; i++) {
     const buf = list[i];
     if (buf instanceof Uint8Array) {
-      buf.forEach((val,index) => buffer[index + (++offset)] = val);
+      buf.forEach((val) => buffer[offset++] = val);
     } else if (buf instanceof Buffer) {
       buf.copy(buffer, offset);
       offset += buf.length;
@@ -1603,7 +1603,7 @@ function allocUninitializedFromPool(size: number): Buffer
   return new Buffer(size);
 }
 
-function allocUninitialed(size: number): Buffer
+function allocUninitialized(size: number): Buffer
 {
   if (typeof size !== 'number') {
     throw new TypeError(`The "size" argument must be of type number`);
@@ -1936,7 +1936,7 @@ export default {
   from,
   alloc,
   allocUninitializedFromPool,
-  allocUninitialed,
+  allocUninitialized,
   byteLength,
   isBuffer,
   isEncoding,
