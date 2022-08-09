@@ -69,15 +69,37 @@ class URI {
     }
 
     get authority() {
-        return this.uricalss.authority;
+        let thisAuthority : string = this.uricalss.authority;
+        if (thisAuthority.indexOf('[') !== -1) {
+            let arr : string[] = thisAuthority.split('[');
+            let brr : string[] = arr[1].split(']');
+            arr[1] = '[' + brr[0] + ']';
+            arr[2] = brr[1];
+            arr[0] = decodeURIComponent(arr[0]);
+            arr[2] = decodeURIComponent(arr[2]);
+            return arr.join('');
+        } else {
+            return decodeURIComponent(thisAuthority);
+        }
     }
 
     get ssp() {
-        return this.uricalss.ssp;
+        let thisSsp : string = this.uricalss.ssp;
+        if (thisSsp.indexOf('[') !== -1) {
+            let arr : string[] = thisSsp.split('[');
+            let brr : string[] = arr[1].split(']');
+            arr[1] = '[' + brr[0] + ']';
+            arr[2] = brr[1];
+            arr[0] = decodeURIComponent(arr[0]);
+            arr[2] = decodeURIComponent(arr[2]);
+            return arr.join('');
+        } else {
+            return decodeURIComponent(thisSsp);
+        }
     }
 
     get userInfo() {
-        return this.uricalss.userInfo;
+        return decodeURIComponent(this.uricalss.userInfo);
     }
 
     get host() {
@@ -89,15 +111,15 @@ class URI {
     }
 
     get path() {
-        return this.uricalss.path;
+        return decodeURIComponent(this.uricalss.path);
     }
 
     get query() {
-        return this.uricalss.query;
+        return decodeURIComponent(this.uricalss.query);
     }
 
     get fragment() {
-        return this.uricalss.fragment;
+        return decodeURIComponent(this.uricalss.fragment);
     }
 
 }
