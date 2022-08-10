@@ -21,7 +21,6 @@ namespace OHOS::Uri {
     std::bitset<MAX_BIT_SIZE> g_ruleUrlc;
     std::bitset<MAX_BIT_SIZE> g_rulePath;
     std::bitset<MAX_BIT_SIZE> g_ruleUserInfo;
-    std::bitset<MAX_BIT_SIZE> g_ruleScope;
     std::bitset<MAX_BIT_SIZE> g_ruleDigit;
     std::bitset<MAX_BIT_SIZE> g_rulePort;
     void Uri::PreliminaryWork() const
@@ -41,24 +40,19 @@ namespace OHOS::Uri {
             g_ruleScheme.set(schemeAggregate[i]);
         }
 
-        std::string uricAggregate = schemeAggregate + ";/?:@&=$,[]_!~*'()";
+        std::string uricAggregate = schemeAggregate + ";/?:@&=$,[]_!~*'()%";
         for (size_t i = 0; i < uricAggregate.size(); ++i) {
             g_ruleUrlc.set(uricAggregate[i]);
         }
 
-        std::string pathAggregate = schemeAggregate + ";/:@&=$,_!~*'()";
+        std::string pathAggregate = schemeAggregate + ";/:@&=$,_!~*'()%";
         for (size_t i = 0; i < pathAggregate.size(); ++i) {
             g_rulePath.set(pathAggregate[i]);
         }
 
-        std::string userInfoAggregate = schemeAggregate + ";:&=$,_!~*'()";
+        std::string userInfoAggregate = schemeAggregate + ";:&=$,_!~*'()%";
         for (size_t i = 0; i < userInfoAggregate.size(); ++i) {
             g_ruleUserInfo.set(userInfoAggregate[i]);
-        }
-
-        std::string scopeAggregate = digitAggregate + alphasAggregate + "_.";
-        for (size_t i = 0; i < scopeAggregate.size(); ++i) {
-            g_ruleScope.set(scopeAggregate[i]);
         }
 
         std::string portAggregate = digitAggregate + alphasAggregate + ".:@-;&=+$,-_!~*'()";
