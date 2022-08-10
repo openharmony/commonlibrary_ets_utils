@@ -445,35 +445,40 @@ int Buffer::IndexOf(const char *data, uint32_t offset)
     return p3 - cData;
 }
 
-int Buffer::GoodSuffix(int suffix, uint8_t *pat, int length)
+int Buffer::GoodSuffix(int patIndex, uint8_t *pat, int tarlen)
 {
-    int terminal = length - 1;
-    int index = -1;
-    suffix--;
-    while (suffix >= 0) {
-        if (pat[suffix] == pat[terminal]) {
-            index = suffix;
-            break;
-        } else {
-            suffix--;
-        }
-    }
-    return terminal - index;
-}
-
-int Buffer::BadChar(int suffix, char temp, uint8_t *target)
-{
-    int index = -1;
-    for (int i = suffix - 1; i >= 0; --i) {
-        if (target[i] == temp) {
-            index = i;
+    int firstIndex = 0;
+    for (int i = patIndex; i < tarlen; i++) {
+        if (pat[0] == pat[i]) {
+            firstIndex = i;
             break;
         }
     }
-    return suffix - index;
+    int resIndex = tarlen;
+    for (int i = 0; i < patIndex; i++) {
+        if (pat[i] != pat[firstIndex]) {
+            resIndex = tarlen;
+            break;
+        }
+        resIndex = firstIndex;
+    }
+
+    return resIndex;
 }
 
-int Buffer::BM(uint8_t *source, uint8_t *target, int soulen, int tarlen)
+int Buffer::BadChar(int patIndex, char temp, uint8_t *str, int tarlen)
+{
+    int resIndex = tarlen;
+    for (int i = patIndex; i < tarlen; i++) {
+        if (temp == str[i]) {
+            resIndex = i;
+            break;
+        }
+    }
+    return resIndex;
+}
+
+int Buffer::FindIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
 {
     int badvalue = 0;
     int distance = 0;
@@ -481,29 +486,26 @@ int Buffer::BM(uint8_t *source, uint8_t *target, int soulen, int tarlen)
         return -1;
     }
 
-    int i = soulen - 1;
-    int j = tarlen - 1;
+    int i = soulen - tarlen;
+    int j = 0;
 
     while (i >= 0) {
         if (source[i] == target[j]) {
-            if (j == 0) {
-                return i;
-            }
-            i--;
-            j--;
-        } else {
             if (j == tarlen - 1) {
-                badvalue = BadChar(j, source[i], target);
-                i = i + tarlen - 1 - j - badvalue;
-                j = tarlen - 1;
+                return i - (tarlen - 1);
+            }
+            i++;
+            j++;
+        } else {
+            if (j == 0) {
+                badvalue = BadChar(j, source[i], target, tarlen);
+                i = i - badvalue;
+                j = 0;
             } else {
-                badvalue = BadChar(j, source[i], target);
-                if (badvalue == -1) {
-                    badvalue = tarlen;
-                }
+                badvalue = BadChar(j, source[i], target, tarlen);
                 distance = badvalue > GoodSuffix(j, target, tarlen) ? badvalue : GoodSuffix(j, target, tarlen);
-                i = i + tarlen - 1 - j - distance;
-                j = tarlen - 1;
+                i = i - badvalue;
+                j = 0;
             }
         }
     }
@@ -514,6 +516,6 @@ int Buffer::LastIndexOf(const char* data, uint32_t offset, int len)
 {
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
-    return BM(sData, (uint8_t *)data, length_ - offset, len);
+    return FindIndex(sData, (uint8_t *)data, length_ - offset, len);
 }
 } // namespace OHOS::Buffer

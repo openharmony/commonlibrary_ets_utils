@@ -74,7 +74,7 @@ public:
     uint32_t Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t sEnd);
     int Compare(Buffer *tBuf, uint32_t targetStart, uint32_t sourceStart, uint32_t length);
     int IndexOf(const char *data, uint32_t offset);
-    int BM(uint8_t *source, uint8_t *target, int soulen, int tarlen);
+    int FindIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen);
     int LastIndexOf(const char *data, uint32_t offset, int len);
     std::string ToBase64(uint32_t start, uint32_t length);
     static EncodingType GetEncodingType(std::string type);
@@ -87,8 +87,8 @@ public:
 private:
     uint8_t *GetRaw();
     bool WriteBytes(uint8_t *src, int size, uint8_t *dest);
-    int GoodSuffix(int suffix, uint8_t *pat, int length);
-    int BadChar(int suffix, char temp, uint8_t *target);
+    int GoodSuffix(int patIndex, uint8_t *pat, int tarlen);
+    int BadChar(int patIndex, char temp, uint8_t *str, int tarlen);
     void WriteBE(int32_t value, uint32_t bytes);
     void WriteLE(int32_t value, uint32_t bytes);
     uint32_t ReadBE(int offset, uint32_t bytes);
