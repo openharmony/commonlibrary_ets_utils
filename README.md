@@ -1866,9 +1866,76 @@ worker能够让js拥有多线程的能力，通过postMessage完成worker线程�
 
 ```
 import worker from "@ohos.worker"
-const worker = new worker.Worker("workers/worker.js");
 ```
+通过判断是否与pages目录同级和创建项目的模型类别，共有以下四种新建Worker的方式：
 
+(1) FA模型: 目录同级
+```
+const workerInstance = new worker.Worker("workers/worker.js", {name:"first worker"});
+```
+(2) FA模型: 目录不同级（以workers目录放置pages目录前一级为例）
+```
+const workerInstance = new worker.Worker("../workers/worker.js", {name:"first worker"});
+```
+(3)  Stage模型: 目录同级
+```
+const workerInstance = new worker.Worker('entry/ets/workers/worker.ts');
+```
+(4) Stage模型: 目录不同级（以workers目录放置pages目录后一级为例）
+```
+const workerInstance = new worker.Worker('entry/ets/pages/workers/worker.ts');
+```
+对于Stage模型中scriptURL——"entry/ets/workers/worker.ts"的解释：
+- entry: 为module.json5中module中name属性的值；
+- ets: 表明当前工程使用的语言；
+- worker.ts: 创建worker.ts文件或者worker.js文件都可以。
+
+另外，需在工程目录下build-profile.json5文件的buildOption属性中添加配置信息，主要分为下面两种情况：
+
+(1) 目录同级(**不添加也可以**)
+
+FA模型:
+```
+  "buildOption": {
+    "sourceOption": {
+      "workers": [
+        "./src/main/ets/MainAbility/workers/worker.js"
+      ]
+    }
+  }
+```
+Stage模型:
+```
+  "buildOption": {
+    "sourceOption": {
+      "workers": [
+        "./src/main/ets/workers/worker.ts"
+      ]
+    }
+  }
+```
+(2) 目录不同级(**必须添加**)
+
+FA模型:
+```
+  "buildOption": {
+    "sourceOption": {
+      "workers": [
+        "./src/main/ets/workers/worker.js"
+      ]
+    }
+  }
+```
+Stage模型:
+```
+  "buildOption": {
+    "sourceOption": {
+      "workers": [
+        "./src/main/ets/pages/workers/worker.ts"
+      ]
+    }
+  }
+```
 2. 
 
 - 接口名
