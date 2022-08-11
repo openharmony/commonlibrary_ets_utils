@@ -1,37 +1,9 @@
 # ets_utils组件
--   [子模块](#子模块)
-    -   [1.js_api_module子模块](#1.js_api_module子模块)
-        -   [1.1.简介](#1.1.简介)
-        -   [1.2.目录](#1.2.目录)
-        -   [1.3.说明](#1.3.说明)
-            -   [1.3.1.接口说明](#1.3.1.接口说明)
-            -   [1.3.2.使用说明](#1.3.2.使用说明)
-    -   [2.js_util_module子模块](#2.js_util_module子模块)
-        -   [2.1.简介](#2.1.简介)
-        -   [2.2.目录](#2.2.目录)
-        -   [2.3.说明](#2.3.说明)
-            -   [2.3.1.接口说明](#2.3.1.接口说明)
-            -   [2.3.2.使用说明](#2.3.2.使用说明)
-    -   [3.js_sys_module子模块](#3.js_sys_module子模块)
-        -   [3.1.简介](#3.1.简介)
-        -   [3.2.目录](#3.2.目录)
-        -   [3.3.说明](#3.3.说明)
-            -   [3.3.1.接口说明](#3.3.1.接口说明)
-            -   [3.3.2.使用说明](#3.3.2.使用说明)
-    -   [4.js_worker_module子模块](#4.js_worker_module子模块)
-        -   [4.1.简介](#4.1.简介)
-        -   [4.2.接口说明](#4.2.接口说明)
-            -   [4.2.1.Worker对象描述](#4.2.1.Worker对象描述)
-                -   [4.2.1.1.接口](#4.2.1.1.接口)
-                -   [4.2.1.2.属性](#4.2.1.2.属性)
-            -   [4.2.2.Worker对象描述](#4.2.2.Worker对象描述)
-                -   [4.2.2.1.接口](#4.2.2.1.接口)
-                -   [4.2.2.1.属性](#4.2.2.1.属性)
-        -   [4.3.涉及仓](#4.3.涉及仓)
+ets_utils组件共提供四个子模块，分别是：js_api_module、js_util_module、js_sys_module和js_worker_module，以下内容将详细介绍各个子模块的简介、目录、说明和涉及仓等相关内容。
 
 # 子模块
-## 1.js_api_module子模块
-### 1.1.简介
+## 1. js_api_module子模块
+### 1.1. 简介
 
 URL接口用于解析，构造，规范化和编码 URLs。 URL的构造函数创建新的URL对象。 以便对URL的已解析组成部分或对URL进行更改。URLSearchParams 接口定义了一些实用的方法来处理 URL 的查询字符串。
 
@@ -41,7 +13,7 @@ xml表示指可扩展标记语言。
 
 XmlSerializer接口用于生成一个xml文件。 XmlSerializer的构造函数创建新的XmlSerializer对象，调用XmlSerializer对象的方法生成一个xml文件。XmlPullParser 接口用于解析已有的xml文件，XmlPullParser的构造函数创建新的XmlPullParser对象，调用XmlPullParser对象的方法解析xml。
 
-### 1.2.目录
+### 1.2. 目录
 
 ```
 commonlibrary/ets_utils/js_api_module/
@@ -115,9 +87,9 @@ commonlibrary/ets_utils/js_api_module/
     └── parse(option: ParseOptions)                                               # parse方法
 ```
 
-### 1.3.说明
+### 1.3. 说明
 
-#### 1.3.1.接口说明
+#### 1.3.1. 接口说明
 
 
 | 接口名 | 说明 |
@@ -170,7 +142,7 @@ commonlibrary/ets_utils/js_api_module/
 | setDocType(text: string): void | 写入DocType属性。 |
 | XmlPullParser(buffer: ArrayBuffer \| DataView, encoding?: string) | 创建并返回一个XmlPullParser对象，该XmlPullParser对象传参两个第一参数是ArrayBuffer或DataView一段内存，第二个参数为文件格式（默认为UTF-8）。 |
 | parse(option: ParseOptions): void | 该接口用于解析xml，ParseOptions参数为一个接口包含五个可选参{supportDoctype?: boolea ignoreNameSpace?: boolean tagValueCallbackFunction?: (name: string, value: string) => boolean attributeValueCallbackFunction?: (name: string, value: string) => boolean） tokenValueCallbackFunction?: (eventType: EventType, value: ParseInfo) => boolean }。其中tokenValueCallbackFunction回调函数的入参1是事件类型，入参2是包含getColumnNumber、getDepth等get属性的info接口，用户可通过info.getDepth()等方法来获取当前解析过程中的depth等信息。 |
-#### 1.3.2.使用说明
+#### 1.3.2. 使用说明
 
 各接口使用方法如下：
 
@@ -472,11 +444,11 @@ var options = {supportDoctype:true, ignoreNameSpace:true, tokenValueCallbackFunc
 that.parse(options);
 ```
 
-## 2.js_util_module子模块
-### 2.1.简介
+## 2. js_util_module子模块
+### 2.1. 简介
 
 UTIL接口用于字符编码TextEncoder、解码TextDecoder、帮助函数HelpFunction、基于Base64的字节编码encode和解码decode、有理数RationalNumber。TextEncoder表示一个文本编码器，接受字符串作为输入，以UTF-8格式进行编码，输出UTF-8字节流。TextDecoder接口表示一个文本解码器，解码器将字节流作为输入，输出stirng字符串。HelpFunction主要是对函数做callback化、promise化以及对错误码进行编写输出，及类字符串的格式化输出。encode接口使用Base64编码方案将指定u8数组中的所有字节编码到新分配的u8数组中或者使用Base64编码方案将指定的字节数组编码为String。decode接口使用Base64编码方案将Base64编码的字符串或输入u8数组解码为新分配的u8数组。RationalNumber有理数主要是对有理数进行比较，获取分子分母等方法。LruBuffer该算法在缓存空间不够的时候，将近期最少使用的数据替换为新数据。该算法源自这样一种访问资源的需求：近期访问的数据，可能在不久的将来会再次访问。于是最少访问的数据就是价值最小的，是最应该踢出缓存空间的数据。Scope接口用于描述一个字段的有效范围。 Scope实例的构造函数用于创建具有指定下限和上限的对象，并要求这些对象必须具有可比性。
-### 2.2.目录
+### 2.2. 目录
 
 ```
 commomlibrary/ets_utils/js_util_module/
@@ -593,9 +565,9 @@ commomlibrary/ets_utils/js_util_module/
     ├── isWeakMap()                     # isWeakMap方法
     └── isWeakSet()                     # isWeakSet方法
 ```
-### 2.3.说明
+### 2.3. 说明
 
-#### 2.3.1.接口说明
+#### 2.3.1. 接口说明
 
 
 | 接口名 | 说明 |
@@ -717,7 +689,7 @@ printf中每个说明符都替换为来自相应参数的转换后的值。 支�
 |    %c:  | 此说明符被忽略，将跳过任何传入的 CSS 。|
 |    %%:  | 单个百分号 ('%')。 这不消耗待式样化参数。|
 
-#### 2.3.2.使用说明
+#### 2.3.2. 使用说明
 各接口使用方法如下：
 
 1.readonly encoding()
@@ -1489,10 +1461,10 @@ var proc = new util.Types();
 var result = proc.isWeakSet(new WeakSet());
 ```
 
-## 3.js_sys_module子模块
-### 3.1.简介
+## 3. js_sys_module子模块
+### 3.1. 简介
 进程主要用于获取进程的相关ID，获取和修改进程的工作目录，退出和关闭进程。 childprocess 对象可用于创建新进程。 主进程可以获取子进程的标准输入输出，发送信号，关闭子进程。
-### 3.2.目录
+### 3.2. 目录
 
 ```
 commomlibrary/ets_utils/js_sys_module/
@@ -1536,9 +1508,9 @@ commomlibrary/ets_utils/js_sys_module/
     └── exitCode                    # exitCode属性
 ```
 
-### 3.3.说明
+### 3.3. 说明
 
-#### 3.3.1.接口说明
+#### 3.3.1. 接口说明
 | 接口名 | 说明 |
 | -------- | -------- |
 | const uid :number | 返回进程的数字用户 ID。 |
@@ -1578,7 +1550,7 @@ commomlibrary/ets_utils/js_sys_module/
 | readonly pid: number | 表示子进程ID。 |
 | readonly ppid: number | 代表主进程ID。 |
 
-#### 3.3.2.使用说明
+#### 3.3.2. 使用说明
 
 各接口使用方法如下：
 1.uid()
@@ -1840,20 +1812,20 @@ getSystemConfig(){
 }
 ```
 
-## 4.js_worker_module子模块
+## 4. js_worker_module子模块
 
-### 4.1.简介
+### 4.1. 简介
 
 worker能够让js拥有多线程的能力，通过postMessage完成worker线程与宿主线程通信。
 
-### 4.2.接口说明
+### 4.2. 接口说明
 接口实现详见：js_worker_module/jsapi/worker
 
-#### 4.2.1.Worker对象描述
+#### 4.2.1. Worker对象描述
 
 宿主线程用于与worker线程通信的Object对象。
 
-##### 4.2.1.1接口
+##### 4.2.1.1. 接口
 
 1. 
 
@@ -2068,7 +2040,7 @@ const worker = new worker.Worker("workers/worker.js");
 worker.removeAllListener();
 ```
 
-##### 4.2.1.2.属性
+##### 4.2.1.2. 属性
 
 1. 
 
@@ -2138,11 +2110,11 @@ worker.onmessageerror = function(e) {
 }
 ```
 
-#### 4.2.2.parentPort对象描述
+#### 4.2.2. parentPort对象描述
 
 worker线程用于与宿主线程通信的Object对象。
 
-##### 4.2.2.1.接口
+##### 4.2.2.1. 接口
 
 1. 
 
@@ -2191,7 +2163,7 @@ parentPort.onmessage = function(e) {
 }
 ```
 
-##### 4.2.2.2.属性
+##### 4.2.2.2. 属性
 
 1. 
 
@@ -2263,16 +2235,20 @@ parentPort.onmessageerror = function(e) {
 }
 ```
 
-### 4.3涉及仓
+### 4.3. 涉及仓
 
 - ace_ace_engine(foundation/arkui/ace_engine-readme_zh.md)
 - ace_napi(foundation/arkui/napi-readme_zh.md)
 
 
-### 相关仓
+# 相关仓
 
 [ets_utils子系统](commonlibrary/ets_utils/README.md)
 
-### 许可证
+# 许可证
 
-Util在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，说明文档详见[说明文档](https://gitee.com/openharmony/js_util_module/blob/master/mozilla_docs.txt)。有关完整的许可证文本，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony-sig/commonlibrary_ets_utils/blob/master/LICENSE)
+js_api_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_api_module/mozilla_docs.txt)。
+
+js_util_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_util_module/mozilla_docs.txt)。
+
+js_worker_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_worker_module/mozilla_docs.txt)。
