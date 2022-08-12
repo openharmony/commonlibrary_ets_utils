@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef BLOB_JS_BLOB_H_
-#define BLOB_JS_BLOB_H_
+#ifndef BLOB_JS_BLOB_H
+#define BLOB_JS_BLOB_H
 
 #include <numeric>
 #include <string>
@@ -42,4 +42,4 @@ private:
     unsigned int length_ = 0;
 };
 } // namespace OHOS::buffer
-#endif // BLOB_JS_BLOB_H_
+#endif // BLOB_JS_BLOB_H
