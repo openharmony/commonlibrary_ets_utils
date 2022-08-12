@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef BUFFER_JS_BUFFER_H_
-#define BUFFER_JS_BUFFER_H_
+#ifndef BUFFER_JS_BUFFER_H
+#define BUFFER_JS_BUFFER_H
 
 #include <numeric>
 #include <string>
@@ -86,7 +86,7 @@ public:
 
 private:
     uint8_t *GetRaw();
-    bool WriteBytes(uint8_t *src, int size, uint8_t *dest);
+    bool WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest);
     int GoodSuffix(int patIndex, uint8_t *pat, int tarlen);
     int BadChar(int patIndex, char temp, uint8_t *str, int tarlen);
     void WriteBE(int32_t value, uint32_t bytes);
@@ -101,4 +101,4 @@ private:
     bool needRelease_ = true;
 };
 } // namespace OHOS::Buffer
-#endif // BUFFER_JS_BUFFER_H_
+#endif // BUFFER_JS_BUFFER_H

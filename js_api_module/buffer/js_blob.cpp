@@ -56,22 +56,23 @@ void Blob::Init(Blob *blob, int start, int end)
     if ((start > 0 && end < 0) || (start < 0 && end > 0)) {
         return;
     }
-    unsigned int length = end - start;
+    if (blob == nullptr) {
+        return;
+    }
+    unsigned int length = static_cast<unsigned int>(end - start);
     length = blob->length_ > length ? length : blob->length_;
-    if (blob != nullptr) {
-        this->raw_ = reinterpret_cast<uint8_t *>(malloc(length));
-        if (raw_ == nullptr) {
-            HILOG_FATAL("Blob constructor malloc failed");
-            } else {
-                this->length_ = length;
-            if (start >= 0) {
-                if (memcpy_s(this->raw_, length, blob->raw_ + start, length) != EOK) {
-                    HILOG_FATAL("Blob constructor(start >= 0, end) memcpy_s failed");
-                }
-            } else {
-                if (memcpy_s(raw_, length, blob->raw_ + blob->length_ + start, length) != EOK) {
-                    HILOG_FATAL("Blob constructor(start, end) memcpy_s failed");
-                }
+    this->raw_ = reinterpret_cast<uint8_t *>(malloc(length));
+    if (raw_ == nullptr) {
+        HILOG_FATAL("Blob constructor malloc failed");
+    } else {
+        this->length_ = length;
+        if (start >= 0) {
+            if (memcpy_s(this->raw_, length, blob->raw_ + start, length) != EOK) {
+                HILOG_FATAL("Blob constructor(start >= 0, end) memcpy_s failed");
+            }
+        } else {
+            if (memcpy_s(raw_, length, blob->raw_ + blob->length_ + start, length) != EOK) {
+                HILOG_FATAL("Blob constructor(start, end) memcpy_s failed");
             }
         }
     }

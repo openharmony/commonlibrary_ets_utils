@@ -109,8 +109,10 @@ u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
                 uint8_t c3 = data[++i]; // The third byte
                 uint8_t c4 = data[++i]; // The forth byte
                 // Calculate the UNICODE code point value (3 bits lower for the first byte, 6 bits for the other)
-                uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS)) // 3 : shift left 3 times of UTF8_VALID_BITS
-                                     | ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS)) // 2 : shift left 2 times of UTF8_VALID_BITS
+                // 3 : shift left 3 times of UTF8_VALID_BITS
+                uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS))
+                                     // 2 : shift left 2 times of UTF8_VALID_BITS
+                                     | ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS))
                                      | ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS)
                                      | (c4 & LOWER_6_BITS_MASK);
 
@@ -132,7 +134,8 @@ u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
                 uint8_t c3 = data[++i]; // The third byte
                 // Calculates the UNICODE code point value
                 // (4 bits lower for the first byte, 6 bits lower for the other)
-                uint32_t codePoint = ((c1 & LOWER_4_BITS_MASK) << (2 * UTF8_VALID_BITS)) // 2 : shift left 2 times of UTF8_VALID_BITS
+                // 2 : shift left 2 times of UTF8_VALID_BITS
+                uint32_t codePoint = ((c1 & LOWER_4_BITS_MASK) << (2 * UTF8_VALID_BITS))
                                     | ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS)
                                     | (c3 & LOWER_6_BITS_MASK);
                 u16Str.push_back(static_cast<char16_t>(codePoint));
@@ -143,7 +146,8 @@ u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
                 uint8_t c2 = data[++i]; // The second byte
                 // Calculates the UNICODE code point value
                 // (5 bits lower for the first byte, 6 bits lower for the other)
-                uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << (2 * UTF8_VALID_BITS)) // 2 : shift left 2 times of UTF8_VALID_BITS
+                // 2 : shift left 2 times of UTF8_VALID_BITS
+                uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << (2 * UTF8_VALID_BITS))
                                     | ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS);
                 u16Str.push_back(static_cast<char16_t>(codePoint));
                 break;
@@ -168,7 +172,7 @@ u16string ASCIIToUtf16LE(const string &asciiStr)
     // 2 : the length of utf16le str is half of ascii str
     for (string::size_type i = 0; i < len / 2; ++i) {
         // Combine two ascii characters into a UNICODE code point
-        uint16_t codePoint = (asciiStr[i * 2] & LOWER_8_BITS_MASK) | asciiStr[i * 2 + 1] << 8;
+        uint16_t codePoint = (asciiStr[i * 2] & LOWER_8_BITS_MASK) | (asciiStr[i * 2 + 1] << 8);
         u16Str.push_back(static_cast<char16_t>(codePoint));
     }
     return u16Str;
@@ -193,7 +197,7 @@ string Utf8ToUtf16leToANSI(const string &str)
     return ret;
 }
 
-bool isBase64Char(unsigned char c)
+bool IsBase64Char(unsigned char c)
 {
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
@@ -241,7 +245,7 @@ string Base64Encode(const unsigned char *src, size_t len)
     }
 
     // process the last set of less than 3 bytes of data
-    if (pEnd - pStart) {
+    if (pEnd - pStart > 0) {
         // 2 : add two zeros in front of the first set of 6 bits to become a new 8 binary bits
         *pos = base64Table[pStart[0] >> 2];
         if (pEnd - pStart == 1) { // one byte remaining
@@ -265,13 +269,13 @@ string Base64Encode(const unsigned char *src, size_t len)
 string Base64Decode(string const& encodedStr)
 {
     size_t len = encodedStr.size();
-    int index = 0;
-    int cursor = 0;
+    unsigned int index = 0;
+    unsigned int cursor = 0;
     unsigned char charArray4[4] = {0}; // an array to stage a group of indexes for encoded string
     unsigned char charArray3[3] = {0}; // an array to stage a set of original string
     string ret = "";
 
-    while ((encodedStr[cursor] != '=') && isBase64Char(encodedStr[cursor])) {
+    while ((encodedStr[cursor] != '=') && IsBase64Char(encodedStr[cursor])) {
         // stage a 4-byte string to charArray4
         charArray4[index] = encodedStr[cursor];
         index++;
@@ -287,8 +291,9 @@ string Base64Decode(string const& encodedStr)
             // get the last four bits of the second byte of charArray4 and the first valid
             // 4 : 2 : four bits(except two higer bits) of the third byte, combine them to a new byte
             charArray3[1] = ((charArray4[1] & LOWER_4_BITS_MASK) << 4) + ((charArray4[2] & MIDDLE_4_BITS_MASK) >> 2);
-            // 2 : 3 : 6 : get the last two bits of the third byte of charArray4 and the forth byte, combine them to a new byte
-            charArray3[2] = ((charArray4[2] & LOWER_2_BITS_MASK) << 6) +   charArray4[3];
+            // get the last two bits of the third byte of charArray4 and the forth byte,
+            // 2 : 3 : 6 : combine them to a new byte
+            charArray3[2] = ((charArray4[2] & LOWER_2_BITS_MASK) << 6) + charArray4[3];
             // 3 : assigns the decoded string to the return value
             for (index = 0; index < 3; index++) {
                 ret += charArray3[index];
@@ -320,10 +325,10 @@ string Base64Decode(string const& encodedStr)
     return ret;
 }
 
-bool isValidHex(const string hex)
+bool IsValidHex(const string hex)
 {
     bool isValid = false;
-    for (int i = 0; i < hex.size(); i++) {
+    for (unsigned int i = 0; i < hex.size(); i++) {
         char c = hex.at(i);
         // 0 ~ 9, A ~ F, a ~ f
         if ((c <= '9' && c >= '0') || (c <= 'F' && c >= 'A') || (c <= 'f' && c >= 'a')) {
@@ -340,17 +345,17 @@ string HexDecode(const string hexStr)
 {
     auto arr = hexStr.c_str();
     string nums = "";
-    int arrSize = hexStr.size();
+    unsigned int arrSize = hexStr.size();
 
     // 2 : means a half length of hex str's size
-    for (int i = 0; i < arrSize / 2; i++) {
+    for (unsigned int i = 0; i < arrSize / 2; i++) {
         string hexStr = "";
         int num = 0;
         // 2 : offset is i * 2
         hexStr.push_back(arr[i * 2]);
         // 2 : offset is i * 2 + 1
         hexStr.push_back(arr[i * 2 + 1]);
-        if (!isValidHex(hexStr)) {
+        if (!IsValidHex(hexStr)) {
             break;
         }
         // 16 : the base is 16

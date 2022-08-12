@@ -148,28 +148,33 @@ int Buffer::Compare(Buffer *tBuf, uint32_t targetStart, uint32_t sourceStart, ui
 
 void Buffer::WriteBE(int32_t value, uint32_t bytes)
 {
-    for (int i = bytes; i > 0; i--) {
-        uint8_t va = static_cast<uint8_t>(value & 0x000000FF);
+    uint32_t uValue = static_cast<uint32_t>(value);
+    for (uint32_t i = bytes; i > 0; i--) {
+        uint8_t va = static_cast<uint8_t>(uValue & 0x000000FF);
         data_[i - 1] = va;
         // 8 : shift right 8 bits(i.e 1 byte)
-        value = value >> 8;
+        uValue = uValue >> 8;
     }
 }
 
 void Buffer::WriteLE(int32_t value, uint32_t bytes)
 {
-    for (int i = 0, len = bytes - 1; i <= len; i++) {
-        uint8_t va = static_cast<uint8_t>(value & 0x000000FF);
+    if (bytes == 0) {
+        return;
+    }
+    uint32_t uValue = static_cast<uint32_t>(value);
+    for (uint32_t i = 0, len = bytes - 1; i <= len; i++) {
+        uint8_t va = static_cast<uint8_t>(uValue & 0x000000FF);
         data_[i] = va;
         // 8 : shift right 8 bits(i.e 1 byte)
-        value = value >> 8;
+        uValue = uValue >> 8;
     }
 }
 
 uint32_t Buffer::ReadBE(int offset, uint32_t bytes)
 {
     uint32_t result = 0x0000;
-    for (int i = 0; i < bytes; i++) {
+    for (uint32_t i = 0; i < bytes; i++) {
         // 8 : shift left 8 bits(i.e 1 byte)
         result = result << 8;
         result |= data_[offset + i];
@@ -180,10 +185,13 @@ uint32_t Buffer::ReadBE(int offset, uint32_t bytes)
 uint32_t Buffer::ReadLE(int offset, uint32_t bytes)
 {
     uint32_t result = 0x0000;
-    for (int i = bytes - 1; i >= 0; i--) {
+    if (bytes == 0) {
+        return result;
+    }
+    for (uint32_t i = bytes; i > 0; i--) {
         // 8 : shift left 8 bits(i.e 1 byte)
         result = result << 8;
-        result |= data_[offset + i];
+        result |= data_[offset + i - 1];
     }
     return result;
 }
@@ -255,7 +263,8 @@ uint32_t Buffer::ReadUInt32LE(int offset)
 int32_t Buffer::Get(int index)
 {
     uint8_t value;
-    if (memcpy_s(&value, 1, raw_ + byteOffset_ + index, 1) != EOK) {
+    uint32_t count = 1;
+    if (memcpy_s(&value, count, raw_ + byteOffset_ + index, count) != EOK) {
         HILOG_FATAL("Buffer get memcpy_s failed");
     }
     return value;
@@ -295,11 +304,12 @@ unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int
 
 void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end, unsigned int length)
 {
-    const char *data = value.c_str();
-    int loop = length > end - offset ? end - offset : length;
-    if (loop <= 0) {
+    if (end - offset <= 0) {
         return;
     }
+    const char *data = value.c_str();
+    unsigned int loop = length > end - offset ? end - offset : length;
+
     uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     while (offset < end) {
         WriteBytes(str, loop, raw_ + byteOffset_ + offset);
@@ -311,7 +321,7 @@ std::string Buffer::Utf16StrToStr(std::u16string value)
 {
     string str = "";
     char16_t *data = value.data();
-    for (int i = 0; i < value.length(); i++) {
+    for (unsigned int i = 0; i < value.length(); i++) {
         char16_t c = data[i];
         char high = (char)((c >> 8) & 0x00FF);
         char low = (char)(c & 0x00FF);
@@ -334,7 +344,7 @@ void Buffer::WriteStringLoop(std::u16string value, unsigned int offset, unsigned
     this->WriteStringLoop(str, offset, end, value.length() * 2);
 }
 
-bool Buffer::WriteBytes(uint8_t *src, int size, uint8_t *dest)
+bool Buffer::WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest)
 {
     if (memcpy_s(dest, size, src, size) != EOK) {
         HILOG_FATAL("Buffer WriteBytes memcpy_s failed");
@@ -345,17 +355,17 @@ bool Buffer::WriteBytes(uint8_t *src, int size, uint8_t *dest)
 
 void Buffer::SetArray(vector<uint8_t> array, unsigned int offset)
 {
-    int arrLen = array.size();
-    int size = arrLen <= length_ ? arrLen : length_;
+    unsigned int arrLen = array.size();
+    unsigned int size = arrLen <= length_ ? arrLen : length_;
     WriteBytes(array.data(), size, raw_ + byteOffset_ + offset);
 }
 
 void Buffer::FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end)
 {
-    int loop = buffer->GetLength() > end - offset ? end - offset : buffer->GetLength();
-    if (loop <= 0) {
+    if (end - offset <= 0) {
         return;
     }
+    unsigned int loop = buffer->GetLength() > end - offset ? end - offset : buffer->GetLength();
 
     while (offset < end) {
         WriteBytes(buffer->GetRaw() + buffer->byteOffset_, loop, raw_ + byteOffset_ + offset);
@@ -365,10 +375,10 @@ void Buffer::FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end)
 
 void Buffer::FillNumber(vector<uint8_t> numbers, unsigned int offset, unsigned int end)
 {
-    int loop = numbers.size() > end - offset ? end - offset : numbers.size();
-    if (loop <= 0) {
+    if (end - offset <= 0) {
         return;
     }
+    unsigned int loop = numbers.size() > end - offset ? end - offset : numbers.size();
 
     while (offset < end) {
         WriteBytes(numbers.data(), loop, raw_ + byteOffset_ + offset);

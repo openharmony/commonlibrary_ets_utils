@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef BUFFER_CONVERTER_H_
-#define BUFFER_CONVERTER_H_
+#ifndef BUFFER_CONVERTER_H
+#define BUFFER_CONVERTER_H
 
 #include <string>
 
@@ -70,9 +70,9 @@ std::u16string Utf8ToUtf16LE(const std::string &u8Str, bool *ok = NULL);
 std::u16string ASCIIToUtf16LE(const std::string &asciiStr);
 std::string Utf16LEToANSI(const std::wstring &wstr);
 std::string Utf8ToUtf16leToANSI(const std::string &str);
-static inline bool isBase64Char(unsigned char c);
+static inline bool IsBase64Char(unsigned char c);
 std::string Base64Encode(const unsigned char *src, size_t len);
 std::string Base64Decode(std::string const& encodedStr);
 std::string HexDecode(const std::string hexStr);
 } // namespace OHOS::Buffer
-#endif // BUFFER_CONVERTER_H_
+#endif // BUFFER_CONVERTER_H
