@@ -28,14 +28,14 @@ namespace CompilerRuntime::WorkerModule::Plugin {
 struct TimerCallbackInfo {
     napi_env env_;
     uint32_t tId_;
-    uint32_t timeout_;
+    int32_t timeout_;
     napi_ref callback_;
     bool repeat_;
     uv_timer_t timeReq_;
     size_t argc_;
     napi_ref* argv_;
 
-    TimerCallbackInfo(napi_env env, uint32_t tId, uint32_t timeout, napi_ref callback,
+    TimerCallbackInfo(napi_env env, uint32_t tId, int32_t timeout, napi_ref callback,
                      bool repeat, size_t argc, napi_ref* argv)
         : env_(env), tId_(tId), timeout_(timeout), callback_(callback),
           repeat_(repeat), argc_(argc), argv_(argv)

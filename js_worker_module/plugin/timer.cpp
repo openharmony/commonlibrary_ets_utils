@@ -148,13 +148,16 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
         napi_throw_error(env, nullptr, "callback must be a function.");
         return nullptr;
     }
-    uint32_t timeout = 0;
+    int32_t timeout = 0;
     if (argc > 1) {
-        napi_status status = napi_get_value_uint32(env, argv[1], &timeout);
+        napi_status status = napi_get_value_int32(env, argv[1], &timeout);
         if (status != napi_ok) {
             HILOG_WARN("timeout should be number");
             timeout = 0;
         }
+    }
+    if (timeout < 0) {
+        HILOG_WARN("worker:: timeout < 0 is unreasonable");
     }
     // 2. get callback args
     size_t callbackArgc = argc >= 2 ? argc - 2 : 0; // 2 include callback and timeout
@@ -181,7 +184,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     timerTable[tId] = callbackInfo;
 
     // 6. start timer
-    uv_timer_start(&callbackInfo->timeReq_, TimerCallback, timeout, timeout > 0 ? timeout : 1);
+    uv_timer_start(&callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
     return Helper::NapiHelper::CreateUint32(env, tId);
 }
 
