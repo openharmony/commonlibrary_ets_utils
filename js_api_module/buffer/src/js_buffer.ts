@@ -64,7 +64,7 @@ declare function requireInternal(s: string): IBuffer;
 const InternalBuffer = requireInternal('buffer');
 const bufferSymbol = Symbol('bufferClass');
 const lengthSymbol = Symbol('bufferLength');
-const bufferEncoding = ['ascii', 'utf8', 'utf-8', 'utf16le', 'ucs2', 'ucs-2',
+const bufferEncoding = ['ascii', 'utf8', 'utf-8', 'utf16le', 'utf-16le', 'ucs2', 'ucs-2',
                         'base64', 'base64url', 'latin1', 'binary', 'hex'];
 
 enum ParaType {
@@ -349,28 +349,44 @@ class Buffer {
    * @param [encoding='utf8'] The encoding for value if value is a string
    * @return A reference to buf
    */
-  fill(value: string | Buffer | Uint8Array | number, offset: number = 0, end?: number,
+  fill(value: string | Buffer | Uint8Array | number, offset: number = 0, end: number = this.length,
        encoding: string = 'utf8'): Buffer {
-    if (typeof offset !== 'number') {
-      throw new Error(`The "offset" argument must be of type number`);
+    if (this.length == 0) {
+      return this;
     }
-    if (typeof end === 'undefined') {
-      end = this.length;
-    } else if (typeof end !== 'number') {
-        throw new Error(`The "end" argument must be of type number`);
+    if (arguments.length === 2) {
+      if (typeof offset === 'string') {
+        encoding = offset;
+        offset = 0;
+      } 
+    } else if (arguments.length === 3) {
+      if (typeof end === 'string') {
+        encoding = end;
+        end = this.length;
+      }
+    }
+    if (typeof offset !== 'number') {
+      throwError(offset, 'number', 'offset');
+    }
+    if (typeof end === 'number') {
+      throwError(end, 'number', 'end');
     }
     if (typeof encoding !== 'string') {
-      throw new Error(`The "encoding" argument must be of type string`);
+      throwError(encoding, 'string', 'encoding');
     }
-    
     const normalizedEncoding = normalizeEncoding(encoding);
     if (normalizedEncoding === undefined) {
-      throw new Error('Unknown encoding: ' + encoding);
+      throw new TypeError('Unknown encoding: ' + encoding);
     }
-    if (offset <  0 || offset > this.length - 1) {
-      throw new Error('offset must be in range of [0,buf.length - 1]');
+    if (offset <  0) {
+      throw new RangeError(`The value of "offset" is out of range`);
     }
-
+    if (end < 0) {
+      throw new RangeError(`The value of "end" is out of range`);
+    }
+    if (offset > end - 1) {
+      return this;
+    }
     if (typeof value === 'string') {
       if (normalizedEncoding === 'hex') {
         let numbers = hexStrtoNumbers(value);
@@ -1344,10 +1360,10 @@ class Buffer {
     let newBuf = Object.create(this);
     start = isNaN(start) ? 0 : Number(start);
     end = isNaN(end) ? 0 : Number(end);
+    end = (end > this.length) ? this.length : end;
     if (start < 0 || end < 0 || end <= start) {
       return new Buffer(0);
     }
-    end = (end > this.length) ? this.length : end;
     newBuf[bufferSymbol] = this[bufferSymbol].subBuffer(start, end);
     newBuf[lengthSymbol] = (end - start);
     return newBuf;
@@ -1528,7 +1544,7 @@ class Buffer {
 
 function throwError(param: unknown, type: string, msg: string) {
   if (typeof param !== type) {
-    throw new Error(`"${msg}" argument must be of type number`)
+    throw new Error(`"${msg}" argument must be of type ${type}`)
   }
 }
 
@@ -1618,7 +1634,7 @@ function allocUninitialized(size: number): Buffer
 function normalizeEncoding(enc: string) {
   enc = enc.toLowerCase();
   if (bufferEncoding.includes(enc)) {
-    if (enc === 'ucs2' || enc === 'ucs-2') {
+    if (enc === 'ucs2' || enc === 'ucs-2' || enc === 'utf-16le') {
       enc = 'utf16le';
     }
     if (enc === 'utf-8') {
