@@ -445,14 +445,15 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
 
 int Buffer::IndexOf(const char *data, uint32_t offset)
 {
-    uint8_t sData[length_ - offset];
+    uint8_t sData[length_ - offset + 1];
     ReadBytes(sData, offset, length_ - offset);
+    sData[length_ - offset] = 0;
     char *cData = reinterpret_cast<char *>(sData);
     char *p3 = strstr(cData, data);
     if (p3 == NULL) {
         return -1;
     }
-    return p3 - cData;
+    return p3 - cData + offset;
 }
 
 int Buffer::GoodSuffix(int patIndex, uint8_t *pat, int tarlen)
@@ -522,7 +523,7 @@ int Buffer::FindIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
     return -1;
 }
 
-int Buffer::LastIndexOf(const char* data, uint32_t offset, int len)
+int Buffer::LastIndexOf(const char *data, uint32_t offset, int len)
 {
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
