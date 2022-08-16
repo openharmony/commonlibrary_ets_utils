@@ -526,6 +526,7 @@ namespace OHOS::Util {
         napi_value textDecoderClass = nullptr;
         napi_property_descriptor textdecoderDesc[] = {
             DECLARE_NAPI_FUNCTION("decode", TextdecoderDecode),
+            DECLARE_NAPI_FUNCTION("decodeWithStream", TextdecoderDecode),
             DECLARE_NAPI_GETTER("encoding", TextdecoderGetEncoding),
             DECLARE_NAPI_GETTER("fatal", TextdecoderGetFatal),
             DECLARE_NAPI_GETTER("ignoreBOM", TextdecoderGetIgnoreBOM),
