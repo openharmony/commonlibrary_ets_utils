@@ -37,7 +37,9 @@
     "component": {
         "name": "ets_utils",
         "subsystem": "commonlibrary",
-        "syscap": [],
+        "syscap": [
+            "SystemCapability.Utils.Lang"
+        ],
         "features": [],
         "adapted_system_type": [],
         "rom": "",
