@@ -23,6 +23,9 @@ interface HelpUtil{
            ...valueString : Array<Object>) : string;
     geterrorstring(errnum : number) : string;
     createExternalType() : Object;
+    randomUUID(entropyCache?: boolean): string;
+    randomBinaryUUID(entropyCache?: boolean): Uint8Array;
+    parseUUID(uuid: string): Uint8Array;
 }
 
 interface Fn{
@@ -391,6 +394,28 @@ function getErrorString(errnum : number) : string
 {
     let errorString : string = helpUtil.geterrorstring(errnum);
     return errorString;
+}
+
+function randomUUID(entropyCache? : boolean): string
+{
+    let uuidString : string = helpUtil.randomUUID(entropyCache);
+    return uuidString;
+}
+
+function randomBinaryUUID(entropyCache?: boolean): Uint8Array
+{
+    let uuidArray : Uint8Array = helpUtil.randomBinaryUUID(entropyCache);
+    return uuidArray;
+}
+
+function parseUUID(uuid: string): Uint8Array
+{
+    let format = /[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}/;
+    if (!format.test(uuid)) {
+        throw new SyntaxError('this uuid parsing failed');
+    }
+    let uuidArray : Uint8Array = helpUtil.parseUUID(uuid);
+    return uuidArray;
 }
 
 function createExternalType() : Object
@@ -1030,6 +1055,9 @@ export default {
     promiseWrapper: promiseWrapper,
     promisify: promisify,
     createExternalType: createExternalType,
+    randomUUID: randomUUID,
+    randomBinaryUUID: randomBinaryUUID,
+    parseUUID: parseUUID,
     TextEncoder: TextEncoder,
     TextDecoder: TextDecoder,
     Base64: Base64,

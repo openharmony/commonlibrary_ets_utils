@@ -81,6 +81,8 @@ ohos_shared_library("util") {
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source",
     "//third_party/node/src",
+    "//third_party/openssl",
+    "//third_party/openssl/include",
     "//foundation/arkui/napi/interfaces/kits",
     "//commonlibrary/ets_utils/js_util_module/util",
   ]
@@ -90,6 +92,7 @@ ohos_shared_library("util") {
     "js_textdecoder.cpp",
     "js_textencoder.cpp",
     "js_types.cpp",
+    "js_uuid.cpp",
     "native_module_util.cpp",
   ]
 
@@ -100,6 +103,7 @@ ohos_shared_library("util") {
     "//foundation/arkui/napi/:ace_napi",
     "//foundation/arkui/napi/:ace_napi_quickjs",
     "//third_party/icu/icu4c:static_icuuc",
+    "//third_party/openssl:libcrypto_static",
   ]
 
   if (is_standard_system) {
