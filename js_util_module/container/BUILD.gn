@@ -43,7 +43,6 @@ action("build_js_ts") {
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
-  depfile = "$target_gen_dir/$target_name.d"
   outputs = []
   foreach(item, container_names) {
     dep = target_out_dir + "/js_" + item + ".js"
