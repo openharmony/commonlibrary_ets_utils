@@ -1819,7 +1819,7 @@ getSystemConfig(){
 worker能够让js拥有多线程的能力，通过postMessage完成worker线程与宿主线程通信。
 
 ### 4.2. 接口说明
-接口实现详见：js_worker_module/jsapi/worker
+接口实现详见：js_worker_module/worker
 
 #### 4.2.1. Worker对象描述
 
@@ -1831,30 +1831,31 @@ worker能够让js拥有多线程的能力，通过postMessage完成worker线程�
 
 - 接口名
 
-|constructor(scriptURL:string, options? WorkerOptions) | 构造函数 |
+|constructor(scriptURL:string, options?:WorkerOptions) | 构造函数 |
 |---|---|
 
 - 使用示例
 
-```
-import worker from "@ohos.worker"
-```
-通过判断是否与pages目录同级和创建项目的模型类别，共有以下四种新建Worker的方式：
+通过判断存放worker.ts的workers目录是否与pages目录同级（以下简称目录同级）和创建项目的模型类别，共有以下四种新建Worker的方式：
 
 (1) FA模型: 目录同级
 ```
+import worker from "@ohos.worker";
 const workerInstance = new worker.Worker("workers/worker.js", {name:"first worker"});
 ```
 (2) FA模型: 目录不同级（以workers目录放置pages目录前一级为例）
 ```
+import worker from "@ohos.worker";
 const workerInstance = new worker.Worker("../workers/worker.js", {name:"first worker"});
 ```
 (3)  Stage模型: 目录同级
 ```
+import worker from "@ohos.worker";
 const workerInstance = new worker.Worker('entry/ets/workers/worker.ts');
 ```
 (4) Stage模型: 目录不同级（以workers目录放置pages目录后一级为例）
 ```
+import worker from "@ohos.worker";
 const workerInstance = new worker.Worker('entry/ets/pages/workers/worker.ts');
 ```
 对于Stage模型中scriptURL——"entry/ets/workers/worker.ts"的解释：
@@ -1862,9 +1863,9 @@ const workerInstance = new worker.Worker('entry/ets/pages/workers/worker.ts');
 - ets: 表明当前工程使用的语言；
 - worker.ts: 创建worker.ts文件或者worker.js文件都可以。
 
-另外，需在工程目录下build-profile.json5文件的buildOption属性中添加配置信息，主要分为下面两种情况：
+另外，需在工程的模块级build-profile.json5文件的buildOption属性中添加配置信息，主要分为下面两种情况：
 
-(1) 目录同级(**不添加也可以**)
+(1) 目录同级(**此情况不添加亦可**)
 
 FA模型:
 ```
@@ -1886,7 +1887,7 @@ Stage模型:
     }
   }
 ```
-(2) 目录不同级(**必须添加**)
+(2) 目录不同级(**此情况必须添加**)
 
 FA模型:
 ```
@@ -1898,7 +1899,7 @@ FA模型:
     }
   }
 ```
-Stage模型:
+Stage模型(workers目录放在pages目录里为例):
 ```
   "buildOption": {
     "sourceOption": {
@@ -1945,7 +1946,7 @@ import worker from "@ohos.worker"
 const worker = new worker.Worker("workers/worker.js");
 worker.on("alert", (e)=>{
      console.log("worker on...");
-})
+});
 ```
 
 4. 
@@ -1961,8 +1962,8 @@ worker.on("alert", (e)=>{
 import worker from "@ohos.worker"
 const worker = new worker.Worker("workers/worker.js");
 worker.once("alert", (e)=>{
-    console.log("worker on...");
-})
+    console.log("worker once...");
+});
 ```
 
 5. 
@@ -2007,7 +2008,9 @@ worker.terminate();
 ```
 import worker from "@ohos.worker"
 const worker = new worker.Worker("workers/worker.js");
-worker.removeEventListener("alert");
+worker.removeEventListener("alert", (e)=>{
+    console.log("worker removeEventListener...");
+});
 ```
 
 8. 
@@ -2237,13 +2240,14 @@ parentPort.onmessageerror = function(e) {
 
 ### 4.3. 涉及仓
 
-- ace_ace_engine(foundation/arkui/ace_engine-readme_zh.md)
-- ace_napi(foundation/arkui/napi-readme_zh.md)
+[arkcompiler_ets_runtime](https://gitee.com/openharmony/arkcompiler_ets_runtime/blob/master/README_zh.md)
+[arkui_ace_engine](https://gitee.com/openharmony/arkui_ace_engine/blob/master/README_zh.md)
+[arkui_napi](https://gitee.com/openharmony/arkui_napi/blob/master/README_zh.md)
 
 
 # 相关仓
 
-[ets_utils子系统](commonlibrary/ets_utils/README.md)
+[ets_utils子系统](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/README.md)
 
 # 许可证
 
