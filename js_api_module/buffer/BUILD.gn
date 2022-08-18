@@ -30,7 +30,6 @@ action("build_ts_js") {
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
-  depfile = "$target_gen_dir/$target_name.d"
   outputs = [ target_out_dir + "/js_buffer.js" ]
 }
 
