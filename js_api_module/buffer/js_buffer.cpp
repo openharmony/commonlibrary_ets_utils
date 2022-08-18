@@ -171,7 +171,7 @@ void Buffer::WriteLE(int32_t value, uint32_t bytes)
     }
 }
 
-uint32_t Buffer::ReadBE(int offset, uint32_t bytes)
+uint32_t Buffer::ReadBE(uint32_t offset, uint32_t bytes)
 {
     uint32_t result = 0x0000;
     for (uint32_t i = 0; i < bytes; i++) {
@@ -182,7 +182,7 @@ uint32_t Buffer::ReadBE(int offset, uint32_t bytes)
     return result;
 }
 
-uint32_t Buffer::ReadLE(int offset, uint32_t bytes)
+uint32_t Buffer::ReadLE(uint32_t offset, uint32_t bytes)
 {
     uint32_t result = 0x0000;
     if (bytes == 0) {
@@ -196,7 +196,7 @@ uint32_t Buffer::ReadLE(int offset, uint32_t bytes)
     return result;
 }
 
-void Buffer::WriteInt32BE(int32_t value, int32_t offset)
+void Buffer::WriteInt32BE(int32_t value, uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteBE(value, 4);
@@ -204,7 +204,7 @@ void Buffer::WriteInt32BE(int32_t value, int32_t offset)
     WriteBytes(data_, 4, raw_ + byteOffset_ + offset);
 }
 
-int32_t Buffer::ReadInt32BE(int offset)
+int32_t Buffer::ReadInt32BE(uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
@@ -212,7 +212,7 @@ int32_t Buffer::ReadInt32BE(int offset)
     return static_cast<int32_t>(ReadBE(offset, 4));
 }
 
-void Buffer::WriteInt32LE(int32_t value, int32_t offset)
+void Buffer::WriteInt32LE(int32_t value, uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteLE(value, 4);
@@ -220,7 +220,7 @@ void Buffer::WriteInt32LE(int32_t value, int32_t offset)
     WriteBytes(data_, 4, raw_ + byteOffset_ + offset);
 }
 
-int32_t Buffer::ReadInt32LE(int offset)
+int32_t Buffer::ReadInt32LE(uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
@@ -228,7 +228,7 @@ int32_t Buffer::ReadInt32LE(int offset)
     return static_cast<int32_t>(ReadLE(offset, 4));
 }
 
-void Buffer::WriteUInt32BE(int32_t value, int32_t offset)
+void Buffer::WriteUInt32BE(int32_t value, uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteBE(value, 4);
@@ -236,7 +236,7 @@ void Buffer::WriteUInt32BE(int32_t value, int32_t offset)
     WriteBytes(data_, 4, raw_ + byteOffset_ + offset);
 }
 
-uint32_t Buffer::ReadUInt32BE(int offset)
+uint32_t Buffer::ReadUInt32BE(uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
@@ -244,7 +244,7 @@ uint32_t Buffer::ReadUInt32BE(int offset)
     return ReadBE(offset, 4);
 }
 
-void Buffer::WriteUInt32LE(int32_t value, int32_t offset)
+void Buffer::WriteUInt32LE(int32_t value, uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteLE(value, 4);
@@ -252,7 +252,7 @@ void Buffer::WriteUInt32LE(int32_t value, int32_t offset)
     WriteBytes(data_, 4, raw_ + byteOffset_ + offset);
 }
 
-uint32_t Buffer::ReadUInt32LE(int offset)
+uint32_t Buffer::ReadUInt32LE(uint32_t offset)
 {
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
@@ -260,7 +260,7 @@ uint32_t Buffer::ReadUInt32LE(int offset)
     return ReadLE(offset, 4);
 }
 
-int32_t Buffer::Get(int index)
+int32_t Buffer::Get(uint32_t index)
 {
     uint8_t value;
     uint32_t count = 1;
@@ -270,19 +270,19 @@ int32_t Buffer::Get(int index)
     return value;
 }
 
-void Buffer::Set(int index, uint8_t value)
+void Buffer::Set(uint32_t index, uint8_t value)
 {
     WriteByte(value, index);
 }
 
-void Buffer::ReadBytes(uint8_t *data, int offset, uint32_t length)
+void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
 {
     if (memcpy_s(data, length, raw_ + byteOffset_ + offset, length) != EOK) {
         HILOG_FATAL("Buffer ReadBytes memcpy_s failed");
     }
 }
 
-void Buffer::WriteByte(uint8_t number, int offset)
+void Buffer::WriteByte(uint8_t number, uint32_t offset)
 {
     WriteBytes(&number, 1, raw_ + byteOffset_ + offset);
 }
