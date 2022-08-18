@@ -926,15 +926,6 @@ struct PromiseInfo {
     napi_value string = nullptr;
 };
 
-static void CopyBlobToString(napi_env env, void *data)
-{
-    auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
-
-    Blob *blob = promiseInfo->jsBlob;
-
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &promiseInfo->string);
-}
-
 static void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data)
 {
     auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
@@ -951,6 +942,8 @@ static void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data
 static void CopiedBlobToString(napi_env env, napi_status status, void *data)
 {
     auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
+    Blob *blob = promiseInfo->jsBlob;
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &promiseInfo->string);
     napi_resolve_deferred(env, promiseInfo->deferred, promiseInfo->string);
     napi_delete_async_work(env, promiseInfo->worker);
     delete promiseInfo;
@@ -985,7 +978,7 @@ static napi_value TextAsync(napi_env env, napi_callback_info info)
 
     napi_create_promise(env, &promiseInfo->deferred, &promiseInfo->promise);
     napi_create_string_utf8(env, "GetPromiseOfString", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_async_work(env, nullptr, resourceName, CopyBlobToString, CopiedBlobToString,
+    napi_create_async_work(env, nullptr, resourceName, nullptr, CopiedBlobToString,
                            reinterpret_cast<void *>(promiseInfo), &promiseInfo->worker);
     napi_queue_async_work(env, promiseInfo->worker);
 
