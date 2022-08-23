@@ -28,6 +28,12 @@ namespace OHOS::Util {
         napi_status napiRst = napi_is_arraybuffer(env, src, &rstFlag);
         if (napiRst == napi_ok && rstFlag) {
             flag = true;
+            napi_get_boolean(env, flag, &rst);
+            return rst;
+        }
+        napiRst = napi_is_shared_array_buffer(env, src, &rstFlag);
+        if (napiRst == napi_ok && rstFlag) {
+            flag = true;
         }
         napi_get_boolean(env, flag, &rst);
         return rst;
@@ -115,37 +121,19 @@ namespace OHOS::Util {
 
     napi_value Types::IsBigInt64Array(napi_env env, napi_value src) const
     {
-        napi_typedarray_type type = napi_int8_array;
-        size_t byteOffset = 0;
-        size_t length = 0;
-        void* resultData = nullptr;
-        napi_value resultBuffer = nullptr;
         bool flag = false;
-        napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset);
-        if (type == napi_typedarray_type::napi_bigint64_array) {
-            flag = true;
-        }
+        NAPI_CALL(env, napi_is_big_int64_array(env, src, &flag));
         napi_value rst = nullptr;
         napi_get_boolean(env, flag, &rst);
-        HILOG_INFO("The type is not supported!");
         return rst;
     }
 
     napi_value Types::IsBigUint64Array(napi_env env, napi_value src) const
     {
-        napi_typedarray_type type = napi_int8_array;
-        size_t byteOffset = 0;
-        size_t length = 0;
-        void* resultData = nullptr;
-        napi_value resultBuffer = nullptr;
         bool flag = false;
-        napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset);
-        if (type == napi_typedarray_type::napi_biguint64_array) {
-            flag = true;
-        }
+        NAPI_CALL(env, napi_is_big_uint64_array(env, src, &flag));
         napi_value rst = nullptr;
         napi_get_boolean(env, flag, &rst);
-        HILOG_INFO("The type is not supported!");
         return rst;
     }
 
@@ -368,7 +356,6 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_is_module_namespace_object(env, src, &flag));
         napi_value result = nullptr;
         napi_get_boolean(env, flag, &result);
-        HILOG_INFO("The type is not supported!");
         return result;
     }
 
@@ -442,9 +429,9 @@ namespace OHOS::Util {
     napi_value Types::IsSharedArrayBuffer(napi_env env, napi_value src) const
     {
         bool flag = false;
+        NAPI_CALL(env, napi_is_shared_array_buffer(env, src, &flag));
         napi_value result = nullptr;
         napi_get_boolean(env, flag, &result);
-        HILOG_INFO("The type is not supported!");
         return result;
     }
 

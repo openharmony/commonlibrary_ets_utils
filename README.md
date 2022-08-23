@@ -460,6 +460,7 @@ commomlibrary/ets_utils/js_util_module/
 ├── Class:TextDecoder                   # TextDecoder类
 │   ├──  new TextDecoder()              # 创建TextDecoder对象
 │   ├──  decode()                       # decode方法
+|   ├──  decodeWithStream()             # decodeWithStream方法
 │   ├──  encoding                       # encoding属性
 │   ├──  fatal                          # fatal属性
 │   └──  ignoreBOM                      # ignoreBOM属性
@@ -581,6 +582,7 @@ commomlibrary/ets_utils/js_util_module/
 | readonly fatal : boolean | 获取抛出异常的设置。 |
 | readonly ignoreBOM : boolean | 获取是否忽略bom标志的设置。 |
 | decode(input : Uint8Array, options?: { stream?: false }) : string | 输入要解码的数据，解出对应的string字符串。第一个参数input表示要解码的数据，第二个参数options表示一个bool标志，表示将跟随附加数据，默认为false。 |
+| decodeWithStream(input : Uint8Array, options?: { stream?: false }) : string | 输入要解码的数据，解出对应的string字符串。第一个参数input表示要解码的数据，第二个参数options表示一个bool标志，表示将跟随附加数据，默认为false。 |
 | encodeSync(src: Uint8Array): Uint8Array; | 使用Base64编码方案将指定u8数组中的所有字节编码到新分配的u8数组中。 |
 | encodeToStringSync(src: Uint8Array): string; | 使用Base64编码方案将指定的字节数组编码为String。 |
 | decodeSync(src: Uint8Array \| string): Uint8Array; | 使用Base64编码方案将Base64编码的字符串或输入u8数组解码为新分配的u8数组。 |
@@ -740,7 +742,13 @@ import util from '@ohos.util'
 var textDecoder = new util.textDecoder("utf-16be", {fatal : true, ignoreBOM : false});
 var result = textDecoder.decode(input, {stream : true});
 ```
-9.printf()
+9.decodeWithStream()
+```
+import util from '@ohos.util'
+var textDecoder = new util.textDecoder("utf-16be", {fatal : true, ignoreBOM : false});
+var result = textDecoder.decodeWithStream(input, {stream : true});
+```
+10.printf()
 ```
 import util from '@ohos.util'
 var format = "%%%o%%%i%s";
@@ -749,13 +757,13 @@ var value1 = 1.5;
 var value2 = "qwer";
 var result = util.printf(format,value,value1,value2);
 ```
-10.getErrorString()
+11.getErrorString()
 ```
 import util from '@ohos.util'
 var errnum = 13;
 var result = util.getErrorString(errnum);
 ```
-11.callbackWrapper()
+12.callbackWrapper()
 ```
 import util from '@ohos.util'
 async function promiseFn() {
@@ -767,7 +775,7 @@ cb((err, ret) => {
     expect(ret).strictEqual('value');
 })
 ```
-12.promiseWrapper()
+13.promiseWrapper()
 ```
 import util from '@ohos.util'
 function aysnFun(str1, str2, callback) {
@@ -782,21 +790,21 @@ newPromiseObj.then(res => {
     expect(res).strictEqual('HelloWorld');
 })
 ```
-13.encodeSync()
+14.encodeSync()
 ```
 import util from '@ohos.util'
 var that = new util.Base64();
 var array = new Uint8Array([115,49,51]);
 var result = that.encodeSync(array);
 ```
-14.encodeToStringSync()
+15.encodeToStringSync()
 ```
 import util from '@ohos.util'
 var that = new util.Base64();
 var array = new Uint8Array([115,49,51]);
 var result = that.encodeToStringSync(array);
 ```
-15.decodeSync()
+16.decodeSync()
 ```
 import util from '@ohos.util'
 var that = new util.Base64()
@@ -804,7 +812,7 @@ var buff = 'czEz';
 var result = that.decodeSync(buff);
 
 ```
-16.encode()
+17.encode()
 ```
 import util from '@ohos.util'
 var that = new util.Base64()
@@ -813,7 +821,7 @@ await that.encode(array).then(val=>{
 })
 done()
 ```
-17.encodeToString()
+18.encodeToString()
 ```
 import util from '@ohos.util'
 var that = new util.Base64()
@@ -822,7 +830,7 @@ await that.encodeToString(array).then(val=>{
 })
 done()
 ```
-18.decode()
+19.decode()
 ```
 import util from '@ohos.util'
 var that = new util.Base64()
@@ -831,82 +839,82 @@ await that.decode(buff).then(val=>{
 })
 done()
 ```
-19.createRationalFromString()
+20.createRationalFromString()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(0, 0);
 var res = pro.createRationalFromString("-1:2");
 var result1 = res.valueOf();
 ```
-20.compareTo()
+21.compareTo()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(2, 1);
 var proc = new util.RationalNumber(3, 4);
 var res = pro.compareTo(proc);
 ```
-21.equals()
+22.equals()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(2, 1);
 var proc = new util.RationalNumber(3, 4);
 var res = pro.equals(proc);
 ```
-22.valueOf()
+23.valueOf()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(2, 1);
 var res = pro.valueOf();
 ```
-23.getCommonDivisor()
+24.getCommonDivisor()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(0, 0);
 var res = pro.getCommonDivisor(4, 8);
 ```
-24.getDenominator()
+25.getDenominator()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(2, 1);
 var res = pro.getDenominator();
 ```
-25.getNumerator()
+26.getNumerator()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(-2, 1);
 var res = pro.getNumerator();
 ```
-26.isFinite()
+27.isFinite()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(-2, 1);
 var res = pro.isFinite();
 ```
-27.isNaN()
+28.isNaN()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(-2, 1);
 var res = pro.isNaN();
 ```
-28.isZero()
+29.isZero()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(-2, 1);
 var res = pro.isZero();
 ```
-29.toString()
+30.toString()
 ```
 import util from '@ohos.util'
 var pro = new util.RationalNumber(-2, 1);
 var res = pro.toString();
 ```
-30.updateCapacity()
+31.updateCapacity()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 var result = pro.updateCapacity(100);
 ```
-31.toString()
+32.toString()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
@@ -915,7 +923,7 @@ pro.get(2);
 pro.remove(20);
 var result = pro.toString();
 ```
-32.values()
+33.values()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
@@ -924,7 +932,7 @@ pro.put(2,"anhu");
 pro.put("afaf","grfb");
 var result = pro.values();
 ```
-33.length
+34.length
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
@@ -932,27 +940,27 @@ pro.put(2,10);
 pro.put(1,8);
 var result = pro.length;
 ```
-34.getCapacity()
+35.getCapacity()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 var result = pro.getCapacity();
 ```
-35.clear()
+36.clear()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(2,10);
 pro.clear();
 ```
-36.getCreateCount()
+37.getCreateCount()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(1,8);
 var result = pro.getCreateCount();
 ```
-37.getMissCount()
+38.getMissCount()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
@@ -960,7 +968,7 @@ pro.put(2,10);
 pro.get(2)
 var result = pro.getMissCount();
 ```
-38.getRemovalCount()
+39.getRemovalCount()
 ```
 
 import util from '@ohos.util'
@@ -971,7 +979,7 @@ pro.put(50,22);
 var result = pro.getRemovalCount();
 
 ```
-39.getMatchCount()
+40.getMatchCount()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
@@ -979,21 +987,21 @@ pro.put(2,10);
 pro.get(2);
 var result = pro.getMatchCount();
 ```
-40.getPutCount()
+41.getPutCount()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(2,10);
 var result = pro.getPutCount();
 ```
-41.isEmpty()
+42.isEmpty()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(2,10);
 var result = pro.isEmpty();
 ```
-42.get()
+43.get()
 
 ```
 import util from '@ohos.util'
@@ -1001,54 +1009,54 @@ var pro = new util.LruBuffer();
 pro.put(2,10);
 var result = pro.get(2);
 ```
-43.put()
+44.put()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 var result = pro.put(2,10);
 ```
-44.keys()
+45.keys()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(2,10);
 var result = pro.keys();
 ```
-45.remove()
+46.remove()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(2,10);
 var result = pro.remove(20);
 ```
-46.contains()
+47.contains()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(2,10);
 var result = pro.contains(20);
 ```
-47.createDefault()
+48.createDefault()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 var result = pro.createDefault(50);
 ```
-48.entries()
+49.entries()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro.put(2,10);
 var result = pro.entries();
 ```
-49.\[Symbol.iterator\]()
+50.\[Symbol.iterator\]()
 ```
 import util from '@ohos.util'
 var pro = new util.LruBuffer();
 pro .put(2,10);
 var result = pro[symbol.iterator]();
 ```
-50.afterRemoval()
+51.afterRemoval()
 ```
 import util from '@ohos.util'
 var arr = [ ];
@@ -1095,7 +1103,7 @@ class Temperature {
 }
 ```
 
-51.constructor()
+52.constructor()
 
 ```
 var tempLower = new Temperature(30);
@@ -1103,7 +1111,7 @@ var tempUpper = new Temperature(40);
 var range = new Scope(tempLower, tempUpper);
 ```
 
-52.toString()
+53.toString()
 
 ```
 var tempLower = new Temperature(30);
@@ -1112,7 +1120,7 @@ var range = new Scope(tempLower, tempUpper);
 var result = range.toString() // => [30,40]
 ```
 
-53.intersect()
+54.intersect()
 
 ```
 var tempLower = new Temperature(30);
@@ -1124,7 +1132,7 @@ var rangeFir = new Scope(tempMiDF, tempMidS);
 var result = range.intersect(rangeFir)  // => [35,39]
 ```
 
-54.intersect()
+55.intersect()
 
 ```
 var tempLower = new Temperature(30);
@@ -1135,7 +1143,7 @@ var range = new Scope(tempLower, tempUpper);
 var result = range.intersect(tempMiDF, tempMidS)  // => [35,39]
 ```
 
-55.getUpper()
+56.getUpper()
 
 ```
 var tempLower = new Temperature(30);
@@ -1144,7 +1152,7 @@ var range = new Scope(tempLower, tempUpper);
 var result = range.getUpper() // => 40
 ```
 
-56.getLower()
+57.getLower()
 
 ```
 var tempLower = new Temperature(30);
@@ -1153,7 +1161,7 @@ var range = new Scope(tempLower, tempUpper);
 var result = range.getLower() // => 30
 ```
 
-57.expand()
+58.expand()
 
 ```
 var tempLower = new Temperature(30);
@@ -1164,7 +1172,7 @@ var range = new Scope(tempLower, tempUpper);
 var result = range.expand(tempMiDF, tempMidS)  // => [30,40]
 ```
 
-58.expand()
+59.expand()
 
 ```
 var tempLower = new Temperature(30);
@@ -1176,7 +1184,7 @@ var rangeFir = new Scope(tempMiDF, tempMidS);
 var result = range.expand(rangeFir) // => [30,40]
 ```
 
-59.expand()
+60.expand()
 
 ```
 var tempLower = new Temperature(30);
@@ -1186,7 +1194,7 @@ var range = new Scope(tempLower, tempUpper);
 var result = range.expand(tempMiDF)  // => [30,40]
 ```
 
-60.contains()
+61.contains()
 
 ```
 var tempLower = new Temperature(30);
@@ -1196,7 +1204,7 @@ var range = new Scope(tempLower, tempUpper);
 var result = range.contains(tempMiDF) // => true
 ```
 
-61.contains()
+62.contains()
 
 ```
 var tempLower = new Temperature(30);
@@ -1208,7 +1216,7 @@ var rangeSec = new Scope(tempLess, tempMore);
 var result = range.contains(rangeSec) // => true
 ```
 
-62.clamp()
+63.clamp()
 
 ```
 var tempLower = new Temperature(30);
@@ -1217,19 +1225,19 @@ var tempMiDF = new Temperature(35);
 var range = new Scope(tempLower, tempUpper);
 var result = range.clamp(tempMiDF) // => 35
 ```
-63.isAnyArrayBuffer()
+64.isAnyArrayBuffer()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isAnyArrayBuffer(new ArrayBuffer([]))
 ```
-64.isArrayBufferView()
+65.isArrayBufferView()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isArrayBufferView(new DataView(new ArrayBuffer(16)));
 ```
-65.isArgumentsObject()
+66.isArgumentsObject()
 ```
 import util from '@ohos.util'
 function foo() {
@@ -1237,80 +1245,80 @@ function foo() {
     }
 var f = foo();
 ```
-66.isArrayBuffer()
+67.isArrayBuffer()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isArrayBuffer(new ArrayBuffer([]));
 ```
-67.isAsyncFunction()
+68.isAsyncFunction()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isAsyncFunction(async function foo() {});
 ```
-68.isBigInt64Array()
+69.isBigInt64Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isBigInt64Array(new Int16Array([]));
 ```
-69.isBigUint64Array()
+70.isBigUint64Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isBigUint64Array(new Int16Array([]));
 ```
-70.isBooleanObject()
+71.isBooleanObject()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isBooleanObject(new Boolean(false));
 ```
-71.isBoxedPrimitive()
+72.isBoxedPrimitive()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isBoxedPrimitive(new Boolean(false));
 ```
-72.isDataView()
+73.isDataView()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 const ab = new ArrayBuffer(20);
 var result = proc.isDataView(new DataView(ab));
 ```
-73.isDate()
+74.isDate()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isDate(new Date());
 ```
-74.isExternal()
+75.isExternal()
 ```
 import util from '@ohos.util'
 const data = util.createExternalType();
 var reult13 = proc.isExternal(data);
 ```
-75.isFloat32Array()
+76.isFloat32Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isFloat32Array(new Float32Array([]));
 ```
-76.isFloat64Array()
+77.isFloat64Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isFloat64Array(new Float64Array([]));
 ```
-77.isGeneratorFunction()
+78.isGeneratorFunction()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isGeneratorFunction(function* foo() {});
 ```
-78.isGeneratorObject()
+79.isGeneratorObject()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
@@ -1318,61 +1326,61 @@ function* foo() {}
 const generator = foo();
 var result = proc.isGeneratorObject(generator);
 ```
-79.isInt8Array()
+80.isInt8Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isInt8Array(new Int8Array([]));
 ```
-80.isInt16Array()
+81.isInt16Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isInt16Array(new Int16Array([]));
 ```
-81.isInt32Array()
+82.isInt32Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isInt32Array(new Int32Array([]));
 ```
-82.isMap()
+83.isMap()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isMap(new Map());
 ```
-83.isMapIterator()
+84.isMapIterator()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isMapIterator(map.keys());
 ```
-84.isModuleNamespaceObject()
+85.isModuleNamespaceObject()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isModuleNamespaceObject(util);
 ```
-85.isNativeError()
+86.isNativeError()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isNativeError(new TypeError());
 ```
-86.isNumberObject()
+87.isNumberObject()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isNumberObject(new Number(0));
 ```
-87.isPromise()
+88.isPromise()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isPromise(Promise.resolve(42));
 ```
-88.isProxy()
+89.isProxy()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
@@ -1380,81 +1388,81 @@ const target = {};
 const proxy = new Proxy(target, {});
 var result = proc.isProxy(proxy);
 ```
-89.isRegExp()
+90.isRegExp()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isRegExp(new RegExp('abc'));
 ```
-90.isSet()
+91.isSet()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isSet(new Set());
 ```
-91.isSetIterator()
+92.isSetIterator()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 const set = new Set();
 var result = proc.isSetIterator(set.keys());
 ```
-92.isSharedArrayBuffer()
+93.isSharedArrayBuffer()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isSharedArrayBuffer(new ArrayBuffer([]));
 ```
-93.isStringObject()
+94.isStringObject()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isStringObject(new String('foo'));
 ```
-94.isSymbolObject()
+95.isSymbolObject()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 const symbols = Symbol('foo');
 var result = proc.isSymbolObject(Object(symbols));
 ```
-95.isTypedArray()
+96.isTypedArray()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isTypedArray(new Float64Array([]));
 ```
-96.isUint8Array()
+97.isUint8Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isUint8Array(new Uint8Array([]));
 ```
-97.isUint8ClampedArray()
+98.isUint8ClampedArray()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isUint8ClampedArray(new Uint8ClampedArray([]));
 ```
-98.isUint16Array()
+99.isUint16Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isUint16Array(new Uint16Array([]));
 ```
-99.isUint32Array()
+100.isUint32Array()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isUint32Array(new Uint32Array([]));
 ```
-100.isWeakMap()
+101.isWeakMap()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isWeakMap(new WeakMap());
 ```
-101.isWeakSet()
+102.isWeakSet()
 ```
 import util from '@ohos.util'
 var proc = new util.Types();
