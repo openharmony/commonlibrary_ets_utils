@@ -62,7 +62,7 @@ namespace OHOS::Url {
         size_t dataLen = data.size();
         for (size_t i = 0; i < dataLen; ++i) {
             if (static_cast<int>(data[i]) >= 0 &&
-                static_cast<int>(data[i]) < static_cast<size_t>(BitsetStatusFlag::MAX_BIT_SIZE)) {
+                static_cast<int>(data[i]) < static_cast<int>(BitsetStatusFlag::MAX_BIT_SIZE)) {
                 bool IsIllegal = rule.test(data[i]);
                 if (IsIllegal) {
                     return false;
@@ -112,7 +112,10 @@ namespace OHOS::Url {
             if (IsHexDigit(temp[pos + 1]) && IsHexDigit(temp[pos + 2])) { // 2:Determine the second character after %
                 std::string subStr = temp.substr(pos + 1, 2); // 2:Truncate the last two digits of the %
                 int octNum = 0;
-                sscanf(subStr.c_str(), "%x", &octNum);
+                if (sscanf_s(subStr.c_str(), "%x", &octNum) == -1) {
+                    HILOG_ERROR("sscanf_s is falie");
+                    return temp;
+                }
                 std::string convertedChar(1, static_cast<char>(octNum));
                 temp.replace(pos, 3, convertedChar); // 3:Replace the percent character with the corresponding char
                 len = len - 2; // 2:After the replacement, the length of the string is reduced by two
@@ -343,16 +346,18 @@ namespace OHOS::Url {
         std::string val = "";
         while ((pos = str.find(".", left)) != std::string::npos) {
             val = str.substr(left, pos - left);
-            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
                 HILOG_ERROR("sprintf_s is falie");
+                return val;
             }
 
             temp.push_back(hexVal);
             left = pos + 1;
             }
         val = str.substr(left);
-        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
             HILOG_ERROR("sprintf_s is falie");
+            return val;
         }
         temp.push_back(hexVal);
         std::string res = str.substr(0, index);
@@ -531,13 +536,15 @@ namespace OHOS::Url {
     {
         int val = 0;
         if (radix == 16) { // 16:hex
-            if (sscanf_s(num.c_str(), "%x", &val) == EOK) {
+            if (sscanf_s(num.c_str(), "%x", &val) == -1) {
                 HILOG_ERROR("sscanf_s is falie");
+                return num;
         }
             return std::to_string(val);
         } else if (radix == 8) { // 8:octal
-            if (sscanf_s(num.c_str(), "%o", &val) == EOK) {
+            if (sscanf_s(num.c_str(), "%o", &val) == -1) {
                 HILOG_ERROR("sscanf_s is falie");
+                return num;
             }
             return std::to_string(val);
         } else {
