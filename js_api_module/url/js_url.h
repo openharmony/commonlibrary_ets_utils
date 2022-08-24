@@ -39,7 +39,10 @@ namespace OHOS::Url {
         BIT8 = 8, // 8:Bit 8 Set to true,The URL has fragment
         BIT9 = 9, // 9:Bit 9 Set to true,The URL Can not be base
         BIT10 = 10, // 10:Bit 10 Set to true,The host is IPV6
-        BIT_STATUS_11 = 11 // 11:Each bit of a BIT represents a different parsing state.
+        BIT_STATUS_11 = 11, // 11:Each bit of a BIT represents a different parsing state.
+        BIT_ASCII_32 = 32, // 32:32-bit previously invalid control characters in ascii
+        BIT_ASCII_127 = 127, // 127:127 bits in ascii are DEL characters
+        MAX_BIT_SIZE = 128 // 128:ascii max range
     };
 
     struct UrlData {
