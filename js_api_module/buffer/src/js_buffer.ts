@@ -418,8 +418,8 @@ class Buffer {
         encoding = offset;
         return this[bufferSymbol].writeString(str, 0, this.length, 'utf8');
       } else if (typeof offset === 'number') {
-        if (offset <= 0 || offset >= this.length) {
-          throw new RangeError(`The value of "offset" is out of range. It must be >= 0 && <= ${this.length}. Received ${offset}`);
+        if (offset < 0 || offset >= this.length) {
+          throw new RangeError(`The value of "offset" is out of range. It must be >= 0 && < ${this.length}. Received ${offset}`);
         }
         return this[bufferSymbol].writeString(str, offset, length, 'utf8');
       } else {
@@ -642,9 +642,7 @@ class Buffer {
   }
 
   writeBigInt64BE(value: bigint, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     if (value < -(2n **63n) ||value > 2n **63n) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -653,9 +651,7 @@ class Buffer {
   }
 
   readBigInt64BE(offset: number = 0): bigint {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     // 24 : the first val for this[offset] shifts left by 3 bytes
     const val = (this[offset] << 24) + this.calculationBE(offset + 1, 3);
     // 32 : Shift left by 4 bytes
@@ -664,9 +660,7 @@ class Buffer {
   }
 
   writeBigInt64LE(value: bigint, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     if (value < -(2n **63n) ||value > 2n **63n) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -691,17 +685,13 @@ class Buffer {
   }
 
   readBigInt64LE(offset: number = 0): bigint {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     const val = this.calculationLE(offset + 4, 3) + (this[offset + 7] << 24); 
     return (BigInt(val) << 32n) + BigInt(this.calculationLE(offset, 4));
   }
 
   writeBigUInt64BE(value: bigint, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     if (value < 0n || value >= 2n **64n) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -710,9 +700,7 @@ class Buffer {
   }
 
   readBigUInt64BE(offset: number = 0): bigint {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     const hi = this.calculationBE(offset, 4);
   
     const lo = this.calculationBE(offset + 4, 4);
@@ -720,9 +708,7 @@ class Buffer {
   }
 
   writeBigUInt64LE(value: bigint, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     if (value < 0n || value >= 2n **64n) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -731,18 +717,14 @@ class Buffer {
   }
 
   readBigUInt64LE(offset: number = 0): bigint {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 8);
     const lo = this.calculationLE(offset, 4);
     const hi = this.calculationLE(offset + 4, 4);
     return BigInt(lo) + (BigInt(hi) << 32n);
   }
 
   writeInt8(value: number, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 1);
     if (value > (Math.pow(2, 7) -1) || value < -(Math.pow(2, 7))){
       throw new RangeError('The value of "value" is out of range')
     }
@@ -753,9 +735,7 @@ class Buffer {
   }
 
   readInt8(offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 1);
     const val = this[offset];
     if (val === undefined) {
       throw new RangeError('The value of "offset" is out of range');
@@ -765,9 +745,7 @@ class Buffer {
   }
 
   writeInt16BE(value: number, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 2);
     if (value < -(Math.pow(2, 15)) || value > (Math.pow(2, 15) - 1)){
       throw new RangeError('The value of "value" is out of range')
     }
@@ -778,17 +756,13 @@ class Buffer {
   }
 
   readInt16BE(offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 2);
     const val = this.calculationBE(offset, 2);
     return val | (val & Math.pow(2, 15)) * 0x1fffe;
   }
 
   writeInt16LE(value: number, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 2);
     if (value < -(Math.pow(2, 15)) || value > (Math.pow(2, 15) - 1)){
       throw new RangeError('The value of "value" is out of range')
     }
@@ -799,26 +773,18 @@ class Buffer {
   }
 
   readInt16LE(offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-
+    this.checkOffsetRange(offset, 2);
     const val = this[offset] + this[offset + 1] * Math.pow(2, 8);
     return val | (val & Math.pow(2, 15)) * 0x1fffe;
   }
 
   readUInt16LE(offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-  
+    this.checkOffsetRange(offset, 2);
     return this[offset] + this[offset + 1] * Math.pow(2, 8);
   }
 
   writeUInt8(value: number, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 1);
     if (value < 0 || value >255) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -829,9 +795,7 @@ class Buffer {
   }
 
   readUInt8(offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 1);
     const val = this[offset];
     if (val === undefined) {
       throw new RangeError('The value of "offset" is out of range');
@@ -844,9 +808,7 @@ class Buffer {
   }
 
   private writeUInt24BE(value: number, offset: number = 0) {
-    if (offset < 0 || offset > this.length - 3) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 3);
     if (value < 0 || value > (Math.pow(2, 24) -1)) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -860,9 +822,7 @@ class Buffer {
   }
 
   private writeUInt40BE(value: number, offset: number = 0) {
-    if (offset < 0 || offset > this.length - 5) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 5);
     if (value < 0 || value >= Math.pow(2, 40)) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -877,9 +837,7 @@ class Buffer {
   }
 
   private writeUInt48BE(value: number, offset: number = 0) {
-    if (offset < 0 || offset > this.length - 6) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 6);
     if(value < 0 || value >= Math.pow(2, 48)){
       throw new RangeError('The value of "value" is out of range');
     }
@@ -896,25 +854,18 @@ class Buffer {
   }
 
   readIntBE(offset: number, byteLength: number): number | undefined {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-
+    this.checkOffsetRange(offset, 1);
     return this.readData(offset, byteLength, Style.IntBE);
   }
 
   private readInt48BE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 6) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 6);
     const val = this.calculationBE(offset, 2);
     return (val | (val & Math.pow(2, 15)) * 0x1fffe) * Math.pow(2, 32) + this.calculationBE(offset + 2, 4);
   }
 
   private readInt40BE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 5) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 5);
     const first = this[offset];
     const last = this[offset + 4];
     if (first === undefined || last === undefined) {
@@ -926,9 +877,7 @@ class Buffer {
   
 
   private readInt24BE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 3) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 3);
     const val = this.calculationBE(offset, 3);
     return val | (val & Math.pow(2, 23)) * 0x1fe;
   }
@@ -938,9 +887,7 @@ class Buffer {
   }
 
   private writeUInt48LE(value: number, offset: number = 0) {
-    if (offset < 0 || offset > this.length - 6) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 6);
     if (value < 0 || value >= Math.pow(2, 48)) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -957,9 +904,7 @@ class Buffer {
   }
 
   private writeUInt40LE(value: number, offset: number = 0) {
-    if (offset < 0 || offset > this.length - 5) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 5);
     if (value < 0 || value >= Math.pow(2, 40)) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -975,9 +920,7 @@ class Buffer {
   }
 
   private writeUInt24LE(value: number, offset: number = 0) {
-    if (offset < 0 || offset > this.length - 3) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 3);
     if (value < 0 || value > (Math.pow(2, 24) - 1)) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -991,33 +934,24 @@ class Buffer {
   }
 
   readIntLE(offset: number, byteLength: number): number | undefined {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-
+    this.checkOffsetRange(offset, 1);
     return this.readData(offset, byteLength, Style.IntLE);
   }
 
   private readInt48LE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 6) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 6);
     const val = this.calculationLE(offset + 4, 2);
     return (val | (val & Math.pow(2, 15)) * 0x1fffe) * Math.pow(2, 32) + this.calculationLE(offset, 4);
   }
 
   private readInt40LE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 5) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 5);
     return (this[offset + 4] | (this[offset + 4] & Math.pow(2, 7)) * 0x1fffffe) * Math.pow(2, 32) +
       this.calculationLE(offset, 4);
   }
 
   private readInt24LE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 3) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 3);
     const val = this.calculationLE(offset, 3);
     return val | (val & Math.pow(2, 23)) * 0x1fe;
   }
@@ -1027,33 +961,23 @@ class Buffer {
   }
 
   readUIntLE(offset: number, byteLength: number): number | undefined {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-
+    this.checkOffsetRange(offset, 1);
     return this.readData(offset, byteLength, Style.UIntLE);
   }
 
   private readUInt48LE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 6) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 6);
     return this.calculationLE(offset, 4) +
       (this.calculationLE(offset + 4, 2)) * Math.pow(2, 32);
   }
 
   private readUInt40LE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 5) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 5);
     return this.calculationLE(offset, 5);
   }
 
   private readUInt24LE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 3) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-  
+    this.checkOffsetRange(offset, 3);
     return this.calculationLE(offset, 3);
   }
 
@@ -1062,32 +986,23 @@ class Buffer {
   }
 
   readUIntBE(offset: number, byteLength: number): number | undefined {
-    if (offset < 0 || offset > this.length - 1) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-
+    this.checkOffsetRange(offset, 1);
     return this.readData(offset, byteLength, Style.UIntBE);
   }
 
   private readUInt48BE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 6) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 6);
     return (this.calculationBE(offset, 2)) * Math.pow(2, 32) +
       this.calculationBE(offset + 2, 4);
   }
 
   private readUInt40BE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 5) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 5);
     return this.calculationBE(offset, 5);
   }
   
   private readUInt24BE(offset: number = 0) {
-    if (offset < 0 || offset > this.length - 3) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 3);
     return this.calculationBE(offset, 3);
   }
 
@@ -1097,19 +1012,8 @@ class Buffer {
     if(value < curMinValue || value > (curMaxValue - 1)) {
       throw new RangeError('The value of "value" is out of range');
     }
-    if (offset < 0 || offset > this.length - 4) {
-      throw new RangeError(`The value of "offset" is out of range`);
-    }
-  }
-  checkRangeWriteDouble(offset: number): void {
-    if (offset < 0 || offset > this.length - 8) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
-  }
-  checkRangeWriteFloat(offset: number): void {
-    if (offset < 0 || offset > this.length - 4) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+
+    this.checkOffsetRange(offset, 4);
   }
 
   writeInt32BE(value: number, offset: number = 0): number {
@@ -1120,7 +1024,14 @@ class Buffer {
     return offset + 4;
   }
 
+  private checkOffsetRange(offset: number, size: number): void {
+    if (offset < 0 || offset > this.length - size) {
+      throw new RangeError(`The value of "offset" is out of range`);
+    }
+  }
+
   readInt32BE(offset: number = 0): number {
+    this.checkOffsetRange(offset, 4);
     return this[bufferSymbol].readInt32BE(offset);
   }
 
@@ -1133,6 +1044,7 @@ class Buffer {
   }
 
   readInt32LE(offset: number = 0) : number {
+    this.checkOffsetRange(offset, 4);
     return this[bufferSymbol].readInt32LE(offset);
   }
 
@@ -1144,6 +1056,7 @@ class Buffer {
   }
 
   readUInt32BE(offset: number = 0): number {
+    this.checkOffsetRange(offset, 4);
     return this[bufferSymbol].readUInt32BE(offset);
   }
 
@@ -1155,11 +1068,12 @@ class Buffer {
   }
 
   readUInt32LE(offset: number = 0): number {
+    this.checkOffsetRange(offset, 4);
     return this[bufferSymbol].readUInt32LE(offset);
   }
 
   writeDoubleBE(value: number, offset: number = 0): number {
-    this.checkRangeWriteDouble(offset);
+    this.checkOffsetRange(offset, 8);
 
     value = +value;
     float64Array[0] = value;
@@ -1185,7 +1099,7 @@ class Buffer {
   }
 
   writeDoubleLE(value: number, offset: number = 0): number {
-    this.checkRangeWriteDouble(offset);
+    this.checkOffsetRange(offset, 8);
     
     value = +value;
     float64Array[0] = value;
@@ -1211,7 +1125,7 @@ class Buffer {
   }
 
   writeFloatBE(value: number, offset: number = 0): number {
-    this.checkRangeWriteFloat(offset);
+    this.checkOffsetRange(offset, 4);
 
     value = +value;
     float32Array[0] = value;
@@ -1237,7 +1151,7 @@ class Buffer {
   }
 
   writeFloatLE(value: number, offset: number = 0): number {
-    this.checkRangeWriteFloat(offset);
+    this.checkOffsetRange(offset, 4);
 
     value = +value;
     float32Array[0] = value;
@@ -1263,9 +1177,7 @@ class Buffer {
   }
 
   writeUInt16BE(value: number, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 2);
     if (value < 0 || value > Math.pow(2, 16)) {
       throw new RangeError('The value of "value" is out of range');
     }
@@ -1276,9 +1188,7 @@ class Buffer {
   }
 
   readUInt16BE(offset: number = 0) : number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 2);
     const first = this[offset];
     const last = this[offset + 1];
     if (first === undefined || last === undefined) {
@@ -1288,9 +1198,7 @@ class Buffer {
   }
 
   writeUInt16LE(value: number, offset: number = 0): number {
-    if (offset < 0 || offset > this.length - 2) {
-      throw new RangeError('The value of "offset" is out of range');
-    }
+    this.checkOffsetRange(offset, 2);
     if (value < 0 || value > Math.pow(2, 16)) {
       throw new RangeError('The value of "value" is out of range');
     }
