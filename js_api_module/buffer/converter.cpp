@@ -307,7 +307,7 @@ string Base64Decode(string const& encodedStr)
 
     if (index != 0) {
         // fill data into charArray4
-        for (int i = 0; i < index; i++) {
+        for (unsigned int i = 0; i < index; i++) {
             charArray4[i] = base64Table.find(charArray4[i]) & LOWER_8_BITS_MASK;
         }
         // get the last six bits of the first byte of charArray4 and the first valid
@@ -317,7 +317,7 @@ string Base64Decode(string const& encodedStr)
         // 4 : 2 : four bits(except two higer bits) of the third byte, combine them to a new byte
         charArray3[1] = ((charArray4[1] & LOWER_4_BITS_MASK) << 4) + ((charArray4[2] & LOWER_6_BITS_MASK) >> 2);
         // assigns the decoded string to the return value
-        for (int i = 0; i < index - 1; i++) {
+        for (unsigned int i = 0; i < index - 1; i++) {
             ret += charArray3[i];
         }
     }

@@ -347,7 +347,7 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
     return GetBufferWrapValue(env, thisVar, buffer);
 }
 
-Buffer *GetValueOffsetAndBuf(napi_env env, napi_callback_info info, int32_t *pValue, int32_t *pOffset)
+Buffer *GetValueOffsetAndBuf(napi_env env, napi_callback_info info, int32_t *pValue, uint32_t *pOffset)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -359,11 +359,11 @@ Buffer *GetValueOffsetAndBuf(napi_env env, napi_callback_info info, int32_t *pVa
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     NAPI_CALL(env, napi_get_value_int32(env, args[0], pValue));
-    NAPI_CALL(env, napi_get_value_int32(env, args[1], pOffset));
+    NAPI_CALL(env, napi_get_value_uint32(env, args[1], pOffset));
     return buf;
 }
 
-Buffer *GetOffsetAndBuf(napi_env env, napi_callback_info info, int32_t *pOffset)
+Buffer *GetOffsetAndBuf(napi_env env, napi_callback_info info, uint32_t *pOffset)
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
@@ -374,14 +374,14 @@ Buffer *GetOffsetAndBuf(napi_env env, napi_callback_info info, int32_t *pOffset)
     
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
-    NAPI_CALL(env, napi_get_value_int32(env, args[0], pOffset));
+    NAPI_CALL(env, napi_get_value_uint32(env, args[0], pOffset));
     return buf;
 }
 
 static napi_value WriteInt32BE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetValueOffsetAndBuf(env, info, &value, &offset);
     if (buf != nullptr) {
         buf->WriteInt32BE(value, offset);
@@ -393,7 +393,7 @@ static napi_value WriteInt32BE(napi_env env, napi_callback_info info)
 
 static napi_value ReadInt32BE(napi_env env, napi_callback_info info)
 {
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
     int32_t res = 0;
     if (buf != nullptr) {
@@ -610,8 +610,8 @@ static napi_value Get(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
-    int32_t index = 0;
-    NAPI_CALL(env, napi_get_value_int32(env, args[0], &index));
+    uint32_t index = 0;
+    NAPI_CALL(env, napi_get_value_uint32(env, args[0], &index));
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     int32_t value = buf->Get(index);
@@ -632,9 +632,9 @@ static napi_value Set(napi_env env, napi_callback_info info)
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     
-    int32_t index = 0;
+    uint32_t index = 0;
     int32_t value = 0;
-    NAPI_CALL(env, napi_get_value_int32(env, args[0], &index));
+    NAPI_CALL(env, napi_get_value_uint32(env, args[0], &index));
     NAPI_CALL(env, napi_get_value_int32(env, args[1], &value));
     buf->Set(index, value);
     napi_value result = nullptr;
@@ -645,7 +645,7 @@ static napi_value Set(napi_env env, napi_callback_info info)
 static napi_value WriteInt32LE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetValueOffsetAndBuf(env, info, &value, &offset);
     if (buf != nullptr) {
         buf->WriteInt32LE(value, offset);
@@ -657,7 +657,7 @@ static napi_value WriteInt32LE(napi_env env, napi_callback_info info)
 
 static napi_value ReadInt32LE(napi_env env, napi_callback_info info)
 {
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
     int32_t res = 0;
     if (buf != nullptr) {
@@ -671,7 +671,7 @@ static napi_value ReadInt32LE(napi_env env, napi_callback_info info)
 static napi_value WriteUInt32BE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetValueOffsetAndBuf(env, info, &value, &offset);
     if (buf != nullptr) {
         buf->WriteUInt32BE(value, offset);
@@ -683,9 +683,9 @@ static napi_value WriteUInt32BE(napi_env env, napi_callback_info info)
 
 static napi_value ReadUInt32BE(napi_env env, napi_callback_info info)
 {
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
-    int32_t res = 0;
+    uint32_t res = 0;
     if (buf != nullptr) {
         res = buf->ReadUInt32BE(offset);
     }
@@ -697,7 +697,7 @@ static napi_value ReadUInt32BE(napi_env env, napi_callback_info info)
 static napi_value WriteUInt32LE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetValueOffsetAndBuf(env, info, &value, &offset);
     if (buf != nullptr) {
         buf->WriteUInt32LE(value, offset);
@@ -709,9 +709,9 @@ static napi_value WriteUInt32LE(napi_env env, napi_callback_info info)
 
 static napi_value ReadUInt32LE(napi_env env, napi_callback_info info)
 {
-    int32_t offset = 0;
+    uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
-    int32_t res = 0;
+    uint32_t res = 0;
     if (buf != nullptr) {
         res = buf->ReadUInt32LE(offset);
     }
