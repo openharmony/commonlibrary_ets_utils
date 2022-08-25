@@ -171,18 +171,18 @@ void Buffer::WriteLE(int32_t value, uint32_t bytes)
     }
 }
 
-uint32_t Buffer::ReadBE(uint32_t offset, uint32_t bytes)
+uint32_t Buffer::ReadBE(uint32_t bytes)
 {
     uint32_t result = 0x0000;
     for (uint32_t i = 0; i < bytes; i++) {
         // 8 : shift left 8 bits(i.e 1 byte)
         result = result << 8;
-        result |= data_[offset + i];
+        result |= data_[i];
     }
     return result;
 }
 
-uint32_t Buffer::ReadLE(uint32_t offset, uint32_t bytes)
+uint32_t Buffer::ReadLE(uint32_t bytes)
 {
     uint32_t result = 0x0000;
     if (bytes == 0) {
@@ -191,7 +191,7 @@ uint32_t Buffer::ReadLE(uint32_t offset, uint32_t bytes)
     for (uint32_t i = bytes; i > 0; i--) {
         // 8 : shift left 8 bits(i.e 1 byte)
         result = result << 8;
-        result |= data_[offset + i - 1];
+        result |= data_[i - 1];
     }
     return result;
 }
@@ -209,7 +209,7 @@ int32_t Buffer::ReadInt32BE(uint32_t offset)
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
-    return static_cast<int32_t>(ReadBE(offset, 4));
+    return static_cast<int32_t>(ReadBE(4));
 }
 
 void Buffer::WriteInt32LE(int32_t value, uint32_t offset)
@@ -225,7 +225,7 @@ int32_t Buffer::ReadInt32LE(uint32_t offset)
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
-    return static_cast<int32_t>(ReadLE(offset, 4));
+    return static_cast<int32_t>(ReadLE(4));
 }
 
 void Buffer::WriteUInt32BE(int32_t value, uint32_t offset)
@@ -241,7 +241,7 @@ uint32_t Buffer::ReadUInt32BE(uint32_t offset)
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
-    return ReadBE(offset, 4);
+    return ReadBE(4);
 }
 
 void Buffer::WriteUInt32LE(int32_t value, uint32_t offset)
@@ -257,7 +257,7 @@ uint32_t Buffer::ReadUInt32LE(uint32_t offset)
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
-    return ReadLE(offset, 4);
+    return ReadLE(4);
 }
 
 int32_t Buffer::Get(uint32_t index)
