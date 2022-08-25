@@ -41,6 +41,37 @@ namespace OHOS::Url {
         '@', '[', '\\', ']'
     };
 
+    std::bitset<static_cast<size_t>(BitsetStatusFlag::MAX_BIT_SIZE)> g_specialCharForBit;
+
+    void PreliminaryWork()
+    {
+        std::vector<char> g_specialSymbols = {'#', '%', '/', ':', '?', '@', '[', '\\', ']', '<', '>', '^', '|'};
+        size_t invalidCharLength = static_cast<size_t>(BitsetStatusFlag::BIT_ASCII_32);
+        for (size_t i = 0; i <= invalidCharLength; ++i) {
+            g_specialCharForBit.set(i);
+        }
+        size_t len = g_specialSymbols.size();
+        for (size_t i = 0; i < len; ++i) {
+            g_specialCharForBit.set(g_specialSymbols[i]);
+        }
+        g_specialCharForBit.set(static_cast<size_t>(BitsetStatusFlag::BIT_ASCII_127));
+    }
+
+    bool CheckCharacter(std::string data, std::bitset<static_cast<size_t>(BitsetStatusFlag::MAX_BIT_SIZE)> rule)
+    {
+        size_t dataLen = data.size();
+        for (size_t i = 0; i < dataLen; ++i) {
+            if (static_cast<int>(data[i]) >= 0 &&
+                static_cast<int>(data[i]) < static_cast<int>(BitsetStatusFlag::MAX_BIT_SIZE)) {
+                bool IsIllegal = rule.test(data[i]);
+                if (IsIllegal) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     void ReplaceSpecialSymbols(std::string& input, std::string& oldstr, std::string& newstr)
     {
         size_t oldlen = oldstr.size();
@@ -69,42 +100,27 @@ namespace OHOS::Url {
         return false;
     }
 
-    unsigned AsciiToHex(const unsigned char pram)
+    std::string DecodeSpecialChars(std::string input)
     {
-        if (pram >= '0' && pram <= '9') {
-            return pram - '0';
-        } else if (pram >= 'A' && pram <= 'F') {
-            return pram - 'A' + 10; // 10:Convert to hexadecimal
-        } else if (pram >= 'a' && pram <= 'f') {
-            return pram - 'a' + 10; // 10:Convert to hexadecimal
-        }
-        return static_cast<unsigned>(pram);
-    }
-
-    std::string DecodePercent(const char *input, size_t len)
-    {
-        std::string temp;
-        if (len == 0) {
+        std::string temp = input;
+        size_t len = temp.size();
+        if (input.empty()) {
             return temp;
         }
-        temp.reserve(len);
-        const char *it = input;
-        const char *end = input + len;
-        while (it < end) {
-            const char ch = it[0];
-            size_t left = end - it - 1;
-            if (ch != '%' || left < 2 || (ch == '%' && (!IsHexDigit(it[1]) || // 2:The length is less than 2
-                !IsHexDigit(it[2])))) { // 2:The number of characters is less than 2
-                temp += ch;
-                it++;
-                continue;
-            } else {
-                unsigned first = AsciiToHex(it[1]);
-                unsigned second = AsciiToHex(it[2]); // 2:Subscript 2
-                char pram = static_cast<char>(first * 16 + second); // 16:Convert hex
-                temp += pram;
-                it += 3; // 3:Move the pointer to the right by 3 digits.
+        size_t pos = temp.find("%");
+        while (pos != std::string::npos && pos < len - 2) { // 2:end subscript backspace
+            if (IsHexDigit(temp[pos + 1]) && IsHexDigit(temp[pos + 2])) { // 2:Determine the second character after %
+                std::string subStr = temp.substr(pos + 1, 2); // 2:Truncate the last two digits of the %
+                int octNum = 0;
+                if (sscanf_s(subStr.c_str(), "%x", &octNum) == -1) {
+                    HILOG_ERROR("sscanf_s is falie");
+                    return temp;
+                }
+                std::string convertedChar(1, static_cast<char>(octNum));
+                temp.replace(pos, 3, convertedChar); // 3:Replace the percent character with the corresponding char
+                len = len - 2; // 2:After the replacement, the length of the string is reduced by two
             }
+            pos = temp.find("%", pos + 1);
         }
         return temp;
     }
@@ -218,7 +234,6 @@ namespace OHOS::Url {
                 }
             }
         }
-
         if (userAndPasswd.find(':') != std::string::npos) {
             size_t position = userAndPasswd.find(':');
             std::string user = userAndPasswd.substr(0, position);
@@ -331,16 +346,18 @@ namespace OHOS::Url {
         std::string val = "";
         while ((pos = str.find(".", left)) != std::string::npos) {
             val = str.substr(left, pos - left);
-            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
                 HILOG_ERROR("sprintf_s is falie");
+                return val;
             }
 
             temp.push_back(hexVal);
             left = pos + 1;
             }
         val = str.substr(left);
-        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
             HILOG_ERROR("sprintf_s is falie");
+            return val;
         }
         temp.push_back(hexVal);
         std::string res = str.substr(0, index);
@@ -519,13 +536,15 @@ namespace OHOS::Url {
     {
         int val = 0;
         if (radix == 16) { // 16:hex
-            if (sscanf_s(num.c_str(), "%x", &val) == EOK) {
+            if (sscanf_s(num.c_str(), "%x", &val) == -1) {
                 HILOG_ERROR("sscanf_s is falie");
+                return num;
         }
             return std::to_string(val);
         } else if (radix == 8) { // 8:octal
-            if (sscanf_s(num.c_str(), "%o", &val) == EOK) {
+            if (sscanf_s(num.c_str(), "%o", &val) == -1) {
                 HILOG_ERROR("sscanf_s is falie");
+                return num;
             }
             return std::to_string(val);
         } else {
@@ -678,15 +697,10 @@ namespace OHOS::Url {
             AnalysisOpaqueHost(input, host, flags);
             return;
         }
-        std::string decodeInput = DecodePercent(input.c_str(), input.length());
-        size_t strlen = decodeInput.size();
-        for (size_t pos = 0; pos < strlen; ++pos) {
-            char ch = decodeInput[pos];
-            auto result = find(g_specialcharacter.begin(), g_specialcharacter.end(), ch);
-            if (result != g_specialcharacter.end()) {
-                flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-                return;
-            }
+        std::string decodeInput = DecodeSpecialChars(input);
+        if (!CheckCharacter(decodeInput, g_specialCharForBit)) {
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
         }
         AnalyseIPv4(decodeInput, host, flags);
     }
@@ -1087,6 +1101,7 @@ namespace OHOS::Url {
     URL::URL(const std::string& input)
     {
         std::string str = input;
+        PreliminaryWork();
         DeleteC0OrSpace(str);
         DeleteTabOrNewline(str);
         InitOnlyInput(str, urlData_, flags_);
