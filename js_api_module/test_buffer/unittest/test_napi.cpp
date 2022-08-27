@@ -44,6 +44,12 @@ void FillZero(OHOS::buffer::Buffer *buf, size_t size)
     }
 }
 
+/**
+ * @tc.name: ConstructorTest001
+ * @tc.desc: Buffer Constructor.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, ConstructorTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -51,6 +57,12 @@ HWTEST_F(NativeEngineTest, ConstructorTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(buf->GetLength(), 10);
 }
 
+/**
+ * @tc.name: ConstructorTest002
+ * @tc.desc: Buffer Constructor.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, ConstructorTest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
@@ -60,6 +72,12 @@ HWTEST_F(NativeEngineTest, ConstructorTest002, testing::ext::TestSize.Level0)
     ASSERT_EQ(buf2->GetLength(), 10);
 }
 
+/**
+ * @tc.name: ConstructorTest003
+ * @tc.desc: Buffer Constructor.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *poolBuffer = new OHOS::buffer::Buffer();
@@ -75,6 +93,12 @@ HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
     ASSERT_EQ(buf3->GetByteOffset(), 5);
 }
 
+/**
+ * @tc.name: ConstructorTest004
+ * @tc.desc: Buffer Constructor.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, ConstructorTest004, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf2 = new OHOS::buffer::Buffer();
@@ -84,12 +108,24 @@ HWTEST_F(NativeEngineTest, ConstructorTest004, testing::ext::TestSize.Level0)
     ASSERT_EQ(buf2->GetByteOffset(), 0);
 }
 
+/**
+ * @tc.name: GetLengthTest001
+ * @tc.desc: Get buffer Length.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, GetLengthTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
     ASSERT_EQ(buf->GetLength(), 0);
 }
 
+/**
+ * @tc.name: GetLengthTest002
+ * @tc.desc: Get buffer Length.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, GetLengthTest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -97,6 +133,12 @@ HWTEST_F(NativeEngineTest, GetLengthTest002, testing::ext::TestSize.Level0)
     ASSERT_EQ(buf->GetLength(), 6);
 }
 
+/**
+ * @tc.name: SetLengthTest001
+ * @tc.desc: Set buffer Length.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, SetLengthTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -105,6 +147,12 @@ HWTEST_F(NativeEngineTest, SetLengthTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(buf->GetLength(), 7);
 }
 
+/**
+ * @tc.name: GetByteOffsetTest001
+ * @tc.desc: Get buffer byteOffset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, GetByteOffsetTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *poolBuffer = new OHOS::buffer::Buffer();
@@ -114,6 +162,12 @@ HWTEST_F(NativeEngineTest, GetByteOffsetTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(buf->GetByteOffset(), 2);
 }
 
+/**
+ * @tc.name: GetAndSetTest001
+ * @tc.desc: Get And Set method.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, GetAndSetTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -123,6 +177,12 @@ HWTEST_F(NativeEngineTest, GetAndSetTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(value, 1);
 }
 
+/**
+ * @tc.name: GetAndSetTest002
+ * @tc.desc: Get And Set method.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, GetAndSetTest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -134,6 +194,13 @@ HWTEST_F(NativeEngineTest, GetAndSetTest002, testing::ext::TestSize.Level0)
     ASSERT_EQ(value, 3);
 }
 
+/**
+ * @tc.name: WriteInt32BEAndReadInt32BETest001
+ * @tc.desc: Writes value to buf at the specified offset as big-endian. The value must be a valid signed 32-bit integer
+ *           Reads a signed, big-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteInt32BEAndReadInt32BETest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -144,6 +211,13 @@ HWTEST_F(NativeEngineTest, WriteInt32BEAndReadInt32BETest001, testing::ext::Test
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: WriteInt32BEAndReadInt32BETest002
+ * @tc.desc: Writes value to buf at the specified offset as big-endian. The value must be a valid signed 32-bit integer
+ *           Reads a signed, big-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteInt32BEAndReadInt32BETest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -154,6 +228,13 @@ HWTEST_F(NativeEngineTest, WriteInt32BEAndReadInt32BETest002, testing::ext::Test
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: WriteInt32BEAndReadInt32BETest003
+ * @tc.desc: Writes value to buf at the specified offset as big-endian. The value must be a valid signed 32-bit integer
+ *           Reads a signed, big-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteInt32BEAndReadInt32BETest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -164,6 +245,14 @@ HWTEST_F(NativeEngineTest, WriteInt32BEAndReadInt32BETest003, testing::ext::Test
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: WriteInt32LEAndReadInt32LETest001
+ * @tc.desc: Writes value to buf at the specified offset as little-endian.
+ *           The value must be a valid signed 32-bit integer.
+ *           Reads a signed, little-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteInt32LEAndReadInt32LETest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -176,6 +265,14 @@ HWTEST_F(NativeEngineTest, WriteInt32LEAndReadInt32LETest001, testing::ext::Test
     ASSERT_EQ(res, 0x78563412);
 }
 
+/**
+ * @tc.name: WriteInt32LEAndReadInt32LETest002
+ * @tc.desc: Writes value to buf at the specified offset as little-endian.
+ *           The value must be a valid signed 32-bit integer.
+ *           Reads a signed, little-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteInt32LEAndReadInt32LETest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -186,6 +283,14 @@ HWTEST_F(NativeEngineTest, WriteInt32LEAndReadInt32LETest002, testing::ext::Test
     ASSERT_EQ(res, 0x34567800);
 }
 
+/**
+ * @tc.name: WriteInt32LEAndReadInt32LETest003
+ * @tc.desc: Writes value to buf at the specified offset as little-endian.
+ *           The value must be a valid signed 32-bit integer.
+ *           Reads a signed, little-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteInt32LEAndReadInt32LETest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -196,6 +301,14 @@ HWTEST_F(NativeEngineTest, WriteInt32LEAndReadInt32LETest003, testing::ext::Test
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: WriteUInt32BEAndReadUInt32BETest001
+ * @tc.desc: Writes value to buf at the specified offset as big-endian.
+ *           The value must be a valid unsigned 32-bit integer.
+ *           Reads an unsigned, big-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteUInt32BEAndReadUInt32BETest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -206,6 +319,14 @@ HWTEST_F(NativeEngineTest, WriteUInt32BEAndReadUInt32BETest001, testing::ext::Te
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: WriteUInt32BEAndReadUInt32BETest002
+ * @tc.desc: Writes value to buf at the specified offset as big-endian.
+ *           The value must be a valid unsigned 32-bit integer.
+ *           Reads an unsigned, big-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteUInt32BEAndReadUInt32BETest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -216,6 +337,14 @@ HWTEST_F(NativeEngineTest, WriteUInt32BEAndReadUInt32BETest002, testing::ext::Te
     ASSERT_EQ(res, 0x123456);
 }
 
+/**
+ * @tc.name: WriteUInt32BEAndReadUInt32BETest003
+ * @tc.desc: Writes value to buf at the specified offset as big-endian.
+ *           The value must be a valid unsigned 32-bit integer.
+ *           Reads an unsigned, big-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteUInt32BEAndReadUInt32BETest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -226,6 +355,14 @@ HWTEST_F(NativeEngineTest, WriteUInt32BEAndReadUInt32BETest003, testing::ext::Te
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: WriteUInt32LEAndReadUInt32LETest001
+ * @tc.desc: Writes value to buf at the specified offset as little-endian.
+ *           The value must be a valid unsigned 32-bit integer.
+ *           Reads an unsigned, little-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteUInt32LEAndReadUInt32LETest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -236,6 +373,14 @@ HWTEST_F(NativeEngineTest, WriteUInt32LEAndReadUInt32LETest001, testing::ext::Te
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: WriteUInt32LEAndReadUInt32LETest002
+ * @tc.desc: Writes value to buf at the specified offset as little-endian.
+ *           The value must be a valid unsigned 32-bit integer.
+ *           Reads an unsigned, little-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteUInt32LEAndReadUInt32LETest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -246,6 +391,14 @@ HWTEST_F(NativeEngineTest, WriteUInt32LEAndReadUInt32LETest002, testing::ext::Te
     ASSERT_EQ(res, 0x34567800);
 }
 
+/**
+ * @tc.name: WriteUInt32LEAndReadUInt32LETest003
+ * @tc.desc: Writes value to buf at the specified offset as little-endian.
+ *           The value must be a valid unsigned 32-bit integer.
+ *           Reads an unsigned, little-endian 32-bit integer from buf at the specified offset.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteUInt32LEAndReadUInt32LETest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -256,6 +409,12 @@ HWTEST_F(NativeEngineTest, WriteUInt32LEAndReadUInt32LETest003, testing::ext::Te
     ASSERT_EQ(res, 0x12345678);
 }
 
+/**
+ * @tc.name: ReadBytesTest001
+ * @tc.desc: Read value from buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, ReadBytesTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -271,6 +430,12 @@ HWTEST_F(NativeEngineTest, ReadBytesTest001, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: WriteStringTest001
+ * @tc.desc: Write string to buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteStringTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -280,6 +445,12 @@ HWTEST_F(NativeEngineTest, WriteStringTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(size, 10);
 }
 
+/**
+ * @tc.name: WriteStringTest002
+ * @tc.desc: Write string to buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteStringTest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -295,6 +466,12 @@ HWTEST_F(NativeEngineTest, WriteStringTest002, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: WriteStringTest003
+ * @tc.desc: Write string to buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteStringTest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -310,6 +487,12 @@ HWTEST_F(NativeEngineTest, WriteStringTest003, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: WriteStringTest004
+ * @tc.desc: Write string to buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteStringTest004, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -325,6 +508,12 @@ HWTEST_F(NativeEngineTest, WriteStringTest004, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: WriteStringTest005
+ * @tc.desc: Write string to buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteStringTest005, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -340,6 +529,12 @@ HWTEST_F(NativeEngineTest, WriteStringTest005, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: WriteStringTest006
+ * @tc.desc: Write string to buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, WriteStringTest006, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -361,6 +556,13 @@ HWTEST_F(NativeEngineTest, WriteStringTest006, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: SubBufferTest001
+ * @tc.desc: Returns a new Buffer that references the same memory as the original,
+ *           but offset and cropped by the start and end indices.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, SubBufferTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
@@ -376,6 +578,13 @@ HWTEST_F(NativeEngineTest, SubBufferTest001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(data), str.c_str());
 }
 
+/**
+ * @tc.name: SubBufferTest002
+ * @tc.desc: Returns a new Buffer that references the same memory as the original,
+ *           but offset and cropped by the start and end indices.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, SubBufferTest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
@@ -391,6 +600,13 @@ HWTEST_F(NativeEngineTest, SubBufferTest002, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(data), "34567890");
 }
 
+/**
+ * @tc.name: CopyTest001
+ * @tc.desc: Copies data from a region of buf to a region in target,
+ *           even if the target memory region overlaps with buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, CopyTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buffer = new OHOS::buffer::Buffer();
@@ -411,6 +627,13 @@ HWTEST_F(NativeEngineTest, CopyTest001, testing::ext::TestSize.Level0)
 
 }
 
+/**
+ * @tc.name: CompareTest001
+ * @tc.desc: Compares buf with target and returns a number indicating whether buf comes before, after,
+ *           or is the same as target in sort order. Comparison is based on the actual sequence of bytes in each Buffer
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, CompareTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buffer = new OHOS::buffer::Buffer();
@@ -425,6 +648,12 @@ HWTEST_F(NativeEngineTest, CompareTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(result, 0);
 }
 
+/**
+ * @tc.name: IndexOfTest001
+ * @tc.desc: The index of the first occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, IndexOfTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -434,6 +663,12 @@ HWTEST_F(NativeEngineTest, IndexOfTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(index, 2);
 }
 
+/**
+ * @tc.name: LastIndexOfTest001
+ * @tc.desc: The index of the last occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, LastIndexOfTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -443,6 +678,12 @@ HWTEST_F(NativeEngineTest, LastIndexOfTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(index, 5);
 }
 
+/**
+ * @tc.name: ToBase64Test001
+ * @tc.desc: Convert the contents of the buffer into a string in Base64 format.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, ToBase64Test001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -452,6 +693,12 @@ HWTEST_F(NativeEngineTest, ToBase64Test001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(base64Str.c_str(), "dGhpcyBpcyBhIHN0cmluZw==");
 }
 
+/**
+ * @tc.name: GetEncodingTypeTest001
+ * @tc.desc: Get encoding type.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, GetEncodingTypeTest001, testing::ext::TestSize.Level0)
 {
     std::string type = "base64";
@@ -459,6 +706,12 @@ HWTEST_F(NativeEngineTest, GetEncodingTypeTest001, testing::ext::TestSize.Level0
     ASSERT_EQ(et, OHOS::buffer::BASE64);
 }
 
+/**
+ * @tc.name: SetArrayTest001
+ * @tc.desc: Put the contents of the array into the buffer.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, SetArrayTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buffer = new OHOS::buffer::Buffer();
@@ -477,6 +730,12 @@ HWTEST_F(NativeEngineTest, SetArrayTest001, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: FillBufferTest001
+ * @tc.desc: Fill the buffer with the buffer object
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, FillBufferTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buffer = new OHOS::buffer::Buffer();
@@ -498,6 +757,12 @@ HWTEST_F(NativeEngineTest, FillBufferTest001, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: FillNumberTest001
+ * @tc.desc: Fill the buffer with the number
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, FillNumberTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -516,6 +781,12 @@ HWTEST_F(NativeEngineTest, FillNumberTest001, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: FillStringTest001
+ * @tc.desc: Fill the buffer with the string
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, FillStringTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
@@ -530,6 +801,12 @@ HWTEST_F(NativeEngineTest, FillStringTest001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(data), "abcdabcdab");
 }
 
+/**
+ * @tc.name: BlobConstructorTest001
+ * @tc.desc: Blob Constructor
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, BlobConstructorTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
@@ -538,6 +815,12 @@ HWTEST_F(NativeEngineTest, BlobConstructorTest001, testing::ext::TestSize.Level0
     ASSERT_EQ(blob->GetLength(), 4);
 }
 
+/**
+ * @tc.name: BlobConstructorTest002
+ * @tc.desc: Blob Constructor
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, BlobConstructorTest002, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
@@ -550,6 +833,12 @@ HWTEST_F(NativeEngineTest, BlobConstructorTest002, testing::ext::TestSize.Level0
     ASSERT_EQ(blob2->GetLength(), 4);
 }
 
+/**
+ * @tc.name: BlobConstructorTest003
+ * @tc.desc: Blob Constructor
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, BlobConstructorTest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
@@ -562,6 +851,12 @@ HWTEST_F(NativeEngineTest, BlobConstructorTest003, testing::ext::TestSize.Level0
     ASSERT_EQ(blob2->GetLength(), 3);
 }
 
+/**
+ * @tc.name: BlobGetByteTest001
+ * @tc.desc: Get a byte in blob
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, BlobGetByteTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
@@ -573,6 +868,12 @@ HWTEST_F(NativeEngineTest, BlobGetByteTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(byte, 3);
 }
 
+/**
+ * @tc.name: BlobGetRawTest001
+ * @tc.desc: Get the raw in blob
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, BlobGetRawTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
@@ -584,6 +885,12 @@ HWTEST_F(NativeEngineTest, BlobGetRawTest001, testing::ext::TestSize.Level0)
     ASSERT_TRUE(raw != nullptr);
 }
 
+/**
+ * @tc.name: BlobGetLengthTest001
+ * @tc.desc: Get the length in blob
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, BlobGetLengthTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
@@ -595,6 +902,12 @@ HWTEST_F(NativeEngineTest, BlobGetLengthTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(len, 4);
 }
 
+/**
+ * @tc.name: BlobGetLengthTest001
+ * @tc.desc: Read blob object bytes
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
 HWTEST_F(NativeEngineTest, BlobReadBytesTest001, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
