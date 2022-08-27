@@ -749,20 +749,6 @@ namespace OHOS::Util {
     }
 
     // Types
-    static napi_value CreateExternalType(napi_env env, napi_callback_info info)
-    {
-        napi_value result = nullptr;
-        const char testStr[] = "test";
-        napi_status status = napi_create_external(
-            env, (void*)testStr,
-            [](napi_env environment, void* data, void* hint) {},
-            (void*)testStr, &result);
-        if (status != napi_ok) {
-            return  NULL;
-        }
-        return result;
-    }
-
     static napi_value TypesConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -1378,7 +1364,6 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("printf", Printf),
             DECLARE_NAPI_FUNCTION("geterrorstring", GetErrorString),
             DECLARE_NAPI_FUNCTION("dealwithformatstring", DealWithFormatString),
-            DECLARE_NAPI_FUNCTION("createExternalType", CreateExternalType),
             DECLARE_NAPI_FUNCTION("randomUUID", RandomUUID),
             DECLARE_NAPI_FUNCTION("randomBinaryUUID", RandomBinaryUUID),
             DECLARE_NAPI_FUNCTION("parseUUID", ParseUUID)

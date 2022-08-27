@@ -22,7 +22,6 @@ interface HelpUtil{
     printf(formatString : string | Array<string | number | Fn>,
            ...valueString : Array<Object>) : string;
     geterrorstring(errnum : number) : string;
-    createExternalType() : Object;
     randomUUID(entropyCache?: boolean): string;
     randomBinaryUUID(entropyCache?: boolean): Uint8Array;
     parseUUID(uuid: string): Uint8Array;
@@ -416,12 +415,6 @@ function parseUUID(uuid: string): Uint8Array
     }
     let uuidArray : Uint8Array = helpUtil.parseUUID(uuid);
     return uuidArray;
-}
-
-function createExternalType() : Object
-{
-    let externalType : Object = helpUtil.createExternalType();
-    return externalType;
 }
 
 function callbackified(original : Fn, ...args : Array<string | number | Fn>) : void
@@ -1054,7 +1047,6 @@ export default {
     callbackWrapper: callbackWrapper,
     promiseWrapper: promiseWrapper,
     promisify: promisify,
-    createExternalType: createExternalType,
     randomUUID: randomUUID,
     randomBinaryUUID: randomBinaryUUID,
     parseUUID: parseUUID,
