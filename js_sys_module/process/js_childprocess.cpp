@@ -85,7 +85,7 @@ namespace OHOS::Js_sys_module::Process {
             dup2(stdErrFd_[1], 2); // 2:The value of parameter
             if (execl("/bin/sh", "sh", "-c", strCommnd.c_str(), nullptr) == -1) {
                 HILOG_ERROR("execl command failed");
-                exit(127); // 127:The parameter value
+                _exit(127); // 127:The parameter value
             }
         } else if (pid > 0) {
             if (optionsInfo_ == nullptr) {
