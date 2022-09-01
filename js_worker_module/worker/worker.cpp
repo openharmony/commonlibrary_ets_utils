@@ -34,8 +34,12 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
         Helper::CloseHelp::DeletePointer(script, true);
         return;
     }
-    uv_async_init(loop, &hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
-    uv_async_init(loop, &hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnError));
+    hostOnMessageSignal_ = new uv_async_t;
+    uv_async_init(loop, hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
+    hostOnMessageSignal_->data = this;
+    hostOnErrorSignal_ = new uv_async_t;
+    uv_async_init(loop, hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnError));
+    hostOnErrorSignal_->data = this;
 
     // 2. copy the script
     script_ = std::string(script);
@@ -163,7 +167,7 @@ void Worker::PublishWorkerOverSignal()
     // post NULL tell host worker is not running
     if (!HostIsStop()) {
         hostMessageQueue_.EnQueue(NULL);
-        uv_async_send(&hostOnMessageSignal_);
+        uv_async_send(hostOnMessageSignal_);
     }
 }
 
@@ -222,7 +226,7 @@ void Worker::ExecuteInThread(const void* data)
 
 void Worker::HostOnMessage(const uv_async_t* req)
 {
-    Worker* worker = Helper::DereferenceHelp::DereferenceOf(&Worker::hostOnMessageSignal_, req);
+    Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
         return;
@@ -259,7 +263,7 @@ void Worker::HostOnErrorInner()
 
 void Worker::HostOnError(const uv_async_t* req)
 {
-    Worker* worker = Helper::DereferenceHelp::DereferenceOf(&Worker::hostOnErrorSignal_, req);
+    Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
         return;
@@ -350,8 +354,18 @@ void Worker::HostOnMessageInner()
         // receive close signal.
         if (data == nullptr) {
             HILOG_INFO("worker:: worker received close signal");
-            uv_close(reinterpret_cast<uv_handle_t*>(&hostOnMessageSignal_), nullptr);
-            uv_close(reinterpret_cast<uv_handle_t*>(&hostOnErrorSignal_), nullptr);
+            uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
+                if (handle != nullptr) {
+                    delete reinterpret_cast<uv_async_t*>(handle);
+                    handle = nullptr;
+                }
+            });
+            uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
+                if (handle != nullptr) {
+                    delete reinterpret_cast<uv_async_t*>(handle);
+                    handle = nullptr;
+                }
+            });
             CloseHostCallback();
             return;
         }
@@ -417,7 +431,7 @@ void Worker::HandleException()
             std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
             if (!HostIsStop()) {
                 errorQueue_.EnQueue(data);
-                uv_async_send(&hostOnErrorSignal_);
+                uv_async_send(hostOnErrorSignal_);
             }
         }
     } else {
@@ -563,7 +577,7 @@ void Worker::PostMessageToHostInner(MessageDataType data)
     std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
     if (hostEnv_ != nullptr && !HostIsStop()) {
         hostMessageQueue_.EnQueue(data);
-        uv_async_send(&hostOnMessageSignal_);
+        uv_async_send(hostOnMessageSignal_);
     } else {
         HILOG_ERROR("worker:: worker host engine is nullptr.");
     }
@@ -741,11 +755,23 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
             {
                 std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
                 if (worker->UpdateHostState(INACTIVE)) {
-                    if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(&worker->hostOnMessageSignal_))) {
-                        uv_close(reinterpret_cast<uv_handle_t*>(&worker->hostOnMessageSignal_), nullptr);
+                    if (worker->hostOnMessageSignal_ != nullptr &&
+                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_))) {
+                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_), [](uv_handle_t* handle) {
+                            if (handle != nullptr) {
+                                delete reinterpret_cast<uv_async_t*>(handle);
+                                handle = nullptr;
+                            }
+                        });
                     }
-                    if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(&worker->hostOnErrorSignal_))) {
-                        uv_close(reinterpret_cast<uv_handle_t*>(&worker->hostOnErrorSignal_), nullptr);
+                    if (worker->hostOnErrorSignal_ != nullptr &&
+                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_))) {
+                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_), [](uv_handle_t* handle) {
+                            if (handle != nullptr) {
+                                delete reinterpret_cast<uv_async_t*>(handle);
+                                handle = nullptr;
+                            }
+                        });
                     }
                     worker->ReleaseHostThreadContent();
                 }
