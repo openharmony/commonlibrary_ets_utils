@@ -407,6 +407,7 @@ private:
     void ParentPortRemoveAllListenerInner();
     void ParentPortRemoveListenerInner(napi_env env, const char* type, napi_ref callback);
     void PreparePandafile();
+    void GetContainerScopeId(napi_env env);
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -426,6 +427,7 @@ private:
     std::string script_ {};
     std::string name_ {};
     ScriptMode scriptMode_ {CLASSIC};
+    int32_t scopeId_;
 
     MessageQueue workerMessageQueue_ {};
     MessageQueue hostMessageQueue_ {};

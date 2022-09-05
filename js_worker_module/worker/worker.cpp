@@ -25,6 +25,12 @@ Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
 {}
 
+void Worker::GetContainerScopeId(napi_env env)
+{
+    NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(env);
+    scopeId_ = hostEngine->GetContainerScopeIdFunc();
+}
+
 void Worker::StartExecuteInThread(napi_env env, const char* script)
 {
     // 1. init hostOnMessageSignal_ in host loop
@@ -34,6 +40,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
         Helper::CloseHelp::DeletePointer(script, true);
         return;
     }
+    GetContainerScopeId(env);
     hostOnMessageSignal_ = new uv_async_t;
     uv_async_init(loop, hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
     hostOnMessageSignal_->data = this;
@@ -240,6 +247,11 @@ void Worker::HostOnErrorInner()
         HILOG_ERROR("worker:: host thread maybe is over");
         return;
     }
+    NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
+        HILOG_ERROR("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
+    }
+
     napi_value obj = Helper::NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
     napi_value callback = Helper::NapiHelper::GetNameProperty(hostEnv_, obj, "onerror");
     bool isCallable = Helper::NapiHelper::IsCallable(hostEnv_, callback);
@@ -258,6 +270,9 @@ void Worker::HostOnErrorInner()
 
         // handle listeners
         HandleEventListeners(hostEnv_, obj, 1, argv, "error");
+    }
+    if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
+        HILOG_ERROR("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
     }
 }
 
@@ -345,6 +360,10 @@ void Worker::HostOnMessageInner()
         HILOG_ERROR("worker:: host thread maybe is over");
         return;
     }
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    if (!engine->InitContainerScopeFunc(scopeId_)) {
+        HILOG_ERROR("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
+    }
     napi_value obj = Helper::NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
     napi_value callback = Helper::NapiHelper::GetNameProperty(hostEnv_, obj, "onmessage");
     bool isCallable = Helper::NapiHelper::IsCallable(hostEnv_, callback);
@@ -389,6 +408,9 @@ void Worker::HostOnMessageInner()
         napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
         // handle listeners.
         HandleEventListeners(hostEnv_, obj, 1, argv, "message");
+    }
+    if (!engine->FinishContainerScopeFunc(scopeId_)) {
+        HILOG_ERROR("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
     }
 }
 
