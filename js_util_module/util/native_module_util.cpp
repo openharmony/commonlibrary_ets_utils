@@ -235,7 +235,7 @@ namespace OHOS::Util {
         NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
         bool flag = false;
         napi_get_value_bool(env, args[0], &flag);
-        std::string uuidString = GetStringUUID(env, flag);
+        std::string uuidString = OHOS::Util::GetStringUUID(env, flag);
         napi_value result = nullptr;
         size_t tempLen = uuidString.size();
         napi_create_string_utf8(env, uuidString.c_str(), tempLen, &result);
@@ -252,7 +252,7 @@ namespace OHOS::Util {
         NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
         bool flag = false;
         napi_get_value_bool(env, args[0], &flag);
-        napi_value result = GetBinaryUUID(env, flag);
+        napi_value result = OHOS::Util::GetBinaryUUID(env, flag);
         return result;
     }
 
@@ -267,7 +267,7 @@ namespace OHOS::Util {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
-        napi_value result = DoParseUUID(env, args[0]);
+        napi_value result = OHOS::Util::DoParseUUID(env, args[0]);
         return result;
     }
 
