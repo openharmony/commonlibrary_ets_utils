@@ -274,7 +274,7 @@ namespace OHOS::Util {
     static void SetVec(const napi_status fatSta, const napi_status bomSta, const bool fat, const bool bom,
         std::vector<int> &paraVec)
     {
-        if (paraVec.size() != 2) {
+        if (paraVec.size() != 2) { // 2:The number of parameters is 2
             return;
         }
         if (fatSta == napi_ok) {
@@ -337,7 +337,7 @@ namespace OHOS::Util {
             napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
-            napi_value argvArr[2] = { 0 };
+            napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
             NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argvArr, nullptr, &data));
             // first para
             NAPI_CALL(env, napi_get_value_string_utf8(env, argvArr[0], nullptr, 0, &typeLen));
@@ -369,7 +369,7 @@ namespace OHOS::Util {
 
     static napi_value TextdecoderDecode(napi_env env, napi_callback_info info)
     {
-        size_t tempArgc = 2;
+        size_t tempArgc = 2; // 2:The number of parameters is 2
         napi_value thisVar = nullptr;
         napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
         size_t argc = 0;
@@ -392,7 +392,7 @@ namespace OHOS::Util {
             valStr = textDecoder->Decode(env, argv, iStream);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
-            napi_value argvArr[2] = { 0 };
+            napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
             NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara));
             // first para
             NAPI_CALL(env, napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset));
@@ -529,9 +529,9 @@ namespace OHOS::Util {
     static napi_value EncodeInto(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t requireArgc = 2;
-        size_t argc = 2;
-        napi_value args[2] = { nullptr };
+        size_t requireArgc = 2; // 2:The number of parameters is 2
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
 
         NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");

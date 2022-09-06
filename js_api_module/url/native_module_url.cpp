@@ -27,8 +27,8 @@ namespace OHOS::Url {
     static void UrlStructor(napi_env &env, napi_callback_info &info, URL *&object)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 2;
-        napi_value argv[2] = { 0 };
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value argv[2] = { 0 }; // 2:The number of parameters is 2
         void *data = nullptr;
         napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data);
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
@@ -82,7 +82,7 @@ namespace OHOS::Url {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         size_t argc = 0;
-        napi_value argv[2] = { 0 };
+        napi_value argv[2] = { 0 }; // 2:The number of parameters is 2
         URL *object = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
         if (argc == 1) {
@@ -582,8 +582,8 @@ namespace OHOS::Url {
     static napi_value Append(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 2;
-        napi_value args[2] = { 0 };
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value args[2] = { 0 }; // 2:The number of parameters is 2
         void *data = nullptr;
         napi_get_cb_info(env, info, &argc, args, &thisVar, &data);
         if (argc != 2) { // 2:If the input parameter is not set to 2,
@@ -640,8 +640,8 @@ namespace OHOS::Url {
     static napi_value Set(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 2;
-        napi_value args[2] = { 0 };
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value args[2] = { 0 }; // 2:The number of parameters is 2
         napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
