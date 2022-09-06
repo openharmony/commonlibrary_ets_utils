@@ -80,8 +80,8 @@ namespace OHOS::Js_sys_module::Process {
     {
         napi_value thisVar = nullptr;
         void* data = nullptr;
-        size_t argc = 2;
-        napi_value args[2] = { nullptr };
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
 
         DealType(env, args, argc);
@@ -232,8 +232,8 @@ namespace OHOS::Js_sys_module::Process {
     static napi_value RunCommand(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 2;
-        napi_value args[2] = { nullptr };
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
 
         const char* childProcessClassName = "ChildProcess";
@@ -356,8 +356,8 @@ namespace OHOS::Js_sys_module::Process {
         napi_value thisVar = nullptr;
         bool flag = true;
         napi_value result = nullptr;
-        size_t requireArgc = 2;
-        size_t argc = 2;
+        size_t requireArgc = 2; // 2:The number of parameters is 2
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
@@ -395,8 +395,8 @@ namespace OHOS::Js_sys_module::Process {
 
     static napi_value KillSig(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
-        napi_value argv[2] = {0};
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value argv[2] = {0}; // 2:The number of parameters is 2
         napi_value thisVar = nullptr;
         void* data = nullptr;
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);

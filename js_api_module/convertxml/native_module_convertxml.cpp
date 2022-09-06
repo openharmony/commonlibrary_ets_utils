@@ -47,7 +47,7 @@ namespace OHOS::Xml {
         napi_value thisVar = nullptr;
         size_t requireMaxArgc = 2; // 2:MaxArgc
         size_t requireMinArgc = 1;
-        size_t argc = 2;
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = {nullptr};
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc <= requireMaxArgc, "Wrong number of arguments(Over)");

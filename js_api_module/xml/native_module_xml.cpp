@@ -28,7 +28,7 @@ namespace OHOS::xml {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         size_t argc = 0;
-        napi_value args[2] = { 0 };
+        napi_value args[2] = { 0 }; // 2:The number of parameters is 2
         XmlSerializer *object = nullptr;
         size_t iLength = 0;
         size_t offPos = 0;
