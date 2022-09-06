@@ -1714,16 +1714,7 @@ namespace OHOS::Url {
     {
         std::wstring winput(inputStr.length(), L' ');
         std::copy(inputStr.begin(), inputStr.end(), winput.begin());
-        const char *expr = "(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])";
-        size_t exprLen = strlen(expr);
-        wchar_t *exprPtr = nullptr;
-        size_t exprSize = mbstowcs(exprPtr, expr, 0) + 1;
-        if (exprSize > 0) {
-            exprPtr = new wchar_t[exprSize];
-            mbstowcs(exprPtr, expr, exprLen);
-        }
-        std::wregex wexpr(exprPtr);
-        delete[] exprPtr;
+        std::wregex wexpr(L"(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])");
         std::wsmatch result;
         std::wstring::const_iterator iterStart = winput.begin();
         std::wstring::const_iterator iterEnd = winput.end();
