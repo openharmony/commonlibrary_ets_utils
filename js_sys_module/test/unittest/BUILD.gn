@@ -59,8 +59,8 @@ ohos_unittest("test_process_unittest") {
     ]
   } else {
     external_deps = [
+      "c_utils:utils",
       "hilog:libhilog",
-      "utils_base:utils",
     ]
   }
 }

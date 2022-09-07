@@ -109,8 +109,8 @@ ohos_shared_library("util") {
     external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
   } else {
     external_deps = [
+      "c_utils:utils",
       "hilog:libhilog",
-      "utils_base:utils",
     ]
   }
   subsystem_name = "commonlibrary"
