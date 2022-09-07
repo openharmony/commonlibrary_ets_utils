@@ -129,8 +129,8 @@ template("container_lib") {
       ]
     } else {
       external_deps = [
+        "c_utils:utils",
         "hilog:libhilog",
-        "utils_base:utils",
       ]
     }
     subsystem_name = "commonlibrary"
