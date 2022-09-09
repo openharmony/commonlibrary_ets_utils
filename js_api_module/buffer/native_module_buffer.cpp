@@ -327,7 +327,7 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
         napi_value resultBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, argv[1], &type, &aryLen,
                                                 &resultData, &resultBuffer, &offset));
-        buffer->Init(reinterpret_cast<uint8_t *>(resultData), offset, aryLen);
+        buffer->Init(reinterpret_cast<uint8_t *>(resultData) - offset, offset, aryLen);
     } else if (paraType == ParaType::ARRAYBUFFER) {
         void *data = nullptr;
         size_t bufferSize = 0;

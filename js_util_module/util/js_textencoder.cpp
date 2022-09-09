@@ -70,7 +70,7 @@ namespace OHOS::Util {
         napi_value resultBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, dest, &type, &length, &resultData, &resultBuffer, &byteOffset));
 
-        char *writeResult = static_cast<char*>(resultData) + byteOffset;
+        char *writeResult = static_cast<char*>(resultData);
 
         int32_t nchars = 0;
         int32_t written = 0;
