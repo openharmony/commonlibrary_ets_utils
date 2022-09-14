@@ -46,7 +46,7 @@ namespace OHOS::Util {
         void *resultData = nullptr;
         napi_value resultBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
-        inputEncode_ = static_cast<const unsigned char*>(resultData) + byteOffset;
+        inputEncode_ = static_cast<const unsigned char*>(resultData);
         unsigned char *rets = EncodeAchieve(inputEncode_, length);
         if (rets == nullptr) {
             napi_throw_error(env, "-1", "encode input is null");
@@ -75,7 +75,7 @@ namespace OHOS::Util {
         void *resultData = nullptr;
         napi_value resultBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
-        inputEncode_ = static_cast<const unsigned char*>(resultData) + byteOffset;
+        inputEncode_ = static_cast<const unsigned char*>(resultData);
         unsigned char *ret = EncodeAchieve(inputEncode_, length);
         if (ret == nullptr) {
             FreeMemory(ret);
@@ -168,7 +168,7 @@ namespace OHOS::Util {
                 pret = DecodeAchieve(env, inputString, prolen);
             }
         } else if (type == napi_typedarray_type::napi_uint8_array) {
-            inputDecode_ = static_cast<const char*>(resultData) + byteOffset;
+            inputDecode_ = static_cast<const char*>(resultData);
             pret = DecodeAchieve(env, inputDecode_, length);
         }
         void *data = nullptr;
@@ -290,7 +290,7 @@ namespace OHOS::Util {
         napi_value resultBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
         unsigned char *inputEncode = nullptr;
-        inputEncode = static_cast<unsigned char*>(resultData) + byteOffset;
+        inputEncode = static_cast<unsigned char*>(resultData);
         CreateEncodePromise(env, inputEncode, length);
         return stdEncodeInfo_->promise;
     }
@@ -303,7 +303,7 @@ namespace OHOS::Util {
         napi_value resultBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
         unsigned char *inputEncode = nullptr;
-        inputEncode = static_cast<unsigned char*>(resultData) + byteOffset;
+        inputEncode = static_cast<unsigned char*>(resultData);
         CreateEncodeToStringPromise(env, inputEncode, length);
         return stdEncodeInfo_->promise;
     }
@@ -453,7 +453,7 @@ namespace OHOS::Util {
             napi_get_value_string_utf8(env, src, inputString, prolen + 1, &prolen);
             CreateDecodePromise(env, inputString, prolen);
         } else if (type == napi_typedarray_type::napi_uint8_array) {
-            inputDecode = static_cast<char*>(resultData) + byteOffset;
+            inputDecode = static_cast<char*>(resultData);
             CreateDecodePromise(env, inputDecode, length);
         }
         return stdDecodeInfo_->promise;
