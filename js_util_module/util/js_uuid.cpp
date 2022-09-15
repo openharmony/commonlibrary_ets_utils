@@ -55,10 +55,10 @@ unsigned char CharToHex(char in)
     return res;
 }
 
-unsigned char HexToChar(unsigned char _in)
+unsigned char HexToChar(unsigned char in)
 {
     unsigned char res = '0';
-    switch (_in) {
+    switch (in) {
         case HEX_ZERO_FLG: res = '0'; break;
         case HEX_ONE_FLG: res = '1'; break;
         case HEX_TWO_FLG: res = '2'; break;
@@ -97,9 +97,11 @@ unsigned char ConvertBits(std::string &input)
 bool GenerateUuid(unsigned char *data, int32_t size)
 {
     unsigned char buf[UUID_SIZE] = { 0 };  // 0: initialization
+    time_t timer = time(NULL);
     if (memcpy_s(data, size, buf, size) != EOK) {
         return false;
     }
+    RAND_seed(&timer, sizeof(time_t));
     int re = RAND_bytes(data, size);
     if (re == 0) {
         return false;
@@ -107,14 +109,15 @@ bool GenerateUuid(unsigned char *data, int32_t size)
     data[HEX_SIX_FLG] = (data[HEX_SIX_FLG] & 0x0F) | 0x40; // 0x0F,0x40 Operate the mark
     int m = 0x8;    // Upper of numerical range
     int n = 0xb;    // down of numerical range
-    unsigned char num = static_cast<unsigned char>(rand() % (n - m + 1) + m);
+    int r = static_cast<int>(data[HEX_EIGHT_FLG]);
+    unsigned char num = static_cast<unsigned char>(r % (n - m + 1) + m);
     data[HEX_EIGHT_FLG] = (data[HEX_EIGHT_FLG] & 0x0F) | (num << 4);  // 0x0F,4 Operate the mark
     return true;
 }
 
 bool GetUUID(napi_env env, bool entropyCache, UUID &uuid)
 {
-    int32_t size = g_uuidCache.size();
+    uint32_t size = g_uuidCache.size();
     if ((entropyCache == true) && (size != 0)) {
         uuid = g_uuidCache.front();
         g_uuidCache.pop();
