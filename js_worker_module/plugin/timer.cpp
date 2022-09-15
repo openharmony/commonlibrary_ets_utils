@@ -32,8 +32,9 @@ TimerCallbackInfo::~TimerCallbackInfo()
 
     uv_timer_stop(&timeReq_);
     uv_close(reinterpret_cast<uv_handle_t*>(&timeReq_), [](uv_handle_t* handle) {
-        if (handle != NULL) {
+        if (handle != nullptr) {
             delete (uv_timer_t*)handle;
+            handle = nullptr;
         }
     });
 }

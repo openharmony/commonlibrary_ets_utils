@@ -432,8 +432,8 @@ private:
     MessageQueue errorQueue_ {};
 
     uv_async_t workerOnMessageSignal_ {};
-    uv_async_t hostOnMessageSignal_ {};
-    uv_async_t hostOnErrorSignal_ {};
+    uv_async_t* hostOnMessageSignal_ = nullptr;
+    uv_async_t* hostOnErrorSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t debuggerOnPostTaskSignal_ {};
     std::function<void()> debuggerTask_;
