@@ -38,18 +38,10 @@ namespace OHOS::Uri {
         if (valuetype == napi_string) {
             std::string type = "";
             size_t typelen = 0;
-            if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-                HILOG_ERROR("can not get argv[0] size");
-                return nullptr;
-            }
+            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
             type.resize(typelen);
-            if (napi_get_value_string_utf8(env, argv[0], type.data(), typelen + 1, &typelen) != napi_ok) {
-                HILOG_ERROR("can not get argv[0] value");
-                return nullptr;
-            }
+            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type.data(), typelen + 1, &typelen));
             object = new Uri(type);
-        } else {
-            napi_throw_error(env, nullptr, "parameter type is error");
         }
         NAPI_CALL(env, napi_wrap(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {

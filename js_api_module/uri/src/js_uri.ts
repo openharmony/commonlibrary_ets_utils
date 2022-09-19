@@ -16,6 +16,7 @@ interface NativeUri{
     new(input : string) : NativeUri;
     normalize() : string;
     equals(other : NativeUri) : boolean;
+    equalsTo(other : NativeUri) : boolean;
     checkIsAbsolute() : boolean;
     toString() : string;
     scheme : string;
@@ -35,16 +36,31 @@ interface UriInterface{
 declare function requireInternal(s : string) : UriInterface;
 const uri = requireInternal('uri');
 
+const TypeErrorCodeId = 401;
+const SyntaxErrorCodeId = 10200002;
+
+class BusinessError extends Error {
+    code : number;
+    constructor(msg:string) {
+        super(msg)
+        this.name = 'BusinessError';
+        this.code = TypeErrorCodeId;
+    }
+}
+
 class URI {
     uricalss : NativeUri
     constructor(input : string) {
         if (typeof input !== 'string' || input.length === 0) {
-            throw new Error('input type err');
+            let err = new BusinessError(`Parameter error.The type of ${input} must be string`);
+            throw err;
         }
         this.uricalss = new uri.Uri(input);
         let errStr : string = this.uricalss.isFailed;
         if (errStr.length !== 0) {
-            throw new Error(errStr);
+            let err = new BusinessError('Syntax Error. Invalid Uri string');
+            err.code = SyntaxErrorCodeId;
+            throw err;
         }
     }
     toString() {
@@ -53,6 +69,14 @@ class URI {
 
     equals(other : URI) {
         return this.uricalss.equals(other.uricalss);
+    }
+
+    equalsTo(other : URI) {
+        if (other instanceof URI) {
+            return this.uricalss.equals(other.uricalss);
+        }
+        let err = new BusinessError(`Parameter error.The type of ${other} must be URI`);
+        throw err;
     }
 
     checkIsAbsolute() {
@@ -121,7 +145,6 @@ class URI {
     get fragment() {
         return decodeURIComponent(this.uricalss.fragment);
     }
-
 }
 
 function toAscllString(uriStr : string) {

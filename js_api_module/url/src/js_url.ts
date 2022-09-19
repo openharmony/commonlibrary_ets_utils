@@ -26,10 +26,30 @@ interface NativeURLSearchParams{
     get(getname : string) : string;
     entries() : Object;
     delete(deletename : string) : void;
+    updateParams() : void; 
     array : string[] | number[];
 }
+
+interface NativeURLParams{
+    new(input ?: object | string | Iterable<[]> | null | undefined) : NativeURLParams;
+    append(params1 : string, params2 : string) : void;
+    set(setname : string, setvalues : string) : void;
+    sort() : void;
+    has(hasname : string) : boolean;
+    toString() : string;
+    keys() : Object;
+    values(): Object;
+    getAll(getAllname : string) : string[];
+    get(getname : string) : string;
+    entries() : Object;
+    delete(deletename : string) : void;
+    updateParams() : void;
+    array : string[] | number[];
+}
+
 interface NativeUrl{
     new(input : string, base ?: string | NativeUrl) : NativeUrl;
+    new() : NativeUrl;
     protocol : string;
     username : string;
     password : string;
@@ -42,10 +62,12 @@ interface NativeUrl{
     pathname : string;
     onOrOff : boolean;
     GetIsIpv6 : boolean;
+    parseURL(input : string, base ?: string | NativeUrl | URL) : NativeUrl;
 }
 interface UrlInterface{
     URLSearchParams1 : NativeURLSearchParams;
     Url : NativeUrl;
+    URLParams1 : NativeURLParams;
     stringParmas(input : string) : string[];
 }
 
@@ -54,6 +76,126 @@ const UrlInterface = requireInternal('url');
 
 
 var seachParamsArr : Array<string> = [];
+const TypeErrorCodeId = 401;
+const SyntaxErrorCodeId = 10200002;
+
+class BusinessError extends Error {
+    code : number;
+    constructor(msg:string) {
+        super(msg)
+        this.name = 'BusinessError';
+        this.code = TypeErrorCodeId;
+    }
+}
+
+class URLParams {
+    urlcalss:NativeURLParams;
+    constructor(input : object | string | Iterable<[]> | null | undefined) {
+        let out : string[] = parameterProcess(input);
+        this.urlcalss = new UrlInterface.URLParams1();
+        this.urlcalss.array = out;
+    }
+
+    append(params1 : string, params2 : string) : void {
+        if (arguments.length === 0 || typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        if (arguments.length === 1 || typeof arguments[1] !== 'string') {
+            let error = new BusinessError(`Parameter error.The type of ${arguments[1]} must be string`);
+            throw error;
+        }
+        this.urlcalss.append(params1, params2);
+    }
+
+    set(setname : string, setvalues : string) : void {
+        if (arguments.length === 0 || typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        if (arguments.length === 1 || typeof arguments[1] !== 'string') {
+            let error = new BusinessError(`Parameter error.The type of ${arguments[1]} must be string`);
+            throw error;
+        }
+        this.urlcalss.set(setname, setvalues);
+    }
+
+    sort() : void {
+        this.urlcalss.sort();
+    }
+
+    has(hasname : string) : boolean {
+        return this.urlcalss.has(hasname);
+    }
+
+    toString() : string {
+        return this.urlcalss.toString();
+    }
+
+    keys() : Object {
+        return this.urlcalss.keys();
+    }
+
+    values() : Object {
+        return this.urlcalss.values();
+    }
+
+    getAll() : string[] {
+        if ((arguments.length !== 1) || (typeof arguments[0] !== 'string')) { 
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        return this.urlcalss.getAll(arguments[0]);
+    }
+
+    get(getname : string) : string {
+        if (arguments.length === 0 || typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        return this.urlcalss.get(getname);
+    }
+
+    entries() : Object {
+        return this.urlcalss.entries();
+    }
+
+    delete(deletename : string) : void {
+        if (arguments.length === 0 || typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        this.urlcalss.delete(deletename);
+    }
+
+    forEach(objfun : Function, thisArg ?: Object) {
+        if (typeof objfun !== 'function') {
+            let err = new BusinessError(`Parameter error.The type of ${objfun} must be function`);
+            throw err;
+        }
+        let array = this.urlcalss.array;
+        if (array.length == 0) {
+            return;
+        }
+        let size = array.length - 1;
+        for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
+            let key = array[i];
+            let value = array[i + 1];
+            objfun.call(thisArg, value, key, this);
+        }
+    }
+
+    [Symbol.iterator]() : Object {
+        return this.urlcalss.entries();
+    }
+
+    updateParams(input : string) : void {
+        let out = [];
+        out = parameterProcess(input);
+        this.urlcalss.array = out;
+    }
+}
+
 class URLSearchParams {
     urlcalss : NativeURLSearchParams;
     constructor(input : object | string | Iterable<[]> | null | undefined) {
@@ -113,7 +255,7 @@ class URLSearchParams {
         }
 
         let size = array.length - 1;
-        for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
+        for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
             let key = array[i];
             let value = array[i + 1];
             objfun.call(thisArg, value, key, this);
@@ -135,6 +277,17 @@ function toHleString(arg : string | symbol | number) {
     return arg.toString();
 }
 
+function parameterProcess(input : object | string | Iterable<[]>) {
+    if (input === null || typeof input === 'undefined') {
+        seachParamsArr = [];
+        return seachParamsArr;
+    } else if (typeof input === 'object' || typeof input === 'function') {
+        return sysObjectParams(input);
+    } else {
+        return initToStringSeachParams(input);
+    }
+}
+
 function parameterProcessing(input : object | string | Iterable<[]>) {
     if (input === null || typeof input === 'undefined') {
         seachParamsArr = [];
@@ -144,6 +297,13 @@ function parameterProcessing(input : object | string | Iterable<[]>) {
     } else {
         return initToStringSeachParams(input);
     }
+}
+
+function sysObjectParams(input : object | Iterable<[]>) {
+    if (typeof input[Symbol.iterator] === 'function') {
+        return iteratorMethodThrow(input as Iterable<[string]>);
+    }
+    return recordMethod(input);
 }
 
 function initObjectSeachParams(input : object | Iterable<[]>) {
@@ -168,6 +328,31 @@ function recordMethod(input : object) {
     return  seachParamsArr;
 }
 
+function iteratorMethodThrow(input : Iterable<[string]>) {
+    let pairs = [];
+    seachParamsArr = [];
+    for (const pair of input) {
+        if ((typeof pair !== 'object' && typeof pair !== 'function') || pair === null || typeof pair[Symbol.iterator] !== 'function') {
+            let err = new BusinessError(`Parameter error.The type of ${input} must be string[][]`);
+            throw err;        
+        }
+        const convertedPair = [];
+        for (let element of pair) {
+            convertedPair.push(element);
+        }
+        pairs.push(convertedPair);
+    }
+
+    for (const pair of pairs) {
+        if (pair.length !== 2) { // 2:Searching for the number and number of keys and values 2
+            let err = new BusinessError(`Parameter error.The type of ${input} must be string[][]`);
+            throw err;
+        }
+        seachParamsArr.push(pair[0], pair[1]);
+    }
+    return  seachParamsArr;
+}
+
 function iteratorMethod(input : Iterable<[string]>) {
     let pairs = [];
     seachParamsArr = [];
@@ -180,8 +365,8 @@ function iteratorMethod(input : Iterable<[string]>) {
     }
 
     for (const pair of pairs) {
-        if (pair.length !== 2) {
-            console.log('key-value-is-worong');
+        if (pair.length !== 2) { // 2:Searching for the number and number of keys and values 2
+            console.error('key-value-is-worong');
         }
         seachParamsArr.push(pair[0], pair[1]);
     }
@@ -189,6 +374,10 @@ function iteratorMethod(input : Iterable<[string]>) {
 }
 
 function initToStringSeachParams(input : string) {
+    if (typeof input !== 'string') {
+        let err = new BusinessError(`Parameter error.The type of ${input} must be string`);
+        throw err;
+    }
     if (input[0] === '?') {
         input = input.slice(1);
     }
@@ -209,23 +398,24 @@ class URL {
     protocol_ : string = '';
     pathname_ : string = '';
     port_ : string = '';
-    searchParamsClass_ !: URLSearchParams;
+    searchParamsClass_ !: URLSearchParams|URLParams;
     c_info !: NativeUrl;
-    constructor() {
+    public constructor()
+    public constructor(inputUrl: string, inputBase?: string | URL)
+    public constructor(inputUrl?: string, inputBase?: string | URL) {
+        if (arguments.length === 0) {
+        }
         let nativeUrl !: NativeUrl;
-        let inputUrl : string = '';
-        let inputBase : string | URL;
-
         if (arguments.length === 1) {
             inputUrl = arguments[0];
             if (typeof inputUrl === 'string' && inputUrl.length > 0) {
                 nativeUrl = new UrlInterface.Url(inputUrl);
             } else {
-                console.log('Input parameter error');
+                console.error('Input parameter error');
             }
         }
 
-        if (arguments.length === 2) {
+        if (arguments.length === 2) { // 2:The number of parameters is 2
             inputUrl = arguments[0];
             inputBase = arguments[1];
             if (typeof inputUrl === 'string') {
@@ -233,14 +423,66 @@ class URL {
                     if (inputBase.length > 0) {
                         nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
                     } else {
-                        console.log('Input parameter error');
+                        console.error('Input parameter error');
                         return;
                     }
-                } else if (typeof inputBase === 'object') {  //if (typeof inputBase === typeof nativeUrl)
+                } else if (typeof inputBase === 'object') {
                     let nativeBase = inputBase.getInfo();
                     nativeUrl = new UrlInterface.Url(inputUrl, nativeBase);
                 }
             }
+        }
+        if (arguments.length === 1 || arguments.length === 2) { // 2:The number of parameters is 2
+            this.c_info = nativeUrl;
+            if (nativeUrl.onOrOff) {
+                this.search_ = encodeURI(nativeUrl.search);
+                this.username_ = encodeURI(nativeUrl.username);
+                this.password_ = encodeURI(nativeUrl.password);
+                if (nativeUrl.GetIsIpv6) {
+                    this.hostname_ = nativeUrl.hostname;
+                    this.host_ = nativeUrl.host;
+                } else {
+                    this.hostname_ = encodeURI(nativeUrl.hostname);
+                    this.host_ = encodeURI(nativeUrl.host);
+                }
+                this.hash_ = encodeURI(nativeUrl.hash);
+                this.protocol_ = encodeURI(nativeUrl.protocol);
+                this.pathname_ = encodeURI(nativeUrl.pathname);
+                this.port_ = nativeUrl.port;
+                this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
+                this.searchParamsClass_ = new URLSearchParams(this.search_);
+                this.set_href();
+            } else {
+                console.error('constructor failed');
+            }
+        }
+    }
+
+    parseURL(inputUrl : string, inputBase ?: string | NativeUrl | URL) {   
+        if (typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        let nativeUrl !: NativeUrl;
+        if (arguments.length === 1) {
+            inputUrl = arguments[0];
+            nativeUrl = new UrlInterface.Url(inputUrl);
+        }
+        if (arguments.length === 2) { // 2:The number of parameters is 2
+            if (typeof inputBase === 'string') {
+                if (inputBase.length > 0) {
+                    nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
+                } else {
+                    let err = new BusinessError(`Parameter error.The type of ${inputBase} must be string`);
+                    throw err;
+                }
+            } else if (typeof inputBase === 'object') {
+                let nativeBase = inputBase.getInfo();
+                nativeUrl = new UrlInterface.Url(inputUrl, nativeBase);
+            } else {
+                let err = new BusinessError(`Parameter error.The type of ${inputBase} must be string or URL`);
+                throw err;
+            }  
         }
         this.c_info = nativeUrl;
         if (nativeUrl.onOrOff) {
@@ -262,9 +504,12 @@ class URL {
             this.searchParamsClass_ = new URLSearchParams(this.search_);
             this.set_href();
         } else {
-            console.log('constructor failed');
+            let err = new BusinessError('Syntax Error. Invalid Url string');
+            err.code = SyntaxErrorCodeId;
+            throw err;
         }
     }
+
     getInfo() {
         return this.c_info;
     }
@@ -461,4 +706,5 @@ class URL {
 export default {
     URLSearchParams: URLSearchParams,
     URL: URL,
+    URLParams: URLParams,
 }
