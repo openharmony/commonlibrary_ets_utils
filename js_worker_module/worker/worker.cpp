@@ -1187,6 +1187,9 @@ void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* m
 
 void Worker::ReleaseWorkerThreadContent()
 {
+    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    hostEngine->DeleteWorker(hostEngine, workerEngine);
     // 1. remove worker instance count
     {
         std::lock_guard<std::mutex> lock(g_workersMutex);
@@ -1205,7 +1208,6 @@ void Worker::ReleaseWorkerThreadContent()
     // 3. clear message send to worker thread
     workerMessageQueue_.Clear(workerEnv_);
     // 4. delete NativeEngine created in worker thread
-    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     workerEngine->CloseAsyncWork();
     reinterpret_cast<NativeEngine*>(workerEnv_)->DeleteEngine();
     Helper::CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
