@@ -427,7 +427,7 @@ private:
     std::string script_ {};
     std::string name_ {};
     ScriptMode scriptMode_ {CLASSIC};
-    int32_t scopeId_;
+    int32_t scopeId_ {-1};
 
     MessageQueue workerMessageQueue_ {};
     MessageQueue hostMessageQueue_ {};
