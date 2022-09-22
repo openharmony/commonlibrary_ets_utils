@@ -101,7 +101,8 @@ namespace OHOS::xml {
             napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
         }
         if (data) {
-            std::string strEnd = reinterpret_cast<char*>(data);
+            std::string strEnd(reinterpret_cast<char*>(data), len);
+            strEnd = strEnd.substr(0, std::strlen(strEnd.c_str()));
             if (argc == 1) {
                 object = new XmlPullParser(strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
