@@ -36,7 +36,7 @@ public:
     static char* GetString(napi_env env, napi_value value);
     static napi_value CreateBooleanValue(napi_env env, bool value);
     static napi_value GetGlobalObject(napi_env env);
-    static napi_ref CreateReference(napi_env env, napi_value value, uint32_t initial_refcount);
+    static napi_ref CreateReference(napi_env env, napi_value value, uint32_t refcount);
     static napi_value CreateUint32(napi_env env, uint32_t value);
     static uv_loop_t* GetLibUV(napi_env env);
     static napi_value GetReferenceValue(napi_env env, napi_ref ref);
