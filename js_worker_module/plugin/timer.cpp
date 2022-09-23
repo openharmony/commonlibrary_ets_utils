@@ -79,7 +79,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
 {
     // 1. check args
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc <= 0) {
+    if (argc < 1) {
         HILOG_WARN("first arg should be number");
         return nullptr;
     }
@@ -137,7 +137,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
 {
     // 1. check args
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc <= 0) {
+    if (argc < 1) {
         napi_throw_error(env, nullptr, "callback must be a function. received undefined");
         return nullptr;
     }
