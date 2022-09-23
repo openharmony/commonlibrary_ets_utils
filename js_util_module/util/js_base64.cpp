@@ -128,7 +128,7 @@ namespace OHOS::Util {
             for (size_t i = 0; i < TRAGET_FOUR; i++) {
                 if (temp < i) {
                     ret[index++] = BASE[BIT_FLG];
-                } else if (temp >= i) {
+                } else {
                     ret[index++] = BASE[(bitWise >> ((TRAGET_THREE - i) * TRAGET_SIX)) & SIXTEEN_FLG];
                 }
             }
@@ -374,7 +374,7 @@ namespace OHOS::Util {
             for (size_t i = 0; i < TRAGET_FOUR; i++) {
                 if (temp < i) {
                     ret[index++] = BASE[BIT_FLG];
-                } else if (temp >= i) {
+                } else {
                     ret[index++] = BASE[(bitWise >> ((TRAGET_THREE - i) * TRAGET_SIX)) & SIXTEEN_FLG];
                 }
             }
@@ -588,14 +588,12 @@ namespace OHOS::Util {
     {
         if (address != nullptr) {
             delete[] address;
-            address = nullptr;
         }
     }
     void FreeMemory(unsigned char *address)
     {
         if (address != nullptr) {
             delete[] address;
-            address = nullptr;
         }
     }
 }
