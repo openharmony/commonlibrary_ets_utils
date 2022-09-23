@@ -97,14 +97,12 @@ unsigned char ConvertBits(std::string &input)
 bool GenerateUuid(unsigned char *data, int32_t size)
 {
     unsigned char buf[UUID_SIZE] = { 0 };  // 0: initialization
-    time_t timer = time(NULL);
     if (memcpy_s(data, size, buf, size) != EOK) {
         return false;
     }
-    RAND_seed(&timer, sizeof(time_t));
-    int re = RAND_bytes(data, size);
-    if (re == 0) {
-        return false;
+    int32_t len = 0;
+    while (len < size) {
+        len += RAND_priv_bytes(data, size - len);
     }
     data[HEX_SIX_FLG] = (data[HEX_SIX_FLG] & 0x0F) | 0x40; // 0x0F,0x40 Operate the mark
     int m = 0x8;    // Upper of numerical range
@@ -123,7 +121,7 @@ bool GetUUID(napi_env env, bool entropyCache, UUID &uuid)
         g_uuidCache.pop();
     } else {
         if (size > MAX_CACHE_MASK) {
-            for (int32_t i = 0; i < size; i++) {
+            for (uint32_t i = 0; i < size; i++) {
                 g_uuidCache.pop();
             }
         }
