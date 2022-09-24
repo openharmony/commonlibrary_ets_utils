@@ -35,7 +35,7 @@ extern const char _binary_util_abc_end[];
 namespace OHOS::Util {
     static char* ApplyMemory(const size_t length)
     {
-        if (length <= 0) {
+        if (length == 0) {
             return nullptr;
         }
         char *type = new char[length + 1];

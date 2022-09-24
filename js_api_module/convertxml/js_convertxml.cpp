@@ -163,12 +163,12 @@ namespace OHOS::Xml {
         char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
         if (curNode->type == xmlElementType::XML_PI_NODE && !options_.ignoreInstruction) {
             if (curContent != nullptr) {
-                SetKeyValue(env, elementsObject, options_.instruction.c_str(), curContent);
+                SetKeyValue(env, elementsObject, options_.instruction, curContent);
                 bFlag = true;
             }
         } else if (curNode->type == xmlElementType::XML_COMMENT_NODE && !options_.ignoreComment) {
             if (curContent != nullptr) {
-                SetKeyValue(env, elementsObject, options_.comment.c_str(), curContent);
+                SetKeyValue(env, elementsObject, options_.comment, curContent);
                 bFlag = true;
             }
         } else if (curNode->type == xmlElementType::XML_CDATA_SECTION_NODE && !options_.ignoreCdata) {
@@ -207,8 +207,7 @@ namespace OHOS::Xml {
     {
         SetKeyValue(env, elementsObject, options_.type, GetNodeType(curNode->type));
         if (curNode->type == xmlElementType::XML_ELEMENT_NODE) {
-            SetKeyValue(env, elementsObject, options_.name.c_str(),
-                        reinterpret_cast<const char*>(curNode->name));
+            SetKeyValue(env, elementsObject, options_.name, reinterpret_cast<const char*>(curNode->name));
             bFlag = true;
         } else if (curNode->type == xmlElementType::XML_TEXT_NODE) {
             char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
