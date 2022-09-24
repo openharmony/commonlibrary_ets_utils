@@ -718,7 +718,7 @@ namespace OHOS::Url {
         return;
     }
 
-    static void IsAddressSign(size_t &strLastPos, size_t &iteaor, std::string &buf,
+    static void IsAddressSign(const size_t &strLastPos, const size_t &iteaor, std::string &buf,
         std::string &stringParm, std::vector<std::string> &seachParasVec)
     {
         if (strLastPos < iteaor) {
@@ -727,7 +727,7 @@ namespace OHOS::Url {
         seachParasVec.push_back(buf);
         return;
     }
-    static void DealParmsString(size_t &strLastPos, size_t &iteaor, std::string &buf,
+    static void DealParmsString(const size_t &strLastPos, const size_t &iteaor, std::string &buf,
         std::string &stringParm, std::vector<std::string> &seachParasVec)
     {
         if (strLastPos < iteaor) {
@@ -735,7 +735,7 @@ namespace OHOS::Url {
         }
         seachParasVec.push_back(buf);
     }
-    static void IsEqualCode(size_t &strStartPos, size_t &iteaor, size_t &strLastPos)
+    static void IsEqualCode(size_t &strStartPos, const size_t &iteaor, size_t &strLastPos)
     {
         if (strStartPos == iteaor) {
             strLastPos = iteaor + 1;

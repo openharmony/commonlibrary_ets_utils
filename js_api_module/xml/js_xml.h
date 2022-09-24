@@ -359,7 +359,7 @@ namespace OHOS::xml {
         bool ParseAttri(napi_env env, napi_value thisVar) const;
         bool ParseToken(napi_env env, napi_value thisVar) const;
         void ParseNspFunction();
-        void ParseNspFunc(size_t &i, std::string &attrName, bool &any);
+        void ParseNspFunc(size_t &i, const std::string &attrName, bool &any);
         void ParseInnerAttriDeclFunc(int &c);
         TagEnum DealExclamationGroup();
         void ParseEntityFunc(size_t start, std::string &out, bool isEntityToken, TextEnum textEnum);
