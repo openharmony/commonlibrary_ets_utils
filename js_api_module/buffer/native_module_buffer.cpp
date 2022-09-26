@@ -129,16 +129,15 @@ static std::string GetStringBase64(napi_env env, napi_value str)
 {
     string base64Str = GetStringASCII(env, str);
     string strDecoded = Base64Decode(base64Str);
-    return base64Str;
+    return strDecoded;
 }
 
 static napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value str, uint32_t size)
 {
-    string base64Str = GetStringBase64(env, str);
+    string strDecoded = GetStringBase64(env, str);
     Buffer *buffer = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
 
-    string strDecoded = Base64Decode(base64Str);
     buffer->WriteString(strDecoded, size);
     return thisVar;
 }
@@ -848,6 +847,7 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     string type = GetStringASCII(env, args[2]);
     EncodingType eType = Buffer::GetEncodingType(type);
     std::string str;
+    std::u16string u16Str;
     const char *data = nullptr;
     switch (eType) {
         case ASCII:
@@ -861,7 +861,7 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
             data = str.c_str();
             break;
         case UTF16LE: {
-            std::u16string u16Str = GetStringUtf16LE(env, args[0]);
+            u16Str = GetStringUtf16LE(env, args[0]);
             data = reinterpret_cast<char *>(const_cast<char16_t *>(u16Str.c_str()));
             break;
         }
