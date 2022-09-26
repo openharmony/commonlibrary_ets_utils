@@ -924,7 +924,7 @@ namespace OHOS::xml {
         return result;
     }
 
-    std::string XmlPullParser::GetNamespace(const std::string prefix)
+    std::string XmlPullParser::GetNamespace(const std::string &prefix)
     {
         size_t temp = GetNSCount(depth) << 1;
         if (temp) {
