@@ -101,8 +101,8 @@ ohos_shared_library("util") {
     ":util_js",
     "//commonlibrary/ets_utils/js_util_module/util/:util_js",
     "//foundation/arkui/napi/:ace_napi",
-    "//third_party/icu/icu4c:static_icuuc",
-    "//third_party/openssl:libcrypto_static",
+    "//third_party/icu/icu4c:shared_icuuc",
+    "//third_party/openssl:libcrypto_shared",
   ]
 
   if (is_standard_system) {
