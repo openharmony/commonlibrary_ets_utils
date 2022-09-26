@@ -491,8 +491,6 @@ int Buffer::BadChar(int patIndex, char temp, uint8_t *str, int tarlen)
 
 int Buffer::FindIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
 {
-    int badvalue = 0;
-    int distance = 0;
     if (soulen < tarlen) {
         return -1;
     }
@@ -509,13 +507,13 @@ int Buffer::FindIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
             j++;
         } else {
             if (j == 0) {
-                badvalue = BadChar(j, source[i], target, tarlen);
+                int badvalue = BadChar(j, source[i], target, tarlen);
                 i = i - badvalue;
                 j = 0;
             } else {
-                badvalue = BadChar(j, source[i], target, tarlen);
-                distance = badvalue > GoodSuffix(j, target, tarlen) ? badvalue : GoodSuffix(j, target, tarlen);
-                i = i - badvalue;
+                int badvalue = BadChar(j, source[i], target, tarlen);
+                int distance = badvalue > GoodSuffix(j, target, tarlen) ? badvalue : GoodSuffix(j, target, tarlen);
+                i = i - distance;
                 j = 0;
             }
         }

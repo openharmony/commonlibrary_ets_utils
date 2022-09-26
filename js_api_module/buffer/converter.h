@@ -65,14 +65,12 @@ static inline uint16_t Swap16(uint16_t number)
     return (number >> 8) | (number << 8);
 }
 
-std::string Utf16LEToUtf8(const std::u16string &u16Str);
 std::u16string Utf8ToUtf16LE(const std::string &u8Str, bool *ok = NULL);
-std::u16string ASCIIToUtf16LE(const std::string &asciiStr);
 std::string Utf16LEToANSI(const std::wstring &wstr);
 std::string Utf8ToUtf16leToANSI(const std::string &str);
 static inline bool IsBase64Char(unsigned char c);
 std::string Base64Encode(const unsigned char *src, size_t len);
 std::string Base64Decode(std::string const& encodedStr);
-std::string HexDecode(const std::string hexStr);
+std::string HexDecode(const std::string &hexStr);
 } // namespace OHOS::Buffer
 #endif // BUFFER_CONVERTER_H
