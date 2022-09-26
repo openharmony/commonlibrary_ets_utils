@@ -26,68 +26,6 @@ bool IsOneByte(uint8_t u8Char)
     return (u8Char & 0x80) == 0;
 }
 
-string Utf16LEToUtf8(const u16string &u16Str)
-{
-    if (u16Str.empty()) {
-        return string();
-    }
-    const char16_t *data = u16Str.data();
-    u16string::size_type len = u16Str.length();
-
-    string u8Str = "";
-    u8Str.reserve(len * 3); // reserve max length for utf8 string which is 3 times of len.
-
-    char16_t u16Char;
-    for (u16string::size_type i = 0; i < len; ++i) {
-        u16Char = data[i];
-        
-        if (u16Char < UTF8_ONE_BYTE_SCALE) { // the part for 1 byte
-            // U+ 00000000 ~ U+ 0000007f : 0xxx xxxx
-            u8Str.push_back(static_cast<char>(u16Char & LOWER_EIGHT_BITS_MASK)); // get lower 8 bits
-            continue;
-        }
-        if (u16Char >= UTF8_ONE_BYTE_SCALE && u16Char <= UTF8_TWO_BYTES_MAX) { // the part for 2 bytes
-            // U+ 00000080 ~ U+ 000007FF : 110xxxxx 10xxxxxx
-            u8Str.push_back(static_cast<char>(((u16Char >> UTF8_VALID_BITS) & LOWER_5_BITS_MASK) |
-                                                UTF8_TWO_BYTES_HEAD_BYTE_MASK));
-            u8Str.push_back(static_cast<char>((u16Char & LOWER_6_BITS_MASK) | UTF8_TAIL_BYTE_MASK));
-            continue;
-        }
-        if (u16Char >= HIGH_AGENT_RANGE_FROM && u16Char <= HIGH_AGENT_RANGE_TO) { // the part for 4 bytes
-            // U+ 00010000 ~ U+ 001FFFFF: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-            uint32_t highSur = u16Char;
-            uint32_t lowSur = data[++i];
-            // Conversion from surrogate pairs to UNICODE code points
-            uint32_t codePoint = highSur - HIGH_AGENT_RANGE_FROM;
-            // 10 : a half of 20 , shift left 10 bits
-            codePoint <<= 10;
-            codePoint |= lowSur - LOW_AGENT_RANGE_FROM;
-            codePoint += UTF16_SPECIAL_VALUE;
-            // 3 : shift right 3 times of UTF8_VALID_BITS
-            u8Str.push_back(static_cast<char>((codePoint >> 3 * UTF8_VALID_BITS) | UTF8_FOUR_BYTES_HEAD_BYTE_MASK));
-            // 2 : shift right 2 times of UTF8_VALID_BITS
-            u8Str.push_back(static_cast<char>(((codePoint >> 2 * UTF8_VALID_BITS) & LOWER_6_BITS_MASK) |
-                                              UTF8_TAIL_BYTE_MASK));
-            u8Str.push_back(static_cast<char>(((codePoint >> UTF8_VALID_BITS) & LOWER_6_BITS_MASK) |
-                                              UTF8_TAIL_BYTE_MASK));
-            u8Str.push_back(static_cast<char>((codePoint & LOWER_6_BITS_MASK) | UTF8_TAIL_BYTE_MASK));
-            continue;
-        }
-        { // the part for 3 bytes
-            // U+ 0000E000 ~ U+ 0000FFFF : 1110xxxx 10xxxxxx 10xxxxxx
-            // 2 : shift right 2 times of UTF8_VALID_BITS
-            u8Str.push_back(static_cast<char>(((u16Char >> 2 * UTF8_VALID_BITS) & LOWER_4_BITS_MASK) |
-                                              UTF8_THREE_BYTES_HEAD_BYTE_MASK));
-            u8Str.push_back(static_cast<char>(((u16Char >> UTF8_VALID_BITS) & LOWER_6_BITS_MASK) |
-                                              UTF8_TAIL_BYTE_MASK));
-            u8Str.push_back(static_cast<char>((u16Char & LOWER_6_BITS_MASK) | UTF8_TAIL_BYTE_MASK));
-            continue;
-        }
-    }
-    
-    return u8Str;
-}
-
 u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
 {
     u16string u16Str = u"";
@@ -165,23 +103,10 @@ u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
     return u16Str;
 }
 
-u16string ASCIIToUtf16LE(const string &asciiStr)
-{
-    u16string u16Str = u"";
-    string::size_type len = asciiStr.length();
-    // 2 : the length of utf16le str is half of ascii str
-    for (string::size_type i = 0; i < len / 2; ++i) {
-        // Combine two ascii characters into a UNICODE code point
-        uint16_t codePoint = (asciiStr[i * 2] & LOWER_8_BITS_MASK) | (asciiStr[i * 2 + 1] << 8);
-        u16Str.push_back(static_cast<char16_t>(codePoint));
-    }
-    return u16Str;
-}
-
 string Utf16LEToANSI(const u16string &wstr)
 {
     string ret = "";
-    for (u16string::const_iterator it = wstr.begin(); it != wstr.end(); it++) {
+    for (u16string::const_iterator it = wstr.begin(); it != wstr.end(); ++it) {
         char16_t wc = (*it);
         // get the lower bit from the UNICODE code point
         char c = static_cast<char>(wc & LOWER_8_BITS_MASK);
@@ -325,7 +250,7 @@ string Base64Decode(string const& encodedStr)
     return ret;
 }
 
-bool IsValidHex(const string hex)
+bool IsValidHex(const string &hex)
 {
     bool isValid = false;
     for (unsigned int i = 0; i < hex.size(); i++) {
@@ -341,7 +266,7 @@ bool IsValidHex(const string hex)
     return isValid;
 }
 
-string HexDecode(const string hexStr)
+string HexDecode(const string &hexStr)
 {
     auto arr = hexStr.c_str();
     string nums = "";
@@ -349,17 +274,17 @@ string HexDecode(const string hexStr)
 
     // 2 : means a half length of hex str's size
     for (unsigned int i = 0; i < arrSize / 2; i++) {
-        string hexStr = "";
+        string hexStrTmp = "";
         int num = 0;
         // 2 : offset is i * 2
-        hexStr.push_back(arr[i * 2]);
+        hexStrTmp.push_back(arr[i * 2]);
         // 2 : offset is i * 2 + 1
-        hexStr.push_back(arr[i * 2 + 1]);
-        if (!IsValidHex(hexStr)) {
+        hexStrTmp.push_back(arr[i * 2 + 1]);
+        if (!IsValidHex(hexStrTmp)) {
             break;
         }
         // 16 : the base is 16
-        num = stoi(hexStr, 0, 16);
+        num = stoi(hexStrTmp, 0, 16);
         nums.push_back(static_cast<char>(num));
     }
 
