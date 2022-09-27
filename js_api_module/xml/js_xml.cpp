@@ -924,7 +924,7 @@ namespace OHOS::xml {
         return result;
     }
 
-    std::string XmlPullParser::GetNamespace(std::string prefix)
+    std::string XmlPullParser::GetNamespace(const std::string &prefix)
     {
         size_t temp = GetNSCount(depth) << 1;
         if (temp) {
@@ -950,7 +950,7 @@ namespace OHOS::xml {
             strTemp.replace(iPos, strSrc.size(), strDes);
         }
     }
-    void XmlPullParser::ParseNspFunc(size_t &i, std::string &attrName, bool &any)
+    void XmlPullParser::ParseNspFunc(size_t &i, const std::string &attrName, bool &any)
     {
         size_t j = (nspCounts_[depth]++) << 1;
         size_t uiSize = nspStack_.size();
@@ -1028,9 +1028,6 @@ namespace OHOS::xml {
             name_ = name_.substr(cut + 1);
         }
         namespace_ = GetNamespace(prefix_);
-        if (namespace_ == "") {
-            namespace_ = "";
-        }
         return any;
     }
 

@@ -45,14 +45,14 @@ namespace OHOS::Url {
 
     void PreliminaryWork()
     {
-        std::vector<char> g_specialSymbols = {'#', '%', '/', ':', '?', '@', '[', '\\', ']', '<', '>', '^', '|'};
+        std::vector<char> g_specialSymbolsTmp = {'#', '%', '/', ':', '?', '@', '[', '\\', ']', '<', '>', '^', '|'};
         size_t invalidCharLength = static_cast<size_t>(BitsetStatusFlag::BIT_ASCII_32);
         for (size_t i = 0; i <= invalidCharLength; ++i) {
             g_specialCharForBit.set(i);
         }
-        size_t len = g_specialSymbols.size();
+        size_t len = g_specialSymbolsTmp.size();
         for (size_t i = 0; i < len; ++i) {
-            g_specialCharForBit.set(g_specialSymbols[i]);
+            g_specialCharForBit.set(g_specialSymbolsTmp[i]);
         }
         g_specialCharForBit.set(static_cast<size_t>(BitsetStatusFlag::BIT_ASCII_127));
     }
@@ -226,9 +226,9 @@ namespace OHOS::Url {
         }
         if (userAndPasswd.find('@') != std::string::npos) {
             while (true) {
-                size_t pos = 0;
-                if ((pos = userAndPasswd.find('@')) != std::string::npos) {
-                    userAndPasswd = userAndPasswd.replace(pos, 1, "%40");
+                size_t posTmp = 0;
+                if ((posTmp = userAndPasswd.find('@')) != std::string::npos) {
+                    userAndPasswd = userAndPasswd.replace(posTmp, 1, "%40");
                 } else {
                     break;
                 }
@@ -592,8 +592,8 @@ namespace OHOS::Url {
         std::vector<std::string> nums;
         std::string res = "";
         while (val > 0) {
-            int num = val % 256; // 256:ipv4 max value
-            nums.push_back(std::to_string(num));
+            int numConver = val % 256; // 256:ipv4 max value
+            nums.push_back(std::to_string(numConver));
             val /= 256; // 256:ipv4 max value
             }
         for (int i = static_cast<int>(nums.size()) - 1; i >= 0; --i) {
@@ -803,7 +803,7 @@ namespace OHOS::Url {
         }
     }
 
-    void AnalysisFilescheme(std::string& input, UrlData& urlinfo,
+    void AnalysisFilescheme(const std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         std::string strPath = urlinfo.scheme + input;
@@ -813,7 +813,7 @@ namespace OHOS::Url {
     }
 
     void AnalyInfoPath(std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags,
-        UrlData& urlinfo, std::string& input)
+        UrlData& urlinfo, const std::string& input)
     {
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT9));
         if (urlinfo.path.empty()) {
@@ -901,7 +901,7 @@ namespace OHOS::Url {
         }
     }
 
-    void AnalysisOnlyHost(std::string& input, UrlData& urlinfo,
+    void AnalysisOnlyHost(const std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, size_t pos)
     {
         std::string strHost = input;
@@ -925,7 +925,7 @@ namespace OHOS::Url {
         }
         AnalysisHost(strHost, urlinfo.host, flags, true);
     }
-    void JudgePos(size_t &pos, size_t &length, std::string& input)
+    void JudgePos(size_t &pos, const size_t &length, const std::string& input)
     {
         for (pos = 0; pos < length; pos++) {
             if (input[pos] == '/' || input[pos] == '\\') {
@@ -951,8 +951,7 @@ namespace OHOS::Url {
             if (input.size() == 0) {
                 flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
                 return;
-            } else if (input.size() != 0 && (input.find('/') != std::string::npos ||
-                input.find('\\') != std::string::npos)) {
+            } else if ((input.find('/') != std::string::npos || input.find('\\') != std::string::npos)) {
                 size_t length = input.size();
                 JudgePos(pos, length, input);
                 std::string strHost = input.substr(0, pos);
@@ -1005,7 +1004,7 @@ namespace OHOS::Url {
     }
 
     void BaseInfoToUrl(const UrlData& baseInfo,
-        const std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> baseflags, UrlData& urlData,
+        const std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& baseflags, UrlData& urlData,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool inputIsEmpty)
     {
         urlData.scheme = baseInfo.scheme;
@@ -1621,7 +1620,7 @@ namespace OHOS::Url {
         size_t i = 0;
         for (; i < lenStr; i++) {
             auto charaEncode = static_cast<size_t>(wstr[i]);
-            if (charaEncode >= 0 && charaEncode < numOfAscii) {
+            if (charaEncode < numOfAscii) {
                 // 2:Defines the escape range of ASCII characters
                 if (IsEscapeRange(charaEncode)) {
                     output += reviseChar[charaEncode];
