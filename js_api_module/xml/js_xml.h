@@ -324,7 +324,7 @@ namespace OHOS::xml {
         void Replace(std::string &strTemp, std::string strSrc, std::string strDes) const;
         size_t GetNSCount(size_t iTemp);
         void Parse(napi_env env, napi_value thisVar);
-        std::string GetNamespace(std::string prefix);
+        std::string GetNamespace(const std::string &prefix);
         napi_value DealOptionInfo(napi_env env, napi_value napiObj, napi_callback_info info);
         TagEnum ParseTagType(bool inDeclaration);
         void SkipText(std::string chars);
@@ -359,7 +359,7 @@ namespace OHOS::xml {
         bool ParseAttri(napi_env env, napi_value thisVar) const;
         bool ParseToken(napi_env env, napi_value thisVar) const;
         void ParseNspFunction();
-        void ParseNspFunc(size_t &i, std::string &attrName, bool &any);
+        void ParseNspFunc(size_t &i, const std::string &attrName, bool &any);
         void ParseInnerAttriDeclFunc(int &c);
         TagEnum DealExclamationGroup();
         void ParseEntityFunc(size_t start, std::string &out, bool isEntityToken, TextEnum textEnum);
