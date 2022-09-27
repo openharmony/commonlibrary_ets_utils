@@ -155,7 +155,7 @@ std::string GetStringUUID(napi_env env, bool entropyCache)
 std::string GetFormatUUID(const UUID &uuid)
 {
     std::string format = "";
-    for (int32_t i = 0; i < sizeof(uuid.elements); i++) {
+    for (size_t i = 0; i < sizeof(uuid.elements); i++) {
         unsigned char value = uuid.elements[i];
         if (i >= HEX_FOUR_FLG && i % 2 == 0 && i <= HEX_TEN_FLG) {  // 2: step value
             format += "-";
