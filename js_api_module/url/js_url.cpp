@@ -1064,10 +1064,10 @@ namespace OHOS::Url {
                 return;
             }
             if (input.find('#') != std::string::npos) {
-                size_t pos = input.find('#');
-                std::string fragment = input.substr(pos);
+                size_t posTmp = input.find('#');
+                std::string fragment = input.substr(posTmp);
                 AnalysisFragment(fragment, urlData.fragment, flags);
-                input = input.substr(0, pos);
+                input = input.substr(0, posTmp);
             }
             if (input.find('?') != std::string::npos) {
                 size_t position = input.find('?');
@@ -1762,7 +1762,6 @@ namespace OHOS::Url {
         size_t size = searchParams.size() - 1;
         for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             if (searchParams[i] == sname) {
-                std::string str = searchParams[i + 1];
                 napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &result);
                 return result;
             }

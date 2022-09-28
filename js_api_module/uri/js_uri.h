@@ -140,7 +140,7 @@ namespace OHOS::Uri {
         bool AnalysisPort(size_t pos);
         bool AnalysisIPV4();
 
-        std::string Split(std::string path) const;
+        std::string Split(const std::string &path) const;
 
     private:
         UriData uriData_;

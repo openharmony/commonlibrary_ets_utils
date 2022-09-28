@@ -67,7 +67,7 @@ namespace OHOS::xml {
             out_.append("  ");
         }
     }
-    std::string Replace(std::string str, std::string str1, std::string str2)
+    std::string Replace(std::string str, const std::string &str1, const std::string &str2)
     {
         size_t iPos = 0;
         while ((iPos = str.find(str1)) != std::string::npos) {
@@ -97,7 +97,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetNamespace(std::string prefix, std::string nsTemp)
+    void XmlSerializer::SetNamespace(std::string prefix, const std::string &nsTemp)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -119,7 +119,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::StartElement(std::string name)
+    void XmlSerializer::StartElement(const std::string &name)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -156,7 +156,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetAttributes(std::string name, std::string value)
+    void XmlSerializer::SetAttributes(const std::string &name, const std::string &value)
     {
         out_ = "";
         if (type != "isStart" && type != "isAttri") {
@@ -242,7 +242,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetText(std::string text)
+    void XmlSerializer::SetText(const std::string &text)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -260,7 +260,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetComment(std::string comment)
+    void XmlSerializer::SetComment(const std::string &comment)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -303,7 +303,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetDocType(std::string text)
+    void XmlSerializer::SetDocType(const std::string &text)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {

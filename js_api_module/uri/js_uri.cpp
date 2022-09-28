@@ -423,7 +423,7 @@ namespace OHOS::Uri {
     }
 
 
-    std::string Uri::Split(std::string path) const
+    std::string Uri::Split(const std::string &path) const
     {
         std::string normalizeUri = "";
         if (!uriData_.scheme.empty()) {
