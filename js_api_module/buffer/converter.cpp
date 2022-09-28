@@ -284,7 +284,7 @@ string HexDecode(const string &hexStr)
             break;
         }
         // 16 : the base is 16
-        num = stoi(hexStrTmp, 0, 16);
+        num = stoi(hexStrTmp, nullptr, 16);
         nums.push_back(static_cast<char>(num));
     }
 
