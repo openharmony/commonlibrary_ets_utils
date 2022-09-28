@@ -27,7 +27,7 @@
 #include "unicode/unistr.h"
 #include "utils/log.h"
 namespace OHOS::Util {
-    TextDecoder::TextDecoder(std::string buff, std::vector<int> optionVec)
+    TextDecoder::TextDecoder(const std::string &buff, std::vector<int> optionVec)
         : label_(0), encStr_(buff), tranTool_(nullptr, nullptr)
     {
         uint32_t i32Flag = 0;
