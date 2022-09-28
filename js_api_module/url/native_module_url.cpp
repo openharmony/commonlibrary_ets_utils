@@ -697,7 +697,7 @@ namespace OHOS::Url {
         return result;
     }
 
-    static void IsPlusSign(size_t &strLastPos, size_t &iteaor, std::string &buf, std::string &stringParm)
+    static void IsPlusSign(size_t &strLastPos, const size_t &iteaor, std::string &buf, std::string &stringParm)
     {
         if (strLastPos < iteaor) {
             buf += stringParm.substr(strLastPos, iteaor - strLastPos);
@@ -706,7 +706,7 @@ namespace OHOS::Url {
         strLastPos = iteaor + 1;
         return;
     }
-    static void IsEqualSign(size_t &strLastPos, size_t &iteaor,
+    static void IsEqualSign(size_t &strLastPos, const size_t &iteaor,
         std::string &buf, std::string &stringParm, std::vector<std::string> &seachParasVec)
     {
         if (strLastPos < iteaor) {
