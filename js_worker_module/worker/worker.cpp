@@ -1085,6 +1085,10 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
     napi_set_named_property(env, exports, "Worker", workerClazz);
 
     if (!engine->IsMainThread()) {
+        if (g_workers.size() <= 0) {
+            HILOG_INFO("worker:: The old worker is not used.");
+            return exports;
+        }
         Worker* worker = nullptr;
         for (auto item = g_workers.begin(); item != g_workers.end(); item++) {
             if ((*item)->IsSameWorkerEnv(env)) {
