@@ -35,7 +35,7 @@ namespace OHOS::xml {
          * @param bufferLengthis the length of the ArrayBuffer or
          * DataView memory used to receive the written xml information.
          */
-        XmlSerializer(char *pStart, size_t bufferLength, std::string encoding = "utf-8") :pStart_(pStart),
+        XmlSerializer(char *pStart, size_t bufferLength, const std::string &encoding = "utf-8") :pStart_(pStart),
             iLength_(bufferLength), encoding_(encoding) {};
 
         /**
@@ -49,7 +49,7 @@ namespace OHOS::xml {
          * @param name The parameter is the key value of the property.
          * @param value The parameter is the value of the property.
          */
-        void SetAttributes(std::string name, std::string value);
+        void SetAttributes(const std::string &name, const std::string &value);
 
         /**
          * Writes an empty element.
@@ -68,7 +68,7 @@ namespace OHOS::xml {
          *
          * @param name The parameter is the element name of the current element.
          */
-        void StartElement(std::string name);
+        void StartElement(const std::string &name);
 
         /**
          * Write element end tag.
@@ -81,14 +81,14 @@ namespace OHOS::xml {
          * @param prefix The parameter is the prefix of the current element and its children.
          * @param nsTemp The parameter is the namespace of the current element and its children.
          */
-        void SetNamespace(std::string prefix, std::string nsTemp);
+        void SetNamespace(std::string prefix, const std::string &nsTemp);
 
         /**
          * Write the comment property.
          *
          * @param comment The parameter is the comment content of the current element.
          */
-        void SetComment(std::string comment);
+        void SetComment(const std::string &comment);
 
         /**
          * Write CDATA attributes.
@@ -102,14 +102,14 @@ namespace OHOS::xml {
          *
          * @param comment The parameter is the content of the CDATA attribute.
          */
-        void SetText(std::string text);
+        void SetText(const std::string &text);
 
         /**
          * Write DocType property.
          *
          * @param text The parameter is the content of the DocType property.
          */
-        void SetDocType(std::string text);
+        void SetDocType(const std::string &text);
 
         /**
          * write an escape.
@@ -297,10 +297,10 @@ namespace OHOS::xml {
                 this->position = -1;
                 this->max = -1;
             };
-            SrcLinkList(SrcLinkList* pNext, std::string strTemp, int iPos, int iMax) :next(pNext),
+            SrcLinkList(SrcLinkList* pNext, const std::string &strTemp, int iPos, int iMax) :next(pNext),
                 strBuffer(strTemp), position(iPos), max(iMax) {}
         };
-        XmlPullParser(std::string strXml, std::string encoding) : strXml_(strXml),
+        XmlPullParser(const std::string &strXml, const std::string &encoding) : strXml_(strXml),
             encoding_(encoding) {};
         ~XmlPullParser()
         {

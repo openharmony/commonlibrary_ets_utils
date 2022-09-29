@@ -54,7 +54,7 @@ namespace OHOS::Util {
          * @param buff Encoding format.
          * @param optionVec There are two attributes of code related option parameters: fatal and ignorebom.
          */
-        TextDecoder(std::string buff, std::vector<int> optionVec);
+        TextDecoder(const std::string &buff, std::vector<int> optionVec);
 
         /**
          * Destructor of textencoder.
