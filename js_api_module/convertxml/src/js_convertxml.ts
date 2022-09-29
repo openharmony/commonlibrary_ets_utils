@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-interface ReceiveObject{
+interface ReceiveObject {
     obj : Object;
     spaces ?: string | number;
 }
@@ -21,12 +21,23 @@ interface ReceiveObject{
 interface NativeConvertXml {
     new() : NativeConvertXml;
     convert(strXml : string, options ?: Object) : ReceiveObject;
+    convertToJSObject(strXml : string, options ?: Object) : ReceiveObject;
 }
 interface ConvertXML {
     ConvertXml : NativeConvertXml;
 }
 declare function requireInternal(s : string) : ConvertXML;
 const convertXml = requireInternal('ConvertXML');
+
+const TypeErrorCode = 401;
+class BusinessError extends Error {
+    code:number;
+    constructor(msg:string) {
+        super(msg)
+        this.name = 'BusinessError'
+        this.code = TypeErrorCode;
+    }
+}
 
 class ConvertXML {
     convertxmlclass : NativeConvertXml;
@@ -43,10 +54,28 @@ class ConvertXML {
         }
         return converted;
     }
+
+    convertToJSObject(strXml : string, options ?: Object) {
+        if (typeof strXml !== 'string') {
+            let error = new BusinessError(`Parameter error.The type of ${strXml} must be string`);
+            throw error;
+        }
+        if (options && typeof options !== 'object') {
+            let error = new BusinessError(`Parameter error.The type of ${options} must be object`);
+            throw error;
+        }
+        strXml = DealXml(strXml);
+        let converted = this.convertxmlclass.convert(strXml, options);
+        let strEnd : string = '';
+        if (converted.hasOwnProperty('spaces')) {
+            let space : string | number | undefined = converted.spaces;
+            delete converted.spaces;
+        }
+        return converted;
+    }
 }
 
-function DealXml(strXml : string)
-{
+function DealXml(strXml : string) {
     let idx : number = 0;
     let idxSec : number = 0;
     let idxThir : number = 0;
@@ -73,8 +102,7 @@ function DealXml(strXml : string)
     return strXml;
 }
 
-function DealPriorReplace(strXml : string, idx : number, idxThir : number)
-{
+function DealPriorReplace(strXml : string, idx : number, idxThir : number) {
     let i : number = idx + 1;
     for (; i < idxThir ; i++) {
         let cXml : string = strXml.charAt(i);
@@ -107,8 +135,7 @@ function DealPriorReplace(strXml : string, idx : number, idxThir : number)
     return strXml;
 }
 
-function DealLaterReplace(strXml : string, idx : number, idxThir : number)
-{
+function DealLaterReplace(strXml : string, idx : number, idxThir : number) {
     let i : number = idx + 1;
     for (; i < idxThir ; i++) {
         let cXml : string = strXml.charAt(i)
