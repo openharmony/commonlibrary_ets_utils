@@ -579,4 +579,141 @@ namespace OHOS::Js_sys_module::Process {
         }
         eventMap.clear();
     }
+
+    napi_value ProcessManager::IsAppUid(napi_env env, napi_value uid) const
+    {
+        int32_t number = 0;
+        napi_value result = nullptr;
+        bool flag = true;
+        napi_get_value_int32(env, uid, &number);
+        if (number > 0) {
+            const auto appId = number % PER_USER_RANGE;
+            if (appId >= FIRST_APPLICATION_UID && appId <= LAST_APPLICATION_UID) {
+                napi_get_boolean(env, flag, &result);
+                return result;
+            }
+            flag = false;
+            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+            return result;
+        } else {
+            flag = false;
+            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+            return result;
+        }
+    }
+
+    napi_value ProcessManager::GetUidForName(napi_env env, napi_value name) const
+    {
+        napi_value convertResult = nullptr;
+        size_t bufferSize = 0;
+        if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get name size");
+            return nullptr;
+        }
+        std::string result = "";
+        result.reserve(bufferSize + 1);
+        result.resize(bufferSize);
+        if (napi_get_value_string_utf8(env, name, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get name value");
+            return nullptr;
+        }
+        struct passwd user;
+        int32_t uid = 0;
+        struct passwd *bufp = nullptr;
+        long bufLen = sysconf(_SC_GETPW_R_SIZE_MAX);
+        if (bufLen == -1) {
+            bufLen = 16384; // 16384:Should be more than enough
+        }
+
+        std::string buf;
+        buf.reserve(bufLen + 1);
+        buf.resize(bufLen);
+        if (getpwnam_r(result.c_str(), &user, buf.data(), bufLen, &bufp) == 0 && bufp != nullptr) {
+            uid = static_cast<int32_t>(bufp->pw_uid);
+            napi_create_int32(env, uid, &convertResult);
+            return convertResult;
+        }
+        napi_create_int32(env, (-1), &convertResult);
+        return convertResult;
+    }
+
+    napi_value ProcessManager::GetThreadPriority(napi_env env, napi_value tid) const
+    {
+        errno = 0;
+        int32_t proTid = 0;
+        napi_value result = nullptr;
+        napi_get_value_int32(env, tid, &proTid);
+        int32_t pri = getpriority(PRIO_PROCESS, proTid);
+        if (errno) {
+            napi_throw_error(env, "-1", "Invalid tid");
+        }
+        napi_create_int32(env, pri, &result);
+        return result;
+    }
+
+    napi_value ProcessManager::GetSystemConfig(napi_env env, napi_value name) const
+    {
+        int32_t number = 0;
+        napi_value result = nullptr;
+        napi_get_value_int32(env, name, &number);
+        auto configinfo = static_cast<int32_t>(sysconf(number));
+        napi_create_int32(env, configinfo, &result);
+        return result;
+    }
+
+    napi_value ProcessManager::GetEnvironmentVar(napi_env env, napi_value name) const
+    {
+        size_t bufferSize = 0;
+        if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get name size");
+            return nullptr;
+        }
+        std::string result = "";
+        result.reserve(bufferSize + 1);
+        result.resize(bufferSize);
+        if (napi_get_value_string_utf8(env, name, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+            HILOG_ERROR("can not get name value");
+            return nullptr;
+        }
+        std::string temp = "";
+        temp = result;
+        char buf[260 * NUM_OF_DATA] = { 0 }; // 260:Only numbers path String size is 260.
+        size_t length = sizeof(buf);
+        auto envNum = uv_os_getenv(temp.c_str(), buf, &length);
+        napi_value convertResult = nullptr;
+        if (envNum == UV_ENOENT) {
+            NAPI_CALL(env, napi_get_undefined(env, &convertResult));
+            return convertResult;
+        }
+        napi_create_string_utf8(env, buf, strlen(buf), &convertResult);
+        return convertResult;
+    }
+
+    void ProcessManager::Exit(napi_env env, napi_value number) const
+    {
+        int32_t result = 0;
+        napi_get_value_int32(env, number, &result);
+        exit(result);
+    }
+
+    napi_value ProcessManager::Kill(napi_env env, napi_value signal, napi_value proid)
+    {
+        int32_t pid = 0;
+        int32_t sig = 0;
+        napi_get_value_int32(env, proid, &pid);
+        napi_get_value_int32(env, signal, &sig);
+        uv_pid_t ownPid = uv_os_getpid();
+        // 64:The maximum valid signal value is 64.
+        if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
+            napi_throw_error(env, "0", "process exit");
+        }
+        bool flag = false;
+        int err = uv_kill(pid, sig);
+        if (!err) {
+            flag = true;
+        }
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+        return result;
+    }
 } // namespace OHOS::Js_sys_module::Process

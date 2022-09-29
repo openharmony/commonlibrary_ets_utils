@@ -242,5 +242,77 @@ namespace OHOS::Js_sys_module::Process {
         int FIRST_APPLICATION_UID = 10000;
         int LAST_APPLICATION_UID = 19999;
     };
+    class ProcessManager {
+    public:
+        /**
+         * Create process object.
+         */
+        explicit ProcessManager() {}
+
+        /**
+         * Process destructor.
+         */
+        virtual ~ProcessManager() {}
+
+        /**
+         * Determine whether the uid belongs to the application.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param uid The parameter is the uid of the application.
+         */
+        napi_value IsAppUid(napi_env env, napi_value uid) const;
+
+        /**
+         * Get process uid by process name.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param name The parameter is the process name.
+         */
+        napi_value GetUidForName(napi_env env, napi_value name) const;
+
+        /**
+         * Get thread priority based on specified tid.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param tid The parameter is the specified thread tid.
+         */
+        napi_value GetThreadPriority(napi_env env, napi_value tid) const;
+
+        /**
+         * Get system configuration information.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param name The parameter is the name of the specified system configuration parameter.
+         */
+        napi_value GetSystemConfig(napi_env env, napi_value name) const;
+
+        /**
+         * Use this method to get the value corresponding to the environment variable.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param name The parameter is the environment variable name.
+         */
+        napi_value GetEnvironmentVar(napi_env env, napi_value name) const;
+
+        /**
+         * Terminate the program.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param number The parameter is the exit code of the process.
+         */
+        void Exit(napi_env env, napi_value number) const;
+
+        /**
+         * Send a signal to the specified process and end the specified process.
+         *
+         * @param env The parameter is NAPI environment variables.
+         * @param signal The parameter is the signal sent.
+         * @param proid The parameter is the id of the process.
+         */
+        napi_value Kill(napi_env env, napi_value signal, napi_value proid);
+    private:
+        int FIRST_APPLICATION_UID = 10000;
+        int LAST_APPLICATION_UID = 19999;
+    };
 } // namespace OHOS::Js_sys_module::Process
 #endif // PROCESS_JS_PROCESS_H_
