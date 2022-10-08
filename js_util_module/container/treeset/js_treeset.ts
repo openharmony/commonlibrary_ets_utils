@@ -27,6 +27,7 @@ if (arkPritvate !== undefined) {
 }
 if (flag || fastTreeSet === undefined) {
   const RBTreeAbility = requireNapi('util.struct');
+  const ErrorUtil = RBTreeAbility.ErrorUtil;
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -54,6 +55,10 @@ if (flag || fastTreeSet === undefined) {
   class TreeSet<T> {
     private constitute: any;
     constructor(comparator?: (firstValue: T, secondValue: T) => boolean) {
+      ErrorUtil.checkNewTargetIsNullError("TreeSet", !new.target);
+      if (comparator) {
+        ErrorUtil.checkTypeError("comparator", "callable", comparator);
+      }
       this.constitute = new RBTreeAbility.RBTreeClass(comparator);
       return new Proxy(this, new HandlerTreeSet());
     }
@@ -61,24 +66,30 @@ if (flag || fastTreeSet === undefined) {
       return this.constitute.memberNumber;
     }
     isEmpty(): boolean {
+      ErrorUtil.checkBindError("isEmpty", TreeSet, this);
       return this.constitute.isEmpty();
     }
     has(value: T): boolean {
+      ErrorUtil.checkBindError("has", TreeSet, this);
       return this.constitute.getNode(value) !== undefined;
     }
     add(value: T): boolean {
+      ErrorUtil.checkBindError("add", TreeSet, this);
       this.constitute.addNode(value);
       return true;
     }
     remove(value: T): boolean {
+      ErrorUtil.checkBindError("remove", TreeSet, this);
       let result: T = undefined;
       result = this.constitute.removeNode(value);
       return result !== undefined;
     }
     clear() {
+      ErrorUtil.checkBindError("clear", TreeSet, this);
       this.constitute.clearTree();
     }
     getFirstValue(): T {
+      ErrorUtil.checkBindError("getFirstValue", TreeSet, this);
       let tempNode: any = undefined;
       tempNode = this.constitute.firstNode();
       if (tempNode === undefined) {
@@ -87,6 +98,7 @@ if (flag || fastTreeSet === undefined) {
       return tempNode.key;
     }
     getLastValue(): T {
+      ErrorUtil.checkBindError("getLastValue", TreeSet, this);
       let tempNode: any = undefined;
       tempNode = this.constitute.lastNode();
       if (tempNode === undefined) {
@@ -95,6 +107,7 @@ if (flag || fastTreeSet === undefined) {
       return tempNode.key;
     }
     getLowerValue(key: T): T {
+      ErrorUtil.checkBindError("getLowerValue", TreeSet, this);
       let tempNode: any = undefined;
       tempNode = this.constitute.getNode(key);
       if (tempNode === undefined) {
@@ -113,6 +126,7 @@ if (flag || fastTreeSet === undefined) {
       return undefined;
     }
     getHigherValue(key: T): T {
+      ErrorUtil.checkBindError("getHigherValue", TreeSet, this);
       let tempNode: any = undefined;
       tempNode = this.constitute.getNode(key);
       if (tempNode === undefined) {
@@ -131,6 +145,7 @@ if (flag || fastTreeSet === undefined) {
       undefined;
     }
     popFirst(): T {
+      ErrorUtil.checkBindError("popFirst", TreeSet, this);
       let firstNode: any = undefined;
       firstNode = this.constitute.firstNode();
       if (firstNode === undefined) {
@@ -141,6 +156,7 @@ if (flag || fastTreeSet === undefined) {
       return value;
     }
     popLast(): T {
+      ErrorUtil.checkBindError("popLast", TreeSet, this);
       let lastNode: any = undefined;
       lastNode = this.constitute.lastNode();
       if (lastNode === undefined) {
@@ -151,6 +167,7 @@ if (flag || fastTreeSet === undefined) {
       return value;
     }
     values(): IterableIterator<T> {
+      ErrorUtil.checkBindError("values", TreeSet, this);
       let data: any = this.constitute;
       let count: number = 0;
       return {
@@ -169,6 +186,8 @@ if (flag || fastTreeSet === undefined) {
     }
     forEach(callbackfn: (value?: T, key?: T, set?: TreeSet<T>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", TreeSet, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       let data: any = this.constitute;
       let tagetArray: Array<any> = data.keyValueArray;
       for (let i: number = 0; i < data.memberNumber; i++) {
@@ -176,6 +195,7 @@ if (flag || fastTreeSet === undefined) {
       }
     }
     entries(): IterableIterator<[T, T]> {
+      ErrorUtil.checkBindError("entries", TreeSet, this);
       let data: any = this.constitute;
       let count: number = 0;
       return {
@@ -193,6 +213,7 @@ if (flag || fastTreeSet === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<T> {
+      ErrorUtil.checkBindError("Symbol.iterator", TreeSet, this);
       return this.values();
     }
   }

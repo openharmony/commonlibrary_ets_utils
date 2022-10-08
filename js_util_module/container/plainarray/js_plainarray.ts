@@ -27,6 +27,7 @@ if (arkPritvate !== undefined) {
 }
 if (flag || fastPlainArray === undefined) {
   const PlainAbility = requireNapi('util.struct');
+  const ErrorUtil = PlainAbility.ErrorUtil;
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -53,6 +54,7 @@ if (flag || fastPlainArray === undefined) {
   }
   class PlainArray<T> extends PlainAbility.PlainArrayClass<T> {
     constructor() {
+      ErrorUtil.checkNewTargetIsNullError("PlainArray", !new.target);
       super();
       return new Proxy(this, new HandlerPlainArray());
     }
@@ -60,12 +62,12 @@ if (flag || fastPlainArray === undefined) {
       return this.memberNumber;
     }
     add(key: number, value: T): void {
-      if (typeof key !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
+      ErrorUtil.checkBindError("add", PlainArray, this);
+      ErrorUtil.checkTypeError("key", "number", key);
       this.addmember(key, value);
     }
     clear(): void {
+      ErrorUtil.checkBindError("clear", PlainArray, this);
       if (this.memberNumber != 0) {
         this.members.keys = [];
         this.members.values = [];
@@ -73,6 +75,7 @@ if (flag || fastPlainArray === undefined) {
       }
     }
     clone(): PlainArray<T> {
+      ErrorUtil.checkBindError("clone", PlainArray, this);
       let clone: PlainArray<T> = new PlainArray<T>();
       clone.memberNumber = this.memberNumber;
       clone.members.keys = this.members.keys.slice();
@@ -80,44 +83,41 @@ if (flag || fastPlainArray === undefined) {
       return clone;
     }
     has(key: number): boolean {
-      if (typeof key !== 'number') {
-        return false;
-      }
+      ErrorUtil.checkBindError("has", PlainArray, this);
+      ErrorUtil.checkTypeError("key", "number", key);
       return this.binarySearchAtPlain(key) > -1;
     }
     get(key: number): T {
-      if (typeof key !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
+      ErrorUtil.checkBindError("get", PlainArray, this);
+      ErrorUtil.checkTypeError("key", "number", key);
       let index: number = 0;
       index = this.binarySearchAtPlain(key);
       return this.members.values[index];
     }
     getIndexOfKey(key: number): number {
-      if (typeof key !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
+      ErrorUtil.checkBindError("getIndexOfKey", PlainArray, this);
+      ErrorUtil.checkTypeError("key", "number", key);
       let result: number = 0;
       result = this.binarySearchAtPlain(key);
       return result < 0 ? -1 : result;
     }
     getIndexOfValue(value: T): number {
+      ErrorUtil.checkBindError("getIndexOfValue", PlainArray, this);
       return this.members.values.indexOf(value);
     }
     isEmpty(): boolean {
+      ErrorUtil.checkBindError("isEmpty", PlainArray, this);
       return this.memberNumber === 0;
     }
     getKeyAt(index: number): number {
-      if (typeof index !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
+      ErrorUtil.checkBindError("getKeyAt", PlainArray, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
       return this.members.keys[index];
     }
     remove(key: number): T {
+      ErrorUtil.checkBindError("remove", PlainArray, this);
+      ErrorUtil.checkTypeError("key", "number", key);
       let result: any = undefined;
-      if (typeof key !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
       let index: number = 0;
       index = this.binarySearchAtPlain(key);
       if (index < 0) {
@@ -126,38 +126,28 @@ if (flag || fastPlainArray === undefined) {
       return this.deletemember(index);
     }
     removeAt(index: number): T {
-      if (typeof index !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
-      let result: any = undefined;
-      if (index >= this.memberNumber || index < 0) {
-        return result;
-      }
+      ErrorUtil.checkBindError("removeAt", PlainArray, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
       return this.deletemember(index);
     }
     removeRangeFrom(index: number, size: number): number {
-      if (typeof index !== 'number' || typeof size !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
-      if (index >= this.memberNumber || index < 0) {
-        throw new RangeError('the index is out-of-bounds');
-      }
+      ErrorUtil.checkBindError("removeRangeFrom", PlainArray, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
+      ErrorUtil.checkTypeError("size", "Integer", size);
+      ErrorUtil.checkRangeError("index", index, 0, this.memberNumber - 1);
       let safeSize: number = 0;
       safeSize = (this.memberNumber - (index + size) < 0) ? this.memberNumber - index : size;
       this.deletemember(index, safeSize);
       return safeSize;
     }
     setValueAt(index: number, value: T): void {
-      if (typeof index !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
-      if (index >= 0 && index < this.memberNumber) {
-        this.members.values[index] = value;
-      } else {
-        throw new RangeError('the index is out-of-bounds');
-      }
+      ErrorUtil.checkBindError("setValueAt", PlainArray, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
+      ErrorUtil.checkRangeError("index", index, 0, this.memberNumber - 1);
+      this.members.values[index] = value;
     }
     toString(): string {
+      ErrorUtil.checkBindError("toString", PlainArray, this);
       let result: string[] = [];
       for (let i: number = 0; i < this.memberNumber; i++) {
         result.push(this.members.keys[i] + ':' + this.members.values[i]);
@@ -165,18 +155,21 @@ if (flag || fastPlainArray === undefined) {
       return result.join(',');
     }
     getValueAt(index: number): T {
-      if (typeof index !== 'number') {
-        throw new TypeError('the index is not integer');
-      }
+      ErrorUtil.checkBindError("getValueAt", PlainArray, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
+      ErrorUtil.checkRangeError("index", index, 0, this.memberNumber - 1);
       return this.members.values[index];
     }
     forEach(callbackfn: (value: T, index?: number, PlainArray?: PlainArray<T>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", PlainArray, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       for (let i: number = 0; i < this.memberNumber; i++) {
         callbackfn.call(thisArg, this.members.values[i], this.members.keys[i]);
       }
     }
     [Symbol.iterator](): IterableIterator<[number, T]> {
+      ErrorUtil.checkBindError("Symbol.iterator", PlainArray, this);
       let data: PlainArray<T> = this;
       let count: number = 0;
       return {

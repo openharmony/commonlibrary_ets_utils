@@ -24,14 +24,14 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
+declare function requireNapi(s: string): any;
 if (flag || fastDeque === undefined) {
+  const {ErrorUtil} = requireNapi('util.struct');
   class HandlerDeque<T> {
     private isOutBounds(prop: any): void {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        if (index < 0) {
-          throw new RangeError('the index is out-of-bounds');
-        }
+        ErrorUtil.checkRangeError("index", index, 0);
       }
     }
     get(obj: Deque<T>, prop: any): T {
@@ -48,12 +48,9 @@ if (flag || fastDeque === undefined) {
       }
       let index: number = Number(prop);
       if (Number.isInteger(index)) {
-        if (index < 0) {
-          throw new RangeError('index is out-of-bounds');
-        } else {
-          obj[index] = value;
-          return true;
-        }
+        ErrorUtil.checkRangeError("index", index, 0);
+        obj[index] = value;
+        return true;
       }
       return false;
     }
@@ -79,7 +76,7 @@ if (flag || fastDeque === undefined) {
       return
     }
     setPrototypeOf(): T {
-      throw new RangeError('Can setPrototype on Deque Object');
+      throw new Error(`Can't setPrototype on Deque Object`);
     }
   }
   interface IterableIterator<T> {
@@ -93,6 +90,7 @@ if (flag || fastDeque === undefined) {
     private capacity: number;
     private rear: number;
     constructor() {
+      ErrorUtil.checkNewTargetIsNullError("Deque", !new.target);
       this.front = 0;
       this.capacity = 8;
       this.rear = 0;
@@ -104,6 +102,7 @@ if (flag || fastDeque === undefined) {
       return result;
     }
     insertFront(element: T): void {
+      ErrorUtil.checkBindError("insertFront", Deque, this);
       if (this.isFull()) {
         this.increaseCapacity();
       }
@@ -111,6 +110,7 @@ if (flag || fastDeque === undefined) {
       this[this.front] = element;
     }
     insertEnd(element: T): void {
+      ErrorUtil.checkBindError("insertEnd", Deque, this);
       if (this.isFull()) {
         this.increaseCapacity();
       }
@@ -118,18 +118,21 @@ if (flag || fastDeque === undefined) {
       this.rear = (this.rear + 1) % (this.capacity + 1);
     }
     getFirst(): T {
+      ErrorUtil.checkBindError("getFirst", Deque, this);
       if (this.isEmpty()) {
         return undefined;
       }
       return this[this.front];
     }
     getLast(): T {
+      ErrorUtil.checkBindError("getLast", Deque, this);
       if (this.isEmpty()) {
         return undefined;
       }
       return this[this.rear - 1];
     }
     has(element: T): boolean {
+      ErrorUtil.checkBindError("has", Deque, this);
       let result: boolean = false;
       this.forEach(function (value) {
         if (value === element) {
@@ -139,6 +142,7 @@ if (flag || fastDeque === undefined) {
       return result;
     }
     popFirst(): T {
+      ErrorUtil.checkBindError("popFirst", Deque, this);
       if (this.isEmpty()) {
         return undefined;
       }
@@ -148,6 +152,7 @@ if (flag || fastDeque === undefined) {
       return result;
     }
     popLast(): T {
+      ErrorUtil.checkBindError("popLast", Deque, this);
       if (this.isEmpty()) {
         return undefined;
       }
@@ -158,6 +163,8 @@ if (flag || fastDeque === undefined) {
     }
     forEach(callbackfn: (value: T, index?: number, deque?: Deque<T>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", Deque, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       let k: number = 0;
       let i: number = this.front;
       while (true) {
@@ -194,6 +201,7 @@ if (flag || fastDeque === undefined) {
       return this.length === 0;
     }
     [Symbol.iterator](): IterableIterator<T> {
+      ErrorUtil.checkBindError("Symbol.iterator", Deque, this);
       let deque: Deque<T> = this;
       let count: number = deque.front;
       return {
