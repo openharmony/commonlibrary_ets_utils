@@ -500,6 +500,178 @@ namespace OHOS::Js_sys_module::Process {
         return object.GetEnvironmentVar(env, args);
     }
 
+    static napi_value ThrowError(napi_env env, const char* errMessage)
+    {
+        napi_value processError = nullptr;
+        napi_value code = nullptr;
+        uint32_t errCode = 401; // 401:The code parameter of this error is 401
+        napi_create_uint32(env, errCode, &code);
+        napi_value name = nullptr;
+        std::string errName = "BuisnessError";
+        napi_value msg = nullptr;
+        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
+        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
+        napi_create_error(env, nullptr, msg, &processError);
+        napi_set_named_property(env, processError, "code", code);
+        napi_set_named_property(env, processError, "name", name);
+        napi_throw(env, processError);
+        napi_value res = nullptr;
+        NAPI_CALL(env, napi_get_undefined(env, &res));
+        return res;
+    }
+
+    static napi_value GetValueFromInfo(napi_env env, napi_callback_info info, napi_value &thisVar)
+    {
+        size_t argc = 1;
+        napi_value args = nullptr;
+        napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
+        return args;
+    }
+
+    static napi_value KillSigOfProcess(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value argv[2] = {0}; // 2:The number of parameters is 2
+        napi_value thisVar = nullptr;
+        void* data = nullptr;
+        napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
+        napi_valuetype valuetype0;
+        NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype0));
+        napi_valuetype valuetype1;
+        NAPI_CALL(env, napi_typeof(env, argv[1], &valuetype1));
+        if (valuetype0 != napi_number || valuetype1 != napi_number) {
+            return ThrowError(env, "The type of v must be number.");
+        }
+        ProcessManager *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->Kill(env, argv[0], argv[1]);
+    }
+    static napi_value ExitOfProcess(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value args = GetValueFromInfo(env, info, thisVar);
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+        if (valuetype != napi_number) {
+            return ThrowError(env, "The type of v must be number.");
+        }
+        ProcessManager *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        object->Exit(env, args);
+        napi_value res = nullptr;
+        NAPI_CALL(env, napi_get_undefined(env, &res));
+        return res;
+    }
+    static napi_value GetSystemConfigOfProcess(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value args = GetValueFromInfo(env, info, thisVar);
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+        if (valuetype != napi_number) {
+            return ThrowError(env, "The type of v must be number.");
+        }
+        ProcessManager *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->GetSystemConfig(env, args);
+    }
+
+    static napi_value GetThreadPriorityOfProcess(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value args = GetValueFromInfo(env, info, thisVar);
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+        if (valuetype != napi_number) {
+            return ThrowError(env, "The type of v must be number.");
+        }
+        ProcessManager *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->GetThreadPriority(env, args);
+    }
+
+    static napi_value GetUidForNameOfProcess(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value args = GetValueFromInfo(env, info, thisVar);
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+        if (valuetype != napi_string) {
+            return ThrowError(env, "The type of v must be string.");
+        }
+        ProcessManager *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->GetUidForName(env, args);
+    }
+
+    static napi_value IsAppUidOfProcess(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value args = GetValueFromInfo(env, info, thisVar);
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+        if (valuetype != napi_number) {
+            return ThrowError(env, "The type of v must be number.");
+        }
+        ProcessManager *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->IsAppUid(env, args);
+    }
+
+    static napi_value GetEnvironmentVarOfProcess(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value args = GetValueFromInfo(env, info, thisVar);
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+        if (valuetype != napi_string) {
+            return ThrowError(env, "The type of v must be string.");
+        }
+        ProcessManager *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->GetEnvironmentVar(env, args);
+    }
+
+    static napi_value ProcessManagerConstructor(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        void *data = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
+        auto objectInfo = new ProcessManager();
+        napi_wrap(
+            env, thisVar, objectInfo,
+            [](napi_env environment, void *data, void *hint) {
+                auto objInfo = reinterpret_cast<ProcessManager*>(data);
+                if (objInfo != nullptr) {
+                    delete objInfo;
+                }
+            },
+            nullptr, nullptr);
+        return thisVar;
+    }
+
+    static napi_value ProcessInit(napi_env env, napi_value exports)
+    {
+        const char *procssClassName = "ProcessManager";
+        napi_value processClass = nullptr;
+        napi_property_descriptor processDesc[] = {
+            DECLARE_NAPI_FUNCTION("kill", KillSigOfProcess),
+            DECLARE_NAPI_FUNCTION("exit", ExitOfProcess),
+            DECLARE_NAPI_FUNCTION("isAppUid", IsAppUidOfProcess),
+            DECLARE_NAPI_FUNCTION("getUidForName", GetUidForNameOfProcess),
+            DECLARE_NAPI_FUNCTION("getThreadPriority", GetThreadPriorityOfProcess),
+            DECLARE_NAPI_FUNCTION("getSystemConfig", GetSystemConfigOfProcess),
+            DECLARE_NAPI_FUNCTION("getEnvironmentVar", GetEnvironmentVarOfProcess),
+        };
+        NAPI_CALL(env, napi_define_class(env, procssClassName, strlen(procssClassName), ProcessManagerConstructor,
+                                         nullptr, sizeof(processDesc) / sizeof(processDesc[0]),
+                                         processDesc, &processClass));
+        napi_property_descriptor desc[] = {
+            DECLARE_NAPI_PROPERTY("ProcessManager", processClass)
+        };
+        napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+        return exports;
+    }
     static napi_value Init(napi_env env, napi_value exports)
     {
         Process object;
@@ -533,7 +705,7 @@ namespace OHOS::Js_sys_module::Process {
             DECLARE_NAPI_FUNCTION("getEnvironmentVar", GetEnvironmentVar),
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
-
+        ProcessInit(env, exports);
         napi_value obj = nullptr;
         NAPI_CALL(env, napi_create_object(env, &obj));
 
