@@ -294,6 +294,7 @@ namespace OHOS::Util {
         CreateEncodePromise(env, inputEncode, length);
         return stdEncodeInfo_->promise;
     }
+    
     napi_value Base64::EncodeToString(napi_env env, napi_value src)
     {
         napi_typedarray_type type;
@@ -307,6 +308,7 @@ namespace OHOS::Util {
         CreateEncodeToStringPromise(env, inputEncode, length);
         return stdEncodeInfo_->promise;
     }
+
     void Base64::CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length)
     {
         napi_value resourceName = nullptr;
@@ -320,6 +322,7 @@ namespace OHOS::Util {
                                reinterpret_cast<void*>(stdEncodeInfo_), &stdEncodeInfo_->worker);
         napi_queue_async_work(env, stdEncodeInfo_->worker);
     }
+
     void Base64::CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length)
     {
         napi_value resourceName = nullptr;
@@ -332,6 +335,7 @@ namespace OHOS::Util {
                                reinterpret_cast<void*>(stdEncodeInfo_), &stdEncodeInfo_->worker);
         napi_queue_async_work(env, stdEncodeInfo_->worker);
     }
+
     unsigned char *EncodeAchieves(napi_env env, EncodeInfo *encodeInfo)
     {
         const unsigned char *input = encodeInfo->sinputEncode;
@@ -382,12 +386,14 @@ namespace OHOS::Util {
         ret[index] = 0;
         return ret;
     }
+
     void Base64::ReadStdEncode(napi_env env, void *data)
     {
         auto stdEncodeInfo = reinterpret_cast<EncodeInfo*>(data);
         unsigned char *rets = EncodeAchieves(env, stdEncodeInfo);
         stdEncodeInfo->sinputEncoding = rets;
     }
+
     void Base64::EndStdEncode(napi_env env, napi_status status, void *buffer)
     {
         auto stdEncodeInfo = reinterpret_cast<EncodeInfo*>(buffer);
@@ -408,12 +414,14 @@ namespace OHOS::Util {
         delete[] stdEncodeInfo->sinputEncoding;
         delete stdEncodeInfo;
     }
+
     void Base64::ReadStdEncodeToString(napi_env env, void *data)
     {
         auto stdEncodeInfo = reinterpret_cast<EncodeInfo*>(data);
         unsigned char *rets = EncodeAchieves(env, stdEncodeInfo);
         stdEncodeInfo->sinputEncoding = rets;
     }
+
     void Base64::EndStdEncodeToString(napi_env env, napi_status status, void *buffer)
     {
         auto stdEncodeInfo = reinterpret_cast<EncodeInfo*>(buffer);
@@ -425,6 +433,7 @@ namespace OHOS::Util {
         delete[] stdEncodeInfo->sinputEncoding;
         delete stdEncodeInfo;
     }
+
     napi_value Base64::Decode(napi_env env, napi_value src)
     {
         napi_valuetype valuetype = napi_undefined;
@@ -458,6 +467,7 @@ namespace OHOS::Util {
         }
         return stdDecodeInfo_->promise;
     }
+
     void Base64::CreateDecodePromise(napi_env env, char *inputDecode, size_t length)
     {
         napi_value resourceName = nullptr;
@@ -471,6 +481,7 @@ namespace OHOS::Util {
                                reinterpret_cast<void*>(stdDecodeInfo_), &stdDecodeInfo_->worker);
         napi_queue_async_work(env, stdDecodeInfo_->worker);
     }
+
     size_t Finds(char ch)
     {
         size_t couts = 0;
@@ -505,6 +516,7 @@ namespace OHOS::Util {
         }
         return retLen;
     }
+
     unsigned char *DecodeAchieves(napi_env env, DecodeInfo *decodeInfo)
     {
         const char *input = decodeInfo->sinputDecode;
@@ -556,6 +568,7 @@ namespace OHOS::Util {
         retDecode[index] = 0;
         return retDecode;
     }
+
     void Base64::ReadStdDecode(napi_env env, void *data)
     {
         auto stdDecodeInfo = reinterpret_cast<DecodeInfo*>(data);

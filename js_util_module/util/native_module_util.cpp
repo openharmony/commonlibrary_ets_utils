@@ -315,11 +315,34 @@ namespace OHOS::Util {
         return nullptr;
     }
 
-    static napi_value TextdecoderConstructor(napi_env env, napi_callback_info info)
+    static napi_value ThrowError(napi_env env, const char* errMessage)
+    {
+        napi_value utilError = nullptr;
+        napi_value code = nullptr;
+        uint32_t errCode = 401;
+        napi_create_uint32(env, errCode, &code);
+        napi_value name = nullptr;
+        std::string errName = "BuisnessError";
+        napi_value msg = nullptr;
+        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
+        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
+        napi_create_error(env, nullptr, msg, &utilError);
+        napi_set_named_property(env, utilError, "code", code);
+        napi_set_named_property(env, utilError, "name", name);
+        napi_throw(env, utilError);
+        napi_value res = nullptr;
+        NAPI_CALL(env, napi_get_undefined(env, &res));
+        return res;
+    }
+
+    static napi_value CreateTextDecoder(napi_env env, napi_callback_info info)
     {
         size_t tempArgc = 0;
         napi_value thisVar = nullptr;
         napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
+        if (tempArgc == 0) {
+            return nullptr;
+        }
         size_t argc = 0;
         void *data = nullptr;
         char *type = nullptr;
@@ -328,9 +351,14 @@ namespace OHOS::Util {
         if (tempArgc == 1) {
             argc = 1;
             napi_value argv = nullptr;
-            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &argv, nullptr, &data));
+            napi_get_cb_info(env, info, &argc, &argv, nullptr, &data);
             // first para
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv, nullptr, 0, &typeLen));
+            napi_valuetype valuetype;
+            napi_typeof(env, argv, &valuetype);
+            if (valuetype != napi_string) {
+                return ThrowError(env, "The type of Parameter must be string.");
+            }
+            napi_get_value_string_utf8(env, argv, nullptr, 0, &typeLen);
             if (typeLen > 0) {
                 type = ApplyMemory(typeLen);
             }
@@ -338,9 +366,74 @@ namespace OHOS::Util {
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
             napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
-            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argvArr, nullptr, &data));
+            napi_get_cb_info(env, info, &argc, argvArr, nullptr, &data);
             // first para
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argvArr[0], nullptr, 0, &typeLen));
+            napi_valuetype valuetype0;
+            napi_valuetype valuetype1;
+            napi_typeof(env, argvArr[0], &valuetype0);
+            if (valuetype0 != napi_string) {
+                return ThrowError(env, "The type of Parameter must be string.");
+            }
+            napi_typeof(env, argvArr[1], &valuetype1);
+            if (valuetype1 != napi_object) {
+                return ThrowError(env, "The type of Parameter must be object.");
+            }
+            napi_get_value_string_utf8(env, argvArr[0], nullptr, 0, &typeLen);
+            if (typeLen > 0) {
+                type = ApplyMemory(typeLen);
+            }
+            napi_get_value_string_utf8(env, argvArr[0], type, typeLen + 1, &typeLen);
+            // second para
+            GetSecPara(env, argvArr[1], paraVec);
+        }
+        std::string enconding = "utf-8";
+        if (type != nullptr) {
+            enconding = type;
+        }
+        delete []type;
+        type = nullptr;
+        auto objectInfo = new TextDecoder(enconding, paraVec);
+        NAPI_CALL(env, napi_wrap(
+            env, thisVar, objectInfo,
+            [](napi_env environment, void *data, void *hint) {
+                auto objInfo = reinterpret_cast<TextDecoder*>(data);
+                if (objInfo != nullptr) {
+                    delete objInfo;
+                }
+            },
+            nullptr, nullptr));
+        return thisVar;
+    }
+
+    static napi_value TextdecoderConstructor(napi_env env, napi_callback_info info)
+    {
+        size_t tempArgc = 0;
+        napi_value thisVar = nullptr;
+        napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
+        if (tempArgc == 0) {
+            return nullptr;
+        }
+        size_t argc = 0;
+        void *data = nullptr;
+        char *type = nullptr;
+        size_t typeLen = 0;
+        std::vector<int> paraVec(2, 0); // 2: Specifies the size of the container to be applied for.
+        if (tempArgc == 1) {
+            argc = 1;
+            napi_value argv = nullptr;
+            napi_get_cb_info(env, info, &argc, &argv, nullptr, &data);
+            // first para
+            napi_get_value_string_utf8(env, argv, nullptr, 0, &typeLen);
+            if (typeLen > 0) {
+                type = ApplyMemory(typeLen);
+            }
+            napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
+        } else if (tempArgc == 2) { // 2: The number of parameters is 2.
+            argc = 2; // 2: The number of parameters is 2.
+            napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
+            napi_get_cb_info(env, info, &argc, argvArr, nullptr, &data);
+            // first para
+            napi_get_value_string_utf8(env, argvArr[0], nullptr, 0, &typeLen);
             if (typeLen > 0) {
                 type = ApplyMemory(typeLen);
             }
@@ -381,22 +474,33 @@ namespace OHOS::Util {
         size_t byteOffset = 0;
         bool iStream = false;
         TextDecoder *textDecoder = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&textDecoder));
+        napi_unwrap(env, thisVar, (void**)&textDecoder);
         napi_value valStr = nullptr;
         if (tempArgc == 1) {
             argc = 1;
             napi_value argv = nullptr;
-            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &argv, nullptr, &dataPara));
+            napi_get_cb_info(env, info, &argc, &argv, nullptr, &dataPara);
             // first para
-            NAPI_CALL(env, napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset));
+            napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset);
+            if (type != napi_uint8_array) {
+                return ThrowError(env, "The type of Parameter must be Uint8Array.");
+            }
             valStr = textDecoder->Decode(env, argv, iStream);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
             napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
-            NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara));
+            napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara);
             // first para
-            NAPI_CALL(env, napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset));
+            napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset);
             // second para
+            if (type != napi_uint8_array) {
+                return ThrowError(env, "The type of Parameter must be string.");
+            }
+            napi_valuetype valueType1;
+            napi_typeof(env, argvArr[1], &valueType1);
+            if (valueType1 != napi_object) {
+                return ThrowError(env, "The type of Parameter must be object.");
+            }
             napi_value messageKeyStream = nullptr;
             const char *messageKeyStrStream = "stream";
 
@@ -459,20 +563,21 @@ namespace OHOS::Util {
         std::string enconding = "utf-8";
         if (argc == 1) {
             napi_get_cb_info(env, info, &argc, &src, nullptr, nullptr);
-
             napi_valuetype valuetype;
             napi_typeof(env, src, &valuetype);
-            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
+            if (valuetype != napi_string) {
+                return ThrowError(env, "The type of Parameter must be string.");
+            }
             std::string buffer = "";
             size_t bufferSize = 0;
             if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
-                HILOG_ERROR("can not get src size");
+                HILOG_INFO("can not get src size");
                 return nullptr;
             }
             buffer.reserve(bufferSize + 1);
             buffer.resize(bufferSize);
             if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-                HILOG_ERROR("can not get src value");
+                HILOG_INFO("can not get src value");
                 return nullptr;
             }
             NAPI_ASSERT(env, CheckEncodingFormat(buffer),
@@ -526,7 +631,24 @@ namespace OHOS::Util {
         return result;
     }
 
-    static napi_value EncodeInto(napi_env env, napi_callback_info info)
+    static napi_value EncodeIntoOne(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = 1;
+        napi_value args = nullptr;
+        napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
+        napi_valuetype valuetype;
+        napi_typeof(env, args, &valuetype);
+        if (valuetype != napi_string) {
+            return ThrowError(env, "The type of Parameter must be string.");
+        }
+        TextEncoder *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        napi_value result = object->Encode(env, args);
+        return result;
+    }
+
+    static napi_value EncodeIntoTwo(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
         size_t requireArgc = 2; // 2:The number of parameters is 2
@@ -556,6 +678,45 @@ namespace OHOS::Util {
 
         return result;
     }
+
+    static napi_value EncodeIntoUint8Array(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = 2; // 2:The number of parameters is 2
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        napi_valuetype valuetype0;
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype0));
+        napi_typedarray_type valuetype1;
+        size_t length = 0;
+        void *data = nullptr;
+        napi_value arraybuffer = nullptr;
+        size_t byteOffset = 0;
+        napi_get_typedarray_info(env, args[1], &valuetype1, &length, &data, &arraybuffer, &byteOffset);
+        if (valuetype0 != napi_string) {
+            return ThrowError(env, "The type of Parameter must be string.");
+        }
+        if (valuetype1 != napi_uint8_array) {
+            return ThrowError(env, "The type of Parameter must be Uint8Array.");
+        }
+        TextEncoder *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        napi_value result = object->EncodeInto(env, args[0], args[1]);
+        return result;
+    }
+
+    static napi_value EncodeIntoArgs(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = 0;
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
+        napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (argc == 2 || argc >= 2) { // 2:The number of parameters is 2
+            return EncodeIntoTwo(env, info);
+        }
+        return EncodeIntoOne(env, info);
+    }
+
     static napi_value TextcoderInit(napi_env env, napi_value exports)
     {
         const char *textEncoderClassName = "TextEncoder";
@@ -563,7 +724,9 @@ namespace OHOS::Util {
         napi_property_descriptor textEncoderDesc[] = {
             DECLARE_NAPI_GETTER("encoding", GetEncoding),
             DECLARE_NAPI_FUNCTION("encode", Encode),
-            DECLARE_NAPI_FUNCTION("encodeInto", EncodeInto),
+            DECLARE_NAPI_FUNCTION("encodeInto", EncodeIntoArgs),
+            DECLARE_NAPI_FUNCTION("encodeIntoUint8Array", EncodeIntoUint8Array),
+
         };
         NAPI_CALL(env, napi_define_class(env, textEncoderClassName, strlen(textEncoderClassName),
                                          TextEncoderConstructor, nullptr,
@@ -575,6 +738,7 @@ namespace OHOS::Util {
         napi_property_descriptor textdecoderDesc[] = {
             DECLARE_NAPI_FUNCTION("decode", TextdecoderDecode),
             DECLARE_NAPI_FUNCTION("decodeWithStream", TextdecoderDecode),
+            DECLARE_NAPI_FUNCTION("create", CreateTextDecoder),
             DECLARE_NAPI_GETTER("encoding", TextdecoderGetEncoding),
             DECLARE_NAPI_GETTER("fatal", TextdecoderGetFatal),
             DECLARE_NAPI_GETTER("ignoreBOM", TextdecoderGetIgnoreBOM),
@@ -583,7 +747,6 @@ namespace OHOS::Util {
                                          TextdecoderConstructor, nullptr,
                                          sizeof(textdecoderDesc) / sizeof(textdecoderDesc[0]),
                                          textdecoderDesc, &textDecoderClass));
-
         napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("TextEncoder", textEncoderClass),
             DECLARE_NAPI_PROPERTY("TextDecoder", textDecoderClass),
@@ -746,6 +909,110 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
         napi_value result = object->Decode(env, args[0]);
         return result;
+    }
+
+    static napi_value EncodeHelper(napi_env env, size_t argc, napi_value args)
+    {
+        size_t requireArgc = 1;
+        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
+        napi_typedarray_type valuetype0;
+        size_t length = 0;
+        void *data = nullptr;
+        napi_value arraybuffer = nullptr;
+        size_t byteOffset = 0;
+        NAPI_CALL(env, napi_get_typedarray_info(env, args, &valuetype0, &length, &data, &arraybuffer, &byteOffset));
+        if (valuetype0 != napi_uint8_array) {
+            return ThrowError(env, "The type of Parameter must be Uint8Array");
+        }
+        return args;
+    }
+
+    static napi_value EncodeToStringHelper(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        Base64 *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->EncodeToStringSync(env, EncodeHelper(env, argc, args[0]));
+    }
+
+    static napi_value EncodeBase64Helper(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        Base64 *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->EncodeSync(env, EncodeHelper(env, argc, args[0]));
+    }
+
+    static napi_value EncodeAsyncHelper(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        Base64 *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->Encode(env, EncodeHelper(env, argc, args[0]));
+    }
+
+    static napi_value EncodeToStringAsyncHelper(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        Base64 *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        napi_value result = object->EncodeToString(env, args[0]);
+        return result;
+    }
+
+    static napi_value DecodeHelper(napi_env env, size_t argc, napi_value args)
+    {
+        size_t requireArgc = 1;
+        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
+        napi_typedarray_type valuetype0;
+        napi_valuetype valuetype1;
+        size_t length = 0;
+        void *data = nullptr;
+        napi_value arraybuffer = nullptr;
+        size_t byteOffset = 0;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype1));
+        if (valuetype1 != napi_valuetype::napi_string) {
+            NAPI_CALL(env, napi_get_typedarray_info(env, args, &valuetype0, &length,
+                                                    &data, &arraybuffer, &byteOffset));
+        }
+        if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
+            return ThrowError(env, "The type of Parameter must be Uint8Array or string");
+        }
+        return args;
+    }
+
+    static napi_value DecodeBase64Helper(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        Base64 *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->DecodeSync(env, DecodeHelper(env, argc, args[0]));
+    }
+
+    static napi_value DecodeAsyncHelper(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        Base64 *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->Decode(env, DecodeHelper(env, argc, args[0]));
     }
 
     // Types
@@ -1358,11 +1625,35 @@ namespace OHOS::Util {
         return exports;
     }
 
+    static napi_value Base64HelperInit(napi_env env, napi_value exports)
+    {
+        const char *base64HelperClassName = "Base64Helper";
+        napi_value Base64HelperClass = nullptr;
+        napi_property_descriptor Base64HelperDesc[] = {
+            DECLARE_NAPI_FUNCTION("encodeSync", EncodeBase64Helper),
+            DECLARE_NAPI_FUNCTION("encodeToStringSync", EncodeToStringHelper),
+            DECLARE_NAPI_FUNCTION("decodeSync", DecodeBase64Helper),
+            DECLARE_NAPI_FUNCTION("encode", EncodeAsyncHelper),
+            DECLARE_NAPI_FUNCTION("encodeToString", EncodeToStringAsyncHelper),
+            DECLARE_NAPI_FUNCTION("decode", DecodeAsyncHelper),
+        };
+        NAPI_CALL(env, napi_define_class(env, base64HelperClassName, strlen(base64HelperClassName), Base64Constructor,
+                                         nullptr, sizeof(Base64HelperDesc) / sizeof(Base64HelperDesc[0]),
+                                         Base64HelperDesc, &Base64HelperClass));
+        napi_property_descriptor desc[] = {
+            DECLARE_NAPI_PROPERTY("Base64Helper", Base64HelperClass)
+        };
+        NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
+        return exports;
+    }
+
     static napi_value UtilInit(napi_env env, napi_value exports)
     {
         napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("printf", Printf),
+            DECLARE_NAPI_FUNCTION("format", Printf),
             DECLARE_NAPI_FUNCTION("geterrorstring", GetErrorString),
+            DECLARE_NAPI_FUNCTION("errnoToString", GetErrorString),
             DECLARE_NAPI_FUNCTION("dealwithformatstring", DealWithFormatString),
             DECLARE_NAPI_FUNCTION("randomUUID", RandomUUID),
             DECLARE_NAPI_FUNCTION("randomBinaryUUID", RandomBinaryUUID),
@@ -1371,6 +1662,7 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         TextcoderInit(env, exports);
         Base64Init(env, exports);
+        Base64HelperInit(env, exports);
         TypeofInit(env, exports);
         return exports;
     }
