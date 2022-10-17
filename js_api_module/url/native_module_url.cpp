@@ -514,15 +514,15 @@ namespace OHOS::Url {
         for (size_t i = 0; i < length; i++) {
             napi_get_element(env, argv[0], i, &napiStr);
             if (napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize) != napi_ok) {
-            HILOG_ERROR("can not get napiStr size");
-            return nullptr;
+                HILOG_ERROR("can not get napiStr size");
+                return nullptr;
             }
             if (arraySize > 0) {
                 std::string cstr = "";
                 cstr.resize(arraySize);
                 if (napi_get_value_string_utf8(env, napiStr, cstr.data(), arraySize + 1, &arraySize) != napi_ok) {
-                HILOG_ERROR("can not get name value");
-                return nullptr;
+                    HILOG_ERROR("can not get name value");
+                    return nullptr;
                 }
                 vec.push_back(cstr);
             } else {
@@ -609,7 +609,6 @@ namespace OHOS::Url {
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
         object->Delete(env, args);
-
         return nullptr;
     }
 
@@ -849,6 +848,34 @@ namespace OHOS::Url {
         return exports;
     };
 
+    static napi_value ParamsInit(napi_env env, napi_value exports)
+    {
+        const char *paramsClassName = "URLSearchParams";
+        napi_value ParamsInitClass = nullptr;
+        napi_property_descriptor UrlDesc[] = {
+            DECLARE_NAPI_FUNCTION("has", IsHas),
+            DECLARE_NAPI_FUNCTION("set", Set),
+            DECLARE_NAPI_FUNCTION("sort", Sort),
+            DECLARE_NAPI_FUNCTION("toString", ToString),
+            DECLARE_NAPI_FUNCTION("keys", IterByKeys),
+            DECLARE_NAPI_FUNCTION("values", IterByValues),
+            DECLARE_NAPI_FUNCTION("get", Get),
+            DECLARE_NAPI_FUNCTION("getAll", GetAll),
+            DECLARE_NAPI_FUNCTION("append", Append),
+            DECLARE_NAPI_FUNCTION("delete", Delete),
+            DECLARE_NAPI_FUNCTION("entries", Entries),
+            DECLARE_NAPI_GETTER_SETTER("array", GetArray, SetArray),
+        };
+        NAPI_CALL(env, napi_define_class(env, paramsClassName, strlen(paramsClassName),
+            SeachParamsConstructor, nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]),
+            UrlDesc, &ParamsInitClass));
+        napi_property_descriptor desc[] = {
+            DECLARE_NAPI_PROPERTY("URLParams1", ParamsInitClass)
+        };
+        napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+        return exports;
+    };
+
     static napi_value UrlInit(napi_env env, napi_value exports)
     {
         const char *urlClassName = "Url";
@@ -883,6 +910,7 @@ namespace OHOS::Url {
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         SeachParamsInit(env, exports);
+        ParamsInit(env, exports);
         UrlInit(env, exports);
         return exports;
     }
