@@ -26,6 +26,12 @@ bool NapiHelper::IsString(napi_value value)
     return valNative == nullptr ? false : valNative->TypeOf() == NATIVE_STRING;
 }
 
+bool NapiHelper::IsNotUndefined(napi_value value)
+{
+    auto valNative = reinterpret_cast<NativeValue*>(value);
+    return valNative == nullptr ? false : valNative->TypeOf() != NATIVE_UNDEFINED;
+}
+
 bool NapiHelper::IsArray(napi_value value)
 {
     auto valNative = reinterpret_cast<NativeValue*>(value);

@@ -24,6 +24,7 @@ namespace CompilerRuntime::WorkerModule::Helper {
 class NapiHelper {
 public:
     static bool IsString(napi_value value);
+    static bool IsNotUndefined(napi_value value);
     static bool IsArray(napi_value value);
     static bool IsConstructor(napi_env env, napi_callback_info cbInfo);
     static bool IsCallable(napi_env env, napi_value value);

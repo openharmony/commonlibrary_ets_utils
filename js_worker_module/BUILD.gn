@@ -27,6 +27,7 @@ ohos_shared_library("worker") {
     "worker/native_module_worker.cpp",
     "worker/thread.cpp",
     "worker/worker.cpp",
+    "worker/worker_new.cpp",
     "worker/worker_runner.cpp",
   ]
 
