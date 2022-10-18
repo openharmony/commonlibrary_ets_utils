@@ -24,14 +24,14 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
+declare function requireNapi(s: string): any;
 if (flag || fastStack === undefined) {
+  const {ErrorUtil} = requireNapi('util.struct');
   class HandlerStack<T> {
     private isOutBounds(obj: Stack<T>, prop: any): void {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        if (index < 0 || index >= obj.length) {
-          throw new RangeError('the index is out-of-bounds');
-        }
+        ErrorUtil.checkRangeError("index", index, 0, obj.length - 1);
       }
     }
     get(obj: Stack<T>, prop: any): T {
@@ -74,7 +74,7 @@ if (flag || fastStack === undefined) {
       return
     }
     setPrototypeOf(): T {
-      throw new RangeError('Can setPrototype on Stack Object');
+      throw new Error(`Can't setPrototype on Stack Object`);
     }
   }
   interface IterableIterator<T> {
@@ -87,12 +87,14 @@ if (flag || fastStack === undefined) {
     private elementNum: number = 0;
     private capacity: number = 10;
     constructor() {
+      ErrorUtil.checkNewTargetIsNullError("Stack", !new.target);
       return new Proxy(this, new HandlerStack());
     }
     get length(): number {
       return this.elementNum;
     }
     push(item: T): T {
+      ErrorUtil.checkBindError("push", Stack, this);
       if (this.isFull()) {
         this.increaseCapacity();
       }
@@ -100,6 +102,7 @@ if (flag || fastStack === undefined) {
       return item;
     }
     pop(): T {
+      ErrorUtil.checkBindError("pop", Stack, this);
       if (this.isEmpty()) {
         return undefined;
       }
@@ -109,12 +112,14 @@ if (flag || fastStack === undefined) {
       return result;
     }
     peek(): T {
+      ErrorUtil.checkBindError("peek", Stack, this);
       if (this.isEmpty()) {
         return undefined;
       }
       return this[this.length - 1];
     }
     locate(element: T): number {
+      ErrorUtil.checkBindError("locate", Stack, this);
       for (let i: number = 0; i < this.length; i++) {
         if (this[i] === element) {
           return i;
@@ -123,10 +128,13 @@ if (flag || fastStack === undefined) {
       return -1;
     }
     isEmpty(): boolean {
+      ErrorUtil.checkBindError("isEmpty", Stack, this);
       return this.elementNum === 0;
     }
     forEach(callbackfn: (value: T, index?: number, stack?: Stack<T>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", Stack, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       for (let i: number = 0; i < this.length; i++) {
         callbackfn.call(thisArg, this[i], i, this);
       }
@@ -138,6 +146,7 @@ if (flag || fastStack === undefined) {
       this.capacity = 1.5 * this.capacity;
     }
     [Symbol.iterator](): IterableIterator<T> {
+      ErrorUtil.checkBindError("Symbol.iterator", Stack, this);
       let count: number = 0;
       let stack: Stack<T> = this;
       return {

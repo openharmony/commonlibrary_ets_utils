@@ -24,7 +24,9 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
+declare function requireNapi(s: string): any;
 if (flag || fastList === undefined) {
+  const {ErrorUtil} = requireNapi('util.struct');
   class HandlerList<T> {
     get(obj: List<T>, prop: any): T {
       if (typeof prop === 'symbol') {
@@ -32,9 +34,7 @@ if (flag || fastList === undefined) {
       }
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        if (index < 0 || index >= obj.length) {
-          throw new RangeError('the index is out-of-bounds');
-        }
+        ErrorUtil.checkRangeError("index", index, 0, obj.length - 1);
         return obj.get(index);
       }
       return obj[prop];
@@ -49,21 +49,16 @@ if (flag || fastList === undefined) {
       }
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        if (index < 0 || index >= obj.length) {
-          throw new RangeError('the index is out-of-bounds');
-        } else {
-          obj.set(index, value);
-          return true;
-        }
+        ErrorUtil.checkRangeError("index", index, 0, obj.length);
+        obj.set(index, value);
+        return true;
       }
       return false;
     }
     deleteProperty(obj: List<T>, prop: any): boolean {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        if (index < 0 || index >= obj.length) {
-          throw new RangeError('the index is out-of-bounds');
-        }
+        ErrorUtil.checkRangeError("index", index, 0, obj.length - 1);
         obj.removeByIndex(index);
         return true;
       }
@@ -85,15 +80,13 @@ if (flag || fastList === undefined) {
     getOwnPropertyDescriptor(obj: List<T>, prop: any): Object {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        if (index < 0 || index >= obj.length) {
-          throw new RangeError('the index is out-of-bounds');
-        }
+        ErrorUtil.checkRangeError("index", index, 0, obj.length - 1);
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
       return;
     }
     setPrototypeOf(): T {
-      throw new Error('Can setPrototype on List Object');
+      throw new Error(`Can't setPrototype on List Object`);
     }
   }
   interface IterableIterator<T> {
@@ -115,6 +108,7 @@ if (flag || fastList === undefined) {
     private elementNum: number;
     private capacity: number;
     constructor() {
+      ErrorUtil.checkNewTargetIsNullError("List", !new.target);
       this.head = undefined;
       this.elementNum = 0;
       this.capacity = 10;
@@ -136,6 +130,8 @@ if (flag || fastList === undefined) {
       return undefined;
     }
     get(index: number): T {
+      ErrorUtil.checkBindError("get", List, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
       if (index >= 0 && index < this.elementNum) {
         let current: NodeObj<T> = this.head;
         for (let i: number = 0; i < index && current != undefined; i++) {
@@ -146,6 +142,7 @@ if (flag || fastList === undefined) {
       return undefined;
     }
     add(element: T): boolean {
+      ErrorUtil.checkBindError("add", List, this);
       let node: NodeObj<T> = new NodeObj(element);
       if (this.head === undefined) {
         this.head = node;
@@ -160,10 +157,12 @@ if (flag || fastList === undefined) {
       return true;
     }
     clear(): void {
+      ErrorUtil.checkBindError("clear", List, this);
       this.head = undefined;
       this.elementNum = 0;
     }
     has(element: T): boolean {
+      ErrorUtil.checkBindError("has", List, this);
       if (this.head !== undefined) {
         if (this.head.element === element) {
           return true;
@@ -179,6 +178,7 @@ if (flag || fastList === undefined) {
       return false;
     }
     equal(obj: Object): boolean {
+      ErrorUtil.checkBindError("equal", List, this);
       if (obj === this) {
         return true;
       }
@@ -206,6 +206,7 @@ if (flag || fastList === undefined) {
       }
     }
     getIndexOf(element: T): number {
+      ErrorUtil.checkBindError("getIndexOf", List, this);
       for (let i: number = 0; i < this.elementNum; i++) {
         let curNode: NodeObj<T> = undefined;
         curNode = this.getNode(i);
@@ -216,6 +217,7 @@ if (flag || fastList === undefined) {
       return -1;
     }
     getLastIndexOf(element: T): number {
+      ErrorUtil.checkBindError("getLastIndexOf", List, this);
       for (let i: number = this.elementNum - 1; i >= 0; i--) {
         let curNode: NodeObj<T> = undefined;
         curNode = this.getNode(i);
@@ -226,9 +228,9 @@ if (flag || fastList === undefined) {
       return -1;
     }
     removeByIndex(index: number): T {
-      if (index < 0 || index >= this.elementNum) {
-        throw new RangeError('the index is out-of-bounds');
-      }
+      ErrorUtil.checkBindError("removeByIndex", List, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
+      ErrorUtil.checkRangeError("index", index, 0, this.elementNum - 1);
       let oldNode: NodeObj<T> = this.head;
       if (index === 0) {
         oldNode = this.head;
@@ -243,6 +245,7 @@ if (flag || fastList === undefined) {
       return oldNode && oldNode.element;
     }
     remove(element: T): boolean {
+      ErrorUtil.checkBindError("remove", List, this);
       if (this.has(element)) {
         let index: number = 0;
         index = this.getIndexOf(element);
@@ -253,6 +256,8 @@ if (flag || fastList === undefined) {
     }
     replaceAllElements(callbackfn: (value: T, index?: number, list?: List<T>) => T,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("replaceAllElements", List, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       let index: number = 0;
       if (this.head !== undefined) {
         let current: NodeObj<T> = this.head;
@@ -266,6 +271,7 @@ if (flag || fastList === undefined) {
       }
     }
     getFirst(): T {
+      ErrorUtil.checkBindError("getFirst", List, this);
       if (this.isEmpty()) {
         return undefined;
       }
@@ -273,6 +279,7 @@ if (flag || fastList === undefined) {
       return element;
     }
     getLast(): T {
+      ErrorUtil.checkBindError("getLast", List, this);
       if (this.isEmpty()) {
         return undefined;
       }
@@ -282,35 +289,35 @@ if (flag || fastList === undefined) {
       return element;
     }
     insert(element: T, index: number): void {
-      if (index < 0 || index >= this.elementNum) {
-        throw new RangeError('the index is out-of-bounds');
-      }
+      ErrorUtil.checkBindError("insert", List, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
+      ErrorUtil.checkRangeError("index", index, 0, this.elementNum);
       let newNode: NodeObj<T> = undefined;
       newNode = new NodeObj(element);
-      if (index >= 0 && index < this.elementNum) {
-        if (index === 0) {
-          let current: NodeObj<T> = this.head;
-          newNode.next = current;
-          this.head = newNode;
-        } else {
-          let prevNode: NodeObj<T> = undefined;
-          prevNode = this.getNode(index - 1);
-          newNode.next = prevNode.next;
-          prevNode.next = newNode;
-        }
-        this.elementNum++;
+      if (index === 0) {
+        let current: NodeObj<T> = this.head;
+        newNode.next = current;
+        this.head = newNode;
+      } else {
+        let prevNode: NodeObj<T> = undefined;
+        prevNode = this.getNode(index - 1);
+        newNode.next = prevNode.next;
+        prevNode.next = newNode;
       }
+      this.elementNum++;
     }
     set(index: number, element: T): T {
-      if (index < 0 || index >= this.elementNum) {
-        throw new RangeError('the index is out-of-bounds');
-      }
+      ErrorUtil.checkBindError("set", List, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
+      ErrorUtil.checkRangeError("index", index, 0, this.length - 1);
       let current: NodeObj<T> = undefined;
       current = this.getNode(index);
       current.element = element;
       return current.element;
     }
     sort(comparator: (firstValue: T, secondValue: T) => number): void {
+      ErrorUtil.checkBindError("sort", List, this);
+      ErrorUtil.checkTypeError("comparator", "callable", comparator);
       let isSort: boolean = true;
       for (let i: number = 0; i < this.elementNum; i++) {
         for (let j: number = 0; j < this.elementNum - 1 - i; j++) {
@@ -330,13 +337,12 @@ if (flag || fastList === undefined) {
       }
     }
     getSubList(fromIndex: number, toIndex: number): List<T> {
-      if (toIndex <= fromIndex) {
-        throw new RangeError(`the toIndex cannot be less than or equal to fromIndex`);
-      }
-      if (fromIndex >= this.elementNum || fromIndex < 0 || toIndex < 0) {
-        throw new RangeError(`the fromIndex or the toIndex is out-of-bounds`);
-      }
-      toIndex = toIndex >= this.elementNum ? this.elementNum : toIndex;
+      ErrorUtil.checkBindError("getSubList", List, this);
+      ErrorUtil.checkTypeError("fromIndex", "Integer", fromIndex);
+      ErrorUtil.checkTypeError("toIndex", "Integer", toIndex);
+      ErrorUtil.checkRangeError("fromIndex", fromIndex, 0,
+                                (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
+      ErrorUtil.checkRangeError("toIndex", toIndex, 0, this.elementNum);
       let list: List<T> = new List<T>();
       for (let i: number = fromIndex; i < toIndex; i++) {
         let element: T = undefined;
@@ -349,6 +355,7 @@ if (flag || fastList === undefined) {
       return list;
     }
     convertToArray(): Array<T> {
+      ErrorUtil.checkBindError("convertToArray", List, this);
       let arr: Array<T> = [];
       let index: number = 0;
       if (this.elementNum <= 0) {
@@ -365,10 +372,13 @@ if (flag || fastList === undefined) {
       return arr;
     }
     isEmpty(): boolean {
+      ErrorUtil.checkBindError("isEmpty", List, this);
       return this.elementNum === 0;
     }
     forEach(callbackfn: (value: T, index?: number, list?: List<T>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", List, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       let index: number = 0;
       if (this.head !== undefined) {
         let current: NodeObj<T> = this.head;
@@ -382,6 +392,7 @@ if (flag || fastList === undefined) {
       }
     }
     [Symbol.iterator](): IterableIterator<T> {
+      ErrorUtil.checkBindError("Symbol.iterator", List, this);
       let count: number = 0;
       let list: List<T> = this;
       return {

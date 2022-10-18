@@ -27,6 +27,7 @@ if (arkPritvate !== undefined) {
 }
 if (flag || fastHashMap === undefined) {
   let HashMapAbility: any = requireNapi('util.struct');
+  const ErrorUtil = HashMapAbility.ErrorUtil;
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -53,6 +54,7 @@ if (flag || fastHashMap === undefined) {
   }
   class HashMap<K, V> extends HashMapAbility.DictionaryClass<K, V> {
     constructor() {
+      ErrorUtil.checkNewTargetIsNullError("HashMap", !new.target);
       super();
       return new Proxy(this, new HandlerHashMap());
     }
@@ -60,21 +62,24 @@ if (flag || fastHashMap === undefined) {
       return this.memberNumber;
     }
     isEmpty(): boolean {
+      ErrorUtil.checkBindError("isEmpty", HashMap, this);
       return this.memberNumber === 0;
     }
     hasKey(key: K): boolean {
+      ErrorUtil.checkBindError("hasKey", HashMap, this);
       return super.hasKey(key);
     }
     hasValue(value: V): boolean {
+      ErrorUtil.checkBindError("hasValue", HashMap, this);
       return super.Values().indexOf(value) > -1;
     }
     get(key: K): V {
+      ErrorUtil.checkBindError("get", HashMap, this);
       return this.getValueByKey(key);
     }
     setAll(map: HashMap<K, V>): void {
-      if (!(map instanceof HashMap)) {
-        throw new TypeError('Incoming object is not JSAPIHashMap');
-      }
+      ErrorUtil.checkBindError("setAll", HashMap, this);
+      ErrorUtil.checkTypeError("map", "HashMap", map);
       let memebers: Array<any> = [];
       memebers = map.keyValueArray;
       for (let i: number = 0; i < memebers.length; i++) {
@@ -82,16 +87,20 @@ if (flag || fastHashMap === undefined) {
       }
     }
     set(key: K, value: V): Object {
+      ErrorUtil.checkBindError("set", HashMap, this);
       return super.put(key, value);
     }
     remove(key: K): V {
+      ErrorUtil.checkBindError("remove", HashMap, this);
       let result: V = this.removeMember(key);
       return result;
     }
     clear(): void {
+      ErrorUtil.checkBindError("clear", HashMap, this);
       super.clear();
     }
     keys(): IterableIterator<K> {
+      ErrorUtil.checkBindError("keys", HashMap, this);
       let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
@@ -109,6 +118,7 @@ if (flag || fastHashMap === undefined) {
       };
     }
     values(): IterableIterator<V> {
+      ErrorUtil.checkBindError("values", HashMap, this);
       let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
@@ -126,10 +136,13 @@ if (flag || fastHashMap === undefined) {
       };
     }
     replace(key: K, newValue: V): boolean {
+      ErrorUtil.checkBindError("replace", HashMap, this);
       return super.replaceMember(key, newValue);
     }
     forEach(callbackfn: (value?: V, key?: K, map?: HashMap<K, V>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", HashMap, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       let tagetArray: Array<any> = [];
       tagetArray = this.keyValueArray;
       for (let i: number = 0; i < tagetArray.length; i++) {
@@ -137,6 +150,7 @@ if (flag || fastHashMap === undefined) {
       }
     }
     entries(): IterableIterator<[K, V]> {
+      ErrorUtil.checkBindError("entries", HashMap, this);
       let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
@@ -154,6 +168,7 @@ if (flag || fastHashMap === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
+      ErrorUtil.checkBindError("Symbol.iterator", HashMap, this);
       return this.entries();
     }
   }

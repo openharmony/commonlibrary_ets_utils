@@ -24,15 +24,14 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
+declare function requireNapi(s: string): any;
 if (flag || fastQueue === undefined) {
+  const {ErrorUtil} = requireNapi('util.struct');
   class HandlerQueue<T> {
     private isOutBounds(obj: Queue<T>, prop: any): void {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        if (index < 0 || index > obj.length) {
-          console.log(index, obj.length)
-          throw new RangeError('the index is out-of-bounds');
-        }
+        ErrorUtil.checkRangeError("index", index, 0, obj.length);
       }
     }
     get(obj: Queue<T>, prop: any): T {
@@ -74,7 +73,7 @@ if (flag || fastQueue === undefined) {
       return
     }
     setPrototypeOf(): T {
-      throw new RangeError('Can setPrototype on Queue Object');
+      throw new Error(`Can't setPrototype on Queue Object`);
     }
   }
   interface IterableIterator<T> {
@@ -88,6 +87,7 @@ if (flag || fastQueue === undefined) {
     private capacity: number;
     private rear: number;
     constructor() {
+      ErrorUtil.checkNewTargetIsNullError("Queue", !new.target);
       this.front = 0;
       this.capacity = 8;
       this.rear = 0;
@@ -97,6 +97,7 @@ if (flag || fastQueue === undefined) {
       return this.rear - this.front;
     }
     add(element: T): boolean {
+      ErrorUtil.checkBindError("add", Queue, this);
       if (this.isFull()) {
         this.increaseCapacity();
       }
@@ -105,12 +106,14 @@ if (flag || fastQueue === undefined) {
       return true;
     }
     getFirst(): T {
+      ErrorUtil.checkBindError("getFirst", Queue, this);
       if (this.isEmpty()) {
         return undefined;
       }
       return this[this.front];
     }
     pop(): T {
+      ErrorUtil.checkBindError("pop", Queue, this);
       if (this.isEmpty()) {
         return undefined;
       }
@@ -121,6 +124,8 @@ if (flag || fastQueue === undefined) {
     }
     forEach(callbackfn: (value: T, index?: number, queue?: Queue<T>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", Queue, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       let k: number = 0;
       let i: number = this.front;
       if (this.isEmpty()) {
@@ -143,6 +148,7 @@ if (flag || fastQueue === undefined) {
       return this.length === 0;
     }
     [Symbol.iterator](): IterableIterator<T> {
+      ErrorUtil.checkBindError("Symbol.iterator", Queue, this);
       let count: number = this.front;
       let queue: Queue<T> = this;
       return {

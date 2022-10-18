@@ -27,6 +27,7 @@ if (arkPritvate !== undefined) {
 }
 if (flag || fastLightWeightSet === undefined) {
   const LightWeightAbility = requireNapi('util.struct');
+  const ErrorUtil = LightWeightAbility.ErrorUtil;
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -53,6 +54,7 @@ if (flag || fastLightWeightSet === undefined) {
   }
   class LightWeightSet<T> extends LightWeightAbility.LightWeightClass<T, T> {
     constructor() {
+      ErrorUtil.checkNewTargetIsNullError("LightWeightSet", !new.target);
       super();
       return new Proxy(this, new HandlerLightWeightSet());
     }
@@ -60,6 +62,7 @@ if (flag || fastLightWeightSet === undefined) {
       return this.memberNumber;
     }
     add(obj: T): boolean {
+      ErrorUtil.checkBindError("add", LightWeightSet, this);
       if (this.members.keys.indexOf(obj) > 0) {
         return false;
       }
@@ -67,6 +70,8 @@ if (flag || fastLightWeightSet === undefined) {
       return true;
     }
     addAll(set: LightWeightSet<T>): boolean {
+      ErrorUtil.checkBindError("addAll", LightWeightSet, this);
+      ErrorUtil.checkTypeError("set", "LightWeightSet", set);
       if (!(set instanceof LightWeightSet)) {
         throw new TypeError('Incoming object is not JSAPILightWeightSet');
       }
@@ -81,6 +86,8 @@ if (flag || fastLightWeightSet === undefined) {
       return change;
     }
     hasAll(set: LightWeightSet<T>): boolean {
+      ErrorUtil.checkBindError("hasAll", LightWeightSet, this);
+      ErrorUtil.checkTypeError("set", "LightWeightSet", set);
       if (set.memberNumber > this.memberNumber) {
         return false;
       }
@@ -90,9 +97,11 @@ if (flag || fastLightWeightSet === undefined) {
       return false;
     }
     has(key: T): boolean {
+      ErrorUtil.checkBindError("has", LightWeightSet, this);
       return this.members.keys.indexOf(key) > -1;
     }
     equal(obj: Object): boolean {
+      ErrorUtil.checkBindError("equal", LightWeightSet, this);
       if (this.memberNumber === 0) {
         return false;
       }
@@ -105,18 +114,27 @@ if (flag || fastLightWeightSet === undefined) {
       return false;
     }
     increaseCapacityTo(minimumCapacity: number): void {
+      ErrorUtil.checkBindError("increaseCapacityTo", LightWeightSet, this);
+      ErrorUtil.checkTypeError("minimumCapacity", "Integer", minimumCapacity);
+      ErrorUtil.checkRangeError("minimumCapacity", minimumCapacity, this.capacity,
+                                undefined, "!=min");
       super.ensureCapacity(minimumCapacity);
     }
     getIndexOf(key: T): number {
+      ErrorUtil.checkBindError("getIndexOf", LightWeightSet, this);
       return super.getIndexByKey(key);
     }
     isEmpty(): boolean {
+      ErrorUtil.checkBindError("isEmpty", LightWeightSet, this);
       return this.memberNumber === 0;
     }
     remove(key: T): T {
+      ErrorUtil.checkBindError("remove", LightWeightSet, this);
       return super.deletemember(key);
     }
     removeAt(index: number): boolean {
+      ErrorUtil.checkBindError("removeAt", LightWeightSet, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
       if (index > this.memberNumber--) {
         return false;
       }
@@ -127,6 +145,7 @@ if (flag || fastLightWeightSet === undefined) {
       return true;
     }
     clear(): void {
+      ErrorUtil.checkBindError("clear", LightWeightSet, this);
       if (this.memberNumber != 0 || this.capacity > 8) {
         this.members.hashs = [];
         this.members.keys = [];
@@ -137,12 +156,15 @@ if (flag || fastLightWeightSet === undefined) {
     }
     forEach(callbackfn: (value?: T, key?: T, set?: LightWeightSet<T>) => void,
       thisArg?: Object): void {
+      ErrorUtil.checkBindError("forEach", LightWeightSet, this);
+      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
       let data: LightWeightSet<T> = this;
       for (let i: number = 0; i < data.memberNumber; i++) {
         callbackfn.call(thisArg, data.members.keys[i], data.members.keys[i], data);
       }
     }
     [Symbol.iterator](): IterableIterator<T> {
+      ErrorUtil.checkBindError("Symbol.iterator", LightWeightSet, this);
       let data: LightWeightSet<T> = this;
       let count: number = 0;
       return {
@@ -160,18 +182,24 @@ if (flag || fastLightWeightSet === undefined) {
       };
     }
     toString(): string {
+      ErrorUtil.checkBindError("toString", LightWeightSet, this);
       return this.members.keys.join(',');
     }
     toArray(): Array<T> {
+      ErrorUtil.checkBindError("toArray", LightWeightSet, this);
       return this.members.keys.slice();
     }
     getValueAt(index: number): T {
+      ErrorUtil.checkBindError("getValueAt", LightWeightSet, this);
+      ErrorUtil.checkTypeError("index", "Integer", index);
       return this.members.keys[index];
     }
     values(): IterableIterator<T> {
+      ErrorUtil.checkBindError("values", LightWeightSet, this);
       return this.members.keys.values() as IterableIterator<T>;
     }
     entries(): IterableIterator<[T, T]> {
+      ErrorUtil.checkBindError("entries", LightWeightSet, this);
       let data: LightWeightSet<T> = this;
       let count: number = 0;
       return {

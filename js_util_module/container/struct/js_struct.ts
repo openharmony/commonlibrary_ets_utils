@@ -676,7 +676,6 @@ class DictionaryClass<K, V>  {
     this.memberArray = [];
     this.capacity = 16;
   }
-
   get keyValueArray(): Pair<K, V>[] {
     let result: Pair<K, V>[] = [];
     result = this.keyValues();
@@ -1021,11 +1020,97 @@ class LinkedList<T> {
     return objString;
   }
 }
+
+const NEWTARGET_IS_NULL_ERROR_CODE = 10200012;
+const BIND_ERROR_CODE = 10200011;
+const RANGE_ERROR_CODE = 10200001;
+const TYPE_ERROR_CODE = 401;
+const EMPTY_ERROR_CODE = 10200010;
+
+class BusinessError extends Error {
+  code: number;
+  constructor(message, code) {
+      super();
+      this.name = "BusinessError";
+      this.message = message;
+      this.code = code;
+  }
+}
+
+function checkBindError(methodName: string, className: Function, self: unknown) {
+  if (!(self instanceof className)) {
+    throw new BusinessError(`The ${methodName} method cannot be bound`, BIND_ERROR_CODE);
+  }
+}
+
+function checkTypeError(paramName:string, type:string, receivedValue:unknown) {
+  let tmpType = "";
+  if (typeof receivedValue === "object") {
+      tmpType = (receivedValue === null) ? "Null" : receivedValue.constructor.name;
+  } else {
+      tmpType = typeof receivedValue;
+  }
+  if (tmpType === "number" && type === "Integer") {
+      tmpType = Number.isInteger(receivedValue) ? "Integer" : "number";
+  }
+  if (tmpType === "function" && type === "callable") {
+    tmpType = "callable";
+  }
+  if (tmpType.toLocaleLowerCase() !== type.toLocaleLowerCase()) {
+    type = (type === "Integer") ? "number" : type;
+    throw new BusinessError(`The type of "${paramName}" must be ${type}. Received value is: ${receivedValue}`, TYPE_ERROR_CODE);
+  }
+}
+
+function checkRangeError(paramName: string, receivedValue:unknown, min?: number, max?: number, options?:string) {
+  let range = [];
+  let minFlag = true;
+  let maxFlag = true;
+  if (min !== undefined) {
+    if (options === "!=min") {
+      minFlag = (receivedValue > min);
+      range.push(`> ${min}`);
+    } else {
+      minFlag = (receivedValue >= min);
+      range.push(`>= ${min}`);
+    }
+  }
+  if (max !== undefined) {
+    max = (max < 0) ? 0 : max;
+    maxFlag = (receivedValue <= max);
+    range.push(`<= ${max}`);
+  }
+  if (!(minFlag && maxFlag)) {
+    throw new BusinessError(
+      `The value of "${paramName}" is out of range. It must be ${range.join(' && ')}. Received value is: ${receivedValue}`, RANGE_ERROR_CODE);
+  }
+}
+
+function checkIsEmptyError(isEmpty: boolean) {
+  if (isEmpty) {
+    throw new BusinessError(`Container is empty`, EMPTY_ERROR_CODE);
+  }
+}
+
+function checkNewTargetIsNullError(className: string, isNull: boolean) {
+  if (isNull) {
+    throw new BusinessError(`The ${className}'s constructor cannot be directly invoked`, NEWTARGET_IS_NULL_ERROR_CODE);
+  }
+}
+
+let ErrorUtil = {
+  checkBindError,
+  checkTypeError,
+  checkRangeError,
+  checkIsEmptyError,
+  checkNewTargetIsNullError
+}
 export default {
   isIncludeToArray,
   LightWeightClass,
   PlainArrayClass,
   RBTreeClass,
-  DictionaryClass
+  DictionaryClass,
+  ErrorUtil
 }
 

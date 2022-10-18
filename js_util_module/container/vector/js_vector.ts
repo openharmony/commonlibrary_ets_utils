@@ -88,7 +88,7 @@ if (flag || fastVector === undefined) {
       return;
     }
     setPrototypeOf(): T {
-      throw new RangeError('Can setPrototype on Vector Object');
+      throw new Error(`Can't setPrototype on Vector Object`);
     }
   }
   interface IterableIterator<T> {
@@ -316,8 +316,9 @@ if (flag || fastVector === undefined) {
     }
     copyToArray(array: Array<T>): void {
       let arr: Array<T> = this.convertToArray();
-      for (let i: number = 0; i < array.length; i++) {
-        array[i] = arr[i];
+      let len = array.length;
+      for (let i: number = 0, arrLen = arr.length; i < arrLen; i++) {
+        array[i + len] = arr[i];
       }
     }
     toString(): string {
