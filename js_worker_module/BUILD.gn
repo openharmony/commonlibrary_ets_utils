@@ -33,10 +33,19 @@ ohos_shared_library("worker") {
 
   deps = [ "//foundation/arkui/napi:ace_napi" ]
 
-  if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  if (is_linux && current_toolchain == host_toolchain) {
+    deps +=
+        [ "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_linux" ]
+    defines = [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+    ]
   } else {
-    external_deps = [ "hilog:libhilog" ]
+    if (is_standard_system) {
+      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    } else {
+      external_deps = [ "hilog:libhilog" ]
+    }
   }
 
   subsystem_name = "commonlibrary"
