@@ -97,7 +97,6 @@ ohos_shared_library("buffer") {
     ":js_buffer",
     "//commonlibrary/ets_utils/js_api_module/buffer/:js_buffer",
     "//foundation/arkui/napi/:ace_napi",
-    "//foundation/arkui/napi/:ace_napi_quickjs",
     "//third_party/icu/icu4c:static_icuuc",
   ]
 
