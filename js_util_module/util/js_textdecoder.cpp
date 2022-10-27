@@ -43,9 +43,8 @@ namespace OHOS::Util {
         }
         label_ = i32Flag;
         SetHwIcuDirectory();
-        bool fatal =
-        (i32Flag & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
-        static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
+        bool fatal = (i32Flag & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
+             static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter *conv = ucnv_open(encStr_.c_str(), &codeflag);
         if (U_FAILURE(codeflag)) {
@@ -56,7 +55,7 @@ namespace OHOS::Util {
             codeflag = U_ZERO_ERROR;
             ucnv_setToUCallBack(conv, UCNV_TO_U_CALLBACK_STOP, nullptr, nullptr, nullptr, &codeflag);
         }
-        TransformToolPointer  tempTranTool(conv, ConverterClose);
+        TransformToolPointer tempTranTool(conv, ConverterClose);
         tranTool_ = std::move(tempTranTool);
     }
 
