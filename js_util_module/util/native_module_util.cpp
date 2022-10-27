@@ -410,9 +410,6 @@ namespace OHOS::Util {
         size_t tempArgc = 0;
         napi_value thisVar = nullptr;
         napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
-        if (tempArgc == 0) {
-            return nullptr;
-        }
         size_t argc = 0;
         void *data = nullptr;
         char *type = nullptr;
