@@ -31,7 +31,7 @@ struct TimerCallbackInfo {
     int32_t timeout_;
     napi_ref callback_;
     bool repeat_;
-    uv_timer_t timeReq_;
+    uv_timer_t* timeReq_;
     size_t argc_;
     napi_ref* argv_;
 
@@ -41,7 +41,9 @@ struct TimerCallbackInfo {
           repeat_(repeat), argc_(argc), argv_(argv)
     {
         uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env_);
-        uv_timer_init(loop, &timeReq_);
+        timeReq_ = new uv_timer_t;
+        uv_timer_init(loop, timeReq_);
+        timeReq_->data = this;
     }
 
     ~TimerCallbackInfo();
