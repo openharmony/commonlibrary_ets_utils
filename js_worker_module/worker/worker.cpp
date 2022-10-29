@@ -102,9 +102,7 @@ bool Worker::PrepareForWorkerInstance()
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
 
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-        if (!hostEngine->CallWorkerAsyncWorkFunc(workerEngine)) {
-            HILOG_ERROR("worker:: CallWorkerAsyncWorkFunc error");
-        }
+        hostEngine->CallWorkerAsyncWorkFunc(workerEngine);
         // 2. init worker environment
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         workerEngine->SetDebuggerPostTaskFunc(
