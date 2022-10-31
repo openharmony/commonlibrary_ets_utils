@@ -64,6 +64,7 @@
             "inner_kits": [],
             "test": [
                 "//commonlibrary/ets_utils/js_api_module/test_uri/unittest:unittest",
+		"//commonlibrary/ets_utils/js_api_module/test_url/unittest:unittest",
                 "//commonlibrary/ets_utils/js_api_module/test_xml/unittest:unittest",              
                 "//commonlibrary/ets_utils/js_api_module/test_buffer/unittest:unittest",
                 "//commonlibrary/ets_utils/js_util_module/test_util/unittest:unittest"
