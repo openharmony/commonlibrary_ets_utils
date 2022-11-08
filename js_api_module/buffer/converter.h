@@ -21,35 +21,35 @@
 #include "utils/log.h"
 
 namespace OHOS::buffer {
-static constexpr uint32_t LOWER_EIGHT_BITS_MASK = 0x00FF;
-static constexpr uint8_t HIGER_4_BITS_MASK = 0xF0;
-static constexpr uint8_t FOUR_BYTES_STYLE = 0xF0;
-static constexpr uint8_t THREE_BYTES_STYLE = 0xE0;
-static constexpr uint8_t TWO_BYTES_STYLE1 = 0xD0;
-static constexpr uint8_t TWO_BYTES_STYLE2 = 0xC0;
-static constexpr uint32_t LOWER_10_BITS_MASK = 0x03FFU;
-static constexpr uint32_t LOWER_8_BITS_MASK = 0x00FFU;
-static constexpr uint8_t LOWER_6_BITS_MASK = 0x3FU;
-static constexpr uint8_t LOWER_5_BITS_MASK = 0x1FU;
-static constexpr uint8_t LOWER_4_BITS_MASK = 0x0FU;
-static constexpr uint8_t LOWER_3_BITS_MASK = 0x07U;
-static constexpr uint8_t LOWER_2_BITS_MASK = 0x03U;
-static constexpr uint8_t MIDDLE_4_BITS_MASK = 0x3CU;
-static constexpr uint32_t HIGH_AGENT_MASK = 0xD800U;
-static constexpr uint32_t LOW_AGENT_MASK = 0xDC00U;
-static constexpr uint32_t UTF8_VALID_BITS = 6;
-static constexpr uint32_t UTF8_ONE_BYTE_MAX = 0x007F;
-static constexpr uint32_t UTF8_ONE_BYTE_SCALE = UTF8_ONE_BYTE_MAX + 1;
-static constexpr uint32_t UTF8_TWO_BYTES_MAX = 0x07FF;
-static constexpr uint32_t HIGH_AGENT_RANGE_FROM = 0xD800;
-static constexpr uint32_t HIGH_AGENT_RANGE_TO = 0xDBFF;
-static constexpr uint32_t LOW_AGENT_RANGE_FROM = 0xDC00;
-static constexpr uint8_t UTF8_TWO_BYTES_HEAD_BYTE_MASK = 0xC0;
-static constexpr uint8_t UTF8_TAIL_BYTE_MASK = 0x80;
-static constexpr uint8_t UTF8_THREE_BYTES_HEAD_BYTE_MASK = 0xE0;
-static constexpr uint8_t UTF8_FOUR_BYTES_HEAD_BYTE_MASK = 0xF0;
-static constexpr uint32_t UTF16_SPECIAL_VALUE = 0x10000;
-static const std::string base64Table =
+constexpr uint32_t LOWER_EIGHT_BITS_MASK = 0x00FF;
+constexpr uint8_t HIGER_4_BITS_MASK = 0xF0;
+constexpr uint8_t FOUR_BYTES_STYLE = 0xF0;
+constexpr uint8_t THREE_BYTES_STYLE = 0xE0;
+constexpr uint8_t TWO_BYTES_STYLE1 = 0xD0;
+constexpr uint8_t TWO_BYTES_STYLE2 = 0xC0;
+constexpr uint32_t LOWER_10_BITS_MASK = 0x03FFU;
+constexpr uint32_t LOWER_8_BITS_MASK = 0x00FFU;
+constexpr uint8_t LOWER_6_BITS_MASK = 0x3FU;
+constexpr uint8_t LOWER_5_BITS_MASK = 0x1FU;
+constexpr uint8_t LOWER_4_BITS_MASK = 0x0FU;
+constexpr uint8_t LOWER_3_BITS_MASK = 0x07U;
+constexpr uint8_t LOWER_2_BITS_MASK = 0x03U;
+constexpr uint8_t MIDDLE_4_BITS_MASK = 0x3CU;
+constexpr uint32_t HIGH_AGENT_MASK = 0xD800U;
+constexpr uint32_t LOW_AGENT_MASK = 0xDC00U;
+constexpr uint32_t UTF8_VALID_BITS = 6;
+constexpr uint32_t UTF8_ONE_BYTE_MAX = 0x007F;
+constexpr uint32_t UTF8_ONE_BYTE_SCALE = UTF8_ONE_BYTE_MAX + 1;
+constexpr uint32_t UTF8_TWO_BYTES_MAX = 0x07FF;
+constexpr uint32_t HIGH_AGENT_RANGE_FROM = 0xD800;
+constexpr uint32_t HIGH_AGENT_RANGE_TO = 0xDBFF;
+constexpr uint32_t LOW_AGENT_RANGE_FROM = 0xDC00;
+constexpr uint8_t UTF8_TWO_BYTES_HEAD_BYTE_MASK = 0xC0;
+constexpr uint8_t UTF8_TAIL_BYTE_MASK = 0x80;
+constexpr uint8_t UTF8_THREE_BYTES_HEAD_BYTE_MASK = 0xE0;
+constexpr uint8_t UTF8_FOUR_BYTES_HEAD_BYTE_MASK = 0xF0;
+constexpr uint32_t UTF16_SPECIAL_VALUE = 0x10000;
+const std::string base64Table =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /**
@@ -58,12 +58,6 @@ static const std::string base64Table =
 * Returns: if the highest bit of u8Char is 0, return true, else ,return false;
 */
 bool IsOneByte(uint8_t u8Char);
-
-static inline uint16_t Swap16(uint16_t number)
-{
-    // 8 : the half of 16 is 8, swap high 8 bits with low 8 bits
-    return (number >> 8) | (number << 8);
-}
 
 std::u16string Utf8ToUtf16LE(const std::string &u8Str, bool *ok = NULL);
 std::string Utf16LEToANSI(const std::wstring &wstr);

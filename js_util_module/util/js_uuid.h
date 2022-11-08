@@ -62,6 +62,6 @@ bool GetUUID(napi_env env, bool entropyCache, UUID &uuid);
 std::string GetFormatUUID(const UUID &uuid);
 unsigned char CharToHex(char in);
 unsigned char ConvertBits(std::string &input);
-unsigned char HexToChar(unsigned char _in);
+unsigned char HexToChar(unsigned char in);
 }
 #endif // UTIL_JS_UUID_H_
