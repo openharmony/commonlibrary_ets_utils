@@ -450,7 +450,7 @@ int Buffer::IndexOf(const char *data, uint32_t offset)
     sData[length_ - offset] = 0;
     char *cData = reinterpret_cast<char *>(sData);
     char *p3 = strstr(cData, data);
-    if (p3 == NULL) {
+    if (p3 == nullptr) {
         return -1;
     }
     return p3 - cData + offset;
