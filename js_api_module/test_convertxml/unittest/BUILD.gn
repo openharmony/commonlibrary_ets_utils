@@ -23,6 +23,7 @@ ohos_unittest("test_convertxml_unittest") {
   configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
   include_dirs = [
     "//commonlibrary/ets_utils/js_api_module/convertxml",
+    "//commonlibrary/ets_utils/js_api_module/xml",
     "//arkcompiler/ets_runtime",
     "//foundation/arkui/napi",
     "//foundation/arkui/napi/interfaces/kits",
@@ -31,6 +32,7 @@ ohos_unittest("test_convertxml_unittest") {
     "//third_party/bounds_checking_function/include",
     "//third_party/googletest/include",
     "//third_party/node/src",
+    "//third_party/libxml2/include",
   ]
 
   cflags = [ "-g3" ]
@@ -43,6 +45,7 @@ ohos_unittest("test_convertxml_unittest") {
   deps = [
     "//arkcompiler/ets_runtime:libark_jsruntime",
     "//commonlibrary/ets_utils/js_api_module/convertxml:convertxml_packages",
+    "//commonlibrary/ets_utils/js_api_module/xml:xml_packages",
     "//foundation/arkui/napi/:ace_napi",
     "//foundation/arkui/napi/:ace_napi_ark",
     "//third_party/bounds_checking_function:libsec_static",
@@ -50,7 +53,6 @@ ohos_unittest("test_convertxml_unittest") {
     "//third_party/googletest:gtest_main",
     "//third_party/icu/icu4c:static_icuuc",
     "//third_party/libuv:uv",
-    "//third_party/libxml2:xml2",
   ]
 
   if (is_standard_system) {
