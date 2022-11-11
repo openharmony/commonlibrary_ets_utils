@@ -252,3 +252,123 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest006, testing::ext::TestSize.Level0)
     EXPECT_STREQ(docTypeStr.c_str(), "doctype");
     EXPECT_STREQ(docStr.c_str(), "root");
 }
+
+/* @tc.name: ConstructorTest001
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConstructorTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\"><todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_valuetype valuetype = napi_undefined;
+
+    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    bool isObj = valuetype == napi_valuetype::napi_object;
+    ASSERT_TRUE(isObj);
+}
+
+/* @tc.name: ConstructorTest002
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConstructorTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\"><todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_value object = nullptr;
+    const char* utf8Name = "_declaration";
+    napi_create_object(env, &object);
+    bool isHas = false;
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    
+    object = convertXml.Convert(env, strXml);
+    napi_has_named_property(env, object, utf8Name, &isHas);
+    ASSERT_TRUE(isHas);
+}
+
+/* @tc.name: ConstructorTest003
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\"><todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_value object = nullptr;
+    const char* utf8Name = "_declaration";
+    napi_create_object(env, &object);
+    bool isHas = false;
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    
+    object = convertXml.Convert(env, strXml);
+    napi_has_named_property(env, object,utf8Name, &isHas);
+    ASSERT_TRUE(isHas);
+}
+
+/* @tc.name: ConvertTest001
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConvertTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><note importance=\"high\" logged=\"true\">    ";
+    std::string str2 = "<title>Happy</title>    <todo>Work</todo>    <todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_valuetype valuetype = napi_undefined;
+
+    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    bool isObj = valuetype == napi_valuetype::napi_object;
+    ASSERT_TRUE(isObj);
+}
+
+/* @tc.name: ConvertTest002
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConvertTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><note importance=\"high\" logged=\"true\">    ";
+    std::string str2 = "<title>Happy</title>    <todo>Work</todo>    <todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_value object = nullptr;
+    const char* utf8Name = "_declaration";
+    napi_create_object(env, &object);
+    bool isHas = false;
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    
+    object = convertXml.Convert(env, strXml);
+    napi_has_named_property(env, object, utf8Name, &isHas);
+    ASSERT_TRUE(isHas);
+}
+
+/* @tc.name: ConvertTest003
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConvertTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><note importance=\"high\" logged=\"true\">    ";
+    std::string str2 = "<title>Happy</title>    <todo>Work</todo>    <todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_value object = nullptr;
+    const char* utf8Name = "_elements";
+    napi_create_object(env, &object);
+    bool isHas = false;
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    
+    object = convertXml.Convert(env, strXml);
+    napi_has_named_property(env, object, utf8Name, &isHas);
+    ASSERT_TRUE(isHas);
+}
