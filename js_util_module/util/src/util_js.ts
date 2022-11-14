@@ -465,6 +465,9 @@ function errnoToString(errnum : number) : string {
 }
 
 function randomUUID(entropyCache ?: boolean) : string {
+    if (entropyCache == undefined) {
+        entropyCache = true;
+    }
     if (typeof entropyCache !== 'boolean') {
         let error = new BusinessError(`Parameter error.The type of ${entropyCache} must be boolean`);
         throw error;
@@ -474,6 +477,9 @@ function randomUUID(entropyCache ?: boolean) : string {
 }
 
 function randomBinaryUUID(entropyCache ?: boolean) : Uint8Array {
+    if (entropyCache == undefined) {
+        entropyCache = true;
+    }
     if (typeof entropyCache !== 'boolean') {
         let error = new BusinessError(`Parameter error.The type of ${entropyCache} must be boolean`);
         throw error;
