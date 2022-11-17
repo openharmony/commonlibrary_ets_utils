@@ -357,7 +357,7 @@ namespace OHOS::xml {
         return xmlSerializerError_;
     }
 
-    napi_value XmlPullParser::DealOptionInfo(napi_env env, napi_value napiObj, napi_callback_info info)
+    napi_value XmlPullParser::DealOptionInfo(napi_env env, napi_value napiObj)
     {
         std::vector<std::string> vctOptions = {
             "supportDoctype", "ignoreNameSpace", "tagValueCallbackFunction",

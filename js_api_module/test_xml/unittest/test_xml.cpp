@@ -34,6 +34,37 @@
         ASSERT_EQ(valueType, type);                             \
     }
 
+std::string testStr = "";
+napi_value Method(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    size_t argc = 0;
+    napi_value args[6] = { 0 }; // 6:six args
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+
+    napi_value name = args[0];
+    napi_value value = args[1];
+
+    std::string buffer1 = "";
+    size_t bufferSize1 = 0;
+    napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize1);
+    buffer1.reserve(bufferSize1 + 1);
+    buffer1.resize(bufferSize1);
+    napi_get_value_string_utf8(env, name, buffer1.data(), bufferSize1 + 1, &bufferSize1);
+
+    std::string buffer2 = "";
+    size_t bufferSize2 = 0;
+    napi_get_value_string_utf8(env, value, nullptr, 0, &bufferSize2);
+    buffer2.reserve(bufferSize2 + 1);
+    buffer2.resize(bufferSize2);
+    napi_get_value_string_utf8(env, value, buffer2.data(), bufferSize2 + 1, &bufferSize2);
+    testStr += buffer1 + buffer2;
+    napi_value result = nullptr;
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+
 /* @tc.name: StartElementTest001
  * @tc.desc: Test whether write a elemnet start tag with the given name successfully.
  * @tc.type: FUNC
@@ -958,4 +989,210 @@ HWTEST_F(NativeEngineTest, SetDocTypeTest005, testing::ext::TestSize.Level0)
     xmlSerializer.EndElement();
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer),
                  "<note>\r\n  <!DOCTYPE root SYSTEM \"http://www.test.org/test.dtd\">\r\n</note>");
+}
+
+/* @tc.name: XmlParseTest001
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
+    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
+    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
+    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
+    std::string str8 = "    </h:table></note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
+    testStr = "";
+
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tagValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, false, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabtabletrtdtd");
+}
+
+/* @tc.name: XmlParseTest002
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(NativeEngineTest, XmlParseTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
+    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
+    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
+    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
+    std::string str8 = "    </h:table></note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
+    testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "attributeValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, false, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
+}
+
+/* @tc.name: XmlParseTest003
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
+    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
+    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
+    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
+    std::string str8 = "    </h:table></note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
+    testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tagValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, false, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
+}
+
+/* @tc.name: XmlParseTest004
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(NativeEngineTest, XmlParseTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
+    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
+    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
+    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
+    std::string str8 = "    </h:table></note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
+    testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "attributeValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
+}
+
+/* @tc.name: XmlParseTest005
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
+    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
+    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
+    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
+    std::string str8 = "    </h:table></note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
+    testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tagValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
 }
