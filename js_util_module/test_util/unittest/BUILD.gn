@@ -27,11 +27,16 @@ ohos_unittest("test_util_unittest") {
     "//foundation/arkui/napi/native_engine/impl/ark",
     "//third_party/openssl",
     "//third_party/openssl/include",
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/icu/icu4c/source",
   ]
 
   cflags = [ "-g3" ]
 
   sources = [
+    "../../util/js_base64.cpp",
+    "../../util/js_textdecoder.cpp",
+    "../../util/js_textencoder.cpp",
     "../../util/js_uuid.cpp",
     "test_ark.cpp",
     "test_util.cpp",
@@ -41,6 +46,8 @@ ohos_unittest("test_util_unittest") {
     "//arkcompiler/ets_runtime:libark_jsruntime",
     "//foundation/arkui/napi/:ace_napi",
     "//foundation/arkui/napi/:ace_napi_ark",
+    "//third_party/icu/icu4c:static_icuuc",
+    "//third_party/libuv:uv_static",
     "//third_party/openssl:libcrypto_static",
   ]
 
