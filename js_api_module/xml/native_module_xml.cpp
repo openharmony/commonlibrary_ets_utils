@@ -386,7 +386,7 @@ namespace OHOS::xml {
         NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument typr. Object expected.");
         XmlPullParser *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        object->DealOptionInfo(env, args[0], info);
+        object->DealOptionInfo(env, args[0]);
         object->Parse(env, thisVar);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));

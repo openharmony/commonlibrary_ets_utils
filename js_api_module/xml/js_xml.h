@@ -325,7 +325,7 @@ namespace OHOS::xml {
         size_t GetNSCount(size_t iTemp);
         void Parse(napi_env env, napi_value thisVar);
         std::string GetNamespace(const std::string &prefix);
-        napi_value DealOptionInfo(napi_env env, napi_value napiObj, napi_callback_info info);
+        napi_value DealOptionInfo(napi_env env, napi_value napiObj);
         TagEnum ParseTagType(bool inDeclaration);
         void SkipText(std::string chars);
         int PriorDealChar();
