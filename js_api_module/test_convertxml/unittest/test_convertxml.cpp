@@ -309,7 +309,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
     
     object = convertXml.Convert(env, strXml);
-    napi_has_named_property(env, object,utf8Name, &isHas);
+    napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
 }
 
