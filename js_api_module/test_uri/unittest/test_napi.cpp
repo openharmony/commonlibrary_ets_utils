@@ -300,6 +300,90 @@ HWTEST_F(NativeEngineTest, ConstructorTest019, testing::ext::TestSize.Level0)
     ASSERT_STREQ(uri.GetFragment().c_str(), "qwer");
 }
 
+HWTEST_F(NativeEngineTest, ConstructorTest020, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/username:password@www.baidu.com:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "http");
+    ASSERT_STREQ(uri.GetAuthority().c_str(), "null");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "/username:password@www.baidu.com:99/path/pathquery");
+    ASSERT_STREQ(uri.GetUserinfo().c_str(), "null");
+    ASSERT_STREQ(uri.GetHost().c_str(), "null");
+    ASSERT_STREQ(uri.GetPort().c_str(), "-1");
+    ASSERT_STREQ(uri.GetPath().c_str(), "/username:password@www.baidu.com:99/path/path");
+    ASSERT_STREQ(uri.GetQuery().c_str(), "query");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "fagment");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest021, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/&username:password@[1080::8:800:200C:417A]:99/path/66path1?query#fagment");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "http");
+    ASSERT_STREQ(uri.GetAuthority().c_str(), "null");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "/&username:password@[1080::8:800:200C:417A]:99/path/66path1query");
+    ASSERT_STREQ(uri.GetUserinfo().c_str(), "null");
+    ASSERT_STREQ(uri.GetHost().c_str(), "null");
+    ASSERT_STREQ(uri.GetPort().c_str(), "-1");
+    ASSERT_STREQ(uri.GetPath().c_str(), "/&username:password@[1080::8:800:200C:417A]:99/path/66path1");
+    ASSERT_STREQ(uri.GetQuery().c_str(), "query");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "fagment");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest022, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/[username:password@[::FFFF:129.144.52.38]:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "http");
+    ASSERT_STREQ(uri.GetAuthority().c_str(), "null");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "/[username:password@[::FFFF:129.144.52.38]:99/path/pathquery");
+    ASSERT_STREQ(uri.GetUserinfo().c_str(), "null");
+    ASSERT_STREQ(uri.GetHost().c_str(), "null");
+    ASSERT_STREQ(uri.GetPort().c_str(), "-1");
+    ASSERT_STREQ(uri.GetPath().c_str(), "/[username:password@[::FFFF:129.144.52.38]:99/path/path");
+    ASSERT_STREQ(uri.GetQuery().c_str(), "query");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "fagment");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest023, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:username:password@[1080::8:800:200C:417A]:99/path/66path1?query#fagment");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "http");
+    ASSERT_STREQ(uri.GetAuthority().c_str(), "null");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "username:password@[1080::8:800:200C:417A]:99/path/66path1query");
+    ASSERT_STREQ(uri.GetUserinfo().c_str(), "null");
+    ASSERT_STREQ(uri.GetHost().c_str(), "null");
+    ASSERT_STREQ(uri.GetPort().c_str(), "-1");
+    ASSERT_STREQ(uri.GetPath().c_str(), "null");
+    ASSERT_STREQ(uri.GetQuery().c_str(), "null");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "fagment");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest024, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:^$username:password@[::192.9.5.5]:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "http");
+    ASSERT_STREQ(uri.GetAuthority().c_str(), "null");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "^$username:password@[::192.9.5.5]:99/path/pathquery");
+    ASSERT_STREQ(uri.GetUserinfo().c_str(), "null");
+    ASSERT_STREQ(uri.GetHost().c_str(), "null");
+    ASSERT_STREQ(uri.GetPort().c_str(), "-1");
+    ASSERT_STREQ(uri.GetPath().c_str(), "null");
+    ASSERT_STREQ(uri.GetQuery().c_str(), "null");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "fagment");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest025, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:[?]username:password@[fe80::0001:0000]:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "http");
+    ASSERT_STREQ(uri.GetAuthority().c_str(), "null");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "[]username:password@[fe80::0001:0000]:99/path/path?query");
+    ASSERT_STREQ(uri.GetUserinfo().c_str(), "null");
+    ASSERT_STREQ(uri.GetHost().c_str(), "null");
+    ASSERT_STREQ(uri.GetPort().c_str(), "-1");
+    ASSERT_STREQ(uri.GetPath().c_str(), "null");
+    ASSERT_STREQ(uri.GetQuery().c_str(), "null");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "fagment");
+}
+
 HWTEST_F(NativeEngineTest, EqualsTest001, testing::ext::TestSize.Level0)
 {
     OHOS::Uri::Uri uri("http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path1?query#fagment");
@@ -380,4 +464,3 @@ HWTEST_F(NativeEngineTest, IsAbsoluteTest003, testing::ext::TestSize.Level0)
     bool res = uri.IsAbsolute();
     ASSERT_FALSE(res);
 }
-
