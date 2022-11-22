@@ -26,7 +26,7 @@ bool IsOneByte(uint8_t u8Char)
     return (u8Char & 0x80) == 0;
 }
 
-u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
+u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
 {
     u16string u16Str = u"";
     u16Str.reserve(u8Str.size());
@@ -84,9 +84,8 @@ u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
                 uint8_t c2 = data[++i]; // The second byte
                 // Calculates the UNICODE code point value
                 // (5 bits lower for the first byte, 6 bits lower for the other)
-                // 2 : shift left 2 times of UTF8_VALID_BITS
-                uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << (2 * UTF8_VALID_BITS))
-                                    | ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS);
+                uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << UTF8_VALID_BITS)
+                                    | (c2 & LOWER_6_BITS_MASK);
                 u16Str.push_back(static_cast<char16_t>(codePoint));
                 break;
             }
@@ -103,7 +102,21 @@ u16string Utf8ToUtf16LE(const string &u8Str, bool *ok)
     return u16Str;
 }
 
-string Utf16LEToANSI(const u16string &wstr)
+u16string Utf16BEToLE(const u16string &wstr)
+{
+    u16string str16 = u"";
+    const char16_t *data = wstr.data();
+    for (unsigned int i = 0; i < wstr.length(); i++) {
+        char16_t wc = data[i];
+        char16_t high = (wc >> 8) & 0x00FF;
+        char16_t low = wc & 0x00FF;
+        char16_t c16 = (low << 8) | high;
+        str16.push_back(c16);
+    }
+    return str16;
+}
+
+string Utf16BEToANSI(const u16string &wstr)
 {
     string ret = "";
     for (u16string::const_iterator it = wstr.begin(); it != wstr.end(); ++it) {
@@ -115,10 +128,10 @@ string Utf16LEToANSI(const u16string &wstr)
     return ret;
 }
 
-string Utf8ToUtf16leToANSI(const string &str)
+string Utf8ToUtf16BEToANSI(const string &str)
 {
-    u16string u16Str = Utf8ToUtf16LE(str);
-    string ret = Utf16LEToANSI(u16Str);
+    u16string u16Str = Utf8ToUtf16BE(str);
+    string ret = Utf16BEToANSI(u16Str);
     return ret;
 }
 
@@ -289,5 +302,123 @@ string HexDecode(const string &hexStr)
     }
 
     return nums;
+}
+
+// Find the position of the last character in pat from patIndex
+int GetGoodSuffixLengthByLastChar(uint8_t *pat, int patIndex, int patLen)
+{
+    int lastIndex = patLen - 1;
+    int index = -1;
+    while (patIndex >= 0) {
+        if (pat[patIndex] == pat[lastIndex]) {
+            index = patIndex;
+            break;
+        } else {
+            patIndex--;
+        }
+    }
+    return lastIndex - index;
+}
+// Find the position of the first character in pat from patIndex
+int GetGoodSuffixLengthByFirstChar(uint8_t *pat, int patIndex, int tarlen)
+{
+    int indexOfNextFirstChar = tarlen;
+    for (int i = patIndex; i < tarlen; i++) {
+        if (pat[0] == pat[i]) {
+            indexOfNextFirstChar = i;
+            break;
+        }
+    }
+    return indexOfNextFirstChar;
+}
+
+// Match forward from patIndex to get the position of the singleChar in the pat
+// and the length of the bad character
+int GetBadCharLengthInReverseOrder(uint8_t *pat, char singleChar, int patIndex)
+{
+    int index = -1;
+    for (int i = patIndex - 1; i >= 0; --i) {
+        if (pat[i] == singleChar) {
+            index = i;
+            break;
+        }
+    }
+    return patIndex - index;
+}
+
+// Get the position of character c in pat
+int GetBadCharLengthInSequence(uint8_t *pat, char singleChar, int patIndex, int tarlen)
+{
+    int resIndex = tarlen;
+    for (int i = patIndex; i < tarlen; i++) {
+        if (singleChar == pat[i]) {
+            resIndex = i;
+            break;
+        }
+    }
+    return resIndex;
+}
+
+int FindLastIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
+{
+    if (soulen < tarlen || tarlen == 0) {
+        return -1;
+    }
+    int i = soulen - tarlen;
+    int j = 0;
+
+    while (i >= 0) {
+        if (source[i] == target[j]) {
+            if (j == tarlen - 1) {
+                return i - (tarlen - 1);
+            }
+            i++;
+            j++;
+        } else {
+            if (j == 0) {
+                int badValue = GetBadCharLengthInSequence(target, source[i], j, tarlen);
+                i = i - badValue;
+                j = 0;
+            } else {
+                int badValue = GetBadCharLengthInSequence(target, source[i], j, tarlen);
+                int goodSuffix = GetGoodSuffixLengthByFirstChar(target, j, tarlen);
+                int distance = badValue > goodSuffix ? badValue : goodSuffix;
+                i = i - distance;
+                j = 0;
+            }
+        }
+    }
+    return -1;
+}
+
+int FindIndex(uint8_t* source, uint8_t* target, int soulen, int tarlen)
+{
+    if (soulen < tarlen || tarlen == 0) {
+        return -1;
+    }
+    int i = tarlen - 1;
+    int j = tarlen - 1;
+    while (i < soulen) {
+        if (source[i] == target[j]) {
+            if (j == 0) {
+                return i;
+            }
+            i--;
+            j--;
+        } else {
+            if (j == tarlen - 1) {
+                int badValue = GetBadCharLengthInReverseOrder(target, source[i], j);
+                i = i + badValue;
+                j = tarlen - 1;
+            } else {
+                int badValue = GetBadCharLengthInReverseOrder(target, source[i], j);
+                int goodSuffix = GetGoodSuffixLengthByLastChar(target, j, tarlen);
+                int distance = badValue > goodSuffix ? badValue : goodSuffix;
+                i = i + tarlen - 1 - j + distance;
+                j = tarlen - 1;
+            }
+        }
+    }
+    return -1;
 }
 }
