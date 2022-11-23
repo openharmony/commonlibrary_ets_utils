@@ -392,7 +392,7 @@ std::string Buffer::GetString(std::string value, EncodingType encodingType)
     switch (encodingType) {
         case ASCII:
         case LATIN1:
-            str = Utf8ToUtf16leToANSI(value);
+            str = Utf8ToUtf16BEToANSI(value);
             break;
         case UTF8:
             str = value;
@@ -402,7 +402,7 @@ std::string Buffer::GetString(std::string value, EncodingType encodingType)
             str = Base64Decode(value);
             break;
         case BINARY:
-            str = Utf8ToUtf16leToANSI(value);
+            str = Utf8ToUtf16BEToANSI(value);
             break;
         default:
             break;
@@ -414,7 +414,7 @@ void Buffer::FillString(string value, unsigned int offset, unsigned int end, str
 {
     EncodingType encodingType = GetEncodingType(encoding);
     if (encodingType == UTF16LE) {
-        u16string u16Str = Utf8ToUtf16LE(value);
+        u16string u16Str = Utf8ToUtf16BE(value);
         this->WriteStringLoop(u16Str, offset, end);
     } else {
         string str = GetString(value, encodingType);
@@ -427,7 +427,7 @@ unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int
     EncodingType encodingType = GetEncodingType(encoding);
     unsigned int lengthWrote = 0;
     if (encodingType == UTF16LE) {
-        u16string u16Str = Utf8ToUtf16LE(value);
+        u16string u16Str = Utf8ToUtf16BE(value);
         lengthWrote = this->WriteString(u16Str, offset, length);
     } else {
         string str = GetString(value, encodingType);
@@ -443,88 +443,18 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
     return Base64Encode(reinterpret_cast<const unsigned char*>(data), length);
 }
 
-int Buffer::IndexOf(const char *data, uint32_t offset)
+int Buffer::IndexOf(const char *data, uint32_t offset, int len)
 {
-    uint8_t sData[length_ - offset + 1];
+    uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
-    sData[length_ - offset] = 0;
-    char *cData = reinterpret_cast<char *>(sData);
-    char *p3 = strstr(cData, data);
-    if (p3 == NULL) {
-        return -1;
-    }
-    return p3 - cData + offset;
-}
-
-int Buffer::GoodSuffix(int patIndex, uint8_t *pat, int tarlen)
-{
-    int firstIndex = 0;
-    for (int i = patIndex; i < tarlen; i++) {
-        if (pat[0] == pat[i]) {
-            firstIndex = i;
-            break;
-        }
-    }
-    int resIndex = tarlen;
-    for (int i = 0; i < patIndex; i++) {
-        if (pat[i] != pat[firstIndex]) {
-            resIndex = tarlen;
-            break;
-        }
-        resIndex = firstIndex;
-    }
-
-    return resIndex;
-}
-
-int Buffer::BadChar(int patIndex, char temp, uint8_t *str, int tarlen)
-{
-    int resIndex = tarlen;
-    for (int i = patIndex; i < tarlen; i++) {
-        if (temp == str[i]) {
-            resIndex = i;
-            break;
-        }
-    }
-    return resIndex;
-}
-
-int Buffer::FindIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
-{
-    if (soulen < tarlen) {
-        return -1;
-    }
-
-    int i = soulen - tarlen;
-    int j = 0;
-
-    while (i >= 0) {
-        if (source[i] == target[j]) {
-            if (j == tarlen - 1) {
-                return i - (tarlen - 1);
-            }
-            i++;
-            j++;
-        } else {
-            if (j == 0) {
-                int badvalue = BadChar(j, source[i], target, tarlen);
-                i = i - badvalue;
-                j = 0;
-            } else {
-                int badvalue = BadChar(j, source[i], target, tarlen);
-                int distance = badvalue > GoodSuffix(j, target, tarlen) ? badvalue : GoodSuffix(j, target, tarlen);
-                i = i - distance;
-                j = 0;
-            }
-        }
-    }
-    return -1;
+    int index = FindIndex(sData, (uint8_t *)data, length_ - offset, len);
+    return index == -1 ? index : (offset + index);
 }
 
 int Buffer::LastIndexOf(const char *data, uint32_t offset, int len)
 {
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
-    return FindIndex(sData, (uint8_t *)data, length_ - offset, len);
+    return FindLastIndex(sData, (uint8_t *)data, length_ - offset, len);
 }
 } // namespace OHOS::Buffer

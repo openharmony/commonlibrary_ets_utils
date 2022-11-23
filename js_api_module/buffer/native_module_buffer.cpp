@@ -109,8 +109,8 @@ static napi_value FromStringASCII(napi_env env, napi_value thisVar, napi_value s
 static std::u16string GetStringUtf16LE(napi_env env, napi_value strValue)
 {
     string utf8Str = GetStringUtf8(env, strValue);
-    u16string u16Str = Utf8ToUtf16LE(utf8Str);
-    return u16Str;
+    u16string u16Str = Utf8ToUtf16BE(utf8Str);
+    return Utf16BEToLE(u16Str);
 }
 
 static napi_value FromStringUtf16LE(napi_env env, napi_value thisVar, napi_value str)
@@ -118,7 +118,7 @@ static napi_value FromStringUtf16LE(napi_env env, napi_value thisVar, napi_value
     string utf8Str = GetStringUtf8(env, str);
     Buffer *buffer = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
-    u16string u16Str = Utf8ToUtf16LE(utf8Str);
+    u16string u16Str = Utf8ToUtf16BE(utf8Str);
     // 2 : the size of string is 2 times of u16str's length
     buffer->WriteString(u16Str, 0, u16Str.size() * 2);
 
@@ -848,6 +848,7 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     EncodingType eType = Buffer::GetEncodingType(type);
     std::string str;
     std::u16string u16Str;
+    int len = 0;
     const char *data = nullptr;
     switch (eType) {
         case ASCII:
@@ -863,6 +864,7 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
         case UTF16LE: {
             u16Str = GetStringUtf16LE(env, args[0]);
             data = reinterpret_cast<char *>(const_cast<char16_t *>(u16Str.c_str()));
+            len = u16Str.length() * 2; // 2 : 2 means the length of wide char String is 2 times of char String
             break;
         }
         case BASE64:
@@ -885,10 +887,11 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_bool(env, args[3], &isReverse));
     int index = -1;
     if (isReverse) {
-        int len = strlen(data);
+        len = (eType == UTF16LE) ? len : strlen(data);
         index = buf->LastIndexOf(data, offset, len);
     } else {
-        index = buf->IndexOf(data, offset);
+        len = (eType == UTF16LE) ? len : strlen(data);
+        index = buf->IndexOf(data, offset, len);
     }
     napi_value result = nullptr;
     napi_create_int32(env, index, &result);
