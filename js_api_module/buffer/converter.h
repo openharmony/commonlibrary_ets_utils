@@ -58,13 +58,20 @@ const std::string base64Table =
 * Returns: if the highest bit of u8Char is 0, return true, else ,return false;
 */
 bool IsOneByte(uint8_t u8Char);
+bool IsBase64Char(unsigned char c);
 
-std::u16string Utf8ToUtf16LE(const std::string &u8Str, bool *ok = NULL);
-std::string Utf16LEToANSI(const std::wstring &wstr);
-std::string Utf8ToUtf16leToANSI(const std::string &str);
-static inline bool IsBase64Char(unsigned char c);
+std::u16string Utf8ToUtf16BE(const std::string &u8Str, bool *ok = NULL);
+std::string Utf16BEToANSI(const std::wstring &wstr);
+std::u16string Utf16BEToLE(const std::u16string &wstr);
+std::string Utf8ToUtf16BEToANSI(const std::string &str);
 std::string Base64Encode(const unsigned char *src, size_t len);
 std::string Base64Decode(std::string const& encodedStr);
 std::string HexDecode(const std::string &hexStr);
+int FindLastIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen);
+int FindIndex(uint8_t* source, uint8_t* target, int soulen, int tarlen);
+int GetGoodSuffixLengthByLastChar(uint8_t *pat, int patIndex, int patLen);
+int GetGoodSuffixLengthByFirstChar(uint8_t *pat, int patIndex, int tarlen);
+int GetBadCharLengthInReverseOrder(uint8_t *pat, char singleChar, int patIndex);
+int GetBadCharLengthInSequence(uint8_t *pat, char singleChar, int patIndex, int tarlen);
 } // namespace OHOS::Buffer
 #endif // BUFFER_CONVERTER_H

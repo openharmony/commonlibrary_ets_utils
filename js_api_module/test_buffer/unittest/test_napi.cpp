@@ -109,6 +109,20 @@ HWTEST_F(NativeEngineTest, ConstructorTest004, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: DestructorTest001
+ * @tc.desc: Buffer Destructor.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, DestructorTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    uint8_t data[4] = {1, 2, 3, 4};
+    buf->Init(data, 0, 4);
+    delete buf;
+}
+
+/**
  * @tc.name: GetLengthTest001
  * @tc.desc: Get buffer Length.
  * @tc.type: FUNC
@@ -659,8 +673,38 @@ HWTEST_F(NativeEngineTest, IndexOfTest001, testing::ext::TestSize.Level0)
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
     buf->Init(20);
     buf->WriteString("this is a string", 16);
-    int index = buf->IndexOf("is", 0);
+    int index = buf->IndexOf("is", 0, 2);
     ASSERT_EQ(index, 2);
+}
+
+/**
+ * @tc.name: IndexOfTest002
+ * @tc.desc: The index of the first occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, IndexOfTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(7);
+    buf->WriteString("3363333", 7);
+    int index = buf->IndexOf("36", 0, 2);
+    ASSERT_EQ(index, 1);
+}
+
+/**
+ * @tc.name: IndexOfTest003
+ * @tc.desc: The index of the first occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, IndexOfTest003, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(12);
+    buf->WriteString("322362326233", 12);
+    int index = buf->IndexOf("2623", 0, 4);
+    ASSERT_EQ(index, 7);
 }
 
 /**
@@ -679,6 +723,67 @@ HWTEST_F(NativeEngineTest, LastIndexOfTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: LastIndexOfTest002
+ * @tc.desc: The index of the last occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, LastIndexOfTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(7);
+    buf->WriteString("3363333", 7);
+    int index = buf->LastIndexOf("36", 0, 2);
+    ASSERT_EQ(index, 1);
+}
+
+/**
+ * @tc.name: LastIndexOfTest003
+ * @tc.desc: The index of the last occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, LastIndexOfTest003, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(7);
+    buf->WriteString("32236326233", 11);
+    int index = buf->LastIndexOf("236", 0, 3);
+    ASSERT_EQ(index, 1);
+}
+
+/**
+ * @tc.name: LastIndexOfTest004
+ * @tc.desc: The index of the last occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, LastIndexOfTest004, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(7);
+    buf->WriteString("322362326233", 12);
+    int index = buf->LastIndexOf("2236", 0, 4);
+    ASSERT_EQ(index, 1);
+}
+
+/**
+ * @tc.name: LastIndexOfTest005
+ * @tc.desc: The index of the last occurrence of value in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, LastIndexOfTest005, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(7);
+    buf->WriteString("322362326233", 12);
+    int index = buf->LastIndexOf("136", 0, 3);
+    ASSERT_EQ(index, -1);
+}
+
+
+/**
  * @tc.name: ToBase64Test001
  * @tc.desc: Convert the contents of the buffer into a string in Base64 format.
  * @tc.type: FUNC
@@ -694,6 +799,21 @@ HWTEST_F(NativeEngineTest, ToBase64Test001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: ToBase64Test002
+ * @tc.desc: Convert the contents of the buffer into a string in Base64 format.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, ToBase64Test002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(30);
+    buf->WriteString("this is a big string", 20);
+    std::string base64Str = buf->ToBase64(0, 20);
+    ASSERT_STREQ(base64Str.c_str(), "dGhpcyBpcyBhIGJpZyBzdHJpbmc=");
+}
+
+/**
  * @tc.name: GetEncodingTypeTest001
  * @tc.desc: Get encoding type.
  * @tc.type: FUNC
@@ -701,9 +821,24 @@ HWTEST_F(NativeEngineTest, ToBase64Test001, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, GetEncodingTypeTest001, testing::ext::TestSize.Level0)
 {
-    std::string type = "base64";
-    OHOS::buffer::EncodingType et = OHOS::buffer::Buffer::GetEncodingType(type);
-    ASSERT_EQ(et, OHOS::buffer::BASE64);
+    std::map <std::string, int> _typeMap =
+    {
+        {"hex", OHOS::buffer::HEX},
+        {"base64url", OHOS::buffer::BASE64URL},
+        {"ascii", OHOS::buffer::ASCII},
+        {"base64", OHOS::buffer::BASE64},
+        {"latin1", OHOS::buffer::LATIN1},
+        {"binary", OHOS::buffer::BINARY},
+        {"utf16le", OHOS::buffer::UTF16LE},
+        {"utf8", OHOS::buffer::UTF8},
+    };
+
+    for (auto item =_typeMap.begin(); item != _typeMap.end(); item++)
+    {
+        std::string type = item->first;
+        OHOS::buffer::EncodingType et = OHOS::buffer::Buffer::GetEncodingType(type);
+        ASSERT_EQ(et, item->second);
+    }
 }
 
 /**
@@ -802,6 +937,46 @@ HWTEST_F(NativeEngineTest, FillStringTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: FillStringTest002
+ * @tc.desc: Fill the buffer with the string
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FillStringTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(20);
+    std::string value = "扡摣";
+    unsigned int offset = 0;
+    unsigned int end = 10;
+    std::string encoding = "utf16le";
+    buf->FillString(value, offset, end, encoding);
+    uint8_t data[20] = {0};
+    buf->ReadBytes(data, offset, end);
+    ASSERT_STREQ(reinterpret_cast<char*>(data), "abcdabcdab");
+}
+
+/**
+ * @tc.name: FillStringTest003
+ * @tc.desc: Fill the buffer with the string
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FillStringTest003, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(20);
+    std::string value = "YWJjZA";
+    unsigned int offset = 0;
+    unsigned int end = 10;
+    std::string encoding = "base64";
+    buf->FillString(value, offset, end, encoding);
+    uint8_t data[20] = {0};
+    buf->ReadBytes(data, offset, end);
+    ASSERT_STREQ(reinterpret_cast<char*>(data), "abcdabcdab");
+}
+
+/**
  * @tc.name: BlobConstructorTest001
  * @tc.desc: Blob Constructor
  * @tc.type: FUNC
@@ -849,6 +1024,20 @@ HWTEST_F(NativeEngineTest, BlobConstructorTest003, testing::ext::TestSize.Level0
     blob2->Init(blob, 1, 4);
 
     ASSERT_EQ(blob2->GetLength(), 3);
+}
+
+/**
+ * @tc.name: BlobDestructorTest001
+ * @tc.desc: Blob Destructor.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, BlobDestructorTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
+    uint8_t data[4] = {1, 2, 3, 4};
+    blob->Init(data, 4);
+    delete blob;
 }
 
 /**
@@ -923,4 +1112,55 @@ HWTEST_F(NativeEngineTest, BlobReadBytesTest001, testing::ext::TestSize.Level0)
     for (int i = 0; i < 10; i++) {
         ASSERT_EQ(dat[i], i);
     }
+}
+
+/**
+ * @tc.name: Utf8ToUtf16BETest001
+ * @tc.desc: convert utf8 bytes to utf16 bytes
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, Utf8ToUtf16BETest001, testing::ext::TestSize.Level0)
+{
+    std::string str8 = "";
+    // one byte
+    str8.append(1, 0x41);
+    // two bytes
+    str8.append(1, 0xC3);
+    str8.append(1, 0x84);
+    // three bytes
+    str8.append(1, 0xE5);
+    str8.append(1, 0x88);
+    str8.append(1, 0x98);
+    // four bytes
+    str8.append(1, 0xf0);
+    str8.append(1, 0x9f);
+    str8.append(1, 0x90);
+    str8.append(1, 0x85);
+
+    // another four bytes
+    str8.append(1, 0xf0);
+    str8.append(1, 0x8f);
+    str8.append(1, 0x90);
+    str8.append(1, 0x85);
+
+    bool isOk = false;
+    std::u16string str16 = OHOS::buffer::Utf8ToUtf16BE(str8, &isOk);
+    
+    char16_t results[] = {0x41, 0xc4, 0x5218, 0xd83d, 0xdc05, 0xf405};
+    for (int i = 0; i < 6; i++) {
+        ASSERT_EQ(results[i], str16[i]);
+    }
+}
+
+/**
+ * @tc.name: HexDecodeTest001
+ * @tc.desc: decode a hex string
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, HexDecodeTest001, testing::ext::TestSize.Level0)
+{
+    std::string ret = OHOS::buffer::HexDecode("313g");
+    ASSERT_EQ(ret, "1");
 }
