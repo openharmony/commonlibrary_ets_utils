@@ -47,7 +47,8 @@ static OHOS::Js_sys_module::Process::ChildProcess RunCommand(napi_env env, napi_
     return objectInfo;
 }
 std::string testStr = "";
-napi_value Method(napi_env env, napi_callback_info info) {
+napi_value Method(napi_env env, napi_callback_info info)
+{
     napi_value thisVar = nullptr;
     size_t argc = 0;
     napi_value args[6] = { 0 }; // 6:six args
@@ -487,7 +488,7 @@ HWTEST_F(NativeEngineTest, ProcessIsolatedProcess001, testing::ext::TestSize.Lev
         ASSERT_TRUE(res);
     } else {
         ASSERT_FALSE(res);
-    } 
+    }
 }
 
 /**
