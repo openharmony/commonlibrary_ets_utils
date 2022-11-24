@@ -149,6 +149,9 @@ bool IsBase64Char(unsigned char c)
 */
 string Base64Encode(const unsigned char *src, size_t len)
 {
+    if (src == nullptr) {
+        return string();
+    }
     unsigned char *out = nullptr;
     unsigned char *pos = nullptr;
     const unsigned char *pEnd = nullptr;
@@ -361,6 +364,9 @@ int GetBadCharLengthInSequence(uint8_t *pat, char singleChar, int patIndex, int 
 
 int FindLastIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
 {
+    if (source == nullptr || target == nullptr) {
+        return -1;
+    }
     if (soulen < tarlen || tarlen == 0) {
         return -1;
     }
@@ -393,6 +399,9 @@ int FindLastIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
 
 int FindIndex(uint8_t* source, uint8_t* target, int soulen, int tarlen)
 {
+    if (source == nullptr || target == nullptr) {
+        return -1;
+    }
     if (soulen < tarlen || tarlen == 0) {
         return -1;
     }

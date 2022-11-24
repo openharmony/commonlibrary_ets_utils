@@ -69,8 +69,8 @@ public:
     Buffer *SubBuffer(uint32_t start, uint32_t end);
     uint32_t Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t sEnd);
     int Compare(Buffer *tBuf, uint32_t targetStart, uint32_t sourceStart, uint32_t length);
-    int IndexOf(const char *data, uint32_t offset, int len);
-    int LastIndexOf(const char *data, uint32_t offset, int len);
+    int IndexOf(const char *data, uint32_t offset, uint32_t len);
+    int LastIndexOf(const char *data, uint32_t offset, uint32_t len);
     std::string ToBase64(uint32_t start, uint32_t length);
     static EncodingType GetEncodingType(std::string type);
     void SetArray(std::vector<uint8_t> array, unsigned int offset = 0);
