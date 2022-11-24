@@ -646,6 +646,7 @@ class LruBuffer {
         } else if (this.cache.size >= this.maxSize) {
             this.cache.delete(this.cache.keys().next().value);
             this.evictionCount++;
+            this.afterRemoval(true, key, value, null);
         }
         this.cache.set(key, value);
         this.length = this.cache.size;
@@ -888,6 +889,7 @@ class LRUCache {
         } else if (this.cache.size >= this.maxSize) {
             this.cache.delete(this.cache.keys().next().value);
             this.evictionCount++;
+            this.afterRemoval(true, key, value, null);
         }
         this.cache.set(key, value);
         this.length = this.cache.size;
