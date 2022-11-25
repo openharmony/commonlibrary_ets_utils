@@ -848,7 +848,7 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     EncodingType eType = Buffer::GetEncodingType(type);
     std::string str;
     std::u16string u16Str;
-    int len = 0;
+    uint32_t len = 0;
     const char *data = nullptr;
     switch (eType) {
         case ASCII:
@@ -887,10 +887,10 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_bool(env, args[3], &isReverse));
     int index = -1;
     if (isReverse) {
-        len = (eType == UTF16LE) ? len : strlen(data);
+        len = (eType == UTF16LE) ? len : str.length();
         index = buf->LastIndexOf(data, offset, len);
     } else {
-        len = (eType == UTF16LE) ? len : strlen(data);
+        len = (eType == UTF16LE) ? len : str.length();
         index = buf->IndexOf(data, offset, len);
     }
     napi_value result = nullptr;
@@ -1008,7 +1008,7 @@ static napi_value GetBytes(napi_env env, napi_callback_info info)
 
 static napi_value BufferInit(napi_env env, napi_value exports)
 {
-    const char *className = "Buffer";
+    string className = "Buffer";
     napi_value bufferClass = nullptr;
     napi_property_descriptor bufferDesc[] = {
         DECLARE_NAPI_FUNCTION("writeInt32BE", WriteInt32BE),
@@ -1037,7 +1037,7 @@ static napi_value BufferInit(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("toBase64", ToBase64),
         DECLARE_NAPI_FUNCTION("indexOf", IndexOf),
     };
-    NAPI_CALL(env, napi_define_class(env, className, strlen(className), BufferConstructor,
+    NAPI_CALL(env, napi_define_class(env, className.c_str(), className.length(), BufferConstructor,
                                      nullptr, sizeof(bufferDesc) / sizeof(bufferDesc[0]), bufferDesc, &bufferClass));
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_PROPERTY("Buffer", bufferClass),
@@ -1048,14 +1048,14 @@ static napi_value BufferInit(napi_env env, napi_value exports)
 
 static napi_value BlobInit(napi_env env, napi_value exports)
 {
-    const char *className = "Blob";
+    string className = "Blob";
     napi_value blobClass = nullptr;
     napi_property_descriptor blobDesc[] = {
         DECLARE_NAPI_FUNCTION("arraybuffer", ArrayBufferAsync),
         DECLARE_NAPI_FUNCTION("text", TextAsync),
         DECLARE_NAPI_FUNCTION("getBytes", GetBytes),
     };
-    NAPI_CALL(env, napi_define_class(env, className, strlen(className), BlobConstructor,
+    NAPI_CALL(env, napi_define_class(env, className.c_str(), className.length(), BlobConstructor,
                                      nullptr, sizeof(blobDesc) / sizeof(blobDesc[0]), blobDesc, &blobClass));
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_PROPERTY("Blob", blobClass),
