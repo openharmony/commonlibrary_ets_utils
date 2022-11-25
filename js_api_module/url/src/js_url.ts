@@ -458,7 +458,7 @@ class URL {
         }
     }
 
-    parseURL(inputUrl : string, inputBase ?: string | NativeUrl | URL) {   
+    static parseURL(inputUrl : string, inputBase ?: string | NativeUrl | URL) {   
         if (typeof arguments[0] !== 'string') {
             let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
             throw err;
@@ -484,30 +484,31 @@ class URL {
                 throw err;
             }  
         }
-        this.c_info = nativeUrl;
+        let urlHelper = new URL();
         if (nativeUrl.onOrOff) {
-            this.search_ = encodeURI(nativeUrl.search);
-            this.username_ = encodeURI(nativeUrl.username);
-            this.password_ = encodeURI(nativeUrl.password);
+            urlHelper.search_ = encodeURI(nativeUrl.search);
+            urlHelper.username_ = encodeURI(nativeUrl.username);
+            urlHelper.password_ = encodeURI(nativeUrl.password);
             if (nativeUrl.GetIsIpv6) {
-                this.hostname_ = nativeUrl.hostname;
-                this.host_ = nativeUrl.host;
+                urlHelper.hostname_ = nativeUrl.hostname;
+                urlHelper.host_ = nativeUrl.host;
             } else {
-                this.hostname_ = encodeURI(nativeUrl.hostname);
-                this.host_ = encodeURI(nativeUrl.host);
+                urlHelper.hostname_ = encodeURI(nativeUrl.hostname);
+                urlHelper.host_ = encodeURI(nativeUrl.host);
             }
-            this.hash_ = encodeURI(nativeUrl.hash);
-            this.protocol_ = encodeURI(nativeUrl.protocol);
-            this.pathname_ = encodeURI(nativeUrl.pathname);
-            this.port_ = nativeUrl.port;
-            this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
-            this.searchParamsClass_ = new URLSearchParams(this.search_);
-            this.set_href();
+            urlHelper.hash_ = encodeURI(nativeUrl.hash);
+            urlHelper.protocol_ = encodeURI(nativeUrl.protocol);
+            urlHelper.pathname_ = encodeURI(nativeUrl.pathname);
+            urlHelper.port_ = nativeUrl.port;
+            urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
+            urlHelper.searchParamsClass_ = new URLSearchParams(urlHelper.search_);
+            urlHelper.set_href();
         } else {
             let err = new BusinessError('Syntax Error. Invalid Url string');
             err.code = SyntaxErrorCodeId;
             throw err;
         }
+        return urlHelper;
     }
 
     getInfo() {
