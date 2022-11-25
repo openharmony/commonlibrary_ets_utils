@@ -130,6 +130,9 @@ Buffer* Buffer::SubBuffer(uint32_t start, uint32_t end)
 
 uint32_t Buffer::Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t sEnd)
 {
+    if (tBuf == nullptr) {
+        return 0; // 0 : cannot copy anything
+    }
     uint8_t *dest = tBuf->raw_ + tBuf->byteOffset_ + tStart;
     uint32_t tLength = tBuf->length_ - tStart;
     uint8_t *src = this->raw_ + this->byteOffset_ + sStart;
@@ -141,6 +144,9 @@ uint32_t Buffer::Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t s
 
 int Buffer::Compare(Buffer *tBuf, uint32_t targetStart, uint32_t sourceStart, uint32_t length)
 {
+    if (tBuf == nullptr) {
+        return 0;
+    }
     uint8_t *dest = tBuf->GetRaw() + tBuf->byteOffset_ + targetStart;
     uint8_t *src = this->GetRaw() + this->byteOffset_ + sourceStart;
     return memcmp(dest, src, length);
@@ -277,6 +283,9 @@ void Buffer::Set(uint32_t index, uint8_t value)
 
 void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
 {
+    if (data == nullptr) {
+        return;
+    }
     if (memcpy_s(data, length, raw_ + byteOffset_ + offset, length) != EOK) {
         HILOG_FATAL("Buffer ReadBytes memcpy_s failed");
     }
@@ -346,6 +355,9 @@ void Buffer::WriteStringLoop(std::u16string value, unsigned int offset, unsigned
 
 bool Buffer::WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest)
 {
+    if (src == nullptr || dest == nullptr) {
+        return false;
+    }
     if (memcpy_s(dest, size, src, size) != EOK) {
         HILOG_FATAL("Buffer WriteBytes memcpy_s failed");
         return false;
@@ -362,6 +374,9 @@ void Buffer::SetArray(vector<uint8_t> array, unsigned int offset)
 
 void Buffer::FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end)
 {
+    if (buffer == nullptr) {
+        return;
+    }
     if (end - offset <= 0) {
         return;
     }
@@ -443,16 +458,22 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
     return Base64Encode(reinterpret_cast<const unsigned char*>(data), length);
 }
 
-int Buffer::IndexOf(const char *data, uint32_t offset, int len)
+int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len)
 {
+    if (data == nullptr) {
+        return -1;
+    }
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
     int index = FindIndex(sData, (uint8_t *)data, length_ - offset, len);
     return index == -1 ? index : (offset + index);
 }
 
-int Buffer::LastIndexOf(const char *data, uint32_t offset, int len)
+int Buffer::LastIndexOf(const char *data, uint32_t offset, uint32_t len)
 {
+    if (data == nullptr) {
+        return -1;
+    }
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
     return FindLastIndex(sData, (uint8_t *)data, length_ - offset, len);
