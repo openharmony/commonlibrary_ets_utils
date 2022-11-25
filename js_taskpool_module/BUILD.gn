@@ -16,13 +16,16 @@ import("//build/ohos.gni")
 ohos_shared_library("taskpool") {
   include_dirs = [
     "//commonlibrary/ets_utils/js_taskpool_module/taskpool",
+    "//commonlibrary/ets_utils/js_worker_module/helper",
   ]
 
   sources = [
     "taskpool/native_module_taskpool.cpp",
-    "taskpool/runner.cpp",
     "taskpool/task_queue.cpp",
+    "taskpool/task_runner.cpp",
     "taskpool/taskpool.cpp",
+    "taskpool/thread.cpp",
+    "taskpool/worker.cpp",
   ]
 
   deps = [ "//foundation/arkui/napi:ace_napi" ]
