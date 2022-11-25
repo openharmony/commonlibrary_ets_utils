@@ -15,7 +15,7 @@
 
 #include "taskpool.h"
 #include "task.h"
-#include "taskpool_helper.h"
+#include "object_helper.h"
 #include "utils/log.h"
 
 namespace Commonlibrary::TaskPoolModule {
@@ -23,28 +23,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     static napi_property_descriptor desc[] = {
         DECLARE_NAPI_FUNCTION("execute", Execute),
-        DECLARE_NAPI_FUNCTION("destroy", Destroy),
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc)/sizeof(desc[0]), desc));
     return exports;
-}
-
-void TaskPool::DestroyTaskPoolInstance()
-{
-    std::unique_lock<std::mutex> lock(mtx_);
-    if (isInitialized_ == false) {
-        return;
-    }
-    isInitialized_ = false;
-    runner_->TerminateThread();
-}
-
-napi_value TaskPool::Destroy(napi_env env, [[maybe_unused]]napi_callback_info cbinfo)
-{
-    TaskPool::GetCurrentTaskpool()->DestroyTaskPoolInstance();
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-    return result;
 }
 
 TaskPool *TaskPool::GetCurrentTaskpool()

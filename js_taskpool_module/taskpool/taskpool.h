@@ -34,7 +34,6 @@ public:
     void DestroyTaskPoolInstance();
     void EnqueueTask(std::unique_ptr<Task> task) const;
     static TaskPool *GetCurrentTaskpool();
-    static napi_value Destroy(napi_env env, [[maybe_unused]]napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
     static napi_value InitTaskPool(napi_env env, napi_value exports);
 
