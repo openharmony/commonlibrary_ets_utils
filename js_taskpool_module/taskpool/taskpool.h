@@ -40,7 +40,7 @@ public:
 
 private:
     std::mutex mtx_;
-    std::unique_ptr<Runner> runner_;
+    std::unique_ptr<TaskRunner> runner_;
     bool isInitialized_ {false};
 };
 } // namespace Commonlibrary::TaskPoolModule

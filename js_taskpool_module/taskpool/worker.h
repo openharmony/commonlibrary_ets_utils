@@ -16,11 +16,13 @@
 #ifndef JS_TASKPOOL_MODULE_TASKPOOL_WORKER_H_
 #define JS_TASKPOOL_MODULE_TASKPOOL_WORKER_H_
 
+#include <list>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 
 namespace Commonlibrary::TaskPoolModule {
+using WorkerEnv = napi_env;
 class Worker {
 public:
     Worker(napi_env env);

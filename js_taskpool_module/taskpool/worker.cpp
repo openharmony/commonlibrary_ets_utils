@@ -17,7 +17,9 @@
 #include "utils/log.h"
 
 namespace Commonlibrary::TaskPoolModule {
-static std::list<napi_env> g_envs;
+const static int MAX_THREADPOOL_SIZE = 4;
+static std::list<WorkerEnv> liveEnvs;
+static std::list<WorkerEnv> idleEnvs;
 static std::mutex g_workersMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
@@ -27,6 +29,10 @@ napi_value Worker::WorkerConstructor(napi_env env)
     Worker *worker = nullptr;
     {
         std::lock_guard<std::mutex> lock(g_workersMutex);
+        if (liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
+            napi_throw_error(env, nullptr, "Too Many worker thread");
+            return nullptr;
+        }
         worker = new Worker(env);
         if (worker == nullptr) {
             napi_throw_error(env, nullptr, "create worker error");
@@ -55,6 +61,8 @@ void Worker::ExecuteInThread(const void *data)
             napi_throw_error(env, nullptr, "Worker create runtime error");
             return;
         }
+        liveEnvs.push_back(workerEnv);
+        idleEnvs.push_back(workerEnv);
         reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
         worker->workerEnv_ = workerEnv;
     }
