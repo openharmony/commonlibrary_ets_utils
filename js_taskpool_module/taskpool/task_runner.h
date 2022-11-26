@@ -47,14 +47,14 @@ public:
     };
 
     explicit TaskRunner(TaskStartCallback callback);
-    ~TaskPoolRunner();
+    ~TaskRunner();
 
     bool Execute();
     void Run() const;
     void Stop();
 
 private:
-    TaskInnerRunner* taskPoolInnerRunner_ {nullptr};
+    TaskInnerRunner* taskInnerRunner_ {nullptr};
     TaskStartCallback callback_;
     uv_thread_t selfThreadId_ {0};
 };

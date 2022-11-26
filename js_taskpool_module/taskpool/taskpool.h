@@ -21,7 +21,6 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
-#include "runner.h"
 #include "task.h"
 
 namespace Commonlibrary::TaskPoolModule {
@@ -30,7 +29,7 @@ public:
     TaskPool() = default;
     ~TaskPool() = default;
 
-    void InitTaskRunner();
+    void InitTaskRunner(napi_env env);
     void DestroyTaskPoolInstance();
     void EnqueueTask(std::unique_ptr<Task> task) const;
     static TaskPool *GetCurrentTaskpool();
@@ -39,7 +38,7 @@ public:
 
 private:
     std::mutex mtx_;
-    std::unique_ptr<TaskRunner> runner_;
+    // std::unique_ptr<TaskRunner> runner_;
     bool isInitialized_ {false};
 };
 } // namespace Commonlibrary::TaskPoolModule

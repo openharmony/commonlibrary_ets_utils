@@ -18,10 +18,11 @@
 
 #include <list>
 #include <memory>
+
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
-
+#include "task_runner.h"
 namespace Commonlibrary::TaskPoolModule {
 using WorkerEnv = napi_env;
 class Worker {
@@ -29,7 +30,7 @@ public:
     Worker(napi_env env);
     ~Worker();
 
-    static void WorkerConstructor(napi_env env);
+    static napi_value WorkerConstructor(napi_env env);
     void StartExecuteInThread(napi_env env);
     static void ExecuteInThread(const void* data);
     bool PrepareForWorkerInstance();
@@ -43,6 +44,7 @@ public:
         }
         return loop;
     }
+
     void Loop() const
     {
         uv_loop_t* loop = GetWorkerLoop();

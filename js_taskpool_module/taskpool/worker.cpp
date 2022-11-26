@@ -32,7 +32,7 @@ bool Worker::NeedInitWorker()
     return true;
 }
 
-void Worker::WorkerConstructor(napi_env env)
+napi_value Worker::WorkerConstructor(napi_env env)
 {
     Worker *worker = nullptr;
     {
@@ -48,12 +48,13 @@ void Worker::WorkerConstructor(napi_env env)
         }
     }
     worker->StartExecuteInThread(env);
+    return nullptr;
 }
 
-void StartExecuteInThread(napi_env env)
+void Worker::StartExecuteInThread(napi_env env)
 {
     if (!runner_) {
-        runner_ = std::make_unique<TaskRunner>(WorkerStartCallback(ExecuteInThread, worker));
+        runner_ = std::make_unique<TaskRunner>(TaskStartCallback(ExecuteInThread, this));
     }
     if (runner_) {
         runner_->Execute(); // start a new thread

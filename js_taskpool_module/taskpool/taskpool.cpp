@@ -15,10 +15,12 @@
 
 #include "taskpool.h"
 #include "task.h"
+#include "worker.h"
 #include "object_helper.h"
 #include "utils/log.h"
 
 namespace Commonlibrary::TaskPoolModule {
+using namespace CompilerRuntime::WorkerModule::Helper;
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     static napi_property_descriptor desc[] = {
@@ -34,23 +36,23 @@ TaskPool *TaskPool::GetCurrentTaskpool()
     return &taskpool;
 }
 
-void TaskPool::InitTaskRunner()
+void TaskPool::InitTaskRunner(napi_env env)
 {
     std::unique_lock<std::mutex> lock(mtx_);
     if (!isInitialized_) {
-        runner_ = std::make_unique<Runner>(DEFAULT_TASKPOOL_THREAD_NUM);
+        Worker::WorkerConstructor(env);
         isInitialized_ = true;
     }
 }
 
-void TaskPool::EnqueueTask(std::unique_ptr<Task> task) const
-{
-    runner_->EnqueueTask(std::move(task));
-}
+// void TaskPool::EnqueueTask(std::unique_ptr<Task> task) const
+// {
+//     runner_->EnqueueTask(std::move(task));
+// }
 
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
-    TaskPool::GetCurrentTaskpool()->InitTaskRunner();
+    TaskPool::GetCurrentTaskpool()->InitTaskRunner(env);
 
     // generate the taskInfo
     size_t argc = 0;
@@ -86,7 +88,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 
     napi_value promise = nullptr;
     napi_create_promise(env, &task->deferred_, &promise);
-    TaskPool::GetCurrentTaskpool()->EnqueueTask(std::move(task));
+    // TaskPool::GetCurrentTaskpool()->EnqueueTask(std::move(task));
     return promise;
 }
 } // namespace Commonlibrary::TaskPoolModule

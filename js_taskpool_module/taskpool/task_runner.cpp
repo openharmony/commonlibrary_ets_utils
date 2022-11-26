@@ -13,26 +13,27 @@
  * limitations under the License.
  */
 
-#include "taskpool_runner.h"
+#include "task_runner.h"
 
 #include "object_helper.h"
 
 namespace Commonlibrary::TaskPoolModule {
-TaskPoolModule::TaskRunner(TaskStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
+using namespace CompilerRuntime::WorkerModule::Helper;
+TaskRunner::TaskRunner(TaskStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
 
-TaskPoolModule::~TaskRunner()
+TaskRunner::~TaskRunner()
 {
-    Helper::CloseHelp::DeletePointer(taskInnerRunner_, false);
+    CloseHelp::DeletePointer(taskInnerRunner_, false);
 }
 
-void TaskPoolModule::TaskInnerRunner::Run()
+void TaskRunner::TaskInnerRunner::Run()
 {
     if (runner_ != nullptr) {
         runner_->Run();
     }
 }
 
-TaskPoolModule::TaskInnerRunner::TaskInnerRunner(const TaskRunner* runner) : runner_(runner) {}
+TaskRunner::TaskInnerRunner::TaskInnerRunner(const TaskRunner* runner) : runner_(runner) {}
 
 void TaskRunner::Run() const
 {
