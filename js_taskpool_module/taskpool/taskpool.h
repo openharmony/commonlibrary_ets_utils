@@ -30,7 +30,6 @@ public:
     ~TaskPool() = default;
 
     void InitTaskRunner(napi_env env);
-    void DestroyTaskPoolInstance();
     void EnqueueTask(std::unique_ptr<Task> task) const;
     static TaskPool *GetCurrentTaskpool();
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
@@ -38,7 +37,6 @@ public:
 
 private:
     std::mutex mtx_;
-    // std::unique_ptr<TaskRunner> runner_;
     bool isInitialized_ {false};
 };
 } // namespace Commonlibrary::TaskPoolModule

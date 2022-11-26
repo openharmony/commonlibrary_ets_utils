@@ -14,7 +14,6 @@
  */
 
 #include "task_queue.h"
-#include "utils/log.h"
 
 namespace Commonlibrary::TaskPoolModule {
 void TaskQueue::EnqueueTask(std::unique_ptr<Task> task)

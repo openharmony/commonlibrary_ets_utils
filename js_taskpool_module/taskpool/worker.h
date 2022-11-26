@@ -24,7 +24,7 @@
 #include "native_engine/native_engine.h"
 #include "task_runner.h"
 #include "task_queue.h"
-#include "../../js_worker_module/helper/object_helper.h"
+#include "object_helper.h"
 
 namespace Commonlibrary::TaskPoolModule {
 class DereferenceHelp;
@@ -41,6 +41,7 @@ public:
     static bool NeedInitWorker();
     static bool NeedExpandWorker();
     static bool HasIdleEnv();
+    static void HostOnMessage(const uv_async_t* req);
 
     static void EnqueueTask(std::unique_ptr<Task> task);
 
@@ -51,6 +52,15 @@ public:
         uv_loop_t *loop = nullptr;
         if (workerEnv_ != nullptr) {
             napi_get_uv_event_loop(workerEnv_, &loop);
+        }
+        return loop;
+    }
+
+    uv_loop_t* GetHostLoop() const
+    {
+        uv_loop_t *loop = nullptr;
+        if (hostEnv_ != nullptr) {
+            napi_get_uv_event_loop(hostEnv_, &loop);
         }
         return loop;
     }
@@ -70,6 +80,7 @@ public:
     napi_env workerEnv_ {nullptr};
     std::unique_ptr<TaskRunner> runner_ {};
 
+    uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* performTaskSignal_ = nullptr;
 
 private:

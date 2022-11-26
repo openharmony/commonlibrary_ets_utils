@@ -14,19 +14,18 @@
  */
 
 #include "taskpool.h"
-#include "task.h"
-#include "worker.h"
+
 #include "object_helper.h"
 #include "utils/log.h"
+#include "worker.h"
 
 namespace Commonlibrary::TaskPoolModule {
 using namespace CompilerRuntime::WorkerModule::Helper;
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
-    static napi_property_descriptor desc[] = {
-        DECLARE_NAPI_FUNCTION("execute", Execute),
-    };
-    NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc)/sizeof(desc[0]), desc));
+    napi_value func;
+    napi_create_function(env, "execute", NAPI_AUTO_LENGTH, Execute, NULL, &func);
+    napi_set_named_property(env, exports, "execute", func);
     return exports;
 }
 
@@ -47,11 +46,6 @@ void TaskPool::InitTaskRunner(napi_env env)
         Worker::WorkerConstructor(env);
     }
 }
-
-// void TaskPool::EnqueueTask(std::unique_ptr<Task> task) const
-// {
-//     runner_->EnqueueTask(std::move(task));
-// }
 
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
@@ -86,13 +80,12 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         napi_throw_error(env, nullptr, "Failed to serialize message");
         return nullptr;
     }
-    task->env_ = env;
     task->taskData_ = taskData;
 
+    // generate the promise and enqueue the task
     napi_value promise = nullptr;
     napi_create_promise(env, &task->deferred_, &promise);
     Worker::EnqueueTask(std::move(task));
-    // TaskPool::GetCurrentTaskpool()->EnqueueTask(std::move(task));
     return promise;
 }
 } // namespace Commonlibrary::TaskPoolModule

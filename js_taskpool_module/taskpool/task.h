@@ -19,14 +19,12 @@
 #include <memory>
 
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "native_engine/native_engine.h"
 
 namespace Commonlibrary::TaskPoolModule {
 using TaskDataType = napi_value;
 class Task {
 public:
-    enum TaskPriority {LOW, HIGH, IMMEDIATE};
+    enum TaskPriority {LOW, MEDIUM, HIGH};
 
     Task() = default;
     Task(napi_ref func, napi_value args);
@@ -50,8 +48,8 @@ public:
     }
 
     napi_deferred deferred_;
-    napi_env env_;
     napi_value taskData_; // Serialization Data
+    napi_value resultData_;
 
 private:
     std::atomic<TaskPriority> priority_ {LOW};
