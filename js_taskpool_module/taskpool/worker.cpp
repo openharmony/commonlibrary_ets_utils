@@ -20,13 +20,39 @@ namespace Commonlibrary::TaskPoolModule {
 const static int MAX_THREADPOOL_SIZE = 4;
 static std::list<WorkerEnv> liveEnvs;
 static std::list<WorkerEnv> idleEnvs;
+static TaskQueue taskQueue_;
 static std::mutex g_workersMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 
+void Worker::EnqueueTask(std::unique_ptr<Task> task)
+{
+    taskQueue_.EnqueueTask(std::move(task));
+}
+
 bool Worker::NeedInitWorker()
 {
+    std::lock_guard<std::mutex> lock(g_workersMutex);
     if (liveEnvs.size() > 0) {
+        return false;
+    }
+    return true;
+}
+
+bool Worker::HasIdleEnv()
+{
+    std::lock_guard<std::mutex> lock(g_workersMutex);
+    if (idleEnvs.size() > 0) {
+        return true;
+    }
+    return false;
+}
+
+bool Worker::NeedExpandWorker()
+{
+    std::lock_guard<std::mutex> lock(g_workersMutex);
+    if (liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
+        HILOG_DEBUG("Work Thread Num reaches the maximum");
         return false;
     }
     return true;
@@ -88,6 +114,8 @@ void Worker::ExecuteInThread(const void *data)
     }
 
     if (worker->PrepareForWorkerInstance()) {
+        uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
+        uv_async_send(worker->performTaskSignal_);
 // #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 //         uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
 //             Worker::HandleDebuggerTask));
@@ -116,4 +144,10 @@ bool Worker::PrepareForWorkerInstance()
     return true;
 }
 
+void Worker::PerformTask(const uv_async_t* req)
+{
+    // Worker* worker = CompilerRuntime::WorkerModule::Helper::DereferenceHelp::DereferenceOf(&Worker::performTaskSignal_, req);
+    // while (std::unique_ptr<Task> task = taskQueue_.DequeueTask()) {
+    // }
+}
 } // namespace Commonlibrary::TaskPoolModule

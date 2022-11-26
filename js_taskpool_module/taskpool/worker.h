@@ -23,7 +23,11 @@
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 #include "task_runner.h"
+#include "task_queue.h"
+#include "../../js_worker_module/helper/object_helper.h"
+
 namespace Commonlibrary::TaskPoolModule {
+class DereferenceHelp;
 using WorkerEnv = napi_env;
 class Worker {
 public:
@@ -35,6 +39,12 @@ public:
     static void ExecuteInThread(const void* data);
     bool PrepareForWorkerInstance();
     static bool NeedInitWorker();
+    static bool NeedExpandWorker();
+    static bool HasIdleEnv();
+
+    static void EnqueueTask(std::unique_ptr<Task> task);
+
+    static void PerformTask(const uv_async_t* req);
 
     uv_loop_t* GetWorkerLoop() const
     {
@@ -59,6 +69,8 @@ public:
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
     std::unique_ptr<TaskRunner> runner_ {};
+
+    uv_async_t* performTaskSignal_ = nullptr;
 
 private:
     std::recursive_mutex liveEnvLock_ {};

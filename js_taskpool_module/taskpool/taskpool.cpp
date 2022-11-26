@@ -39,9 +39,12 @@ TaskPool *TaskPool::GetCurrentTaskpool()
 void TaskPool::InitTaskRunner(napi_env env)
 {
     std::unique_lock<std::mutex> lock(mtx_);
-    if (!isInitialized_) {
+    if (!isInitialized_ && Worker::NeedInitWorker()) {
         Worker::WorkerConstructor(env);
         isInitialized_ = true;
+    }
+    if (Worker::NeedExpandWorker()) {
+        Worker::WorkerConstructor(env);
     }
 }
 
@@ -88,6 +91,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 
     napi_value promise = nullptr;
     napi_create_promise(env, &task->deferred_, &promise);
+    Worker::EnqueueTask(std::move(task));
     // TaskPool::GetCurrentTaskpool()->EnqueueTask(std::move(task));
     return promise;
 }
