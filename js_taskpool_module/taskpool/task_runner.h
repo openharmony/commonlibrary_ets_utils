@@ -21,7 +21,7 @@
 #include "native_engine/native_engine.h"
 #include "thread.h"
 
-namespace CompilerRuntime::TaskPoolModule {
+namespace Commonlibrary::TaskPoolModule {
 struct TaskStartCallback {
     using CallbackFunction = std::function<void(void*)>;
 

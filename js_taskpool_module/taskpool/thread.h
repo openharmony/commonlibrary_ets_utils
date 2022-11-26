@@ -18,7 +18,7 @@
 
 #include <uv.h>
 
-namespace CompilerRuntime::TaskPoolModule {
+namespace Commonlibrary::TaskPoolModule {
 class Thread {
 public:
     Thread();

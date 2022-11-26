@@ -17,6 +17,7 @@
 #define JS_TASKPOOL_MODULE_TASKPOOL_WORKER_H_
 
 #include <list>
+#include <memory>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
@@ -28,9 +29,11 @@ public:
     Worker(napi_env env);
     ~Worker();
 
-    static napi_value WorkerConstructor(napi_env env);
+    static void WorkerConstructor(napi_env env);
+    void StartExecuteInThread(napi_env env);
     static void ExecuteInThread(const void* data);
     bool PrepareForWorkerInstance();
+    static bool NeedInitWorker();
 
     uv_loop_t* GetWorkerLoop() const
     {

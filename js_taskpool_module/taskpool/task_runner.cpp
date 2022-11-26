@@ -17,7 +17,7 @@
 
 #include "object_helper.h"
 
-namespace CompilerRuntime::TaskPoolModule {
+namespace Commonlibrary::TaskPoolModule {
 TaskPoolModule::TaskRunner(TaskStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
 
 TaskPoolModule::~TaskRunner()

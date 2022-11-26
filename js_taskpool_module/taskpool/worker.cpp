@@ -24,7 +24,15 @@ static std::mutex g_workersMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 
-napi_value Worker::WorkerConstructor(napi_env env)
+bool Worker::NeedInitWorker()
+{
+    if (liveEnvs.size() > 0) {
+        return false;
+    }
+    return true;
+}
+
+void Worker::WorkerConstructor(napi_env env)
 {
     Worker *worker = nullptr;
     {
@@ -38,14 +46,19 @@ napi_value Worker::WorkerConstructor(napi_env env)
             napi_throw_error(env, nullptr, "create worker error");
             return nullptr;
         }
-        if (!runner_) {
-            runner_ = std::make_unique<TaskRunner>(WorkerStartCallback(ExecuteInThread, worker));
-        }
-        if (runner_) {
-            runner_->Execute(); // start a new thread
-        } else {
-            HILOG_ERROR("runner_ is nullptr");
-        }
+    }
+    worker->StartExecuteInThread(env);
+}
+
+void StartExecuteInThread(napi_env env)
+{
+    if (!runner_) {
+        runner_ = std::make_unique<TaskRunner>(WorkerStartCallback(ExecuteInThread, worker));
+    }
+    if (runner_) {
+        runner_->Execute(); // start a new thread
+    } else {
+        HILOG_ERROR("runner_ is nullptr");
     }
 }
 

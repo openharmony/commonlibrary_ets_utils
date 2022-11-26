@@ -15,7 +15,7 @@
 
 #include "thread.h"
 
-namespace CompilerRuntime::TaskPoolModule {
+namespace Commonlibrary::TaskPoolModule {
 Thread::Thread() : tId_() {}
 
 bool Thread::Start()
