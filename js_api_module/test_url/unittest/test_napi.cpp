@@ -135,6 +135,42 @@ HWTEST_F(NativeEngineTest, testUrlProtocol003, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "https:");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSetScheme001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+    url.SetScheme("ftp:");
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "ftp:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetScheme002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+    url.SetScheme("666");
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetScheme003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+    url.SetScheme("-/+");
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+}
+
 HWTEST_F(NativeEngineTest, testUrlUsername001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
@@ -160,6 +196,30 @@ HWTEST_F(NativeEngineTest, testUrlUsername003, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetUsername(env), output);
     ASSERT_STREQ(output.c_str(), "skk");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetUsername001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "username");
+    url.SetUsername("666");
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "666");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetUsername002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "username");
+    url.SetUsername("");
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "");
 }
 
 HWTEST_F(NativeEngineTest, testUrlPassword001, testing::ext::TestSize.Level0)
@@ -189,6 +249,30 @@ HWTEST_F(NativeEngineTest, testUrlPassword003, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSetPassword001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "password");
+    url.SetPassword("666");
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "666");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetPassword002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "password");
+    url.SetPassword("");
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
 HWTEST_F(NativeEngineTest, testUrlHost001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
@@ -214,6 +298,54 @@ HWTEST_F(NativeEngineTest, testUrlHost003, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetHost(env), output);
     ASSERT_STREQ(output.c_str(), "host:199");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetHost001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+    url.SetHost("0.0.0.0.0:199");
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "0.0.0.0.0:199");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetHost002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+    url.SetHost("");
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetHref001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+    url.SetHref("http:huawei.com");
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "huawei.com");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetHref002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+    url.SetHref("   http:huawei.com");
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "huawei.com");
 }
 
 HWTEST_F(NativeEngineTest, testUrlHostname001, testing::ext::TestSize.Level0)
@@ -271,6 +403,18 @@ HWTEST_F(NativeEngineTest, testUrlPort003, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSetPort001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:100/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPort(env), output);
+    ASSERT_STREQ(output.c_str(), "100");
+    url.SetPort("600");
+    DealNapiStrValue(env, url.GetPort(env), output);
+    ASSERT_STREQ(output.c_str(), "600");
+}
+
 HWTEST_F(NativeEngineTest, testUrlPathname001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
@@ -296,6 +440,42 @@ HWTEST_F(NativeEngineTest, testUrlPathname003, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetPath(env), output);
     ASSERT_STREQ(output.c_str(), "/");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetPath001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/");
+    url.SetPath("\\D:");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/D:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetPath002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/");
+    url.SetPath(":\\D:");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/:/D:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetPath003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/");
+    url.SetPath("::");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/::");
 }
 
 HWTEST_F(NativeEngineTest, testUrlSearch001, testing::ext::TestSize.Level0)
@@ -325,6 +505,54 @@ HWTEST_F(NativeEngineTest, testUrlSearch003, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "?ppp9875=77");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSetSearch001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?ppp9875=77#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?ppp9875=77");
+    url.SetSearch("");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetSearch002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?ppp9875=77#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?ppp9875=77");
+    url.SetSearch("?444=555");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?444=555");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetSearch003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?ppp9875=77#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?ppp9875=77");
+    url.SetSearch("444=555");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?444=555");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetSearch004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?ppp9875=77#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?ppp9875=77");
+    url.SetSearch("?##44=55");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?%23%2344=55");
+}
+
 HWTEST_F(NativeEngineTest, testUrlGetFragment001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:8080/directory/file?query=pppppp#fragment");
@@ -350,6 +578,42 @@ HWTEST_F(NativeEngineTest, testUrlGetFragment003, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetFragment(env), output);
     ASSERT_STREQ(output.c_str(), "#123456");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetFragment001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?query=pppppp#123456");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#123456");
+    url.SetFragment("");
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetFragment002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?query=pppppp#123456");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#123456");
+    url.SetFragment("#445566");
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#445566");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetFragment003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080/directory/file?query=pppppp#123456");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#123456");
+    url.SetFragment("445566");
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#445566");
 }
 
 HWTEST_F(NativeEngineTest, testUrlIPV6001, testing::ext::TestSize.Level0)
@@ -864,4 +1128,35 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsIterByValues, testing::ext::TestSi
         }
     }
     ASSERT_STREQ(cstr.data(), "ma");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsEntries001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "ma");
+    napi_value input2 = StrToNapiValue(env, "jk");
+    params.Append(env, input1, input2);
+    napi_value input3 = StrToNapiValue(env, "你好");
+    napi_value input4 = StrToNapiValue(env, "jk1");
+    params.Append(env, input3, input4);
+    napi_value input5 = StrToNapiValue(env, "a");
+    napi_value input6 = StrToNapiValue(env, "jk2");
+    params.Append(env, input5, input6);
+    napi_value result = params.Entries(env);
+    std::vector<std::string> res = {"ma", "jk", "你好", "jk1", "a", "jk2"};
+    uint32_t length = 0;
+    napi_value napiStr = nullptr;
+    size_t arraySize = 0;
+    napi_get_array_length(env, result, &length);
+    std::string cstr = "";
+    for (size_t i = 0; i < length; i++) {
+        napi_get_element(env, result, i, &napiStr);
+        napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize);
+        if (arraySize > 0) {
+            napi_get_value_string_utf8(env, napiStr, cstr.data(), arraySize + 1, &arraySize);
+        }
+    }
+    ASSERT_EQ(length, 3);
 }
