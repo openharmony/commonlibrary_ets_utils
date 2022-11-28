@@ -746,10 +746,10 @@ HWTEST_F(NativeEngineTest, LastIndexOfTest002, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, LastIndexOfTest003, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
-    buf->Init(7);
+    buf->Init(11);
     buf->WriteString("32236326233", 11);
     int index = buf->LastIndexOf("236", 0, 3);
-    ASSERT_EQ(index, 1);
+    ASSERT_EQ(index, 2);
 }
 
 /**
@@ -761,7 +761,7 @@ HWTEST_F(NativeEngineTest, LastIndexOfTest003, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, LastIndexOfTest004, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
-    buf->Init(7);
+    buf->Init(12);
     buf->WriteString("322362326233", 12);
     int index = buf->LastIndexOf("2236", 0, 4);
     ASSERT_EQ(index, 1);
@@ -776,7 +776,7 @@ HWTEST_F(NativeEngineTest, LastIndexOfTest004, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, LastIndexOfTest005, testing::ext::TestSize.Level0)
 {
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
-    buf->Init(7);
+    buf->Init(12);
     buf->WriteString("322362326233", 12);
     int index = buf->LastIndexOf("136", 0, 3);
     ASSERT_EQ(index, -1);
