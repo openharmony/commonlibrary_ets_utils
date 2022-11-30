@@ -465,7 +465,7 @@ int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len)
     }
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
-    int index = FindIndex(sData, (uint8_t *)data, length_ - offset, len);
+    int index = FindIndex(sData, reinterpret_cast<uint8_t *>(const_cast<char *>(data)), length_ - offset, len);
     return index == -1 ? index : (offset + index);
 }
 
@@ -476,6 +476,6 @@ int Buffer::LastIndexOf(const char *data, uint32_t offset, uint32_t len)
     }
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
-    return FindLastIndex(sData, (uint8_t *)data, length_ - offset, len);
+    return FindLastIndex(sData, reinterpret_cast<uint8_t *>(const_cast<char *>(data)), length_ - offset, len);
 }
 } // namespace OHOS::Buffer
