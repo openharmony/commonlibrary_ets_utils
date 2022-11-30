@@ -95,6 +95,43 @@ napi_value TokenValueCallbackFunction(napi_env env, napi_callback_info info)
     return result;
 }
 
+napi_value TokenValueCallbackFunc(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    size_t argc = 0;
+    napi_value args[6] = { 0 }; // 6:six args
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+    napi_value value = args[1];
+    napi_value value3 = nullptr;
+    napi_get_named_property(env, value, "getDepth", &value3);
+    napi_value returnVal = nullptr;
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getColumnNumber", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getLineNumber", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getAttributeCount", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getName", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getName", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getNamespace", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getPrefix", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "getText", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "isEmptyElementTag", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+    napi_get_named_property(env, value, "isWhitespace", &value3);
+    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
+
+    napi_value result = nullptr;
+    napi_get_boolean(env, true, &result);
+    return result;
+}
 /* @tc.name: StartElementTest001
  * @tc.desc: Test whether write a elemnet start tag with the given name successfully.
  * @tc.type: FUNC
@@ -1341,6 +1378,46 @@ HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
     napi_value value3 = nullptr;
     std::string cbName = "Method";
     napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
+}
+
+/* @tc.name: XmlParseTest009
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(NativeEngineTest, XmlParseTest009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
+    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
+    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
+    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
+    std::string str8 = "    </h:table></note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "TokenValueCallbackFunc";
+    napi_create_function(env, cbName.c_str(), cbName.size(), TokenValueCallbackFunc, nullptr, &value3);
     napi_set_named_property(env, object, key1, value1);
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
