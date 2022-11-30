@@ -398,7 +398,8 @@ class URL {
     protocol_ : string = '';
     pathname_ : string = '';
     port_ : string = '';
-    searchParamsClass_ !: URLSearchParams|URLParams;
+    searchParamsClass_ !: URLSearchParams;
+    URLParamsClass_ !: URLParams;
     c_info !: NativeUrl;
     public constructor()
     public constructor(inputUrl: string, inputBase?: string | URL)
@@ -451,6 +452,7 @@ class URL {
                 this.port_ = nativeUrl.port;
                 this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
                 this.searchParamsClass_ = new URLSearchParams(this.search_);
+                this.URLParamsClass_ = new URLParams(this.search_)
                 this.set_href();
             } else {
                 console.error('constructor failed');
@@ -502,6 +504,7 @@ class URL {
             urlHelper.port_ = nativeUrl.port;
             urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
             urlHelper.searchParamsClass_ = new URLSearchParams(urlHelper.search_);
+            urlHelper.URLParamsClass_ = new URLParams(urlHelper.search_);
             urlHelper.set_href();
         } else {
             let err = new BusinessError('Syntax Error. Invalid Url string');
@@ -587,6 +590,7 @@ class URL {
         this.c_info.search = query_;
         this.search_ = this.c_info.search;
         this.searchParamsClass_.updateParams(this.search_);
+        this.URLParamsClass_.updateParams(this.search_);
         this.set_href();
     }
     get hostname() {
@@ -650,6 +654,7 @@ class URL {
             this.port_ = this.c_info.port;
             this.origin_ = this.protocol_ + '//' + this.host_;
             this.searchParamsClass_.updateParams(this.search_);
+            this.URLParamsClass_.updateParams(this.search_);
             this.set_href();
         }
     }
@@ -666,6 +671,10 @@ class URL {
 
     get searchParams() {
         return this.searchParamsClass_;
+    }
+
+    get params() {
+        return this.URLParamsClass_;
     }
 
     toJSON() {
