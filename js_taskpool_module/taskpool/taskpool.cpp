@@ -41,9 +41,11 @@ void TaskPool::InitTaskRunner(napi_env env)
     if (!isInitialized_ && Worker::NeedInitWorker()) {
         Worker::WorkerConstructor(env);
         isInitialized_ = true;
+        return;
     }
     if (Worker::NeedExpandWorker()) {
         Worker::WorkerConstructor(env);
+        return;
     }
 }
 
@@ -55,7 +57,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc != 1) {
-        napi_throw_error(env, nullptr, "TaskPool Execute param num should be one");
+        napi_throw_error(env, nullptr, "taskpool:: TaskPool Execute param num should be one");
         return nullptr;
     }
 
@@ -66,7 +68,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type != napi_object) {
-        napi_throw_error(env, nullptr, "TaskPool Execute param type should be Object");
+        napi_throw_error(env, nullptr, "taskpool:: TaskPool Execute param type should be Object");
         return nullptr;
     }
 
@@ -77,9 +79,10 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_status serializeStatus = napi_ok;
     serializeStatus = napi_serialize(env, args[0], undefined, &taskData);
     if (serializeStatus != napi_ok || taskData == nullptr) {
-        napi_throw_error(env, nullptr, "Failed to serialize message");
+        napi_throw_error(env, nullptr, "taskpool:: Failed to serialize message");
         return nullptr;
     }
+    task->hostEnv_ = env;
     task->taskData_ = taskData;
 
     // generate the promise and enqueue the task

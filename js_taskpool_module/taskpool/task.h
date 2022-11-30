@@ -47,7 +47,18 @@ public:
         priority_ = priority;
     }
 
+    void SetHostEnv(napi_env env)
+    {
+        hostEnv_ = env;
+    }
+
+    napi_env GetHostEnv()
+    {
+        return hostEnv_;
+    }
+
     napi_deferred deferred_;
+    napi_env hostEnv_;
     napi_value taskData_; // Serialization Data
     napi_value resultData_;
 

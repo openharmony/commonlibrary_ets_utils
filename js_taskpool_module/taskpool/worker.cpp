@@ -25,6 +25,7 @@ const static int MAX_THREADPOOL_SIZE = 4;
 static std::unordered_map<int32_t, WorkerEnv> g_idleEnvs;
 static std::queue<std::unique_ptr<Task>> g_hostQueue;
 static std::unordered_map<int32_t, WorkerEnv> g_liveEnvs;
+static std::unordered_map<WorkerEnv, Worker*> g_workerHostEnvMap;
 static TaskQueue g_taskQueue;
 static std::mutex g_workersMutex;
 
@@ -57,7 +58,7 @@ bool Worker::NeedExpandWorker()
 {
     std::unique_lock<std::mutex> lock(g_workersMutex);
     if (g_liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
-        HILOG_DEBUG("Work Thread Num reaches the maximum");
+        HILOG_ERROR("taskpool:: work Thread Num reaches the maximum");
         return false;
     }
     return true;
@@ -69,12 +70,13 @@ napi_value Worker::WorkerConstructor(napi_env env)
     {
         std::unique_lock<std::mutex> lock(g_workersMutex);
         if (g_liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
-            napi_throw_error(env, nullptr, "Too Many worker thread");
+            napi_throw_error(env, nullptr, "taskpool:: Too Many worker thread");
             return nullptr;
         }
         worker = new Worker(env);
+        g_workerHostEnvMap.emplace(env, worker);
         if (worker == nullptr) {
-            napi_throw_error(env, nullptr, "create worker error");
+            napi_throw_error(env, nullptr, "taskpool:: create worker error");
             return nullptr;
         }
     }
@@ -110,7 +112,7 @@ void Worker::StartExecuteInThread(napi_env env)
     if (runner_) {
         runner_->Execute(); // start a new thread
     } else {
-        HILOG_ERROR("runner_ is nullptr");
+        HILOG_ERROR("taskpool:: runner_ is nullptr");
     }
 }
 
@@ -123,7 +125,7 @@ void Worker::ExecuteInThread(const void *data)
         napi_env env = worker->hostEnv_;
         napi_create_runtime(env, &workerEnv);
         if (workerEnv == nullptr) {
-            napi_throw_error(env, nullptr, "Worker create runtime error");
+            napi_throw_error(env, nullptr, "taskpool:: Worker create runtime error");
             return;
         }
         int32_t tid = gettid();
@@ -135,7 +137,7 @@ void Worker::ExecuteInThread(const void *data)
 
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
-        HILOG_ERROR("worker:: Worker loop is nullptr");
+        HILOG_ERROR("taskpool:: Worker loop is nullptr");
         return;
     }
 
@@ -150,7 +152,7 @@ void Worker::ExecuteInThread(const void *data)
 // #endif
         worker->Loop();
     } else {
-        HILOG_ERROR("worker:: worker PrepareForWorkerInstance failure");
+        HILOG_ERROR("taskpool:: worker PrepareForWorkerInstance failure");
     }
 }
 
@@ -166,7 +168,7 @@ bool Worker::PrepareForWorkerInstance()
 //         std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
 // #endif
     if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
-        HILOG_ERROR("Worker init func failure");
+        HILOG_ERROR("taskpool:: worker init func failure");
         return false;
     }
     return true;
@@ -174,8 +176,8 @@ bool Worker::PrepareForWorkerInstance()
 
 void Worker::PerformTask(const uv_async_t* req)
 {
-    Worker *worker = static_cast<Worker*>(req->data);
     while (std::unique_ptr<Task> task = g_taskQueue.DequeueTask()) {
+        napi_env taskHostEnv = task->hostEnv_;
         if (HasIdleEnv()) {
             napi_env env = nullptr;
             int32_t tid = gettid();
@@ -198,6 +200,7 @@ void Worker::PerformTask(const uv_async_t* req)
             g_workersMutex.lock();
             g_hostQueue.push(std::move(task));
             g_workersMutex.unlock();
+            auto worker = g_workerHostEnvMap[taskHostEnv];
             uv_async_send(worker->hostOnMessageSignal_);
         }
     }
