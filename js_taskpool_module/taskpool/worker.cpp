@@ -22,11 +22,10 @@
 
 namespace Commonlibrary::TaskPoolModule {
 const static int MAX_THREADPOOL_SIZE = 4;
-static std::unordered_map<int32_t, WorkerEnv> g_idleEnvs;
-static std::queue<std::unique_ptr<Task>> g_hostQueue;
 static std::unordered_map<int32_t, WorkerEnv> g_liveEnvs;
 static std::unordered_map<WorkerEnv, Worker*> g_workerHostEnvMap;
 static TaskQueue g_taskQueue;
+static std::mutex g_queueMutex;
 static std::mutex g_workersMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
@@ -45,15 +44,6 @@ bool Worker::NeedInitWorker()
     return true;
 }
 
-bool Worker::HasIdleEnv()
-{
-    std::unique_lock<std::mutex> lock(g_workersMutex);
-    if (g_idleEnvs.size() > 0) {
-        return true;
-    }
-    return false;
-}
-
 bool Worker::NeedExpandWorker()
 {
     std::unique_lock<std::mutex> lock(g_workersMutex);
@@ -70,7 +60,7 @@ napi_value Worker::WorkerConstructor(napi_env env)
     {
         std::unique_lock<std::mutex> lock(g_workersMutex);
         if (g_liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
-            napi_throw_error(env, nullptr, "taskpool:: Too Many worker thread");
+            napi_throw_error(env, nullptr, "taskpool:: Too many worker thread");
             return nullptr;
         }
         worker = new Worker(env);
@@ -86,10 +76,11 @@ napi_value Worker::WorkerConstructor(napi_env env)
 
 void Worker::HostOnMessage(const uv_async_t* req)
 {
+    std::unique_lock<std::mutex> lock(g_queueMutex);
     Worker* worker = static_cast<Worker*>(req->data);
-    while (!g_hostQueue.empty()) {
-        std::unique_ptr<Task> task = std::move(g_hostQueue.front());
-        g_hostQueue.pop();
+    while (!worker->hostTaskQueue_.empty()) {
+        std::unique_ptr<Task> task = std::move(worker->hostTaskQueue_.front());
+        worker->hostTaskQueue_.pop();
         napi_value taskData;
         napi_deserialize(worker->hostEnv_, task->resultData_, &taskData);
         if (taskData == nullptr) {
@@ -128,9 +119,6 @@ void Worker::ExecuteInThread(const void *data)
             napi_throw_error(env, nullptr, "taskpool:: Worker create runtime error");
             return;
         }
-        int32_t tid = gettid();
-        g_liveEnvs[tid] = workerEnv;
-        g_idleEnvs[tid] = workerEnv;
         reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
         worker->workerEnv_ = workerEnv;
     }
@@ -176,33 +164,32 @@ bool Worker::PrepareForWorkerInstance()
 
 void Worker::PerformTask(const uv_async_t* req)
 {
+    Worker *worker = static_cast<Worker*>(req->data);
     while (std::unique_ptr<Task> task = g_taskQueue.DequeueTask()) {
-        napi_env taskHostEnv = task->hostEnv_;
-        if (HasIdleEnv()) {
-            napi_env env = nullptr;
-            int32_t tid = gettid();
-            env = g_idleEnvs[tid];
-            napi_value taskData;
-            napi_deserialize(env, task->taskData_, &taskData);
-            napi_value func;
-            napi_value args;
-            napi_get_named_property(env, taskData, "func", &func);
-            napi_get_named_property(env, taskData, "args", &args);
-            napi_valuetype type;
-            napi_typeof(env, func, &type);
-            napi_value undefined;
-            napi_get_undefined(env, &undefined);
-            napi_value result;
-            napi_call_function(env, undefined, func, 1, &args, &result);
-            napi_value resultData;
-            napi_serialize(env, result, undefined, &resultData);
-            task->resultData_ = resultData;
-            g_workersMutex.lock();
-            g_hostQueue.push(std::move(task));
-            g_workersMutex.unlock();
-            auto worker = g_workerHostEnvMap[taskHostEnv];
-            uv_async_send(worker->hostOnMessageSignal_);
-        }
+        napi_env env = worker->workerEnv_;
+        napi_env taskEnv = task->hostEnv_;
+        napi_value taskData;
+        napi_deserialize(env, task->taskData_, &taskData);
+
+        napi_value func;
+        napi_value args;
+        napi_get_named_property(env, taskData, "func", &func);
+        napi_get_named_property(env, taskData, "args", &args);
+        napi_valuetype type;
+        napi_typeof(env, func, &type);
+        napi_value undefined;
+        napi_get_undefined(env, &undefined);
+        napi_value result;
+        napi_call_function(env, undefined, func, 1, &args, &result);
+
+        napi_value resultData;
+        napi_serialize(env, result, undefined, &resultData);
+        task->resultData_ = resultData;
+        Worker *newWorker = g_workerHostEnvMap[taskEnv];
+        g_queueMutex.lock();
+        newWorker->hostTaskQueue_.push(std::move(task));
+        g_queueMutex.unlock();
+        uv_async_send(newWorker->hostOnMessageSignal_);
     }
 }
 } // namespace Commonlibrary::TaskPoolModule

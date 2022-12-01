@@ -78,6 +78,7 @@ public:
 
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
+    std::queue<std::unique_ptr<Task>> hostTaskQueue_;
     std::unique_ptr<TaskRunner> runner_ {};
 
     uv_async_t* hostOnMessageSignal_ = nullptr;
