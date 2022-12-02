@@ -82,9 +82,91 @@ commonlibrary/ets_utils/js_api_module/
 │   ├── setCData(text: string)                                                    # 设置CData方法
 │   ├── setText(text: string)                                                     # 设置Text方法
 │   └── setDocType(text: string)                                                  # 设置DocType方法
-└── Class: XmlPullParser                                                          # XmlPullParser类
-    ├── new (buffer: ArrayBuffer | DataView, encoding?: string)                   # 创建XmlPullParser对象
-    └── parse(option: ParseOptions)                                               # parse方法
+├── Class: XmlPullParser                                                          # XmlPullParser类
+│   ├── new (buffer: ArrayBuffer | DataView, encoding?: string)                   # 创建XmlPullParser对象
+│   └── parse(option: ParseOptions)                                               # parse方法
+├── alloc()                                                                       # 创建Buffer实例并初始化
+├── allocUninitializedFromPool()                                                  # 在池中创建Buffer实例
+├── allocUninitialized()                                                          # 创建Buffer实例
+├── byteLength()                                                                  # 按编码返回字节数
+├── compare()                                                                     # Buffer数据比较
+├── concat()                                                                      # 粘接Buffer数组
+├── from()                                                                        # 创建Buffer实例
+├── isBuffer()                                                                    # 判断是否为Buffer
+├── isEncoding()                                                                  # 创建Buffer实例
+├── transcode()                                                                   # 转码
+├── Class: Buffer                                                                 # Buffer类
+│   ├── length                                                                    # length属性
+│   ├── buffer                                                                    # buffer属性
+│   ├── byteOffset                                                                # byteOffset属性
+│   ├── fill()                                                                    # 填充数据
+│   ├── compare()                                                                 # Buffer数据比较
+│   ├── copy()                                                                    # 复制数据
+│   ├── equals()                                                                  # 比较实例是否相等
+│   ├── includes()                                                                # 检查对象是否包含值
+│   ├── indexOf()                                                                 # 查找索引
+│   ├── keys()                                                                    # 返回包含key值的迭代器
+│   ├── values()                                                                  # 返回包含value值的迭代器
+│   ├── entries()                                                                 # 返回包含key和value的迭代器
+│   ├── lastIndexOf()                                                             # 反向查找索引
+│   ├── readBigInt64BE()                                                          # 读取有符号的大端序64位整数
+│   ├── readBigInt64LE()                                                          # 读取有符号的小端序64位整数
+│   ├── readBigUInt64BE()                                                         # 读取无符号的大端序64位整数
+│   ├── readBigUInt64LE()                                                         # 读取无符号的小端序64位整数
+│   ├── readDoubleBE()                                                            # 读取64位大端序双精度值
+│   ├── readDoubleLE()                                                            # 读取64位小端序双精度值
+│   ├── readFloatBE()                                                             # 读取32位大端序浮点数
+│   ├── readFloatLE()                                                             # 读取32位小端序浮点数
+│   ├── readInt8()                                                                # 读取有符号的8位整数
+│   ├── readInt16BE()                                                             # 读取有符号的大端序16位整数
+│   ├── readInt16LE()                                                             # 读取有符号的小端序16位整数
+│   ├── readInt32BE()                                                             # 读取有符号的大端序32位整数
+│   ├── readInt32LE()                                                             # 读取有符号的小端序32位整数
+│   ├── readIntBE()                                                               # 读取有符号的大端序整数
+│   ├── readIntLE()                                                               # 读取有符号的小端序整数
+│   ├── readUInt8()                                                               # 读取8位无符号整数
+│   ├── readUInt16BE()                                                            # 读取无符号的大端序16位整数
+│   ├── readUInt16LE()                                                            # 读取无符号的小端序16位整数
+│   ├── readUInt32BE()                                                            # 读取无符号的大端序32位整数
+│   ├── readUInt32LE()                                                            # 读取无符号的小端序32位整数
+│   ├── readUIntBE()                                                              # 读取无符号的大端序整数
+│   ├── readUIntLE()                                                              # 读取无符号的小端序整数
+│   ├── subarray()                                                                # 子Buffer
+│   ├── swap16()                                                                  # 以16位为基础交换字节顺序
+│   ├── swap32()                                                                  # 以32位为基础交换字节顺序
+│   ├── swap64()                                                                  # 以64位为基础交换字节顺序
+│   ├── toJSON()                                                                  # 转为JSON格式对象
+│   ├── toString()                                                                # 转成字符串
+│   ├── write()                                                                   # 写入字符串
+│   ├── writeBigInt64BE()                                                         # 写入有符号的大端序64位整数
+│   ├── writeBigInt64LE()                                                         # 写入有符号的小端序64位整数
+│   ├── writeBigUInt64BE()                                                        # 写入无符号的大端序64位整数
+│   ├── writeBigUInt64LE()                                                        # 写入无符号的小端序64位整数
+│   ├── writeDoubleBE()                                                           # 写入64位大端序双浮点型数据
+│   ├── writeDoubleLE()                                                           # 写入64位小端序双浮点型数据
+│   ├── writeFloatBE()                                                            # 写入32位大端序浮点型数据
+│   ├── writeFloatLE()                                                            # 写入32位小端序浮点型数据
+│   ├── writeInt8()                                                               # 写入8位有符号整数
+│   ├── writeInt16BE()                                                            # 写入有符号的大端序16位整数
+│   ├── writeInt16LE()                                                            # 写入有符号的小端序16位整数
+│   ├── writeInt32BE()                                                            # 写入有符号的大端序32位整数
+│   ├── writeInt32LE()                                                            # 写入有符号的大端序16位整数
+│   ├── writeIntBE()                                                              # 写入有符号的大端序整数
+│   ├── writeIntLE()                                                              # 写入有符号的小端序整数
+│   ├── writeUInt8()                                                              # 写入8位无符号整数
+│   ├── writeUInt16BE()                                                           # 写入无符号的大端序16位整数
+│   ├── writeUInt16LE()                                                           # 写入无符号的小端序16位整数
+│   ├── writeUInt32BE()                                                           # 写入无符号的大端序32位整数
+│   ├── writeUInt32LE()                                                           # 写入无符号的小端序32位整数
+│   ├── writeUIntBE()                                                             # 写入无符号的大端序整数
+│   └── writeUIntLE()                                                             # 写入无符号的小端序整数
+└── Class: Blob                                                                   # Blob类
+    ├── constructor()                                                             # 构造函数
+    ├── size                                                                      # size属性
+    ├── type                                                                      # type属性
+    ├── arrayBuffer()                                                             # 获取ArrayBuffer对象
+    ├── slice()                                                                   # 返回切割后的对象
+    └── text()                                                                    # 返回文本
 ```
 
 ### 1.3. 说明
@@ -142,7 +224,91 @@ commonlibrary/ets_utils/js_api_module/
 | setDocType(text: string): void | 写入DocType属性。 |
 | XmlPullParser(buffer: ArrayBuffer \| DataView, encoding?: string) | 创建并返回一个XmlPullParser对象，该XmlPullParser对象传参两个第一参数是ArrayBuffer或DataView一段内存，第二个参数为文件格式（默认为UTF-8）。 |
 | parse(option: ParseOptions): void | 该接口用于解析xml，ParseOptions参数为一个接口包含五个可选参{supportDoctype?: boolea ignoreNameSpace?: boolean tagValueCallbackFunction?: (name: string, value: string) => boolean attributeValueCallbackFunction?: (name: string, value: string) => boolean） tokenValueCallbackFunction?: (eventType: EventType, value: ParseInfo) => boolean }。其中tokenValueCallbackFunction回调函数的入参1是事件类型，入参2是包含getColumnNumber、getDepth等get属性的info接口，用户可通过info.getDepth()等方法来获取当前解析过程中的depth等信息。 |
-#### 1.3.2. 使用说明
+| alloc(size: number, fill?: string \| Buffer \| number, encoding?: BufferEncoding): Buffer | 创建size个字节长度的Buffer实例，并初始化。 |
+| allocUninitializedFromPool(size: number): Buffer | 创建指定大小的未被初始化Buffer实例。内存从缓冲池分配。 创建的Buffer的内容未知，需要使用fill()函数来初始化Buffer实例。 |
+| allocUninitialized(size: number): Buffer | 创建指定大小的未被初始化Buffer实例。内存不从缓冲池分配。 |
+| byteLength(string: string \| Buffer \| TypedArray \| DataView \| ArrayBuffer \| SharedArrayBuffer, encoding?: BufferEncoding): number | 根据不同的编码方法，返回字符串的字节数。 |
+| compare(buf1: Buffer \| Uint8Array, buf2: Buffer \| Uint8Array): -1 \| 0 \| 1 | 返回比较buf1和buf2的结果, 通常用于对Buffer实例的数组进行排序。 |
+| concat(list: Buffer[] \| Uint8Array[], totalLength?: number): Buffer | 将list中的实例内容复制totalLength字节长度到新的Buffer实例中并返回。 |
+| from(array: number[]): Buffer | 根据指定数组创建新的Buffer实例。 |
+| from(arrayBuffer: ArrayBuffer \| SharedArrayBuffer, byteOffset?: number, length?: number): Buffer | 创建指定长度的与arrayBuffer共享内存的Buffer实例 |
+| from(buffer: Buffer \| Uint8Array): Buffer | 创建并复制buffer数据到新的Buffer实例并返回。 |
+| from(object: Object, offsetOrEncoding: number \| string, length: number): Buffer | 根据指定的object类型数据，创建新的Buffer实例。 |
+| from(string: String, encoding?: BufferEncoding): Buffer | 根据指定编码格式的字符串，创建新的Buffer实例。 |
+| isBuffer(obj: Object): boolean | 判断obj是否为Buffer。 |
+| isEncoding(encoding: string):boolean | 判断encoding是否为支持的编码格式。 |
+| transcode(source: Buffer \| Uint8Array, fromEnc: string, toEnc: string): Buffer | 将给定的Buffer或Uint8Array实例从一种字符编码重新编码为另一种。 |
+| length: number | buffer的字节长度。 |
+| buffer: ArrayBuffer | ArrayBuffer对象。 |
+| byteOffset: number | 当前buffer所在内存池的偏移量。 |
+| fill(value: string \| Buffer \| Uint8Array \| number, offset?: number, end?: number, encoding?: BufferEncoding): Buffer | 用value填充this实例指定位置的数据，默认为循环填充，并返回填充后的Buffer实例。 |
+| compare(target: Buffer \| Uint8Array, targetStart?: number, targetEnd?: number, sourceStart?: number, sourceEnd?: number): -1 \| 0 \| 1 | this实例对象与target实例对象进行比较，返回buf在排序中的顺序，-1:前排序，0:与buf相同，1:后排序。 |
+| copy(target: Buffer \| Uint8Array, targetStart?: number, sourceStart?: number, sourceEnd?: number): number | 将this实例中指定位置的数据复制到target的指定位置上，并返回复制的字节总长度。 |
+| equals(otherBuffer: Uint8Array \| Buffer): boolean | 比较this实例和otherBuffer实例是否相等。 |
+| includes(value: string \| number \| Buffer \| Uint8Array, byteOffset?: number, encoding?: BufferEncoding): boolean | 检查Buffer对象是否包含value值。 |
+| indexOf(value: string \| number \| Buffer \| Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number | 查找this实例中第一次出现value的索引，如果不包含value，则为-1。 |
+| keys(): IterableIterator<number> | 返回一个包含key值的迭代器。 |
+| values(): IterableIterator<number> | 返回一个包含value的迭代器。 |
+| entries(): IterableIterator<[number, number]> | 返回一个包含key和value的迭代器。 |
+| lastIndexOf(value: string | number | Buffer | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number | 返回this实例中最后一次出现value的索引，如果对象不包含，则为-1。 |
+| readBigInt64BE(offset?: number): bigint | 从指定的offset处读取有符号的大端序64位整数。 |
+| readBigInt64LE(offset?: number): bigint | 从指定的offset处读取有符号的小端序64位整数。 |
+| readBigUInt64BE(offset?: number): bigint | 从指定的offset处读取无符号的大端序64位整数。 |
+| readBigUInt64LE(offset?: number): bigint | 从指定的offset处读取无符号的小端序64位整数。 |
+| readDoubleBE(offset?: number): number | 从指定offset处读取64位大端序双精度值。 |
+| readDoubleLE(offset?: number): number | 从指定offset处读取64位小端序双精度值。 |
+| readFloatBE(offset?: number): number | 从指定offset处读取32位大端序浮点数。 |
+| readFloatLE(offset?: number): number | 从指定offset处读取32位小端序浮点数。 |
+| readInt8(offset?: number): number | 从指定的offset处读取有符号的8位整数。 |
+| readInt16BE(offset?: number): number | 从指定的offset处读取有符号的大端序16位整数。 |
+| readInt16LE(offset?: number): number | 从指定的offset处读取有符号的小端序16位整数。 |
+| readInt32BE(offset?: number): number | 从指定的offset处读取有符号的大端序32位整数。 |
+| readInt32LE(offset?: number): number | 从指定的offset处读取有符号的小端序32位整数。 |
+| readIntBE(offset: number, byteLength: number): number | 从指定的offset处的buf读取byteLength个字节，并将结果解释为支持最高48位精度的大端序、二进制补码有符号值。 |
+| readIntLE(offset: number, byteLength: number): number | 从指定的offset处的buf读取byteLength个字节，并将结果解释为支持最高48位精度的小端序、二进制补码有符号值。 |
+| readUInt8(offset?: number): number | 从offset处读取8位无符号整型数。 |
+| readUInt16BE(offset?: number): number | 从指定的`offset`处的buf读取无符号的大端序16位整数。 |   
+| readUInt16LE(offset?: number): number | 从指定的`offset`处的buf读取无符号的小端序16位整数。 |
+| readUInt32BE(offset?: number): number | 从指定的`offset`处的buf读取无符号的大端序32位整数。 |
+| readUInt32LE(offset?: number): number | 从指定的`offset`处的buf读取无符号的小端序32位整数。 |
+| readUIntBE(offset: number, byteLength: number): number | 从指定的`offset`处的buf读取`byteLength`个字节，并将结果解释为支持最高48位精度的无符号大端序整数。 |
+| readUIntLE(offset: number, byteLength: number): number | 从指定的`offset`处的buf读取`byteLength`个字节，并将结果解释为支持最高48位精度的无符号小端序整数。 |
+| subarray(start?: number, end?: number): Buffer | 截取指定位置的`this`实例并返回。 |
+| swap16(): Buffer | 将`this`实例解释为无符号的16位整数数组，并就地交换字节顺序。 |
+| swap32(): Buffer | 将`this`实例解释为无符号的32位整数数组，并就地交换字节顺序。 |
+| swap64(): Buffer | 将`this`实例解释为无符号的64位整数数组，并就地交换字节顺序。 |
+| toJSON(): Object | 将buf转为JSON并返回。 |
+| toString(encoding?: string, start?: number, end?: number): string | 将`this`实例中指定位置数据转成指定编码格式字符串并返回。 |
+| write(str: string, offset?: number, length?: number, encoding?: string): number | 从buf的offset偏移写入指定编码的字符串str,写入的字节长度为length。 |
+| writeBigInt64BE(value: bigint, offset?: number): number | 从buf的offset偏移写入有符号的大端序64位BigInt型数据value。 |
+| writeBigInt64LE(value: bigint, offset?: number): number | 从buf的offset偏移写入有符号的小端序64位BigInt型数据value。 |
+| writeBigUInt64BE(value: bigint, offset?: number): number | 从buf的offset偏移写入无符号的大端序64位BigUInt型数据value。 |
+| writeBigUInt64LE(value: bigint, offset?: number): number | 从buf的offset偏移写入无符号的小端序64位BigUInt型数据value。 |
+| writeDoubleBE(value: number, offset?: number): number | 从buf的offset偏移写入大端序的64位双浮点型数据value。 |
+| writeDoubleLE(value: number, offset?: number): number | 从buf的offset偏移写入小端序的64位双浮点型数据value。 |
+| writeFloatBE(value: number, offset?: number): number | 从buf的offset偏移写入大端序的32位浮点型数据value。 |
+| writeFloatLE(value: number, offset?: number): number | 从buf的offset偏移写入小端序的32位浮点型数据value。 |
+| writeInt8(value: number, offset?: number): number | 从buf的offset偏移写入8位有符号整型数据value。 |
+| writeInt16BE(value: number, offset?: number): number | 从buf的offset偏移写入大端序的16位有符号整型数据value。 |
+| writeInt16LE(value: number, offset?: number): number | 从buf的offset偏移写入小端序的16位有符号整型数据value。 |
+| writeInt32BE(value: number, offset?: number): number | 从buf的offset偏移写入大端序的32位有符号整型数据value。 |
+| writeInt32LE(value: number, offset?: number): number | 从buf的offset偏移写入小端序的32位有符号整型数据value。 |
+| writeIntBE(value: number, offset: number, byteLength: number): number | 从buf的offset偏移写入大端序的有符号value数据,value字节长度为byteLength。 |
+| writeIntLE(value: number, offset: number, byteLength: number): number | 从buf的offset偏移写入小端序的有符号value数据,value字节长度为byteLength。 |
+| writeUInt8(value: number, offset?: number): number | 从buf的offset偏移写入8位无符号整型数据value。 |
+| writeUInt16BE(value: number, offset?: number): number | 从buf的offset偏移写入大端序的16位无符号整型数据value。 |
+| writeUInt16LE(value: number, offset?: number): number | 从buf的offset偏移写入小端序的16位无符号整型数据value。 |
+| writeUInt32BE(value: number, offset?: number): number | 从buf的offset偏移写入大端序的32位无符号整型数据value。 |
+| writeUInt32LE(value: number, offset?: number): number | 从buf的offset偏移写入小端序的32位无符号整型数据value。 |
+| writeUIntBE(value: number, offset: number, byteLength: number): number | 从buf的offset偏移写入大端序的无符号value数据,value字节长度为byteLength。 |
+| writeUIntLE(value: number, offset: number, byteLength: number): number | 从buf的offset偏移写入小端序的无符号value数据,value字节长度为byteLength。 |
+| new Blob(sources: string[] \| ArrayBuffer[] \| TypedArray[] \| DataView[] \| Blob[] , options?: Object) | Blob的构造函数,返回一个Blob的实例对象。 |
+| size | Blob实例的总字节大小。 |
+| type | Blob实例的内容类型。 |
+| arrayBuffer(): Promise&lt;ArrayBuffer&gt; | 将Blob中的数据放入到ArrayBuffer中，并返回一个Promise。 |
+| slice(start?: number, end?: number, type?: string): Blob | 创建并返回一个复制原blob对象中start到end位置数据的新blob实例对象。 |
+| text(): Promise&lt;string&gt; | 返回一个Promise，该Promise中的值为UTF8编码类型的文本。 |
+#### 1.3.2. 使用说明 | 
 
 各接口使用方法如下：
 
@@ -442,6 +608,677 @@ function func(key, value){
 }
 var options = {supportDoctype:true, ignoreNameSpace:true, tokenValueCallbackFunction:func}
 that.parse(options);
+```
+50、alloc(size: number, fill?: string | Buffer | number, encoding?: BufferEncoding): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.alloc(5);
+let buf2 = buffer.alloc(5, 'a');
+let buf3 = buffer.alloc(11, 'aGVsbG8gd29ybGQ=', 'base64');
+```
+51、allocUninitializedFromPool(size: number): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.allocUninitializedFromPool(10);
+buf.fill(0);
+```
+52、allocUninitialized(size: number): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.allocUninitialized(10);
+buf.fill(0);
+```
+53、byteLength(string: string | Buffer | TypedArray | DataView | ArrayBuffer | SharedArrayBuffer, encoding?: BufferEncoding): number
+```
+import buffer from '@ohos.buffer';
+
+let str = '\u00bd + \u00bc = \u00be';
+console.log(`${str}: ${str.length} characters, ${buffer.byteLength(str, 'utf-8')} bytes`);
+// 打印: ½ + ¼ = ¾: 9 characters, 12 bytes
+```
+54、compare(buf1: Buffer | Uint8Array, buf2: Buffer | Uint8Array): -1 | 0 | 1
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.from('1234');
+let buf2 = buffer.from('0123');
+let res = buf1.compare(buf2);
+
+console.log(Number(res).toString()); // 打印 1
+```
+55、concat(list: Buffer[] | Uint8Array[], totalLength?: number): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.from("1234");
+let buf2 = buffer.from("abcd");
+let buf = buffer.concat([buf1, buf2]);
+console.log(buf.toString('hex')); // 3132333461626364
+```
+56、from(array: number[]): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]);
+console.log(buf.toString('hex')); // 627566666572
+```
+57、from(arrayBuffer: ArrayBuffer | SharedArrayBuffer, byteOffset?: number, length?: number): Buffer
+```
+let ab = new ArrayBuffer(10);
+let buf = buffer.from(ab, 0, 2);
+```
+58、from(buffer: Buffer | Uint8Array): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.from('buffer');
+let buf2 = buffer.from(buf1);
+```
+59、from(object: Object, offsetOrEncoding: number | string, length: number): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from(new String('this is a test'));
+```
+60、from(string: String, encoding?: BufferEncoding): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.from('this is a test');
+let buf2 = buffer.from('7468697320697320612074c3a97374', 'hex');
+
+console.log(buf1.toString());	// 打印: this is a test
+console.log(buf2.toString());
+```
+61、isBuffer(obj: Object): boolean
+```
+import buffer from '@ohos.buffer';
+
+buffer.isBuffer(buffer.alloc(10)); // true
+buffer.isBuffer(buffer.from('foo')); // true
+buffer.isBuffer('a string'); // false
+buffer.isBuffer([]); // false
+buffer.isBuffer(new Uint8Array(1024)); // false
+```
+62、isEncoding(encoding: string):boolean
+```
+import buffer from '@ohos.buffer';
+
+console.log(buffer.isEncoding('utf-8').toString());	// 打印: true
+console.log(buffer.isEncoding('hex').toString());	// 打印: true
+console.log(buffer.isEncoding('utf/8').toString());	// 打印: false
+console.log(buffer.isEncoding('').toString());	// 打印: false
+```
+63、transcode(source: Buffer | Uint8Array, fromEnc: string, toEnc: string): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.alloc(50);
+let newBuf = buffer.transcode(buffer.from('€'), 'utf-8', 'ascii');
+console.log(newBuf.toString('ascii'));
+```
+64、length: number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from("1236");
+console.log(JSON.stringify(buf.length));
+```
+65、buffer: ArrayBuffer
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from("1236");
+let arrayBuffer = buf.buffer;
+console.log(JSON.stringify(new Uint8Array(arrayBuffer)));
+```
+66、byteOffset: number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from("1236");
+console.log(JSON.stringify(buf.byteOffset));
+```
+67、fill(value: string | Buffer | Uint8Array | number, offset?: number, end?: number, encoding?: BufferEncoding): Buffer
+```
+import buffer from '@ohos.buffer';
+
+let b = buffer.allocUninitializedFromPool(50).fill('h');
+console.log(b.toString());
+```
+68、compare(target: Buffer | Uint8Array, targetStart?: number, targetEnd?: number, sourceStart?: number, sourceEnd?: number): -1 | 0 | 1
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+let buf2 = buffer.from([5, 6, 7, 8, 9, 1, 2, 3, 4]);
+
+console.log(buf1.compare(buf2, 5, 9, 0, 4).toString());	// 打印: 0
+console.log(buf1.compare(buf2, 0, 6, 4).toString());	// 打印: -1
+console.log(buf1.compare(buf2, 5, 6, 5).toString());	// 打印: 1
+```
+69、copy(target: Buffer | Uint8Array, targetStart?: number, sourceStart?: number, sourceEnd?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.allocUninitializedFromPool(26);
+let buf2 = buffer.allocUninitializedFromPool(26).fill('!');
+
+for (let i = 0; i < 26; i++) {
+  buf1[i] = i + 97;
+}
+
+buf1.copy(buf2, 8, 16, 20);
+console.log(buf2.toString('ascii', 0, 25));
+// 打印: !!!!!!!!qrst!!!!!!!!!!!!!
+```
+70、equals(otherBuffer: Uint8Array | Buffer): boolean
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.from('ABC');
+let buf2 = buffer.from('414243', 'hex');
+let buf3 = buffer.from('ABCD');
+
+console.log(buf1.equals(buf2).toString());	// 打印: true
+console.log(buf1.equals(buf3).toString());	// 打印: false
+```
+71、includes(value: string | number | Buffer | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): boolean
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from('this is a buffer');
+console.log(buf.includes('this').toString());	// 打印: true
+console.log(buf.includes('be').toString());	// 打印: false
+```
+72、indexOf(value: string | number | Buffer | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from('this is a buffer');
+console.log(buf.indexOf('this').toString());	// 打印: 0
+console.log(buf.indexOf('is').toString());		// 打印: 2
+```
+73、keys(): IterableIterator\<number>
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from('buffer');
+for (const key of buf.keys()) {
+  console.log(key.toString());
+}
+```
+74、values(): IterableIterator\<number>
+```
+import buffer from '@ohos.buffer';
+
+let buf1 = buffer.from('buffer');
+for (let value of buf1.values()) {
+  console.log(value.toString());
+}
+```
+75、entries(): IterableIterator<[number, number]>
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from('buffer');
+for (let pair of buf.entries()) {
+  console.log(pair.toString());
+}
+```
+76、lastIndexOf(value: string | number | Buffer | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from('this buffer is a buffer');
+console.log(buf.lastIndexOf('this').toString());	// 打印: 0
+console.log(buf.lastIndexOf('buffer').toString());	// 打印: 17
+```
+77、readBigInt64BE(offset?: number): bigint
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x70, 
+        0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78]);
+console.log(buf.readBigInt64BE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(8);
+buf1.writeBigInt64BE(0x0102030405060708n, 0);
+```
+78、readBigInt64LE(offset?: number): bigint
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x70, 
+        0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78]);
+console.log(buf.readBigInt64LE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(8);
+buf1.writeBigInt64BE(0x0102030405060708n, 0);
+```
+79、readBigUInt64BE(offset?: number): bigint
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x70, 
+        0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78]);
+console.log(buf.readBigUInt64BE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(8);
+buf1.writeBigUInt64BE(0xdecafafecacefaden, 0);
+```
+80、readBigUInt64LE(offset?: number): bigint
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x70, 
+        0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78]);
+console.log(buf.readBigUInt64LE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(8);
+buf1.writeBigUInt64BE(0xdecafafecacefaden, 0);
+```
+81、readDoubleBE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
+console.log(buf.readDoubleBE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(8);
+buf1.writeDoubleBE(123.456, 0);
+```
+82、readDoubleLE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
+console.log(buf.readDoubleLE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(8);
+buf1.writeDoubleLE(123.456, 0);
+```
+83、readFloatBE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
+console.log(buf.readFloatBE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(4);
+buf1.writeFloatBE(0xcabcbcbc, 0);
+```
+84、readFloatLE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([1, 2, 3, 4, 5, 6, 7, 8]);
+console.log(buf.readFloatLE(0).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(4);
+buf1.writeFloatLE(0xcabcbcbc, 0);
+```
+85、readInt8(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([-1, 5]);
+console.log(buf.readInt8(0).toString());	// 打印: -1
+console.log(buf.readInt8(1).toString());	// 打印: 5
+
+let buf1 = buffer.allocUninitializedFromPool(2);
+buf1.writeInt8(0x12);
+```
+86、readInt16BE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0, 5]);
+console.log(buf.readInt16BE(0).toString());	// 打印: 5
+
+let buf1 = buffer.alloc(2);
+buf1.writeInt16BE(0x1234, 0);
+```
+87、readInt16LE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0, 5]);
+console.log(buf.readInt16LE(0).toString());	// 打印: 1280
+
+let buf1 = buffer.alloc(2);
+buf1.writeInt16BE(0x1234, 0);
+```
+88、readInt32BE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0, 0, 0, 5]);
+console.log(buf.readInt32BE(0).toString());	// 打印: 5
+
+let buf1 = buffer.alloc(4);
+buf1.writeInt32BE(0x12345678, 0);
+```
+89、readInt32LE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0, 0, 0, 5]);
+console.log(buf.readInt32LE(0).toString());	// 打印: 83886080
+
+let buf1 = buffer.alloc(4);
+buf1.writeInt32BE(0x12345678, 0);
+```
+90、readIntBE(offset: number, byteLength: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from("ab");
+let num = buf.readIntBE(0, 1);
+console.log(num.toString()); // 97
+
+let buf1 = buffer.allocUninitializedFromPool(6);
+buf1.writeIntBE(0x123456789011, 0, 6);
+```
+91、readIntLE(offset: number, byteLength: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+console.log(buf.readIntLE(0, 6).toString(16));
+
+let buf1 = buffer.allocUninitializedFromPool(6);
+buf1.writeIntLE(0x123456789011, 0, 6);
+```
+92、readUInt8(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+
+let buf = buffer.from([1, -2]);
+console.log(buf.readUInt8(0).toString());
+console.log(buf.readUInt8(1).toString());
+
+let buf1 = buffer.allocUninitializedFromPool(4);
+buf1.writeUInt8(0x42);
+```
+93、readUInt16BE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.from([0x12, 0x34, 0x56]);
+console.log(buf.readUInt16BE(0).toString(16));
+console.log(buf.readUInt16BE(1).toString(16));
+```
+94、readUInt16LE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.from([0x12, 0x34, 0x56]);
+console.log(buf.readUInt16LE(0).toString(16));
+console.log(buf.readUInt16LE(1).toString(16));
+```
+95、readUInt32BE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.from([0x12, 0x34, 0x56, 0x78]);
+console.log(buf.readUInt32BE(0).toString(16));
+```  
+96、readUInt32LE(offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.from([0x12, 0x34, 0x56, 0x78]);
+console.log(buf.readUInt32LE(0).toString(16));
+```
+97、readUIntBE(offset: number, byteLength: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.from([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+console.log(buf.readUIntBE(0, 6).toString(16));
+```  
+98、readUIntLE(offset: number, byteLength: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.from([0x12, 0x34, 0x56, 0x78, 0x90, 0xab]);
+console.log(buf.readUIntLE(0, 6).toString(16));
+```    
+99、subarray(start?: number, end?: number): Buffer
+```
+import buffer from '@ohos.buffer';
+let buf1 = buffer.allocUninitializedFromPool(26);
+for (let i = 0; i < 26; i++) {
+  buf1[i] = i + 97;
+}
+const buf2 = buf1.subarray(0, 3);
+console.log(buf2.toString('ascii', 0, buf2.length));
+```    
+100、swap16(): Buffer
+```
+import buffer from '@ohos.buffer';
+let buf1 = buffer.from([0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]);
+console.log(buf1.toString('hex'));
+buf1.swap16();
+console.log(buf1.toString('hex'));
+```     
+101、swap32(): Buffer
+```
+import buffer from '@ohos.buffer';
+let buf1 = buffer.from([0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]);
+console.log(buf1.toString('hex'));
+buf1.swap32();
+console.log(buf1.toString('hex'));
+```          
+102、swap64(): Buffer
+```
+import buffer from '@ohos.buffer';
+let buf1 = buffer.from([0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8]);
+console.log(buf1.toString('hex'));
+buf1.swap64();
+console.log(buf1.toString('hex'));
+```         
+103、toJSON(): Object
+```
+import buffer from '@ohos.buffer';
+let buf1 = buffer.from([0x1, 0x2, 0x3, 0x4, 0x5]);
+let obj = buf1.toJSON();
+console.log(JSON.stringify(obj))
+```          
+104、toString(encoding?: string, start?: number, end?: number): string
+```
+import buffer from '@ohos.buffer';
+let buf1 = buffer.allocUninitializedFromPool(26);
+for (let i = 0; i < 26; i++) {
+  buf1[i] = i + 97;
+}
+console.log(buf1.toString('utf-8'));
+```      
+105、write(str: string, offset?: number, length?: number, encoding?: string): number  
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.alloc(256);
+let len = buf.write('\u00bd + \u00bc = \u00be', 0);
+console.log(`${len} bytes: ${buf.toString('utf-8', 0, len)}`);
+let buffer1 = buffer.alloc(10);
+let length = buffer1.write('abcd', 8);
+```        
+106、writeBigInt64BE(value: bigint, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeBigInt64BE(0x0102030405060708n, 0);
+```
+107、writeBigInt64LE(value: bigint, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeBigInt64LE(0x0102030405060708n, 0);
+```
+108、writeBigUInt64BE(value: bigint, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeBigUInt64BE(0xdecafafecacefaden, 0);
+```
+109、writeBigUInt64LE(value: bigint, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeBigUInt64LE(0xdecafafecacefaden, 0);
+```
+110、writeDoubleBE(value: number, offset?: number): number 
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeDoubleBE(123.456, 0);
+```
+111、writeDoubleLE(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeDoubleLE(123.456, 0);
+```   
+112、writeFloatBE(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeFloatBE(0xcafebabe, 0);
+```   
+113、writeFloatLE(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(8);
+buf.writeFloatLE(0xcafebabe, 0);
+```    
+114、writeInt8(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(2);
+buf.writeInt8(2, 0);
+buf.writeInt8(-2, 1);
+```       
+115、writeInt16BE(value: number, offset?: number): number 
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(2);
+buf.writeInt16BE(0x0102, 0);
+```   
+116、writeInt16LE(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(2);
+buf.writeInt16LE(0x0304, 0);
+```    
+117、writeInt32BE(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(4);
+buf.writeInt32BE(0x01020304, 0);
+```    
+118、writeInt32LE(value: number, offset?: number): number 
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(4);
+buf.writeInt32LE(0x05060708, 0);
+```  
+119、writeIntBE(value: number, offset: number, byteLength: number): number 
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(6);
+buf.writeIntBE(0x1234567890ab, 0, 6);
+```     
+120、writeIntLE(value: number, offset: number, byteLength: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(6);
+buf.writeIntLE(0x1234567890ab, 0, 6);
+```     
+121、writeUInt8(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(4);
+buf.writeUInt8(0x3, 0);
+buf.writeUInt8(0x4, 1);
+buf.writeUInt8(0x23, 2);
+buf.writeUInt8(0x42, 3);
+```     
+122、writeUInt16BE(value: number, offset?: number): number 
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(4);
+buf.writeUInt16BE(0xdead, 0);
+buf.writeUInt16BE(0xbeef, 2);
+``` 
+123、writeUInt16LE(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(4);
+buf.writeUInt16LE(0xdead, 0);
+buf.writeUInt16LE(0xbeef, 2);
+```  
+124、writeUInt32BE(value: number, offset?: number): number  
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(4);
+buf.writeUInt32BE(0xfeedface, 0);
+```
+125、writeUInt32LE(value: number, offset?: number): number
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(4);
+buf.writeUInt32LE(0xfeedface, 0);
+```   
+126、writeUIntBE(value: number, offset: number, byteLength: number): number  
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(6);
+buf.writeUIntBE(0x1234567890ab, 0, 6);
+``` 
+127、writeUIntLE(value: number, offset: number, byteLength: number): number  
+```
+import buffer from '@ohos.buffer';
+let buf = buffer.allocUninitializedFromPool(6);
+buf.writeUIntLE(0x1234567890ab, 0, 6);
+```
+128、new Blob(sources: string[] | ArrayBuffer[] | TypedArray[] | DataView[] | Blob[] , options?: Object)
+```
+import buffer from '@ohos.buffer';
+let blob = new buffer.Blob(['a', 'b', 'c']);
+let blob1 = new buffer.Blob(['a', 'b', 'c'], {endings:'native', type: 'MIME'});
+```
+129、size
+```
+import buffer from '@ohos.buffer';
+let blob = new buffer.Blob(['a', 'b', 'c']);
+blob.size
+```
+130、type
+```
+import buffer from '@ohos.buffer';
+let blob = new buffer.Blob(['a', 'b', 'c'], {endings:'native', type: 'MIME'});
+blob.type
+```
+131、arrayBuffer(): Promise&lt;ArrayBuffer&gt;
+```
+let blob = new buffer.Blob(['a', 'b', 'c']);
+let pro = blob.arrayBuffer();
+pro.then(val => {
+  let uintarr = new Uint8Array(val);
+  console.log(uintarr.toString());
+});
+```
+132、slice(start?: number, end?: number, type?: string): Blob
+```
+let blob = new buffer.Blob(['a', 'b', 'c']);
+let blob2 = blob.slice(0, 2);
+let blob3 = blob.slice(0, 2, "MIME");
+```
+133、text(): Promise&lt;string&gt;
+```
+let blob = new buffer.Blob(['a', 'b', 'c']);
+let pro = blob.text();
+pro.then(val => {
+    console.log(val)
+});
 ```
 
 ## 2. js_util_module子模块
