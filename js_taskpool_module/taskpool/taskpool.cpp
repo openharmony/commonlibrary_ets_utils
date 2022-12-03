@@ -15,17 +15,26 @@
 
 #include "taskpool.h"
 
+#include <unistd.h>
+
 #include "object_helper.h"
 #include "utils/log.h"
 #include "worker.h"
 
 namespace Commonlibrary::TaskPoolModule {
 using namespace CompilerRuntime::WorkerModule::Helper;
+static int32_t g_taskId = 0;
+static std::mutex g_mutex;
+
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
-    napi_value func;
-    napi_create_function(env, "execute", NAPI_AUTO_LENGTH, Execute, NULL, &func);
-    napi_set_named_property(env, exports, "execute", func);
+    napi_value initFunc;
+    napi_create_function(env, "execute", NAPI_AUTO_LENGTH, Execute, NULL, &initFunc);
+    napi_set_named_property(env, exports, "execute", initFunc);
+
+    napi_value cancelFunc;
+    napi_create_function(env, "cancel", NAPI_AUTO_LENGTH, Cancel, NULL, &cancelFunc);
+    napi_set_named_property(env, exports, "cancel", cancelFunc);
     return exports;
 }
 
@@ -57,7 +66,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc != 1) {
-        napi_throw_error(env, nullptr, "taskpool:: TaskPool Execute param num should be one");
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "the number of the params must be one");
         return nullptr;
     }
 
@@ -68,7 +77,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type != napi_object) {
-        napi_throw_error(env, nullptr, "taskpool:: TaskPool Execute param type should be Object");
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "the type of the params must be object");
         return nullptr;
     }
 
@@ -79,16 +88,33 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_status serializeStatus = napi_ok;
     serializeStatus = napi_serialize(env, args[0], undefined, &taskData);
     if (serializeStatus != napi_ok || taskData == nullptr) {
-        napi_throw_error(env, nullptr, "taskpool:: Failed to serialize message");
+        Worker::ThrowError(env, Worker::SERIALIZATION_ERROR, "taskpool:: Failed to serialize the message");
         return nullptr;
     }
-    task->hostEnv_ = env;
-    task->taskData_ = taskData;
+    g_mutex.lock();
+    task->taskId_ = g_taskId;
+    g_taskId += 1;
+    g_mutex.unlock();
+
+    TaskInfo *taskInfo = new TaskInfo();
+    Worker::StoreTaskInfo(task->taskId_, taskInfo);
+    taskInfo->env = env;
+    taskInfo->serializationData = taskData;
+    taskInfo->taskSignal = new uv_async_t;
+    taskInfo->taskId = task->taskId_;
+    uv_loop_t *loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    uv_async_init(loop, taskInfo->taskSignal, reinterpret_cast<uv_async_cb>(Worker::HandleTaskResult));
+    taskInfo->taskSignal->data = taskInfo;
 
     // generate the promise and enqueue the task
-    napi_value promise = nullptr;
-    napi_create_promise(env, &task->deferred_, &promise);
+    napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Worker::EnqueueTask(std::move(task));
-    return promise;
+    return taskInfo->promise;
+}
+
+napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
+{
+    return nullptr;
 }
 } // namespace Commonlibrary::TaskPoolModule

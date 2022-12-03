@@ -17,11 +17,23 @@
 #define JS_TASKPOOL_MODULE_TASKPOOL_TASK_H_
 
 #include <memory>
+#include <uv.h>
 
 #include "napi/native_api.h"
 
 namespace Commonlibrary::TaskPoolModule {
 using TaskDataType = napi_value;
+
+struct TaskInfo {
+    napi_env env = nullptr;
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    napi_value result = nullptr;
+    napi_value serializationData = nullptr;
+    int32_t taskId;
+    uv_async_t *taskSignal = nullptr;
+};
+
 class Task {
 public:
     enum TaskPriority {LOW, MEDIUM, HIGH};
@@ -47,25 +59,11 @@ public:
         priority_ = priority;
     }
 
-    void SetHostEnv(napi_env env)
-    {
-        hostEnv_ = env;
-    }
-
-    napi_env GetHostEnv()
-    {
-        return hostEnv_;
-    }
-
-    napi_deferred deferred_;
-    napi_env hostEnv_;
-    napi_value taskData_; // Serialization Data
-    napi_value resultData_;
+    int32_t taskId_;
 
 private:
     std::atomic<TaskPriority> priority_ {LOW};
     std::atomic<bool> canceled_ {false};
-    TaskDataType serializationData;
 };
 } // namespace Commonlibrary::TaskPoolModule
 #endif // JS_TASKPOOL_MODULE_TASKPOOL_TASK_H_

@@ -37,6 +37,8 @@ public:
 
     void Terminate();
 
+    void NotifyWorkerThread();
+
 private:
     std::queue<std::unique_ptr<Task>> tasks_;
     std::condition_variable cv_;

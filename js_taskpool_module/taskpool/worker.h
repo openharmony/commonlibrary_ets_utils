@@ -32,35 +32,26 @@ using WorkerEnv = napi_env;
 class Worker {
 public:
     Worker(napi_env env);
-    ~Worker();
+    ~Worker() = default;
 
-    static napi_value WorkerConstructor(napi_env env);
     void StartExecuteInThread(napi_env env);
-    static void ExecuteInThread(const void* data);
     bool PrepareForWorkerInstance();
+    static napi_value WorkerConstructor(napi_env env);
+    static void ExecuteInThread(const void* data);
     static bool NeedInitWorker();
     static bool NeedExpandWorker();
     static bool HasIdleEnv();
-    static void HostOnMessage(const uv_async_t* req);
-
+    static void HandleTaskResult(const uv_async_t* req);
     static void EnqueueTask(std::unique_ptr<Task> task);
-
     static void PerformTask(const uv_async_t* req);
+    static void StoreTaskInfo(int32_t taskId, TaskInfo *taskInfo);
+    static void ThrowError(napi_env env, int32_t errCode, const char* errMessage);
 
     uv_loop_t* GetWorkerLoop() const
     {
         uv_loop_t *loop = nullptr;
         if (workerEnv_ != nullptr) {
             napi_get_uv_event_loop(workerEnv_, &loop);
-        }
-        return loop;
-    }
-
-    uv_loop_t* GetHostLoop() const
-    {
-        uv_loop_t *loop = nullptr;
-        if (hostEnv_ != nullptr) {
-            napi_get_uv_event_loop(hostEnv_, &loop);
         }
         return loop;
     }
@@ -76,15 +67,17 @@ public:
         }
     }
 
-    napi_env hostEnv_ {nullptr};
-    napi_env workerEnv_ {nullptr};
-    std::queue<std::unique_ptr<Task>> hostTaskQueue_;
-    std::unique_ptr<TaskRunner> runner_ {};
-
-    uv_async_t* hostOnMessageSignal_ = nullptr;
-    uv_async_t* performTaskSignal_ = nullptr;
+    static const int32_t TYPE_ERROR = 401;
+    static const int32_t INITIALIZATION_ERROR = 10200003;
+    static const int32_t NOTRUNNING_ERROR = 10200004;
+    static const int32_t UNSUPPORTED_ERROR = 10200005;
+    static const int32_t SERIALIZATION_ERROR = 10200006;
 
 private:
+    napi_env hostEnv_ {nullptr};
+    napi_env workerEnv_ {nullptr};
+    uv_async_t* performTaskSignal_ = nullptr;
+    std::unique_ptr<TaskRunner> runner_ {};
     std::recursive_mutex liveEnvLock_ {};
 };
 } // namespace Commonlibrary::TaskPoolModule

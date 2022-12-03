@@ -46,6 +46,12 @@ bool TaskQueue::IsEmpty() const
     return tasks_.empty();
 }
 
+void TaskQueue::NotifyWorkerThread()
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    cv_.notify_one();
+}
+
 void TaskQueue::Terminate()
 {
     std::unique_lock<std::mutex> lock(mtx_);
