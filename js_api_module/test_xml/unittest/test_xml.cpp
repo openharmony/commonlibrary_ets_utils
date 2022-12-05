@@ -79,7 +79,6 @@ napi_value TokenValueCallbackFunction(napi_env env, napi_callback_info info)
     napi_get_named_property(env, value, "getLineNumber", &value3);
     napi_get_named_property(env, value, "getAttributeCount", &value3);
     napi_get_named_property(env, value, "getName", &value3);
-    napi_get_named_property(env, value, "getName", &value3);
     napi_get_named_property(env, value, "getNamespace", &value3);
     napi_get_named_property(env, value, "getPrefix", &value3);
     napi_get_named_property(env, value, "getText", &value3);
@@ -112,8 +111,6 @@ napi_value TokenValueCallbackFunc(napi_env env, napi_callback_info info)
     napi_get_named_property(env, value, "getLineNumber", &value3);
     napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
     napi_get_named_property(env, value, "getAttributeCount", &value3);
-    napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
-    napi_get_named_property(env, value, "getName", &value3);
     napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);
     napi_get_named_property(env, value, "getName", &value3);
     napi_call_function(env, thisVar, value3, 0, nullptr, &returnVal);

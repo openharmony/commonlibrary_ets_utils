@@ -1133,7 +1133,6 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsIterByValues, testing::ext::TestSi
 HWTEST_F(NativeEngineTest, testUrlSearchParamsEntries001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
-    std::string output;
     napi_env env = (napi_env)engine_;
     napi_value input1 = StrToNapiValue(env, "ma");
     napi_value input2 = StrToNapiValue(env, "jk");
@@ -1145,7 +1144,6 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsEntries001, testing::ext::TestSize
     napi_value input6 = StrToNapiValue(env, "jk2");
     params.Append(env, input5, input6);
     napi_value result = params.Entries(env);
-    std::vector<std::string> res = {"ma", "jk", "你好", "jk1", "a", "jk2"};
     uint32_t length = 0;
     napi_value napiStr = nullptr;
     size_t arraySize = 0;
