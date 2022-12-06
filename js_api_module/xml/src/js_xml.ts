@@ -81,7 +81,7 @@ class XmlSerializer {
             let error = new BusinessError(`Parameter error.The type of ${name} must be string`);
             throw error;
         }
-        if (typeof value !== 'string' || value.length === 0) {
+        if (typeof value !== 'string') {
             let error = new BusinessError(`Parameter error.The type of ${value} must be string`);
             throw error;
         }
