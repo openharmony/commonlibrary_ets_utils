@@ -46,10 +46,9 @@ public:
 
     void Run();
 
-    void Cancel()
-    {
-        canceled_ = true;
-    }
+    static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
+
+    static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
 
     bool IsCanceled()
     {

@@ -42,6 +42,17 @@ void Worker::EnqueueTask(std::unique_ptr<Task> task)
     g_taskQueue.EnqueueTask(std::move(task));
 }
 
+void Worker::CancelTask(int32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
+    auto iter = g_taskInfoMap.find(taskId);
+    if (iter == g_taskInfoMap.end() || iter->second == nullptr) {
+        HILOG_ERROR("taskpool:: Failed to find the task");
+        return;
+    }
+    iter->second->canceled = true;
+}
+
 bool Worker::NeedInitWorker()
 {
     std::unique_lock<std::mutex> lock(g_workersMutex);
@@ -205,7 +216,7 @@ void Worker::PerformTask(const uv_async_t* req)
             }
             taskInfo = iter->second;
         }
-        if (task->IsCanceled()) {
+        if (taskInfo->canceled) {
             ReleaseTaskContent(taskInfo);
             continue;
         }

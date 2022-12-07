@@ -28,6 +28,15 @@ static std::mutex g_mutex;
 
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
+    const char className[] = "Task";
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_FUNCTION("cancel", Cancel),
+    };
+    napi_value workerClazz = nullptr;
+    napi_define_class(env, className, sizeof(className), Task::TaskConstructor, nullptr,
+        sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
+    napi_set_named_property(env, exports, "Task", workerClazz);
+
     napi_value initFunc;
     napi_create_function(env, "execute", NAPI_AUTO_LENGTH, Execute, NULL, &initFunc);
     napi_set_named_property(env, exports, "execute", initFunc);
@@ -58,6 +67,12 @@ void TaskPool::InitTaskRunner(napi_env env)
     }
 }
 
+void TaskPool::GenerateTaskId(Task* task)
+{
+    std::unique_lock<std::mutex> lock(g_mutex);
+    task->taskId_ = g_taskId++;
+}
+
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
     TaskPool::GetCurrentTaskpool()->InitTaskRunner(env);
@@ -69,10 +84,6 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the number of the params should at least be one");
         return nullptr;
     }
-    if (argc == 1) {
-        return ExecuteTask(env, cbinfo);
-    }
-
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_value thisVar = nullptr;
@@ -81,8 +92,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type == napi_object) {
         return ExecuteTask(env, cbinfo);
-    }
-    if (type == napi_function) {
+    } else if (type == napi_function) {
         return ExecuteFunction(env, cbinfo);
     }
 
@@ -122,10 +132,8 @@ napi_value TaskPool::ExecuteTask(napi_env env, napi_callback_info cbinfo)
         Worker::ThrowError(env, Worker::SERIALIZATION_ERROR, "taskpool:: Failed to serialize the message");
         return nullptr;
     }
-    g_mutex.lock();
-    task->taskId_ = g_taskId++;
-    g_mutex.unlock();
 
+    GenerateTaskId(task.get());
     TaskInfo *taskInfo = new TaskInfo();
     Worker::StoreTaskInfo(task->taskId_, taskInfo);
     taskInfo->env = env;
@@ -151,6 +159,26 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_callback_info cbinfo)
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
 {
+    size_t argc = 0;
+    napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
+    if (argc != 1) {
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "the number of the params must be one");
+        return nullptr;
+    }
+
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    napi_valuetype type;
+    NAPI_CALL(env, napi_typeof(env, args[0], &type));
+    if (type != napi_object) {
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "the type of the params must be object");
+        return nullptr;
+    }
+    Task *task = nullptr;
+    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&task)));
+    Worker::CancelTask(task->taskId_);
     return nullptr;
 }
 } // namespace Commonlibrary::TaskPoolModule

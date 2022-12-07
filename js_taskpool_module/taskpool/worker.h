@@ -46,6 +46,7 @@ public:
     static void PerformTask(const uv_async_t* req);
     static void StoreTaskInfo(int32_t taskId, TaskInfo *taskInfo);
     static void ThrowError(napi_env env, int32_t errCode, const char* errMessage);
+    static void CancelTask(int32_t taskId);
 
     uv_loop_t* GetWorkerLoop() const
     {
