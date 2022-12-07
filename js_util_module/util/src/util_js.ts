@@ -678,8 +678,8 @@ class LruBuffer {
     }
 
     public clear() : void {
-        this.cache.clear();
         this.afterRemoval(false, this.cache.keys(), this.cache.values(), null);
+        this.cache.clear();
         this.length = this.cache.size;
     }
 
@@ -960,8 +960,8 @@ class LRUCache {
     }
 
     public clear() : void {
-        this.cache.clear();
         this.afterRemoval(false, this.cache.keys(), this.cache.values(), null);
+        this.cache.clear();
         this.length = this.cache.size;
     }
 
