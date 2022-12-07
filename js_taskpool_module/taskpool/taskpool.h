@@ -33,6 +33,8 @@ public:
     void EnqueueTask(std::unique_ptr<Task> task) const;
     static TaskPool *GetCurrentTaskpool();
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
+    static napi_value ExecuteTask(napi_env env, napi_callback_info cbinfo);
+    static napi_value ExecuteFunction(napi_env env, napi_callback_info cbinfo);
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
     static napi_value InitTaskPool(napi_env env, napi_value exports);
 
