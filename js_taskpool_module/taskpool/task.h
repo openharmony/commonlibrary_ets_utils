@@ -30,7 +30,6 @@ struct TaskInfo {
     napi_value promise = nullptr;
     napi_value result = nullptr;
     napi_value serializationData = nullptr;
-    bool isTask = true;
     int32_t argsNum;
     int32_t taskId;
     uv_async_t *taskSignal = nullptr;

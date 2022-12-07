@@ -50,7 +50,7 @@ void Worker::CancelTask(int32_t taskId)
         HILOG_ERROR("taskpool:: Failed to find the task");
         return;
     }
-    iter->second->canceled = true;
+    // iter->second->canceled = true;
 }
 
 bool Worker::NeedInitWorker()
@@ -216,28 +216,32 @@ void Worker::PerformTask(const uv_async_t* req)
             }
             taskInfo = iter->second;
         }
-        if (taskInfo->canceled) {
-            ReleaseTaskContent(taskInfo);
-            continue;
-        }
+        // if (taskInfo->canceled) {
+        //     ReleaseTaskContent(taskInfo);
+        //     continue;
+        // }
 
+        napi_value undefined;
+        napi_get_undefined(env, &undefined);
+        napi_status status;
+        napi_value result;
+        napi_value resultData;
+        napi_value func;
+        napi_value args;
         napi_value taskData;
-        napi_status status = napi_deserialize(env, taskInfo->serializationData, &taskData);
+        status = napi_deserialize(env, taskInfo->serializationData, &taskData);
         if (status != napi_ok || taskData == nullptr) {
             continue;
         }
-        napi_value func;
-        napi_value args;
         napi_get_named_property(env, taskData, "func", &func);
         napi_get_named_property(env, taskData, "args", &args);
-        napi_valuetype type;
-        napi_typeof(env, func, &type);
-        napi_value undefined;
-        napi_get_undefined(env, &undefined);
-        napi_value result;
-        napi_call_function(env, undefined, func, 1, &args, &result);
-
-        napi_value resultData;
+        napi_value argsArray[taskInfo->argsNum];
+        napi_value val;
+        for (size_t i = 0; i < taskInfo->argsNum; i++) {
+            napi_get_element(env, args, i, &val);
+            argsArray[i] = val;
+        }
+        napi_call_function(env, undefined, func, taskInfo->argsNum, argsArray, &result);
         status = napi_serialize(env, result, undefined, &resultData);
         if (status != napi_ok || resultData == nullptr) {
             continue;
