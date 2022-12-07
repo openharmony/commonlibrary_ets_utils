@@ -50,7 +50,7 @@ void Worker::CancelTask(int32_t taskId)
         HILOG_ERROR("taskpool:: Failed to find the task");
         return;
     }
-    // iter->second->canceled = true;
+    iter->second->canceled = true;
 }
 
 bool Worker::NeedInitWorker()
@@ -216,10 +216,10 @@ void Worker::PerformTask(const uv_async_t* req)
             }
             taskInfo = iter->second;
         }
-        // if (taskInfo->canceled) {
-        //     ReleaseTaskContent(taskInfo);
-        //     continue;
-        // }
+        if (taskInfo->canceled) {
+            ReleaseTaskContent(taskInfo);
+            continue;
+        }
 
         napi_value undefined;
         napi_get_undefined(env, &undefined);

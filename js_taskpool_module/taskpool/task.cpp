@@ -43,6 +43,18 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+
+    napi_value argsArray;
+    napi_create_array_with_length(env, argc-1, &argsArray);
+    for (size_t i = 0; i < argc - 1; i++) {
+        napi_set_element(env, argsArray, i, args[i + 1]);
+    }
+
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_set_named_property(env, object, "func", args[0]);
+    napi_set_named_property(env, object, "args", argsArray);
+
     Task* task = nullptr;
     task = new Task();
     if (task == nullptr) {
@@ -50,6 +62,10 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
+    napi_ref objRef = nullptr;
+    napi_create_reference(env, object, 1, &objRef);
+    task->objRef_ = objRef;
+    task->argsNum_ = argc - 1;
     TaskPool::GenerateTaskId(task);
     napi_wrap(
         env, thisVar, task,

@@ -23,13 +23,13 @@
 
 namespace Commonlibrary::TaskPoolModule {
 using TaskDataType = napi_value;
-
 struct TaskInfo {
     napi_env env = nullptr;
     napi_deferred deferred = nullptr;
     napi_value promise = nullptr;
     napi_value result = nullptr;
     napi_value serializationData = nullptr;
+    bool canceled = false;
     int32_t argsNum;
     int32_t taskId;
     uv_async_t *taskSignal = nullptr;
@@ -60,6 +60,8 @@ public:
     }
 
     int32_t taskId_;
+    int32_t argsNum_;
+    napi_ref objRef_;
 
 private:
     std::atomic<TaskPriority> priority_ {LOW};
