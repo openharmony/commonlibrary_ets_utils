@@ -17,6 +17,7 @@
 #define JS_WORKER_MODULE_PLUGIN_TIMER_H_
 
 #include <map>
+#include <mutex>
 #include <uv.h>
 
 #include "../helper/napi_helper.h"
