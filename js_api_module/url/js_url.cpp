@@ -979,6 +979,10 @@ namespace OHOS::Url {
                 AnalysisOnlyHost(input, urlinfo, flags, pos);
             }
         } else {
+            size_t inputLen = input.size();
+            if (inputLen > 0){
+                urlinfo.isSpecialPath = input[0] != '/' ? true : false;
+            }
             AnalysisNoDefaultProtocol(input, urlinfo, flags);
         }
     }
@@ -1279,6 +1283,9 @@ namespace OHOS::Url {
     {
         napi_value result;
         std::string temp = "/";
+        if (urlData_.isSpecialPath) {
+            temp = "";
+        }
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT6))) {
             size_t length = urlData_.path.size();
             for (size_t i = 0; i < length; i++) {

@@ -47,6 +47,7 @@ namespace OHOS::Url {
 
     struct UrlData {
         int port = -1;
+        bool isSpecialPath = false;
         std::vector<std::string> path;
         std::string password = "";
         std::string scheme = "";
