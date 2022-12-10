@@ -32,11 +32,12 @@ public:
     void InitTaskRunner(napi_env env);
     void EnqueueTask(std::unique_ptr<Task> task) const;
     static TaskPool *GetCurrentTaskpool();
-    static void GenerateTaskId(Task* task);
+    static uint32_t GenerateTaskId();
+    static TaskInfo* GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
-    static napi_value ExecuteTask(napi_env env, napi_callback_info cbinfo);
-    static napi_value ExecuteFunction(napi_env env, napi_callback_info cbinfo);
+    static napi_value ExecuteTask(napi_env env, Task *task);
+    static napi_value ExecuteFunction(napi_env env, napi_value object);
     static napi_value InitTaskPool(napi_env env, napi_value exports);
 
 private:

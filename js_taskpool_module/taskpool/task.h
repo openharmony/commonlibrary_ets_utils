@@ -30,42 +30,19 @@ struct TaskInfo {
     napi_value result = nullptr;
     napi_value serializationData = nullptr;
     bool canceled = false;
-    int32_t argsNum;
-    int32_t taskId;
+    uint32_t taskId;
     uv_async_t *taskSignal = nullptr;
 };
 
 class Task {
 public:
-    enum TaskPriority {LOW, MEDIUM, HIGH};
-
     Task() = default;
-    Task(napi_ref func, napi_value args);
     ~Task() = default;
-
-    void Run();
 
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
 
-    static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
-
-    bool IsCanceled()
-    {
-        return canceled_;
-    }
-
-    void SetPriority(TaskPriority priority)
-    {
-        priority_ = priority;
-    }
-
-    int32_t taskId_;
-    int32_t argsNum_;
+    uint32_t taskId_;
     napi_ref objRef_;
-
-private:
-    std::atomic<TaskPriority> priority_ {LOW};
-    std::atomic<bool> canceled_ {false};
 };
 } // namespace Commonlibrary::TaskPoolModule
 #endif // JS_TASKPOOL_MODULE_TASKPOOL_TASK_H_

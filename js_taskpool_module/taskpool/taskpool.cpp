@@ -67,137 +67,97 @@ void TaskPool::InitTaskRunner(napi_env env)
     }
 }
 
-void TaskPool::GenerateTaskId(Task* task)
+uint32_t TaskPool::GenerateTaskId()
 {
     std::unique_lock<std::mutex> lock(g_mutex);
-    task->taskId_ = g_taskId++;
+    return g_taskId++;
 }
 
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
+    // get the taskpool instance
     TaskPool::GetCurrentTaskpool()->InitTaskRunner(env);
 
-    // generate the taskInfo
+    // check the argc
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc < 1) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the number of the params should at least be one");
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the number of params must be at least one");
         return nullptr;
     }
+
+    // check the first param is object or func
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
+
     if (argc == 1 && type != napi_object) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: first param must be object when argc = 1");
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: first param must be object when argc is one");
         return nullptr;
-    }
-    if (type == napi_object) {
-        return ExecuteTask(env, cbinfo);
+    } else if (type == napi_object) {
+        Task *task = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&task)));
+        return ExecuteTask(env, task);
     } else if (type == napi_function) {
-        return ExecuteFunction(env, cbinfo);
+        napi_value argsArray;
+        napi_create_array_with_length(env, argc - 1, &argsArray);
+        for (size_t i = 0; i < argc - 1; i++) {
+            napi_set_element(env, argsArray, i, args[i + 1]);
+        }
+        napi_value object;
+        napi_create_object(env, &object);
+        napi_set_named_property(env, object, "func", args[0]);
+        napi_set_named_property(env, object, "args", argsArray);
+        return ExecuteFunction(env, object);
     }
 
     Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: first param must be object or function");
     return nullptr;
 }
 
-napi_value TaskPool::ExecuteTask(napi_env env, napi_callback_info cbinfo)
+TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId)
 {
-    // generate the taskInfo
-    size_t argc = 0;
-    napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
-
-    if (argc != 1) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "the number of the params must be one");
-        return nullptr;
-    }
-
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
-
-    Task *task = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&task)));
-
-    napi_value obj = nullptr;
-    napi_get_reference_value(env, task->objRef_, &obj);
     napi_value undefined;
     napi_get_undefined(env, &undefined);
     napi_value taskData;
     napi_status serializeStatus = napi_ok;
-    serializeStatus = napi_serialize(env, obj, undefined, &taskData);
+    serializeStatus = napi_serialize(env, object, undefined, &taskData);
     if (serializeStatus != napi_ok || taskData == nullptr) {
         Worker::ThrowError(env, Worker::SERIALIZATION_ERROR, "taskpool:: Failed to serialize the message");
         return nullptr;
     }
-
     TaskInfo *taskInfo = new TaskInfo();
-    Worker::StoreTaskInfo(task->taskId_, taskInfo);
+    Worker::StoreTaskInfo(taskId, taskInfo);
     taskInfo->env = env;
     taskInfo->serializationData = taskData;
     taskInfo->taskSignal = new uv_async_t;
-    taskInfo->taskId = task->taskId_;
-    taskInfo->argsNum = task->argsNum_;
+    taskInfo->taskId = taskId;
     uv_loop_t *loop = nullptr;
     napi_get_uv_event_loop(env, &loop);
     uv_async_init(loop, taskInfo->taskSignal, reinterpret_cast<uv_async_cb>(Worker::HandleTaskResult));
     taskInfo->taskSignal->data = taskInfo;
+    return taskInfo;
+}
 
-    // generate the promise and enqueue the task
+napi_value TaskPool::ExecuteTask(napi_env env, Task *task)
+{
+    napi_value obj = nullptr;
+    napi_get_reference_value(env, task->objRef_, &obj);
+    TaskInfo *taskInfo = GenerateTaskInfo(env, obj, task->taskId_);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     std::unique_ptr<Task> pointer(task);
     Worker::EnqueueTask(std::move(pointer));
     return taskInfo->promise;
 }
 
-napi_value TaskPool::ExecuteFunction(napi_env env, napi_callback_info cbinfo)
+napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 {
-    // generate the taskInfo
-    size_t argc = 0;
-    napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
-
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
-
-    napi_value argsArray;
-    napi_create_array_with_length(env, argc-1, &argsArray);
-    for (size_t i = 0; i < argc - 1; i++) {
-        napi_set_element(env, argsArray, i, args[i + 1]);
-    }
-
-    napi_value object;
-    napi_create_object(env, &object);
-    napi_set_named_property(env, object, "func", args[0]);
-    napi_set_named_property(env, object, "args", argsArray);
     std::unique_ptr<Task> task = std::make_unique<Task>();
-    g_mutex.lock();
-    task->taskId_ = g_taskId++;
-    g_mutex.unlock();
-
-    napi_value taskData;
-    napi_value undefined;
-    napi_get_undefined(env, &undefined);
-    napi_serialize(env, object, undefined, &taskData);
-
-    TaskInfo *taskInfo = new TaskInfo();
-    Worker::StoreTaskInfo(task->taskId_, taskInfo);
-    taskInfo->env = env;
-    taskInfo->serializationData = taskData;
-    taskInfo->taskSignal = new uv_async_t;
-    taskInfo->taskId = task->taskId_;
-    taskInfo->argsNum = argc - 1;
-    uv_loop_t *loop = nullptr;
-    napi_get_uv_event_loop(env, &loop);
-    uv_async_init(loop, taskInfo->taskSignal, reinterpret_cast<uv_async_cb>(Worker::HandleTaskResult));
-    taskInfo->taskSignal->data = taskInfo;
-
-    // generate the promise and enqueue the task
+    task->taskId_ = TaskPool::GenerateTaskId();
+    TaskInfo *taskInfo = GenerateTaskInfo(env, object, task->taskId_);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Worker::EnqueueTask(std::move(task));
     return taskInfo->promise;

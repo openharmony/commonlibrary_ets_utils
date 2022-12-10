@@ -235,13 +235,15 @@ void Worker::PerformTask(const uv_async_t* req)
         }
         napi_get_named_property(env, taskData, "func", &func);
         napi_get_named_property(env, taskData, "args", &args);
-        napi_value argsArray[taskInfo->argsNum];
+        uint32_t argsNum = 0;
+        napi_get_array_length(env, args, &argsNum);
+        napi_value argsArray[argsNum];
         napi_value val;
-        for (size_t i = 0; i < taskInfo->argsNum; i++) {
+        for (size_t i = 0; i < argsNum; i++) {
             napi_get_element(env, args, i, &val);
             argsArray[i] = val;
         }
-        napi_call_function(env, undefined, func, taskInfo->argsNum, argsArray, &result);
+        napi_call_function(env, undefined, func, argsNum, argsArray, &result);
         status = napi_serialize(env, result, undefined, &resultData);
         if (status != napi_ok || resultData == nullptr) {
             continue;
