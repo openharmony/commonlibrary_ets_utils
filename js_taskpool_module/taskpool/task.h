@@ -30,6 +30,7 @@ struct TaskInfo {
     napi_value result = nullptr;
     napi_value serializationData = nullptr;
     bool canceled = false;
+    bool executed = false;
     uint32_t taskId;
     uv_async_t *taskSignal = nullptr;
 };

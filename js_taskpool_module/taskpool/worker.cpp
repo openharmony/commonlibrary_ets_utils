@@ -22,16 +22,16 @@
 #include "utils/log.h"
 
 namespace Commonlibrary::TaskPoolModule {
-const static int MAX_THREADPOOL_SIZE = 4;
+const static int MAX_THREADPOOL_SIZE = 2;
 static std::list<WorkerEnv> g_liveEnvs;
-static std::unordered_map<int32_t, TaskInfo*> g_taskInfoMap;
+static std::unordered_map<uint32_t, TaskInfo*> g_taskInfoMap;
 static TaskQueue g_taskQueue;
 static std::mutex g_workersMutex;
 static std::shared_mutex g_taskMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 
-void Worker::StoreTaskInfo(int32_t taskId, TaskInfo *taskInfo)
+void Worker::StoreTaskInfo(uint32_t taskId, TaskInfo *taskInfo)
 {
     std::unique_lock<std::shared_mutex> lock(g_taskMutex);
     g_taskInfoMap.emplace(taskId, taskInfo);
@@ -42,12 +42,16 @@ void Worker::EnqueueTask(std::unique_ptr<Task> task)
     g_taskQueue.EnqueueTask(std::move(task));
 }
 
-void Worker::CancelTask(int32_t taskId)
+void Worker::CancelTask(napi_env env, uint32_t taskId)
 {
     std::unique_lock<std::shared_mutex> lock(g_taskMutex);
     auto iter = g_taskInfoMap.find(taskId);
     if (iter == g_taskInfoMap.end() || iter->second == nullptr) {
         HILOG_ERROR("taskpool:: Failed to find the task");
+        return;
+    }
+    if (iter->second->executed) {
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "The task being executed does not support cancellation"); // temp error code, will modify
         return;
     }
     iter->second->canceled = true;
@@ -220,7 +224,7 @@ void Worker::PerformTask(const uv_async_t* req)
             ReleaseTaskContent(taskInfo);
             continue;
         }
-
+        taskInfo->executed = true;
         napi_value undefined;
         napi_get_undefined(env, &undefined);
         napi_status status;

@@ -148,7 +148,9 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task *task)
     napi_get_reference_value(env, task->objRef_, &obj);
     TaskInfo *taskInfo = GenerateTaskInfo(env, obj, task->taskId_);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
-    std::unique_ptr<Task> pointer(task);
+    Task *temp = new Task();
+    *temp = *task;
+    std::unique_ptr<Task> pointer(temp);
     Worker::EnqueueTask(std::move(pointer));
     return taskInfo->promise;
 }
@@ -184,7 +186,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     }
     Task *task = nullptr;
     NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&task)));
-    Worker::CancelTask(task->taskId_);
+    Worker::CancelTask(env, task->taskId_);
     return nullptr;
 }
 } // namespace Commonlibrary::TaskPoolModule
