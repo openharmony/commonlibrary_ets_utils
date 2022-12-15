@@ -32,6 +32,7 @@ struct TaskInfo {
     bool canceled = false;
     bool executed = false;
     uint32_t taskId;
+    uint32_t executeId;
     uv_async_t *taskSignal = nullptr;
 };
 
@@ -43,6 +44,7 @@ public:
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
 
     uint32_t taskId_;
+    uint32_t executeId;
     napi_ref objRef_;
 };
 } // namespace Commonlibrary::TaskPoolModule

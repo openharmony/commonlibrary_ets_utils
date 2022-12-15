@@ -31,10 +31,10 @@ static std::shared_mutex g_taskMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 
-void Worker::StoreTaskInfo(uint32_t taskId, TaskInfo *taskInfo)
+void Worker::StoreTaskInfo(uint32_t executeId, TaskInfo *taskInfo)
 {
     std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    g_taskInfoMap.emplace(taskId, taskInfo);
+    g_taskInfoMap.emplace(executeId, taskInfo);
 }
 
 void Worker::EnqueueTask(std::unique_ptr<Task> task)
@@ -107,7 +107,7 @@ void ReleaseTaskContent(TaskInfo* taskInfo)
     }
 
     std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    auto iter = g_taskInfoMap.find(taskInfo->taskId);
+    auto iter = g_taskInfoMap.find(taskInfo->executeId);
     delete iter->second;
     iter->second = nullptr;
     g_taskInfoMap.erase(iter);
@@ -213,7 +213,7 @@ void Worker::PerformTask(const uv_async_t* req)
         TaskInfo *taskInfo = nullptr;
         {
             std::shared_lock<std::shared_mutex> lock(g_taskMutex);
-            auto iter = g_taskInfoMap.find(task->taskId_);
+            auto iter = g_taskInfoMap.find(task->executeId);
             if (iter == g_taskInfoMap.end() || iter->second == nullptr) {
                 HILOG_ERROR("taskpool:: taskInfo is imcomplete");
                 return;

@@ -24,6 +24,7 @@
 namespace Commonlibrary::TaskPoolModule {
 using namespace CompilerRuntime::WorkerModule::Helper;
 static int32_t g_taskId = 0;
+static int32_t g_executeId = 0;
 static std::mutex g_mutex;
 
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
@@ -73,6 +74,12 @@ uint32_t TaskPool::GenerateTaskId()
     return g_taskId++;
 }
 
+uint32_t TaskPool::GenerateExecuteId()
+{
+    std::unique_lock<std::mutex> lock(g_mutex);
+    return g_executeId++;
+}
+
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
     // get the taskpool instance
@@ -118,7 +125,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     return nullptr;
 }
 
-TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId)
+TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId)
 {
     napi_value undefined;
     napi_get_undefined(env, &undefined);
@@ -130,11 +137,12 @@ TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t t
         return nullptr;
     }
     TaskInfo *taskInfo = new TaskInfo();
-    Worker::StoreTaskInfo(taskId, taskInfo);
+    Worker::StoreTaskInfo(executeId, taskInfo);
     taskInfo->env = env;
     taskInfo->serializationData = taskData;
     taskInfo->taskSignal = new uv_async_t;
     taskInfo->taskId = taskId;
+    taskInfo->executeId = executeId;
     uv_loop_t *loop = nullptr;
     napi_get_uv_event_loop(env, &loop);
     uv_async_init(loop, taskInfo->taskSignal, reinterpret_cast<uv_async_cb>(Worker::HandleTaskResult));
@@ -146,7 +154,8 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task *task)
 {
     napi_value obj = nullptr;
     napi_get_reference_value(env, task->objRef_, &obj);
-    TaskInfo *taskInfo = GenerateTaskInfo(env, obj, task->taskId_);
+    task->executeId = TaskPool::GenerateExecuteId();
+    TaskInfo *taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Task *temp = new Task();
     *temp = *task;
@@ -159,7 +168,7 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 {
     std::unique_ptr<Task> task = std::make_unique<Task>();
     task->taskId_ = TaskPool::GenerateTaskId();
-    TaskInfo *taskInfo = GenerateTaskInfo(env, object, task->taskId_);
+    TaskInfo *taskInfo = GenerateTaskInfo(env, object, task->taskId_, 0);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Worker::EnqueueTask(std::move(task));
     return taskInfo->promise;
