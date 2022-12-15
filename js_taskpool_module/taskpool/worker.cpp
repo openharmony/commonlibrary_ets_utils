@@ -31,41 +31,6 @@ static std::shared_mutex g_taskMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 
-void Worker::StoreTaskInfo(uint32_t executeId, TaskInfo *taskInfo)
-{
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    g_taskInfoMap.emplace(executeId, taskInfo);
-}
-
-void Worker::EnqueueTask(std::unique_ptr<Task> task)
-{
-    g_taskQueue.EnqueueTask(std::move(task));
-}
-
-void Worker::CancelTask(napi_env env, uint32_t taskId)
-{
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    auto iter = g_taskInfoMap.find(taskId);
-    if (iter == g_taskInfoMap.end() || iter->second == nullptr) {
-        HILOG_ERROR("taskpool:: Failed to find the task");
-        return;
-    }
-    if (iter->second->executed) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "The task being executed does not support cancellation"); // temp error code, will modify
-        return;
-    }
-    iter->second->canceled = true;
-}
-
-bool Worker::NeedInitWorker()
-{
-    std::unique_lock<std::mutex> lock(g_workersMutex);
-    if (g_liveEnvs.size() > 0) {
-        return false;
-    }
-    return true;
-}
-
 bool Worker::NeedExpandWorker()
 {
     std::unique_lock<std::mutex> lock(g_workersMutex);
@@ -78,7 +43,7 @@ bool Worker::NeedExpandWorker()
 
 napi_value Worker::WorkerConstructor(napi_env env)
 {
-    Worker *worker = nullptr;
+    Worker* worker = nullptr;
     {
         std::unique_lock<std::mutex> lock(g_workersMutex);
         if (g_liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
@@ -92,6 +57,95 @@ napi_value Worker::WorkerConstructor(napi_env env)
     }
     worker->StartExecuteInThread(env);
     return nullptr;
+}
+
+void Worker::StartExecuteInThread(napi_env env)
+{
+    if (!runner_) {
+        runner_ = std::make_unique<TaskRunner>(TaskStartCallback(ExecuteInThread, this));
+    }
+    if (runner_) {
+        runner_->Execute(); // start a new thread
+    } else {
+        HILOG_ERROR("taskpool:: runner_ is nullptr");
+    }
+}
+
+void Worker::ExecuteInThread(const void* data)
+{
+    auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
+    napi_env workerEnv = nullptr;
+    {
+        std::unique_lock<std::recursive_mutex> lock(worker->liveEnvLock_);
+        napi_env env = worker->hostEnv_;
+        napi_create_runtime(env, &workerEnv);
+        if (workerEnv == nullptr) {
+            ThrowError(env, Worker::NOTRUNNING_ERROR, "taskpool:: Worker create runtime error");
+            return;
+        }
+        g_liveEnvs.push_back(workerEnv);
+        reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
+        worker->workerEnv_ = workerEnv;
+    }
+    uv_loop_t* loop = worker->GetWorkerLoop();
+    if (loop == nullptr) {
+        ThrowError(workerEnv, Worker::NOTRUNNING_ERROR, "taskpool:: Worker loop is nullptr");
+        return;
+    }
+
+    if (worker->PrepareForWorkerInstance()) {
+        worker->performTaskSignal_ = new uv_async_t;
+        worker->performTaskSignal_->data = worker;
+        uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
+        uv_async_send(worker->performTaskSignal_);
+        worker->Loop();
+    } else {
+        HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
+    }
+}
+
+bool Worker::PrepareForWorkerInstance()
+{
+    std::unique_lock<std::recursive_mutex> lock(liveEnvLock_);
+    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    hostEngine->CallWorkerAsyncWorkFunc(workerEngine);
+    if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
+        HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc failure");
+        return false;
+    }
+    return true;
+}
+
+void Worker::EnqueueTask(std::unique_ptr<Task> task)
+{
+    g_taskQueue.EnqueueTask(std::move(task));
+}
+
+void Worker::StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo)
+{
+    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
+    g_taskInfoMap.emplace(executeId, taskInfo);
+}
+
+void Worker::CancelTask(napi_env env, uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
+    bool cancelTask = false;
+    for (auto &iter : g_taskInfoMap) {
+        TaskInfo* taskInfo = iter.second;
+        if (taskInfo->taskId == taskId) {
+            if (taskInfo->executed == true) {
+                ThrowError(env, Worker::CANCEL_ERROR, "The task being executed does not support cancellation");
+                return;
+            }
+            taskInfo->canceled = true;
+            cancelTask = true;
+        }
+    }
+    if (!cancelTask) {
+        ThrowError(env, Worker::CANCEL_ERROR, "Failed to find the task");
+    }
 }
 
 void ReleaseTaskContent(TaskInfo* taskInfo)
@@ -126,65 +180,6 @@ void Worker::HandleTaskResult(const uv_async_t* req)
     ReleaseTaskContent(taskInfo);
 }
 
-void Worker::StartExecuteInThread(napi_env env)
-{
-    if (!runner_) {
-        runner_ = std::make_unique<TaskRunner>(TaskStartCallback(ExecuteInThread, this));
-    }
-    if (runner_) {
-        runner_->Execute(); // start a new thread
-    } else {
-        HILOG_ERROR("taskpool:: runner_ is nullptr");
-    }
-}
-
-void Worker::ExecuteInThread(const void *data)
-{
-    auto worker = reinterpret_cast<Worker *>(const_cast<void *>(data));
-    napi_env workerEnv = nullptr;
-    {
-        std::unique_lock<std::recursive_mutex> lock(worker->liveEnvLock_);
-        napi_env env = worker->hostEnv_;
-        napi_create_runtime(env, &workerEnv);
-        if (workerEnv == nullptr) {
-            ThrowError(env, Worker::NOTRUNNING_ERROR, "taskpool:: Worker create runtime error");
-            return;
-        }
-        g_liveEnvs.push_back(workerEnv);
-        reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
-        worker->workerEnv_ = workerEnv;
-    }
-    uv_loop_t* loop = worker->GetWorkerLoop();
-    if (loop == nullptr) {
-        ThrowError(workerEnv, Worker::NOTRUNNING_ERROR, "taskpool:: Worker loop is nullptr");
-        return;
-    }
-
-    if (worker->PrepareForWorkerInstance()) {
-        worker->performTaskSignal_ = new uv_async_t;
-        worker->performTaskSignal_->data = worker;
-        uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
-        uv_async_send(worker->performTaskSignal_);
-        worker->Loop();
-    } else {
-        HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
-    }
-}
-
-bool Worker::PrepareForWorkerInstance()
-{
-    std::unique_lock<std::recursive_mutex> lock(liveEnvLock_);
-
-    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
-    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    hostEngine->CallWorkerAsyncWorkFunc(workerEngine);
-    if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
-        HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc failure");
-        return false;
-    }
-    return true;
-}
-
 void Worker::ThrowError(napi_env env, int32_t errCode, const char* errMessage)
 {
     std::string errTitle = "";
@@ -207,15 +202,15 @@ void Worker::ThrowError(napi_env env, int32_t errCode, const char* errMessage)
 
 void Worker::PerformTask(const uv_async_t* req)
 {
-    Worker *worker = static_cast<Worker*>(req->data);
+    Worker* worker = static_cast<Worker*>(req->data);
     while (std::unique_ptr<Task> task = g_taskQueue.DequeueTask()) {
         napi_env env = worker->workerEnv_;
-        TaskInfo *taskInfo = nullptr;
+        TaskInfo* taskInfo = nullptr;
         {
             std::shared_lock<std::shared_mutex> lock(g_taskMutex);
-            auto iter = g_taskInfoMap.find(task->executeId);
+            auto iter = g_taskInfoMap.find(task->executeId_);
             if (iter == g_taskInfoMap.end() || iter->second == nullptr) {
-                HILOG_ERROR("taskpool:: taskInfo is imcomplete");
+                HILOG_ERROR("taskpool:: taskInfo is incomplete");
                 return;
             }
             taskInfo = iter->second;

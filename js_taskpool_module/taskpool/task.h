@@ -43,9 +43,9 @@ public:
 
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
 
-    uint32_t taskId_;
-    uint32_t executeId;
     napi_ref objRef_;
+    uint32_t executeId_;
+    uint32_t taskId_;
 };
 } // namespace Commonlibrary::TaskPoolModule
 #endif // JS_TASKPOOL_MODULE_TASKPOOL_TASK_H_

@@ -22,12 +22,11 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
+#include "object_helper.h"
 #include "task_runner.h"
 #include "task_queue.h"
-#include "object_helper.h"
 
 namespace Commonlibrary::TaskPoolModule {
-class DereferenceHelp;
 using WorkerEnv = napi_env;
 class Worker {
 public:
@@ -36,17 +35,15 @@ public:
 
     void StartExecuteInThread(napi_env env);
     bool PrepareForWorkerInstance();
-    static napi_value WorkerConstructor(napi_env env);
-    static void ExecuteInThread(const void* data);
-    static bool NeedInitWorker();
     static bool NeedExpandWorker();
-    static bool HasIdleEnv();
-    static void HandleTaskResult(const uv_async_t* req);
+    static napi_value WorkerConstructor(napi_env env);
+    static void CancelTask(napi_env env, uint32_t taskId);
     static void EnqueueTask(std::unique_ptr<Task> task);
+    static void ExecuteInThread(const void* data);
+    static void HandleTaskResult(const uv_async_t* req);
     static void PerformTask(const uv_async_t* req);
     static void StoreTaskInfo(uint32_t taskId, TaskInfo *taskInfo);
     static void ThrowError(napi_env env, int32_t errCode, const char* errMessage);
-    static void CancelTask(napi_env env, uint32_t taskId);
 
     uv_loop_t* GetWorkerLoop() const
     {
@@ -71,7 +68,7 @@ public:
     static const int32_t TYPE_ERROR = 401;
     static const int32_t INITIALIZATION_ERROR = 10200003;
     static const int32_t NOTRUNNING_ERROR = 10200004;
-    static const int32_t UNSUPPORTED_ERROR = 10200005;
+    static const int32_t CANCEL_ERROR = 10200005;
     static const int32_t SERIALIZATION_ERROR = 10200006;
 
 private:

@@ -15,32 +15,28 @@
 
 #include "taskpool.h"
 
-#include <unistd.h>
-
 #include "object_helper.h"
 #include "utils/log.h"
 #include "worker.h"
 
 namespace Commonlibrary::TaskPoolModule {
 using namespace CompilerRuntime::WorkerModule::Helper;
-static int32_t g_taskId = 0;
 static int32_t g_executeId = 0;
+static int32_t g_taskId = 1; // 1: task will begin from 1, 0 for func
 static std::mutex g_mutex;
 
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     const char className[] = "Task";
-    napi_property_descriptor properties[] = {
-        DECLARE_NAPI_FUNCTION("cancel", Cancel),
-    };
+    napi_property_descriptor properties[] = {};
     napi_value workerClazz = nullptr;
     napi_define_class(env, className, sizeof(className), Task::TaskConstructor, nullptr,
         sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
     napi_set_named_property(env, exports, "Task", workerClazz);
 
-    napi_value initFunc;
-    napi_create_function(env, "execute", NAPI_AUTO_LENGTH, Execute, NULL, &initFunc);
-    napi_set_named_property(env, exports, "execute", initFunc);
+    napi_value executeFunc;
+    napi_create_function(env, "execute", NAPI_AUTO_LENGTH, Execute, NULL, &executeFunc);
+    napi_set_named_property(env, exports, "execute", executeFunc);
 
     napi_value cancelFunc;
     napi_create_function(env, "cancel", NAPI_AUTO_LENGTH, Cancel, NULL, &cancelFunc);
@@ -48,7 +44,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     return exports;
 }
 
-TaskPool *TaskPool::GetCurrentTaskpool()
+TaskPool* TaskPool::GetCurrentTaskpool()
 {
     static TaskPool taskpool;
     return &taskpool;
@@ -57,14 +53,11 @@ TaskPool *TaskPool::GetCurrentTaskpool()
 void TaskPool::InitTaskRunner(napi_env env)
 {
     std::unique_lock<std::mutex> lock(mtx_);
-    if (!isInitialized_ && Worker::NeedInitWorker()) {
+    if (!isInitialized_) {
         Worker::WorkerConstructor(env);
         isInitialized_ = true;
-        return;
-    }
-    if (Worker::NeedExpandWorker()) {
+    } else if (Worker::NeedExpandWorker()) {
         Worker::WorkerConstructor(env);
-        return;
     }
 }
 
@@ -105,8 +98,8 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: first param must be object when argc is one");
         return nullptr;
     } else if (type == napi_object) {
-        Task *task = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&task)));
+        Task* task = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void**>(&task)));
         return ExecuteTask(env, task);
     } else if (type == napi_function) {
         napi_value argsArray;
@@ -120,7 +113,6 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         napi_set_named_property(env, object, "args", argsArray);
         return ExecuteFunction(env, object);
     }
-
     Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: first param must be object or function");
     return nullptr;
 }
@@ -136,28 +128,28 @@ TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t t
         Worker::ThrowError(env, Worker::SERIALIZATION_ERROR, "taskpool:: Failed to serialize the message");
         return nullptr;
     }
-    TaskInfo *taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
     Worker::StoreTaskInfo(executeId, taskInfo);
     taskInfo->env = env;
-    taskInfo->serializationData = taskData;
-    taskInfo->taskSignal = new uv_async_t;
-    taskInfo->taskId = taskId;
     taskInfo->executeId = executeId;
-    uv_loop_t *loop = nullptr;
+    taskInfo->serializationData = taskData;
+    taskInfo->taskId = taskId;
+    taskInfo->taskSignal = new uv_async_t;
+    uv_loop_t* loop = nullptr;
     napi_get_uv_event_loop(env, &loop);
     uv_async_init(loop, taskInfo->taskSignal, reinterpret_cast<uv_async_cb>(Worker::HandleTaskResult));
     taskInfo->taskSignal->data = taskInfo;
     return taskInfo;
 }
 
-napi_value TaskPool::ExecuteTask(napi_env env, Task *task)
+napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
 {
     napi_value obj = nullptr;
     napi_get_reference_value(env, task->objRef_, &obj);
-    task->executeId = TaskPool::GenerateExecuteId();
-    TaskInfo *taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId);
+    task->executeId_ = TaskPool::GenerateExecuteId();
+    TaskInfo* taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
-    Task *temp = new Task();
+    Task* temp = new Task();
     *temp = *task;
     std::unique_ptr<Task> pointer(temp);
     Worker::EnqueueTask(std::move(pointer));
@@ -167,8 +159,8 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task *task)
 napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 {
     std::unique_ptr<Task> task = std::make_unique<Task>();
-    task->taskId_ = TaskPool::GenerateTaskId();
-    TaskInfo *taskInfo = GenerateTaskInfo(env, object, task->taskId_, 0);
+    task->executeId_ = TaskPool::GenerateExecuteId();
+    TaskInfo* taskInfo = GenerateTaskInfo(env, object, 0, task->executeId_); // 0: 0 for function specially
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Worker::EnqueueTask(std::move(task));
     return taskInfo->promise;

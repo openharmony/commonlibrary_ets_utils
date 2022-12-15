@@ -13,15 +13,11 @@
  * limitations under the License.
  */
 
-#include <shared_mutex>
-#include <unistd.h>
-#include <unordered_map>
+#include "task.h"
 
-#include "worker.h"
-#include "taskpool.h"
-#include "napi_helper.h"
 #include "object_helper.h"
-#include "utils/log.h"
+#include "taskpool.h"
+#include "worker.h"
 
 namespace Commonlibrary::TaskPoolModule {
 using namespace CompilerRuntime::WorkerModule::Helper;

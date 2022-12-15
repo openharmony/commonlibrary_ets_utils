@@ -58,5 +58,4 @@ void TaskQueue::Terminate()
     terminate_ = true;
     cv_.notify_all();
 }
-
 } // namespace Commonlibrary::TaskPoolModule

@@ -31,8 +31,6 @@ public:
 
     std::unique_ptr<Task> DequeueTask();
 
-    void CancelTask(std::unique_ptr<Task> task);
-
     bool IsEmpty() const;
 
     void Terminate();
