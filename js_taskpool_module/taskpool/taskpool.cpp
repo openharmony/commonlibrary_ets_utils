@@ -149,9 +149,9 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
     task->executeId_ = TaskPool::GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
-    Task* temp = new Task();
-    *temp = *task;
-    std::unique_ptr<Task> pointer(temp);
+    Task* currentTask = new Task();
+    *currentTask = *task;
+    std::unique_ptr<Task> pointer(currentTask);
     Worker::EnqueueTask(std::move(pointer));
     return taskInfo->promise;
 }
@@ -171,7 +171,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc != 1) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "the number of the params must be one");
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the number of the params must be one");
         return nullptr;
     }
 
@@ -182,7 +182,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type != napi_object) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "the type of the params must be object");
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the type of the params must be object");
         return nullptr;
     }
     Task *task = nullptr;

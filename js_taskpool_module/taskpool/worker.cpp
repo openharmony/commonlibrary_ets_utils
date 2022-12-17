@@ -51,7 +51,7 @@ napi_value Worker::WorkerConstructor(napi_env env)
         }
         worker = new Worker(env);
         if (worker == nullptr) {
-            ThrowError(env, Worker::NOTRUNNING_ERROR, "taskpool:: worker is null when InitWorker");
+            ThrowError(env, Worker::INIT_WORKER_ERROR, "taskpool:: worker is null when InitWorker");
             return nullptr;
         }
     }
@@ -80,7 +80,7 @@ void Worker::ExecuteInThread(const void* data)
         napi_env env = worker->hostEnv_;
         napi_create_runtime(env, &workerEnv);
         if (workerEnv == nullptr) {
-            ThrowError(env, Worker::NOTRUNNING_ERROR, "taskpool:: Worker create runtime error");
+            ThrowError(env, Worker::INIT_WORKER_ERROR, "taskpool:: Worker create runtime error");
             return;
         }
         g_liveEnvs.push_back(workerEnv);
@@ -89,7 +89,7 @@ void Worker::ExecuteInThread(const void* data)
     }
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
-        ThrowError(workerEnv, Worker::NOTRUNNING_ERROR, "taskpool:: Worker loop is nullptr");
+        ThrowError(workerEnv, Worker::INIT_WORKER_ERROR, "taskpool:: Worker loop is nullptr");
         return;
     }
 
@@ -136,7 +136,7 @@ void Worker::CancelTask(napi_env env, uint32_t taskId)
         TaskInfo* taskInfo = iter.second;
         if (taskInfo->taskId == taskId) {
             if (taskInfo->executed == true) {
-                ThrowError(env, Worker::CANCEL_ERROR, "The task being executed does not support cancellation");
+                ThrowError(env, Worker::CANCEL_ERROR, "taskpool:: the task being executed, not support cancel");
                 return;
             }
             taskInfo->canceled = true;
@@ -144,7 +144,7 @@ void Worker::CancelTask(napi_env env, uint32_t taskId)
         }
     }
     if (!cancelTask) {
-        ThrowError(env, Worker::CANCEL_ERROR, "Failed to find the task");
+        ThrowError(env, Worker::CANCEL_ERROR, "taskpool:: failed to find the task");
     }
 }
 
@@ -223,16 +223,14 @@ void Worker::PerformTask(const uv_async_t* req)
         napi_value undefined;
         napi_get_undefined(env, &undefined);
         napi_status status;
-        napi_value result;
-        napi_value resultData;
-        napi_value func;
-        napi_value args;
         napi_value taskData;
         status = napi_deserialize(env, taskInfo->serializationData, &taskData);
         if (status != napi_ok || taskData == nullptr) {
             continue;
         }
+        napi_value func;
         napi_get_named_property(env, taskData, "func", &func);
+        napi_value args;
         napi_get_named_property(env, taskData, "args", &args);
         uint32_t argsNum = 0;
         napi_get_array_length(env, args, &argsNum);
@@ -242,7 +240,9 @@ void Worker::PerformTask(const uv_async_t* req)
             napi_get_element(env, args, i, &val);
             argsArray[i] = val;
         }
+        napi_value result;
         napi_call_function(env, undefined, func, argsNum, argsArray, &result);
+        napi_value resultData;
         status = napi_serialize(env, result, undefined, &resultData);
         if (status != napi_ok || resultData == nullptr) {
             continue;

@@ -60,14 +60,13 @@ public:
         if (loop != nullptr) {
             uv_run(loop, UV_RUN_DEFAULT);
         } else {
-            napi_throw_error(workerEnv_, nullptr, "Worker loop is nullptr");
+            ThrowError(workerEnv_, Worker::INIT_WORKER_ERROR, "taskpool:: Worker loop is nullptr");
             return;
         }
     }
 
     static const int32_t TYPE_ERROR = 401;
-    static const int32_t INITIALIZATION_ERROR = 10200003;
-    static const int32_t NOTRUNNING_ERROR = 10200004;
+    static const int32_t INIT_WORKER_ERROR = 10200004;
     static const int32_t CANCEL_ERROR = 10200005;
     static const int32_t SERIALIZATION_ERROR = 10200006;
 

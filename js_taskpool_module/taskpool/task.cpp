@@ -28,7 +28,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc < 1) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "the number of create task params must be more than 1 with new");
+        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: create task need more than one param with new");
         return nullptr;
     }
 
