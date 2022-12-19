@@ -27,7 +27,7 @@ namespace Commonlibrary::TaskPoolModule {
 class TaskPool {
 public:
     TaskPool() = default;
-    ~TaskPool() = default;
+    ~TaskPool();
 
     void InitTaskRunner(napi_env env);
     void EnqueueTask(std::unique_ptr<Task> task) const;

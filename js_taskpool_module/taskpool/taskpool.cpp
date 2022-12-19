@@ -61,6 +61,11 @@ void TaskPool::InitTaskRunner(napi_env env)
     }
 }
 
+TaskPool::~TaskPool()
+{
+    Worker::WorkerDestructor();
+}
+
 uint32_t TaskPool::GenerateTaskId()
 {
     std::unique_lock<std::mutex> lock(g_mutex);

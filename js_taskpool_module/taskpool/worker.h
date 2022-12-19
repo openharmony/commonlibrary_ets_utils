@@ -35,14 +35,17 @@ public:
 
     void StartExecuteInThread(napi_env env);
     bool PrepareForWorkerInstance();
+    void ReleaseWorkerThreadContent();
+    void TerminateWorker();
     static bool NeedExpandWorker();
     static napi_value WorkerConstructor(napi_env env);
+    static void WorkerDestructor();
     static void CancelTask(napi_env env, uint32_t taskId);
     static void EnqueueTask(std::unique_ptr<Task> task);
     static void ExecuteInThread(const void* data);
     static void HandleTaskResult(const uv_async_t* req);
     static void PerformTask(const uv_async_t* req);
-    static void StoreTaskInfo(uint32_t taskId, TaskInfo *taskInfo);
+    static void StoreTaskInfo(uint32_t taskId, TaskInfo* taskInfo);
     static void ThrowError(napi_env env, int32_t errCode, const char* errMessage);
 
     uv_loop_t* GetWorkerLoop() const

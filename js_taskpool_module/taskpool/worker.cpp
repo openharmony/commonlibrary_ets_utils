@@ -23,7 +23,7 @@
 
 namespace Commonlibrary::TaskPoolModule {
 const static int MAX_THREADPOOL_SIZE = 2;
-static std::list<WorkerEnv> g_liveEnvs;
+static std::list<Worker*> g_workers;
 static std::unordered_map<uint32_t, TaskInfo*> g_taskInfoMap;
 static TaskQueue g_taskQueue;
 static std::mutex g_workersMutex;
@@ -34,7 +34,7 @@ Worker::Worker(napi_env env) : hostEnv_(env) {}
 bool Worker::NeedExpandWorker()
 {
     std::unique_lock<std::mutex> lock(g_workersMutex);
-    if (g_liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
+    if (g_workers.size() >= MAX_THREADPOOL_SIZE) {
         HILOG_DEBUG("taskpool:: Worker thread num reaches the maximum");
         return false;
     }
@@ -46,7 +46,7 @@ napi_value Worker::WorkerConstructor(napi_env env)
     Worker* worker = nullptr;
     {
         std::unique_lock<std::mutex> lock(g_workersMutex);
-        if (g_liveEnvs.size() >= MAX_THREADPOOL_SIZE) {
+        if (g_workers.size() >= MAX_THREADPOOL_SIZE) {
             return nullptr;
         }
         worker = new Worker(env);
@@ -54,9 +54,43 @@ napi_value Worker::WorkerConstructor(napi_env env)
             ThrowError(env, Worker::INIT_WORKER_ERROR, "taskpool:: worker is null when InitWorker");
             return nullptr;
         }
+        g_workers.push_back(worker);
     }
     worker->StartExecuteInThread(env);
     return nullptr;
+}
+
+void ReleaseTaskContent(TaskInfo* taskInfo)
+{
+    if (taskInfo != nullptr && taskInfo->taskSignal != nullptr &&
+        !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal))) {
+        uv_close(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
+
+    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
+    auto iter = g_taskInfoMap.find(taskInfo->executeId);
+    delete iter->second;
+    iter->second = nullptr;
+    g_taskInfoMap.erase(iter);
+}
+
+void Worker::WorkerDestructor()
+{
+    g_taskQueue.Terminate();
+    for (auto &iter : g_taskInfoMap) {
+        ReleaseTaskContent(iter.second);
+    }
+
+    std::lock_guard<std::mutex> lock(g_workersMutex);
+    for (auto &item : g_workers) {
+        item->TerminateWorker();
+        g_workers.remove(item);
+    }
 }
 
 void Worker::StartExecuteInThread(napi_env env)
@@ -83,7 +117,6 @@ void Worker::ExecuteInThread(const void* data)
             ThrowError(env, Worker::INIT_WORKER_ERROR, "taskpool:: Worker create runtime error");
             return;
         }
-        g_liveEnvs.push_back(workerEnv);
         reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
         worker->workerEnv_ = workerEnv;
     }
@@ -102,6 +135,7 @@ void Worker::ExecuteInThread(const void* data)
     } else {
         HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
     }
+    worker->ReleaseWorkerThreadContent();
 }
 
 bool Worker::PrepareForWorkerInstance()
@@ -115,6 +149,31 @@ bool Worker::PrepareForWorkerInstance()
         return false;
     }
     return true;
+}
+
+void Worker::ReleaseWorkerThreadContent()
+{
+    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    if (workerEngine == nullptr) {
+        HILOG_ERROR("taskpool:: workerEngine is nullptr");
+        return;
+    }
+
+    // 4. delete NativeEngine created in worker thread
+    workerEngine->CloseAsyncWork();
+    reinterpret_cast<NativeEngine*>(workerEnv_)->DeleteEngine();
+    delete (reinterpret_cast<NativeEngine*>(workerEnv_));
+    workerEnv_ = nullptr;
+}
+
+void Worker::TerminateWorker()
+{
+    // when there is no active handle, worker loop will stop automatic.
+    uv_close(reinterpret_cast<uv_handle_t*>(&performTaskSignal_), nullptr);
+    uv_loop_t* loop = GetWorkerLoop();
+    if (loop != nullptr) {
+        uv_stop(loop);
+    }
 }
 
 void Worker::EnqueueTask(std::unique_ptr<Task> task)
@@ -146,25 +205,6 @@ void Worker::CancelTask(napi_env env, uint32_t taskId)
     if (!cancelTask) {
         ThrowError(env, Worker::CANCEL_ERROR, "taskpool:: failed to find the task");
     }
-}
-
-void ReleaseTaskContent(TaskInfo* taskInfo)
-{
-    if (taskInfo != nullptr && taskInfo->taskSignal != nullptr &&
-        !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
-        });
-    }
-
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    auto iter = g_taskInfoMap.find(taskInfo->executeId);
-    delete iter->second;
-    iter->second = nullptr;
-    g_taskInfoMap.erase(iter);
 }
 
 void Worker::HandleTaskResult(const uv_async_t* req)
