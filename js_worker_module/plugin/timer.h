@@ -32,7 +32,7 @@ struct TimerCallbackInfo {
     int32_t timeout_;
     napi_ref callback_;
     bool repeat_;
-    uv_timer_t* timeReq_;
+    uv_timer_t* timeReq_ = nullptr;
     size_t argc_;
     napi_ref* argv_;
 
@@ -48,8 +48,6 @@ struct TimerCallbackInfo {
     }
 
     ~TimerCallbackInfo();
-
-    void DeleteTimerCallbackInfo();
 };
 
 class Timer {
