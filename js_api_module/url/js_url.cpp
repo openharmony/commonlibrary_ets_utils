@@ -980,7 +980,7 @@ namespace OHOS::Url {
             }
         } else {
             size_t inputLen = input.size();
-            if (inputLen > 0){
+            if (inputLen > 0) {
                 urlinfo.isSpecialPath = input[0] != '/' ? true : false;
             }
             AnalysisNoDefaultProtocol(input, urlinfo, flags);
