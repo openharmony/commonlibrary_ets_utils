@@ -21,7 +21,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
-#include "task.h"
+#include "task_manager.h"
 
 namespace Commonlibrary::TaskPoolModule {
 class TaskPool {
@@ -30,10 +30,7 @@ public:
     ~TaskPool();
 
     void InitTaskRunner(napi_env env);
-    void EnqueueTask(std::unique_ptr<Task> task) const;
-    static TaskPool* GetCurrentTaskpool();
-    static uint32_t GenerateTaskId();
-    static uint32_t GenerateExecuteId();
+    static TaskPool& GetInstance();
     static TaskInfo* GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId);
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
@@ -42,6 +39,11 @@ public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
 
 private:
+    TaskPool(const TaskPool &) = delete;
+    TaskPool& operator=(const TaskPool &) = delete;
+    TaskPool(TaskPool &&) = delete;
+    TaskPool& operator=(TaskPool &&) = delete;
+
     std::mutex mtx_;
     bool isInitialized_ {false};
 };

@@ -23,17 +23,18 @@
 
 namespace Commonlibrary::TaskPoolModule {
 using TaskDataType = napi_value;
+
+enum TaskState { NOT_FOUND, WAITING, RUNNING, TERMINATED, CANCELED };
+
 struct TaskInfo {
     napi_env env = nullptr;
     napi_deferred deferred = nullptr;
     napi_value promise = nullptr;
     napi_value result = nullptr;
     napi_value serializationData = nullptr;
-    bool canceled = false;
-    bool executed = false;
+    uv_async_t *taskSignal = nullptr;
     uint32_t taskId;
     uint32_t executeId;
-    uv_async_t *taskSignal = nullptr;
 };
 
 class Task {
@@ -46,6 +47,31 @@ public:
     napi_ref objRef_;
     uint32_t executeId_;
     uint32_t taskId_;
+};
+
+class TaskManager {
+public:
+    static uint32_t GenerateTaskId();
+    static uint32_t GenerateExecuteId();
+    static TaskInfo* PopTaskInfo(uint32_t executeId);
+    static void ClearTaskInfo();
+    static void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
+    static void StoreStateInfo(uint32_t executeId, TaskState state);
+    static void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
+    static bool UpdateState(uint32_t executeId, TaskState state);
+    static void ReleaseTaskContent(TaskInfo* taskInfo);
+    static void PopRunningInfo(uint32_t taskId, uint32_t executeId);
+    static void CancelTask(napi_env env, uint32_t taskId);
+    static TaskState QueryState(uint32_t executeId);
+
+private:
+    TaskManager() = delete;
+    ~TaskManager() = delete;
+
+    TaskManager(const TaskManager &) = delete;
+    TaskManager& operator=(const TaskManager &) = delete;
+    TaskManager(TaskManager &&) = delete;
+    TaskManager& operator=(TaskManager &&) = delete;
 };
 } // namespace Commonlibrary::TaskPoolModule
 #endif // JS_TASKPOOL_MODULE_TASKPOOL_TASK_H_

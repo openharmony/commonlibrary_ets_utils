@@ -16,11 +16,11 @@
 #include "thread.h"
 
 namespace Commonlibrary::TaskPoolModule {
-Thread::Thread() : tId_() {}
+Thread::Thread() : tid_() {}
 
 bool Thread::Start()
 {
-    int ret = uv_thread_create(&tId_, [](void* arg) {
+    int ret = uv_thread_create(&tid_, [](void* arg) {
         Thread* thread = reinterpret_cast<Thread*>(arg);
         thread->Run();
     }, this);

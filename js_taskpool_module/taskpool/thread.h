@@ -28,11 +28,11 @@ public:
 
     uv_thread_t GetThreadId() const
     {
-        return tId_;
+        return tid_;
     }
 
 private:
-    uv_thread_t tId_ {0};
+    uv_thread_t tid_ {0};
 };
 }  // namespace CompilerRuntime::TaskPoolModule
 

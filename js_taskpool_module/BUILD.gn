@@ -21,9 +21,9 @@ ohos_shared_library("taskpool") {
 
   sources = [
     "taskpool/native_module_taskpool.cpp",
+    "taskpool/task_manager.cpp",
     "taskpool/task_queue.cpp",
     "taskpool/task_runner.cpp",
-    "taskpool/task.cpp",
     "taskpool/taskpool.cpp",
     "taskpool/thread.cpp",
     "taskpool/worker.cpp",

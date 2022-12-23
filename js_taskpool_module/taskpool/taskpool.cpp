@@ -15,24 +15,21 @@
 
 #include "taskpool.h"
 
+#include "error_helper.h"
 #include "object_helper.h"
 #include "utils/log.h"
 #include "worker.h"
 
 namespace Commonlibrary::TaskPoolModule {
 using namespace CompilerRuntime::WorkerModule::Helper;
-static int32_t g_executeId = 0;
-static int32_t g_taskId = 1; // 1: task will begin from 1, 0 for func
-static std::mutex g_mutex;
-
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     const char className[] = "Task";
     napi_property_descriptor properties[] = {};
-    napi_value workerClazz = nullptr;
+    napi_value taskClass = nullptr;
     napi_define_class(env, className, sizeof(className), Task::TaskConstructor, nullptr,
-        sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
-    napi_set_named_property(env, exports, "Task", workerClazz);
+        sizeof(properties) / sizeof(properties[0]), properties, &taskClass);
+    napi_set_named_property(env, exports, "Task", taskClass);
 
     napi_value executeFunc;
     napi_create_function(env, "execute", NAPI_AUTO_LENGTH, Execute, NULL, &executeFunc);
@@ -44,20 +41,18 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     return exports;
 }
 
-TaskPool* TaskPool::GetCurrentTaskpool()
+TaskPool& TaskPool::GetInstance()
 {
     static TaskPool taskpool;
-    return &taskpool;
+    return taskpool;
 }
 
 void TaskPool::InitTaskRunner(napi_env env)
 {
     std::unique_lock<std::mutex> lock(mtx_);
-    if (!isInitialized_) {
+    if (!isInitialized_ || Worker::NeedExpandWorker()) {
         Worker::WorkerConstructor(env);
         isInitialized_ = true;
-    } else if (Worker::NeedExpandWorker()) {
-        Worker::WorkerConstructor(env);
     }
 }
 
@@ -66,28 +61,16 @@ TaskPool::~TaskPool()
     Worker::WorkerDestructor();
 }
 
-uint32_t TaskPool::GenerateTaskId()
-{
-    std::unique_lock<std::mutex> lock(g_mutex);
-    return g_taskId++;
-}
-
-uint32_t TaskPool::GenerateExecuteId()
-{
-    std::unique_lock<std::mutex> lock(g_mutex);
-    return g_executeId++;
-}
-
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
     // get the taskpool instance
-    TaskPool::GetCurrentTaskpool()->InitTaskRunner(env);
+    TaskPool::GetInstance().InitTaskRunner(env);
 
     // check the argc
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc < 1) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the number of params must be at least one");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be at least one");
         return nullptr;
     }
 
@@ -100,7 +83,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
 
     if (argc == 1 && type != napi_object) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: first param must be object when argc is one");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: first param must be object when argc is one");
         return nullptr;
     } else if (type == napi_object) {
         Task* task = nullptr;
@@ -118,7 +101,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         napi_set_named_property(env, object, "args", argsArray);
         return ExecuteFunction(env, object);
     }
-    Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: first param must be object or function");
+    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: first param must be object or function");
     return nullptr;
 }
 
@@ -130,11 +113,10 @@ TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t t
     napi_status serializeStatus = napi_ok;
     serializeStatus = napi_serialize(env, object, undefined, &taskData);
     if (serializeStatus != napi_ok || taskData == nullptr) {
-        Worker::ThrowError(env, Worker::SERIALIZATION_ERROR, "taskpool:: Failed to serialize the message");
         return nullptr;
     }
     TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
-    Worker::StoreTaskInfo(executeId, taskInfo);
+    TaskManager::StoreTaskInfo(executeId, taskInfo);
     taskInfo->env = env;
     taskInfo->executeId = executeId;
     taskInfo->serializationData = taskData;
@@ -151,8 +133,10 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
 {
     napi_value obj = nullptr;
     napi_get_reference_value(env, task->objRef_, &obj);
-    task->executeId_ = TaskPool::GenerateExecuteId();
+    task->executeId_ = TaskManager::GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
+    TaskManager::StoreStateInfo(task->executeId_, TaskState::WAITING);
+    TaskManager::StoreRunningInfo(task->taskId_, task->executeId_);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Task* currentTask = new Task();
     *currentTask = *task;
@@ -164,7 +148,7 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
 napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 {
     std::unique_ptr<Task> task = std::make_unique<Task>();
-    task->executeId_ = TaskPool::GenerateExecuteId();
+    task->executeId_ = TaskManager::GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, object, 0, task->executeId_); // 0: 0 for function specially
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Worker::EnqueueTask(std::move(task));
@@ -176,7 +160,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc != 1) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the number of the params must be one");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
         return nullptr;
     }
 
@@ -187,12 +171,12 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type != napi_object) {
-        Worker::ThrowError(env, Worker::TYPE_ERROR, "taskpool:: the type of the params must be object");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be object");
         return nullptr;
     }
-    Task *task = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&task)));
-    Worker::CancelTask(env, task->taskId_);
+    Task* task = nullptr;
+    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void**>(&task)));
+    TaskManager::CancelTask(env, task->taskId_);
     return nullptr;
 }
 } // namespace Commonlibrary::TaskPoolModule

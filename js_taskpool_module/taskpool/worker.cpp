@@ -15,19 +15,13 @@
 
 #include "worker.h"
 
-#include <shared_mutex>
-#include <unistd.h>
-#include <unordered_map>
-
 #include "utils/log.h"
 
 namespace Commonlibrary::TaskPoolModule {
 const static int MAX_THREADPOOL_SIZE = 2;
 static std::list<Worker*> g_workers;
-static std::unordered_map<uint32_t, TaskInfo*> g_taskInfoMap;
 static TaskQueue g_taskQueue;
 static std::mutex g_workersMutex;
-static std::shared_mutex g_taskMutex;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 
@@ -46,12 +40,8 @@ napi_value Worker::WorkerConstructor(napi_env env)
     Worker* worker = nullptr;
     {
         std::unique_lock<std::mutex> lock(g_workersMutex);
-        if (g_workers.size() >= MAX_THREADPOOL_SIZE) {
-            return nullptr;
-        }
-        worker = new Worker(env);
+        worker = new (std::nothrow) Worker(env);
         if (worker == nullptr) {
-            ThrowError(env, Worker::INIT_WORKER_ERROR, "taskpool:: worker is null when InitWorker");
             return nullptr;
         }
         g_workers.push_back(worker);
@@ -60,36 +50,13 @@ napi_value Worker::WorkerConstructor(napi_env env)
     return nullptr;
 }
 
-void ReleaseTaskContent(TaskInfo* taskInfo)
-{
-    if (taskInfo != nullptr && taskInfo->taskSignal != nullptr &&
-        !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
-        });
-    }
-
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    auto iter = g_taskInfoMap.find(taskInfo->executeId);
-    delete iter->second;
-    iter->second = nullptr;
-    g_taskInfoMap.erase(iter);
-}
-
 void Worker::WorkerDestructor()
 {
     g_taskQueue.Terminate();
-    for (auto &iter : g_taskInfoMap) {
-        ReleaseTaskContent(iter.second);
-    }
-
+    TaskManager::ClearTaskInfo();
     std::lock_guard<std::mutex> lock(g_workersMutex);
     for (auto &item : g_workers) {
         item->TerminateWorker();
-        g_workers.remove(item);
     }
 }
 
@@ -114,7 +81,6 @@ void Worker::ExecuteInThread(const void* data)
         napi_env env = worker->hostEnv_;
         napi_create_runtime(env, &workerEnv);
         if (workerEnv == nullptr) {
-            ThrowError(env, Worker::INIT_WORKER_ERROR, "taskpool:: Worker create runtime error");
             return;
         }
         reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
@@ -122,7 +88,6 @@ void Worker::ExecuteInThread(const void* data)
     }
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
-        ThrowError(workerEnv, Worker::INIT_WORKER_ERROR, "taskpool:: Worker loop is nullptr");
         return;
     }
 
@@ -136,6 +101,10 @@ void Worker::ExecuteInThread(const void* data)
         HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
     }
     worker->ReleaseWorkerThreadContent();
+    if (worker != nullptr) {
+        delete worker;
+        worker = nullptr;
+    }
 }
 
 bool Worker::PrepareForWorkerInstance()
@@ -159,17 +128,31 @@ void Worker::ReleaseWorkerThreadContent()
         return;
     }
 
-    // 4. delete NativeEngine created in worker thread
+    // 1. remove worker instance count
+    {
+        std::lock_guard<std::mutex> lock(g_workersMutex);
+        std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
+        if (it != g_workers.end()) {
+            g_workers.erase(it);
+        }
+    }
+
+    // 2. delete NativeEngine created in worker thread
     workerEngine->CloseAsyncWork();
-    reinterpret_cast<NativeEngine*>(workerEnv_)->DeleteEngine();
-    delete (reinterpret_cast<NativeEngine*>(workerEnv_));
+    workerEngine->DeleteEngine();
+    delete workerEngine;
     workerEnv_ = nullptr;
 }
 
 void Worker::TerminateWorker()
 {
     // when there is no active handle, worker loop will stop automatic.
-    uv_close(reinterpret_cast<uv_handle_t*>(&performTaskSignal_), nullptr);
+    uv_close(reinterpret_cast<uv_handle_t*>(performTaskSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
     uv_loop_t* loop = GetWorkerLoop();
     if (loop != nullptr) {
         uv_stop(loop);
@@ -179,32 +162,6 @@ void Worker::TerminateWorker()
 void Worker::EnqueueTask(std::unique_ptr<Task> task)
 {
     g_taskQueue.EnqueueTask(std::move(task));
-}
-
-void Worker::StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo)
-{
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    g_taskInfoMap.emplace(executeId, taskInfo);
-}
-
-void Worker::CancelTask(napi_env env, uint32_t taskId)
-{
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    bool cancelTask = false;
-    for (auto &iter : g_taskInfoMap) {
-        TaskInfo* taskInfo = iter.second;
-        if (taskInfo->taskId == taskId) {
-            if (taskInfo->executed == true) {
-                ThrowError(env, Worker::CANCEL_ERROR, "taskpool:: the task being executed, not support cancel");
-                return;
-            }
-            taskInfo->canceled = true;
-            cancelTask = true;
-        }
-    }
-    if (!cancelTask) {
-        ThrowError(env, Worker::CANCEL_ERROR, "taskpool:: failed to find the task");
-    }
 }
 
 void Worker::HandleTaskResult(const uv_async_t* req)
@@ -217,27 +174,7 @@ void Worker::HandleTaskResult(const uv_async_t* req)
     } else {
         napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
     }
-    ReleaseTaskContent(taskInfo);
-}
-
-void Worker::ThrowError(napi_env env, int32_t errCode, const char* errMessage)
-{
-    std::string errTitle = "";
-    napi_value workerError = nullptr;
-
-    napi_value code = nullptr;
-    napi_create_uint32(env, errCode, &code);
-
-    napi_value name = nullptr;
-    std::string errName = "BusinessError";
-    napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
-    napi_value msg = nullptr;
-    napi_create_string_utf8(env, (errTitle + std::string(errMessage)).c_str(), NAPI_AUTO_LENGTH, &msg);
-
-    napi_create_error(env, nullptr, msg, &workerError);
-    napi_set_named_property(env, workerError, "code", code);
-    napi_set_named_property(env, workerError, "name", name);
-    napi_throw(env, workerError);
+    TaskManager::ReleaseTaskContent(taskInfo);
 }
 
 void Worker::PerformTask(const uv_async_t* req)
@@ -245,29 +182,15 @@ void Worker::PerformTask(const uv_async_t* req)
     Worker* worker = static_cast<Worker*>(req->data);
     while (std::unique_ptr<Task> task = g_taskQueue.DequeueTask()) {
         napi_env env = worker->workerEnv_;
-        TaskInfo* taskInfo = nullptr;
-        {
-            std::shared_lock<std::shared_mutex> lock(g_taskMutex);
-            auto iter = g_taskInfoMap.find(task->executeId_);
-            if (iter == g_taskInfoMap.end() || iter->second == nullptr) {
-                HILOG_ERROR("taskpool:: taskInfo is incomplete");
-                return;
-            }
-            taskInfo = iter->second;
-        }
-        if (taskInfo->canceled) {
-            ReleaseTaskContent(taskInfo);
+        TaskInfo* taskInfo = TaskManager::PopTaskInfo(task->executeId_);
+        if (taskInfo == nullptr) { // task may have been canceled
             continue;
         }
-        taskInfo->executed = true;
+        TaskManager::UpdateState(taskInfo->executeId, TaskState::RUNNING);
         napi_value undefined;
         napi_get_undefined(env, &undefined);
-        napi_status status;
         napi_value taskData;
-        status = napi_deserialize(env, taskInfo->serializationData, &taskData);
-        if (status != napi_ok || taskData == nullptr) {
-            continue;
-        }
+        napi_deserialize(env, taskInfo->serializationData, &taskData);
         napi_value func;
         napi_get_named_property(env, taskData, "func", &func);
         napi_value args;
@@ -283,11 +206,10 @@ void Worker::PerformTask(const uv_async_t* req)
         napi_value result;
         napi_call_function(env, undefined, func, argsNum, argsArray, &result);
         napi_value resultData;
-        status = napi_serialize(env, result, undefined, &resultData);
-        if (status != napi_ok || resultData == nullptr) {
-            continue;
-        }
+        napi_serialize(env, result, undefined, &resultData);
         taskInfo->result = resultData;
+        TaskManager::UpdateState(taskInfo->executeId, TaskState::TERMINATED);
+        TaskManager::PopRunningInfo(task->taskId_, task->executeId_);
         uv_async_send(taskInfo->taskSignal);
         g_taskQueue.NotifyWorkerThread();
     }

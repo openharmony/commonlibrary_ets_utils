@@ -22,7 +22,9 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
+#include "error_helper.h"
 #include "object_helper.h"
+#include "task_manager.h"
 #include "task_runner.h"
 #include "task_queue.h"
 
@@ -38,15 +40,12 @@ public:
     void ReleaseWorkerThreadContent();
     void TerminateWorker();
     static bool NeedExpandWorker();
-    static napi_value WorkerConstructor(napi_env env);
     static void WorkerDestructor();
-    static void CancelTask(napi_env env, uint32_t taskId);
     static void EnqueueTask(std::unique_ptr<Task> task);
     static void ExecuteInThread(const void* data);
     static void HandleTaskResult(const uv_async_t* req);
     static void PerformTask(const uv_async_t* req);
-    static void StoreTaskInfo(uint32_t taskId, TaskInfo* taskInfo);
-    static void ThrowError(napi_env env, int32_t errCode, const char* errMessage);
+    static napi_value WorkerConstructor(napi_env env);
 
     uv_loop_t* GetWorkerLoop() const
     {
@@ -62,21 +61,13 @@ public:
         uv_loop_t* loop = GetWorkerLoop();
         if (loop != nullptr) {
             uv_run(loop, UV_RUN_DEFAULT);
-        } else {
-            ThrowError(workerEnv_, Worker::INIT_WORKER_ERROR, "taskpool:: Worker loop is nullptr");
-            return;
         }
     }
-
-    static const int32_t TYPE_ERROR = 401;
-    static const int32_t INIT_WORKER_ERROR = 10200004;
-    static const int32_t CANCEL_ERROR = 10200005;
-    static const int32_t SERIALIZATION_ERROR = 10200006;
 
 private:
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
-    uv_async_t* performTaskSignal_ = nullptr;
+    uv_async_t* performTaskSignal_ {nullptr};
     std::unique_ptr<TaskRunner> runner_ {};
     std::recursive_mutex liveEnvLock_ {};
 };
