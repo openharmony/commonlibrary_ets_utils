@@ -30,23 +30,13 @@ TimerCallbackInfo::~TimerCallbackInfo()
     }
     Helper::CloseHelp::DeletePointer(argv_, true);
 
-    uv_timer_stop(&timeReq_);
-    uv_close(reinterpret_cast<uv_handle_t*>(&timeReq_), [](uv_handle_t* handle) {
+    uv_timer_stop(timeReq_);
+    uv_close(reinterpret_cast<uv_handle_t*>(timeReq_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
             delete (uv_timer_t*)handle;
             handle = nullptr;
         }
     });
-}
-
-void TimerCallbackInfo::DeleteTimerCallbackInfo()
-{
-    Helper::NapiHelper::DeleteReference(env_, callback_);
-    for (size_t idx = 0; idx < argc_; idx++) {
-        Helper::NapiHelper::DeleteReference(env_, argv_[idx]);
-    }
-    Helper::CloseHelp::DeletePointer(argv_, true);
-    uv_timer_stop(&timeReq_);
 }
 
 bool Timer::RegisterTime(napi_env env)
@@ -101,13 +91,13 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
     }
     TimerCallbackInfo* callbackInfo = iter->second;
     timerTable.erase(tId);
-    callbackInfo->DeleteTimerCallbackInfo();
+    Helper::CloseHelp::DeletePointer(callbackInfo, false);
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
 
 void Timer::TimerCallback(uv_timer_t* handle)
 {
-    TimerCallbackInfo* callbackInfo = Helper::DereferenceHelp::DereferenceOf(&TimerCallbackInfo::timeReq_, handle);
+    TimerCallbackInfo* callbackInfo = static_cast<TimerCallbackInfo*>(handle->data);
     if (callbackInfo == nullptr) {
         return;
     }
@@ -127,7 +117,7 @@ void Timer::TimerCallback(uv_timer_t* handle)
     }
     if (!callbackInfo->repeat_) {
         timerTable.erase(callbackInfo->tId_);
-        callbackInfo->DeleteTimerCallbackInfo();
+        Helper::CloseHelp::DeletePointer(callbackInfo, false);
     } else {
         uv_timer_again(handle);
     }
@@ -185,7 +175,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     timerTable[tId] = callbackInfo;
 
     // 6. start timer
-    uv_timer_start(&callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
+    uv_timer_start(callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
     return Helper::NapiHelper::CreateUint32(env, tId);
 }
 
