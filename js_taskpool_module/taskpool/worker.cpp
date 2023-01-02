@@ -193,9 +193,9 @@ void Worker::PerformTask(const uv_async_t* req)
         napi_deserialize(env, taskInfo->serializationData, &taskData);
         napi_value func;
         napi_get_named_property(env, taskData, "func", &func);
-        // auto funcVal = reinterpret_cast<NativeValue*>(func);
-        // auto workerEngine = reinterpret_cast<NativeEngine*>(env);
-        // workerEngine->CallInitTaskFunc(workerEngine, funcVal);
+        auto funcVal = reinterpret_cast<NativeValue*>(func);
+        auto workerEngine = reinterpret_cast<NativeEngine*>(env);
+        workerEngine->CallInitTaskFunc(workerEngine, funcVal);
         napi_value args;
         napi_get_named_property(env, taskData, "args", &args);
         uint32_t argsNum = 0;
