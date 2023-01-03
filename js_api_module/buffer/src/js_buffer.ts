@@ -1765,6 +1765,8 @@ function alloc(size: number, fill?: string | Buffer | number, encoding?: string)
   const buf = new Buffer(size);
   if (fill !== undefined && fill !== 0) {
     buf.fill(fill);
+  } else {
+    buf.fill(0);
   }
   return buf;
 }
