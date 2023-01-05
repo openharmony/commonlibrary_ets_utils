@@ -108,6 +108,39 @@ ohos_shared_library("uri") {
   relative_install_dir = "module"
 }
 
+ohos_static_library("uri_static") {
+  include_dirs = [
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/node/src",
+    "//foundation/arkui/napi/interfaces/kits",
+    "//commonlibrary/ets_utils/js_api_module/uri",
+  ]
+
+  sources = [
+    "js_uri.cpp",
+    "native_module_uri.cpp",
+  ]
+
+  deps = [
+    ":js_uri",
+    ":uri_abc",
+    "//commonlibrary/ets_utils/js_api_module/uri/:js_uri",
+    "//foundation/arkui/napi/:ace_napi",
+    "//third_party/icu/icu4c:shared_icuuc",
+  ]
+
+  if (is_standard_system) {
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+}
+
 group("uri_packages") {
   deps = [ ":uri" ]
 }
