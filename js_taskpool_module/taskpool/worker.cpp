@@ -35,19 +35,15 @@ bool Worker::NeedExpandWorker()
     return true;
 }
 
-napi_value Worker::WorkerConstructor(napi_env env)
+void Worker::WorkerConstructor(napi_env env)
 {
     Worker* worker = nullptr;
     {
         std::unique_lock<std::mutex> lock(g_workersMutex);
         worker = new (std::nothrow) Worker(env);
-        if (worker == nullptr) {
-            return nullptr;
-        }
         g_workers.push_back(worker);
     }
     worker->StartExecuteInThread(env);
-    return nullptr;
 }
 
 void Worker::WorkerDestructor()
@@ -81,6 +77,7 @@ void Worker::ExecuteInThread(const void* data)
         napi_env env = worker->hostEnv_;
         napi_create_runtime(env, &workerEnv);
         if (workerEnv == nullptr) {
+            HILOG_ERROR("taskpool:: workerEnv is nullptr");
             return;
         }
         reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
@@ -88,6 +85,7 @@ void Worker::ExecuteInThread(const void* data)
     }
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
+        HILOG_ERROR("taskpool:: loop is nullptr");
         return;
     }
 
@@ -101,10 +99,8 @@ void Worker::ExecuteInThread(const void* data)
         HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
     }
     worker->ReleaseWorkerThreadContent();
-    if (worker != nullptr) {
-        delete worker;
-        worker = nullptr;
-    }
+    delete worker;
+    worker = nullptr;
 }
 
 bool Worker::PrepareForWorkerInstance()

@@ -29,7 +29,6 @@
 #include "task_queue.h"
 
 namespace Commonlibrary::TaskPoolModule {
-using WorkerEnv = napi_env;
 class Worker {
 public:
     Worker(napi_env env);
@@ -45,7 +44,7 @@ public:
     static void ExecuteInThread(const void* data);
     static void HandleTaskResult(const uv_async_t* req);
     static void PerformTask(const uv_async_t* req);
-    static napi_value WorkerConstructor(napi_env env);
+    static void WorkerConstructor(napi_env env);
 
     uv_loop_t* GetWorkerLoop() const
     {
