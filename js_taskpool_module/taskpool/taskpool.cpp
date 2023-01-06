@@ -137,6 +137,10 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
     TaskInfo* taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
     TaskManager::StoreStateInfo(task->executeId_, TaskState::WAITING);
     TaskManager::StoreRunningInfo(task->taskId_, task->executeId_);
+    if (taskInfo->promise == nullptr || taskInfo->deferred == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: GenerateTaskInfo Error");
+        return nullptr;
+    }
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Task* currentTask = new Task();
     *currentTask = *task;
@@ -150,6 +154,10 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
     std::unique_ptr<Task> task = std::make_unique<Task>();
     task->executeId_ = TaskManager::GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, object, 0, task->executeId_); // 0: 0 for function specially
+    if (taskInfo->promise == nullptr || taskInfo->deferred == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: GenerateTaskInfo Error");
+        return nullptr;
+    }
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Worker::EnqueueTask(std::move(task));
     return taskInfo->promise;
