@@ -111,6 +111,41 @@ ohos_shared_library("convertxml") {
   relative_install_dir = "module"
 }
 
+ohos_static_library("convertxml_static") {
+  include_dirs = [
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/node/src",
+    "//third_party/libxml2/include",
+    "//foundation/arkui/napi/interfaces/kits",
+    "//commonlibrary/ets_utils/js_api_module/convertxml",
+  ]
+
+  sources = [
+    "js_convertxml.cpp",
+    "native_module_convertxml.cpp",
+  ]
+
+  deps = [
+    ":convertxml_abc",
+    ":js_convertxml",
+    "//commonlibrary/ets_utils/js_api_module/convertxml/:js_convertxml",
+    "//foundation/arkui/napi/:ace_napi",
+    "//third_party/icu/icu4c:shared_icuuc",
+    "//third_party/libxml2:xml2",
+  ]
+
+  if (is_standard_system) {
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+}
+
 group("convertxml_packages") {
   deps = [ ":convertxml" ]
 }
