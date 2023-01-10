@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_WORKER_OBJECT_HELPER_H_
-#define JS_WORKER_MODULE_WORKER_OBJECT_HELPER_H_
+#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
+#define JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
 
-namespace CompilerRuntime::WorkerModule::Helper {
+namespace Commonlibrary::ConcurrentModule::Helper {
 class DereferenceHelp {
 public:
     template<typename Inner, typename Outer>
@@ -69,5 +69,5 @@ private:
     const T* data_;
     bool isArray_;
 };
-} // namespace CompilerRuntime::WorkerModule::Helper
-#endif // JS_WORKER_MODULE_WORKER_OBJECT_HELPER_H_
+} // namespace Commonlibrary::ConcurrentModule::Helper
+#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_

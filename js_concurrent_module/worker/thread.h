@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_WORKER_THREAD_H_
-#define JS_WORKER_MODULE_WORKER_THREAD_H_
+#ifndef JS_CONCURRENT_MODULE_WORKER_THREAD_H_
+#define JS_CONCURRENT_MODULE_WORKER_THREAD_H_
 
 #include <uv.h>
 
-namespace CompilerRuntime::WorkerModule {
+namespace Commonlibrary::ConcurrentModule {
 class Thread {
 public:
     Thread();
@@ -34,6 +34,6 @@ public:
 private:
     uv_thread_t tId_ {0};
 };
-}  // namespace CompilerRuntime::WorkerModule
+}  // namespace Commonlibrary::ConcurrentModule
 
-#endif // #define JS_WORKER_MODULE_WORKER_THREAD_H_
+#endif // #define JS_CONCURRENT_MODULE_WORKER_THREAD_H_

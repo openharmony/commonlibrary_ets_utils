@@ -14,9 +14,10 @@
  */
 
 #include "worker.h"
-#include "../plugin/timer.h"
 
-namespace CompilerRuntime::WorkerModule {
+#include "commonlibrary/ets_utils/js_concurrent_module/common/plugin/timer.h"
+
+namespace Commonlibrary::ConcurrentModule {
 const static int MAXWORKERS = 8;
 static std::list<Worker*> g_workers;
 static std::mutex g_workersMutex;
@@ -102,11 +103,9 @@ bool Worker::PrepareForWorkerInstance()
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
 
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-        if (!hostEngine->CallWorkerAsyncWorkFunc(workerEngine)) {
-            HILOG_ERROR("worker:: CallWorkerAsyncWorkFunc error");
-        }
+        hostEngine->CallWorkerAsyncWorkFunc(workerEngine);
         // 2. init worker environment
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM)
         workerEngine->SetDebuggerPostTaskFunc(
             std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
 #endif
@@ -1497,4 +1496,4 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv,
         }
     }
 }
-} // namespace CompilerRuntime::WorkerModule
+} // namespace Commonlibrary::ConcurrentModule

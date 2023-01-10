@@ -13,18 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_PLUGIN_TIMER_H_
-#define JS_WORKER_MODULE_PLUGIN_TIMER_H_
+#ifndef JS_CONCURRENT_MODULE_COMMON_PLUGIN_TIMER_H_
+#define JS_CONCURRENT_MODULE_COMMON_PLUGIN_TIMER_H_
 
 #include <map>
+#include <mutex>
 #include <uv.h>
 
-#include "../helper/napi_helper.h"
-#include "../helper/object_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace CompilerRuntime::WorkerModule::Plugin {
+namespace Commonlibrary::ConcurrentModule::Plugin {
 struct TimerCallbackInfo {
     napi_env env_;
     uint32_t tId_;
@@ -67,5 +68,5 @@ private:
     static std::map<uint32_t, TimerCallbackInfo*> timerTable;
     static std::mutex timeLock;
 };
-} // namespace CompilerRuntime::WorkerModule::Plugin
-#endif // JS_WORKER_MODULE_PLUGIN_TIMER_H_
+} // namespace Commonlibrary::ConcurrentModule::Plugin
+#endif // JS_CONCURRENT_MODULE_COMMON_PLUGIN_TIMER_H_

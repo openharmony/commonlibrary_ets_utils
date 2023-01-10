@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_WORKER_MESSAGE_QUEUE_H_
-#define JS_WORKER_MODULE_WORKER_MESSAGE_QUEUE_H_
+#ifndef JS_CONCURRENT_MODULE_WORKER_MESSAGE_QUEUE_H_
+#define JS_CONCURRENT_MODULE_WORKER_MESSAGE_QUEUE_H_
 
 #include <mutex>
 #include <queue>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace CompilerRuntime::WorkerModule {
+namespace Commonlibrary::ConcurrentModule {
 using MessageDataType = napi_value;
 class MessageQueue final {
 public:
@@ -38,5 +38,5 @@ private:
     std::mutex queueLock_;
     std::queue<MessageDataType> queue_;
 };
-}  // namespace CompilerRuntime::WorkerModule
-#endif // JS_WORKER_MODULE_WORKER_MESSAGE_QUEUE_H_
+}  // namespace Commonlibrary::ConcurrentModule
+#endif // JS_CONCURRENT_MODULE_WORKER_MESSAGE_QUEUE_H_

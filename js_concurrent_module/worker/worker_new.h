@@ -13,22 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_NEWWORKER_WORKER_NEW_H_
-#define JS_WORKER_MODULE_NEWWORKER_WORKER_NEW_H_
+#ifndef JS_CONCURRENT_MODULE_WORKER_WORKER_NEW_H_
+#define JS_CONCURRENT_MODULE_WORKER_WORKER_NEW_H_
 
 #include <list>
 #include <map>
 #include <mutex>
 #include "message_queue.h"
-#include "commonlibrary/ets_utils/js_worker_module/helper/napi_helper.h"
-#include "commonlibrary/ets_utils/js_worker_module/helper/object_helper.h"
-#include "worker_runner.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 #include "utils/log.h"
+#include "worker_runner.h"
 
-namespace CompilerRuntime::WorkerModule {
+namespace Commonlibrary::ConcurrentModule {
 class NewWorker {
 public:
     static const int8_t WORKERPARAMNUM = 2;
@@ -290,15 +290,6 @@ public:
     static napi_value WorkerPortDispatchEvent(napi_env env, napi_callback_info cbinfo);
 
     /**
-     * Throw error.
-     *
-     * @param env NAPI environment parameters.
-     * @param errCode The error code.
-     * @param errMessage The error message.
-     */
-    static void ThrowError(napi_env env, int32_t errCode, const char* errMessage);
-
-    /**
      * The parent port removes the event listener.
      *
      * @param env NAPI environment parameters.
@@ -452,7 +443,7 @@ private:
     uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* hostOnErrorSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_async_t debuggerOnPostTaskSignal_ {};
+    uv_async_t ddebuggerOnPostTaskSignal_ {};
     std::function<void()> debuggerTask_;
 #endif
 
@@ -471,5 +462,5 @@ private:
 
     std::recursive_mutex liveStatusLock_ {};
 };
-} // namespace CompilerRuntime::WorkerModule
-#endif // JS_WORKER_MODULE_NEWWORKER_WORKER_NEW_H_
+} // namespace Commonlibrary::ConcurrentModule
+#endif // JS_CONCURRENT_MODULE_WORKER_WORKER_NEW_H_

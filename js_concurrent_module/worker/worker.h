@@ -13,22 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_WORKER_WORKER_H_
-#define JS_WORKER_MODULE_WORKER_WORKER_H_
+#ifndef JS_CONCURRENT_MODULE_WORKER_WORKER_H_
+#define JS_CONCURRENT_MODULE_WORKER_WORKER_H_
 
 #include <list>
 #include <map>
 #include <mutex>
+
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
 #include "message_queue.h"
-#include "../helper/napi_helper.h"
-#include "../helper/object_helper.h"
-#include "worker_runner.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 #include "utils/log.h"
+#include "worker_runner.h"
 
-namespace CompilerRuntime::WorkerModule {
+namespace Commonlibrary::ConcurrentModule {
 class Worker {
 public:
     static const int8_t WORKERPARAMNUM = 2;
@@ -456,5 +457,5 @@ private:
 
     std::recursive_mutex liveStatusLock_ {};
 };
-} // namespace CompilerRuntime::WorkerModule
-#endif // JS_WORKER_MODULE_WORKER_WORKER_H_
+} // namespace Commonlibrary::ConcurrentModule
+#endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H_

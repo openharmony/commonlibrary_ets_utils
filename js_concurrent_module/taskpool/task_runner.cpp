@@ -13,37 +13,38 @@
  * limitations under the License.
  */
 
-#include "worker_runner.h"
+#include "task_runner.h"
 
-#include "../helper/object_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
 
-namespace CompilerRuntime::WorkerModule {
-WorkerRunner::WorkerRunner(WorkerStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
+namespace Commonlibrary::ConcurrentModule {
+using namespace Commonlibrary::ConcurrentModule::Helper;
+TaskRunner::TaskRunner(TaskStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
 
-WorkerRunner::~WorkerRunner()
+TaskRunner::~TaskRunner()
 {
-    Helper::CloseHelp::DeletePointer(workerInnerRunner_, false);
+    CloseHelp::DeletePointer(taskInnerRunner_, false);
 }
 
-void WorkerRunner::WorkerInnerRunner::Run()
+void TaskRunner::TaskInnerRunner::Run()
 {
     if (runner_ != nullptr) {
         runner_->Run();
     }
 }
 
-WorkerRunner::WorkerInnerRunner::WorkerInnerRunner(const WorkerRunner* runner) : runner_(runner) {}
+TaskRunner::TaskInnerRunner::TaskInnerRunner(const TaskRunner* runner) : runner_(runner) {}
 
-void WorkerRunner::Run() const
+void TaskRunner::Run() const
 {
     if (callback_.callback != nullptr) {
         callback_.callback(callback_.data);
     }
 }
 
-bool WorkerRunner::Execute()
+bool TaskRunner::Execute()
 {
-    workerInnerRunner_ = new WorkerInnerRunner(this);
-    return workerInnerRunner_->Start();
+    taskInnerRunner_ = new TaskInnerRunner(this);
+    return taskInnerRunner_->Start();
 }
-} // namespace CompilerRuntime::WorkerModule
+} // namespace Commonlibrary::ConcurrentModule

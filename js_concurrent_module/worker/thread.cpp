@@ -15,7 +15,7 @@
 
 #include "thread.h"
 
-namespace CompilerRuntime::WorkerModule {
+namespace Commonlibrary::ConcurrentModule {
 Thread::Thread() : tId_() {}
 
 bool Thread::Start()
@@ -26,4 +26,4 @@ bool Thread::Start()
     }, this);
     return ret != 0;
 }
-}  // namespace CompilerRuntime::WorkerModule
+}  // namespace Commonlibrary::ConcurrentModule

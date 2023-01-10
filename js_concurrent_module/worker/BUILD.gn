@@ -15,28 +15,36 @@ import("//build/ohos.gni")
 
 ohos_shared_library("worker") {
   include_dirs = [
-    "//commonlibrary/ets_utils/js_worker_module/worker",
-    "//commonlibrary/ets_utils/js_worker_module/helper",
-    "//commonlibrary/ets_utils/js_worker_module/plugin",
+    "//commonlibrary/ets_utils/js_concurrent_module/common",
+    "//commonlibrary/ets_utils/js_concurrent_module/worker",
   ]
 
   sources = [
-    "helper/napi_helper.cpp",
-    "plugin/timer.cpp",
-    "worker/message_queue.cpp",
-    "worker/native_module_worker.cpp",
-    "worker/thread.cpp",
-    "worker/worker.cpp",
-    "worker/worker_new.cpp",
-    "worker/worker_runner.cpp",
+    "../common/helper/napi_helper.cpp",
+    "../common/plugin/timer.cpp",
+    "native_module_worker.cpp",
+    "message_queue.cpp",
+    "thread.cpp",
+    "worker.cpp",
+    "worker_new.cpp",
+    "worker_runner.cpp",
   ]
 
   deps = [ "//foundation/arkui/napi:ace_napi" ]
 
-  if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  if (is_linux && current_toolchain == host_toolchain) {
+    deps +=
+        [ "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_linux" ]
+    defines = [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+    ]
   } else {
-    external_deps = [ "hilog:libhilog" ]
+    if (is_standard_system) {
+      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    } else {
+      external_deps = [ "hilog:libhilog" ]
+    }
   }
 
   subsystem_name = "commonlibrary"
@@ -45,6 +53,6 @@ ohos_shared_library("worker") {
   relative_install_dir = "module"
 }
 
-group("jsapi_packages") {
+group("worker_packages") {
   deps = [ ":worker" ]
 }
