@@ -138,14 +138,14 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
     TaskManager::StoreStateInfo(task->executeId_, TaskState::WAITING);
     TaskManager::StoreRunningInfo(task->taskId_, task->executeId_);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
-    if (taskInfo->promise == nullptr || taskInfo->deferred == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
-        return nullptr;
-    }
     Task* currentTask = new Task();
     *currentTask = *task;
     std::unique_ptr<Task> pointer(currentTask);
     Worker::EnqueueTask(std::move(pointer));
+    if (taskInfo->promise == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
+        return nullptr;
+    }
     return taskInfo->promise;
 }
 
@@ -155,11 +155,11 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
     task->executeId_ = TaskManager::GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, object, 0, task->executeId_); // 0: 0 for function specially
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
-    if (taskInfo->promise == nullptr || taskInfo->deferred == nullptr) {
+    Worker::EnqueueTask(std::move(task));
+    if (taskInfo->promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
     }
-    Worker::EnqueueTask(std::move(task));
     return taskInfo->promise;
 }
 
