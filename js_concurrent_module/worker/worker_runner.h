@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_WORKER_WORKER_RUNNER_H_
-#define JS_WORKER_MODULE_WORKER_WORKER_RUNNER_H_
+#ifndef JS_CONCURRENT_MODULE_WORKER_WORKER_RUNNER_H_
+#define JS_CONCURRENT_MODULE_WORKER_WORKER_RUNNER_H_
 
 #include <functional>
 
 #include "native_engine/native_engine.h"
 #include "thread.h"
 
-namespace CompilerRuntime::WorkerModule {
+namespace Commonlibrary::ConcurrentModule {
 struct WorkerStartCallback {
     using CallbackFunction = std::function<void(void*)>;
 
@@ -58,5 +58,5 @@ private:
     WorkerStartCallback callback_;
     uv_thread_t selfThreadId_ {0};
 };
-} // namespace CompilerRuntime::WorkerModule
-#endif // JS_WORKER_MODULE_WORKER_WORKER_RUNNER_H_
+} // namespace Commonlibrary::ConcurrentModule
+#endif // JS_CONCURRENT_MODULE_WORKER_WORKER_RUNNER_H_

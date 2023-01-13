@@ -13,36 +13,25 @@
  * limitations under the License.
  */
 
-#include "worker.h"
-#include "worker_new.h"
-
-/*
- * module init func
- */
-static napi_value Init(napi_env env, napi_value exports)
-{
-    exports = CompilerRuntime::WorkerModule::NewWorker::InitWorker(env, exports);
-    exports = CompilerRuntime::WorkerModule::Worker::InitWorker(env, exports);
-
-    return exports;
-}
+#include "commonlibrary/ets_utils/js_concurrent_module/taskpool/taskpool.h"
 
 /*
  * module define
  */
-static napi_module g_workerModule = {
+static napi_module g_taskPoolModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
-    .nm_register_func = Init,
-    .nm_modname = "worker",
+    .nm_register_func = Commonlibrary::ConcurrentModule::TaskPool::InitTaskPool,
+    .nm_modname = "taskpool",
     .nm_priv = reinterpret_cast<void*>(0),
     .reserved = { 0 },
 };
+
 /*
  * module register
  */
 extern "C" __attribute__((constructor)) void Register()
 {
-    napi_module_register(&g_workerModule);
+    napi_module_register(&g_taskPoolModule);
 }

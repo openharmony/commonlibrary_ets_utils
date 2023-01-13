@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef JS_WORKER_MODULE_HELPER_NAPI_HELPER_H_
-#define JS_WORKER_MODULE_HELPER_NAPI_HELPER_H_
+#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_
+#define JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_
 
 #include <uv.h>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace CompilerRuntime::WorkerModule::Helper {
+namespace Commonlibrary::ConcurrentModule::Helper {
 class NapiHelper {
 public:
     static bool IsString(napi_value value);
@@ -46,5 +46,5 @@ public:
     static bool GetBooleanValue(napi_env env, napi_value value);
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
 };
-} // namespace CompilerRuntime::WorkerModule::Helper
-#endif // JS_WORKER_MODULE_HELPER_NAPI_HELPER_H_
+} // namespace Commonlibrary::ConcurrentModule::Helper
+#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_

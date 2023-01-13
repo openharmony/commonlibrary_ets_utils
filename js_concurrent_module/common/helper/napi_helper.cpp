@@ -17,7 +17,7 @@
 
 #include "native_engine/native_value.h"
 
-namespace CompilerRuntime::WorkerModule::Helper {
+namespace Commonlibrary::ConcurrentModule::Helper {
 const static int32_t MAXCHARLENGTH = 200;
 
 bool NapiHelper::IsString(napi_value value)
@@ -180,4 +180,4 @@ bool NapiHelper::StrictEqual(napi_env env, napi_value value, napi_value cmpValue
     napi_strict_equals(env, value, cmpValue, &isEqual);
     return isEqual;
 }
-} // namespace CompilerRuntime::WorkerModule::Helper
+} // namespace Commonlibrary::ConcurrentModule::Helper
