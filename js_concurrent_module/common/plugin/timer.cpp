@@ -84,13 +84,17 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         HILOG_WARN("handler should be number");
         return nullptr;
     }
-    auto iter = timerTable.find(tId);
-    if (iter == timerTable.end()) {
-        HILOG_INFO("handler not in table");
-        return nullptr;
+    TimerCallbackInfo* callbackInfo = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(timeLock);
+        auto iter = timerTable.find(tId);
+        if (iter == timerTable.end()) {
+            HILOG_INFO("handler not in table");
+            return nullptr;
+        }
+        callbackInfo = iter->second;
+        timerTable.erase(tId);
     }
-    TimerCallbackInfo* callbackInfo = iter->second;
-    timerTable.erase(tId);
     Helper::CloseHelp::DeletePointer(callbackInfo, false);
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
@@ -116,7 +120,14 @@ void Timer::TimerCallback(uv_timer_t* handle)
         return;
     }
     if (!callbackInfo->repeat_) {
-        timerTable.erase(callbackInfo->tId_);
+        {
+            std::lock_guard<std::mutex> lock(timeLock);
+            if (timerTable.find(callbackInfo->tId_) == timerTable.end()) {
+                HILOG_ERROR("erase inexistent timerCallbackInfo");
+            } else {
+                timerTable.erase(callbackInfo->tId_);
+            }
+        }
         Helper::CloseHelp::DeletePointer(callbackInfo, false);
     } else {
         uv_timer_again(handle);
@@ -161,18 +172,22 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
         }
     }
 
-    // 3. generate time callback id;
+    // 3. generate time callback id
+    // 4. generate time callback info
+    // 5. push callback info into timerTable
     uint32_t tId = 0;
+    TimerCallbackInfo* callbackInfo = nullptr;
     {
         std::lock_guard<std::mutex> lock(timeLock);
         tId = timeCallbackId++;
+        napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, argv[0], 1);
+        callbackInfo = new TimerCallbackInfo(env, tId, timeout, callbackRef, repeat, callbackArgc, callbackArgv);
+        if (timerTable.find(tId) != timerTable.end()) {
+            HILOG_ERROR("timerTable occurs error");
+        } else {
+            timerTable[tId] = callbackInfo;
+        }
     }
-    // 4. generate time callback info
-    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, argv[0], 1);
-    TimerCallbackInfo* callbackInfo =
-        new TimerCallbackInfo(env, tId, timeout, callbackRef, repeat, callbackArgc, callbackArgv);
-    // 5. push callback info into timerTable
-    timerTable[tId] = callbackInfo;
 
     // 6. start timer
     uv_timer_start(callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
@@ -181,6 +196,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
 
 void Timer::ClearEnvironmentTimer(napi_env env)
 {
+    std::lock_guard<std::mutex> lock(timeLock);
     auto iter = timerTable.begin();
     while (iter != timerTable.end()) {
         TimerCallbackInfo* callbackInfo = iter->second;
