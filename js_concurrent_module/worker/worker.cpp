@@ -423,7 +423,9 @@ void Worker::TerminateWorker()
     CloseWorkerCallback();
     uv_loop_t* loop = GetWorkerLoop();
     if (loop != nullptr) {
-        Plugin::Timer::ClearEnvironmentTimer(workerEnv_);
+        if (g_workers.size() <= 1) {
+            Plugin::Timer::ClearEnvironmentTimer(workerEnv_);
+        }
         uv_stop(loop);
     }
     UpdateWorkerState(TERMINATED);
