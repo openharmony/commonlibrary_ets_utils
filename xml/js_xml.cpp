@@ -67,7 +67,7 @@ namespace OHOS::xml {
             out_.append("  ");
         }
     }
-    std::string Replace(std::string str, std::string str1, std::string str2)
+    std::string Replace(std::string str, const std::string &str1, const std::string &str2)
     {
         size_t iPos = 0;
         while ((iPos = str.find(str1)) != std::string::npos) {
@@ -97,7 +97,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetNamespace(std::string prefix, std::string nsTemp)
+    void XmlSerializer::SetNamespace(std::string prefix, const std::string &nsTemp)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -119,7 +119,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::StartElement(std::string name)
+    void XmlSerializer::StartElement(const std::string &name)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -156,7 +156,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetAttributes(std::string name, std::string value)
+    void XmlSerializer::SetAttributes(const std::string &name, const std::string &value)
     {
         out_ = "";
         if (type != "isStart" && type != "isAttri") {
@@ -242,7 +242,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetText(std::string text)
+    void XmlSerializer::SetText(const std::string &text)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -260,7 +260,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetComment(std::string comment)
+    void XmlSerializer::SetComment(const std::string &comment)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -303,7 +303,7 @@ namespace OHOS::xml {
             }
         }
     }
-    void XmlSerializer::SetDocType(std::string text)
+    void XmlSerializer::SetDocType(const std::string &text)
     {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
@@ -357,7 +357,7 @@ namespace OHOS::xml {
         return xmlSerializerError_;
     }
 
-    napi_value XmlPullParser::DealOptionInfo(napi_env env, napi_value napiObj, napi_callback_info info)
+    napi_value XmlPullParser::DealOptionInfo(napi_env env, napi_value napiObj)
     {
         std::vector<std::string> vctOptions = {
             "supportDoctype", "ignoreNameSpace", "tagValueCallbackFunction",
@@ -531,7 +531,9 @@ namespace OHOS::xml {
             napi_call_function(env, global, attrFunc_, argc, argv, &returnVal);
             bool bRec = false;
             napi_get_value_bool(env, returnVal, &bRec);
-            return bRec;
+            if (!bRec) {
+                return bRec;
+            }
         }
         return true;
     }
@@ -560,6 +562,7 @@ namespace OHOS::xml {
                 }
                 if (attrFunc_ && attriCount_) {
                     bRec = ParseAttri(env, thisVar);
+                    attriCount_ = 0;
                 }
                 if (attrFunc_ && attriCount_ && !bRec) {
                     break;
@@ -821,8 +824,8 @@ namespace OHOS::xml {
         ParseEntityFunc(start, out, isEntityToken, textEnum);
     }
 
-    bool XmlPullParser::ParseTagValueFunc(char c, bool bFlag, TextEnum textEnum,
-        size_t &start, std::string& result)
+    bool XmlPullParser::ParseTagValueFunc(char &c, bool bFlag, TextEnum textEnum,
+        size_t &start, std::string &result)
     {
         if (c == '\r') {
             if ((position_ + 1 < max_ || DealLength(2)) && strXml_[position_ + 1] == '\n') { // 2: number of args
@@ -898,30 +901,30 @@ namespace OHOS::xml {
         bool throwOnResolveFailure, TextEnum textEnum)
     {
         size_t start = position_;
-        std::string result = " ";
+        std::string result = "";
         if (textEnum == TextEnum::TEXT && text_ != "") {
             result.append(text_);
         }
         while (true) {
-            size_t iRecv = ParseTagValueInner(start, result, delimiter, textEnum, resolveEntities);
-            if (iRecv == 0) {
+            char cRecv = static_cast<char>(ParseTagValueInner(start, result, delimiter, textEnum, resolveEntities));
+            if (cRecv == 0) {
                 return result;
-            } else if (iRecv == 1) {
+            } else if (cRecv == 1) {
                 break;
-            } else if (iRecv == 2) { // 2: break flag
+            } else if (cRecv == 2) { // 2: break flag
                 continue;
-            } else if (!ParseTagValueFunc(static_cast<char>(iRecv), throwOnResolveFailure, textEnum, start, result)) {
+            } else if (!ParseTagValueFunc(cRecv, throwOnResolveFailure, textEnum, start, result)) {
                 continue;
             }
             ++position_;
-            result = result + static_cast<char>(iRecv);
+            result = result + static_cast<char>(cRecv);
             start = position_;
         }
         result.append(strXml_, start, position_ - start);
         return result;
     }
 
-    std::string XmlPullParser::GetNamespace(std::string prefix)
+    std::string XmlPullParser::GetNamespace(const std::string &prefix)
     {
         size_t temp = GetNSCount(depth) << 1;
         if (temp) {
@@ -947,7 +950,7 @@ namespace OHOS::xml {
             strTemp.replace(iPos, strSrc.size(), strDes);
         }
     }
-    void XmlPullParser::ParseNspFunc(size_t &i, std::string &attrName, bool &any)
+    void XmlPullParser::ParseNspFunc(size_t &i, const std::string &attrName, bool &any)
     {
         size_t j = (nspCounts_[depth]++) << 1;
         size_t uiSize = nspStack_.size();
@@ -1025,9 +1028,6 @@ namespace OHOS::xml {
             name_ = name_.substr(cut + 1);
         }
         namespace_ = GetNamespace(prefix_);
-        if (namespace_ == "") {
-            namespace_ = "";
-        }
         return any;
     }
 
@@ -1442,6 +1442,9 @@ namespace OHOS::xml {
             }
         } else {
             xmlPullParserError_ = "Expected entity value or external ID";
+        }
+        if (generalEntity && bDocDecl) {
+            documentEntities[name] = entityValue;
         }
         SkipInvalidChar();
         SkipChar('>');
