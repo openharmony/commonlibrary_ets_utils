@@ -28,7 +28,7 @@ namespace OHOS::xml {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         size_t argc = 0;
-        napi_value args[2] = { 0 };
+        napi_value args[2] = { 0 }; // 2:The number of parameters is 2
         XmlSerializer *object = nullptr;
         size_t iLength = 0;
         size_t offPos = 0;
@@ -101,7 +101,8 @@ namespace OHOS::xml {
             napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
         }
         if (data) {
-            std::string strEnd = reinterpret_cast<char*>(data);
+            std::string strEnd(reinterpret_cast<char*>(data), len);
+            strEnd = strEnd.substr(0, std::strlen(strEnd.c_str()));
             if (argc == 1) {
                 object = new XmlPullParser(strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
@@ -385,7 +386,7 @@ namespace OHOS::xml {
         NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument typr. Object expected.");
         XmlPullParser *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        object->DealOptionInfo(env, args[0], info);
+        object->DealOptionInfo(env, args[0]);
         object->Parse(env, thisVar);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
