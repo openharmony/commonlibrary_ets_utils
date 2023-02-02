@@ -337,72 +337,40 @@ namespace OHOS::Util {
 
     static napi_value CreateTextDecoder(napi_env env, napi_callback_info info)
     {
+        void *data = nullptr;
+        napi_value global = nullptr;
+        NAPI_CALL(env, napi_get_global(env, &global));
+        napi_value constructor = nullptr;
+        NAPI_CALL(env, napi_get_named_property(env, global, "TextDecoderCreate_", &constructor));
+        napi_value objTextDecoder = nullptr;
         size_t tempArgc = 0;
         napi_value thisVar = nullptr;
         napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
-        if (tempArgc == 0) {
-            return nullptr;
-        }
-        size_t argc = 0;
-        void *data = nullptr;
-        char *type = nullptr;
-        size_t typeLen = 0;
-        std::vector<int> paraVec(2, 0); // 2: Specifies the size of the container to be applied for.
         if (tempArgc == 1) {
-            argc = 1;
             napi_value argv = nullptr;
-            napi_get_cb_info(env, info, &argc, &argv, nullptr, &data);
-            // first para
+            napi_get_cb_info(env, info, &tempArgc, &argv, nullptr, &data);
             napi_valuetype valuetype;
             napi_typeof(env, argv, &valuetype);
             if (valuetype != napi_string) {
                 return ThrowError(env, "The type of Parameter must be string.");
             }
-            napi_get_value_string_utf8(env, argv, nullptr, 0, &typeLen);
-            if (typeLen > 0) {
-                type = ApplyMemory(typeLen);
-            }
-            napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
-        } else if (tempArgc == 2) { // 2: The number of parameters is 2.
-            argc = 2; // 2: The number of parameters is 2.
-            napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
-            napi_get_cb_info(env, info, &argc, argvArr, nullptr, &data);
-            // first para
-            napi_valuetype valuetype0;
-            napi_valuetype valuetype1;
-            napi_typeof(env, argvArr[0], &valuetype0);
-            if (valuetype0 != napi_string) {
+            NAPI_CALL(env, napi_new_instance(env, constructor, tempArgc, &argv, &objTextDecoder));
+        } else if (tempArgc == 2) { // 2:The number of parameters is 2.
+            napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2.
+            napi_get_cb_info(env, info, &tempArgc, argvArr, nullptr, &data);
+            napi_valuetype firValuetype;
+            napi_valuetype secValuetype;
+            napi_typeof(env, argvArr[0], &firValuetype);
+            if (firValuetype != napi_string) {
                 return ThrowError(env, "The type of Parameter must be string.");
             }
-            napi_typeof(env, argvArr[1], &valuetype1);
-            if (valuetype1 != napi_object) {
+            napi_typeof(env, argvArr[1], &secValuetype);
+            if (secValuetype != napi_object) {
                 return ThrowError(env, "The type of Parameter must be object.");
             }
-            napi_get_value_string_utf8(env, argvArr[0], nullptr, 0, &typeLen);
-            if (typeLen > 0) {
-                type = ApplyMemory(typeLen);
-            }
-            napi_get_value_string_utf8(env, argvArr[0], type, typeLen + 1, &typeLen);
-            // second para
-            GetSecPara(env, argvArr[1], paraVec);
+            NAPI_CALL(env, napi_new_instance(env, constructor, tempArgc, argvArr, &objTextDecoder));
         }
-        std::string enconding = "utf-8";
-        if (type != nullptr) {
-            enconding = type;
-        }
-        delete []type;
-        type = nullptr;
-        auto objectInfo = new TextDecoder(enconding, paraVec);
-        NAPI_CALL(env, napi_wrap(
-            env, thisVar, objectInfo,
-            [](napi_env environment, void *data, void *hint) {
-                auto objInfo = reinterpret_cast<TextDecoder*>(data);
-                if (objInfo != nullptr) {
-                    delete objInfo;
-                }
-            },
-            nullptr, nullptr));
-        return thisVar;
+        return objTextDecoder;
     }
 
     static napi_value TextdecoderConstructor(napi_env env, napi_callback_info info)
@@ -735,7 +703,7 @@ namespace OHOS::Util {
         napi_property_descriptor textdecoderDesc[] = {
             DECLARE_NAPI_FUNCTION("decode", TextdecoderDecode),
             DECLARE_NAPI_FUNCTION("decodeWithStream", TextdecoderDecode),
-            DECLARE_NAPI_FUNCTION("create", CreateTextDecoder),
+            DECLARE_NAPI_STATIC_FUNCTION("create", CreateTextDecoder),
             DECLARE_NAPI_GETTER("encoding", TextdecoderGetEncoding),
             DECLARE_NAPI_GETTER("fatal", TextdecoderGetFatal),
             DECLARE_NAPI_GETTER("ignoreBOM", TextdecoderGetIgnoreBOM),
@@ -750,6 +718,11 @@ namespace OHOS::Util {
         };
 
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
+
+        napi_value global = nullptr;
+        NAPI_CALL(env, napi_get_global(env, &global));
+        NAPI_CALL(env, napi_set_named_property(env, global, "TextDecoderCreate_", textDecoderClass));
+
         return exports;
     }
 
