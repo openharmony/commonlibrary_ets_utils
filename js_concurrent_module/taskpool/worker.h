@@ -31,7 +31,7 @@
 namespace Commonlibrary::ConcurrentModule {
 class Worker {
 public:
-    Worker(napi_env env);
+    explicit Worker(napi_env env);
     ~Worker() = default;
 
     void StartExecuteInThread(napi_env env);
