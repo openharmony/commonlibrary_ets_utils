@@ -15,7 +15,7 @@
 
 #include "worker.h"
 
-#include "commonlibrary/ets_utils/js_concurrent_module/common/plugin/timer.h"
+#include "plugin/timer.h"
 
 namespace Commonlibrary::ConcurrentModule {
 const static int MAXWORKERS = 8;
@@ -103,7 +103,6 @@ bool Worker::PrepareForWorkerInstance()
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
 
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-        hostEngine->CallWorkerAsyncWorkFunc(workerEngine);
         // 2. init worker environment
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM)
         workerEngine->SetDebuggerPostTaskFunc(
@@ -1215,7 +1214,6 @@ void Worker::ReleaseWorkerThreadContent()
     // 3. clear message send to worker thread
     workerMessageQueue_.Clear(workerEnv_);
     // 4. delete NativeEngine created in worker thread
-    workerEngine->CloseAsyncWork();
     reinterpret_cast<NativeEngine*>(workerEnv_)->DeleteEngine();
     Helper::CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
     workerEnv_ = nullptr;
