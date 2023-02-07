@@ -20,42 +20,23 @@ void TaskQueue::EnqueueTask(std::unique_ptr<Task> task)
 {
     std::unique_lock<std::mutex> lock(mtx_);
     tasks_.push(std::move(task));
-    cv_.notify_one();
 }
 
 std::unique_ptr<Task> TaskQueue::DequeueTask()
 {
     std::unique_lock<std::mutex> lock(mtx_);
-    while (true) {
-        if (!tasks_.empty()) {
-            std::unique_ptr<Task> task = std::move(tasks_.front());
-            tasks_.pop();
-            return task;
-        }
-        if (terminate_) {
-            cv_.notify_all();
-            return nullptr;
-        }
-        cv_.wait(lock);
+    if (!tasks_.empty()) {
+        std::unique_ptr<Task> task = std::move(tasks_.front());
+        tasks_.pop();
+        return task;
     }
+
+    return nullptr;
 }
 
 bool TaskQueue::IsEmpty() const
 {
     std::unique_lock<std::mutex> lock(mtx_);
     return tasks_.empty();
-}
-
-void TaskQueue::NotifyWorkerThread()
-{
-    std::unique_lock<std::mutex> lock(mtx_);
-    cv_.notify_one();
-}
-
-void TaskQueue::Terminate()
-{
-    std::unique_lock<std::mutex> lock(mtx_);
-    terminate_ = true;
-    cv_.notify_all();
 }
 } // namespace Commonlibrary::ConcurrentModule

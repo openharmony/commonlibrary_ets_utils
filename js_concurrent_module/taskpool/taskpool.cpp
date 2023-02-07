@@ -15,8 +15,9 @@
 
 #include "taskpool.h"
 
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/error_helper.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#include "helper/error_helper.h"
+#include "helper/object_helper.h"
+#include "task_manager.h"
 #include "utils/log.h"
 #include "worker.h"
 
@@ -41,30 +42,10 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     return exports;
 }
 
-TaskPool& TaskPool::GetInstance()
-{
-    static TaskPool taskpool;
-    return taskpool;
-}
-
-void TaskPool::InitTaskRunner(napi_env env)
-{
-    std::unique_lock<std::mutex> lock(mtx_);
-    if (!isInitialized_ || Worker::NeedExpandWorker()) {
-        Worker::WorkerConstructor(env);
-        isInitialized_ = true;
-    }
-}
-
-TaskPool::~TaskPool()
-{
-    Worker::WorkerDestructor();
-}
-
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
     // get the taskpool instance
-    TaskPool::GetInstance().InitTaskRunner(env);
+    TaskManager::GetInstance().InitTaskRunner(env);
 
     // check the argc
     size_t argc = 0;
@@ -110,19 +91,15 @@ TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t t
     napi_status serializeStatus = napi_ok;
     serializeStatus = napi_serialize(env, object, undefined, &taskData);
     if (serializeStatus != napi_ok || taskData == nullptr) {
+        ErrorHelper::ThrowError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
+            "taskpool: failed to serialize message.");
         return nullptr;
     }
     TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
-    TaskManager::StoreTaskInfo(executeId, taskInfo);
-    taskInfo->env = env;
+    TaskManager::GetInstance().StoreTaskInfo(executeId, taskInfo);
     taskInfo->executeId = executeId;
     taskInfo->serializationData = taskData;
     taskInfo->taskId = taskId;
-    taskInfo->taskSignal = new uv_async_t;
-    uv_loop_t* loop = nullptr;
-    napi_get_uv_event_loop(env, &loop);
-    uv_async_init(loop, taskInfo->taskSignal, reinterpret_cast<uv_async_cb>(Worker::HandleTaskResult));
-    taskInfo->taskSignal->data = taskInfo;
     return taskInfo;
 }
 
@@ -130,15 +107,15 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
 {
     napi_value obj = nullptr;
     napi_get_reference_value(env, task->objRef_, &obj);
-    task->executeId_ = TaskManager::GenerateExecuteId();
+    task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
-    TaskManager::StoreStateInfo(task->executeId_, TaskState::WAITING);
-    TaskManager::StoreRunningInfo(task->taskId_, task->executeId_);
+    TaskManager::GetInstance().StoreStateInfo(taskInfo->executeId, TaskState::WAITING);
+    TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, taskInfo->executeId);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     Task* currentTask = new Task();
     *currentTask = *task;
     std::unique_ptr<Task> pointer(currentTask);
-    Worker::EnqueueTask(std::move(pointer));
+    TaskManager::GetInstance().EnqueueTask(std::move(pointer));
     if (taskInfo->promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
@@ -149,10 +126,10 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
 napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 {
     std::unique_ptr<Task> task = std::make_unique<Task>();
-    task->executeId_ = TaskManager::GenerateExecuteId();
+    task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, object, 0, task->executeId_); // 0: 0 for function specially
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
-    Worker::EnqueueTask(std::move(task));
+    TaskManager::GetInstance().EnqueueTask(std::move(task));
     if (taskInfo->promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
@@ -181,7 +158,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     }
     Task* task = nullptr;
     NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void**>(&task)));
-    TaskManager::CancelTask(env, task->taskId_);
+    TaskManager::GetInstance().CancelTask(env, task->taskId_);
     return nullptr;
 }
 } // namespace Commonlibrary::ConcurrentModule

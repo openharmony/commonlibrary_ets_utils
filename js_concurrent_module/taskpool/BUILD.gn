@@ -23,6 +23,7 @@ ohos_shared_library("taskpool") {
     "../common/helper/napi_helper.cpp",
     "../common/plugin/timer.cpp",
     "native_module_taskpool.cpp",
+    "task.cpp",
     "task_manager.cpp",
     "task_queue.cpp",
     "task_runner.cpp",
