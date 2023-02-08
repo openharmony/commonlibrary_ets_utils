@@ -82,10 +82,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
 
-    if (argc == 1 && type != napi_object) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: first param must be object when argc is one");
-        return nullptr;
-    } else if (type == napi_object) {
+    if (type == napi_object) {
         Task* task = nullptr;
         NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void**>(&task)));
         return ExecuteTask(env, task);
