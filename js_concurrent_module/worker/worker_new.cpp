@@ -51,7 +51,7 @@ napi_value NewWorker::InitWorker(napi_env env, napi_value exports)
 
     if (!engine->IsMainThread()) {
         if (g_newWorkers.size() <= 0) {
-            HILOG_INFO("worker:: The new worker is not used.");
+            HILOG_DEBUG("worker:: The new worker is not used.");
             return exports;
         }
         NewWorker* worker = nullptr;
@@ -210,7 +210,7 @@ napi_value NewWorker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
                     worker->ReleaseHostThreadContent();
                 }
                 if (!worker->IsRunning()) {
-                    HILOG_INFO("worker:: worker is not in running");
+                    HILOG_DEBUG("worker:: worker is not in running");
                     return;
                 }
                 worker->TerminateInner();
@@ -272,7 +272,7 @@ napi_value NewWorker::Terminate(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (worker->IsTerminated() || worker->IsTerminating()) {
-        HILOG_INFO("worker:: worker is not in running when Terminate");
+        HILOG_DEBUG("worker:: worker is not in running when Terminate");
         return nullptr;
     }
     worker->TerminateInner();
@@ -524,7 +524,7 @@ napi_value NewWorker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 
     if (!worker->IsRunning()) {
         // if worker is not running, don't send any message to host thread
-        HILOG_INFO("worker:: when post message to host occur worker is not in running.");
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
     }
 
@@ -913,7 +913,7 @@ void NewWorker::HostOnMessageInner()
     while (hostMessageQueue_.DeQueue(&data)) {
         // receive close signal.
         if (data == nullptr) {
-            HILOG_INFO("worker:: worker received close signal");
+            HILOG_DEBUG("worker:: worker received close signal");
             uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
                 if (handle != nullptr) {
                     delete reinterpret_cast<uv_async_t*>(handle);
@@ -990,7 +990,7 @@ void NewWorker::HostOnError(const uv_async_t* req)
 {
     NewWorker* worker = static_cast<NewWorker*>(req->data);
     if (worker == nullptr) {
-        HILOG_ERROR("worker::worker is null");
+        HILOG_ERROR("worker:: worker is null");
         return;
     }
     worker->HostOnErrorInner();
@@ -1035,7 +1035,7 @@ void NewWorker::HostOnErrorInner()
 void NewWorker::PostMessageInner(MessageDataType data)
 {
     if (IsTerminated()) {
-        HILOG_INFO("worker:: worker has been terminated when PostMessageInner.");
+        HILOG_DEBUG("worker:: worker has been terminated when PostMessageInner.");
         return;
     }
     workerMessageQueue_.EnQueue(data);
@@ -1147,7 +1147,7 @@ void NewWorker::WorkerOnMessageInner()
     MessageDataType data = nullptr;
     while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
         if (data == nullptr) {
-            HILOG_INFO("worker:: worker reveive terminate signal");
+            HILOG_DEBUG("worker:: worker reveive terminate signal");
             TerminateWorker();
             return;
         }
@@ -1175,7 +1175,7 @@ void NewWorker::HandleEventListeners(napi_env env, napi_value recv, size_t argc,
     std::string listener(type);
     auto iter = eventListeners_.find(listener);
     if (iter == eventListeners_.end()) {
-        HILOG_INFO("worker:: there is no listener for type %{public}s", type);
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s", type);
         return;
     }
 
@@ -1462,7 +1462,7 @@ void NewWorker::ParentPortHandleEventListeners(napi_env env, napi_value recv,
     std::string listener(type);
     auto iter = parentPortEventListeners_.find(listener);
     if (iter == parentPortEventListeners_.end()) {
-        HILOG_INFO("worker:: there is no listener for type %{public}s", type);
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s", type);
         return;
     }
 

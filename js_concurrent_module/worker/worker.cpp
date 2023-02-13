@@ -234,7 +234,7 @@ void Worker::HostOnMessage(const uv_async_t* req)
 {
     Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
-        HILOG_ERROR("worker::worker is null");
+        HILOG_ERROR("worker:: worker is null");
         return;
     }
     worker->HostOnMessageInner();
@@ -335,7 +335,7 @@ void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, co
     std::string listener(type);
     auto iter = eventListeners_.find(listener);
     if (iter == eventListeners_.end()) {
-        HILOG_INFO("worker:: there is no listener for type %{public}s", type);
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s", type);
         return;
     }
 
@@ -371,7 +371,7 @@ void Worker::HostOnMessageInner()
     while (hostMessageQueue_.DeQueue(&data)) {
         // receive close signal.
         if (data == nullptr) {
-            HILOG_INFO("worker:: worker received close signal");
+            HILOG_DEBUG("worker:: worker received close signal");
             uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
                 if (handle != nullptr) {
                     delete reinterpret_cast<uv_async_t*>(handle);
@@ -470,7 +470,7 @@ void Worker::WorkerOnMessageInner()
     MessageDataType data = nullptr;
     while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
         if (data == nullptr) {
-            HILOG_INFO("worker:: worker reveive terminate signal");
+            HILOG_DEBUG("worker:: worker reveive terminate signal");
             TerminateWorker();
             return;
         }
@@ -571,7 +571,7 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 
     if (!worker->IsRunning()) {
         // if worker is not running, don't send any message to host thread
-        HILOG_INFO("worker:: when post message to host occur worker is not in running.");
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
     }
 
@@ -609,7 +609,7 @@ void Worker::PostMessageToHostInner(MessageDataType data)
 void Worker::PostMessageInner(MessageDataType data)
 {
     if (IsTerminated()) {
-        HILOG_INFO("worker:: worker has been terminated.");
+        HILOG_DEBUG("worker:: worker has been terminated.");
         return;
     }
     workerMessageQueue_.EnQueue(data);
@@ -629,7 +629,7 @@ napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (worker->IsTerminated() || worker->IsTerminating()) {
-        HILOG_INFO("worker:: worker is not in running");
+        HILOG_DEBUG("worker:: worker is not in running");
         return nullptr;
     }
     worker->TerminateInner();
@@ -641,7 +641,7 @@ void Worker::TerminateInner()
     if (IsTerminated() || IsTerminating()) {
         HILOG_INFO("worker:: worker is not in running");
         return;
-    }
+    } 
     // 1. Update State
     UpdateWorkerState(TERMINATEING);
     // 2. send null signal
@@ -799,7 +799,7 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
                     worker->ReleaseHostThreadContent();
                 }
                 if (!worker->IsRunning()) {
-                    HILOG_INFO("worker:: worker is not in running");
+                    HILOG_DEBUG("worker:: worker is not in running");
                     return;
                 }
                 worker->TerminateInner();
@@ -1087,7 +1087,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
 
     if (!engine->IsMainThread()) {
         if (g_workers.size() <= 0) {
-            HILOG_INFO("worker:: The old worker is not used.");
+            HILOG_DEBUG("worker:: The old worker is not used.");
             return exports;
         }
         Worker* worker = nullptr;
@@ -1269,7 +1269,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
 
     if (!worker->IsRunning()) {
         // if worker is not running, don't send any message to host thread
-        HILOG_INFO("worker:: when post message to host occur worker is not in running.");
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
     }
 
@@ -1305,7 +1305,7 @@ napi_value Worker::ParentPortRemoveAllListener(napi_env env, napi_callback_info 
 
     if (!worker->IsRunning()) {
         // if worker is not running, don't send any message to host thread
-        HILOG_INFO("worker:: when post message to host occur worker is not in running.");
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
     }
 
@@ -1344,7 +1344,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
 
     if (!worker->IsRunning()) {
         // if worker is not running, don't send any message to host thread
-        HILOG_INFO("worker:: when post message to host occur worker is not in running.");
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return Helper::NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -1401,7 +1401,7 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
 
     if (!worker->IsRunning()) {
         // if worker is not running, don't send any message to host thread
-        HILOG_INFO("worker:: when post message to host occur worker is not in running.");
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
     }
 
@@ -1481,7 +1481,7 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv,
     std::string listener(type);
     auto iter = parentPortEventListeners_.find(listener);
     if (iter == parentPortEventListeners_.end()) {
-        HILOG_INFO("worker:: there is no listener for type %{public}s", type);
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s", type);
         return;
     }
 

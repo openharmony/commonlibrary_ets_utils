@@ -70,7 +70,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
     // 1. check args
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        HILOG_WARN("first arg should be number");
+        HILOG_ERROR("the number of params must be one");
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];
@@ -81,7 +81,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
     uint32_t tId;
     napi_status status = napi_get_value_uint32(env, argv[0], &tId);
     if (status != napi_ok) {
-        HILOG_WARN("handler should be number");
+        HILOG_ERROR("first param should be number");
         return nullptr;
     }
     TimerCallbackInfo* callbackInfo = nullptr;
@@ -89,7 +89,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         std::lock_guard<std::mutex> lock(timeLock);
         auto iter = timerTable.find(tId);
         if (iter == timerTable.end()) {
-            HILOG_INFO("handler not in table");
+            HILOG_ERROR("timerId is inexistent");
             return nullptr;
         }
         callbackInfo = iter->second;
@@ -116,7 +116,7 @@ void Timer::TimerCallback(uv_timer_t* handle)
     napi_call_function(callbackInfo->env_, undefinedValue, callback,
                        callbackInfo->argc_, callbackArgv, &callbackResult);
     if (callbackResult == nullptr) {
-        HILOG_WARN("call callback error");
+        HILOG_ERROR("call timerCallback error");
         return;
     }
     if (!callbackInfo->repeat_) {
@@ -159,7 +159,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
         }
     }
     if (timeout < 0) {
-        HILOG_WARN("worker:: timeout < 0 is unreasonable");
+        HILOG_WARN("timeout < 0 is unreasonable");
     }
     // 2. get callback args
     size_t callbackArgc = argc >= 2 ? argc - 2 : 0; // 2 include callback and timeout
