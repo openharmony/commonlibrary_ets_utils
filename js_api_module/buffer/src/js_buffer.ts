@@ -1763,8 +1763,14 @@ function alloc(size: number, fill?: string | Buffer | number, encoding?: string)
 {
   sizeErrorCheck(size, "size", ['number'], 0, MAX_LENGTH);
   const buf = new Buffer(size);
-  if (fill !== undefined && fill !== 0) {
+  buf.fill(0);
+  if(arguments.length === 2 && fill !== undefined && fill !== 0) {
     buf.fill(fill);
+  } else if (arguments.length === 3) {
+    typeErrorCheck(encoding, ['string'], "encoding");
+    if (fill !== undefined && fill !== 0) {
+      buf.fill(fill, undefined, undefined, encoding);
+    }
   }
   return buf;
 }
