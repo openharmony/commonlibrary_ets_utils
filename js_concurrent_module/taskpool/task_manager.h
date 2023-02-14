@@ -13,65 +13,74 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_
+#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_
 
+#include <list>
 #include <memory>
-#include <uv.h>
+#include <shared_mutex>
+#include <unordered_map>
 
+#include "task_queue.h"
 #include "napi/native_api.h"
 
 namespace Commonlibrary::ConcurrentModule {
-using TaskDataType = napi_value;
-
-enum TaskState { NOT_FOUND, WAITING, RUNNING, TERMINATED, CANCELED };
-
-struct TaskInfo {
-    napi_env env = nullptr;
-    napi_deferred deferred = nullptr;
-    napi_value promise = nullptr;
-    napi_value result = nullptr;
-    napi_value serializationData = nullptr;
-    uv_async_t *taskSignal = nullptr;
-    uint32_t taskId;
-    uint32_t executeId;
-};
-
-class Task {
-public:
-    Task() = default;
-    ~Task() = default;
-
-    static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
-
-    napi_ref objRef_;
-    uint32_t executeId_;
-    uint32_t taskId_;
-};
+class Worker;
 
 class TaskManager {
 public:
-    static uint32_t GenerateTaskId();
-    static uint32_t GenerateExecuteId();
-    static TaskInfo* PopTaskInfo(uint32_t executeId);
-    static void ClearTaskInfo();
-    static void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
-    static void StoreStateInfo(uint32_t executeId, TaskState state);
-    static void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
-    static bool UpdateState(uint32_t executeId, TaskState state);
-    static void ReleaseTaskContent(TaskInfo* taskInfo);
-    static void PopRunningInfo(uint32_t taskId, uint32_t executeId);
-    static void CancelTask(napi_env env, uint32_t taskId);
-    static TaskState QueryState(uint32_t executeId);
+    TaskManager() = default;
+    ~TaskManager();
+
+    static TaskManager &GetInstance();
+
+    uint32_t GenerateTaskId();
+    uint32_t GenerateExecuteId();
+    TaskInfo* PopTaskInfo(uint32_t executeId);
+    void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
+    void StoreStateInfo(uint32_t executeId, TaskState state);
+    void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
+    bool UpdateState(uint32_t executeId, TaskState state);
+    void ReleaseTaskContent(TaskInfo* taskInfo);
+    void PopRunningInfo(uint32_t taskId, uint32_t executeId);
+    void CancelTask(napi_env env, uint32_t taskId);
+    void EnqueueTask(std::unique_ptr<Task> task);
+    std::unique_ptr<Task> DequeueTask();
+    void NotifyWorkerIdle(Worker *worker);
+    void InitTaskRunner(napi_env env);
 
 private:
-    TaskManager() = delete;
-    ~TaskManager() = delete;
-
     TaskManager(const TaskManager &) = delete;
     TaskManager& operator=(const TaskManager &) = delete;
     TaskManager(TaskManager &&) = delete;
     TaskManager& operator=(TaskManager &&) = delete;
+
+    TaskState QueryState(uint32_t executeId);
+
+    bool NeedExpandWorker();
+
+    void NotifyWorkerAdded(Worker *worker);
+    void NotifyExecuteTask();
+
+    int32_t currentExecuteId_ = 0;
+    int32_t currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
+    std::mutex idMutex_;
+
+    std::unordered_map<uint32_t, TaskInfo*> taskInfos_;
+    std::shared_mutex taskInfosMutex_;
+
+    std::unordered_map<uint32_t, TaskState> taskStates_;
+    std::shared_mutex taskStatesMutex_;
+
+    std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_;
+    std::shared_mutex runningInfosMutex_;
+
+    std::list<Worker*> workers_;
+    std::list<Worker*> idleWorkers_;
+    std::mutex workersMutex_;
+
+    TaskQueue taskQueue_;
+
 };
 } // namespace Commonlibrary::ConcurrentModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_

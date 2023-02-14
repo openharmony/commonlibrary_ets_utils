@@ -19,54 +19,68 @@
 #include <list>
 #include <memory>
 
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/error_helper.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#include "helper/error_helper.h"
+#include "helper/napi_helper.h"
+#include "helper/object_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
-#include "task_manager.h"
+#include "task.h"
 #include "task_runner.h"
-#include "task_queue.h"
+#include "utils/log.h"
 
 namespace Commonlibrary::ConcurrentModule {
 class Worker {
 public:
-    explicit Worker(napi_env env);
-    ~Worker() = default;
+    ~Worker();
 
-    void StartExecuteInThread(napi_env env);
-    bool PrepareForWorkerInstance();
-    void ReleaseWorkerThreadContent();
-    void TerminateWorker();
-    static bool NeedExpandWorker();
-    static void WorkerDestructor();
-    static void EnqueueTask(std::unique_ptr<Task> task);
-    static void ExecuteInThread(const void* data);
-    static void HandleTaskResult(const uv_async_t* req);
-    static void PerformTask(const uv_async_t* req);
-    static void WorkerConstructor(napi_env env);
+    static Worker* WorkerConstructor(napi_env env);
+
+    void NotifyExecuteTask();
+
+private:
+    explicit Worker(napi_env env);
+
+    uv_loop_t* GetHostLoop() const
+    {
+        if (hostEnv_ != nullptr) {
+            return Helper::NapiHelper::GetLibUV(hostEnv_);
+        }
+        return nullptr;
+    }
 
     uv_loop_t* GetWorkerLoop() const
     {
-        uv_loop_t *loop = nullptr;
         if (workerEnv_ != nullptr) {
-            napi_get_uv_event_loop(workerEnv_, &loop);
+            return Helper::NapiHelper::GetLibUV(workerEnv_);
         }
-        return loop;
+        return nullptr;
     }
 
-    void Loop() const
+    void RunLoop() const
     {
         uv_loop_t* loop = GetWorkerLoop();
         if (loop != nullptr) {
             uv_run(loop, UV_RUN_DEFAULT);
+        } else {
+            HILOG_ERROR("taskpool:: Worker loop is nullptr when start worker loop");
+            return;
         }
     }
 
-private:
+    void StartExecuteInThread();
+    static void ExecuteInThread(const void* data);
+    bool PrepareForWorkerInstance();
+    void ReleaseWorkerThreadContent();
+    static void PerformTask(const uv_async_t* req);
+    static void TaskResultCallback(NativeEngine* engine, NativeValue* value, NativeValue* data);
+    static void HandleTaskResult(const uv_async_t* req);
+
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
-    uv_async_t* performTaskSignal_ {nullptr};
+    TaskInfo *taskInfo_ {nullptr};
+    uv_async_t performTaskSignal_ {};
+    uv_async_t notifyResultSignal_ {};
     std::unique_ptr<TaskRunner> runner_ {};
     std::recursive_mutex liveEnvLock_ {};
 };
