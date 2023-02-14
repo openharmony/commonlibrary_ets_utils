@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "commonlibrary/ets_utils/js_concurrent_module/taskpool/taskpool.h"
+#include "taskpool.h"
 
 /*
  * module define

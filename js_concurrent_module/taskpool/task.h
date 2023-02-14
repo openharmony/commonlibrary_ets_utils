@@ -13,30 +13,37 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
+#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
 
 #include <mutex>
 #include <queue>
+#include <uv.h>
 
 #include "napi/native_api.h"
-#include "task.h"
 
 namespace Commonlibrary::ConcurrentModule {
-class TaskQueue {
+enum TaskState { NOT_FOUND, WAITING, RUNNING, TERMINATED, CANCELED };
+
+class Task {
 public:
-    TaskQueue() = default;
-    ~TaskQueue() = default;
+    Task() = default;
+    ~Task() = default;
 
-    void EnqueueTask(std::unique_ptr<Task> task);
+    static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
 
-    std::unique_ptr<Task> DequeueTask();
+    napi_ref objRef_;
+    uint32_t executeId_;
+    uint32_t taskId_;
+};
 
-    bool IsEmpty() const;
-
-private:
-    std::queue<std::unique_ptr<Task>> tasks_;
-    mutable std::mutex mtx_;
+struct TaskInfo {
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    napi_value result = nullptr;
+    napi_value serializationData = nullptr;
+    uint32_t taskId;
+    uint32_t executeId;
 };
 } // namespace Commonlibrary::ConcurrentModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_

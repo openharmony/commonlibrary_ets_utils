@@ -15,7 +15,7 @@
 
 #include "worker_runner.h"
 
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#include "helper/object_helper.h"
 
 namespace Commonlibrary::ConcurrentModule {
 WorkerRunner::WorkerRunner(WorkerStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}

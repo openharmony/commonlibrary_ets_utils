@@ -15,8 +15,8 @@
 
 #include "worker_new.h"
 
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/error_helper.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/common/plugin/timer.h"
+#include "helper/error_helper.h"
+#include "plugin/timer.h"
 
 namespace Commonlibrary::ConcurrentModule {
 using namespace Commonlibrary::ConcurrentModule::Helper;
@@ -848,7 +848,6 @@ bool NewWorker::PrepareForWorkerInstance()
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
 
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-        hostEngine->CallWorkerAsyncWorkFunc(workerEngine);
         // 2. init worker environment
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         workerEngine->SetDebuggerPostTaskFunc(
@@ -1396,7 +1395,6 @@ void NewWorker::ReleaseWorkerThreadContent()
     // 3. clear message send to worker thread
     workerMessageQueue_.Clear(workerEnv_);
     // 4. delete NativeEngine created in worker thread
-    workerEngine->CloseAsyncWork();
     reinterpret_cast<NativeEngine*>(workerEnv_)->DeleteEngine();
     Helper::CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
     workerEnv_ = nullptr;

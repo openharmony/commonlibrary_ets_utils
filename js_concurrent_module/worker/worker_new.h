@@ -20,8 +20,8 @@
 #include <map>
 #include <mutex>
 #include "message_queue.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#include "helper/napi_helper.h"
+#include "helper/object_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"

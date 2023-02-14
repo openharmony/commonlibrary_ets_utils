@@ -15,118 +15,70 @@
 
 #include "task_manager.h"
 
-#include <list>
-#include <shared_mutex>
-#include <unordered_map>
-
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/error_helper.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#include "helper/error_helper.h"
 #include "utils/log.h"
+#include "worker.h"
 
 namespace Commonlibrary::ConcurrentModule {
+const static int MAX_THREADPOOL_SIZE = 2;
+
 using namespace Commonlibrary::ConcurrentModule::Helper;
-static int32_t g_executeId = 0;
-static int32_t g_taskId = 1; // 1: task will begin from 1, 0 for func
-std::unordered_map<uint32_t, TaskInfo*> g_taskInfoMap;
-std::unordered_map<uint32_t, TaskState> g_stateMap;
-std::unordered_map<uint32_t, std::list<uint32_t>> g_runningInfoMap;
-static std::mutex g_mutex;
-static std::shared_mutex g_taskMutex;
-static std::shared_mutex g_stateMutex;
-static std::shared_mutex g_runningMutex;
-
-napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
+TaskManager &TaskManager::GetInstance()
 {
-    // check argv count
-    size_t argc = 0;
-    napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
-    if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create task need more than one param");
-        return nullptr;
+    static TaskManager manager;
+    return manager;
+}
+
+TaskManager::~TaskManager()
+{
+    {
+        std::lock_guard<std::mutex> lock(workersMutex_);
+        for (auto &item : workers_) {
+            delete item;
+        }
+        workers_.clear();
     }
-
-    // check 1st param is func
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-    napi_valuetype type;
-    NAPI_CALL(env, napi_typeof(env, args[0], &type));
-    if (type != napi_function) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param of task must be function");
-        return nullptr;
+    {
+        std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+        for (auto iter = taskInfos_.begin(); iter != taskInfos_.end(); iter++) {
+            delete iter->second;
+            iter->second = nullptr;
+        }
+        taskInfos_.clear();
     }
-
-    napi_value argsArray;
-    napi_create_array_with_length(env, argc - 1, &argsArray);
-    for (size_t i = 0; i < argc - 1; i++) {
-        napi_set_element(env, argsArray, i, args[i + 1]);
-    }
-
-    napi_value object = nullptr;
-    napi_create_object(env, &object);
-    napi_set_named_property(env, object, "func", args[0]);
-    napi_set_named_property(env, object, "args", argsArray);
-
-    Task* task = new (std::nothrow) Task();
-    napi_ref objRef = nullptr;
-    napi_create_reference(env, object, 1, &objRef);
-    task->objRef_ = objRef;
-    task->taskId_ = TaskManager::GenerateTaskId();
-    napi_wrap(
-        env, thisVar, task,
-        [](napi_env env, void *data, void *hint) {
-            auto obj = reinterpret_cast<Task*>(data);
-            if (obj != nullptr) {
-                delete obj;
-            }
-        },
-        nullptr, nullptr);
-    return thisVar;
 }
 
 uint32_t TaskManager::GenerateTaskId()
 {
-    std::unique_lock<std::mutex> lock(g_mutex);
-    return g_taskId++;
+    std::unique_lock<std::mutex> lock(idMutex_);
+    return currentTaskId_++;
 }
 
 uint32_t TaskManager::GenerateExecuteId()
 {
-    std::unique_lock<std::mutex> lock(g_mutex);
-    return g_executeId++;
-}
-
-void TaskManager::ClearTaskInfo()
-{
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    for (auto iter = g_taskInfoMap.begin(); iter != g_taskInfoMap.end(); iter++) {
-        delete iter->second;
-        iter->second = nullptr;
-    }
-    g_taskInfoMap.clear();
+    std::unique_lock<std::mutex> lock(idMutex_);
+    return currentExecuteId_++;
 }
 
 void TaskManager::StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo)
 {
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    g_taskInfoMap.emplace(executeId, taskInfo);
+    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+    taskInfos_.emplace(executeId, taskInfo);
 }
 
 void TaskManager::StoreStateInfo(uint32_t executeId, TaskState state)
 {
-    std::unique_lock<std::shared_mutex> lock(g_stateMutex);
-    g_stateMap.emplace(executeId, state);
+    std::unique_lock<std::shared_mutex> lock(taskStatesMutex_);
+    taskStates_.emplace(executeId, state);
 }
 
 void TaskManager::StoreRunningInfo(uint32_t taskId, uint32_t executeId)
 {
-    std::unique_lock<std::shared_mutex> lock(g_runningMutex);
-    auto iter = g_runningInfoMap.find(taskId);
-    if (iter == g_runningInfoMap.end()) {
+    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
+    auto iter = runningInfos_.find(taskId);
+    if (iter == runningInfos_.end()) {
         std::list<uint32_t> list {executeId};
-        g_runningInfoMap.emplace(taskId, list);
+        runningInfos_.emplace(taskId, list);
     } else {
         iter->second.push_front(executeId);
     }
@@ -134,23 +86,23 @@ void TaskManager::StoreRunningInfo(uint32_t taskId, uint32_t executeId)
 
 TaskInfo* TaskManager::PopTaskInfo(uint32_t executeId)
 {
-    std::unique_lock<std::shared_mutex> lock(g_taskMutex);
-    auto iter = g_taskInfoMap.find(executeId);
-    if (iter == g_taskInfoMap.end() || iter->second == nullptr) {
+    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+    auto iter = taskInfos_.find(executeId);
+    if (iter == taskInfos_.end() || iter->second == nullptr) {
         return nullptr;
     }
 
     TaskInfo* taskInfo = iter->second;
     // remove the the taskInfo when executed
-    g_taskInfoMap.erase(iter);
+    taskInfos_.erase(iter);
     return taskInfo;
 }
 
 void TaskManager::PopRunningInfo(uint32_t taskId, uint32_t executeId)
 {
-    std::unique_lock<std::shared_mutex> lock(g_runningMutex);
-    auto iter = g_runningInfoMap.find(taskId);
-    if (iter == g_runningInfoMap.end()) {
+    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
+    auto iter = runningInfos_.find(taskId);
+    if (iter == runningInfos_.end()) {
         return;
     }
     iter->second.remove(executeId);
@@ -158,9 +110,9 @@ void TaskManager::PopRunningInfo(uint32_t taskId, uint32_t executeId)
 
 TaskState TaskManager::QueryState(uint32_t executeId)
 {
-    std::shared_lock<std::shared_mutex> lock(g_stateMutex);
-    auto iter = g_stateMap.find(executeId);
-    if (iter == g_stateMap.end()) {
+    std::shared_lock<std::shared_mutex> lock(taskStatesMutex_);
+    auto iter = taskStates_.find(executeId);
+    if (iter == taskStates_.end()) {
         HILOG_ERROR("taskpool:: failed to find the target task");
         return TaskState::NOT_FOUND;
     }
@@ -169,24 +121,24 @@ TaskState TaskManager::QueryState(uint32_t executeId)
 
 bool TaskManager::UpdateState(uint32_t executeId, TaskState state)
 {
-    std::unique_lock<std::shared_mutex> lock(g_stateMutex);
-    auto iter = g_stateMap.find(executeId);
-    if (iter == g_stateMap.end()) {
+    std::unique_lock<std::shared_mutex> lock(taskStatesMutex_);
+    auto iter = taskStates_.find(executeId);
+    if (iter == taskStates_.end()) {
         return false;
     }
     if (state == TaskState::RUNNING) {
         iter->second = state;
     } else {
-        g_stateMap.erase(iter);
+        taskStates_.erase(iter);
     }
     return true;
 }
 
 void TaskManager::CancelTask(napi_env env, uint32_t taskId)
 {
-    std::unique_lock<std::shared_mutex> lock(g_runningMutex);
-    auto iter = g_runningInfoMap.find(taskId);
-    if (iter == g_runningInfoMap.end() || iter->second.empty()) {
+    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
+    auto iter = runningInfos_.find(taskId);
+    if (iter == runningInfos_.end() || iter->second.empty()) {
         ErrorHelper::ThrowError(env, ErrorHelper::NOTEXIST_ERROR, "taskpool:: can not find the task");
         return;
     }
@@ -211,22 +163,68 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     } else if (result == ErrorHelper::RUNNING_ERROR) {
         ErrorHelper::ThrowError(env, ErrorHelper::RUNNING_ERROR, "taskpool:: can not cancel the running task");
     } else {
-        g_runningInfoMap.erase(iter);
+        runningInfos_.erase(iter);
     }
 }
 
 void TaskManager::ReleaseTaskContent(TaskInfo* taskInfo)
 {
-    if (taskInfo != nullptr && taskInfo->taskSignal != nullptr &&
-        !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(taskInfo->taskSignal), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
-        });
-    }
     delete taskInfo;
     taskInfo = nullptr;
+}
+
+bool TaskManager::NeedExpandWorker()
+{
+    std::unique_lock<std::mutex> lock(workersMutex_);
+    return workers_.size() < MAX_THREADPOOL_SIZE;
+}
+
+void TaskManager::NotifyWorkerIdle(Worker *worker)
+{
+    {
+        std::unique_lock<std::mutex> lock(workersMutex_);
+        idleWorkers_.push_back(worker);
+    }
+    NotifyExecuteTask();
+}
+
+void TaskManager::NotifyWorkerAdded(Worker *worker)
+{
+    std::unique_lock<std::mutex> lock(workersMutex_);
+    workers_.push_back(worker);
+}
+
+void TaskManager::EnqueueTask(std::unique_ptr<Task> task)
+{
+    taskQueue_.EnqueueTask(std::move(task));
+    NotifyExecuteTask();
+}
+
+std::unique_ptr<Task> TaskManager::DequeueTask()
+{
+    return taskQueue_.DequeueTask();
+}
+
+void TaskManager::NotifyExecuteTask()
+{
+    if (taskQueue_.IsEmpty()) {
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock(workersMutex_);
+    if (idleWorkers_.empty()) {
+        return;
+    }
+    Worker *worker = idleWorkers_.front();
+    idleWorkers_.pop_front();
+    worker->NotifyExecuteTask();
+}
+
+void TaskManager::InitTaskRunner(napi_env env)
+{
+    if (NeedExpandWorker()) {
+        auto worker = Worker::WorkerConstructor(env);
+        NotifyWorkerAdded(worker);
+    }
 }
 } // namespace Commonlibrary::ConcurrentModule
