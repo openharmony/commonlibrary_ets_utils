@@ -1045,7 +1045,7 @@ class RationalNumber {
         }
     }
 
-    public parseRationalNumber(num : number, den : number) {
+    static parseRationalNumber(num : number, den : number): RationalNumber {
         if (typeof num !== 'number') {
             let error = new BusinessError(`Parameter error.The type of ${num} must be number`);
             throw error;
@@ -1057,31 +1057,33 @@ class RationalNumber {
 
         num = den < 0 ?  num * (-1) : num;
         den = den < 0 ?  den * (-1) : den;
+        let ratNum = new RationalNumber();
         if (den === 0) {
             if (num > 0) {
-                this.mnum = 1;
-                this.mden = 0;
+                ratNum.mnum = 1;
+                ratNum.mden = 0;
             } else if (num < 0) {
-                this.mnum = -1;
-                this.mden = 0;
+                ratNum.mnum = -1;
+                ratNum.mden = 0;
             } else {
-                this.mnum = 0;
-                this.mden = 0;
+                ratNum.mnum = 0;
+                ratNum.mden = 0;
             }
         } else if (num === 0) {
-            this.mnum = 0;
-            this.mden = 1;
+            ratNum.mnum = 0;
+            ratNum.mden = 1;
         } else {
             let gnum : number = 0;
-            gnum = this.getCommonDivisor(num, den);
+            gnum = this.getCommonFactor(num, den);
             if (gnum !== 0) {
-                this.mnum = num / gnum;
-                this.mden = den / gnum;
+                ratNum.mnum = num / gnum;
+                ratNum.mden = den / gnum;
             }
         }
+        return ratNum;
     }
 
-    public createRationalFromString(str : string) : RationalNumber {
+    static createRationalFromString(str : string) : RationalNumber {
         if (typeof str !== 'string') {
             let error = new BusinessError(`Parameter error.The type of ${str} must be string`);
             throw error;
@@ -1099,7 +1101,7 @@ class RationalNumber {
         let s2 : string = str.substr(index + 1, str.length);
         let num1 : number = Number(s1);
         let num2 : number = Number(s2);
-        return new RationalNumber(num1, num2);
+        return RationalNumber.parseRationalNumber(num1, num2);
     }
 
     public compareTo(other : RationalNumber) : number {
@@ -1203,7 +1205,7 @@ class RationalNumber {
         return number2;
     }
 
-    public getCommonFactor(firNum : number, SecNum : number) : number {
+    static getCommonFactor(firNum : number, SecNum : number) : number {
         if (typeof firNum !== 'number') {
             let error = new BusinessError(`Parameter error.The type of ${firNum} must be number`);
             throw error;
