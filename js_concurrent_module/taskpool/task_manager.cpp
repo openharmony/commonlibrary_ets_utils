@@ -16,6 +16,7 @@
 #include "task_manager.h"
 
 #include "helper/error_helper.h"
+#include "taskpool.h"
 #include "utils/log.h"
 #include "worker.h"
 
@@ -167,8 +168,46 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     }
 }
 
+TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId)
+{
+    napi_value undefined;
+    napi_get_undefined(env, &undefined);
+    napi_value taskData;
+    napi_status serializeStatus = napi_ok;
+    serializeStatus = napi_serialize(env, object, undefined, &taskData);
+    if (serializeStatus != napi_ok || taskData == nullptr) {
+        ErrorHelper::ThrowError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
+            "taskpool: failed to serialize message.");
+        return nullptr;
+    }
+    TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
+    taskInfo->env = env;
+    taskInfo->executeId = executeId;
+    taskInfo->serializationData = taskData;
+    taskInfo->taskId = taskId;
+    taskInfo->onResultSignal = new uv_async_t;
+    uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env);
+    uv_async_init(loop, taskInfo->onResultSignal, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
+    taskInfo->onResultSignal->data = taskInfo;
+
+    StoreTaskInfo(executeId, taskInfo);
+    return taskInfo;
+}
+
 void TaskManager::ReleaseTaskContent(TaskInfo* taskInfo)
 {
+    if (taskInfo == nullptr) {
+        return;
+    }
+    if (taskInfo->onResultSignal != nullptr &&
+        !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->onResultSignal))) {
+        uv_close(reinterpret_cast<uv_handle_t*>(taskInfo->onResultSignal), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
     delete taskInfo;
     taskInfo = nullptr;
 }

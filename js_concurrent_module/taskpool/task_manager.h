@@ -41,13 +41,14 @@ public:
     void StoreStateInfo(uint32_t executeId, TaskState state);
     void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
     bool UpdateState(uint32_t executeId, TaskState state);
-    void ReleaseTaskContent(TaskInfo* taskInfo);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
-    void CancelTask(napi_env env, uint32_t taskId);
     void EnqueueTask(std::unique_ptr<Task> task);
     std::unique_ptr<Task> DequeueTask();
+    void CancelTask(napi_env env, uint32_t taskId);
     void NotifyWorkerIdle(Worker *worker);
     void InitTaskRunner(napi_env env);
+    TaskInfo* GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId);
+    void ReleaseTaskContent(TaskInfo* taskInfo);
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -80,7 +81,6 @@ private:
     std::mutex workersMutex_;
 
     TaskQueue taskQueue_;
-
 };
 } // namespace Commonlibrary::ConcurrentModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_

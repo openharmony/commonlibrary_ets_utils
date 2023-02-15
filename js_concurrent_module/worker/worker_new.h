@@ -379,6 +379,8 @@ public:
         }
     }
 
+    static void TranslateErrorEvent(napi_env env, napi_value error, napi_value *obj);
+
 private:
     void WorkerOnMessageInner();
     void HostOnMessageInner();

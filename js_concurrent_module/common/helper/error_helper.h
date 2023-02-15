@@ -26,7 +26,7 @@ public:
     ErrorHelper() = default;
     ~ErrorHelper() = default;
 
-    static void ThrowError(napi_env env, int32_t errCode, const char* errMessage)
+    static napi_value NewError(napi_env env, int32_t errCode, const char* errMessage)
     {
         std::string errTitle = "";
         napi_value concurrentError = nullptr;
@@ -60,6 +60,12 @@ public:
         napi_create_error(env, nullptr, msg, &concurrentError);
         napi_set_named_property(env, concurrentError, "code", code);
         napi_set_named_property(env, concurrentError, "name", name);
+        return concurrentError;
+    }
+
+    static void ThrowError(napi_env env, int32_t errCode, const char* errMessage)
+    {
+        napi_value concurrentError = NewError(env, errCode, errMessage);
         napi_throw(env, concurrentError);
     }
 

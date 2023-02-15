@@ -1192,25 +1192,51 @@ void NewWorker::HandleEventListeners(napi_env env, napi_value recv, size_t argc,
     }
 }
 
+void NewWorker::TranslateErrorEvent(napi_env env, napi_value error, napi_value *obj)
+{
+    napi_create_object(env, obj);
+
+    // add lineno
+    napi_value lineno = nullptr;
+    napi_create_int32(env, 0, &lineno);
+    napi_set_named_property(env, *obj, "lineno", lineno);
+
+    // add colno
+    napi_value colno = nullptr;
+    napi_create_int32(env, 0, &colno);
+    napi_set_named_property(env, *obj, "colno", colno);
+
+    // add message
+    napi_value msgValue = nullptr;
+    napi_coerce_to_string(env, error, &msgValue);
+    napi_set_named_property(env, *obj, "message", msgValue);
+
+    // add error
+    napi_set_named_property(env, *obj, "error", error);
+}
+
 void NewWorker::HandleException()
 {
-    // obj.message, obj.filename, obj.lineno, obj.colno
-    napi_value exception = nullptr;
-    napi_create_object(workerEnv_, &exception);
+    napi_value exception;
+    napi_get_and_clear_last_exception(workerEnv_, &exception);
+    if (exception == nullptr) {
+        return;
+    }
 
-    napi_get_exception_info_for_worker(workerEnv_, exception);
+    napi_value obj;
+    NewWorker::TranslateErrorEvent(workerEnv_, exception, &obj);
 
-    // add obj.filename
+    // add filename
     napi_value filenameValue = nullptr;
     napi_create_string_utf8(workerEnv_, script_.c_str(), script_.length(), &filenameValue);
-    napi_set_named_property(workerEnv_, exception, "filename", filenameValue);
+    napi_set_named_property(workerEnv_, obj, "filename", filenameValue);
 
     // WorkerGlobalScope onerror
-    WorkerOnErrorInner(exception);
+    WorkerOnErrorInner(obj);
 
     if (hostEnv_ != nullptr) {
         napi_value data = nullptr;
-        napi_serialize(workerEnv_, exception, Helper::NapiHelper::GetUndefinedValue(workerEnv_), &data);
+        napi_serialize(workerEnv_, obj, Helper::NapiHelper::GetUndefinedValue(workerEnv_), &data);
         {
             std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
             if (!HostIsStop()) {
