@@ -39,6 +39,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value cancelFunc;
     napi_create_function(env, "cancel", NAPI_AUTO_LENGTH, Cancel, NULL, &cancelFunc);
     napi_set_named_property(env, exports, "cancel", cancelFunc);
+
+    // Add a reserved thread for taskpool
+    TaskManager::GetInstance().InitTaskRunner(env);
     return exports;
 }
 
@@ -97,6 +100,7 @@ TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t t
     }
     TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
     TaskManager::GetInstance().StoreTaskInfo(executeId, taskInfo);
+    taskInfo->env = env;
     taskInfo->executeId = executeId;
     taskInfo->serializationData = taskData;
     taskInfo->taskId = taskId;
@@ -109,6 +113,9 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
     napi_get_reference_value(env, task->objRef_, &obj);
     task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
+    if (taskInfo == nullptr) {
+        return nullptr;
+    }
     TaskManager::GetInstance().StoreStateInfo(taskInfo->executeId, TaskState::WAITING);
     TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, taskInfo->executeId);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
@@ -128,6 +135,9 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
     std::unique_ptr<Task> task = std::make_unique<Task>();
     task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = GenerateTaskInfo(env, object, 0, task->executeId_); // 0: 0 for function specially
+    if (taskInfo == nullptr) {
+        return nullptr;
+    }
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     TaskManager::GetInstance().EnqueueTask(std::move(task));
     if (taskInfo->promise == nullptr) {

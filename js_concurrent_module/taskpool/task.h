@@ -38,12 +38,14 @@ public:
 };
 
 struct TaskInfo {
+    napi_env env = nullptr;
     napi_deferred deferred = nullptr;
     napi_value promise = nullptr;
     napi_value result = nullptr;
     napi_value serializationData = nullptr;
     uint32_t taskId;
     uint32_t executeId;
+    bool success = true;
 };
 } // namespace Commonlibrary::ConcurrentModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
