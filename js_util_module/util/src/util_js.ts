@@ -1598,6 +1598,8 @@ export default {
     promisify: promisify,
     randomUUID: randomUUID,
     randomBinaryUUID: randomBinaryUUID,
+    generateRandomUUID: randomUUID,
+    generateRandomBinaryUUID: randomBinaryUUID,
     parseUUID: parseUUID,
     TextEncoder: TextEncoder,
     TextDecoder: TextDecoder,
