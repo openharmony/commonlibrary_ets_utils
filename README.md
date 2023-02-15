@@ -525,47 +525,279 @@ commomlibrary/ets_utils/js_util_module/
 |   ├── contains()                      # contains方法
 |   ├── contains()                      # contains方法
 |   └── clamp()                         # clamp方法
-└── Class:Types                         # Types类
-    ├── isAnyArrayBuffer()              # isAnyArrayBuffer方法
-    ├── isArrayBufferView()             # isArrayBufferView方法
-    ├── isArgumentsObject()             # isArgumentsObject方法
-    ├── isArrayBuffer()                 # isArrayBuffer方法
-    ├── isAsyncFunction()               # isAsyncFunction方法
-    ├── isBigInt64Array()               # isBigInt64Array方法
-    ├── isBigUint64Array()              # isBigUint64Array方法
-    ├── isBooleanObject()               # isBooleanObject方法
-    ├── isBoxedPrimitive()              # isBoxedPrimitive方法
-    ├── isDataView()                    # isDataView方法
-    ├── isDate()                        # isDate方法
-    ├── isExternal()                    # isExternal方法
-    ├── isFloat32Array()                # isFloat32Array方法
-    ├── isFloat64Array()                # isFloat64Array方法
-    ├── isGeneratorFunction()           # isGeneratorFunction方法
-    ├── isGeneratorObject()             # isGeneratorObject方法
-    ├── isInt8Array()                   # isInt8Array方法
-    ├── isInt16Array()                  # isInt16Array方法
-    ├── isInt32Array()                  # isInt32Array方法
-    ├── isMap()                         # isMap方法
-    ├── isMapIterator()                 # isMapIterator方法
-    ├── isModuleNamespaceObject()       # isModuleNamespaceObject方法
-    ├── isNativeError()                 # isNativeError方法
-    ├── isNumberObject()                # isNumberObject方法
-    ├── isPromise()                     # isPromise方法
-    ├── isProxy()                       # isProxy方法
-    ├── isRegExp()                      # isRegExp方法
-    ├── isSet()                         # isSet方法
-    ├── isSetIterator()                 # isSetIterator方法
-    ├── isSharedArrayBuffer()           # isSharedArrayBuffer方法
-    ├── isStringObject()                # isStringObject方法
-    ├── isSymbolObject()                # isSymbolObject方法
-    ├── isTypedArray()                  # isTypedArray方法
-    ├── isUint8Array()                  # isUint8Array方法
-    ├── isUint8ClampedArray()           # isUint8ClampedArray方法
-    ├── isUint16Array()                 # isUint16Array方法
-    ├── isUint32Array()                 # isUint32Array方法
-    ├── isWeakMap()                     # isWeakMap方法
-    └── isWeakSet()                     # isWeakSet方法
+|—— Class:Types                         # Types类
+|   ├── isAnyArrayBuffer()              # isAnyArrayBuffer方法
+|   ├── isArrayBufferView()             # isArrayBufferView方法
+|   ├── isArgumentsObject()             # isArgumentsObject方法
+|   ├── isArrayBuffer()                 # isArrayBuffer方法
+|   ├── isAsyncFunction()               # isAsyncFunction方法
+|   ├── isBigInt64Array()               # isBigInt64Array方法
+|   ├── isBigUint64Array()              # isBigUint64Array方法
+|   ├── isBooleanObject()               # isBooleanObject方法
+|   ├── isBoxedPrimitive()              # isBoxedPrimitive方法
+|   ├── isDataView()                    # isDataView方法
+|   ├── isDate()                        # isDate方法
+|   ├── isExternal()                    # isExternal方法
+|   ├── isFloat32Array()                # isFloat32Array方法
+|   ├── isFloat64Array()                # isFloat64Array方法
+|   ├── isGeneratorFunction()           # isGeneratorFunction方法
+|   ├── isGeneratorObject()             # isGeneratorObject方法
+|   ├── isInt8Array()                   # isInt8Array方法
+|   ├── isInt16Array()                  # isInt16Array方法
+|   ├── isInt32Array()                  # isInt32Array方法
+|   ├── isMap()                         # isMap方法
+|   ├── isMapIterator()                 # isMapIterator方法
+|   ├── isModuleNamespaceObject()       # isModuleNamespaceObject方法
+|   ├── isNativeError()                 # isNativeError方法
+|   ├── isNumberObject()                # isNumberObject方法
+|   ├── isPromise()                     # isPromise方法
+|   ├── isProxy()                       # isProxy方法
+|   ├── isRegExp()                      # isRegExp方法
+|   ├── isSet()                         # isSet方法
+|   ├── isSetIterator()                 # isSetIterator方法
+|   ├── isSharedArrayBuffer()           # isSharedArrayBuffer方法
+|   ├── isStringObject()                # isStringObject方法
+|   ├── isSymbolObject()                # isSymbolObject方法
+|   ├── isTypedArray()                  # isTypedArray方法
+|   ├── isUint8Array()                  # isUint8Array方法
+|   ├── isUint8ClampedArray()           # isUint8ClampedArray方法
+|   ├── isUint16Array()                 # isUint16Array方法
+|   ├── isUint32Array()                 # isUint32Array方法
+|   ├── isWeakMap()                     # isWeakMap方法
+|   └── isWeakSet()                     # isWeakSet方法
+|—— Class:ArrayList 
+|   ├── new ArrayList()                 # 创建ArrayList对象
+|   ├── length                          # length属性
+|   ├── add()                           # add方法
+|   ├── insert()                        # insert方法
+|   ├── has()                           # has方法
+|   ├── getIndexOf()                    # getIndexOf方法
+|   ├── removeByIndex()                 # removeByIndex方法
+|   ├── remove()                        # remove方法
+|   ├── getLastIndexOf()                # getLastIndexOf方法
+|   ├── removeByRange()                 # removeByRange方法
+|   ├── replaceAllElements()            # replaceAllElements方法
+|   ├── forEach()                       # forEach方法
+|   ├── sort()                          # sort方法
+|   ├── subArrayList()                  # subArrayList方法
+|   ├── clear()                         # clear方法
+|   ├── clone()                         # clone方法
+|   ├── getCapacity()                   # getCapacity方法
+|   ├── convertToArray()                # convertToArray方法
+|   ├── isEmpty()                       # isEmpty方法
+|   ├── increaseCapacityTo()            # increaseCapacityTo方法
+|   ├── trimToCurrentLength()           # trimToCurrentLength方法
+|   └── isEmpty()                       # isEmpty方法
+|—— Class:Deque
+|   ├── new Deque()                     # 创建Deque对象
+|   ├── length                          # length属性
+|   ├── add()                           # add方法
+|   ├── insertFront()                   # insertFront方法
+|   ├── insertEnd()                     # insertEnd方法
+|   ├── has()                           # has方法
+|   ├── getFirst()                      # getFirst方法
+|   ├── getLast()                       # getLast方法
+|   ├── popFirst()                      # popFirst方法
+|   ├── popLast()                       # popLast方法
+|   └── forEach()                       # forEach方法
+|—— Class:HashMap
+|   ├── new HashMap()                   # 创建HashMap对象
+|   ├── length                          # length属性
+|   ├── isEmpty()                       # isEmpty方法
+|   ├── hasKey()                        # hasKey方法
+|   ├── hasValue()                      # hasValue方法
+|   ├── setAll()                        # setAll方法
+|   ├── set()                           # set方法
+|   ├── remove()                        # remove方法
+|   ├── clear()                         # clear方法
+|   ├── keys()                          # keys方法
+|   ├── values()                        # values方法
+|   ├── replace()                       # replace方法
+|   ├── forEach()                       # forEach方法
+|   └── entries()                       # entries方法
+|—— Class:HashSet
+|   ├── new HashSet()                   # 创建HashSet对象
+|   ├── length                          # length属性
+|   ├── isEmpty()                       # isEmpty方法
+|   ├── has()                           # has方法
+|   ├── add()                           # add方法
+|   ├── remove()                        # remove方法
+|   ├── clear()                         # clear方法
+|   ├── forEach()                       # forEach方法
+|   ├── values()                        # values方法
+|   └── entries()                       # entries方法
+|—— Class:LightWeightMap
+|   ├── new LightWeightMap()            # 创建LightWeightMap对象
+|   ├── length                          # length属性
+|   ├── hasAll()                        # hasAll方法
+|   ├── hasKey()                        # hasKey方法
+|   ├── hasValue()                      # hasValue方法
+|   ├── increaseCapacityTo()            # increaseCapacityTo方法
+|   ├── entries()                       # entries方法
+|   ├── get()                           # get方法
+|   ├── getIndexOfKey()                 # getIndexOfKey方法
+|   ├── getIndexOfValue()               # getIndexOfValue方法
+|   ├── isEmpty()                       # isEmpty方法
+|   ├── getKeyAt()                      # getKeyAt方法
+|   ├── keys()                          # keys方法
+|   ├── setAll()                        # setAll方法
+|   ├── set()                           # set方法
+|   ├── remove()                        # remove方法
+|   ├── removeAt()                      # removeAt方法
+|   ├── clear()                         # clear方法
+|   ├── setValueAt()                    # setValueAt方法
+|   ├── forEach()                       # forEach方法
+|   ├── toString()                      # toString方法
+|   ├── getValueAt()                    # getValueAt方法
+|   ├── values()                        # values方法
+|   └── [Symbol.iterator]()             # [Symbol.iterator]方法
+|—— Class:LightWeightSet
+|   ├── new LightWeightSet()            # 创建LightWeightSet对象
+|   ├── length                          # length属性
+|   ├── add()                           # add方法
+|   ├── addAll()                        # addAll方法
+|   ├── hasAll()                        # hasAll方法
+|   ├── has()                           # has方法
+|   ├── equal()                         # equal方法
+|   ├── increaseCapacityTo()            # increaseCapacityTo方法
+|   ├── getIndexOf()                    # getIndexOf方法
+|   ├── remove()                        # remove方法
+|   ├── removeAt()                      # removeAt方法
+|   ├── clear()                         # clear方法
+|   ├── forEach()                       # forEach方法
+|   ├── [Symbol.iterator]()             # [Symbol.iterator]方法
+|   ├── toString()                      # toString方法
+|   ├── toArray()                       # toArray方法
+|   ├── getValueAt()                    # getValueAt方法
+|   ├── values()                        # values方法
+|   ├── entries()                       # entries方法
+|   └── isEmpty()                       # isEmpty方法
+|—— Class:LinkedList
+|   ├── new LinkedList()                # 创建LinkedList对象
+|   ├── length                          # length属性
+|   ├── add()                           # add方法
+|   ├── insert()                        # insert方法
+|   ├── get()                           # get方法
+|   ├── addFirst()                      # addFirst方法
+|   ├── removeFirst()                   # removeFirst方法
+|   ├── removeLast()                    # removeLast方法
+|   ├── has()                           # has方法
+|   ├── getIndexOf()                    # getIndexOf方法
+|   ├── removeByIndex()                 # removeByIndex方法
+|   ├── remove()                        # remove方法
+|   ├── removeFirstFound()              # removeFirstFound方法
+|   ├── removeLastFound()               # removeLastFound方法
+|   ├── getLastIndexOf()                # getLastIndexOf方法
+|   ├── getFirst()                      # getFirst方法
+|   ├── getLast()                       # getLast方法
+|   ├── set()                           # set方法
+|   ├── forEach()                       # forEach方法
+|   ├── clear()                         # clear方法
+|   ├── clone()                         # clone方法
+|   ├── convertToArray()                # convertToArray方法
+|   └── [Symbol.iterator]()             # [Symbol.iterator]方法
+|—— Class:List
+|   ├── new List()                      # 创建List对象
+|   ├── length                          # length属性
+|   ├── add()                           # add方法
+|   ├── insert()                        # insert方法
+|   ├── get()                           # get方法
+|   ├── has()                           # has方法
+|   ├── getIndexOf()                    # getIndexOf方法
+|   ├── removeByIndex()                 # removeByIndex方法
+|   ├── remove()                        # remove方法
+|   ├── getLastIndexOf()                # getLastIndexOf方法
+|   ├── getFirst()                      # getFirst方法
+|   ├── getLast()                       # getLast方法
+|   ├── set()                           # set方法
+|   ├── equal()                         # equal方法
+|   ├── forEach()                       # forEach方法
+|   ├── sort()                          # sort方法
+|   ├── clear()                         # clear方法
+|   ├── getSubList()                    # getSubList方法
+|   ├── replaceAllElements()            # replaceAllElements方法
+|   ├── convertToArray()                # convertToArray方法
+|   ├── isEmpty()                       # isEmpty方法
+|   └── [Symbol.iterator]()             # [Symbol.iterator]方法
+|—— Class:PlainArray
+|   ├── new PlainArray()                # 创建PlainArray对象
+|   ├── length                          # length属性
+|   ├── add()                           # add方法
+|   ├── clear()                         # clear方法
+|   ├── clone()                         # clone方法
+|   ├── has()                           # has方法
+|   ├── get()                           # get方法
+|   ├── getIndexOfKey()                 # getIndexOfKey方法
+|   ├── getIndexOfValue()               # getIndexOfValue方法
+|   ├── isEmpty()                       # isEmpty方法
+|   ├── getKeyAt()                      # getKeyAt方法
+|   ├── remove()                        # remove方法
+|   ├── removeAt()                      # removeAt方法
+|   ├── removeRangeFrom()               # removeRangeFrom方法
+|   ├── setValueAt()                    # setValueAt方法
+|   ├── toString()                      # toString方法
+|   ├── getValueAt()                    # getValueAt方法
+|   ├── forEach()                       # forEach方法
+|   └── [Symbol.iterator]()             # [Symbol.iterator]方法
+|—— Class:Queue
+|   ├── new Queue()                     # 创建Queue对象
+|   ├── length                          # length属性
+|   ├── add()                           # add方法
+|   ├── getFirst()                      # getFirst方法
+|   ├── pop()                           # pop方法
+|   ├── forEach()                       # forEach方法
+|   └── [Symbol.iterator]()             # [Symbol.iterator]方法
+|—— Class:Stack
+|   ├── new Stack()                     # 创建Stack对象
+|   ├── length                          # length属性
+|   ├── isEmpty()                       # isEmpty方法
+|   ├── peek()                          # peek方法
+|   ├── pop()                           # pop方法
+|   ├── push()                          # push方法
+|   ├── locate()                        # locate方法
+|   ├── forEach()                       # forEach方法
+|   └── [Symbol.iterator]()             # [Symbol.iterator]方法
+|—— Class:TreeMap
+|   ├── new TreeMap()                   # 创建TreeMap对象
+|   ├── length                          # length属性
+|   ├── isEmpty()                       # isEmpty方法
+|   ├── hasKey()                        # hasKey方法
+|   ├── hasValue()                      # hasValue方法
+|   ├── get()                           # get方法
+|   ├── getFirstKey()                   # getFirstKey方法
+|   ├── getLastKey()                    # getLastKey方法
+|   ├── setAll()                        # setAll方法
+|   ├── set()                           # set方法
+|   ├── remove()                        # remove方法
+|   ├── clear()                         # clear方法
+|   ├── getLowerKey()                   # getLowerKey方法
+|   ├── getHigherKey()                  # getHigherKey方法
+|   ├── keys()                          # keys方法
+|   ├── values()                        # values方法
+|   ├── replace()                       # replace方法
+|   ├── forEach()                       # forEach方法
+|   ├── entries()                       # entries方法
+|   └── [Symbol.iterator]()             # [Symbol.iterator]方法
+└── Class:TreeSet
+    ├── new TreeSet()                   # 创建TreeSet对象
+    ├── length                          # length属性
+    ├── isEmpty()                       # isEmpty方法
+    ├── has()                           # has方法
+    ├── add()                           # add方法
+    ├── remove()                        # remove方法
+    ├── clear()                         # clear方法
+    ├── getFirstValue()                 # getFirstValue方法
+    ├── getLastValue()                  # getLastValue方法
+    ├── getLowerValue()                 # getLowerValue方法
+    ├── getHigherValue()                # getHigherValue方法
+    ├── popFirst()                      # popFirst方法
+    ├── popLast()                       # popLast方法
+    ├── forEach()                       # forEach方法
+    ├── values()                        # values方法
+    ├── entries()                       # entries方法
+    └── [Symbol.iterator]()             # [Symbol.iterator]方法
 ```
+
 ### 2.3. 说明
 
 #### 2.3.1. 接口说明
@@ -677,6 +909,213 @@ commomlibrary/ets_utils/js_util_module/
 | isUint32Array(value: Object): boolean | 检查输入的value是否是Uint32Array数组类型。 |
 | isWeakMap(value: Object): boolean | 检查输入的value是否是WeakMap类型。 |
 | isWeakSet(value: Object): boolean | 检查输入的value是否是WeakSet类型。 |
+| add(element: T): boolean | 在ArrayList尾部插入元素。 |
+| insert(element: T, index: number): void | 在长度范围内任意位置插入指定元素。 |
+| has(element: T): boolean | 判断此ArrayList中是否含有该指定元素。 |
+| getIndexOf(element: T): number | 返回指定元素第一次出现时的下标值，查找失败返回-1。 |
+| removeByIndex(index: number): T | 根据元素的下标值查找元素，返回元素后将其删除。 |
+| remove(element: T): boolean | 删除查找到的第一个指定的元素。 |
+| getLastIndexOf(element: T): number | 返回指定元素最后一次出现时的下标值，查找失败返回-1。 |
+| removeByRange(fromIndex: number, toIndex: number): void | 从一段范围内删除元素，包括起始值但不包括终止值。 |
+| replaceAllElements(callbackFn: (value: T, index?: number, arrlist?: ArrayList<T>) => T,
+thisArg?: Object): void | 用户操作ArrayList中的元素，用操作后的元素替换原元素并返回操作后的元素。 |
+| forEach(callbackFn: (value: T, index?: number, arrlist?: ArrayList<T>) => void,
+  thisArg?: Object): void | 通过回调函数来遍历ArrayList实例对象上的元素以及元素对应的下标。 |
+| sort(comparator?: (firstValue: T, secondValue: T) => number): void | 对ArrayList中的元素排序。 |
+| subArrayList(fromIndex: number, toIndex: number): ArrayList<T> | 根据下标截取ArrayList中的一段元素，并返回这一段ArrayList实例，包括起始值但不包括终止值。 |
+| clear(): void | 清除ArrayList中的所有元素，并把length置为0。 |
+| clone(): ArrayList<T> | 克隆一个与ArrayList相同的实例，并返回克隆后的实例。修改克隆后的实例并不会影响原实例。 |
+| getCapacity(): number | 获取当前实例的容量大小。 |
+| convertToArray(): Array<T> | 把当前ArrayList实例转换成数组，并返回转换后的数组。 |
+| isEmpty(): boolean | 判断该ArrayList是否为空。 |
+| increaseCapacityTo(newCapacity: number): void | 如果传入的新容量大于或等于ArrayList中的元素个数，将容量变更为新容量。 |
+| trimToCurrentLength(): void | 把容量限制为当前的length大小。 |
+| insertFront(element: T): void | 在deque头部插入元素。 |
+| insertEnd(element: T): void | 在deque尾部插入元素。 |
+| has(element: T): boolean | 判断此Deque中是否含有该指定元素。 |
+| getFirst(): T | 获取Deque实例中的头元素。 |
+| getLast(): T | 获取Deque实例中的尾元素。 |
+| popFirst(): T | 删除并返回双端队列的首元素。 |
+| popLast(): T | 删除并返回双端队列的尾元素。 |
+| forEach(callbackFn: (value: T, index?: number, deque?: Deque<T>) => void,thisArg?: Object): void |
+通过回调函数来遍历Deque实例对象上的元素以及元素对应的下标。 |
+| isEmpty(): boolean | 判断该HashMap是否为空。 |
+| hasKey(key: K): boolean | 判断此HashMap中是否含有该指定key。 |
+| hasValue(value: V): boolean | 判断此HashMap中是否含有该指定value。 |
+| get(key: K): V | 获取指定key所对应的value。 |
+| setAll(map: HashMap<K, V>): void | 将一个HashMap中的所有元素组添加到另一个hashMap中。 |
+| set(key: K, value: V): Object | 向HashMap中添加一组数据。 |
+| remove(key: K): V | 删除指定key所对应元素。 |
+| clear(): void | 清除HashMap中的所有元素,并把length置为0。 |
+| keys(): IterableIterator<K> | 返回包含此映射中包含的键名的新迭代器对象。 |
+| values(): IterableIterator<V> | 返回包含此映射中包含的键值的新迭代器对象。 |
+| replace(key: K, newValue: V): boolean | 对HashMap中一组数据进行更新（替换）。 |
+| forEach(callbackFn: (value?: V, key?: K, map?: HashMap<K, V>) => void,thisArg?: Object): void |
+通过回调函数来遍历HashMap实例对象上的元素以及元素对应的下标。 |
+| entries(): IterableIterator<[K, V]> | 返回包含此映射中包含的键值对的新迭代器对象。 |
+| isEmpty(): boolean | 判断该HashSet是否为空。 |
+| has(value: T): boolean | 判断此HashSet中是否含有该指定元素。 |
+| add(value: T): boolean | 向HashSet中添加数据。 |
+| remove(value: T): boolean | 删除指定的元素。 |
+| clear(): void | 清除HashSet中的所有元素,并把length置为0。 |
+| forEach(callbackFn: (value?: T, key?: T, set?: HashSet<T>) => void,thisArg?: Object): void |
+通过回调函数来遍历实例对象上的元素以及元素对应的下标。 |
+| values(): IterableIterator<T> | 返回包含此映射中包含的键值的新迭代器对象。 |
+| entries(): IterableIterator<[T, T]> | 返回包含此映射中包含的键值对的新迭代器对象。 |
+| hasAll(map: LightWeightMap<K, V>): boolean | 判断此LightWeightMap中是否含有该指定map中的所有元素。 |
+| hasKey(key: K): boolean | 判断此LightWeightMap中是否含有该指定key。 |
+| hasValue(value: V): boolean | 判断此LightWeightMap中是否含有该指定value。 |
+| increaseCapacityTo(minimumCapacity: number): void | 将当前LightWeightMap扩容至可以容纳指定数量元素。 |
+| entries(): IterableIterator<[K, V]> | 返回包含此映射中包含的键值对的新迭代器对象。 |
+| get(key: K): V | 获取指定key所对应的value。 |
+| getIndexOfKey(key: K): number | 查找key元素第一次出现的下标值，如果没有找到该元素返回-1。 |
+| getIndexOfValue(value: V): number | 查找value元素第一次出现的下标值，如果没有找到该元素返回-1。 |
+| isEmpty(): boolean | 判断该LightWeightMap是否为空。 |
+| getKeyAt(index: number): K | 查找指定下标的元素键值对中key值，否则返回undefined。 |
+| keys(): IterableIterator<K> | 返回包含此映射中包含的键的新迭代器对象。 |
+| setAll(map: LightWeightMap<K, V>): void | 将一个LightWeightMap中的所有元素组添加到另一个lightWeightMap中。 |
+| set(key: K, value: V): Object | 向LightWeightMap中添加一组数据。 |
+| remove(key: K): V | 删除并返回指定key映射的元素。 |
+| removeAt(index: number): boolean | 删除指定下标对应的元素。 |
+| clear(): void | 清除LightWeightMap中的所有元素,并把length置为0。 |
+| setValueAt(index: number, newValue: V): boolean | 替换指定下标对应键值对中的元素。 |
+| forEach(callbackFn: (value?: V, key?: K, map?: LightWeightMap<K, V>) => void,thisArg?: Object): void |
+通过回调函数来遍历实例对象上的元素以及元素对应的下标。 |
+| [Symbol.iterator](): IterableIterator<[K, V]> | 返回一个迭代器，迭代器的每一项都是一个 JavaScript 对象,并返回该对象。 |
+| toString(): String | 将此映射中包含的键值对拼接成字符串，并返回字符串类型。 |
+| getValueAt(index: number): V | 获取指定下标对应键值对中的元素。 |
+| values(): IterableIterator<V> | 返回包含此映射中包含的键值的新迭代器对象。 |
+| add(obj: T): boolean | 向此容器中添加数据。 |
+| addAll(set: LightWeightSet<T>): boolean | 将另一个容器中的所有元素组添加到当前容器中。 |
+| hasAll(set: LightWeightSet<T>): boolean | 判断此容器中是否含有该指定set中的所有元素。 |
+| has(key: T): boolean | 判断此容器中是否含有该指定key。 |
+| equal(obj: Object): boolean | 判断此容器中是否含有该指定obj同类型的对象。 |
+| increaseCapacityTo(minimumCapacity: number): void | 将当前容器扩容至可以容纳指定数量元素。 |
+| getIndexOf(key: T): number | 获取指定key所对应的下标。 |
+| remove(key: T): T | 删除并返回指定key对应的元素。 |
+| removeAt(index: number): boolean | 删除指定下标所对应的元素。 |
+| clear(): void | 清除容器中的所有元素，并把length置为0。 |
+| forEach(callbackFn: (value?: T, key?: T, set?: LightWeightSet<T>) => void,thisArg?: Object): void |
+通过回调函数来遍历LightWeightSet实例对象上的元素以及元素对应的下标。 |
+| [Symbol.iterator](): IterableIterator<T> | 返回一个迭代器，迭代器的每一项都是一个 JavaScript 对象，并返回该对象。 |
+| toString(): String | 获取包含容器中所有键和值的字符串。 |
+| toArray(): Array<T> | 获取包含此容器中所有对象的数组。 |
+| getValueAt(index: number): T | 获取此容器中指定下标对应的元素。 |
+| values(): IterableIterator<T> | 返回包含此映射中包含的键值的新迭代器对象。 |
+| entries(): IterableIterator<[T, T]> | 返回包含此映射中包含的键值对的新迭代器对象。 |
+| isEmpty(): boolean | 判断该容器是否为空。 |
+| add(element: T): boolean | 在LinkedList尾部插入元素。 |
+| insert(index: number, element: T): void | 在长度范围内任意插入指定元素。 |
+| get(index: number): T | 根据下标获取LinkedList中的元素。 |
+| addFirst(element: T): void | 在LinkedList头部插入元素。 |
+| removeFirst(): T | 删除并返回LinkedList的第一个元素。 |
+| removeLast(): T | 删除并返回LinkedList的最后一个元素。 |
+| has(element: T): boolean | 判断此LinkedList中是否含有该指定元素。 |
+| getIndexOf(element: T): number | 返回指定元素第一次出现时的下标值，查找失败返回-1。 |
+| removeByIndex(index: number): T | 根据元素的下标值查找元素，返回元素后将其删除。 |
+| remove(element: T): boolean | 删除查找到的第一个指定的元素。 |
+| removeFirstFound(element: T): boolean | 删除第一次出现的指定元素。 |
+| removeLastFound(element: T): boolean | 删除最后一次出现的指定元素。 |
+| getLastIndexOf(element: T): number | 返回指定元素最后一次出现时的下标值，查找失败返回-1。 |
+| getFirst(): T | 获取LinkedList实例中的第一个元素。 |
+| getLast(): T | 获取LinkedList实例中的最后一个元素。 |
+| set(index: number, element: T): T | 将此LinkedList中指定位置的元素替换为指定元素。 |
+| forEach(callbackFn: (value: T, index?: number, LinkedList?: LinkedList<T>) => void,thisArg?: Object): void |
+通过回调函数来遍历LinkedList实例对象上的元素以及元素对应的下标。 |
+| clear(): void | 清除LinkedList中的所有元素，并把length置为0。 |
+| clone(): LinkedList<T> | 克隆一个与LinkedList相同的实例，并返回克隆后的实例。修改克隆后的实例并不会影响原实例。 |
+| convertToArray(): Array<T> | 把当前LinkedList实例转换成数组，并返回转换后的数组。 |
+| [Symbol.iterator](): IterableIterator<T> | 返回一个迭代器，迭代器的每一项都是一个 JavaScript 对象，并返回该对象。 |
+| add(element: T): boolean | 在List尾部插入元素。 |
+| insert(element: T, index: number): void | 在长度范围内任意位置插入指定元素。 |
+| get(index: number): T | 根据下标获取List中的元素。 |
+| has(element: T): boolean | 判断此List中是否含有该指定元素。 |
+| getIndexOf(element: T): number | 查找指定元素第一次出现的下标值，查找失败返回-1。 |
+| removeByIndex(index: number): T | 根据元素的下标值查找元素，返回元素后将其删除。 |
+| remove(element: T): boolean | 删除查找到的第一个指定的元素。 |
+| getLastIndexOf(element: T): number | 查找指定元素最后一次出现的下标值，查找失败返回-1。 |
+| getFirst(): T | 获取List实例中的第一个元素。 |
+| getLast(): T | 获取List实例中的最后一个元素。 |
+| set(index: number, element: T): T | 将此 List 中指定位置的元素替换为指定元素。 |
+| equal(obj: Object): boolean | 比较指定对象与此List是否相等。 |
+| forEach(callbackFn: (value: T, index?: number, List?: List<T>) => void,thisArg?: Object): void |
+通过回调函数来遍历List实例对象上的元素以及元素对应的下标。 |
+| sort(comparator: (firstValue: T, secondValue: T) => number): void | 对List中的元素进行一个排序操作。 |
+| clear(): void | 清除List中的所有元素，并把length置为0。 |
+| getSubList(fromIndex: number, toIndex: number): List<T> |
+根据下标截取List中的一段元素，并返回这一段List实例，包括起始值但不包括终止值。 |
+| replaceAllElements(callbackFn: (value: T, index?: number, list?: List<T>) => T,thisArg?: Object): void;T |
+用户操作List中的元素,用操作后的元素替换原元素并返回操作后的元素。 |
+| convertToArray(): Array<T> | 把当前List实例转换成数组，并返回转换后的数组。 |
+| isEmpty(): boolean | 判断该List是否为空。 |
+| [Symbol.iterator](): IterableIterator<T> | 返回一个迭代器，迭代器的每一项都是一个 JavaScript 对象，并返回该对象。 |
+| add(key: number, value: T): void | 向容器中添加一组数据。 |
+| clear(): void | 清除容器中的所有元素，并把length置为0。 |
+| clone(): PlainArray<T> | 克隆一个实例，并返回克隆后的实例。修改克隆后的实例并不会影响原实例。 |
+| has(key: number): boolean | 判断此容器中是否含有该指定key。 |
+| get(key: number): T | 获取指定key所对应的value。 |
+| getIndexOfKey(key: number): number | 查找指定key第一次出现的下标值，如果没有找到该key返回-1。 |
+| getIndexOfValue(value: T): number | 查找指定value元素第一次出现的下标值，如果没有找到该value元素返回-1。 |
+| isEmpty(): boolean | 判断该容器是否为空。 |
+| getKeyAt(index: number): number | 查找指定下标元素键值对中的key值。 |
+| remove(key: number): T | 删除指定key对应元素。 |
+| removeAt(index: number): T | 删除指定下标对应的元素。 |
+| removeRangeFrom(index: number, size: number): number | 删除一定范围内的元素。 |
+| setValueAt(index: number, value: T): void | 替换容器中指定下标对应键值对中的键值。 |
+| toString(): String | 获取包含容器中所有键和值的字符串。 |
+| getValueAt(index: number): T | 查找指定下标元素键值对中的Value值，失败返回undefined。 |
+| forEach(callbackFn: (value: T, index?: number, PlainArray?: PlainArray<T>) => void,thisArg?: Object): void |
+通过回调函数来遍历实例对象上的元素以及元素对应的下标。 |
+| [Symbol.iterator](): IterableIterator<[number, T]> | 返回一个包含key-value键值对的迭代器对象，其中key是number类型。 |
+| add(element: T): boolean | 在队列尾部插入元素。 |
+| getFirst(): T | 获取队列的头元素。 |
+| pop(): T | 删除头元素并返回该删除元素。 |
+| forEach(callbackFn: (value: T, index?: number, Queue?: Queue<T>) => void, thisArg?: Object): void; |
+通过回调函数来遍历Queue实例对象上的元素以及元素对应的下标。 |
+| [Symbol.iterator](): IterableIterator<T> | 返回一个迭代器，迭代器的每一项都是一个 JavaScript 对象,并返回该对象。 |
+| isEmpty(): boolean | 判断该栈是否为空。 |
+| peek(): T | 获取并返回栈顶元素。 |
+| pop(): T | 删除栈顶元素并返回该删除元素。 |
+| push(item: T): T | 在栈顶插入元素，并返回该元素。 |
+| locate(element: T): number | 返回指定元素第一次出现时的下标值，查找失败返回-1。 |
+| forEach(callbackFn: (value: T, index?: number, stack?: Stack<T>) => void,thisArg?: Object): void |
+通过回调函数来遍历Stack实例对象上的元素以及元素对应的下标。 |
+| [Symbol.iterator](): IterableIterator<T> | 返回一个迭代器，迭代器的每一项都是一个 JavaScript 对象,并返回该对象。 |
+| isEmpty(): boolean | 判断该容器是否为空。 |
+| hasKey(key: K): boolean | 判断此容器中是否含有该指定key。 |
+| hasValue(value: V): boolean | 判断此容器中是否含有该指定value。 |
+| get(key: K): V | 获取指定key所对应的value。 |
+| getFirstKey(): K | 获取容器中排序第一的key。 |
+| getLastKey(): K | 获取容器中排序最后的key。 |
+| setAll(map: TreeMap<K, V>): void | 将一个TreeMap中的所有元素组添加到另一个TreeMap中。 |
+| set(key: K, value: V): Object | 向容器中添加一组数据。 |
+| remove(key: K): V | 删除指定key对应的元素。 |
+| clear(): void | 清除容器中的所有元素，并把length置为0。 |
+| getLowerKey(key: K): K | 获取容器中比传入key排序靠前一位的key。 |
+| getHigherKey(key: K): K | 获取容器中比传入key排序靠后一位的key。 |
+| keys(): IterableIterator<K> | 返回包含此映射中包含的键的新迭代器对象。 |
+| values(): IterableIterator<V> | 返回包含此映射中键值对的新迭代器对象。 |
+| replace(key: K, newValue: V): boolean | 对容器中一组数据进行更新（替换）。 |
+| forEach(callbackFn: (value?: V, key?: K, map?: TreeMap<K, V>) => void, thisArg?: Object): void; |
+通过回调函数来遍历实例对象上的元素以及元素对应的下标。 |
+| entries(): IterableIterator<[K, V]> | 返回包含此映射中键值对的新迭代器对象。 |
+| [Symbol.iterator](): IterableIterator<[K, V]> | 返回一个迭代器，迭代器的每一项都是一个JavaScript对象，并返回该对象。 |
+| isEmpty(): boolean | 判断该容器是否为空。 |
+| has(value: T): boolean | 判断此容器中是否含有该指定元素。 |
+| add(value: T): boolean | 向容器中添加一组数据。 |
+| remove(value: T): boolean | 删除指定的元素。 |
+| clear(): void | 清除容器中的所有元素，并把length置为0。 |
+| getFirstValue(): T | 获取容器中排序第一的数据。 |
+| getLastValue(): T | 获取容器中排序最后的数据。 |
+| getLowerValue(key: T): T | 获取容器中比传入元素排序靠前一位的元素。 |
+| getHigherValue(key: T): T | 获取容器中比传入元素排序靠后一位的元素。 |
+| popFirst(): T | 删除容器中排序最前的数据。 |
+| popLast(): T | 删除容器中排序最后的数据。 |
+| forEach(callbackFn: (value?: T, key?: T, set?: TreeSet<T>) => void, thisArg?: Object): void; |
+通过回调函数来遍历实例对象上的元素以及元素对应的下标。 |
+| values(): IterableIterator<T> | 返回包含此映射中键值对的新迭代器对象。 |
+| entries(): IterableIterator<[T, T]> | 返回包含此映射中键值对的新迭代器对象。 |
+| [Symbol.iterator](): IterableIterator<T> | 返回一个迭代器，迭代器的每一项都是一个JavaScript对象，并返回该对象。 |
 
 printf中每个说明符都替换为来自相应参数的转换后的值。 支持的说明符有:
 | 式样化字符 | 式样要求 |
@@ -1467,6 +1906,1799 @@ var result = proc.isWeakMap(new WeakMap());
 import util from '@ohos.util'
 var proc = new util.Types();
 var result = proc.isWeakSet(new WeakSet());
+```
+103.add()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+let result = arrayList.add(8);
+```
+104.insert()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add("四");
+arrayList.add("三");
+arrayList.add(1);
+arrayList.add("a");
+arrayList.insert(8, 2);
+```
+105.add()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add("四");
+arrayList.add("三");
+arrayList.add(1);
+arrayList.add("a");
+arrayList.insert(8, 2);
+let result = arrayList.has(8);
+```
+106.getIndexOf()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(1);
+arrayList.add("三");
+arrayList.add(1);
+arrayList.add("a");
+arrayList.insert(1, 2);
+let result = arrayList.getIndexOf(1);
+```
+107.removeByIndex()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(1);
+arrayList.add("三");
+arrayList.add(1);
+arrayList.add("a");
+let result = arrayList.removeByIndex(2);
+```
+108.remove()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add("四");
+arrayList.add("三");
+arrayList.add(1);
+arrayList.add("a");
+let result = arrayList.remove("三");
+```
+109.getLastIndexOf()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add("四");
+arrayList.add("三");
+arrayList.add(1);
+arrayList.add("a");
+arrayList.add(1);
+arrayList.add("b");
+let result = arrayList.getLastIndexOf(1);
+```
+110.removeByRange()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add("四");
+arrayList.add("三");
+arrayList.add("a");
+arrayList.add("b");
+arrayList.add("c");
+arrayList.removeByRange(1, 3);
+```
+111.replaceAllElements()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+arrayList.replaceAllElements((item, index) => {
+    return (item = 2 * item);
+});
+```
+112.forEach()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+let arr = [];
+arrayList.forEach((item, index) => {
+    arr.push(item);
+});
+```
+113.sort()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+arrayList.sort((a, b) => a - b);
+```
+114.subArrayList()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+let result = arrayList.subArrayList(0, 5);
+```
+115.clear()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+arrayList.clear();
+```
+116.clone()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+let res = arrayList.clone();
+```
+117.getCapacity()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+let result = arrayList.getCapacity();
+```
+118.convertToArray()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+let arr = arrayList.convertToArray();
+```
+119.isEmpty()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.clear();
+let result = arrayList.isEmpty();
+```
+120.increaseCapacityTo()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+arrayList.increaseCapacityTo(-1);
+```
+121.trimToCurrentLength()
+```
+import ArrayList from "@ohos.util.ArrayList"
+let arrayList = new ArrayList();
+arrayList.add(4);
+arrayList.add(3);
+arrayList.add(1);
+arrayList.add(2);
+arrayList.add(14);
+arrayList.trimToCurrentLength();
+```
+122.insertFront()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+deque.insertFront("一");
+```
+123.insertEnd()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+let a = ["a", "b", "c"];
+deque.insertEnd(a);
+```
+124.has()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+deque.insertEnd(6);
+let result = deque.has(6);
+```
+125.getFirst()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+deque.insertFront("$");
+let result = deque.getFirst();
+```
+126.getLast()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+deque.insertFront("$");
+let result = deque.getLast();
+```
+127.popFirst()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+deque.insertFront(6);
+let result = deque.popFirst();
+```
+128.popLast()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+deque.insertFront(11);
+let result = deque.popLast();
+```
+129.forEach()
+```
+import Deque from "@ohos.util.Deque"
+let deque = new Deque();
+deque.insertEnd(1);
+deque.insertEnd(2);
+deque.insertEnd(3);
+let arr = [];
+deque.forEach((item, index) => {
+    arr.push(item);
+});
+```
+130.isEmpty()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+let result = hashMap.isEmpty();
+```
+131.hasKey()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+let result = hashMap.hasKey(3);
+```
+132.hasValue()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+let result = hashMap.hasValue("C");
+```
+133.get()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+let result = hashMap.get(3);
+```
+134.setAll()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+let hashMap1 = new HashMap();
+hashMap1.set(1, 1);
+hashMap1.set(2, 2);
+hashMap.setAll(hashMap1);
+```
+135.set()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+```
+136.remove()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+let result = hashMap.remove(3);
+```
+137.clear()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+hashMap.clear();
+```
+138.keys()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+hashMap.set(4, "D");
+hashMap.set(5, "E");
+let result = hashMap.keys();
+```
+139.values()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+hashMap.set(4, "D");
+hashMap.set(5, "E");
+let result = hashMap.values();
+```
+140.replace()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+hashMap.set(4, "D");
+hashMap.set(5, "E");
+let result = hashMap.replace(2, "G");
+```
+141.forEach()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+hashMap.set(4, "D");
+hashMap.set(5, "E");
+let vals = [];
+let keys = [];
+hashMap.forEach((value, key) => {
+    keys.push(key);
+    vals.push(value);
+});
+```
+142.entries()
+```
+import HashMap from "@ohos.util.HashMap"
+let hashMap = new HashMap();
+hashMap.set(1, "A");
+hashMap.set(2, "B");
+hashMap.set(3, "C");
+hashMap.set(4, "D");
+hashMap.set(5, "E");
+let result = hashMap.entries();
+```
+143.isEmpty()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add(1);
+hashSet.add(2);
+let result = hashSet.isEmpty();
+```
+144.has()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add(1);
+hashSet.add(2);
+let result = hashSet.has(1);
+```
+145.add()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add(1);
+hashSet.add(2);
+```
+146.remove()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add(1);
+hashSet.add(2);
+let hashSet = hashSet.remove(1);
+```
+147.clear()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add(1);
+hashSet.add(2);
+hashSet.clear();
+```
+148.forEach()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add(1);
+hashSet.add(2);
+hashSet.add(3);
+hashSet.add(4);
+hashSet.add(5);
+let arr = [];
+hashSet.forEach((value, index) => {
+    arr.push(value);
+});
+```
+149.values()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add("A");
+hashSet.add("B");
+hashSet.add("C");
+hashSet.add("D");
+hashSet.add("E");
+let res = hashSet.values();
+```
+150.entries()
+```
+import HashSet from "@ohos.util.HashSet"
+let hashSet = new HashSet();
+hashSet.add(1);
+hashSet.add(2);
+hashSet.add(3);
+let res = hashSet.entries();
+```
+151.hasAll()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set("a", "A");
+lightWeightMap.set("b", "B");
+lightWeightMap.set("c", "C");
+lightWeightMap.set("d", "D");
+lightWeightMap.set("e", "E");
+let lightWeightMap1 = new LightWeightMap();
+lightWeightMap1.set("a", "A");
+lightWeightMap1.set("d", "D");
+let res = lightWeightMap.hasAll(lightWeightMap1);
+```
+152.hasKey()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set("a", "A");
+lightWeightMap.set("b", "B");
+lightWeightMap.set("c", "C");
+let res = lightWeightMap.hasKey("a");
+```
+153.hasValue()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set("a", "A");
+lightWeightMap.set("b", "B");
+lightWeightMap.set("c", "C");
+let res = lightWeightMap.hasValue("A");
+```
+154.increaseCapacityTo()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set("a", "A");
+lightWeightMap.set("b", "B");
+lightWeightMap.set("c", "C");
+lightWeightMap.increaseCapacityTo(3);
+```
+155.entries()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.entries();
+```
+156.get()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.get(1);
+```
+157.getIndexOfKey()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.getIndexOfKey(2);
+```
+158.getIndexOfValue()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+lightWeightMap.set(4, "D");
+lightWeightMap.set(5, "E");
+lightWeightMap.setValueAt(4, "F");
+let res = lightWeightMap.getIndexOfValue("F");
+```
+159.isEmpty()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+let res = lightWeightMap.isEmpty();
+```
+160.getKeyAt()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.getKeyAt(1);
+```
+161.keys()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.keys();
+```
+161.setAll()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+lightWeightMap.set(4, "D");
+lightWeightMap.set(5, "E");
+let lightWeightMap1 = new LightWeightMap();
+lightWeightMap1.set(6, "A");
+lightWeightMap1.set(7, "B");
+lightWeightMap.setAll(lightWeightMap1);
+```
+162.set()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+```
+163.remove()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+let res = lightWeightMap.remove(2);
+```
+164.removeAt()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+let res = lightWeightMap.removeAt(1);
+```
+165.clear()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.clear();
+```
+166.setValueAt()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.setValueAt(0, "a");
+```
+167.forEach()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+lightWeightMap.set(4, "D");
+lightWeightMap.set(5, "E");
+let arr = [];
+lightWeightMap.forEach((value, index) => {
+    arr.push(value);
+});
+```
+168.[Symbol.iterator]()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+lightWeightMap.set(4, "D");
+lightWeightMap.set(5, "E");
+let iters = lightWeightMap[Symbol.iterator]();
+```
+169.toString()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.toString();
+```
+170.getValueAt()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.getValueAt(1);
+```
+171.values()
+```
+import LightWeightMap from "@ohos.util.LightWeightMap"
+let lightWeightMap = new LightWeightMap();
+lightWeightMap.set(1, "A");
+lightWeightMap.set(2, "B");
+lightWeightMap.set(3, "C");
+let res = lightWeightMap.values();
+```
+172.add()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+```
+173.addAll()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+lightWeightSet.add(4);
+lightWeightSet.add(5);
+let lightWeightSet1 = new LightWeightSet();
+lightWeightSet1.add(6);
+lightWeightSet1.add(7);
+let res1 = lightWeightSet.addAll(lightWeightSet1);
+```
+174.hasAll()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add("a");
+lightWeightSet.add("b");
+lightWeightSet.add("c");
+lightWeightSet.add("e");
+let lightWeightSet1 = new LightWeightSet();
+lightWeightSet1.add("a");
+lightWeightSet1.add("d");
+let res = lightWeightSet.hasAll(lightWeightSet1);
+```
+175.has()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add("a");
+lightWeightSet.add("b");
+lightWeightSet.add("c");
+let res = lightWeightSet.has("a");
+```
+176.equal()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let obj = [1,2,3];
+let res = lightWeightSet.equal(obj);
+```
+177.increaseCapacityTo()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.increaseCapacityTo(20);
+```
+178.getIndexOf()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.getIndexOf(2);
+```
+179.remove()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.remove(1);
+```
+180.removeAt()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.removeAt(1);
+```
+181.clear()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+lightWeightSet.clear();
+```
+182.forEach()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+lightWeightSet.add(4);
+lightWeightSet.add(5);
+let arr = [];
+lightWeightSet.forEach((value, index) => {
+    arr.push(value);
+});
+```
+183.[Symbol.iterator]()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet[Symbol.iterator]();
+```
+184.toString()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.toString();
+```
+185.toArray()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.toArray();
+```
+186.getValueAt()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.getValueAt(1);
+```
+187.values()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.values();
+```
+188.entries()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.entries();
+```
+189.isEmpty()
+```
+import LightWeightSet from "@ohos.util.LightWeightSet"
+let lightWeightSet = new LightWeightSet();
+lightWeightSet.add(1);
+lightWeightSet.add(2);
+lightWeightSet.add(3);
+let res = lightWeightSet.isEmpty();
+```
+190.add()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("四");
+```
+191.insert()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+linkedList.add("a");
+linkedList.add("b");
+let res = linkedList.insert(3, "d");
+```
+192.get()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res1 = linkedList.get(2);
+```
+193.addFirst()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+linkedList.addFirst("e");
+```
+194.removeFirst()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.removeFirst();
+```
+195.removeLast()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.removeLast();
+```
+196.has()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.has(1);
+```
+197.getIndexOf()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.getIndexOf("b");
+```
+198.removeByIndex()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.removeByIndex(2);
+```
+199.remove()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.remove("a");
+```
+200.removeFirstFound()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.removeFirstFound("b");
+```
+201.removeLastFound()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.removeLastFound("b");
+```
+202.getLastIndexOf()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("b");
+let res = linkedList.getLastIndexOf("a");
+```
+203.getFirst()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("b");
+let res = linkedList.getFirst();
+```
+204.getLast()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("b");
+let res = linkedList.getLast();
+```
+205.set()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.set(2, "d");
+```
+206.forEach()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add(8);
+linkedList.add("一");
+linkedList.add("二");
+linkedList.add(5);
+let c = [1, 2, 3, 4];
+linkedList.add(c);
+linkedList.add(6);
+linkedList.add("三");
+linkedList.add("四");
+let arr = [];
+linkedList.forEach((item, index) => {
+    arr.push(item);
+});
+```
+207.clear()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let res = linkedList.clear();
+```
+208.clone()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+let linkedList1 = linkedList.clone();
+```
+209.convertToArray()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add(4);
+linkedList.add(3);
+linkedList.add(1);
+linkedList.add(2);
+linkedList.add(14);
+let res = linkedList.convertToArray();
+```
+210.[Symbol.iterator]()
+```
+import LinkedList from "@ohos.util.LinkedList"
+let linkedList = new LinkedList();
+linkedList.add("a");
+linkedList.add("b");
+linkedList.add("c");
+linkedList.addFirst("e");
+let itr = linkedList[Symbol.iterator]();
+```
+211.add()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("四");
+```
+212.insert()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("a");
+list.add("b");
+let res = list.insert("d", 3);
+```
+213.get()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("a");
+let res = list.set(2, "d");
+let res1 = list.get(2);
+```
+214.has()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+let res = list.has(1);
+```
+215.getIndexOf()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("b");
+let res = list.getIndexOf("b");
+```
+216.removeByIndex()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("b");
+let res = list.removeByIndex(2);
+```
+217.remove()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("b");
+let res = list.remove("a");
+```
+218.getLastIndexOf()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("b");
+let res = list.getLastIndexOf("F");
+```
+219.getFirst()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("b");
+let res = list.getFirst();
+```
+220.getLast()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("b");
+let res = list.getLast();
+```
+221.set()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+list.add("a");
+let res = list.set(2, "d");
+```
+222.equal()
+```
+import List from "@ohos.util.List"
+let list = new List();
+let list1 = new List();
+let res = list.equal(list1);
+```
+223.forEach()
+```
+import List from "@ohos.util.List"
+let list = new List();
+let num = 0;
+list.forEach((item, index) => {
+    num++;
+});
+```
+224.sort()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add(4);
+list.add(3);
+list.add(1);
+list.sort((a, b) => a - b);
+```
+225.clear()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add(4);
+list.add(3);
+list.add(1);
+list.clear();
+```
+226.getSubList()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add(4);
+list.add(3);
+list.add(1);
+list.add(2);
+list.add(14);
+let res = list.getSubList(2, 4);
+```
+227.replaceAllElements()
+```
+import List from "@ohos.util.List"
+let list = new List();
+let num = 0;
+list.replaceAllElements((item, index) => {
+    num++;
+});
+```
+228.convertToArray()
+```
+import List from "@ohos.util.List"
+let list = new List();
+const res = list.convertToArray();
+```
+229.isEmpty()
+```
+import List from "@ohos.util.List"
+let list = new List();
+let res = list.isEmpty();
+```
+230.[Symbol.iterator]()
+```
+import List from "@ohos.util.List"
+let list = new List();
+list.add("a");
+list.add("b");
+list.add("c");
+let itr = list[Symbol.iterator]();
+```
+231.add()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+```
+232.clear()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+plainArray.clear();
+```
+233.clone()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let clonePlainarray = plainArray.clone();
+```
+234.has()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.has(6);
+```
+235.get()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let value = plainArray.get(2);
+```
+236.getIndexOfKey()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.getIndexOfKey(9);
+```
+237.getIndexOfValue()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.getIndexOfValue("Asad");
+```
+238.isEmpty()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.isEmpty();
+```
+239.getKeyAt()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.getKeyAt(2);
+```
+240.remove()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.remove(2);
+```
+241.removeAt()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.removeAt(2);
+```
+242.removeRangeFrom()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+plainArray.removeRangeFrom(2, 2);
+```
+243.setValueAt()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+plainArray.setValueAt(2, "V");
+```
+244.toString()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res1 = plainArray.toString();
+```
+245.getValueAt()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let res = plainArray.getValueAt(2);
+```
+246.forEach()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let arr = [];
+res.forEach((value, index) => {
+    arr.push(value);
+});
+```
+247.[Symbol.iterator]()
+```
+import PlainArray from "@ohos.util.PlainArray"
+let plainArray = new PlainArray();
+plainArray.add(1, "A");
+plainArray.add(2, "B");
+plainArray.add(3, "C");
+let iters = plainArray[Symbol.iterator]();
+```
+248.add()
+```
+import Queue from "@ohos.util.Queue"
+let queue = new Queue();
+queue.add("四");
+```
+249.getFirst()
+```
+import Queue from "@ohos.util.Queue"
+let queue = new Queue();
+queue.add("四");
+let res = queue.getFirst();
+```
+250.pop()
+```
+import Queue from "@ohos.util.Queue"
+let queue = new Queue();
+queue.add("四");
+let res = queue.pop();
+```
+251.forEach()
+```
+import Queue from "@ohos.util.Queue"
+let queue = new Queue();
+queue.add(1);
+queue.add(2);
+queue.add(3);
+queue.add(4);
+queue.forEach((item, index) => {
+    arr.push(item);
+});
+```
+252.[Symbol.iterator]()
+```
+import Queue from "@ohos.util.Queue"
+let queue = new Queue();
+queue.add("四");
+let itr = queue[Symbol.iterator]();
+```
+253.isEmpty()
+```
+import Stack from "@ohos.util.Stack"
+let stack = new Stack();
+stack.push(8);
+stack.push(5);
+let res = stack.isEmpty();
+```
+254.peek()
+```
+import Stack from "@ohos.util.Stack"
+let stack = new Stack();
+stack.push(1234);
+let res = stack.peek();
+```
+255.pop()
+```
+import Stack from "@ohos.util.Stack"
+let stack = new Stack();
+stack.push(1234);
+let res = stack.pop();
+```
+256.push()
+```
+import Stack from "@ohos.util.Stack"
+let stack = new Stack();
+stack.push(12);
+```
+257.locate()
+```
+import Stack from "@ohos.util.Stack"
+let stack = new Stack();
+stack.push("A");
+stack.push("B");
+stack.push(1);
+let res = stack.locate("A");
+```
+258.forEach()
+```
+import Stack from "@ohos.util.Stack"
+let stack = new Stack();
+stack.push(8);
+stack.push(5);
+stack.push(c);
+stack.push(6);
+stack.forEach((item, index) => {
+    arr.push(item);
+});
+```
+259.[Symbol.iterator]()
+```
+import Stack from "@ohos.util.Stack"
+let stack = new Stack();
+stack.push("A");
+stack.push("B");
+stack.push(1);
+let itr = stack[Symbol.iterator]();
+```
+260.isEmpty()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.isEmpty();
+```
+261.hasKey()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.hasKey(1);
+```
+262.hasValue()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.hasValue("a");
+```
+263.get()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.get(1);
+```
+264.getFirstKey()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.getFirstKey();
+```
+265.getLastKey()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.getLastKey();
+```
+266.setAll()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let treeMap1 = new TreeMap();
+treeMap1.set(0, "a");
+treeMap1.set(1, "b");
+treeMap1.set(2, "c");
+treeMap.setAll(treeMap1);
+```
+267.set()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+```
+268.remove()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.remove(1);
+```
+269.clear()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+treeMap.clear();
+```
+270.getLowerKey()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.getLowerKey(1);
+```
+271.getHigherKey()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.getHigherKey(1);
+```
+272.keys()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.keys();
+```
+273.values()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.values();
+```
+274.replace()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+let res = treeMap.replace(1, "B");
+```
+275.forEach()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+treeMap.set(2, "c");
+treeMap.set(3, "d");
+treeMap.set(4, "g");
+let arr1 = [];
+treeMap.forEach((value, key) => {
+    arr1.push(value);
+});
+```
+276.entries()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+treeMap.set(2, "c");
+let entries = treeMap.entries();
+```
+277.[Symbol.iterator]()
+```
+import TreeMap from "@ohos.util.TreeMap"
+let treeMap = new TreeMap();
+treeMap.set(0, "a");
+treeMap.set(1, "b");
+treeMap.set(2, "c");
+let iters = treeMap[Symbol.iterator]();
+```
+278.isEmpty()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+let res = treeSet.isEmpty();
+```
+279.has()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+let res = treeSet.has("c");
+```
+280.add()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+```
+281.remove()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+let res = treeSet.remove("c");
+```
+282.clear()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+treeSet.clear();
+```
+283.getFirstValue()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+let res = treeSet.getFirstValue();
+```
+284.getLastValue()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+let res = treeSet.getLastValue();
+```
+285.getLowerValue()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add(0);
+treeSet.add(1);
+treeSet.add(2);
+treeSet.add(3);
+let res = treeSet.getLowerValue(2);
+```
+286.getHigherValue()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add(0);
+treeSet.add(1);
+treeSet.add(2);
+treeSet.add(3);
+let res = treeSet.getHigherValue(3);
+```
+287.popFirst()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add(0);
+treeSet.add(1);
+treeSet.add(2);
+treeSet.add(3);
+let res = treeSet.popFirst();
+```
+288.popLast()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add(0);
+treeSet.add(1);
+treeSet.add(2);
+treeSet.add(3);
+let res = treeSet.popLast();
+```
+289.forEach()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add(0);
+treeSet.add(1);
+treeSet.add(2);
+treeSet.add(3);
+treeSet.add(4);
+let arr1 = [];
+treeSet.forEach((value, key) => {
+    arr1.push(value);
+});
+```
+290.values()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+let res = treeSet.values();
+```
+291.entries()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+let res = treeSet.entries();
+```
+292.[Symbol.iterator]()
+```
+import TreeSet from "@ohos.util.TreeSet"
+let treeSet = new TreeSet();
+treeSet.add("a");
+treeSet.add("b");
+treeSet.add("c");
+let res = treeSet[Symbol.iterator]();
 ```
 
 ## 3. js_sys_module子模块
