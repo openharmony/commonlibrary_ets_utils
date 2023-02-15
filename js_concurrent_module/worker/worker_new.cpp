@@ -1376,7 +1376,9 @@ void NewWorker::ReleaseWorkerThreadContent()
 {
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
-    hostEngine->DeleteWorker(hostEngine, workerEngine);
+    if (hostEngine != nullptr && workerEngine != nullptr) {
+        hostEngine->DeleteWorker(hostEngine, workerEngine);
+    }
     // 1. remove worker instance count
     {
         std::lock_guard<std::mutex> lock(g_newWorkersMutex);
