@@ -41,7 +41,9 @@ private:
 
     static napi_value ExecuteFunction(napi_env env, napi_value object);
     static napi_value ExecuteTask(napi_env env, Task* task);
-    static TaskInfo* GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId);
+    static void HandleTaskResult(const uv_async_t* req);
+
+    friend class TaskManager;
 };
 } // namespace Commonlibrary::ConcurrentModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H_
