@@ -38,6 +38,8 @@ public:
 
     void NotifyExecuteTask();
 
+    void NotifyIdle();
+
 private:
     explicit Worker(napi_env env);
 
@@ -74,15 +76,15 @@ private:
     void ReleaseWorkerThreadContent();
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(NativeEngine* engine, NativeValue* value, NativeValue* data);
+    static void NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, napi_value result);
     static void HandleTaskResult(const uv_async_t* req);
 
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
     TaskInfo *taskInfo_ {nullptr};
-    uv_async_t performTaskSignal_ {};
-    uv_async_t notifyResultSignal_ {};
+    uv_async_t *performTaskSignal_ {nullptr};
+    uv_async_t *notifyResultSignal_ {nullptr};
     std::unique_ptr<TaskRunner> runner_ {};
-    std::recursive_mutex liveEnvLock_ {};
 };
 } // namespace Commonlibrary::ConcurrentModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_
