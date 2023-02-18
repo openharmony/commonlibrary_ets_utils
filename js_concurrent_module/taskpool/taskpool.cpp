@@ -86,25 +86,21 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     return nullptr;
 }
 
-TaskInfo* TaskPool::GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId)
+void TaskPool::HandleTaskResult(const uv_async_t* req)
 {
-    napi_value undefined;
-    napi_get_undefined(env, &undefined);
-    napi_value taskData;
-    napi_status serializeStatus = napi_ok;
-    serializeStatus = napi_serialize(env, object, undefined, &taskData);
-    if (serializeStatus != napi_ok || taskData == nullptr) {
-        ErrorHelper::ThrowError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
-            "taskpool: failed to serialize message.");
-        return nullptr;
+    auto taskInfo = static_cast<TaskInfo*>(req->data);
+    if (taskInfo == nullptr) {
+        HILOG_FATAL("taskpool::HandleTaskResult taskInfo is null");
+        return;
     }
-    TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
-    TaskManager::GetInstance().StoreTaskInfo(executeId, taskInfo);
-    taskInfo->env = env;
-    taskInfo->executeId = executeId;
-    taskInfo->serializationData = taskData;
-    taskInfo->taskId = taskId;
-    return taskInfo;
+    napi_value taskData = nullptr;
+    napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
+    if (status != napi_ok || taskData == nullptr || !taskInfo->success) {
+        napi_reject_deferred(taskInfo->env, taskInfo->deferred, taskData);
+    } else {
+        napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
+    }
+    TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
 
 napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
@@ -112,7 +108,7 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
     napi_value obj = nullptr;
     napi_get_reference_value(env, task->objRef_, &obj);
     task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
-    TaskInfo* taskInfo = GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
+    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, obj, task->taskId_, task->executeId_);
     if (taskInfo == nullptr) {
         return nullptr;
     }
@@ -134,7 +130,7 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 {
     std::unique_ptr<Task> task = std::make_unique<Task>();
     task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
-    TaskInfo* taskInfo = GenerateTaskInfo(env, object, 0, task->executeId_); // 0: 0 for function specially
+    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, object, 0, task->executeId_);
     if (taskInfo == nullptr) {
         return nullptr;
     }

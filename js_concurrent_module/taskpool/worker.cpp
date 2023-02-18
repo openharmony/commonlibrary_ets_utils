@@ -38,12 +38,6 @@ Worker::~Worker()
             handle = nullptr;
         }
     });
-    uv_close(reinterpret_cast<uv_handle_t*>(notifyResultSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
-    });
     uv_loop_t* loop = GetWorkerLoop();
     if (loop != nullptr) {
         uv_stop(loop);
@@ -85,12 +79,6 @@ void Worker::ExecuteInThread(const void* data)
     worker->performTaskSignal_ = new uv_async_t;
     worker->performTaskSignal_->data = worker;
     uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
-
-    // Init host task callback signal
-    uv_loop_t* hostLoop = worker->GetHostLoop();
-    worker->notifyResultSignal_ = new uv_async_t;
-    worker->notifyResultSignal_->data = worker;
-    uv_async_init(hostLoop, worker->notifyResultSignal_, reinterpret_cast<uv_async_cb>(Worker::HandleTaskResult));
 
     if (worker->PrepareForWorkerInstance()) {
         // Call after uv_async_init
@@ -140,26 +128,6 @@ void Worker::NotifyIdle()
 {
     taskInfo_ = nullptr;
     TaskManager::GetInstance().NotifyWorkerIdle(this);
-}
-
-void Worker::HandleTaskResult(const uv_async_t* req)
-{
-    auto worker = static_cast<Worker*>(req->data);
-    TaskInfo* taskInfo = worker->taskInfo_;
-    worker->NotifyIdle();  // Will clean task info
-
-    if (taskInfo == nullptr) {
-        HILOG_FATAL("taskpool::HandleTaskResult taskInfo is null");
-        return;
-    }
-    napi_value taskData = nullptr;
-    napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
-    if (status != napi_ok || taskData == nullptr || !taskInfo->success) {
-        napi_reject_deferred(taskInfo->env, taskInfo->deferred, taskData);
-    } else {
-        napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
-    }
-    TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
 
 void Worker::PerformTask(const uv_async_t* req)
@@ -241,7 +209,8 @@ void Worker::NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, 
 
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::TERMINATED);
     TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
-    uv_async_send(worker->notifyResultSignal_);
+    uv_async_send(taskInfo->onResultSignal);
+    worker->NotifyIdle();
 }
 
 void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* value, NativeValue* data)
