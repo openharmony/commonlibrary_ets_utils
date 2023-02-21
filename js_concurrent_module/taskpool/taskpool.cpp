@@ -40,6 +40,23 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_create_function(env, "cancel", NAPI_AUTO_LENGTH, Cancel, NULL, &cancelFunc);
     napi_set_named_property(env, exports, "cancel", cancelFunc);
 
+    napi_value priorityObj = nullptr;
+    napi_create_object(env, &priorityObj);
+    napi_value highPriority = nullptr;
+    napi_value mediumPriority = nullptr;
+    napi_value lowPriority = nullptr;
+    napi_create_int32(env, Priority::HIGH, &highPriority);
+    napi_set_named_property(env, priorityObj, "HIGH", highPriority);
+    napi_create_int32(env, Priority::MEDIUM, &mediumPriority);
+    napi_set_named_property(env, priorityObj, "MEDIUM", mediumPriority);
+    napi_create_int32(env, Priority::LOW, &lowPriority);
+    napi_set_named_property(env, priorityObj, "LOW", lowPriority);
+
+    napi_property_descriptor exportPriority[] = {
+        DECLARE_NAPI_PROPERTY("Priority", priorityObj),
+    };
+    napi_define_properties(env, exports, sizeof(exportPriority) / sizeof(exportPriority[0]), exportPriority);
+
     // Add a reserved thread for taskpool
     TaskManager::GetInstance().InitTaskRunner(env);
     return exports;
