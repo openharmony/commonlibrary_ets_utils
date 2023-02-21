@@ -15,6 +15,7 @@
 
 #include "worker.h"
 
+#include "hitrace_meter.h"
 #include "plugin/timer.h"
 #include "task_manager.h"
 #include "utils/log.h"
@@ -24,6 +25,7 @@ Worker::Worker(napi_env env) : hostEnv_(env) {}
 
 Worker* Worker::WorkerConstructor(napi_env env)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     Worker* worker = new Worker(env);
     worker->StartExecuteInThread();
     return worker;
@@ -58,6 +60,7 @@ void Worker::StartExecuteInThread()
 
 void Worker::ExecuteInThread(const void* data)
 {
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
     {
         napi_create_runtime(worker->hostEnv_, &worker->workerEnv_);
@@ -79,7 +82,7 @@ void Worker::ExecuteInThread(const void* data)
     worker->performTaskSignal_ = new uv_async_t;
     worker->performTaskSignal_->data = worker;
     uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
-
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     if (worker->PrepareForWorkerInstance()) {
         // Call after uv_async_init
         worker->NotifyIdle();
@@ -94,6 +97,7 @@ void Worker::ExecuteInThread(const void* data)
 
 bool Worker::PrepareForWorkerInstance()
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
@@ -105,6 +109,7 @@ bool Worker::PrepareForWorkerInstance()
 
 void Worker::ReleaseWorkerThreadContent()
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     if (workerEngine == nullptr) {
         HILOG_ERROR("taskpool:: workerEngine is nullptr");
@@ -132,6 +137,7 @@ void Worker::NotifyIdle()
 
 void Worker::PerformTask(const uv_async_t* req)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto worker = static_cast<Worker*>(req->data);
     napi_env env = worker->workerEnv_;
     std::unique_ptr<Task> task = TaskManager::GetInstance().DequeueTask();
@@ -193,6 +199,7 @@ void Worker::PerformTask(const uv_async_t* req)
 
 void Worker::NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, napi_value result)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     napi_value undefined;
     napi_get_undefined(env, &undefined);
 
@@ -215,6 +222,7 @@ void Worker::NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, 
 
 void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* value, NativeValue* data)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     if (engine == nullptr) {
         HILOG_FATAL("taskpool::TaskResultCallback engine is null");
         return;
