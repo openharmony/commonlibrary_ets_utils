@@ -24,6 +24,12 @@
 #include "task.h"
 
 namespace Commonlibrary::ConcurrentModule {
+enum Priority {
+    HIGH,
+    MEDIUM,
+    LOW
+};
+
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
