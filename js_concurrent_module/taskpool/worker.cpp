@@ -38,6 +38,14 @@ Worker::~Worker()
             handle = nullptr;
         }
     });
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    uv_close(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
+#endif
     uv_loop_t* loop = GetWorkerLoop();
     if (loop != nullptr) {
         uv_stop(loop);
@@ -55,6 +63,26 @@ void Worker::StartExecuteInThread()
         HILOG_ERROR("taskpool:: runner_ is nullptr");
     }
 }
+
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+void Worker::HandleDebuggerTask(const uv_async_t* req)
+{
+    Worker* worker = reinterpret_cast<Worker*>(req->data);
+    if (worker == nullptr) {
+        HILOG_ERROR("taskpool:: worker is null");
+        return;
+    }
+    worker->debuggerTask_();
+}
+
+void Worker::DebuggerOnPostTask(std::function<void()>&& task)
+{
+    if (uv_is_active(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
+        debuggerTask_ = std::move(task);
+        uv_async_send(debuggerOnPostTaskSignal_);
+    }
+}
+#endif
 
 void Worker::ExecuteInThread(const void* data)
 {
@@ -79,7 +107,12 @@ void Worker::ExecuteInThread(const void* data)
     worker->performTaskSignal_ = new uv_async_t;
     worker->performTaskSignal_->data = worker;
     uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
-
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    // Init debugger task post signal
+    worker->debuggerOnPostTaskSignal_ = new uv_async_t;
+    worker->debuggerOnPostTaskSignal_->data = worker;
+    uv_async_init(loop, worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::HandleDebuggerTask));
+#endif
     if (worker->PrepareForWorkerInstance()) {
         // Call after uv_async_init
         worker->NotifyIdle();
@@ -96,6 +129,10 @@ bool Worker::PrepareForWorkerInstance()
 {
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    workerEngine->SetDebuggerPostTaskFunc(
+        std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
+#endif
     if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
         HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc failure");
         return false;
