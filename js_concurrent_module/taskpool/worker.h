@@ -51,6 +51,11 @@ private:
         return nullptr;
     }
 
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    static void HandleDebuggerTask(const uv_async_t* req);
+    void DebuggerOnPostTask(std::function<void()>&& task);
+#endif
+
     uv_loop_t* GetWorkerLoop() const
     {
         if (workerEnv_ != nullptr) {
@@ -82,6 +87,10 @@ private:
     napi_env workerEnv_ {nullptr};
     TaskInfo *taskInfo_ {nullptr};
     uv_async_t *performTaskSignal_ {nullptr};
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    uv_async_t *debuggerOnPostTaskSignal_ {nullptr};
+    std::function<void()> debuggerTask_;
+#endif
     std::unique_ptr<TaskRunner> runner_ {};
 };
 } // namespace Commonlibrary::ConcurrentModule
