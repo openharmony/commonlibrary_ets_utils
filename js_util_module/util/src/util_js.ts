@@ -520,7 +520,7 @@ function getOwnPropertyDescriptors(obj : Fn) : PropertyDescriptorMap {
     return result;
 }
 
-function callbackWrapper(original : Fn) : void {
+function callbackWrapper(original : Fn) : Function {
     if (typeof original !== 'function') {
         let error = new BusinessError(`Parameter error.The type of ${original} must be function`);
         throw error;
@@ -537,6 +537,7 @@ function callbackWrapper(original : Fn) : void {
         callbackified(original, ...args);
     }
     Object.defineProperties(cb, descriptors);
+    return cb;
 }
 
 function promiseWrapper(func : Function) : Object {
