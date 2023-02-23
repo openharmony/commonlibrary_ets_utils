@@ -100,6 +100,9 @@ bool Worker::PrepareForWorkerInstance()
         HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc failure");
         return false;
     }
+    // register timer interface
+    Plugin::Timer::RegisterTime(workerEnv_);
+
     return true;
 }
 
@@ -110,6 +113,8 @@ void Worker::ReleaseWorkerThreadContent()
         HILOG_ERROR("taskpool:: workerEngine is nullptr");
         return;
     }
+
+    Plugin::Timer::ClearEnvironmentTimer(workerEnv_);
 
     // 2. delete NativeEngine created in worker thread
     workerEngine->DeleteEngine();
