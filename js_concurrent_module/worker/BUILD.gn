@@ -22,8 +22,8 @@ ohos_shared_library("worker") {
   sources = [
     "../common/helper/napi_helper.cpp",
     "../common/plugin/timer.cpp",
-    "native_module_worker.cpp",
     "message_queue.cpp",
+    "native_module_worker.cpp",
     "thread.cpp",
     "worker.cpp",
     "worker_new.cpp",
@@ -31,6 +31,8 @@ ohos_shared_library("worker") {
   ]
 
   deps = [ "//foundation/arkui/napi:ace_napi" ]
+
+  external_deps = []
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps +=
@@ -46,6 +48,8 @@ ohos_shared_library("worker") {
       external_deps = [ "hilog:libhilog" ]
     }
   }
+
+  external_deps += [ "hitrace_native:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
