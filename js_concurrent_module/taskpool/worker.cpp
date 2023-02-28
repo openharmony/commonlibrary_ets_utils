@@ -174,7 +174,6 @@ void Worker::NotifyExecuteTask()
 
 void Worker::NotifyIdle()
 {
-    taskInfo_ = nullptr;
     TaskManager::GetInstance().NotifyWorkerIdle(this);
 }
 
@@ -195,7 +194,7 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_ERROR("taskpool::PerformTask taskInfo is null");
         return;
     }
-    worker->taskInfo_ = taskInfo;
+    taskInfo->worker = worker;
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::RUNNING);
     napi_value undefined;
     napi_get_undefined(env, &undefined);
@@ -206,7 +205,7 @@ void Worker::PerformTask(const uv_async_t* req)
         napi_value err = Helper::ErrorHelper::NewError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
             "taskpool: failed to deserialize message.");
         taskInfo->success = false;
-        NotifyTaskResult(env, worker, taskInfo, err);
+        NotifyTaskResult(env, taskInfo, err);
         return;
     }
     napi_value func;
@@ -226,7 +225,7 @@ void Worker::PerformTask(const uv_async_t* req)
     }
     // Store taskinfo in last argument
     napi_value data;
-    napi_create_external(env, worker, nullptr, nullptr, &data);
+    napi_create_external(env, taskInfo, nullptr, nullptr, &data);
 
     napi_value result;
     napi_call_function(env, data, func, argsNum, argsArray, &result);
@@ -236,11 +235,13 @@ void Worker::PerformTask(const uv_async_t* req)
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");
         taskInfo->success = false;
-        NotifyTaskResult(env, worker, taskInfo, exception);
+        NotifyTaskResult(env, taskInfo, exception);
+    } else {
+        worker->NotifyIdle();
     }
 }
 
-void Worker::NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, napi_value result)
+void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     napi_value undefined;
@@ -252,7 +253,7 @@ void Worker::NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, 
         taskInfo->success = false;
         napi_value err = Helper::ErrorHelper::NewError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
             "taskpool: failed to serialize result.");
-        NotifyTaskResult(env, worker, taskInfo, err);
+        NotifyTaskResult(env, taskInfo, err);
         return;
     }
     taskInfo->result = resultData;
@@ -260,6 +261,9 @@ void Worker::NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, 
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::TERMINATED);
     TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
     uv_async_send(taskInfo->onResultSignal);
+
+    // Warning: The worker thread maybe released for future taskpool shrinkage strategy?
+    Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
     worker->NotifyIdle();
 }
 
@@ -281,18 +285,13 @@ void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* value, Native
         return;
     }
 
-    Worker* worker = nullptr;
-    napi_get_value_external(env, reinterpret_cast<napi_value>(data), reinterpret_cast<void**>(&worker));
-    if (worker == nullptr) {
-        HILOG_FATAL("taskpool::TaskResultCallback worker is null");
-        return;
-    }
-    TaskInfo* taskInfo = worker->taskInfo_;
+    TaskInfo* taskInfo = nullptr;
+    napi_get_value_external(env, reinterpret_cast<napi_value>(data), reinterpret_cast<void**>(&taskInfo));
     if (taskInfo == nullptr) {
         HILOG_FATAL("taskpool::TaskResultCallback taskInfo is null");
         return;
     }
 
-    NotifyTaskResult(env, worker, taskInfo, result);
+    NotifyTaskResult(env, taskInfo, result);
 }
 } // namespace Commonlibrary::ConcurrentModule

@@ -81,11 +81,10 @@ private:
     void ReleaseWorkerThreadContent();
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(NativeEngine* engine, NativeValue* value, NativeValue* data);
-    static void NotifyTaskResult(napi_env env, Worker* worker, TaskInfo *taskInfo, napi_value result);
+    static void NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result);
 
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
-    TaskInfo *taskInfo_ {nullptr};
     uv_async_t *performTaskSignal_ {nullptr};
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t *debuggerOnPostTaskSignal_ {nullptr};
