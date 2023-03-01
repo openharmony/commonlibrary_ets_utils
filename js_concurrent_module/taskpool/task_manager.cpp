@@ -34,8 +34,8 @@ TaskManager::~TaskManager()
 {
     {
         std::lock_guard<std::mutex> lock(workersMutex_);
-        for (auto &item : workers_) {
-            delete item;
+        for (auto &worker : workers_) {
+            delete worker;
         }
         workers_.clear();
     }
@@ -222,7 +222,7 @@ void TaskManager::NotifyWorkerIdle(Worker *worker)
 {
     {
         std::unique_lock<std::mutex> lock(workersMutex_);
-        idleWorkers_.push_back(worker);
+        idleWorkers_.insert(worker);
     }
     NotifyExecuteTask();
 }
@@ -230,7 +230,7 @@ void TaskManager::NotifyWorkerIdle(Worker *worker)
 void TaskManager::NotifyWorkerAdded(Worker *worker)
 {
     std::unique_lock<std::mutex> lock(workersMutex_);
-    workers_.push_back(worker);
+    workers_.insert(worker);
 }
 
 void TaskManager::EnqueueTask(std::unique_ptr<Task> task)
@@ -254,8 +254,9 @@ void TaskManager::NotifyExecuteTask()
     if (idleWorkers_.empty()) {
         return;
     }
-    Worker *worker = idleWorkers_.front();
-    idleWorkers_.pop_front();
+    auto candidator = idleWorkers_.begin();
+    Worker *worker = *candidator;
+    idleWorkers_.erase(candidator);
     worker->NotifyExecuteTask();
 }
 
