@@ -17,6 +17,7 @@
 
 #include "helper/error_helper.h"
 #include "helper/object_helper.h"
+#include "hitrace_meter.h"
 #include "task_manager.h"
 #include "utils/log.h"
 #include "worker.h"
@@ -25,6 +26,7 @@ namespace Commonlibrary::ConcurrentModule {
 using namespace Commonlibrary::ConcurrentModule::Helper;
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     const char className[] = "Task";
     napi_property_descriptor properties[] = {};
     napi_value taskClass = nullptr;
@@ -64,9 +66,11 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteToWorkerEnd");
     // get the taskpool instance
     TaskManager::GetInstance().InitTaskRunner(env);
-
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     // check the argc
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
@@ -105,6 +109,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 
 void TaskPool::HandleTaskResult(const uv_async_t* req)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto taskInfo = static_cast<TaskInfo*>(req->data);
     if (taskInfo == nullptr) {
         HILOG_FATAL("taskpool::HandleTaskResult taskInfo is null");
@@ -122,6 +127,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
 
 napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     napi_value obj = nullptr;
     napi_get_reference_value(env, task->objRef_, &obj);
     task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
@@ -145,6 +151,7 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
 
 napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     std::unique_ptr<Task> task = std::make_unique<Task>();
     task->executeId_ = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, object, 0, task->executeId_);
@@ -162,6 +169,7 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     size_t argc = 0;
     napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
     if (argc != 1) {

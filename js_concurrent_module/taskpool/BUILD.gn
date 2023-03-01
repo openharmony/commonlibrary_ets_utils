@@ -34,6 +34,8 @@ ohos_shared_library("taskpool") {
 
   deps = [ "//foundation/arkui/napi:ace_napi" ]
 
+  external_deps = []
+
   if (is_linux && current_toolchain == host_toolchain) {
     deps +=
         [ "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_linux" ]
@@ -48,6 +50,8 @@ ohos_shared_library("taskpool") {
       external_deps = [ "hilog:libhilog" ]
     }
   }
+
+  external_deps += [ "hitrace_native:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
