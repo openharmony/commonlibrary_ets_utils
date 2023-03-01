@@ -141,14 +141,15 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
     auto iter = runningInfos_.find(taskId);
     if (iter == runningInfos_.end() || iter->second.empty()) {
-        ErrorHelper::ThrowError(env, ErrorHelper::NOTEXIST_ERROR, "taskpool:: can not find the task");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCAL_NONEXIST_TASK,
+            "taskpool:: can not find the task");
         return;
     }
     int32_t result;
     for (auto item : iter->second) {
         TaskState state = QueryState(item);
         if (state == TaskState::NOT_FOUND) {
-            result = ErrorHelper::NOTEXIST_ERROR;
+            result = ErrorHelper::ERR_CANCAL_NONEXIST_TASK;
             break;
         }
         UpdateState(item, TaskState::CANCELED);
@@ -156,14 +157,16 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
             TaskInfo* taskInfo = PopTaskInfo(item);
             ReleaseTaskContent(taskInfo);
         } else {
-            result = ErrorHelper::RUNNING_ERROR;
+            result = ErrorHelper::ERR_CANCAL_RUNNING_TASK;
         }
     }
 
-    if (result == ErrorHelper::NOTEXIST_ERROR) {
-        ErrorHelper::ThrowError(env, ErrorHelper::NOTEXIST_ERROR, "taskpool:: can not find the task");
-    } else if (result == ErrorHelper::RUNNING_ERROR) {
-        ErrorHelper::ThrowError(env, ErrorHelper::RUNNING_ERROR, "taskpool:: can not cancel the running task");
+    if (result == ErrorHelper::ERR_CANCAL_NONEXIST_TASK) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCAL_NONEXIST_TASK,
+            "taskpool:: can not find the task");
+    } else if (result == ErrorHelper::ERR_CANCAL_RUNNING_TASK) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCAL_RUNNING_TASK,
+            "taskpool:: can not cancel the running task");
     } else {
         runningInfos_.erase(iter);
     }
@@ -177,7 +180,7 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value object, uint32_
     napi_status serializeStatus = napi_ok;
     serializeStatus = napi_serialize(env, object, undefined, &taskData);
     if (serializeStatus != napi_ok || taskData == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::WORKERSERIALIZATION_ERROR,
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
             "taskpool: failed to serialize message.");
         return nullptr;
     }
