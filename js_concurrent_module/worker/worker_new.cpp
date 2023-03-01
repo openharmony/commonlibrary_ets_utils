@@ -16,6 +16,7 @@
 #include "worker_new.h"
 
 #include "helper/error_helper.h"
+#include "hitrace_meter.h"
 #include "plugin/timer.h"
 
 namespace Commonlibrary::ConcurrentModule {
@@ -30,6 +31,7 @@ NewWorker::NewWorker(napi_env env, napi_ref thisVar)
 
 napi_value NewWorker::InitWorker(napi_env env, napi_value exports)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     const char className[] = "ThreadWorker";
     napi_property_descriptor properties[] = {
@@ -224,6 +226,7 @@ napi_value NewWorker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
 
 napi_value NewWorker::PostMessage(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker messageObject must be not null with postMessage");
@@ -263,6 +266,7 @@ napi_value NewWorker::PostMessage(napi_env env, napi_callback_info cbinfo)
 
 napi_value NewWorker::Terminate(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     NewWorker* worker = nullptr;
@@ -507,6 +511,7 @@ napi_value NewWorker::CancelTask(napi_env env, napi_callback_info cbinfo)
 
 napi_value NewWorker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker param count must be more than 1 with new");
@@ -551,6 +556,7 @@ napi_value NewWorker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 
 napi_value NewWorker::CloseWorker(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     NewWorker* worker = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, (void**)&worker);
     if (worker != nullptr) {
@@ -784,6 +790,7 @@ void NewWorker::StartExecuteInThread(napi_env env, const char* script)
 
 void NewWorker::ExecuteInThread(const void* data)
 {
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, "Before ReleaseWorkerThreadContent");
     auto worker = reinterpret_cast<NewWorker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
@@ -826,13 +833,16 @@ void NewWorker::ExecuteInThread(const void* data)
         HILOG_ERROR("worker:: worker PrepareForWorkerInstance failure");
         worker->UpdateWorkerState(TERMINATED);
     }
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     worker->ReleaseWorkerThreadContent();
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, "After ReleaseWorkerThreadContent");
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->HostIsStop()) {
         Helper::CloseHelp::DeletePointer(worker, false);
     } else {
         worker->PublishWorkerOverSignal();
     }
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
 }
 
 bool NewWorker::PrepareForWorkerInstance()
@@ -886,6 +896,7 @@ bool NewWorker::PrepareForWorkerInstance()
 
 void NewWorker::HostOnMessage(const uv_async_t* req)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     NewWorker* worker = static_cast<NewWorker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is null when host onmessage.");
@@ -1103,6 +1114,7 @@ bool NewWorker::UpdateHostState(HostState state)
 
 void NewWorker::TerminateWorker()
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     // when there is no active handle, worker loop will stop automatic.
     uv_close(reinterpret_cast<uv_handle_t*>(&workerOnMessagSignal_), nullptr);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
@@ -1130,6 +1142,7 @@ void NewWorker::PublishWorkerOverSignal()
 
 void NewWorker::WorkerOnMessage(const uv_async_t* req)
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     NewWorker* worker = Helper::DereferenceHelp::DereferenceOf(&NewWorker::workerOnMessagSignal_, req);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
@@ -1400,6 +1413,7 @@ void NewWorker::CloseWorkerCallback()
 
 void NewWorker::ReleaseWorkerThreadContent()
 {
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     hostEngine->DeleteWorker(hostEngine, workerEngine);
