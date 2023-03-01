@@ -21,7 +21,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::WorkerModule {
 using MessageDataType = napi_value;
 class MessageQueue final {
 public:
@@ -38,5 +38,5 @@ private:
     std::mutex queueLock_;
     std::queue<MessageDataType> queue_;
 };
-}  // namespace Commonlibrary::ConcurrentModule
+}  // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_MESSAGE_QUEUE_H_

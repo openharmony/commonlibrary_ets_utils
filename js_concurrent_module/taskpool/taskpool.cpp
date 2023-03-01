@@ -22,8 +22,8 @@
 #include "utils/log.h"
 #include "worker.h"
 
-namespace Commonlibrary::ConcurrentModule {
-using namespace Commonlibrary::ConcurrentModule::Helper;
+namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
@@ -192,4 +192,4 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     TaskManager::GetInstance().CancelTask(env, task->taskId_);
     return nullptr;
 }
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule

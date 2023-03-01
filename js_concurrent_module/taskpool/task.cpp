@@ -19,8 +19,8 @@
 #include "helper/object_helper.h"
 #include "task_manager.h"
 
-namespace Commonlibrary::ConcurrentModule {
-using namespace Commonlibrary::ConcurrentModule::Helper;
+namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
 
 napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
 {
@@ -72,4 +72,4 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         nullptr, nullptr);
     return thisVar;
 }
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule

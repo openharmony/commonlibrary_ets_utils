@@ -18,7 +18,7 @@
 
 #include <uv.h>
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 class Thread {
 public:
     Thread();
@@ -34,5 +34,5 @@ public:
 private:
     uv_thread_t tid_ {0};
 };
-}  // namespace Commonlibrary::ConcurrentModule
+}  // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_THREAD_H_

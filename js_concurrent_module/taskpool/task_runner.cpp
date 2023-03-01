@@ -17,8 +17,8 @@
 
 #include "helper/object_helper.h"
 
-namespace Commonlibrary::ConcurrentModule {
-using namespace Commonlibrary::ConcurrentModule::Helper;
+namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
 TaskRunner::TaskRunner(TaskStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
 
 TaskRunner::~TaskRunner()
@@ -47,4 +47,4 @@ bool TaskRunner::Execute()
     taskInnerRunner_ = new TaskInnerRunner(this);
     return taskInnerRunner_->Start();
 }
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
