@@ -42,9 +42,8 @@ TaskManager::~TaskManager()
     }
     {
         std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-        for (auto iter = taskInfos_.begin(); iter != taskInfos_.end(); iter++) {
-            delete iter->second;
-            iter->second = nullptr;
+        for (auto &[_, taskInfo] : taskInfos_) {
+            delete taskInfo;
         }
         taskInfos_.clear();
     }
@@ -52,13 +51,11 @@ TaskManager::~TaskManager()
 
 uint32_t TaskManager::GenerateTaskId()
 {
-    std::unique_lock<std::mutex> lock(idMutex_);
     return currentTaskId_++;
 }
 
 uint32_t TaskManager::GenerateExecuteId()
 {
-    std::unique_lock<std::mutex> lock(idMutex_);
     return currentExecuteId_++;
 }
 
@@ -145,16 +142,16 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
             "taskpool:: can not find the task");
         return;
     }
-    int32_t result;
-    for (auto item : iter->second) {
-        TaskState state = QueryState(item);
+    int32_t result = 0;
+    for (auto executeId : iter->second) {
+        TaskState state = QueryState(executeId);
         if (state == TaskState::NOT_FOUND) {
             result = ErrorHelper::ERR_CANCAL_NONEXIST_TASK;
             break;
         }
-        UpdateState(item, TaskState::CANCELED);
+        UpdateState(executeId, TaskState::CANCELED);
         if (state == TaskState::WAITING) {
-            TaskInfo* taskInfo = PopTaskInfo(item);
+            TaskInfo* taskInfo = PopTaskInfo(executeId);
             ReleaseTaskContent(taskInfo);
         } else {
             result = ErrorHelper::ERR_CANCAL_RUNNING_TASK;
