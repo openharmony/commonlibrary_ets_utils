@@ -17,12 +17,12 @@
 
 #include "helper/object_helper.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::WorkerModule {
 WorkerRunner::WorkerRunner(WorkerStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
 
 WorkerRunner::~WorkerRunner()
 {
-    Helper::CloseHelp::DeletePointer(workerInnerRunner_, false);
+    Common::Helper::CloseHelp::DeletePointer(workerInnerRunner_, false);
 }
 
 void WorkerRunner::WorkerInnerRunner::Run()
@@ -46,4 +46,4 @@ bool WorkerRunner::Execute()
     workerInnerRunner_ = new WorkerInnerRunner(this);
     return workerInnerRunner_->Start();
 }
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::WorkerModule

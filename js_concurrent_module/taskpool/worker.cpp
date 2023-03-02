@@ -20,7 +20,9 @@
 #include "task_manager.h"
 #include "utils/log.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common::Plugin;
+
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 
 Worker* Worker::WorkerConstructor(napi_env env)
@@ -143,7 +145,7 @@ bool Worker::PrepareForWorkerInstance()
         return false;
     }
     // register timer interface
-    Plugin::Timer::RegisterTime(workerEnv_);
+    Timer::RegisterTime(workerEnv_);
 
     return true;
 }
@@ -157,7 +159,7 @@ void Worker::ReleaseWorkerThreadContent()
         return;
     }
 
-    Plugin::Timer::ClearEnvironmentTimer(workerEnv_);
+    Timer::ClearEnvironmentTimer(workerEnv_);
 
     // 2. delete NativeEngine created in worker thread
     workerEngine->DeleteEngine();
@@ -202,7 +204,7 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_status status = napi_deserialize(env, taskInfo->serializationData, &taskData);
     if (status != napi_ok || taskData == nullptr) {
         HILOG_ERROR("taskpool::PerformTask napi_deserialize fail");
-        napi_value err = Helper::ErrorHelper::NewError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::WORKERSERIALIZATION_ERROR,
             "taskpool: failed to deserialize message.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
@@ -251,7 +253,7 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     napi_status status = napi_serialize(env, result, undefined, &resultData);
     if ((status != napi_ok || resultData == nullptr) && taskInfo->success) {
         taskInfo->success = false;
-        napi_value err = Helper::ErrorHelper::NewError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::WORKERSERIALIZATION_ERROR,
             "taskpool: failed to serialize result.");
         NotifyTaskResult(env, taskInfo, err);
         return;
@@ -294,4 +296,4 @@ void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* value, Native
 
     NotifyTaskResult(env, taskInfo, result);
 }
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule

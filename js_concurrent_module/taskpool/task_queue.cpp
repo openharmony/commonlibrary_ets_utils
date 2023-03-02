@@ -15,7 +15,7 @@
 
 #include "task_queue.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 void TaskQueue::EnqueueTask(std::unique_ptr<Task> task)
 {
     std::unique_lock<std::mutex> lock(mtx_);
@@ -39,4 +39,4 @@ bool TaskQueue::IsEmpty() const
     std::unique_lock<std::mutex> lock(mtx_);
     return tasks_.empty();
 }
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule

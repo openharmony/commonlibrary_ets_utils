@@ -22,7 +22,7 @@
 
 #include "napi/native_api.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 enum TaskState { NOT_FOUND, WAITING, RUNNING, TERMINATED, CANCELED };
 
 class Task {
@@ -33,8 +33,8 @@ public:
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
 
     napi_ref objRef_;
-    uint32_t executeId_;
-    uint32_t taskId_;
+    uint32_t executeId_ = 0;
+    uint32_t taskId_ = 0;
 };
 
 struct TaskInfo {
@@ -49,5 +49,5 @@ struct TaskInfo {
     bool success = true;
     void *worker = nullptr;
 };
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_

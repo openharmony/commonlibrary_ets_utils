@@ -28,7 +28,9 @@
 #include "utils/log.h"
 #include "worker_runner.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::WorkerModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
+
 class NewWorker {
 public:
     static const int8_t WORKERPARAMNUM = 2;
@@ -52,7 +54,7 @@ public:
 
         ~WorkerListener()
         {
-            Helper::NapiHelper::DeleteReference(env_, callback_);
+            NapiHelper::DeleteReference(env_, callback_);
             callback_ = nullptr;
         }
 
@@ -78,10 +80,10 @@ public:
 
         bool operator()(const WorkerListener* listener) const
         {
-            napi_value compareObj = Helper::NapiHelper::GetReferenceValue(env_, listener->callback_);
-            napi_value obj = Helper::NapiHelper::GetReferenceValue(env_, ref_);
+            napi_value compareObj = NapiHelper::GetReferenceValue(env_, listener->callback_);
+            napi_value obj = NapiHelper::GetReferenceValue(env_, ref_);
             // the env of listener and cmp listener must be same env because of Synchronization method
-            return Helper::NapiHelper::StrictEqual(env_, compareObj, obj);
+            return NapiHelper::StrictEqual(env_, compareObj, obj);
         }
 
         napi_env env_ {nullptr};
@@ -329,7 +331,7 @@ public:
     uv_loop_t* GetWorkerLoop() const
     {
         if (workerEnv_ != nullptr) {
-            return Helper::NapiHelper::GetLibUV(workerEnv_);
+            return NapiHelper::GetLibUV(workerEnv_);
         }
         return nullptr;
     }
@@ -464,5 +466,5 @@ private:
 
     std::recursive_mutex liveStatusLock_ {};
 };
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_NEW_H_

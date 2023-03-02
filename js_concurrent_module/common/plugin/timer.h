@@ -25,7 +25,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace Commonlibrary::ConcurrentModule::Plugin {
+namespace Commonlibrary::Concurrent::Common::Plugin {
 struct TimerCallbackInfo {
     napi_env env_;
     uint32_t tId_;
@@ -68,5 +68,5 @@ private:
     static std::map<uint32_t, TimerCallbackInfo*> timerTable;
     static std::mutex timeLock;
 };
-} // namespace Commonlibrary::ConcurrentModule::Plugin
+} // namespace Commonlibrary::Concurrent::Common::Plugin
 #endif // JS_CONCURRENT_MODULE_COMMON_PLUGIN_TIMER_H_
