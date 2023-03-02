@@ -21,8 +21,8 @@
  */
 static napi_value Init(napi_env env, napi_value exports)
 {
-    exports = Commonlibrary::ConcurrentModule::NewWorker::InitWorker(env, exports);
-    exports = Commonlibrary::ConcurrentModule::Worker::InitWorker(env, exports);
+    exports = Commonlibrary::Concurrent::WorkerModule::NewWorker::InitWorker(env, exports);
+    exports = Commonlibrary::Concurrent::WorkerModule::Worker::InitWorker(env, exports);
 
     return exports;
 }

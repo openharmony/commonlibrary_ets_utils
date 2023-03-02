@@ -21,7 +21,7 @@
 #include "native_engine/native_engine.h"
 #include "thread.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 struct TaskStartCallback {
     using CallbackFunction = std::function<void(void*)>;
 
@@ -58,5 +58,5 @@ private:
     TaskStartCallback callback_;
     uv_thread_t selfThreadId_ {0};
 };
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_RUNNER_H_

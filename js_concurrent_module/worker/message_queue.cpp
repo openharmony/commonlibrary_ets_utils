@@ -16,7 +16,7 @@
 #include "message_queue.h"
 #include "utils/log.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::WorkerModule {
 void MessageQueue::EnQueue(MessageDataType data)
 {
     queueLock_.lock();
@@ -57,4 +57,4 @@ void MessageQueue::Clear(napi_env env)
     }
     queueLock_.unlock();
 }
-}  // namespace Commonlibrary::ConcurrentModule
+}  // namespace Commonlibrary::Concurrent::WorkerModule

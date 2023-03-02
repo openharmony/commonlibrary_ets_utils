@@ -22,7 +22,7 @@
 #include "napi/native_api.h"
 #include "task.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 class TaskQueue {
 public:
     TaskQueue() = default;
@@ -38,5 +38,5 @@ private:
     std::queue<std::unique_ptr<Task>> tasks_;
     mutable std::mutex mtx_;
 };
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_

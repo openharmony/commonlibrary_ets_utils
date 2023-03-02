@@ -20,10 +20,11 @@
 #include "utils/log.h"
 #include "worker.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 const static int MAX_THREADPOOL_SIZE = 2;
 
-using namespace Commonlibrary::ConcurrentModule::Helper;
+using namespace Commonlibrary::Concurrent::Common::Helper;
+
 TaskManager &TaskManager::GetInstance()
 {
     static TaskManager manager;
@@ -176,7 +177,7 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value object, uint32_
     napi_status serializeStatus = napi_ok;
     serializeStatus = napi_serialize(env, object, undefined, &taskData);
     if (serializeStatus != napi_ok || taskData == nullptr) {
-        ErrorHelper::ThrowError(env, Helper::ErrorHelper::WORKERSERIALIZATION_ERROR,
+        ErrorHelper::ThrowError(env, ErrorHelper::WORKERSERIALIZATION_ERROR,
             "taskpool: failed to serialize message.");
         return nullptr;
     }
@@ -186,7 +187,7 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value object, uint32_
     taskInfo->serializationData = taskData;
     taskInfo->taskId = taskId;
     taskInfo->onResultSignal = new uv_async_t;
-    uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env);
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_async_init(loop, taskInfo->onResultSignal, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
     taskInfo->onResultSignal->data = taskInfo;
 
@@ -266,4 +267,4 @@ void TaskManager::InitTaskRunner(napi_env env)
         NotifyWorkerAdded(worker);
     }
 }
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule

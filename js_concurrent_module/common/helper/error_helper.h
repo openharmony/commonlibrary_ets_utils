@@ -20,7 +20,7 @@
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 
-namespace Commonlibrary::ConcurrentModule::Helper {
+namespace Commonlibrary::Concurrent::Common::Helper {
 class ErrorHelper {
 public:
     ErrorHelper() = default;
@@ -79,5 +79,5 @@ public:
     static const int32_t NOTEXIST_ERROR = 10200015; // 10200015 : the task does not exist when it is canceled
     static const int32_t RUNNING_ERROR = 10200016; // 10200016 : the task is executing when it is canceled
 };
-} // namespace Commonlibrary::ConcurrentModule::Helper
+} // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H_

@@ -24,7 +24,7 @@
 #include "task_queue.h"
 #include "napi/native_api.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 class Worker;
 
 class TaskManager {
@@ -82,5 +82,5 @@ private:
 
     TaskQueue taskQueue_;
 };
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_

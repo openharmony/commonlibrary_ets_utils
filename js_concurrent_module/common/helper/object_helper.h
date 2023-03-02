@@ -16,7 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
 #define JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
 
-namespace Commonlibrary::ConcurrentModule::Helper {
+namespace Commonlibrary::Concurrent::Common::Helper {
 class DereferenceHelp {
 public:
     template<typename Inner, typename Outer>
@@ -69,5 +69,5 @@ private:
     const T* data_;
     bool isArray_;
 };
-} // namespace Commonlibrary::ConcurrentModule::Helper
+} // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_

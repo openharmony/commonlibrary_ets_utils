@@ -23,7 +23,7 @@
 #include "native_engine/native_engine.h"
 #include "task.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 enum Priority {
     HIGH,
     MEDIUM,
@@ -51,5 +51,5 @@ private:
 
     friend class TaskManager;
 };
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H_
