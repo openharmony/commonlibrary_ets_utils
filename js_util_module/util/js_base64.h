@@ -120,7 +120,7 @@ namespace OHOS::Util {
     private:
         unsigned char *DecodeAchieve(napi_env env, const char *input, size_t inputLen);
         unsigned char *EncodeAchieve(const unsigned char *input, size_t inputLen);
-        size_t Finds(char ch);
+        size_t Finds(napi_env env, char ch);
         size_t DecodeOut(size_t equalCount, size_t retLen);
         size_t retLen = 0;
         size_t decodeOutLen = 0;
