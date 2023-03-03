@@ -226,7 +226,7 @@ namespace OHOS::Util {
                 if (inp >= (inputLen - equalCount)) {
                     break;
                 }
-                bitWise = (bitWise << TRAGET_SIX) | (Finds(input[inp]));
+                bitWise = (bitWise << TRAGET_SIX) | (Finds(env, input[inp]));
                 inp++;
                 temp++;
             }
@@ -269,13 +269,18 @@ namespace OHOS::Util {
     }
 
     /* Decoding lookup function */
-    size_t Base64::Finds(char ch)
+    size_t Base64::Finds(napi_env env, char ch)
     {
         size_t couts = 0;
         // 65:Number of elements in the encoding table.
         for (size_t i = 0; i < 65; i++) {
             if (BASE[i] == ch) {
                 couts = i;
+                break;
+            }
+            // 64:Number of elements in the encoding table.
+            if (i == 64 && BASE[i] != ch) {
+                napi_throw_error(env, "-1", "The input string contains unsupported characters");
             }
         }
         return couts;
