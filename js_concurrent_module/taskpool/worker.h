@@ -29,7 +29,9 @@
 #include "task_runner.h"
 #include "utils/log.h"
 
-namespace Commonlibrary::ConcurrentModule {
+namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
+
 class Worker {
 public:
     ~Worker();
@@ -46,7 +48,7 @@ private:
     uv_loop_t* GetHostLoop() const
     {
         if (hostEnv_ != nullptr) {
-            return Helper::NapiHelper::GetLibUV(hostEnv_);
+            return NapiHelper::GetLibUV(hostEnv_);
         }
         return nullptr;
     }
@@ -59,7 +61,7 @@ private:
     uv_loop_t* GetWorkerLoop() const
     {
         if (workerEnv_ != nullptr) {
-            return Helper::NapiHelper::GetLibUV(workerEnv_);
+            return NapiHelper::GetLibUV(workerEnv_);
         }
         return nullptr;
     }
@@ -93,5 +95,5 @@ private:
 #endif
     std::unique_ptr<TaskRunner> runner_ {};
 };
-} // namespace Commonlibrary::ConcurrentModule
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_

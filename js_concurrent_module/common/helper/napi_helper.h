@@ -20,7 +20,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace Commonlibrary::ConcurrentModule::Helper {
+namespace Commonlibrary::Concurrent::Common::Helper {
 class NapiHelper {
 public:
     static bool IsString(napi_value value);
@@ -46,5 +46,5 @@ public:
     static bool GetBooleanValue(napi_env env, napi_value value);
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
 };
-} // namespace Commonlibrary::ConcurrentModule::Helper
+} // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_

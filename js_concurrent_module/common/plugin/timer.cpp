@@ -17,7 +17,7 @@
 
 #include "utils/log.h"
 
-namespace Commonlibrary::ConcurrentModule::Plugin {
+namespace Commonlibrary::Concurrent::Common::Plugin {
 uint32_t Timer::timeCallbackId = 0;
 std::map<uint32_t, TimerCallbackInfo*> Timer::timerTable;
 std::mutex Timer::timeLock;
@@ -208,4 +208,4 @@ void Timer::ClearEnvironmentTimer(napi_env env)
         }
     }
 }
-} // namespace Commonlibrary::ConcurrentModule::Plugin
+} // namespace Commonlibrary::Concurrent::Common::Plugin
