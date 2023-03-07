@@ -115,11 +115,13 @@ void Timer::TimerCallback(uv_timer_t* handle)
     }
     napi_call_function(callbackInfo->env_, undefinedValue, callback,
                        callbackInfo->argc_, callbackArgv, &callbackResult);
-    if (callbackResult == nullptr) {
-        HILOG_ERROR("call timerCallback error");
-        return;
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(callbackInfo->env_, &exception);
+    if (exception != nullptr) {
+        HILOG_ERROR("timerCallback occurs exception");
     }
-    if (!callbackInfo->repeat_) {
+    if (!callbackInfo->repeat_ || exception != nullptr) {
         {
             std::lock_guard<std::mutex> lock(timeLock);
             if (timerTable.find(callbackInfo->tId_) == timerTable.end()) {
