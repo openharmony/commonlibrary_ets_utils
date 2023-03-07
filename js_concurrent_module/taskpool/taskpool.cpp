@@ -72,8 +72,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     TaskManager::GetInstance().InitTaskRunner(env);
     FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     // check the argc
-    size_t argc = 0;
-    napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be at least one");
         return nullptr;
@@ -171,7 +170,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     size_t argc = 1;
     napi_value args[1];
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
-    if (argc != 1) {
+    if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
         return nullptr;
     }

@@ -16,6 +16,7 @@
 #include "task.h"
 
 #include "helper/error_helper.h"
+#include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "task_manager.h"
 
@@ -25,8 +26,7 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
 {
     // check argv count
-    size_t argc = 0;
-    napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create task need more than one param");
         return nullptr;

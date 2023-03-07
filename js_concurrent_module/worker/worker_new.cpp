@@ -419,20 +419,18 @@ void NewCallWorkCallback(napi_env env, napi_value recv, size_t argc, const napi_
 
 napi_value NewWorker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
 {
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    size_t argc = 1;
+    napi_value args[1];
+    napi_value thisVar = nullptr;
+    void* data = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (argc < 1) {
         ErrorHelper::ThrowError(env,
             ErrorHelper::TYPE_ERROR, "the count of event param must be more than 1 in DispatchEvent");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
-    // check 1st param is string
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-
+    // check 1st param is event
     if (!NapiHelper::IsObject(args[0])) {
         ErrorHelper::ThrowError(env,
             ErrorHelper::TYPE_ERROR, "the type of event 1st param must be Event in DispatchEvent");
@@ -453,7 +451,6 @@ napi_value NewWorker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerRef_);
-    napi_value argv[1] = { args[0] };
 
     char* typeStr = NapiHelper::GetString(env, typeValue);
     if (typeStr == nullptr) {
@@ -461,14 +458,14 @@ napi_value NewWorker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
         return NapiHelper::CreateBooleanValue(env, false);
     }
     if (strcmp(typeStr, "error") == 0) {
-        NewCallWorkCallback(env, obj, 1, argv, "onerror");
+        NewCallWorkCallback(env, obj, 1, args, "onerror");
     } else if (strcmp(typeStr, "messageerror") == 0) {
-        NewCallWorkCallback(env, obj, 1, argv, "onmessageerror");
+        NewCallWorkCallback(env, obj, 1, args, "onmessageerror");
     } else if (strcmp(typeStr, "message") == 0) {
-        NewCallWorkCallback(env, obj, 1, argv, "onmessage");
+        NewCallWorkCallback(env, obj, 1, args, "onmessage");
     }
 
-    worker->HandleEventListeners(env, obj, 1, argv, typeStr);
+    worker->HandleEventListeners(env, obj, 1, args, typeStr);
 
     CloseHelp::DeletePointer(typeStr, true);
     return NapiHelper::CreateBooleanValue(env, true);
@@ -643,16 +640,14 @@ napi_value NewWorker::WorkerPortAddEventListener(napi_env env, napi_callback_inf
 
 napi_value NewWorker::WorkerPortDispatchEvent(napi_env env, napi_callback_info cbinfo)
 {
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    size_t argc = 1;
+    napi_value args[1];
+    NewWorker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "DispatchEvent param count must be more than 1.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
-
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    NewWorker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
     if (!NapiHelper::IsObject(args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker DispatchEvent 1st param must be Event.");
@@ -670,7 +665,6 @@ napi_value NewWorker::WorkerPortDispatchEvent(napi_env env, napi_callback_info c
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
-    napi_value argv[1] = { args[0] };
     char* typeStr = NapiHelper::GetString(env, typeValue);
     if (typeStr == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener type must be not null.");
@@ -680,14 +674,14 @@ napi_value NewWorker::WorkerPortDispatchEvent(napi_env env, napi_callback_info c
     napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerPort_);
 
     if (strcmp(typeStr, "error") == 0) {
-        NewCallWorkCallback(env, obj, 1, argv, "onerror");
+        NewCallWorkCallback(env, obj, 1, args, "onerror");
     } else if (strcmp(typeStr, "messageerror") == 0) {
-        NewCallWorkCallback(env, obj, 1, argv, "onmessageerror");
+        NewCallWorkCallback(env, obj, 1, args, "onmessageerror");
     } else if (strcmp(typeStr, "message") == 0) {
-        NewCallWorkCallback(env, obj, 1, argv, "onmessage");
+        NewCallWorkCallback(env, obj, 1, args, "onmessage");
     }
 
-    worker->ParentPortHandleEventListeners(env, obj, 1, argv, typeStr);
+    worker->ParentPortHandleEventListeners(env, obj, 1, args, typeStr);
 
     CloseHelp::DeletePointer(typeStr, true);
     return NapiHelper::CreateBooleanValue(env, true);
