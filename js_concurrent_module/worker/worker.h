@@ -34,7 +34,7 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 class Worker {
 public:
-    static const int8_t WORKERPARAMNUM = 2;
+    static const int8_t NUM_WORKER_ARGS = 2;
 
     enum RunnerState { STARTING, RUNNING, TERMINATEING, TERMINATED };
     enum HostState { ACTIVE, INACTIVE };

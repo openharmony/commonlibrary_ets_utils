@@ -64,9 +64,10 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     napi_wrap(
         env, thisVar, task,
         [](napi_env env, void *data, void *hint) {
-            auto obj = reinterpret_cast<Task*>(data);
-            if (obj != nullptr) {
-                delete obj;
+            auto task = reinterpret_cast<Task*>(data);
+            if (task != nullptr) {
+                napi_delete_reference(env, task->objRef_);
+                delete task;
             }
         },
         nullptr, nullptr);

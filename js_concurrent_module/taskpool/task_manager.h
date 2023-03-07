@@ -64,9 +64,8 @@ private:
     void NotifyWorkerAdded(Worker *worker);
     void NotifyExecuteTask();
 
-    int32_t currentExecuteId_ = 0;
-    int32_t currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
-    std::mutex idMutex_;
+    std::atomic<int32_t> currentExecuteId_ = 0;
+    std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
 
     std::unordered_map<uint32_t, TaskInfo*> taskInfos_;
     std::shared_mutex taskInfosMutex_;

@@ -204,7 +204,7 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_status status = napi_deserialize(env, taskInfo->serializationData, &taskData);
     if (status != napi_ok || taskData == nullptr) {
         HILOG_ERROR("taskpool::PerformTask napi_deserialize fail");
-        napi_value err = ErrorHelper::NewError(env, ErrorHelper::WORKERSERIALIZATION_ERROR,
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
             "taskpool: failed to deserialize message.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
@@ -253,7 +253,7 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     napi_status status = napi_serialize(env, result, undefined, &resultData);
     if ((status != napi_ok || resultData == nullptr) && taskInfo->success) {
         taskInfo->success = false;
-        napi_value err = ErrorHelper::NewError(env, ErrorHelper::WORKERSERIALIZATION_ERROR,
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
             "taskpool: failed to serialize result.");
         NotifyTaskResult(env, taskInfo, err);
         return;

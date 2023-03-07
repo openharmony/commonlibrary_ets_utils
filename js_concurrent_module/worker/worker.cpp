@@ -549,7 +549,7 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
 
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
-    if (argc >= WORKERPARAMNUM) {
+    if (argc >= NUM_WORKER_ARGS) {
         if (!NapiHelper::IsArray(argv[1])) {
             napi_throw_error(env, nullptr, "Transfer list must be an Array");
             return nullptr;
@@ -592,7 +592,7 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
-    if (argc >= WORKERPARAMNUM) {
+    if (argc >= NUM_WORKER_ARGS) {
         if (!NapiHelper::IsArray(argv[1])) {
             napi_throw_error(env, nullptr, "Transfer list must be an Array");
             return nullptr;
@@ -830,7 +830,7 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
 napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, ListenerMode mode)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < WORKERPARAMNUM) {
+    if (argc < NUM_WORKER_ARGS) {
         napi_throw_error(env, nullptr, "Worker param count must be more than WORKPARAMNUM with on");
         return nullptr;
     }
@@ -857,9 +857,9 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
 
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
     auto listener = new WorkerListener(env, callback, mode);
-    if (mode == ONCE && argc > WORKERPARAMNUM) {
-        if (NapiHelper::IsObject(args[WORKERPARAMNUM])) {
-            napi_value onceValue = NapiHelper::GetNameProperty(env, args[WORKERPARAMNUM], "once");
+    if (mode == ONCE && argc > NUM_WORKER_ARGS) {
+        if (NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
+            napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
             bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
             if (!isOnce) {
                 listener->SetMode(PERMANENT);
@@ -1259,8 +1259,8 @@ void Worker::ReleaseHostThreadContent()
 napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < WORKERPARAMNUM) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than WORKPARAMNUM with on");
+    if (argc < NUM_WORKER_ARGS) {
+        napi_throw_error(env, nullptr, "Worker param count must be more than NUM_WORKER_ARGS with on");
         return nullptr;
     }
 
@@ -1292,8 +1292,8 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
 
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
     auto listener = new WorkerListener(env, callback, PERMANENT);
-    if (argc > WORKERPARAMNUM && NapiHelper::IsObject(args[WORKERPARAMNUM])) {
-        napi_value onceValue = NapiHelper::GetNameProperty(env, args[WORKERPARAMNUM], "once");
+    if (argc > NUM_WORKER_ARGS && NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
+        napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
         bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
         if (isOnce) {
             listener->SetMode(ONCE);

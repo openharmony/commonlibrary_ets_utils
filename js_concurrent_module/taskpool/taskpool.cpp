@@ -138,10 +138,8 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
     TaskManager::GetInstance().StoreStateInfo(taskInfo->executeId, TaskState::WAITING);
     TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, taskInfo->executeId);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
-    Task* currentTask = new Task();
-    *currentTask = *task;
-    std::unique_ptr<Task> pointer(currentTask);
-    TaskManager::GetInstance().EnqueueTask(std::move(pointer));
+    std::unique_ptr<Task> executeInstance = std::make_unique<Task>(*task);
+    TaskManager::GetInstance().EnqueueTask(std::move(executeInstance));
     if (taskInfo->promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
@@ -170,17 +168,14 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
-    size_t argc = 0;
-    napi_get_cb_info(env, cbinfo, &argc, nullptr, nullptr, nullptr);
+    size_t argc = 1;
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc != 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
         return nullptr;
     }
 
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type != napi_object) {

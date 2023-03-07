@@ -33,13 +33,13 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 class NewWorker {
 public:
-    static const int8_t WORKERPARAMNUM = 2;
+    static const int8_t NUM_WORKER_ARGS = 2;
     static const int32_t TYPE_ERROR = 401;
-    static const int32_t WORKERINITIALIZATION_ERROR = 10200003;
-    static const int32_t WORKENOTRUNNING_ERROR = 10200004;
-    static const int32_t WORKERUNSUPPORTED_ERROR = 10200005;
-    static const int32_t WORKERSERIALIZATION_ERROR = 10200006;
-    static const int32_t WORKERFILEPATH_ERROR = 10200007;
+    static const int32_t ERR_WORKER_INITIALIZATION = 10200003;
+    static const int32_t ERR_WORKER_NOT_RUNNING = 10200004;
+    static const int32_t ERR_WORKER_UNSUPPORTED = 10200005;
+    static const int32_t ERR_WORKER_SERIALIZATION = 10200006;
+    static const int32_t ERR_WORKER_INVALID_FILEPATH = 10200007;
 
     enum RunnerState { STARTING, RUNNING, TERMINATEING, TERMINATED };
     enum HostState { ACTIVE, INACTIVE };
