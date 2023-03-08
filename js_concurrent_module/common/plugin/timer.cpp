@@ -68,15 +68,13 @@ napi_value Timer::SetInterval(napi_env env, napi_callback_info cbinfo)
 napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
 {
     // 1. check args
-    size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    size_t argc = 1;
+    napi_value argv[1];
+    napi_get_cb_info(env, cbinfo, &argc, argv, nullptr, nullptr);
     if (argc < 1) {
         HILOG_ERROR("the number of params must be one");
         return nullptr;
     }
-    napi_value* argv = new napi_value[argc];
-    Helper::ObjectScope<napi_value> scope(argv, true);
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
 
     uint32_t tId;
     napi_status status = napi_get_value_uint32(env, argv[0], &tId);
