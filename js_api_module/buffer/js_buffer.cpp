@@ -321,7 +321,11 @@ void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end
 
     uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
     while (offset < end) {
-        WriteBytes(str, loop, raw_ + byteOffset_ + offset);
+        if (loop + offset > end) {
+            WriteBytes(str, end - offset, raw_ + byteOffset_ + offset);
+        } else {
+            WriteBytes(str, loop, raw_ + byteOffset_ + offset);
+        }
         offset += loop;
     }
 }
