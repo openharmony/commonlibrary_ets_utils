@@ -82,7 +82,8 @@ private:
     bool PrepareForWorkerInstance();
     void ReleaseWorkerThreadContent();
     static void PerformTask(const uv_async_t* req);
-    static void TaskResultCallback(NativeEngine* engine, NativeValue* value, NativeValue* data);
+    static void TaskResultCallback(NativeEngine* engine, NativeValue* result,
+        bool success, NativeValue* data);
     static void NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result);
 
     napi_env hostEnv_ {nullptr};

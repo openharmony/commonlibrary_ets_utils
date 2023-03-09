@@ -269,7 +269,8 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     worker->NotifyIdle();
 }
 
-void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* value, NativeValue* data)
+void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result,
+    bool success, NativeValue* data)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     if (engine == nullptr) {
@@ -278,12 +279,11 @@ void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* value, Native
     }
 
     auto env = reinterpret_cast<napi_env>(engine);
-    auto result = reinterpret_cast<napi_value>(value);
 
     napi_valuetype type;
     napi_typeof(env, reinterpret_cast<napi_value>(data), &type);
     if (type != napi_external) {
-        HILOG_INFO("taskpool::TaskResultCallback Concurrent func not called by taskpool.execute");
+        HILOG_ERROR("taskpool::TaskResultCallback Concurrent func not called by taskpool.execute");
         return;
     }
 
@@ -294,6 +294,7 @@ void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* value, Native
         return;
     }
 
-    NotifyTaskResult(env, taskInfo, result);
+    taskInfo->success = success;
+    NotifyTaskResult(env, taskInfo, reinterpret_cast<napi_value>(result));
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
