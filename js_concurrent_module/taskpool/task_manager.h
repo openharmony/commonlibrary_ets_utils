@@ -19,9 +19,9 @@
 #include <array>
 #include <list>
 #include <memory>
-#include <set>
 #include <shared_mutex>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "task_queue.h"
 #include "napi/native_api.h"
@@ -43,7 +43,6 @@ public:
     uint32_t GenerateTaskId();
     uint32_t GenerateExecuteId();
     TaskInfo* PopTaskInfo(uint32_t executeId);
-    void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
     void StoreStateInfo(uint32_t executeId, TaskState state);
     void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
     bool UpdateState(uint32_t executeId, TaskState state);
@@ -52,9 +51,13 @@ public:
     uint32_t DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
     void NotifyWorkerIdle(Worker *worker);
-    void InitTaskRunner(napi_env env);
+    void PopTaskEnvInfo(napi_env env);
+    void InitTaskManager(napi_env env);
+    void UpdateExecutedInfo(uint64_t duration);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId);
     void ReleaseTaskContent(TaskInfo* taskInfo);
+    uint32_t GetTaskNum();
+    uint32_t GetThreadNum();
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -63,12 +66,19 @@ private:
     TaskManager& operator=(TaskManager &&) = delete;
 
     TaskState QueryState(uint32_t executeId);
-
-    bool NeedExpandWorker();
-    bool IsTaskQueueNotEmpty();
-
-    void NotifyWorkerAdded(Worker *worker);
     void NotifyExecuteTask();
+    void CreateWorker(napi_env env);
+    void NotifyWorkerAdded(Worker *worker);
+    void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
+
+    // for load balance
+    void RunTaskManager();
+    void CreateOrDeleteWorkers(int32_t targetNum);
+    void StoreTaskEnvInfo(napi_env env);
+    bool HasTaskEnvInfo(napi_env env);
+    int32_t ComputeSuitableThreadNum();
+    static void RestartTimer(const uv_async_t* req);
+    static void TriggerLoadBalance(const uv_timer_t* req);
 
     std::atomic<int32_t> currentExecuteId_ = 1; // 1: executeId begin from 1, 0 for exception
     std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
@@ -84,10 +94,25 @@ private:
     std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_ {};
     std::shared_mutex runningInfosMutex_;
 
-    std::set<Worker*> workers_ {};
-    std::set<Worker*> idleWorkers_ {};
-    std::mutex workersMutex_;
+    std::unordered_map<napi_env, uint32_t> taskEnvInfo_ {};
+    std::shared_mutex taskEnvInfoMutex_;
 
+    std::unordered_set<Worker*> workers_ {};
+    std::unordered_set<Worker*> idleWorkers_ {};
+    std::recursive_mutex workersMutex_;
+
+    // for load balance
+    napi_env hostEnv_ = nullptr;
+    uv_loop_t* loop_ = nullptr;
+    uv_timer_t* timer_ = nullptr;
+    uv_async_t* notifyRestartTimer_ = nullptr;
+    std::atomic<bool> suspend_ = false;
+    std::atomic<uint32_t> retryCount_ = 0;
+    std::atomic<uint32_t> totalExecCount_ = 0;
+    std::atomic<uint64_t> totalExecTime_ = 0;
+
+    bool isInitialized_ = false;
+    std::mutex initMutex_;
     std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};
     std::mutex taskQueuesMutex_;
 };

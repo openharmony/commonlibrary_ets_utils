@@ -19,6 +19,7 @@
 #include <list>
 #include <memory>
 
+#include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
@@ -34,16 +35,25 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 class Worker {
 public:
-    ~Worker();
-
     static Worker* WorkerConstructor(napi_env env);
 
     void NotifyExecuteTask();
 
-    void NotifyIdle();
-
 private:
     explicit Worker(napi_env env);
+
+    ~Worker() = default;
+
+    void NotifyIdle();
+
+    void NotifyTaskRunning()
+    {
+        runningCount_++;
+    }
+
+    // the function will only be called when the task is finished or
+    // exits abnormally, so we can not put it in the scope directly
+    void NotifyTaskFinished();
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -69,6 +79,29 @@ private:
         }
     }
 
+    // we will use the scope to manage resources automatically,
+    // including the HandleScope and NotifyRunning/NotifyIdle
+    class RunningScope {
+    public:
+        RunningScope(Worker* worker, napi_status& status) : worker_(worker)
+        {
+            status = napi_open_handle_scope(worker_->workerEnv_, &scope_);
+            worker_->NotifyTaskRunning();
+        }
+
+        ~RunningScope()
+        {
+            worker_->NotifyIdle();
+            if (scope_ != nullptr) {
+                napi_close_handle_scope(worker_->workerEnv_, scope_);
+            }
+        }
+
+    private:
+        Worker* worker_ = nullptr;
+        napi_handle_scope scope_ = nullptr;
+    };
+
     void StartExecuteInThread();
     static void ExecuteInThread(const void* data);
     bool PrepareForWorkerInstance();
@@ -77,15 +110,20 @@ private:
     static void TaskResultCallback(NativeEngine* engine, NativeValue* result,
         bool success, NativeValue* data);
     static void NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result);
+    static void ReleaseWorkerHandles(const uv_async_t* req);
 
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
     uv_async_t *performTaskSignal_ {nullptr};
+    uv_async_t *clearWorkerSignal_ {nullptr};
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t *debuggerOnPostTaskSignal_ {nullptr};
     std::function<void()> debuggerTask_;
 #endif
-    std::unique_ptr<TaskRunner> runner_ {};
+    std::unique_ptr<TaskRunner> runner_ {nullptr};
+    std::atomic<int32_t> runningCount_ = 0;
+    std::atomic<uint64_t> idlePoint_ = ConcurrentHelper::GetMilliseconds();
+    friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_

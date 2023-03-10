@@ -215,4 +215,13 @@ void Timer::ClearEnvironmentTimer(napi_env env)
         }
     }
 }
+
+bool Timer::HasTimer(napi_env env)
+{
+    std::lock_guard<std::mutex> lock(timeLock);
+    auto iter = std::find_if(timerTable.begin(), timerTable.end(), [env](const auto &item) {
+        return item.second->env_ == env;
+    });
+    return iter != timerTable.end();
+}
 } // namespace Commonlibrary::JsSysModule
