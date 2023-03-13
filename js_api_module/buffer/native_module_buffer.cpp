@@ -479,6 +479,7 @@ static napi_value WriteString(napi_env env, napi_callback_info info)
 
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    length = (value.length() < length) ? value.length() : length;
     unsigned int lengthWrote = buf->WriteString(value, offset, length, encoding);
 
     napi_value result = nullptr;
