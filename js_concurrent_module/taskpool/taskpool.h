@@ -24,12 +24,6 @@
 #include "task.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-enum Priority {
-    HIGH,
-    MEDIUM,
-    LOW
-};
-
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
@@ -46,7 +40,7 @@ private:
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
 
     static napi_value ExecuteFunction(napi_env env, napi_value object);
-    static napi_value ExecuteTask(napi_env env, Task* task);
+    static napi_value ExecuteTask(napi_env env, Task* task, Priority priority = Priority::DEFAULT);
     static void HandleTaskResult(const uv_async_t* req);
 
     friend class TaskManager;

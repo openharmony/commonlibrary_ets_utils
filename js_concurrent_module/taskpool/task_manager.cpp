@@ -22,6 +22,8 @@
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 const static int MAX_THREADPOOL_SIZE = 4;
+const static int HIGH_PRIORITY_TASK_COUNT = 5;
+const static int MEDIUM_PRIORITY_TASK_COUNT = 5;
 
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
@@ -29,6 +31,14 @@ TaskManager &TaskManager::GetInstance()
 {
     static TaskManager manager;
     return manager;
+}
+
+TaskManager::TaskManager()
+{
+    for (size_t i = 0; i < taskQueues_.size(); i++) {
+        std::unique_ptr<TaskQueue> taskQueue = std::make_unique<TaskQueue>();
+        taskQueues_[i] = std::move(taskQueue);
+    }
 }
 
 TaskManager::~TaskManager()
@@ -234,23 +244,44 @@ void TaskManager::NotifyWorkerAdded(Worker *worker)
     workers_.insert(worker);
 }
 
-void TaskManager::EnqueueTask(std::unique_ptr<Task> task)
+void TaskManager::EnqueueTask(std::unique_ptr<Task> task, Priority priority)
 {
-    taskQueue_.EnqueueTask(std::move(task));
+    {
+        std::unique_lock<std::mutex> lock(taskQueuesMutex_);
+        taskQueues_[priority]->EnqueueTask(std::move(task));
+    }
     NotifyExecuteTask();
 }
 
 std::unique_ptr<Task> TaskManager::DequeueTask()
 {
-    return taskQueue_.DequeueTask();
+    std::unique_lock<std::mutex> lock(taskQueuesMutex_);
+    if (highPriorityTask_ < HIGH_PRIORITY_TASK_COUNT) {
+        auto &highTaskQueue = taskQueues_[Priority::HIGH];
+        auto task = highTaskQueue->DequeueTask();
+        if (task != nullptr) {
+            highPriorityTask_++;
+            return task;
+        }
+    }
+    highPriorityTask_ = 0;
+
+    if (mediumPriorityTask_ < MEDIUM_PRIORITY_TASK_COUNT) {
+        auto &mediumTaskQueue = taskQueues_[Priority::MEDIUM];
+        auto task = mediumTaskQueue->DequeueTask();
+        if (task != nullptr) {
+            mediumPriorityTask_++;
+            return task;
+        }
+    }
+    mediumPriorityTask_ = 0;
+
+    auto &lowTaskQueue = taskQueues_[Priority::LOW];
+    return lowTaskQueue->DequeueTask();
 }
 
 void TaskManager::NotifyExecuteTask()
 {
-    if (taskQueue_.IsEmpty()) {
-        return;
-    }
-
     std::unique_lock<std::mutex> lock(workersMutex_);
     if (idleWorkers_.empty()) {
         return;
