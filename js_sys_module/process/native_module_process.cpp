@@ -23,7 +23,7 @@
 #include "securec.h"
 #include "utils/log.h"
 
-namespace OHOS::Js_sys_module::Process {
+namespace OHOS::JsSysModule::Process {
     static napi_value DealType(napi_env env, napi_value args[], size_t argsSize)
     {
         if (args[0] != nullptr) {
@@ -737,4 +737,4 @@ namespace OHOS::Js_sys_module::Process {
     {
         napi_module_register(&processModule);
     }
-} // namespace OHOS::Js_sys_module::Process
+} // namespace OHOS::JsSysModule::Process

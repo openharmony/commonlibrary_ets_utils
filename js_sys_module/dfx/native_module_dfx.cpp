@@ -19,7 +19,7 @@
 #include "securec.h"
 #include "utils/log.h"
 
-namespace OHOS::Js_sys_module::Dfx {
+namespace OHOS::JsSysModule::Dfx {
     constexpr int NUMBER_OF_PARAMETER_TWO = 2;
     static napi_value DumpHeapSnapshot(napi_env env, napi_callback_info info)
     {
@@ -207,4 +207,4 @@ namespace OHOS::Js_sys_module::Dfx {
     {
         napi_module_register(&dfxModule);
     }
-} // namespace OHOS::Js_sys_module::Dfx
+} // namespace OHOS::JsSysModule::Dfx
