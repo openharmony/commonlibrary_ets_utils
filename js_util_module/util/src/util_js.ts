@@ -14,11 +14,11 @@
  */
 
 interface HelpUtil {
-  textEncoder: Object;
-  textDecoder: Object;
-  base64: Object;
-  base64Helper: Object;
-  types: Object;
+  TextEncoder: Object;
+  TextDecoder: Object;
+  Base64: Object;
+  Base64Helper: Object;
+  Types: Object;
   dealwithformatstring(formatString: string | Array<string | number | Fn>): string;
   printf(formatString: string | Array<string | number | Fn>,
     ...valueString: Array<Object>): string;
@@ -35,11 +35,11 @@ interface Fn {
 }
 declare function requireInternal(s: string): HelpUtil;
 const helpUtil = requireInternal('util');
-let textEncoder = helpUtil.textEncoder;
-let textDecoder = helpUtil.textDecoder;
-let base64 = helpUtil.base64;
-let base64Helper = helpUtil.base64Helper;
-let types = helpUtil.types;
+let textEncoder = helpUtil.TextEncoder;
+let textDecoder = helpUtil.TextDecoder;
+let base64 = helpUtil.Base64;
+let base64Helper = helpUtil.Base64Helper;
+let types = helpUtil.Types;
 
 const typeErrorCode = 401;
 const syntaxErrorCode = 10200002;
