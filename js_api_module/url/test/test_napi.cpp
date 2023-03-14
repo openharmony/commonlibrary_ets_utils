@@ -331,9 +331,9 @@ HWTEST_F(NativeEngineTest, testUrlSetHref001, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetHost(env), output);
     ASSERT_STREQ(output.c_str(), "host:199");
-    url.SetHref("http:huawei.com");
+    url.SetHref("http:example.com");
     DealNapiStrValue(env, url.GetHost(env), output);
-    ASSERT_STREQ(output.c_str(), "huawei.com");
+    ASSERT_STREQ(output.c_str(), "example.com");
 }
 
 HWTEST_F(NativeEngineTest, testUrlSetHref002, testing::ext::TestSize.Level0)
@@ -343,9 +343,9 @@ HWTEST_F(NativeEngineTest, testUrlSetHref002, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetHost(env), output);
     ASSERT_STREQ(output.c_str(), "host:199");
-    url.SetHref("   http:huawei.com");
+    url.SetHref("   http:example.com");
     DealNapiStrValue(env, url.GetHost(env), output);
-    ASSERT_STREQ(output.c_str(), "huawei.com");
+    ASSERT_STREQ(output.c_str(), "example.com");
 }
 
 HWTEST_F(NativeEngineTest, testUrlHostname001, testing::ext::TestSize.Level0)
