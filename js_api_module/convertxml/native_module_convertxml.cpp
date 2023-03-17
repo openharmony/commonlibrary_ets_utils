@@ -88,21 +88,6 @@ namespace OHOS::Xml {
         return exports;
     }
 
-    static napi_module convertXmlModule = {
-        .nm_version = 1,
-        .nm_flags = 0,
-        .nm_filename = nullptr,
-        .nm_register_func = ConvertXmlInit,
-        .nm_modname = "convertxml",
-        .nm_priv = reinterpret_cast<void*>(0),
-        .reserved = { 0 },
-    };
-
-    extern "C" __attribute__((constructor)) void RegisterModule()
-    {
-        napi_module_register(&convertXmlModule);
-    }
-
     extern "C"
     __attribute__((visibility("default"))) void NAPI_convertxml_GetJSCode(const char **buf, int *bufLen)
     {
@@ -122,5 +107,21 @@ namespace OHOS::Xml {
         if (buflen != nullptr) {
             *buflen = _binary_convertxml_abc_end - _binary_convertxml_abc_start;
         }
+    }
+
+    static napi_module_with_js convertXmlModule = {
+        .nm_version = 1,
+        .nm_flags = 0,
+        .nm_filename = nullptr,
+        .nm_register_func = ConvertXmlInit,
+        .nm_modname = "convertxml",
+        .nm_priv = reinterpret_cast<void*>(0),
+        .nm_get_abc_code = NAPI_convertxml_GetABCCode,
+        .nm_get_js_code = NAPI_convertxml_GetJSCode,
+    };
+
+    extern "C" __attribute__((constructor)) void ConvertXMLRegisterModule(void)
+    {
+        napi_module_with_js_register(&convertXmlModule);
     }
 } // namespace OHOS::Xml
