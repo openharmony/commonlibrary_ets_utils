@@ -125,6 +125,10 @@ class URLParams {
     }
 
     has(hasname : string) : boolean {
+        if (typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
         return this.urlcalss.has(hasname);
     }
 
@@ -204,10 +208,26 @@ class URLSearchParams {
         this.urlcalss.array = out;
     }
     append(params1 : string, params2 : string) {
+        if (arguments.length === 0 || typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        if (arguments.length === 1 || typeof arguments[1] !== 'string') {
+            let error = new BusinessError(`Parameter error.The type of ${arguments[1]} must be string`);
+            throw error;
+        }
         this.urlcalss.append(params1, params2);
     }
 
     set(setname : string, setvalues : string) {
+        if (arguments.length === 0 || typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
+        if (arguments.length === 1 || typeof arguments[1] !== 'string') {
+            let error = new BusinessError(`Parameter error.The type of ${arguments[1]} must be string`);
+            throw error;
+        }
         this.urlcalss.set(setname, setvalues);
     }
 
@@ -216,6 +236,10 @@ class URLSearchParams {
     }
 
     has(hasname : string) {
+        if (typeof arguments[0] !== 'string') {
+            let err = new BusinessError(`Parameter error.The type of ${arguments[0]} must be string`);
+            throw err;
+        }
         return this.urlcalss.has(hasname);
     }
 
