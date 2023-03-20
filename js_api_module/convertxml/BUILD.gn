@@ -14,7 +14,11 @@
 import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
+
+# shall be moved to "//build/ohos/ace/ace.gni" in the future
+import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
@@ -32,11 +36,15 @@ action("build_ts_js") {
   outputs = [ target_out_dir + "/js_convertxml.js" ]
 }
 base_output_path = get_label_info(":js_convertxml", "target_out_dir")
-js_xml_obj_path = base_output_path + "/convertxml.o"
-gen_js_obj("js_convertxml") {
+if (target_os == "ios" || is_mac || is_mingw) {
+  js_xml_obj_path = base_output_path + "/convertxml.c"
+} else {
+  js_xml_obj_path = base_output_path + "/convertxml.o"
+}
+gen_obj("js_convertxml") {
   input = "$target_out_dir/js_convertxml.js"
   output = js_xml_obj_path
-  dep = ":build_ts_js"
+  snapshot_dep = [ ":build_ts_js" ]
 }
 
 # compile .js to .abc.
@@ -67,11 +75,15 @@ action("gen_convertxml_abc") {
 }
 
 abc_output_path = get_label_info(":convertxml_abc", "target_out_dir")
-convertxml_abc_obj_path = abc_output_path + "/convertxml_abc.o"
-gen_js_obj("convertxml_abc") {
+if (target_os == "ios" || is_mac || is_mingw) {
+  convertxml_abc_obj_path = abc_output_path + "/convertxml_abc.c"
+} else {
+  convertxml_abc_obj_path = abc_output_path + "/convertxml_abc.o"
+}
+gen_obj("convertxml_abc") {
   input = "$target_out_dir/convertxml.abc"
   output = convertxml_abc_obj_path
-  dep = ":gen_convertxml_abc"
+  snapshot_dep = [ ":gen_convertxml_abc" ]
 }
 
 ohos_shared_library("convertxml") {
@@ -89,9 +101,8 @@ ohos_shared_library("convertxml") {
   ]
 
   deps = [
-    ":convertxml_abc",
-    ":js_convertxml",
-    "//commonlibrary/ets_utils/js_api_module/convertxml/:js_convertxml",
+    ":gen_obj_src_convertxml_abc",
+    ":gen_obj_src_js_convertxml",
     "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
     "//third_party/libxml2:xml2",
@@ -111,7 +122,7 @@ ohos_shared_library("convertxml") {
   relative_install_dir = "module"
 }
 
-ohos_static_library("convertxml_static") {
+ohos_source_set("convertxml_static") {
   include_dirs = [
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
@@ -126,12 +137,11 @@ ohos_static_library("convertxml_static") {
   ]
 
   deps = [
-    ":convertxml_abc",
-    ":js_convertxml",
-    "//commonlibrary/ets_utils/js_api_module/convertxml/:js_convertxml",
+    ":gen_obj_src_convertxml_abc",
+    ":gen_obj_src_js_convertxml",
     "//foundation/arkui/napi/:ace_napi",
-    "//third_party/icu/icu4c:shared_icuuc",
-    "//third_party/libxml2:xml2",
+    "//third_party/icu/icu4c:static_icuuc",
+    "//third_party/libxml2:static_libxml2",
   ]
 
   if (is_standard_system) {
@@ -142,6 +152,19 @@ ohos_static_library("convertxml_static") {
       "hilog:libhilog",
     ]
   }
+
+  if (defined(is_cross_platform_build) && is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    deps += [ "$plugins_root/interfaces/native:plugin_log" ]
+    if (target_os == "android") {
+      deps += [ "$plugins_root/interfaces/native:ace_plugin_util_android" ]
+      defines = [ "ANDROID_PLATFORM" ]
+    }
+  }
+
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 }
