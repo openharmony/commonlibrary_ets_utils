@@ -97,20 +97,18 @@ napi_value NewWorker::InitWorker(napi_env env, napi_value exports)
 
 napi_value NewWorker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
 {
+    napi_value thisVar = nullptr;
+    void* data = nullptr;
+    size_t argc = 2;  // 2: max args number is 2
+    napi_value args[argc];
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     // check argv count
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env,
             ErrorHelper::TYPE_ERROR, "the number of create worker param must be more than 1 with new");
         return nullptr;
     }
-
     // check 1st param is string
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of Worker 1st param must be string.");
         return nullptr;

@@ -1384,16 +1384,14 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
 
 napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_info cbinfo)
 {
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    size_t argc = 2;  // 2: max args number is 2
+    napi_value args[argc];
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Worker param count must be more than 2 with on");
         return nullptr;
     }
-
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
     if (!NapiHelper::IsString(args[0])) {
         napi_throw_error(env, nullptr, "Worker 1st param must be string with on");
