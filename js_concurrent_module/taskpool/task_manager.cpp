@@ -21,7 +21,7 @@
 #include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-const static int MAX_THREADPOOL_SIZE = 2;
+const static int MAX_THREADPOOL_SIZE = 4;
 
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
