@@ -63,7 +63,7 @@ static string GetStringUtf8(napi_env env, napi_value strValue)
     str.reserve(strSize + 1);
     str.resize(strSize);
     NAPI_CALL(env, napi_get_value_string_utf8(env, strValue, str.data(), strSize + 1, &strSize));
-    size_t pos = count(str.begin(), str.end(), '\0');
+    int pos = count(str.begin(), str.end(), '\0');
     if (pos != 0) {
         str.resize(strSize);
     }
