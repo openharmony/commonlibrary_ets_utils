@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_
 
+#include <array>
 #include <list>
 #include <memory>
 #include <set>
@@ -30,7 +31,7 @@ class Worker;
 
 class TaskManager {
 public:
-    TaskManager() = default;
+    TaskManager();
     ~TaskManager();
 
     static TaskManager &GetInstance();
@@ -43,7 +44,7 @@ public:
     void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
     bool UpdateState(uint32_t executeId, TaskState state);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
-    void EnqueueTask(std::unique_ptr<Task> task);
+    void EnqueueTask(std::unique_ptr<Task> task, Priority priority = Priority::DEFAULT);
     std::unique_ptr<Task> DequeueTask();
     void CancelTask(napi_env env, uint32_t taskId);
     void NotifyWorkerIdle(Worker *worker);
@@ -66,21 +67,24 @@ private:
 
     std::atomic<int32_t> currentExecuteId_ = 0;
     std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
+    uint32_t highPriorityTask_ = 0;
+    uint32_t mediumPriorityTask_ = 0;
 
-    std::unordered_map<uint32_t, TaskInfo*> taskInfos_;
+    std::unordered_map<uint32_t, TaskInfo*> taskInfos_ {};
     std::shared_mutex taskInfosMutex_;
 
-    std::unordered_map<uint32_t, TaskState> taskStates_;
+    std::unordered_map<uint32_t, TaskState> taskStates_ {};
     std::shared_mutex taskStatesMutex_;
 
-    std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_;
+    std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_ {};
     std::shared_mutex runningInfosMutex_;
 
-    std::set<Worker*> workers_;
-    std::set<Worker*> idleWorkers_;
+    std::set<Worker*> workers_ {};
+    std::set<Worker*> idleWorkers_ {};
     std::mutex workersMutex_;
 
-    TaskQueue taskQueue_;
+    std::array<std::unique_ptr<TaskQueue>, Priority::NUMBER> taskQueues_ {};
+    std::mutex taskQueuesMutex_;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_

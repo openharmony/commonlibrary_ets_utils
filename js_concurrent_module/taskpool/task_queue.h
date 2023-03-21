@@ -16,7 +16,6 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
 
-#include <mutex>
 #include <queue>
 
 #include "napi/native_api.h"
@@ -35,8 +34,7 @@ public:
     bool IsEmpty() const;
 
 private:
-    std::queue<std::unique_ptr<Task>> tasks_;
-    mutable std::mutex mtx_;
+    std::queue<std::unique_ptr<Task>> tasks_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_

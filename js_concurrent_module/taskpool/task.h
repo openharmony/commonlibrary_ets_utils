@@ -24,6 +24,7 @@
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 enum TaskState { NOT_FOUND, WAITING, RUNNING, TERMINATED, CANCELED };
+enum Priority { HIGH, MEDIUM, LOW, NUMBER, DEFAULT = MEDIUM };
 
 class Task {
 public:
@@ -35,6 +36,7 @@ public:
     napi_ref objRef_;
     uint32_t executeId_ = 0;
     uint32_t taskId_ = 0;
+    Priority priority_ = Priority::DEFAULT;
 };
 
 struct TaskInfo {

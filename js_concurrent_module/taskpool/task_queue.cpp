@@ -18,13 +18,11 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 void TaskQueue::EnqueueTask(std::unique_ptr<Task> task)
 {
-    std::unique_lock<std::mutex> lock(mtx_);
     tasks_.push(std::move(task));
 }
 
 std::unique_ptr<Task> TaskQueue::DequeueTask()
 {
-    std::unique_lock<std::mutex> lock(mtx_);
     if (!tasks_.empty()) {
         std::unique_ptr<Task> task = std::move(tasks_.front());
         tasks_.pop();
@@ -36,7 +34,6 @@ std::unique_ptr<Task> TaskQueue::DequeueTask()
 
 bool TaskQueue::IsEmpty() const
 {
-    std::unique_lock<std::mutex> lock(mtx_);
     return tasks_.empty();
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

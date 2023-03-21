@@ -89,7 +89,15 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     if (type == napi_object) {
         Task* task = nullptr;
         NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void**>(&task)));
-        return ExecuteTask(env, task);
+        uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
+        if (argc > 1) {
+            napi_get_value_uint32(env, args[1], &priority);
+            if (priority >= Priority::NUMBER) {
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority value is error");
+                return nullptr;
+            }
+        }
+        return ExecuteTask(env, task, Priority(priority));
     } else if (type == napi_function) {
         napi_value argsArray;
         napi_create_array_with_length(env, argc - 1, &argsArray);
@@ -124,7 +132,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
 
-napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
+napi_value TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     napi_value obj = nullptr;
@@ -138,7 +146,7 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task)
     TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, taskInfo->executeId);
     napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
     std::unique_ptr<Task> executeInstance = std::make_unique<Task>(*task);
-    TaskManager::GetInstance().EnqueueTask(std::move(executeInstance));
+    TaskManager::GetInstance().EnqueueTask(std::move(executeInstance), priority);
     if (taskInfo->promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
