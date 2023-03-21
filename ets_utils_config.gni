@@ -16,3 +16,9 @@ is_cross_platform_build =
 if (is_cross_platform_build) {
   plugins_root = "//plugins"
 }
+container_root = "//commonlibrary/ets_utils/js_util_module/container/"
+hilog_windows =
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_windows"
+hilog_linux =
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_linux"
+hilog_mac = "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_mac"

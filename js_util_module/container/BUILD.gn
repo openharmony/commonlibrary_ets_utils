@@ -14,7 +14,9 @@
 import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 container_names = [
   "arraylist",
@@ -43,6 +45,7 @@ action("build_js_ts") {
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
+
   outputs = []
   foreach(item, container_names) {
     dep = target_out_dir + "/js_" + item + ".js"
@@ -51,7 +54,10 @@ action("build_js_ts") {
 }
 
 config("container_config") {
-  cflags = [ "-fstack-protector-all" ]
+  cflags_cc = [
+    "-std=c++17",
+    "-Wno-deprecated-declarations",
+  ]
 }
 
 # libs
@@ -60,11 +66,15 @@ template("container_lib") {
 
   name = target_name
   base_output_path = get_label_info(":js_" + name, "target_out_dir")
-  js_container_obj_path = base_output_path + name + ".o"
-  gen_js_obj("js_" + name) {
+  gen_obj("js_" + name) {
     input = "$target_out_dir/js_" + name + ".js"
+    if (use_mac || use_mingw_win || use_ios || use_linux) {
+      js_container_obj_path = base_output_path + name + ".c"
+    } else {
+      js_container_obj_path = base_output_path + name + ".o"
+    }
     output = js_container_obj_path
-    dep = ":build_js_ts"
+    snapshot_dep = [ ":build_js_ts" ]
   }
 
   # compile .js to .abc.
@@ -96,11 +106,15 @@ template("container_lib") {
   }
 
   abc_output_path = get_label_info(":" + name + "_abc", "target_out_dir")
-  arraylist_abc_obj_path = abc_output_path + "/" + name + "_abc.o"
-  gen_js_obj(name + "_abc") {
+  gen_obj(name + "_abc") {
     input = "$target_out_dir/" + name + ".abc"
+    if (use_mac || use_mingw_win || use_ios || use_linux) {
+      arraylist_abc_obj_path = abc_output_path + "/" + name + "_abc.c"
+    } else {
+      arraylist_abc_obj_path = abc_output_path + "/" + name + "_abc.o"
+    }
     output = arraylist_abc_obj_path
-    dep = ":gen_" + target_name
+    snapshot_dep = [ ":gen_" + target_name ]
   }
 
   ohos_shared_library(name) {
@@ -112,27 +126,27 @@ template("container_lib") {
 
     sources = [ name + "/native_module_" + name + ".cpp" ]
 
-    dep_abc = ":" + name + "_abc"
-    dep_js = ":js_" + name
+    dep_abc = ":gen_obj_src_" + name + "_abc"
+    dep_js = ":gen_obj_src_js_" + name
     deps = [
-      "//commonlibrary/ets_utils/js_util_module/container/:js_" + name,
+      "$container_root:gen_obj_src_js_" + name,
       "//foundation/arkui/napi/:ace_napi",
     ]
     deps += [ dep_abc ]
     deps += [ dep_js ]
 
-    configs = [ ":container_config" ]
-    if (is_standard_system) {
-      external_deps = [
-        "c_utils:utils",
-        "hiviewdfx_hilog_native:libhilog",
-      ]
+    if (use_mingw_win) {
+      deps += [ "$hilog_windows" ]
+    } else if (use_linux) {
+      deps += [ "$hilog_linux" ]
+    } else if (use_mac) {
+      deps += [ "$hilog_mac" ]
     } else {
-      external_deps = [
-        "c_utils:utils",
-        "hilog:libhilog",
-      ]
+      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
     }
+
+    configs = [ ":container_config" ]
+
     subsystem_name = "commonlibrary"
     part_name = "ets_utils"
 
@@ -149,5 +163,5 @@ foreach(item, container_names) {
 }
 
 group("container_packages") {
-  deps = container_libs
+  public_deps = container_libs
 }

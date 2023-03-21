@@ -16,11 +16,12 @@ import os
 import platform
 import argparse
 import subprocess
+import sys
 
 def run_command(command):
     print(" ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE,
-          stderr=subprocess.PIPE, universal_newlines=True)
+          stderr=subprocess.PIPE, universal_newlines=True, shell=False)
     out, err = proc.communicate()
     if out != "":
         print(out)
@@ -37,9 +38,13 @@ if __name__ == '__main__':
     build_path = os.path.abspath(os.path.join(os.getcwd(), input_arguments.relative_path))
     os.chdir("%s/commonlibrary/ets_utils/js_util_module/container/" % build_path)
 
-
-    NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
+    os_name = sys.platform
+    if os_name.lower().startswith('linux'):
+        NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-linux-x64/bin/node'
+    elif os_name == 'darwin':
+        NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
+node-v12.18.4-darwin-x64/bin/node'
     TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/typescript/bin/tsc'
     cmd = [NODE_PATH, TSC_PATH]
     run_command(cmd)
