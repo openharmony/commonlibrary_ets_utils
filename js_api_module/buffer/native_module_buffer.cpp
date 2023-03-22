@@ -62,7 +62,7 @@ static string GetStringUtf8(napi_env env, napi_value strValue)
     NAPI_CALL(env, napi_get_value_string_utf8(env, strValue, nullptr, 0, &strSize));
     str.reserve(strSize + 1);
     str.resize(strSize);
-    NAPI_CALL(env, napi_get_value_string_utf8(env, strValue, str.data(), strSize + 1, &strSize));
+    NAPI_CALL(env, napi_get_value_string_utf8(env, strValue, const_cast<char *>(str.data()), strSize + 1, &strSize));
     int pos = count(str.begin(), str.end(), '\0');
     if (pos != 0) {
         str.resize(strSize);
@@ -77,7 +77,7 @@ static string GetStringASCII(napi_env env, napi_value strValue)
     NAPI_CALL(env, napi_get_value_string_latin1(env, strValue, nullptr, 0, &strSize));
     str.reserve(strSize + 1);
     str.resize(strSize);
-    NAPI_CALL(env, napi_get_value_string_latin1(env, strValue, str.data(), strSize + 1, &strSize));
+    NAPI_CALL(env, napi_get_value_string_latin1(env, strValue, const_cast<char *>(str.data()), strSize + 1, &strSize));
     return str;
 }
 

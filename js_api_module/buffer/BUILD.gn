@@ -14,7 +14,9 @@
 import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
@@ -30,15 +32,27 @@ action("build_ts_js") {
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
+
   outputs = [ target_out_dir + "/js_buffer.js" ]
 }
 
+config("buffer_config") {
+  cflags_cc = [
+    "-std=c++17",
+    "-Wno-deprecated-declarations",
+  ]
+}
+
 base_output_path = get_label_info(":js_buffer", "target_out_dir")
-js_buffer_obj_path = base_output_path + "/buffer.o"
-gen_js_obj("js_buffer") {
+gen_obj("js_buffer") {
   input = "$target_out_dir/js_buffer.js"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    js_buffer_obj_path = base_output_path + "/buffer.c"
+  } else {
+    js_buffer_obj_path = base_output_path + "/buffer.o"
+  }
   output = js_buffer_obj_path
-  dep = ":build_ts_js"
+  snapshot_dep = [ ":build_ts_js" ]
 }
 
 # compile .js to .abc.
@@ -69,11 +83,15 @@ action("gen_buffer_abc") {
 }
 
 abc_output_path = get_label_info(":buffer_abc", "target_out_dir")
-buffer_abc_obj_path = abc_output_path + "/buffer_abc.o"
-gen_js_obj("buffer_abc") {
+gen_obj("buffer_abc") {
   input = "$target_out_dir/buffer.abc"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    buffer_abc_obj_path = abc_output_path + "/buffer_abc.c"
+  } else {
+    buffer_abc_obj_path = abc_output_path + "/buffer_abc.o"
+  }
   output = buffer_abc_obj_path
-  dep = ":gen_buffer_abc"
+  snapshot_dep = [ ":gen_buffer_abc" ]
 }
 
 ohos_shared_library("buffer") {
@@ -91,20 +109,25 @@ ohos_shared_library("buffer") {
     "native_module_buffer.cpp",
   ]
 
-  external_deps = [ "c_utils:utils" ]
   deps = [
-    ":buffer_abc",
-    ":js_buffer",
-    "//commonlibrary/ets_utils/js_api_module/buffer/:js_buffer",
+    ":gen_obj_src_buffer_abc",
+    ":gen_obj_src_js_buffer",
     "//foundation/arkui/napi/:ace_napi",
+    "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
 
-  if (is_standard_system) {
-    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+  if (use_mingw_win) {
+    deps += [ "$hilog_windows" ]
+  } else if (use_linux) {
+    deps += [ "$hilog_linux" ]
+  } else if (use_mac) {
+    deps += [ "$hilog_mac" ]
   } else {
-    external_deps += [ "hilog:libhilog" ]
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
   }
+
+  configs = [ ":buffer_config" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 
@@ -128,12 +151,13 @@ ohos_static_library("buffer_static") {
 
   external_deps = [ "c_utils:utils" ]
   deps = [
-    ":buffer_abc",
-    ":js_buffer",
-    "//commonlibrary/ets_utils/js_api_module/buffer/:js_buffer",
+    ":gen_obj_src_buffer_abc",
+    ":gen_obj_src_js_buffer",
     "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
+
+  configs = [ ":buffer_config" ]
 
   if (is_standard_system) {
     external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
@@ -145,5 +169,5 @@ ohos_static_library("buffer_static") {
 }
 
 group("buffer_packages") {
-  deps = [ ":buffer" ]
+  public_deps = [ ":buffer" ]
 }
