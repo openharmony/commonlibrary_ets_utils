@@ -63,6 +63,7 @@ napi_value StrToNapiValue(napi_env env, std::string result)
     napi_create_string_utf8(env, result.c_str(), result.size(), &output);
     return output;
 }
+
 HWTEST_F(NativeEngineTest, testUrlConstructs001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("https://example.org:81/a/b/c?query#fragment");
@@ -106,6 +107,84 @@ HWTEST_F(NativeEngineTest, testUrlConstructs005, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetScheme(env), output);
     ASSERT_STREQ(output.c_str(), "http:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs006, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL base("http://www.example.com");
+    OHOS::Url::URL url("//sca/./path/./scasa#", base);
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/path/scasa");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs007, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL base("http://www.example.com");
+    OHOS::Url::URL url("/dire/query", base);
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/dire/query");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs008, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL base("http://www.example.com");
+    OHOS::Url::URL url("foo/bar//fragment", base);
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/foo/bar//fragment");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs009, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL base("http://www.example.com");
+    OHOS::Url::URL url("/../sca/./path/./s#casa", base);
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/sca/path/s");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs010, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL base("http://www.example.com");
+    OHOS::Url::URL url("/../sca/./path/./sca?sa", base);
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/sca/path/sca");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs011, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL base("http://www.example.com");
+    OHOS::Url::URL url("", base);
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs012, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("file://\\/www.example.com");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "file:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs013, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("file:///www.example.com");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "file:");
 }
 
 HWTEST_F(NativeEngineTest, testUrlProtocol001, testing::ext::TestSize.Level0)
@@ -629,6 +708,16 @@ HWTEST_F(NativeEngineTest, testUrlIPV6001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, testUrlIPV6002, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://0377.0xff.255.1:80/index.html");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetIsIpv6(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlIPV6003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://[1080:0:0:0:8:800:200C.417A]/index.html");
     napi_env env = (napi_env)engine_;
     napi_value result = url.GetIsIpv6(env);
     bool value = false;
