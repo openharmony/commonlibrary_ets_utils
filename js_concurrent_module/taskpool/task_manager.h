@@ -18,6 +18,7 @@
 
 #include <list>
 #include <memory>
+#include <set>
 #include <shared_mutex>
 #include <unordered_map>
 
@@ -76,8 +77,8 @@ private:
     std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_;
     std::shared_mutex runningInfosMutex_;
 
-    std::list<Worker*> workers_;
-    std::list<Worker*> idleWorkers_;
+    std::set<Worker*> workers_;
+    std::set<Worker*> idleWorkers_;
     std::mutex workersMutex_;
 
     TaskQueue taskQueue_;

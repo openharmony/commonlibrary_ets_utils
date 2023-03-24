@@ -47,6 +47,7 @@ struct TaskInfo {
     uint32_t taskId;
     uint32_t executeId;
     bool success = true;
+    void *worker = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
