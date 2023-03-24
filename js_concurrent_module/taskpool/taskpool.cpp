@@ -123,6 +123,11 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         return;
     }
     napi_value taskData = nullptr;
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(taskInfo->env, &scope);
+    if (scope == nullptr) {
+        return;
+    }
     napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
     if (status != napi_ok || taskData == nullptr || !taskInfo->success) {
         napi_reject_deferred(taskInfo->env, taskInfo->deferred, taskData);
@@ -130,6 +135,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
     }
     TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
+    napi_close_handle_scope(taskInfo->env, scope);
 }
 
 napi_value TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
@@ -144,14 +150,15 @@ napi_value TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     }
     TaskManager::GetInstance().StoreStateInfo(taskInfo->executeId, TaskState::WAITING);
     TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, taskInfo->executeId);
-    napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
+    napi_value promise = nullptr;
+    napi_create_promise(env, &taskInfo->deferred, &promise);
     std::unique_ptr<Task> executeInstance = std::make_unique<Task>(*task);
     TaskManager::GetInstance().EnqueueTask(std::move(executeInstance), priority);
-    if (taskInfo->promise == nullptr) {
+    if (promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
     }
-    return taskInfo->promise;
+    return promise;
 }
 
 napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
@@ -163,13 +170,14 @@ napi_value TaskPool::ExecuteFunction(napi_env env, napi_value object)
     if (taskInfo == nullptr) {
         return nullptr;
     }
-    napi_create_promise(env, &taskInfo->deferred, &taskInfo->promise);
+    napi_value promise = nullptr;
+    napi_create_promise(env, &taskInfo->deferred, &promise);
     TaskManager::GetInstance().EnqueueTask(std::move(task));
-    if (taskInfo->promise == nullptr) {
+    if (promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
     }
-    return taskInfo->promise;
+    return promise;
 }
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)

@@ -162,6 +162,9 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
         UpdateState(executeId, TaskState::CANCELED);
         if (state == TaskState::WAITING) {
             TaskInfo* taskInfo = PopTaskInfo(executeId);
+            napi_value undefined = nullptr;
+            napi_get_undefined(taskInfo->env, &undefined);
+            napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
             ReleaseTaskContent(taskInfo);
         } else {
             result = ErrorHelper::ERR_CANCAL_RUNNING_TASK;

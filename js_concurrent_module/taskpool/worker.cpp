@@ -198,6 +198,11 @@ void Worker::PerformTask(const uv_async_t* req)
     }
     taskInfo->worker = worker;
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::RUNNING);
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
+    if (scope == nullptr) {
+        return;
+    }
     napi_value undefined;
     napi_get_undefined(env, &undefined);
     napi_value taskData;
@@ -208,6 +213,7 @@ void Worker::PerformTask(const uv_async_t* req)
             "taskpool: failed to deserialize message.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
+        napi_close_handle_scope(env, scope);
         return;
     }
     napi_value func;
@@ -241,6 +247,7 @@ void Worker::PerformTask(const uv_async_t* req)
     } else {
         worker->NotifyIdle();
     }
+    napi_close_handle_scope(env, scope);
 }
 
 void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result)

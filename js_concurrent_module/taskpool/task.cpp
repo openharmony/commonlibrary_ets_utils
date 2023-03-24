@@ -57,9 +57,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     napi_set_named_property(env, object, "args", argsArray);
 
     Task* task = new (std::nothrow) Task();
-    napi_ref objRef = nullptr;
-    napi_create_reference(env, object, 1, &objRef);
-    task->objRef_ = objRef;
+    napi_create_reference(env, object, 1, &task->objRef_);
     task->taskId_ = TaskManager::GetInstance().GenerateTaskId();
     napi_wrap(
         env, thisVar, task,
