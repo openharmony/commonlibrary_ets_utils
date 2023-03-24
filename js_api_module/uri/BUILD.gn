@@ -12,8 +12,9 @@
 # limitations under the License.
 import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
-import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
@@ -29,13 +30,6 @@ action("build_ts_js") {
     rebase_path("//", root_build_dir),
   ]
   outputs = [ target_out_dir + "/js_uri.js" ]
-}
-base_output_path = get_label_info(":js_uri", "target_out_dir")
-js_uri_obj_path = base_output_path + "/uri.o"
-gen_js_obj("js_uri") {
-  input = "$target_out_dir/js_uri.js"
-  output = js_uri_obj_path
-  dep = ":build_ts_js"
 }
 
 # compile .js to .abc.
@@ -66,11 +60,27 @@ action("gen_uri_abc") {
 }
 
 abc_output_path = get_label_info(":uri_abc", "target_out_dir")
-uri_abc_obj_path = abc_output_path + "/uri_abc.o"
-gen_js_obj("uri_abc") {
+
+gen_obj("uri_js") {
+  input = "$target_out_dir/js_uri.js"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    uri_obj_path = abc_output_path + "/uri.c"
+  } else {
+    uri_obj_path = abc_output_path + "/uri.o"
+  }
+  output = uri_obj_path
+  snapshot_dep = [ ":build_ts_js" ]
+}
+
+gen_obj("uri_abc") {
   input = "$target_out_dir/uri.abc"
-  output = uri_abc_obj_path
-  dep = ":gen_uri_abc"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    uri_obj_path = abc_output_path + "/uri_abc.c"
+  } else {
+    uri_obj_path = abc_output_path + "/uri_abc.o"
+  }
+  output = uri_obj_path
+  snapshot_dep = [ ":gen_uri_abc" ]
 }
 
 ohos_shared_library("uri") {
@@ -87,9 +97,8 @@ ohos_shared_library("uri") {
   ]
 
   deps = [
-    ":js_uri",
-    ":uri_abc",
-    "//commonlibrary/ets_utils/js_api_module/uri/:js_uri",
+    ":gen_obj_src_uri_abc",
+    ":gen_obj_src_uri_js",
     "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
@@ -108,23 +117,22 @@ ohos_shared_library("uri") {
   relative_install_dir = "module"
 }
 
-ohos_static_library("uri_static") {
+ohos_source_set("uri_static") {
   include_dirs = [
-    "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
     "//commonlibrary/ets_utils/js_api_module/uri",
   ]
 
+  configs = [ "//third_party/icu/icu4c:icu_config" ]
   sources = [
     "js_uri.cpp",
     "native_module_uri.cpp",
   ]
 
   deps = [
-    ":js_uri",
-    ":uri_abc",
-    "//commonlibrary/ets_utils/js_api_module/uri/:js_uri",
+    ":gen_obj_src_uri_abc",
+    ":gen_obj_src_uri_js",
     "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
@@ -137,6 +145,21 @@ ohos_static_library("uri_static") {
       "hilog:libhilog",
     ]
   }
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    if (target_os == "android") {
+      defines = [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
+      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
+    }
+  }
+
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 }
