@@ -141,6 +141,9 @@ namespace OHOS::Url {
         }
         str = str.substr(i);
         strlen = str.size();
+        if (strlen == 0) {
+            return;
+        }
         for (i = strlen - 1; i != 0; i--) {
             if (str[i] >= '\0' && str[i] <= ' ') {
                 str.pop_back();
