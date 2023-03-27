@@ -268,20 +268,6 @@ namespace OHOS::Uri {
         return exports;
     }
 
-
-    static napi_module UriModule = {
-        .nm_version = 1,
-        .nm_flags = 0,
-        .nm_filename = nullptr,
-        .nm_register_func = UriInit,
-        .nm_modname = "uri",
-        .nm_priv = reinterpret_cast<void*>(0),
-        .reserved = {0},
-    };
-    extern "C" __attribute__((constructor)) void RegisterModule()
-    {
-        napi_module_register(&UriModule);
-    }
     extern "C"
     __attribute__((visibility("default"))) void NAPI_uri_GetJSCode(const char **buf, int *bufLen)
     {
@@ -301,5 +287,20 @@ namespace OHOS::Uri {
         if (buflen != nullptr) {
             *buflen = _binary_uri_abc_end - _binary_uri_abc_start;
         }
+    }
+
+    static napi_module_with_js UriModule = {
+        .nm_version = 1,
+        .nm_flags = 0,
+        .nm_filename = nullptr,
+        .nm_register_func = UriInit,
+        .nm_modname = "uri",
+        .nm_priv = reinterpret_cast<void*>(0),
+        .nm_get_js_code = NAPI_uri_GetJSCode,
+        .nm_get_abc_code = NAPI_uri_GetABCCode,
+    };
+    extern "C" __attribute__((constructor)) void UriRegisterModule()
+    {
+        napi_module_with_js_register(&UriModule);
     }
 } // namespace OHOS::Uri
