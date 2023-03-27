@@ -134,8 +134,8 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     } else {
         napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
     }
-    TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
     napi_close_handle_scope(taskInfo->env, scope);
+    TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
 
 napi_value TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
