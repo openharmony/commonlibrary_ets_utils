@@ -18,7 +18,7 @@
 #include "native_engine/native_value.h"
 
 namespace Commonlibrary::Concurrent::Common::Helper {
-const static int32_t MAXCHARLENGTH = 200;
+static constexpr int32_t MAX_CHAR_LENGTH = 200;
 
 bool NapiHelper::IsString(napi_value value)
 {
@@ -105,7 +105,7 @@ char* NapiHelper::GetString(napi_env env, napi_value value)
     size_t bufferSize = 0;
     size_t strLength = 0;
     napi_get_value_string_utf8(env, value, nullptr, 0, &bufferSize);
-    if (bufferSize > MAXCHARLENGTH) {
+    if (bufferSize > MAX_CHAR_LENGTH) {
         return nullptr;
     }
     char* buffer = new char[bufferSize + 1] { 0 };
