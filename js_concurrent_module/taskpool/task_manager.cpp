@@ -21,9 +21,9 @@
 #include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-const static int MAX_THREADPOOL_SIZE = 4;
-const static int HIGH_PRIORITY_TASK_COUNT = 5;
-const static int MEDIUM_PRIORITY_TASK_COUNT = 5;
+static constexpr int8_t MAX_THREADPOOL_SIZE = 4;
+static constexpr int8_t HIGH_PRIORITY_TASK_COUNT = 5;
+static constexpr int8_t MEDIUM_PRIORITY_TASK_COUNT = 5;
 
 using namespace Commonlibrary::Concurrent::Common::Helper;
 

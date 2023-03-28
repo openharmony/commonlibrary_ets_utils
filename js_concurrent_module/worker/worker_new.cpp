@@ -21,7 +21,8 @@
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Plugin;
-const static int MAXWORKERS = 8;
+static constexpr int8_t NUM_NEW_WORKER_ARGS = 2;
+static constexpr int8_t MAX_NEW_WORKERS = 8;
 static std::list<NewWorker *> g_newWorkers;
 static std::mutex g_newWorkersMutex;
 
@@ -116,7 +117,7 @@ napi_value NewWorker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     NewWorker* worker = nullptr;
     {
         std::lock_guard<std::mutex> lock(g_newWorkersMutex);
-        if (g_newWorkers.size() >= MAXWORKERS) {
+        if (g_newWorkers.size() >= MAX_NEW_WORKERS) {
             ErrorHelper::ThrowError(env,
                 ErrorHelper::ERR_WORKER_INITIALIZATION, "the number of workers exceeds the maximum.");
             return nullptr;
@@ -246,7 +247,7 @@ napi_value NewWorker::PostMessage(napi_env env, napi_callback_info cbinfo)
 
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
-    if (argc >= NUM_WORKER_ARGS) {
+    if (argc >= NUM_NEW_WORKER_ARGS) {
         if (!NapiHelper::IsArray(argv[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "transfer list must be an Array");
             return nullptr;
@@ -311,7 +312,7 @@ napi_value NewWorker::AddEventListener(napi_env env, napi_callback_info cbinfo)
 napi_value NewWorker::AddListener(napi_env env, napi_callback_info cbinfo, ListenerMode mode)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < NUM_WORKER_ARGS) {
+    if (argc < NUM_NEW_WORKER_ARGS) {
         ErrorHelper::ThrowError(env,
             ErrorHelper::TYPE_ERROR, "worker add listener param count must be not less than 2.");
         return nullptr;
@@ -339,9 +340,9 @@ napi_value NewWorker::AddListener(napi_env env, napi_callback_info cbinfo, Liste
 
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
     auto listener = new WorkerListener(env, callback, mode);
-    if (mode == ONCE && argc > NUM_WORKER_ARGS) {
-        if (NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
-            napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
+    if (mode == ONCE && argc > NUM_NEW_WORKER_ARGS) {
+        if (NapiHelper::IsObject(args[NUM_NEW_WORKER_ARGS])) {
+            napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_NEW_WORKER_ARGS], "once");
             bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
             if (!isOnce) {
                 listener->SetMode(PERMANENT);
@@ -533,7 +534,7 @@ napi_value NewWorker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
-    if (argc >= NUM_WORKER_ARGS) {
+    if (argc >= NUM_NEW_WORKER_ARGS) {
         if (!NapiHelper::IsArray(argv[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Transfer list must be an Array");
             return nullptr;
@@ -589,7 +590,7 @@ napi_value NewWorker::WorkerPortCancelTask(napi_env env, napi_callback_info cbin
 napi_value NewWorker::WorkerPortAddEventListener(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < NUM_WORKER_ARGS) {
+    if (argc < NUM_NEW_WORKER_ARGS) {
         ErrorHelper::ThrowError(env,
             ErrorHelper::TYPE_ERROR, "worker listener param count must be more than WORKPARAMNUM.");
         return nullptr;
@@ -618,8 +619,8 @@ napi_value NewWorker::WorkerPortAddEventListener(napi_env env, napi_callback_inf
 
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
     auto listener = new WorkerListener(env, callback, PERMANENT);
-    if (argc > NUM_WORKER_ARGS && NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
-        napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
+    if (argc > NUM_NEW_WORKER_ARGS && NapiHelper::IsObject(args[NUM_NEW_WORKER_ARGS])) {
+        napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_NEW_WORKER_ARGS], "once");
         bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
         if (isOnce) {
             listener->SetMode(ONCE);

@@ -21,7 +21,8 @@
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Plugin;
-const static int MAXWORKERS = 8;
+static constexpr int8_t NUM_WORKER_ARGS = 2;
+static constexpr int8_t MAX_WORKERS = 8;
 static std::list<Worker*> g_workers;
 static std::mutex g_workersMutex;
 
@@ -736,7 +737,7 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     Worker* worker = nullptr;
     {
         std::lock_guard<std::mutex> lock(g_workersMutex);
-        if (g_workers.size() >= MAXWORKERS) {
+        if (g_workers.size() >= MAX_WORKERS) {
             napi_throw_error(env, nullptr, "Too many workers, the number of workers exceeds the maximum.");
             return nullptr;
         }
