@@ -45,14 +45,6 @@ public:
 private:
     explicit Worker(napi_env env);
 
-    uv_loop_t* GetHostLoop() const
-    {
-        if (hostEnv_ != nullptr) {
-            return NapiHelper::GetLibUV(hostEnv_);
-        }
-        return nullptr;
-    }
-
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
     void DebuggerOnPostTask(std::function<void()>&& task);

@@ -370,7 +370,7 @@ public:
         return workerEnv_ == env;
     }
 
-    void Loop()
+    void Loop() const
     {
         uv_loop_t* loop = GetWorkerLoop();
         if (loop != nullptr) {
