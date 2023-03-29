@@ -454,17 +454,18 @@ namespace OHOS::xml {
     }
 
 
-    static napi_module xmlModule = {
+    static napi_module_with_js xmlModule = {
         .nm_version = 1,
         .nm_flags = 0,
         .nm_filename = nullptr,
         .nm_register_func = Init,
         .nm_modname = "xml",
         .nm_priv = reinterpret_cast<void*>(0),
-        .reserved = {0},
+        .nm_get_abc_code = NAPI_xml_GetABCCode,
+        .nm_get_js_code = NAPI_xml_GetJSCode,
     };
-    extern "C" __attribute__((constructor)) void RegisterModule()
+    extern "C" __attribute__((constructor)) void XmlRegisterModule()
     {
-        napi_module_register(&xmlModule);
+        napi_module_with_js_register(&xmlModule);
     }
 } // namespace OHOS::Xml

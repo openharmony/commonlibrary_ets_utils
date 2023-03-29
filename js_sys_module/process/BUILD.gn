@@ -12,6 +12,8 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
 
 ohos_shared_library("process") {
   include_dirs = [
@@ -44,6 +46,53 @@ ohos_shared_library("process") {
   part_name = "ets_utils"
 
   relative_install_dir = "module"
+}
+
+ohos_source_set("process_static") {
+  include_dirs = [
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/node/src",
+    "$napi_root/interfaces/kits",
+    "$process_root",
+  ]
+
+  sources = [
+    "js_childprocess.cpp",
+    "js_process.cpp",
+    "native_module_process.cpp",
+  ]
+
+  deps = [
+    "$napi_root:ace_napi",
+    "//third_party/icu/icu4c:shared_icuuc",
+  ]
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+
+    if (target_os == "android") {
+      defines = [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      defines = [ "IOS_PLATFORM" ]
+      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
+      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
+    }
+  }
+
+  if (is_standard_system) {
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
 }
 
 group("process_packages") {

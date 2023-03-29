@@ -1104,18 +1104,19 @@ __attribute__((visibility("default"))) void NAPI_buffer_GetABCCode(const char** 
     }
 }
 
-static napi_module bufferModule = {
+static napi_module_with_js bufferModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Init,
     .nm_modname = "buffer",
     .nm_priv = reinterpret_cast<void *>(0),
-    .reserved = {0},
+    .nm_get_abc_code = NAPI_buffer_GetABCCode,
+    .nm_get_js_code = NAPI_buffer_GetJSCode,
 };
 
-extern "C" __attribute__((constructor)) void RegisterModule()
+extern "C" __attribute__((constructor)) void BufferRegisterModule()
 {
-    napi_module_register(&bufferModule);
+    napi_module_with_js_register(&bufferModule);
 }
 } // namespace OHOS::Buffer

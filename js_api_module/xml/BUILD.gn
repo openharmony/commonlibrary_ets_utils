@@ -13,8 +13,9 @@
 
 import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
-import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
@@ -31,14 +32,6 @@ action("build_ts_js") {
     rebase_path("//", root_build_dir),
   ]
   outputs = [ target_out_dir + "/js_xml.js" ]
-}
-
-base_output_path = get_label_info(":js_xml", "target_out_dir")
-js_xml_obj_path = base_output_path + "/xml.o"
-gen_js_obj("js_xml") {
-  input = "$target_out_dir/js_xml.js"
-  output = js_xml_obj_path
-  dep = ":build_ts_js"
 }
 
 # compile .js to .abc.
@@ -69,11 +62,27 @@ action("gen_xml_abc") {
 }
 
 abc_output_path = get_label_info(":xml_abc", "target_out_dir")
-xml_abc_obj_path = abc_output_path + "/xml_abc.o"
-gen_js_obj("xml_abc") {
+
+gen_obj("xml_js") {
+  input = "$target_out_dir/js_xml.js"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    xml_obj_path = abc_output_path + "/xml.c"
+  } else {
+    xml_obj_path = abc_output_path + "/xml.o"
+  }
+  output = xml_obj_path
+  snapshot_dep = [ ":build_ts_js" ]
+}
+
+gen_obj("xml_abc") {
   input = "$target_out_dir/xml.abc"
-  output = xml_abc_obj_path
-  dep = ":gen_xml_abc"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    xml_obj_path = abc_output_path + "/xml_abc.c"
+  } else {
+    xml_obj_path = abc_output_path + "/xml_abc.o"
+  }
+  output = xml_obj_path
+  snapshot_dep = [ ":gen_xml_abc" ]
 }
 
 ohos_shared_library("xml") {
@@ -90,9 +99,8 @@ ohos_shared_library("xml") {
   ]
 
   deps = [
-    ":js_xml",
-    ":xml_abc",
-    "//commonlibrary/ets_utils/js_api_module/xml/:js_xml",
+    ":gen_obj_src_xml_abc",
+    ":gen_obj_src_xml_js",
     "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
@@ -111,7 +119,7 @@ ohos_shared_library("xml") {
   relative_install_dir = "module"
 }
 
-ohos_static_library("xml_static") {
+ohos_source_set("xml_static") {
   include_dirs = [
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
@@ -125,9 +133,8 @@ ohos_static_library("xml_static") {
   ]
 
   deps = [
-    ":js_xml",
-    ":xml_abc",
-    "//commonlibrary/ets_utils/js_api_module/xml/:js_xml",
+    ":gen_obj_src_xml_abc",
+    ":gen_obj_src_xml_js",
     "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
@@ -139,6 +146,19 @@ ohos_static_library("xml_static") {
       "c_utils:utils",
       "hilog:libhilog",
     ]
+  }
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    if (target_os == "android") {
+      defines = [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
+      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
+    }
   }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
