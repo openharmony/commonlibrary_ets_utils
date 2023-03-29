@@ -17,7 +17,9 @@
 
 #include "utils/log.h"
 
-namespace Commonlibrary::Concurrent::Common::Plugin {
+namespace OHOS::Js_sys_module {
+using namespace Commonlibrary::Concurrent::Common;
+
 uint32_t Timer::timeCallbackId = 0;
 std::map<uint32_t, TimerCallbackInfo*> Timer::timerTable;
 std::mutex Timer::timeLock;
@@ -191,6 +193,9 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
 
     // 6. start timer
     uv_timer_start(callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
+    uv_work_t *work = new uv_work_t;
+    uv_queue_work(Helper::NapiHelper::GetLibUV(env), work, [](uv_work_t *){ },
+                  [](uv_work_t *work, int32_t) {delete work; });
     return Helper::NapiHelper::CreateUint32(env, tId);
 }
 
@@ -208,4 +213,4 @@ void Timer::ClearEnvironmentTimer(napi_env env)
         }
     }
 }
-} // namespace Commonlibrary::Concurrent::Common::Plugin
+} // namespace Commonlibrary::Js_sys_module

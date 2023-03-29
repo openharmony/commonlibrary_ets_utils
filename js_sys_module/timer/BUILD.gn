@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Copyright (c) 2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,32 +12,25 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
-ohos_shared_library("taskpool") {
+ohos_shared_library("timer") {
   include_dirs = [
-    "//commonlibrary/ets_utils/js_concurrent_module/common",
-    "//commonlibrary/ets_utils/js_concurrent_module/taskpool",
+    "../../js_concurrent_module/common",
+    "../timer",
   ]
 
   sources = [
-    "../common/helper/napi_helper.cpp",
-    "native_module_taskpool.cpp",
-    "task.cpp",
-    "task_manager.cpp",
-    "task_queue.cpp",
-    "task_runner.cpp",
-    "taskpool.cpp",
-    "thread.cpp",
-    "worker.cpp",
+    "../../js_concurrent_module/common/helper/napi_helper.cpp",
+    "timer.cpp",
   ]
 
-  deps = [ "//foundation/arkui/napi:ace_napi" ]
+  deps = [ "$ace_napi_dep" ]
 
   external_deps = []
 
   if (is_linux && current_toolchain == host_toolchain) {
-    deps +=
-        [ "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_linux" ]
+    deps += [ "$hilog_linux" ]
     defines = [
       "LINUX_PLATFORM",
       "PREVIEW",
@@ -50,17 +43,12 @@ ohos_shared_library("taskpool") {
     }
   }
 
-  external_deps += [
-    "ets_utils:timer",
-    "hitrace_native:hitrace_meter",
-  ]
+  external_deps += [ "hitrace_native:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
-
-  relative_install_dir = "module"
 }
 
-group("taskpool_packages") {
-  deps = [ ":taskpool" ]
+group("timer_packages") {
+  deps = [ ":timer" ]
 }

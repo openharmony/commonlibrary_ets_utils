@@ -22,3 +22,7 @@ hilog_windows =
 hilog_linux =
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_linux"
 hilog_mac = "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_mac"
+hilog_ios = "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_ios"
+hilog_android =
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_android"
+ace_napi_dep = "//foundation/arkui/napi:ace_napi"

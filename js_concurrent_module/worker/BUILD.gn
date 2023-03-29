@@ -21,7 +21,6 @@ ohos_shared_library("worker") {
 
   sources = [
     "../common/helper/napi_helper.cpp",
-    "../common/plugin/timer.cpp",
     "message_queue.cpp",
     "native_module_worker.cpp",
     "thread.cpp",
@@ -49,7 +48,10 @@ ohos_shared_library("worker") {
     }
   }
 
-  external_deps += [ "hitrace_native:hitrace_meter" ]
+  external_deps += [
+    "ets_utils:timer",
+    "hitrace_native:hitrace_meter",
+  ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"

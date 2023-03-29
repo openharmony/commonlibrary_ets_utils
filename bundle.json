@@ -57,12 +57,24 @@
                 "//commonlibrary/ets_utils/js_api_module/buffer:buffer_packages",
                 "//commonlibrary/ets_utils/js_concurrent_module/taskpool:taskpool_packages",
                 "//commonlibrary/ets_utils/js_concurrent_module/worker:worker_packages",
+                "//commonlibrary/ets_utils/js_sys_module/console:console_packages",
                 "//commonlibrary/ets_utils/js_sys_module/process:process_packages",
                 "//commonlibrary/ets_utils/js_sys_module/dfx:dfx_packages",
+                "//commonlibrary/ets_utils/js_sys_module/timer:timer_packages",
                 "//commonlibrary/ets_utils/js_util_module/util:util_packages",
                 "//commonlibrary/ets_utils/js_util_module/container:container_packages"
             ],
-            "inner_kits": [],
+            "inner_kits": [
+                {
+                    "name": "//commonlibrary/ets_utils/js_sys_module/timer:timer",
+                    "header": {
+                      "header_files": [
+                        "timer.h"
+                      ],
+                      "header_base": "//commonlibrary/ets_utils/js_sys_module/timer"
+                    }
+                }
+            ],
             "test": [
                 "//commonlibrary/ets_utils/js_api_module/test_convertxml/unittest:unittest",
                 "//commonlibrary/ets_utils/js_api_module/test_uri/unittest:unittest",
