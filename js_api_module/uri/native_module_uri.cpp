@@ -296,8 +296,8 @@ namespace OHOS::Uri {
         .nm_register_func = UriInit,
         .nm_modname = "uri",
         .nm_priv = reinterpret_cast<void*>(0),
-        .nm_get_js_code = NAPI_uri_GetJSCode,
         .nm_get_abc_code = NAPI_uri_GetABCCode,
+        .nm_get_js_code = NAPI_uri_GetJSCode,
     };
     extern "C" __attribute__((constructor)) void UriRegisterModule()
     {

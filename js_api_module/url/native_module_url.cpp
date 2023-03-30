@@ -943,8 +943,8 @@ namespace OHOS::Url {
         .nm_register_func = Init,
         .nm_modname = "url",
         .nm_priv = reinterpret_cast<void*>(0),
-        .nm_get_js_code = NAPI_url_GetJSCode,
         .nm_get_abc_code = NAPI_url_GetABCCode,
+        .nm_get_js_code = NAPI_url_GetJSCode,
     };
     extern "C" __attribute__((constructor)) void UrlRegisterModule()
     {
