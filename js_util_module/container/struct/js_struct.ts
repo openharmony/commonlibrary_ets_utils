@@ -14,7 +14,7 @@
  */
 type CompFun<T> = (firstValue: T, secondValue: T) => boolean;
 
-function hashCode(element: any): number {
+function hashCode(element: Object): number {
   let str: string = '';
   str = String(element);
   let hash: number = 0;
@@ -22,7 +22,7 @@ function hashCode(element: any): number {
     for (let i: number = 0; i < str.length; i++) {
       let char: number = 0;
       char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = ((hash << 5) - hash) + char; // 5 : means number
       hash = hash & hash;
     }
   }
@@ -57,14 +57,14 @@ function compareToString(string1: String, string2: String): number {
   }
   throw new Error('this compare function run error');
 }
-function currencyCompare(a: any, b: any, compareFn?: CompFun<any>): number {
+function currencyCompare(a: string | Object, b: string | Object, compareFn?: CompFun<string | Object>): number {
   if (a === b) {
     return ComparResult.EQUALS;
   }
   if (a instanceof Pair && b instanceof Pair) {
     return currencyCompare(a.key, b.key, compareFn);
   }
-  if (compareFn != undefined) {
+  if (compareFn !== undefined) {
     return compareFn(a, b) ? ComparResult.BIGGER_THAN : ComparResult.LESS_THAN;
   }
   if (typeof a === 'number' && typeof b === 'number') {
@@ -82,17 +82,17 @@ function currencyCompare(a: any, b: any, compareFn?: CompFun<any>): number {
   }
   throw new Error('This form of comparison is not supported');
 }
-function isIncludeToArray(array1: Array<any>, array2: Array<any>): boolean {
+function isIncludeToArray(array1: Array<number>, array2: Array<number>): boolean {
   let newList: number[] = [];
   newList = array1.filter((val) => {
     return array2.indexOf(val) > -1;
-  })
+  });
   if (newList.length === array2.length) {
     return true;
   }
   return false;
 }
-class Pair<K, V>{
+class Pair<K, V> {
   key: K;
   value: V;
   constructor(key: K, value: V = key as unknown as V) {
@@ -171,7 +171,7 @@ class LightWeightMembers<K, V> {
 class LightWeightClass<K, V> {
   protected memberNumber: number;
   protected members: LightWeightMembers<K, V>;
-  protected capacity: number = 8;
+  protected capacity: number = 8; // 8 : means number
   constructor() {
     this.memberNumber = 0;
     this.members = new LightWeightMembers<K, V>();
@@ -191,7 +191,9 @@ class LightWeightClass<K, V> {
       insert(this.members.values, index, value);
       this.memberNumber++;
     }
-    if (this.capacity < this.memberNumber) this.ensureCapacity(1);
+    if (this.capacity < this.memberNumber) {
+      this.ensureCapacity(1);
+    }
   }
   protected getIndexByKey(key: K): number {
     let hash: number = 0;
@@ -199,11 +201,13 @@ class LightWeightClass<K, V> {
     let index: number = 0;
     index = this.binarySearchAtLightWeight(hash);
     // js ( A negative number indicates an inverted number in the array )
-    if (index < 0 || index >= this.memberNumber) return -1;
+    if (index < 0 || index >= this.memberNumber) {
+      return -1;
+    }
     return index;
   }
   protected deletemember(key: K): V {
-    let result: any = undefined;
+    let result: V = undefined;
     let index: number = 0;
     index = this.getIndexByKey(key);
     if (index < 0) {
@@ -218,7 +222,7 @@ class LightWeightClass<K, V> {
     let tempCapacity: number = 0;
     tempCapacity = this.capacity + addCapacity;
     while (this.capacity < tempCapacity) {
-      this.capacity = 2 * this.capacity;
+      this.capacity = 2 * this.capacity; // 2 : means number
     }
   }
   protected getIndex(key: K): number {
@@ -261,17 +265,17 @@ class LightWeightClass<K, V> {
 type RBTreeNodeColor = 0 | 1;
 const BLACK = 0;
 const RED = 1;
-class RBTreeNode<K, V> extends Pair<K, V>{
+class TreeNode<K, V> extends Pair<K, V> {
   color: RBTreeNodeColor;
-  left: RBTreeNode<K, V> | undefined;
-  right: RBTreeNode<K, V> | undefined;
-  parent: RBTreeNode<K, V> | undefined;
+  left: TreeNode<K, V> | undefined;
+  right: TreeNode<K, V> | undefined;
+  parent: TreeNode<K, V> | undefined;
   constructor(key: K,
     value?: V,
     color: RBTreeNodeColor = RED,
-    parent?: RBTreeNode<K, V>,
-    left?: RBTreeNode<K, V>,
-    right?: RBTreeNode<K, V>) {
+    parent?: TreeNode<K, V>,
+    left?: TreeNode<K, V>,
+    right?: TreeNode<K, V>) {
     super(key, value);
     this.color = color;
     this.left = left;
@@ -279,38 +283,38 @@ class RBTreeNode<K, V> extends Pair<K, V>{
     this.parent = parent;
   }
 }
-class RBTreeClass<K, V> {
-  private root: RBTreeNode<K, V> | undefined;
+class TreeClass<K, V> {
+  private root: TreeNode<K, V> | undefined;
   public memberNumber: number;
   private isChange: boolean;
-  private treeNodeArray: Array<RBTreeNode<K, V>>;
+  private treeNodeArray: Array<TreeNode<K, V>>;
   private compFun: CompFun<K> | undefined;
-  constructor(comparator?: CompFun<K>, root?: RBTreeNode<K, V>) {
+  constructor(comparator?: CompFun<K>, root?: TreeNode<K, V>) {
     this.root = root;
     this.compFun = comparator;
     this.memberNumber = 0;
     this.isChange = true;
     this.treeNodeArray = [];
   }
-  get keyValueArray(): Array<RBTreeNode<K, V>> {
-    let result: Array<RBTreeNode<K, V>> = [];
+  get keyValueArray(): Array<TreeNode<K, V>> {
+    let result: Array<TreeNode<K, V>> = [];
     result = this.recordByMinToMax();
     return result;
   }
-  addNode(key: K, value: V = key as unknown as V): RBTreeClass<K, V> {
+  addNode(key: K, value: V = key as unknown as V): TreeClass<K, V> {
     if (this.root === undefined) {
-      this.root = new RBTreeNode<K, V>(key, value);
+      this.root = new TreeNode<K, V>(key, value);
       this.setColor(BLACK, this.root);
       this.memberNumber++;
       this.isChange = true;
     } else {
-      this.addProcess(key, value)
+      this.addProcess(key, value);
     }
     return this;
   }
-  addProcess(key: K, value: V): RBTreeClass<K, V> {
-    let leafNode: RBTreeNode<K, V> | undefined = this.root;
-    let parentNode: RBTreeNode<K, V> = this.root as RBTreeNode<K, V>;
+  addProcess(key: K, value: V): TreeClass<K, V> {
+    let leafNode: TreeNode<K, V> | undefined = this.root;
+    let parentNode: TreeNode<K, V> = this.root as TreeNode<K, V>;
     let comp: number = 0;
     while (leafNode !== undefined) {
       parentNode = leafNode;
@@ -324,7 +328,7 @@ class RBTreeClass<K, V> {
         leafNode = leafNode.left;
       }
     }
-    leafNode = new RBTreeNode<K, V>(key, value)
+    leafNode = new TreeNode<K, V>(key, value);
     leafNode.parent = parentNode;
     if (comp < 0) {
       parentNode.right = leafNode;
@@ -337,7 +341,7 @@ class RBTreeClass<K, V> {
     return this;
   }
   removeNode(key: K): V | undefined {
-    let removeNode: RBTreeNode<K, V> | undefined = undefined;
+    let removeNode: TreeNode<K, V> | undefined = undefined;
     removeNode = this.getNode(key);
     if (removeNode === undefined) {
       return undefined;
@@ -347,9 +351,9 @@ class RBTreeClass<K, V> {
       return result;
     }
   }
-  removeNodeProcess(removeNode: RBTreeNode<K, V>): void {
+  removeNodeProcess(removeNode: TreeNode<K, V>): void {
     if (removeNode.left !== undefined && removeNode.right !== undefined) {
-      let successor: RBTreeNode<K, V> | undefined = removeNode.right;
+      let successor: TreeNode<K, V> | undefined = removeNode.right;
       while (successor.left !== undefined) {
         successor = successor.left;
       }
@@ -357,8 +361,8 @@ class RBTreeClass<K, V> {
       removeNode.value = successor.value;
       this.removeNodeProcess(successor); // only once
       return;
-    } else {  // one or zero child
-      let child: RBTreeNode<K, V> | undefined = undefined;
+    } else { // one or zero child
+      let child: TreeNode<K, V> | undefined = undefined;
       child = (removeNode.left === undefined ? removeNode.right : removeNode.left);
       if (removeNode.parent === undefined) { // remove is root
         if (child === undefined) {
@@ -369,7 +373,7 @@ class RBTreeClass<K, V> {
           this.root = child;
         }
       } else {
-        if (child != undefined) {
+        if (child !== undefined) {
           // delete removeNode
           if (removeNode.parent.left === removeNode) {
             removeNode.parent.left = child;
@@ -377,11 +381,11 @@ class RBTreeClass<K, V> {
             removeNode.parent.right = child;
           }
           if (this.getColor(removeNode) === BLACK) {
-            this.deleteRebalance(child)
+            this.deleteRebalance(child);
           }
         } else {
           if (this.getColor(removeNode) === BLACK) {
-            this.deleteRebalance(removeNode)
+            this.deleteRebalance(removeNode);
           }
           if (removeNode.parent.left === removeNode) {
             removeNode.parent.left = child;
@@ -394,19 +398,19 @@ class RBTreeClass<K, V> {
       this.isChange = true;
     }
   }
-  getNode(key: K): RBTreeNode<K, V> | undefined {
+  getNode(key: K): TreeNode<K, V> | undefined {
     if (this.root === undefined) {
       return undefined;
     }
-    let findNode: RBTreeNode<K, V> | undefined = this.root;
+    let findNode: TreeNode<K, V> | undefined = this.root;
     while (findNode !== undefined && findNode.key !== key) {
       findNode = currencyCompare(findNode.key, key, this.compFun) === ComparResult.BIGGER_THAN ?
         findNode.left : findNode.right;
     }
     return findNode;
   }
-  findNode(value: V): RBTreeNode<K, V> | undefined {
-    let tempNode: RBTreeNode<K, V> | undefined = undefined;
+  findNode(value: V): TreeNode<K, V> | undefined {
+    let tempNode: TreeNode<K, V> | undefined = undefined;
     this.recordByMinToMax();
     for (let i: number = 0; i < this.memberNumber; i++) {
       if (this.treeNodeArray[i].value === value) {
@@ -416,15 +420,15 @@ class RBTreeClass<K, V> {
     }
     return tempNode;
   }
-  firstNode(): RBTreeNode<K, V> | undefined {
-    let tempNode: RBTreeNode<K, V> | undefined = this.root;
+  firstNode(): TreeNode<K, V> | undefined {
+    let tempNode: TreeNode<K, V> | undefined = this.root;
     while (tempNode !== undefined && tempNode.left !== undefined) {
       tempNode = tempNode.left;
     }
     return tempNode;
   }
-  lastNode(): RBTreeNode<K, V> | undefined {
-    let tempNode: RBTreeNode<K, V> | undefined = this.root;
+  lastNode(): TreeNode<K, V> | undefined {
+    let tempNode: TreeNode<K, V> | undefined = this.root;
     while (tempNode !== undefined && tempNode.right !== undefined) {
       tempNode = tempNode.right;
     }
@@ -433,8 +437,8 @@ class RBTreeClass<K, V> {
   isEmpty(): boolean {
     return this.root === undefined;
   }
-  setAll(map: RBTreeClass<K, V>): void {
-    let tempArray: RBTreeNode<K, V>[] = [];
+  setAll(map: TreeClass<K, V>): void {
+    let tempArray: TreeNode<K, V>[] = [];
     tempArray = map.recordByMinToMax();
     for (let i: number = 0; i < map.memberNumber; i++) {
       this.addNode(tempArray[i].key, tempArray[i].value);
@@ -444,15 +448,15 @@ class RBTreeClass<K, V> {
     this.root = undefined;
     this.memberNumber = 0;
   }
-  private recordByMinToMax(): Array<RBTreeNode<K, V>> {
+  private recordByMinToMax(): Array<TreeNode<K, V>> {
     if (!this.isChange) {
       return this.treeNodeArray;
     }
-    let stack: Array<any> = [];
+    let stack: Array<TreeNode<K, V>> = [];
     this.treeNodeArray = [];
-    let node: RBTreeNode<K, V> | undefined = this.root;
-    while (node != undefined || stack.length) {
-      while (node != undefined) {
+    let node: TreeNode<K, V> | undefined = this.root;
+    while (node !== undefined || stack.length) {
+      while (node !== undefined) {
         stack.push(node);
         node = node.left;
       }
@@ -468,10 +472,10 @@ class RBTreeClass<K, V> {
     this.memberNumber = this.treeNodeArray.length;
     return this.treeNodeArray;
   }
-  private lRotate(datumPointNode: RBTreeNode<K, V>): RBTreeClass<K, V> {
-    let newTopNode: RBTreeNode<K, V> | undefined = datumPointNode.right;
+  private lRotate(datumPointNode: TreeNode<K, V>): TreeClass<K, V> {
+    let newTopNode: TreeNode<K, V> | undefined = datumPointNode.right;
     if (newTopNode === undefined) {
-      throw new Error('[rotate right error]: the right child node of the base node === undefined')
+      throw new Error('[rotate right error]: the right child node of the base node === undefined');
     }
     datumPointNode.right = newTopNode.left;
     datumPointNode.right !== undefined ? datumPointNode.right.parent = datumPointNode : '';
@@ -487,14 +491,14 @@ class RBTreeClass<K, V> {
     newTopNode.left = datumPointNode;
     return this;
   }
-  private rRotate(datumPointNode: RBTreeNode<K, V>): RBTreeClass<K, V> {
-    let newTopNode: RBTreeNode<K, V> | undefined = datumPointNode.left;
+  private rRotate(datumPointNode: TreeNode<K, V>): TreeClass<K, V> {
+    let newTopNode: TreeNode<K, V> | undefined = datumPointNode.left;
     if (newTopNode === undefined) {
-      throw new Error('[rotate right error]: the left child node of the base node === undefined')
+      throw new Error('[rotate right error]: the left child node of the base node === undefined');
     }
     datumPointNode.left = newTopNode.right;
     datumPointNode.left !== undefined ? datumPointNode.left.parent = datumPointNode : '';
-    newTopNode.parent = datumPointNode.parent
+    newTopNode.parent = datumPointNode.parent;
     if (datumPointNode.parent === undefined) {
       this.root = newTopNode;
     } else if (datumPointNode === datumPointNode.parent.left) {
@@ -506,8 +510,8 @@ class RBTreeClass<K, V> {
     newTopNode.right = datumPointNode;
     return this;
   }
-  private insertRebalance(fixNode: RBTreeNode<K, V>): RBTreeClass<K, V> {
-    let parentNode: RBTreeNode<K, V> | undefined = fixNode.parent;
+  private insertRebalance(fixNode: TreeNode<K, V>): TreeClass<K, V> {
+    let parentNode: TreeNode<K, V> | undefined = fixNode.parent;
     while (this.getColor(parentNode) === RED &&
       parentNode !== undefined &&
       parentNode.parent !== undefined) {
@@ -518,7 +522,7 @@ class RBTreeClass<K, V> {
         this
           .setColor(BLACK, parentNode)
           .setColor(RED, grandpaNode)
-          .rRotate(grandpaNode)
+          .rRotate(grandpaNode);
         break;
       } else if (parentNode === grandpaNode.left &&
         this.getColor(grandpaNode.right) === BLACK &&
@@ -527,7 +531,7 @@ class RBTreeClass<K, V> {
           .setColor(BLACK, fixNode)
           .setColor(RED, grandpaNode)
           .lRotate(parentNode)
-          .rRotate(grandpaNode)
+          .rRotate(grandpaNode);
         break;
       } else if (parentNode === grandpaNode.right &&
         this.getColor(grandpaNode.left) === BLACK &&
@@ -536,7 +540,7 @@ class RBTreeClass<K, V> {
           .setColor(BLACK, fixNode)
           .setColor(RED, grandpaNode)
           .rRotate(parentNode)
-          .lRotate(grandpaNode)
+          .lRotate(grandpaNode);
         break;
       } else if (parentNode === grandpaNode.right &&
         this.getColor(grandpaNode.left) === BLACK &&
@@ -544,49 +548,49 @@ class RBTreeClass<K, V> {
         this
           .setColor(BLACK, parentNode)
           .setColor(RED, grandpaNode)
-          .lRotate(grandpaNode)
+          .lRotate(grandpaNode);
         break;
       } else if ((parentNode === grandpaNode.right && this.getColor(grandpaNode.left) === RED) ||
         (parentNode === grandpaNode.left && this.getColor(grandpaNode.right) === RED)) {
         this
           .setColor(BLACK, parentNode)
           .setColor(BLACK, parentNode === grandpaNode.left ? grandpaNode.right : grandpaNode.left)
-          .setColor(RED, grandpaNode)
+          .setColor(RED, grandpaNode);
         fixNode = grandpaNode;
         parentNode = fixNode.parent;
       } else {
-        throw new Error('Exceptions after adding')
+        throw new Error('Exceptions after adding');
       }
     }
     this.root ? this.root.color = BLACK : '';
     return this;
   }
-  private deleteRebalance(fixNode: RBTreeNode<K, V>): void {
+  private deleteRebalance(fixNode: TreeNode<K, V>): void {
     while (this.getColor(fixNode) === BLACK && fixNode !== this.root && fixNode.parent) {
-      let sibling: RBTreeNode<K, V> | undefined = undefined;
+      let sibling: TreeNode<K, V> | undefined = undefined;
       if (fixNode === fixNode.parent.left) {
         sibling = fixNode.parent.right;
         if (this.getColor(sibling) === RED) {
           this
             .setColor(RED, fixNode.parent)
             .setColor(BLACK, sibling)
-            .lRotate(fixNode.parent)
+            .lRotate(fixNode.parent);
           sibling = fixNode.parent.right;
         }
         if (sibling === undefined) {
-          throw new Error('Error sibling node is undefined')
+          throw new Error('Error sibling node is undefined');
         }
         if (this.getColor(sibling.left) === BLACK && this.getColor(sibling.right) === BLACK) {
-          this.setColor(RED, sibling)
-          fixNode = fixNode.parent
+          this.setColor(RED, sibling);
+          fixNode = fixNode.parent;
         } else if (this.getColor(sibling.left) === RED && this.getColor(sibling.right) === BLACK) {
           this
             .setColor(RED, sibling)
             .setColor(BLACK, sibling.left)
             .rRotate(sibling);
-          sibling = fixNode.parent.right
+          sibling = fixNode.parent.right;
           if (sibling === undefined) {
-            throw new Error('Error sibling node is empty')
+            throw new Error('Error sibling node is empty');
           }
           this
             .setColor(fixNode.parent.color, sibling)
@@ -602,7 +606,7 @@ class RBTreeClass<K, V> {
             .lRotate(fixNode.parent);
           break;
         } else {
-          throw new Error('Adjust the error after the error is deleted')
+          throw new Error('Adjust the error after the error is deleted');
         }
       } else {
         sibling = fixNode.parent.left;
@@ -614,11 +618,11 @@ class RBTreeClass<K, V> {
           sibling = fixNode.parent.left;
         }
         if (sibling === undefined) {
-          throw new Error('Error sibling node is undefined')
+          throw new Error('Error sibling node is undefined');
         }
         if (this.getColor(sibling.left) === BLACK && this.getColor(sibling.right) === BLACK) {
           this
-            .setColor(RED, sibling)
+            .setColor(RED, sibling);
           fixNode = fixNode.parent;
         } else if (this.getColor(sibling.left) === BLACK && this.getColor(sibling.right) === RED) {
           this
@@ -627,7 +631,7 @@ class RBTreeClass<K, V> {
             .lRotate(sibling);
           sibling = fixNode.parent.left;
           if (sibling === undefined) {
-            throw new Error('Adjust the error after the error is deleted')
+            throw new Error('Adjust the error after the error is deleted');
           }
           this
             .setColor(fixNode.parent.color, sibling)
@@ -643,28 +647,28 @@ class RBTreeClass<K, V> {
             .rRotate(fixNode.parent);
           break;
         } else {
-          throw new Error('Adjust the error after the error is deleted')
+          throw new Error('Adjust the error after the error is deleted');
         }
       }
     }
-    this.setColor(BLACK, fixNode)
+    this.setColor(BLACK, fixNode);
   }
-  private getColor(node: RBTreeNode<K, V> | undefined): RBTreeNodeColor {
+  private getColor(node: TreeNode<K, V> | undefined): RBTreeNodeColor {
     return node === undefined ? BLACK : node.color;
   }
-  private setColor(color: RBTreeNodeColor, node: RBTreeNode<K, V> | undefined): RBTreeClass<K, V> {
+  private setColor(color: RBTreeNodeColor, node: TreeNode<K, V> | undefined): TreeClass<K, V> {
     if (node === undefined) {
-      throw new Error('Wrong color setting')
+      throw new Error('Wrong color setting');
     } else {
-      node.color = color
+      node.color = color;
     }
     return this;
   }
 }
-const MAXcapacity = 1 << 30;
+const MAX_CAPACITY = 1 << 30; // 30 : means number
 const LOADER_FACTOR = 0.75;
-class DictionaryClass<K, V>  {
-  private tableLink: { [hashIndex: number]: LinkedList<Pair<K, V>> | RBTreeClass<K, V> };
+class DictionaryClass<K, V> {
+  private tableLink: { [hashIndex: number]: LinkedList<Pair<K, V>> | TreeClass<K, V> };
   protected memberNumber: number;
   private isChange: boolean;
   private memberArray: Array<Pair<K, V>>;
@@ -684,7 +688,7 @@ class DictionaryClass<K, V>  {
   protected getHashIndex(key: K): number {
     let h: number = 0;
     let hash: number = 0;
-    hash = ((key === null) ? 0 : ((h = hashCode(key)) ^ (h >>> 16)));
+    hash = ((key === null) ? 0 : ((h = hashCode(key)) ^ (h >>> 16))); // 16 : means number
     if (this.expandCapacity()) {
       this.keyValues();
       this.memberNumber = 0;
@@ -702,7 +706,7 @@ class DictionaryClass<K, V>  {
   private power(size: number): number {
     let n: number = 1;
     let temp: number = size;
-    while (temp >>> 1 != 1) {
+    while (temp >>> 1 !== 1) {
       n++;
       temp = temp >>> 1;
     }
@@ -716,17 +720,17 @@ class DictionaryClass<K, V>  {
     let keys: number[] = [];
     keys = Object.keys(this.tableLink).map((item) => parseInt(item));
     for (let i: number = 0; i < keys.length; i++) {
-      let members: RBTreeClass<K, V> | LinkedList<Pair<K, V>> = undefined;
+      let members: TreeClass<K, V> | LinkedList<Pair<K, V>> = undefined;
       members = this.tableLink[keys[i]];
-      if (members instanceof RBTreeClass) {
-        let tempArray: RBTreeNode<K, V>[] = members.keyValueArray;
+      if (members instanceof TreeClass) {
+        let tempArray: TreeNode<K, V>[] = members.keyValueArray;
         for (let i: number = 0; i < members.memberNumber; i++) {
           this.memberArray.push(new Pair(tempArray[i].key, tempArray[i].value));
         }
       } else {
-        if (members != undefined && !members.isEmpty()) {
+        if (members !== undefined && !members.isEmpty()) {
           let current: Node<Pair<K, V>> = members.getHead();
-          while (current != undefined) {
+          while (current !== undefined) {
             this.memberArray.push(current.element);
             current = current.next;
           }
@@ -739,8 +743,8 @@ class DictionaryClass<K, V>  {
   }
   protected expandCapacity(): boolean {
     let capacityChange: boolean = false;
-    while (this.capacity < this.memberNumber / LOADER_FACTOR && this.capacity < MAXcapacity) {
-      this.capacity = 2 * this.capacity;
+    while (this.capacity < this.memberNumber / LOADER_FACTOR && this.capacity < MAX_CAPACITY) {
+      this.capacity = 2 * this.capacity; // 2 : means number
       capacityChange = true;
     }
     return capacityChange;
@@ -752,21 +756,23 @@ class DictionaryClass<K, V>  {
     }
     let position: number = 0;
     position = this.getHashIndex(key);
-    let members: LinkedList<Pair<K, V>> | RBTreeClass<K, V> = undefined;
+    let members: LinkedList<Pair<K, V>> | TreeClass<K, V> = undefined;
     members = this.tableLink[position];
-    if (members instanceof LinkedList && members.count >= 8) {
-      let newElement: RBTreeClass<K, V> = new RBTreeClass<K, V>();
+    if (members instanceof LinkedList && members.count >= 8) { // 8 : means number
+      let newElement: TreeClass<K, V> = new TreeClass<K, V>();
       let current: Node<Pair<K, V>> = undefined;
       current = members.getHead();
-      while (current != null || current != undefined) {
-        if (!(current.element instanceof Pair)) return false;
+      while (current != null || current !== undefined) {
+        if (!(current.element instanceof Pair)) {
+          return false;
+        }
         newElement.addNode(current.element.key, current.element.value);
         current = current.next;
       }
       newElement.addNode(key, value);
       this.tableLink[position] = newElement;
       return true;
-    } else if (members instanceof RBTreeClass) {
+    } else if (members instanceof TreeClass) {
       members.addNode(key, value);
       this.tableLink[position] = members;
       return true;
@@ -791,7 +797,7 @@ class DictionaryClass<K, V>  {
     }
     let current: Node<Pair<K, V>> = undefined;
     current = members.getHead();
-    while (current != undefined) {
+    while (current !== undefined) {
       if (current.element.key === key) {
         current.element.value = value;
         return true;
@@ -803,19 +809,21 @@ class DictionaryClass<K, V>  {
   protected getValueByKey(key: K): V | undefined {
     let position: number = 0;
     position = this.getHashIndex(key);
-    let members: LinkedList<Pair<K, V>> | RBTreeClass<K, V> = undefined;
+    let members: LinkedList<Pair<K, V>> | TreeClass<K, V> = undefined;
     members = this.tableLink[position];
-    if (members instanceof RBTreeClass) {
-      let resultNode: RBTreeNode<K, V> | undefined = undefined;
+    if (members instanceof TreeClass) {
+      let resultNode: TreeNode<K, V> | undefined = undefined;
       resultNode = members.getNode(key);
-      if (resultNode === undefined) return undefined;
+      if (resultNode === undefined) {
+        return undefined;
+      }
       return resultNode.value;
     } else {
-      if (members != undefined && !members.isEmpty()) {
+      if (members !== undefined && !members.isEmpty()) {
         members as LinkedList<Pair<K, V>>;
         let current: Node<Pair<K, V>> = undefined;
         current = members.getHead();
-        while (current != undefined) {
+        while (current !== undefined) {
           if (current.element.key === key) {
             return current.element.value;
           }
@@ -828,20 +836,20 @@ class DictionaryClass<K, V>  {
   protected removeMember(key: K): V | undefined {
     let position: number = 0;
     position = this.getHashIndex(key);
-    let members: LinkedList<Pair<K, V>> | RBTreeClass<K, V> = undefined;
+    let members: LinkedList<Pair<K, V>> | TreeClass<K, V> = undefined;
     members = this.tableLink[position];
-    if (members instanceof RBTreeClass) {
+    if (members instanceof TreeClass) {
       let result: V | undefined = members.removeNode(key);
-      if (result != undefined) {
+      if (result !== undefined) {
         this.isChange = true;
         this.memberNumber--;
         return result;
       }
     } else {
-      if (members != undefined && !members.isEmpty()) {
+      if (members !== undefined && !members.isEmpty()) {
         let current: Node<Pair<K, V>> = undefined;
         current = members.getHead();
-        while (current != undefined) {
+        while (current !== undefined) {
           if (current.element.key === key) {
             let result: V | undefined = current.element.value;
             members.remove(current.element);
@@ -858,7 +866,7 @@ class DictionaryClass<K, V>  {
     }
     return undefined;
   }
-  protected clear() {
+  protected clear(): void {
     this.tableLink = {};
     this.memberNumber = 0;
     this.isChange = true;
@@ -867,17 +875,17 @@ class DictionaryClass<K, V>  {
   protected hasKey(key: K): boolean {
     let position: number = 0;
     position = this.getHashIndex(key);
-    let members: LinkedList<Pair<K, V>> | RBTreeClass<K, V> = undefined;
+    let members: LinkedList<Pair<K, V>> | TreeClass<K, V> = undefined;
     members = this.tableLink[position];
     if (members === undefined || members === undefined) {
       return false;
     }
-    if (members instanceof RBTreeClass) {
+    if (members instanceof TreeClass) {
       return members.getNode(key) !== undefined;
     }
     let current: Node<Pair<K, V>> = undefined;
     current = members.getHead();
-    while (current != undefined && current != undefined) {
+    while (current !== undefined && current !== undefined) {
       if (current.element.key === key) {
         return true;
       }
@@ -892,7 +900,7 @@ class DictionaryClass<K, V>  {
       this.put(memebers[i].key, memebers[i].value);
     }
   }
-  protected Values(): V[] {
+  protected values(): V[] {
     let values: Array<V> = [];
     let valuePairs: Pair<K, V>[] = [];
     valuePairs = this.keyValues();
@@ -927,7 +935,7 @@ class LinkedList<T> {
       this.head = node;
     } else {
       current = this.head;
-      while (current.next != undefined) {
+      while (current.next !== undefined) {
         current = current.next;
       }
       current.next = node;
@@ -937,7 +945,7 @@ class LinkedList<T> {
   removeAt(index: number): T {
     if (index >= 0 && index < this.count) {
       let current: Node<T> = this.head;
-      if (index === 0 && current != undefined) {
+      if (index === 0 && current !== undefined) {
         this.head = current.next;
       } else {
         let previous: Node<T> = this.getElementAt(index--);
@@ -956,7 +964,7 @@ class LinkedList<T> {
   getElementAt(index: number): Node<T> {
     if (index > 0 && index < this.count) {
       let current: Node<T> = this.head;
-      for (let i: number = 0; i < index && current != undefined; i++) {
+      for (let i: number = 0; i < index && current !== undefined; i++) {
         current = current.next;
       }
       return current;
@@ -972,8 +980,9 @@ class LinkedList<T> {
         this.head = node;
       } else {
         let previous: Node<T> = this.getElementAt(index--);
-        if (previous === undefined)
+        if (previous === undefined) {
           throw new Error('data storage error');
+        }
         node.next = previous.next;
         previous.next = node;
       }
@@ -984,7 +993,7 @@ class LinkedList<T> {
   }
   indexOf(element: T, compareFn?: CompFun<T>): number {
     let current: Node<T> = this.head;
-    for (let i: number = 0; i < this.count && current != undefined; i++) {
+    for (let i: number = 0; i < this.count && current !== undefined; i++) {
       if (currencyCompare(element, current.element, compareFn) === ComparResult.EQUALS) {
         return i;
       }
@@ -1013,7 +1022,7 @@ class LinkedList<T> {
     objString = `${this.head.element}`;
     let current: Node<T> = undefined;
     current = this.head.next;
-    for (let i: number = 1; i < this.count && current != undefined; i++) {
+    for (let i: number = 1; i < this.count && current !== undefined; i++) {
       objString = `${objString}, ${current.element}`;
       current = current.next;
     }
@@ -1030,44 +1039,44 @@ const EMPTY_ERROR_CODE = 10200010;
 class BusinessError extends Error {
   code: number;
   constructor(message, code) {
-      super();
-      this.name = "BusinessError";
-      this.message = message;
-      this.code = code;
+    super();
+    this.name = 'BusinessError';
+    this.message = message;
+    this.code = code;
   }
 }
 
-function checkBindError(methodName: string, className: Function, self: unknown) {
+function checkBindError(methodName: string, className: Function, self: unknown): void {
   if (!(self instanceof className)) {
     throw new BusinessError(`The ${methodName} method cannot be bound`, BIND_ERROR_CODE);
   }
 }
 
-function checkTypeError(paramName:string, type:string, receivedValue:unknown) {
-  let tmpType = "";
-  if (typeof receivedValue === "object") {
-      tmpType = (receivedValue === null) ? "Null" : receivedValue.constructor.name;
+function checkTypeError(paramName: string, type: string, receivedValue: unknown) {
+  let tmpType = '';
+  if (typeof receivedValue === 'object') {
+    tmpType = (receivedValue === null) ? 'Null' : receivedValue.constructor.name;
   } else {
-      tmpType = typeof receivedValue;
+    tmpType = typeof receivedValue;
   }
-  if (tmpType === "number" && type === "Integer") {
-      tmpType = Number.isInteger(receivedValue) ? "Integer" : "number";
+  if (tmpType === 'number' && type === 'Integer') {
+    tmpType = Number.isInteger(receivedValue) ? 'Integer' : 'number';
   }
-  if (tmpType === "function" && type === "callable") {
-    tmpType = "callable";
+  if (tmpType === 'function' && type === 'callable') {
+    tmpType = 'callable';
   }
   if (tmpType.toLocaleLowerCase() !== type.toLocaleLowerCase()) {
-    type = (type === "Integer") ? "number" : type;
+    type = (type === 'Integer') ? 'number' : type;
     throw new BusinessError(`The type of "${paramName}" must be ${type}. Received value is: ${receivedValue}`, TYPE_ERROR_CODE);
   }
 }
 
-function checkRangeError(paramName: string, receivedValue:unknown, min?: number, max?: number, options?:string) {
+function checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void {
   let range = [];
   let minFlag = true;
   let maxFlag = true;
   if (min !== undefined) {
-    if (options === "!=min") {
+    if (options === '!=min') {
       minFlag = (receivedValue > min);
       range.push(`> ${min}`);
     } else {
@@ -1086,19 +1095,19 @@ function checkRangeError(paramName: string, receivedValue:unknown, min?: number,
   }
 }
 
-function checkIsEmptyError(isEmpty: boolean) {
+function checkIsEmptyError(isEmpty: boolean): void {
   if (isEmpty) {
     throw new BusinessError(`Container is empty`, EMPTY_ERROR_CODE);
   }
 }
 
-function checkNewTargetIsNullError(className: string, isNull: boolean) {
+function checkNewTargetIsNullError(className: string, isNull: boolean): void {
   if (isNull) {
     throw new BusinessError(`The ${className}'s constructor cannot be directly invoked`, NEWTARGET_IS_NULL_ERROR_CODE);
   }
 }
 
-let ErrorUtil = {
+let errorUtil = {
   checkBindError,
   checkTypeError,
   checkRangeError,
@@ -1109,8 +1118,7 @@ export default {
   isIncludeToArray,
   LightWeightClass,
   PlainArrayClass,
-  RBTreeClass,
+  TreeClass,
   DictionaryClass,
-  ErrorUtil
-}
-
+  errorUtil
+};

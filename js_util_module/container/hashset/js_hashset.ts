@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 declare function requireNapi(s: string): any;
 interface ArkPrivate {
   HashSet: number;
@@ -27,8 +26,8 @@ if (arkPritvate !== undefined) {
   flag = true;
 }
 if (flag || fastHashSet === undefined) {
-  let HashSetAbility: any = requireNapi('util.struct');
-  const ErrorUtil = HashSetAbility.ErrorUtil;
+  let hashSetAbility: any = requireNapi('util.struct');
+  const errorUtil = hashSetAbility.errorUtil;
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -36,7 +35,7 @@ if (flag || fastHashSet === undefined) {
     };
   }
   class HandlerHashSet<T> {
-    set(target: HashSet<T>, p: any, value: any): boolean {
+    set(target: HashSet<T>, p: string, value: string): boolean {
       if (p in target) {
         target[p] = value;
         return true;
@@ -53,9 +52,9 @@ if (flag || fastHashSet === undefined) {
       throw new Error(`Can't set Prototype on HashSet Object`);
     }
   }
-  class HashSet<T> extends HashSetAbility.DictionaryClass<T, T> {
+  class HashSet<T> extends hashSetAbility.DictionaryClass<T, T> {
     constructor() {
-      ErrorUtil.checkNewTargetIsNullError("HashSet", !new.target);
+      errorUtil.checkNewTargetIsNullError('HashSet', !new.target);
       super();
       return new Proxy(this, new HandlerHashSet());
     }
@@ -63,47 +62,47 @@ if (flag || fastHashSet === undefined) {
       return this.memberNumber;
     }
     isEmpty(): boolean {
-      ErrorUtil.checkBindError("isEmpty", HashSet, this);
+      errorUtil.checkBindError('isEmpty', HashSet, this);
       return this.memberNumber === 0;
     }
     has(value: T): boolean {
-      ErrorUtil.checkBindError("has", HashSet, this);
+      errorUtil.checkBindError('has', HashSet, this);
       return this.hasKey(value);
     }
     add(value: T): boolean {
-      ErrorUtil.checkBindError("add", HashSet, this);
+      errorUtil.checkBindError('add', HashSet, this);
       if (this.has(value)) {
         return false;
       }
       return this.put(value);
     }
     remove(value: T): boolean {
-      ErrorUtil.checkBindError("remove", HashSet, this);
+      errorUtil.checkBindError('remove', HashSet, this);
       if (this.removeMember(value) !== undefined) {
         return true;
       }
       return false;
     }
     clear(): void {
-      ErrorUtil.checkBindError("clear", HashSet, this);
+      errorUtil.checkBindError('clear', HashSet, this);
       super.clear();
     }
     forEach(callbackfn: (value?: T, key?: T, set?: HashSet<T>) => void,
       thisArg?: Object): void {
-      ErrorUtil.checkBindError("forEach", HashSet, this);
-      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
-      let tagetArray: Array<any> = [];
+      errorUtil.checkBindError('forEach', HashSet, this);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      let tagetArray: Array<HashSet<T>> = [];
       tagetArray = this.keyValueArray;
       for (let i: number = 0; i < tagetArray.length; i++) {
         callbackfn.call(thisArg, tagetArray[i].key, tagetArray[i].key, this);
       }
     }
     values(): IterableIterator<T> {
-      ErrorUtil.checkBindError("values", HashSet, this);
+      errorUtil.checkBindError('values', HashSet, this);
       let data: HashSet<T> = this;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
           done = count >= data.memberNumber;
@@ -117,11 +116,11 @@ if (flag || fastHashSet === undefined) {
       };
     }
     entries(): IterableIterator<[T, T]> {
-      ErrorUtil.checkBindError("entries", HashSet, this);
+      errorUtil.checkBindError('entries', HashSet, this);
       let data: HashSet<T> = this;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: [T, T] } {
           let done: boolean = false;
           let value: [T, T] = undefined;
           done = count >= data.memberNumber;
@@ -135,7 +134,7 @@ if (flag || fastHashSet === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<T> {
-      ErrorUtil.checkBindError("Symbol.iterator", HashSet, this);
+      errorUtil.checkBindError('Symbol.iterator', HashSet, this);
       return this.values();
     }
   }
