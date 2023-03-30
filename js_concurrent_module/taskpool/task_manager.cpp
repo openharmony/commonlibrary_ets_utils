@@ -162,10 +162,12 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
         UpdateState(executeId, TaskState::CANCELED);
         if (state == TaskState::WAITING) {
             TaskInfo* taskInfo = PopTaskInfo(executeId);
-            napi_value undefined = nullptr;
-            napi_get_undefined(taskInfo->env, &undefined);
-            napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
-            ReleaseTaskContent(taskInfo);
+            if (taskInfo != nullptr) {
+                napi_value undefined = nullptr;
+                napi_get_undefined(taskInfo->env, &undefined);
+                napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
+                ReleaseTaskContent(taskInfo);
+            }
         } else {
             result = ErrorHelper::ERR_CANCAL_RUNNING_TASK;
         }
@@ -210,9 +212,6 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value object, uint32_
 
 void TaskManager::ReleaseTaskContent(TaskInfo* taskInfo)
 {
-    if (taskInfo == nullptr) {
-        return;
-    }
     if (taskInfo->onResultSignal != nullptr &&
         !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->onResultSignal))) {
         uv_close(reinterpret_cast<uv_handle_t*>(taskInfo->onResultSignal), [](uv_handle_t* handle) {
