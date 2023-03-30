@@ -36,7 +36,7 @@ action("build_ts_js") {
   outputs = [ target_out_dir + "/js_convertxml.js" ]
 }
 base_output_path = get_label_info(":js_convertxml", "target_out_dir")
-if (target_os == "ios" || is_mac || is_mingw) {
+if (use_ios || use_mac || use_mingw_win || use_linux) {
   js_xml_obj_path = base_output_path + "/convertxml.c"
 } else {
   js_xml_obj_path = base_output_path + "/convertxml.o"
@@ -75,7 +75,7 @@ action("gen_convertxml_abc") {
 }
 
 abc_output_path = get_label_info(":convertxml_abc", "target_out_dir")
-if (target_os == "ios" || is_mac || is_mingw) {
+if (use_ios || use_mac || use_mingw_win || use_linux) {
   convertxml_abc_obj_path = abc_output_path + "/convertxml_abc.c"
 } else {
   convertxml_abc_obj_path = abc_output_path + "/convertxml_abc.o"
@@ -140,7 +140,7 @@ ohos_source_set("convertxml_static") {
     ":gen_obj_src_convertxml_abc",
     ":gen_obj_src_js_convertxml",
     "//foundation/arkui/napi/:ace_napi",
-    "//third_party/icu/icu4c:static_icuuc",
+    "//third_party/icu/icu4c:shared_icuuc",
     "//third_party/libxml2:static_libxml2",
   ]
 
@@ -162,6 +162,10 @@ ohos_source_set("convertxml_static") {
     if (target_os == "android") {
       deps += [ "$plugins_root/interfaces/native:ace_plugin_util_android" ]
       defines = [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
+      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
     }
   }
 
