@@ -27,7 +27,13 @@
 
 #include <sys/resource.h>
 #include <sys/syscall.h>
+
+#ifdef IOS_PLATFORM
+#include <sys/sysctl.h>
+#else
 #include <sys/sysinfo.h>
+#endif
+
 #include <sys/types.h>
 
 #include "securec.h"
@@ -169,13 +175,29 @@ namespace OHOS::Js_sys_module::Process {
     napi_value Process::Uptime(napi_env env) const
     {
         napi_value result = nullptr;
+        double runsystime = 0.0;
+#ifdef IOS_PLATFORM
+        struct timeval boottime;
+        struct timeval now;
+        struct timezone tz;
+        int mib[2] = { CTL_KERN, KERN_BOOTTIME };
+        size_t size = sizeof(boottime);
+        gettimeofday(&now, &tz);
+        double systimer = -1;
+#define MIB_SIZE 2
+#define MICROSECONDS_OF_SECOND 1000.0*1000.0
+        if (sysctl(mib, MIB_SIZE, &boottime, &size, NULL, 0) != -1 && boottime.tv_sec != 0) {
+            systimer = now.tv_sec - boottime.tv_sec;
+            systimer += (double)(now.tv_usec - boottime.tv_usec) / MICROSECONDS_OF_MILLISECOND;
+        }
+#else
         struct sysinfo information = {0};
         time_t systimer = 0;
-        double runsystime = 0.0;
         if (sysinfo(&information)) {
             napi_throw_error(env, "-1", "Failed to get sysinfo");
         }
         systimer = information.uptime;
+#endif
         if (systimer > 0) {
             runsystime = static_cast<double>(systimer);
             NAPI_CALL(env, napi_create_double(env, runsystime, &result));
@@ -276,8 +298,14 @@ namespace OHOS::Js_sys_module::Process {
     napi_value Process::GetTid(napi_env env) const
     {
         napi_value result = nullptr;
+#ifdef IOS_PLATFORM
+        uint64_t proTid;
+        pthread_threadid_np(0, &proTid);
+        napi_create_int64(env, proTid, &result);
+#else
         auto proTid = static_cast<int32_t>(gettid());
         napi_create_int32(env, proTid, &result);
+#endif
         return result;
     }
 

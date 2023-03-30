@@ -733,7 +733,7 @@ namespace OHOS::Js_sys_module::Process {
         .reserved = { 0 },
     };
 
-    extern "C" __attribute__ ((constructor)) void RegisterModule()
+    extern "C" __attribute__ ((constructor)) void ProcessRegisterModule()
     {
         napi_module_register(&processModule);
     }

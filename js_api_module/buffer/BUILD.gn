@@ -13,7 +13,6 @@
 
 import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
 import("//build/ohos.gni")
-import("//build/ohos/ace/ace.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
@@ -134,7 +133,7 @@ ohos_shared_library("buffer") {
   relative_install_dir = "module"
 }
 
-ohos_static_library("buffer_static") {
+ohos_source_set("buffer_static") {
   include_dirs = [
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
@@ -163,6 +162,20 @@ ohos_static_library("buffer_static") {
     external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
   } else {
     external_deps += [ "hilog:libhilog" ]
+  }
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    if (target_os == "android") {
+      defines = [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
+      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
+    }
   }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
