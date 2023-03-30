@@ -38,6 +38,12 @@ bool NapiHelper::IsArray(napi_value value)
     return valNative == nullptr ? false : valNative->IsArray();
 }
 
+bool NapiHelper::IsFunction(napi_value object)
+{
+    auto valNative = reinterpret_cast<NativeValue*>(object);
+    return valNative == nullptr ? false :  valNative->TypeOf() == NATIVE_FUNCTION;
+}
+
 bool NapiHelper::IsConstructor(napi_env env, napi_callback_info cbInfo)
 {
     napi_value* funcObj = nullptr;
@@ -179,5 +185,27 @@ bool NapiHelper::StrictEqual(napi_env env, napi_value value, napi_value cmpValue
     bool isEqual = false;
     napi_strict_equals(env, value, cmpValue, &isEqual);
     return isEqual;
+}
+
+napi_value NapiHelper::GetConstructorName(napi_env env, napi_value object)
+{
+    while (IsNotUndefined(object)) {
+        napi_value func = nullptr;
+        napi_get_own_property_descriptor(env, object, "constructor", &func);
+        bool isInstanceof = false;
+        napi_instanceof(env, object, func, &isInstanceof);
+        if (IsNotUndefined(func) && isInstanceof) {
+            napi_value ctorName = nullptr;
+            napi_get_own_property_descriptor(env, func, "name", &ctorName);
+            std::string name = GetString(env, ctorName);
+            if (name.size() > 0) {
+                return ctorName;
+            }
+        }
+        napi_value result = nullptr;
+        napi_get_prototype(env, object, &result);
+        object = result;
+    }
+    return nullptr;
 }
 } // namespace Commonlibrary::Concurrent::Common::Helper

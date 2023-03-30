@@ -16,12 +16,12 @@
 #include "worker.h"
 
 #include "hitrace_meter.h"
-#include "plugin/timer.h"
+#include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "task_manager.h"
 #include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-using namespace Commonlibrary::Concurrent::Common::Plugin;
+using namespace OHOS::Js_sys_module;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 

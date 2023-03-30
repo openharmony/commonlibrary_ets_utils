@@ -26,6 +26,7 @@ public:
     static bool IsString(napi_value value);
     static bool IsNotUndefined(napi_value value);
     static bool IsArray(napi_value value);
+    static bool IsFunction(napi_value object);
     static bool IsConstructor(napi_env env, napi_callback_info cbInfo);
     static bool IsCallable(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_ref value);
@@ -45,6 +46,7 @@ public:
     static napi_value GetNameProperty(napi_env env, napi_value obj, const char* name);
     static bool GetBooleanValue(napi_env env, napi_value value);
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
+    static napi_value GetConstructorName(napi_env env, napi_value object);
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_

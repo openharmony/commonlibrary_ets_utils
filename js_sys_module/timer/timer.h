@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_COMMON_PLUGIN_TIMER_H_
-#define JS_CONCURRENT_MODULE_COMMON_PLUGIN_TIMER_H_
+#ifndef TIMER_TIMER_H_
+#define TIMER_TIMER_H_
 
 #include <map>
 #include <mutex>
 #include <uv.h>
 
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace Commonlibrary::Concurrent::Common::Plugin {
+namespace OHOS::Js_sys_module {
 struct TimerCallbackInfo {
     napi_env env_;
     uint32_t tId_;
@@ -41,7 +41,7 @@ struct TimerCallbackInfo {
         : env_(env), tId_(tId), timeout_(timeout), callback_(callback),
           repeat_(repeat), argc_(argc), argv_(argv)
     {
-        uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env_);
+        uv_loop_t* loop = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetLibUV(env_);
         timeReq_ = new uv_timer_t;
         uv_timer_init(loop, timeReq_);
         timeReq_->data = this;
@@ -68,5 +68,5 @@ private:
     static std::map<uint32_t, TimerCallbackInfo*> timerTable;
     static std::mutex timeLock;
 };
-} // namespace Commonlibrary::Concurrent::Common::Plugin
-#endif // JS_CONCURRENT_MODULE_COMMON_PLUGIN_TIMER_H_
+} // namespace Commonlibrary::Js_sys_module
+#endif // TIMER_TIMER_H_
