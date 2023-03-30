@@ -434,7 +434,7 @@ private:
     MessageQueue hostMessageQueue_ {};
     MessageQueue errorQueue_ {};
 
-    uv_async_t workerOnMessageSignal_ {};
+    uv_async_t* workerOnMessageSignal_ = nullptr;
     uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* hostOnErrorSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)

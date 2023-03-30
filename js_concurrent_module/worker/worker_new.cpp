@@ -815,14 +815,16 @@ void NewWorker::ExecuteInThread(const void* data)
 
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
-        uv_async_init(loop, &worker->workerOnMessagSignal_, reinterpret_cast<uv_async_cb>(NewWorker::WorkerOnMessage));
+        worker->workerOnMessageSignal_ = new uv_async_t;
+        uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(NewWorker::WorkerOnMessage));
+        worker->workerOnMessageSignal_->data = worker;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         uv_async_init(loop, &worker->ddebuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             NewWorker::HandleDebuggerTask));
 #endif
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
-        uv_async_send(&worker->workerOnMessagSignal_);
+        uv_async_send(worker->workerOnMessageSignal_);
         // 3. start worker loop
         worker->Loop();
     } else {
@@ -1045,8 +1047,8 @@ void NewWorker::PostMessageInner(MessageDataType data)
         return;
     }
     workerMessageQueue_.EnQueue(data);
-    if (uv_is_active((uv_handle_t*)&workerOnMessagSignal_)) {
-        uv_async_send(&workerOnMessagSignal_);
+    if (workerOnMessageSignal_ != nullptr && uv_is_active((uv_handle_t*)workerOnMessageSignal_)) {
+        uv_async_send(workerOnMessageSignal_);
     }
 }
 
@@ -1112,7 +1114,12 @@ void NewWorker::TerminateWorker()
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     // when there is no active handle, worker loop will stop automatic.
-    uv_close(reinterpret_cast<uv_handle_t*>(&workerOnMessagSignal_), nullptr);
+    uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_close(reinterpret_cast<uv_handle_t*>(&ddebuggerOnPostTaskSignal_), nullptr);
 #endif
@@ -1139,7 +1146,7 @@ void NewWorker::PublishWorkerOverSignal()
 void NewWorker::WorkerOnMessage(const uv_async_t* req)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
-    NewWorker* worker = DereferenceHelp::DereferenceOf(&NewWorker::workerOnMessagSignal_, req);
+    NewWorker* worker = static_cast<NewWorker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
         return;
