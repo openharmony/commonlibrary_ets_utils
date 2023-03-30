@@ -26,8 +26,8 @@ if (arkPritvate !== undefined) {
   flag = true;
 }
 if (flag || fastHashMap === undefined) {
-  let HashMapAbility: any = requireNapi('util.struct');
-  const ErrorUtil = HashMapAbility.ErrorUtil;
+  let hashMapAbility: any = requireNapi('util.struct');
+  const errorUtil = hashMapAbility.errorUtil;
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -35,7 +35,7 @@ if (flag || fastHashMap === undefined) {
     };
   }
   class HandlerHashMap<K, V> {
-    set(target: HashMap<K, V>, p: any, value: any): boolean {
+    set(target: HashMap<K, V>, p: string, value: string): boolean {
       if (p in target) {
         target[p] = value;
         return true;
@@ -52,9 +52,9 @@ if (flag || fastHashMap === undefined) {
       throw new Error(`Can't set Prototype on HashMap Object`);
     }
   }
-  class HashMap<K, V> extends HashMapAbility.DictionaryClass<K, V> {
+  class HashMap<K, V> extends hashMapAbility.DictionaryClass<K, V> {
     constructor() {
-      ErrorUtil.checkNewTargetIsNullError("HashMap", !new.target);
+      errorUtil.checkNewTargetIsNullError('HashMap', !new.target);
       super();
       return new Proxy(this, new HandlerHashMap());
     }
@@ -62,49 +62,49 @@ if (flag || fastHashMap === undefined) {
       return this.memberNumber;
     }
     isEmpty(): boolean {
-      ErrorUtil.checkBindError("isEmpty", HashMap, this);
+      errorUtil.checkBindError('isEmpty', HashMap, this);
       return this.memberNumber === 0;
     }
     hasKey(key: K): boolean {
-      ErrorUtil.checkBindError("hasKey", HashMap, this);
+      errorUtil.checkBindError('hasKey', HashMap, this);
       return super.hasKey(key);
     }
     hasValue(value: V): boolean {
-      ErrorUtil.checkBindError("hasValue", HashMap, this);
-      return super.Values().indexOf(value) > -1;
+      errorUtil.checkBindError('hasValue', HashMap, this);
+      return super.values().indexOf(value) > -1;
     }
     get(key: K): V {
-      ErrorUtil.checkBindError("get", HashMap, this);
+      errorUtil.checkBindError('get', HashMap, this);
       return this.getValueByKey(key);
     }
     setAll(map: HashMap<K, V>): void {
-      ErrorUtil.checkBindError("setAll", HashMap, this);
-      ErrorUtil.checkTypeError("map", "HashMap", map);
-      let memebers: Array<any> = [];
+      errorUtil.checkBindError('setAll', HashMap, this);
+      errorUtil.checkTypeError('map', 'HashMap', map);
+      let memebers: Array<HashMap<K, V>> = [];
       memebers = map.keyValueArray;
       for (let i: number = 0; i < memebers.length; i++) {
         this.put(memebers[i].key, memebers[i].value);
       }
     }
     set(key: K, value: V): Object {
-      ErrorUtil.checkBindError("set", HashMap, this);
+      errorUtil.checkBindError('set', HashMap, this);
       return super.put(key, value);
     }
     remove(key: K): V {
-      ErrorUtil.checkBindError("remove", HashMap, this);
+      errorUtil.checkBindError('remove', HashMap, this);
       let result: V = this.removeMember(key);
       return result;
     }
     clear(): void {
-      ErrorUtil.checkBindError("clear", HashMap, this);
+      errorUtil.checkBindError('clear', HashMap, this);
       super.clear();
     }
     keys(): IterableIterator<K> {
-      ErrorUtil.checkBindError("keys", HashMap, this);
+      errorUtil.checkBindError('keys', HashMap, this);
       let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: K } {
           let done: boolean = false;
           let value: K = undefined;
           done = count >= data.memberNumber;
@@ -118,11 +118,11 @@ if (flag || fastHashMap === undefined) {
       };
     }
     values(): IterableIterator<V> {
-      ErrorUtil.checkBindError("values", HashMap, this);
+      errorUtil.checkBindError('values', HashMap, this);
       let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: V } {
           let done: boolean = false;
           let value: V = undefined;
           done = count >= data.memberNumber;
@@ -136,25 +136,25 @@ if (flag || fastHashMap === undefined) {
       };
     }
     replace(key: K, newValue: V): boolean {
-      ErrorUtil.checkBindError("replace", HashMap, this);
+      errorUtil.checkBindError('replace', HashMap, this);
       return super.replaceMember(key, newValue);
     }
     forEach(callbackfn: (value?: V, key?: K, map?: HashMap<K, V>) => void,
       thisArg?: Object): void {
-      ErrorUtil.checkBindError("forEach", HashMap, this);
-      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
-      let tagetArray: Array<any> = [];
+      errorUtil.checkBindError('forEach', HashMap, this);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      let tagetArray: Array<HashMap<K, V>> = [];
       tagetArray = this.keyValueArray;
       for (let i: number = 0; i < tagetArray.length; i++) {
         callbackfn.call(thisArg, tagetArray[i].value, tagetArray[i].key, this);
       }
     }
     entries(): IterableIterator<[K, V]> {
-      ErrorUtil.checkBindError("entries", HashMap, this);
+      errorUtil.checkBindError('entries', HashMap, this);
       let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: [K, V] } {
           let done: boolean = false;
           let value: [K, V] = undefined;
           done = count >= data.memberNumber;
@@ -168,7 +168,7 @@ if (flag || fastHashMap === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
-      ErrorUtil.checkBindError("Symbol.iterator", HashMap, this);
+      errorUtil.checkBindError('Symbol.iterator', HashMap, this);
       return this.entries();
     }
   }

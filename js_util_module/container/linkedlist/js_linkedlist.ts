@@ -26,21 +26,21 @@ if (arkPritvate !== undefined) {
 }
 declare function requireNapi(s: string): any;
 if (flag || fastLinkedList === undefined) {
-  const {ErrorUtil} = requireNapi('util.struct');
+  const { errorUtil } = requireNapi('util.struct');
   class HandlerLinkedList<T> {
-    get(obj: LinkedList<T>, prop: any): T {
+    get(obj: LinkedList<T>, prop: string): T {
       if (typeof prop === 'symbol') {
         return obj[prop];
       }
       let index: number = Number.parseInt(prop);
       let length: number = obj.length;
       if (Number.isInteger(index)) {
-        ErrorUtil.checkRangeError("index", index, 0, length - 1);
+        errorUtil.checkRangeError('index', index, 0, length - 1);
         return obj.get(index);
       }
       return obj[prop];
     }
-    set(obj: LinkedList<T>, prop: any, value: any): boolean {
+    set(obj: LinkedList<T>, prop: string, value: T): boolean {
       if (prop === 'elementNum' ||
         prop === 'capacity' ||
         prop === 'head' ||
@@ -52,23 +52,23 @@ if (flag || fastLinkedList === undefined) {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         let length: number = obj.length;
-        ErrorUtil.checkRangeError("index", index, 0, length);
+        errorUtil.checkRangeError('index', index, 0, length);
         obj.set(index, value);
         return true;
       }
       return false;
     }
-    deleteProperty(obj: LinkedList<T>, prop: any): boolean {
+    deleteProperty(obj: LinkedList<T>, prop: string): boolean {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         let length: number = obj.length;
-        ErrorUtil.checkRangeError("index", index, 0, length - 1);
+        errorUtil.checkRangeError('index', index, 0, length - 1);
         obj.removeByIndex(index);
         return true;
       }
       return false;
     }
-    has(obj: LinkedList<T>, prop: any): boolean {
+    has(obj: LinkedList<T>, prop: T): boolean {
       return obj.has(prop);
     }
     ownKeys(obj: LinkedList<T>): Array<string> {
@@ -82,14 +82,14 @@ if (flag || fastLinkedList === undefined) {
     defineProperty(): boolean {
       return true;
     }
-    getOwnPropertyDescriptor(obj: LinkedList<T>, prop: any): Object {
+    getOwnPropertyDescriptor(obj: LinkedList<T>, prop: string): Object {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         let length: number = obj.length;
-        ErrorUtil.checkRangeError("index", index, 0, length - 1);
+        errorUtil.checkRangeError('index', index, 0, length - 1);
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
-      return;
+      return Object;
     }
     setPrototypeOf(): T {
       throw new Error(`Can't setPrototype on LinkedList Object`);
@@ -117,7 +117,7 @@ if (flag || fastLinkedList === undefined) {
     private elementNum: number;
     private capacity: number;
     constructor() {
-      ErrorUtil.checkNewTargetIsNullError("LinkedList", !new.target);
+      errorUtil.checkNewTargetIsNullError('LinkedList', !new.target);
       this.head = undefined;
       this.tail = undefined;
       this.elementNum = 0;
@@ -140,8 +140,8 @@ if (flag || fastLinkedList === undefined) {
       return undefined;
     }
     get(index: number): T {
-      ErrorUtil.checkBindError("get", LinkedList, this);
-      ErrorUtil.checkTypeError("index", "Integer", index);
+      errorUtil.checkBindError('get', LinkedList, this);
+      errorUtil.checkTypeError('index', 'Integer', index);
       if (index >= 0 && index < this.elementNum) {
         let current: NodeObj<T> = this.head;
         for (let i: number = 0; i < index && current !== undefined; i++) {
@@ -152,7 +152,7 @@ if (flag || fastLinkedList === undefined) {
       return undefined;
     }
     add(element: T): boolean {
-      ErrorUtil.checkBindError("add", LinkedList, this);
+      errorUtil.checkBindError('add', LinkedList, this);
       let node: NodeObj<T> = new NodeObj(element);
       if (this.head === undefined) {
         this.head = this.tail = node;
@@ -167,7 +167,7 @@ if (flag || fastLinkedList === undefined) {
       return true;
     }
     addFirst(element: T): void {
-      ErrorUtil.checkBindError("addFirst", LinkedList, this);
+      errorUtil.checkBindError('addFirst', LinkedList, this);
       let node: NodeObj<T> = new NodeObj(element);
       if (this.elementNum === 0) {
         this.head = this.tail = node;
@@ -178,27 +178,27 @@ if (flag || fastLinkedList === undefined) {
       this.elementNum++;
     }
     removeFirst(): T {
-      ErrorUtil.checkBindError("removeFirst", LinkedList, this);
-      ErrorUtil.checkIsEmptyError(!this.head);
+      errorUtil.checkBindError('removeFirst', LinkedList, this);
+      errorUtil.checkIsEmptyError(!this.head);
       let result: T = this.head.element;
       this.removeByIndex(0);
       return result;
     }
     removeLast(): T {
-      ErrorUtil.checkBindError("removeLast", LinkedList, this);
-      ErrorUtil.checkIsEmptyError(!this.tail);
+      errorUtil.checkBindError('removeLast', LinkedList, this);
+      errorUtil.checkIsEmptyError(!this.tail);
       let result: T = this.tail.element;
       this.removeByIndex(this.elementNum - 1);
       return result;
     }
     clear(): void {
-      ErrorUtil.checkBindError("clear", LinkedList, this);
+      errorUtil.checkBindError('clear', LinkedList, this);
       this.head = undefined;
       this.tail = undefined;
       this.elementNum = 0;
     }
     has(element: T): boolean {
-      ErrorUtil.checkBindError("has", LinkedList, this);
+      errorUtil.checkBindError('has', LinkedList, this);
       if (this.head !== undefined) {
         if (this.head.element === element) {
           return true;
@@ -214,7 +214,7 @@ if (flag || fastLinkedList === undefined) {
       return false;
     }
     getIndexOf(element: T): number {
-      ErrorUtil.checkBindError("getIndexOf", LinkedList, this);
+      errorUtil.checkBindError('getIndexOf', LinkedList, this);
       for (let i: number = 0; i < this.elementNum; i++) {
         let curNode: NodeObj<T> = this.getNode(i);
         if (curNode !== undefined && curNode.element === element) {
@@ -224,7 +224,7 @@ if (flag || fastLinkedList === undefined) {
       return -1;
     }
     getLastIndexOf(element: T): number {
-      ErrorUtil.checkBindError("getLastIndexOf", LinkedList, this);
+      errorUtil.checkBindError('getLastIndexOf', LinkedList, this);
       for (let i: number = this.elementNum - 1; i >= 0; i--) {
         let curNode: NodeObj<T> = this.getNode(i);
         if (curNode !== undefined && curNode.element === element) {
@@ -234,9 +234,9 @@ if (flag || fastLinkedList === undefined) {
       return -1;
     }
     removeByIndex(index: number): T {
-      ErrorUtil.checkBindError("removeByIndex", LinkedList, this);
-      ErrorUtil.checkTypeError("index", "Integer", index);
-      ErrorUtil.checkRangeError("index", index, 0, this.length - 1);
+      errorUtil.checkBindError('removeByIndex', LinkedList, this);
+      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkRangeError('index', index, 0, this.length - 1);
       if (index >= 0 && index < this.elementNum) {
         let current: NodeObj<T> = this.head;
         if (index === 0 && current !== undefined) {
@@ -266,9 +266,10 @@ if (flag || fastLinkedList === undefined) {
       } else {
         throw new RangeError('the index is out-of-bounds');
       }
+      return undefined;
     }
     remove(element: T): boolean {
-      ErrorUtil.checkBindError("remove", LinkedList, this);
+      errorUtil.checkBindError('remove', LinkedList, this);
       if (this.isEmpty()) {
         return false;
       }
@@ -281,8 +282,8 @@ if (flag || fastLinkedList === undefined) {
       return false;
     }
     removeFirstFound(element: T): boolean {
-      ErrorUtil.checkBindError("removeFirstFound", LinkedList, this);
-      ErrorUtil.checkIsEmptyError(!this.head);
+      errorUtil.checkBindError('removeFirstFound', LinkedList, this);
+      errorUtil.checkIsEmptyError(!this.head);
       if (this.has(element)) {
         let index: number = 0;
         index = this.getIndexOf(element);
@@ -292,8 +293,8 @@ if (flag || fastLinkedList === undefined) {
       return false;
     }
     removeLastFound(element: T): boolean {
-      ErrorUtil.checkBindError("removeLastFound", LinkedList, this);
-      ErrorUtil.checkIsEmptyError(!this.tail);
+      errorUtil.checkBindError('removeLastFound', LinkedList, this);
+      errorUtil.checkIsEmptyError(!this.tail);
       if (this.has(element)) {
         let index: number = 0;
         index = this.getLastIndexOf(element);
@@ -303,23 +304,23 @@ if (flag || fastLinkedList === undefined) {
       return false;
     }
     getFirst(): T {
-      ErrorUtil.checkBindError("getFirst", LinkedList, this);
+      errorUtil.checkBindError('getFirst', LinkedList, this);
       if (this.head !== undefined) {
         return this.head.element;
       }
       return undefined;
     }
     getLast(): T {
-      ErrorUtil.checkBindError("getLast", LinkedList, this);
+      errorUtil.checkBindError('getLast', LinkedList, this);
       if (this.tail !== undefined) {
         return this.tail.element;
       }
       return undefined;
     }
     insert(index: number, element: T): void {
-      ErrorUtil.checkBindError("insert", LinkedList, this);
-      ErrorUtil.checkTypeError("index", "Integer", index);
-      ErrorUtil.checkRangeError("index", index, 0, this.length);
+      errorUtil.checkBindError('insert', LinkedList, this);
+      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkRangeError('index', index, 0, this.length);
       if (index >= 0 && index <= this.elementNum) {
         let newNode: NodeObj<T> = new NodeObj(element);
         let current: NodeObj<T> = this.head;
@@ -348,16 +349,16 @@ if (flag || fastLinkedList === undefined) {
       this.elementNum++;
     }
     set(index: number, element: T): T {
-      ErrorUtil.checkBindError("set", LinkedList, this);
-      ErrorUtil.checkTypeError("index", "Integer", index);
-      ErrorUtil.checkRangeError("index", index, 0, this.length - 1);
+      errorUtil.checkBindError('set', LinkedList, this);
+      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkRangeError('index', index, 0, this.length - 1);
       let current: NodeObj<T> = undefined;
       current = this.getNode(index);
       current.element = element;
       return current.element;
     }
     convertToArray(): Array<T> {
-      ErrorUtil.checkBindError("convertToArray", LinkedList, this);
+      errorUtil.checkBindError('convertToArray', LinkedList, this);
       let arr: Array<T> = [];
       let index: number = 0;
       if (this.elementNum <= 0) {
@@ -374,7 +375,7 @@ if (flag || fastLinkedList === undefined) {
       return arr;
     }
     clone(): LinkedList<T> {
-      ErrorUtil.checkBindError("clone", LinkedList, this);
+      errorUtil.checkBindError('clone', LinkedList, this);
       let clone: LinkedList<T> = new LinkedList<T>();
       let arr: Array<T> = this.convertToArray();
       for (let i: number = 0; i < arr.length; i++) {
@@ -388,8 +389,8 @@ if (flag || fastLinkedList === undefined) {
     }
     forEach(callbackfn: (value: T, index?: number, linkedList?: LinkedList<T>) => void,
       thisArg?: Object): void {
-      ErrorUtil.checkBindError("forEach", LinkedList, this);
-      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
+      errorUtil.checkBindError('forEach', LinkedList, this);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
       let index: number = 0;
       if (this.head !== undefined) {
         let current: NodeObj<T> = this.head;
@@ -403,11 +404,11 @@ if (flag || fastLinkedList === undefined) {
       }
     }
     [Symbol.iterator](): IterableIterator<T> {
-      ErrorUtil.checkBindError("Symbol.iterator", LinkedList, this);
+      errorUtil.checkBindError('Symbol.iterator', LinkedList, this);
       let count: number = 0;
       let linkedlist: LinkedList<T> = this;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
           done = count >= linkedlist.elementNum;
