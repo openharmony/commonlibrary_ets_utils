@@ -21,7 +21,7 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-namespace OHOS::Js_sys_module::Process {
+namespace OHOS::JsSysModule::Process {
     struct WaitInfo {
         napi_async_work worker = nullptr;
         napi_deferred deferred = nullptr;
@@ -162,5 +162,5 @@ namespace OHOS::Js_sys_module::Process {
         bool killed_ = false;
         bool isWait_ = true;
     };
-} // namespace OHOS::Js_sys_module::Process
+} // namespace OHOS::JsSysModule::Process
 #endif // PROCESS_JS_CHILDPROCESS_H_

@@ -23,7 +23,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace OHOS::Js_sys_module::Process {
+namespace OHOS::JsSysModule::Process {
     using ClearRefCallback = void (*)(napi_env env);
     enum class PromiseRejectionEvent : uint32_t { REJECT = 0, HANDLE };
     class Process {
@@ -314,5 +314,5 @@ namespace OHOS::Js_sys_module::Process {
         int FIRST_APPLICATION_UID = 10000;
         int LAST_APPLICATION_UID = 19999;
     };
-} // namespace OHOS::Js_sys_module::Process
+} // namespace OHOS::JsSysModule::Process
 #endif // PROCESS_JS_PROCESS_H_

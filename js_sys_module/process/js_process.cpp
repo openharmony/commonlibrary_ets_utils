@@ -38,7 +38,7 @@
 
 #include "securec.h"
 #include "utils/log.h"
-namespace OHOS::Js_sys_module::Process {
+namespace OHOS::JsSysModule::Process {
     namespace {
         constexpr int NUM_OF_DATA = 4;
         constexpr int PER_USER_RANGE = 100000;
@@ -744,4 +744,4 @@ namespace OHOS::Js_sys_module::Process {
         NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         return result;
     }
-} // namespace OHOS::Js_sys_module::Process
+} // namespace OHOS::JsSysModule::Process

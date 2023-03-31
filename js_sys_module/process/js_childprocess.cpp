@@ -27,7 +27,7 @@
 #include "securec.h"
 #include "utils/log.h"
 
-namespace OHOS::Js_sys_module::Process {
+namespace OHOS::JsSysModule::Process {
     constexpr int MAXSIZE = 1024;
     constexpr int TIME_EXCHANGE = 1000;
     std::map<std::string, int> g_signalsMap = {
@@ -485,4 +485,4 @@ namespace OHOS::Js_sys_module::Process {
         }
         isNeedRun_ = false;
     }
-} // namespace OHOS::Js_sys_module::Process
+} // namespace OHOS::JsSysModule::Process

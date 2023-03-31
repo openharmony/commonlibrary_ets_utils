@@ -36,9 +36,9 @@
         ASSERT_CHECK_CALL(napi_typeof(env, value, &valueType)); \
         ASSERT_EQ(valueType, type);                             \
     }
-static OHOS::Js_sys_module::Process::ChildProcess RunCommand(napi_env env, napi_value command, napi_value options)
+static OHOS::JsSysModule::Process::ChildProcess RunCommand(napi_env env, napi_value command, napi_value options)
 {
-    OHOS::Js_sys_module::Process::ChildProcess objectInfo;
+    OHOS::JsSysModule::Process::ChildProcess objectInfo;
 
     objectInfo.InitOptionsInfo(env, options);
 
@@ -84,7 +84,7 @@ napi_value Method(napi_env env, napi_callback_info info)
 HWTEST_F(NativeEngineTest, ProcessUptimeTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value timeStart = process.Uptime(env);
     sleep(1);
     napi_value timeEnd = process.Uptime(env);
@@ -103,13 +103,13 @@ HWTEST_F(NativeEngineTest, ProcessUptimeTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessKillTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
 
     napi_value pid = childprocess.Getpid(env);
     napi_value signal = nullptr;
@@ -128,13 +128,13 @@ HWTEST_F(NativeEngineTest, ProcessKillTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessKillTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
 
     napi_value pid = childprocess.Getpid(env);
     napi_value signal = nullptr;
@@ -153,13 +153,13 @@ HWTEST_F(NativeEngineTest, ProcessKillTest002, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessRunCmdTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("each abc");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
 
     napi_value output = childprocess.GetOutput(env);
     bool res = false;
@@ -175,13 +175,13 @@ HWTEST_F(NativeEngineTest, ProcessRunCmdTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessRunCmdTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("mkdir test.txt");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
 
     napi_value errorOutput = childprocess.GetErrorOutput(env);
     bool res = false;
@@ -197,7 +197,7 @@ HWTEST_F(NativeEngineTest, ProcessRunCmdTest002, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetUidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiUid = process.GetUid(env);
     int32_t uid = 0;
     napi_get_value_int32(env, napiUid, &uid);
@@ -216,7 +216,7 @@ HWTEST_F(NativeEngineTest, ProcessGetUidTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetGidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiGid = process.GetGid(env);
     int32_t gid = 0;
     napi_get_value_int32(env, napiGid, &gid);
@@ -235,7 +235,7 @@ HWTEST_F(NativeEngineTest, ProcessGetGidTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetEUidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiEuid = process.GetEUid(env);
     int32_t euid = 0;
     napi_get_value_int32(env, napiEuid, &euid);
@@ -254,7 +254,7 @@ HWTEST_F(NativeEngineTest, ProcessGetEUidTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetEGidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiEgid = process.GetEGid(env);
     int32_t egid = 0;
     napi_get_value_int32(env, napiEgid, &egid);
@@ -273,7 +273,7 @@ HWTEST_F(NativeEngineTest, ProcessGetEGidTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetPidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiPid = process.GetPid(env);
     int32_t pid = 0;
     napi_get_value_int32(env, napiPid, &pid);
@@ -292,7 +292,7 @@ HWTEST_F(NativeEngineTest, ProcessGetPidTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetPpidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiPpid = process.GetPpid(env);
     int32_t ppid = 0;
     napi_get_value_int32(env, napiPpid, &ppid);
@@ -311,13 +311,13 @@ HWTEST_F(NativeEngineTest, ProcessGetPpidTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, childProcessPpidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1s;");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
     napi_value result = childprocess.Getppid(env);
     int32_t ppid = 0;
     napi_get_value_int32(env, result, &ppid);
@@ -336,13 +336,13 @@ HWTEST_F(NativeEngineTest, childProcessPpidTest001, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, childProcesspidTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1s;");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
     napi_value result = childprocess.Getpid(env);
     int32_t pid = 0;
     napi_get_value_int32(env, result, &pid);
@@ -361,7 +361,7 @@ HWTEST_F(NativeEngineTest, childProcesspidTest001, testing::ext::TestSize.Level0
 HWTEST_F(NativeEngineTest, ProcessGetGroupsTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value element = nullptr;
     napi_value groups = process.GetGroups(env);
     napi_get_element(env, groups, 1, &element);
@@ -382,7 +382,7 @@ HWTEST_F(NativeEngineTest, ProcessGetGroupsTest001, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, ProcessChdirTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     std::string catalogue = "/system/lib";
     napi_value temp = nullptr;
     napi_create_string_utf8(env, catalogue.c_str(), catalogue.length(), &temp);
@@ -415,7 +415,7 @@ HWTEST_F(NativeEngineTest, ProcessChdirTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessOn001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value temp = nullptr;
     std::string cbNameEvent = "add";
     napi_create_string_utf8(env, cbNameEvent.c_str(), cbNameEvent.length(), &temp);
@@ -438,7 +438,7 @@ HWTEST_F(NativeEngineTest, ProcessOn001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessOn002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value temp = nullptr;
     std::string cbNameEvent = "UnHandleRejection";
     napi_create_string_utf8(env, cbNameEvent.c_str(), cbNameEvent.length(), &temp);
@@ -461,7 +461,7 @@ HWTEST_F(NativeEngineTest, ProcessOn002, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetTid001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiTid = process.GetTid(env);
     int32_t tid = 0;
     napi_get_value_int32(env, napiTid, &tid);
@@ -480,7 +480,7 @@ HWTEST_F(NativeEngineTest, ProcessGetTid001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessIsolatedProcess001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value result = process.IsIsolatedProcess(env);
     bool res = false;
     napi_get_value_bool(env, result, &res);
@@ -499,7 +499,7 @@ HWTEST_F(NativeEngineTest, ProcessIsolatedProcess001, testing::ext::TestSize.Lev
 HWTEST_F(NativeEngineTest, ProcessIsAppUid001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value uid = nullptr;
     napi_create_int32(env, 9, &uid);
     napi_value result = process.IsAppUid(env, uid);
@@ -516,7 +516,7 @@ HWTEST_F(NativeEngineTest, ProcessIsAppUid001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessIs64Bit001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value result = process.Is64Bit(env);
     bool res = false;
     napi_get_value_bool(env, result, &res);
@@ -535,7 +535,7 @@ HWTEST_F(NativeEngineTest, ProcessIs64Bit001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ProcessGetEnvironmentVar001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value temp = nullptr;
     std::string envVar = "PATH";
     napi_create_string_utf8(env, envVar.c_str(), envVar.length(), &temp);
@@ -558,7 +558,7 @@ HWTEST_F(NativeEngineTest, ProcessGetEnvironmentVar001, testing::ext::TestSize.L
 HWTEST_F(NativeEngineTest, ProcesGetUidForName001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value temp = nullptr;
     std::string user = "root";
     napi_create_string_utf8(env, user.c_str(), user.length(), &temp);
@@ -581,7 +581,7 @@ HWTEST_F(NativeEngineTest, ProcesGetUidForName001, testing::ext::TestSize.Level0
 HWTEST_F(NativeEngineTest, ProcesGetUidForName002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value temp = nullptr;
     std::string user = "1234";
     napi_create_string_utf8(env, user.c_str(), user.length(), &temp);
@@ -604,7 +604,7 @@ HWTEST_F(NativeEngineTest, ProcesGetUidForName002, testing::ext::TestSize.Level0
 HWTEST_F(NativeEngineTest, ProcesGetThreadPriority001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value napiTid = process.GetTid(env);
     napi_value result = process.GetThreadPriority(env, napiTid);
     napi_valuetype valuetype;
@@ -624,7 +624,7 @@ HWTEST_F(NativeEngineTest, ProcesGetThreadPriority001, testing::ext::TestSize.Le
 HWTEST_F(NativeEngineTest, ProcesGetGetStartRealtime001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value result = process.GetStartRealtime(env);
     int32_t num = 0;
     napi_get_value_int32(env, result, &num);
@@ -644,7 +644,7 @@ HWTEST_F(NativeEngineTest, ProcesGetGetStartRealtime001, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, ProcesGetPastCputime001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value result = process.GetPastCputime(env);
     int32_t num = 0;
     napi_get_value_int32(env, result, &num);
@@ -664,7 +664,7 @@ HWTEST_F(NativeEngineTest, ProcesGetPastCputime001, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, ProcesGetSystemConfig001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
     napi_value config = nullptr;
     napi_create_int32(env, _SC_NPROCESSORS_CONF, &config);
     napi_value result = process.GetSystemConfig(env, config);
@@ -686,13 +686,13 @@ HWTEST_F(NativeEngineTest, ProcesGetSystemConfig001, testing::ext::TestSize.Leve
 HWTEST_F(NativeEngineTest, ProcessCloseTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
     childprocess.Wait(env);
     childprocess.Close();
     napi_value exitCode = childprocess.GetExitCode(env);
@@ -715,13 +715,13 @@ HWTEST_F(NativeEngineTest, ProcessCloseTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, childProcessKillTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Js_sys_module::Process::Process process;
+    OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1s;");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::Js_sys_module::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
     childprocess.Wait(env);
     napi_value signo = nullptr;
     napi_create_int32(env, 9, &signo);

@@ -76,12 +76,12 @@
                 }
             ],
             "test": [
-                "//commonlibrary/ets_utils/js_api_module/test_convertxml/unittest:unittest",
-                "//commonlibrary/ets_utils/js_api_module/test_uri/unittest:unittest",
-		"//commonlibrary/ets_utils/js_api_module/test_url/unittest:unittest",
-                "//commonlibrary/ets_utils/js_api_module/test_xml/unittest:unittest",
-                "//commonlibrary/ets_utils/js_api_module/test_buffer/unittest:unittest",
-                "//commonlibrary/ets_utils/js_util_module/test_util/unittest:unittest"
+                "//commonlibrary/ets_utils/js_api_module/convertxml/test:unittest",
+                "//commonlibrary/ets_utils/js_api_module/uri/test:unittest",
+                "//commonlibrary/ets_utils/js_api_module/url/test:unittest",
+                "//commonlibrary/ets_utils/js_api_module/xml/test:unittest",
+                "//commonlibrary/ets_utils/js_api_module/buffer/test:unittest",
+                "//commonlibrary/ets_utils/js_util_module/util/test:unittest"
             ]
         }
     }
