@@ -188,7 +188,7 @@ namespace OHOS::Js_sys_module::Process {
 #define MICROSECONDS_OF_SECOND 1000.0*1000.0
         if (sysctl(mib, MIB_SIZE, &boottime, &size, NULL, 0) != -1 && boottime.tv_sec != 0) {
             systimer = now.tv_sec - boottime.tv_sec;
-            systimer += (double)(now.tv_usec - boottime.tv_usec) / MICROSECONDS_OF_MILLISECOND;
+            systimer += (double)(now.tv_usec - boottime.tv_usec) / MICROSECONDS_OF_SECOND;
         }
 #else
         struct sysinfo information = {0};
