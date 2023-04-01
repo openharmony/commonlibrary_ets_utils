@@ -24,7 +24,7 @@ using namespace Commonlibrary::Concurrent::Common;
 thread_local std::map<std::string, uint64_t> Console::timerMap;
 thread_local std::map<std::string, uint32_t> Console::counterMap;
 thread_local std::string Console::groupIndent;
-constexpr uint32_t GROUPINDETATIONWIDTH = 2; // 2 : indentation
+constexpr size_t GROUPINDETATIONWIDTH = 2; // 2 : indentation
 constexpr uint32_t SECOND = 1000;
 constexpr uint32_t MINUTE = 60 * SECOND;
 constexpr uint32_t HOUR = 60 * MINUTE;
@@ -76,10 +76,10 @@ std::string Console::ParseLogContent(const std::vector<std::string>& params)
         return ret;
     }
     std::string formatStr = params[0];
-    uint32_t size = params.size();
-    uint32_t len = formatStr.size();
-    uint32_t pos = 0;
-    uint32_t count = 1;
+    size_t size = params.size();
+    size_t len = formatStr.size();
+    size_t pos = 0;
+    size_t count = 1;
     for (; pos < len; ++pos) {
         if (count >= size) {
             break;
@@ -146,8 +146,8 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
         return ParseLogContent(content);
     } else {
         std::string ret;
-        uint32_t size = content.size();
-        for (uint32_t i = 0; i < size; ++i) {
+        size_t size = content.size();
+        for (size_t i = 0; i < size; ++i) {
             ret += " ";
             ret += content[i];
         }
@@ -155,11 +155,11 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
     }
 }
 
-std::string Console::StringRepeat(uint32_t number, const std::string& tableChars)
+std::string Console::StringRepeat(size_t number, const std::string& tableChars)
 {
     std::string divider;
-    uint32_t length = number;
-    for (uint32_t i = 0; i < length; i++) {
+    size_t length = number;
+    for (size_t i = 0; i < length; i++) {
         divider += tableChars;
     }
     return divider;
@@ -266,7 +266,7 @@ napi_value Console::Group(napi_env env, napi_callback_info info)
 
 napi_value Console::GroupEnd(napi_env env, napi_callback_info info)
 {
-    uint32_t length = groupIndent.size();
+    size_t length = groupIndent.size();
     if (length > GROUPINDETATIONWIDTH) {
         groupIndent = groupIndent.substr(0, length - GROUPINDETATIONWIDTH);
     }
@@ -275,31 +275,31 @@ napi_value Console::GroupEnd(napi_env env, napi_callback_info info)
 
 std::string Console::ArrayJoin(std::vector<std::string> rowDivider, const std::string& tableChars)
 {
-    uint32_t size = rowDivider.size();
+    size_t size = rowDivider.size();
     if (size == 0) {
         return "no rowDivider";
     }
     std::string result = rowDivider[0];
-    for (uint32_t i = 1; i < size; i++) {
+    for (size_t i = 1; i < size; i++) {
         result += tableChars;
         result += rowDivider[i];
     }
     return result;
 }
 
-std::string Console::RenderHead(napi_env env, napi_value head, std::vector<uint32_t> columnWidths)
+std::string Console::RenderHead(napi_env env, napi_value head, std::vector<size_t> columnWidths)
 {
     std::string result = tableChars["left"];
-    uint32_t length = columnWidths.size();
-    for (uint32_t i = 0; i < length; i++) {
+    size_t length = columnWidths.size();
+    for (size_t i = 0; i < length; i++) {
         napi_value element = nullptr;
         napi_get_element(env, head, i, &element);
         napi_value string = nullptr;
         napi_coerce_to_string(env, element, &string);
-        uint32_t stringLen = 0;
+        size_t stringLen = 0;
         napi_get_value_string_utf8(env, string, nullptr, 0, &stringLen);
-        uint32_t left = (columnWidths[i] - stringLen) / 2; // 2: half
-        uint32_t right = columnWidths[i] - stringLen - left;
+        size_t left = (columnWidths[i] - stringLen) / 2; // 2: half
+        size_t right = columnWidths[i] - stringLen - left;
         std::string elemStr = Helper::NapiHelper::GetString(env, string);
         result += StringRepeat(left, " ") + elemStr + StringRepeat(right, " ");
         if (i != length - 1) {
@@ -310,7 +310,7 @@ std::string Console::RenderHead(napi_env env, napi_value head, std::vector<uint3
     return result;
 }
 
-std::string Console::GetStringAndStringWidth(napi_env env, napi_value element, uint32_t& stringLen)
+std::string Console::GetStringAndStringWidth(napi_env env, napi_value element, size_t& stringLen)
 {
     napi_value string = nullptr;
     napi_coerce_to_string(env, element, &string);
@@ -323,19 +323,19 @@ std::string Console::GetStringAndStringWidth(napi_env env, napi_value element, u
     return result;
 }
 
-void Console::PrintRows(napi_env env, napi_value Rows, std::vector<uint32_t> columnWidths, uint32_t indexNum)
+void Console::PrintRows(napi_env env, napi_value Rows, std::vector<size_t> columnWidths, size_t indexNum)
 {
-    uint32_t length = columnWidths.size();
-    for (uint32_t i = 0; i < indexNum; i++) {
+    size_t length = columnWidths.size();
+    for (size_t i = 0; i < indexNum; i++) {
         std::string result = tableChars["left"];
-        for (uint32_t j = 0; j < length; j++) {
+        for (size_t j = 0; j < length; j++) {
             napi_value element = nullptr;
             napi_get_element(env, Rows, j * indexNum + i, &element);
-            uint32_t stringLen = 0;
+            size_t stringLen = 0;
             std::string stringVal = GetStringAndStringWidth(env, element, stringLen);
             if (stringLen > 0) {
-                uint32_t left = (columnWidths[j] - stringLen) / 2; // 2: half
-                uint32_t right = columnWidths[j] - stringLen - left;
+                size_t left = (columnWidths[j] - stringLen) / 2; // 2: half
+                size_t right = columnWidths[j] - stringLen - left;
                 result += StringRepeat(left, " ") + stringVal + StringRepeat(right, " ");
             } else {
                 result += StringRepeat(columnWidths[j], " ");
@@ -349,27 +349,27 @@ void Console::PrintRows(napi_env env, napi_value Rows, std::vector<uint32_t> col
     }
 }
 
-void Console::GraphTable(napi_env env, napi_value head, napi_value columns, const uint32_t& length)
+void Console::GraphTable(napi_env env, napi_value head, napi_value columns, const size_t& length)
 {
-    uint32_t columnLen = 0;
+    size_t columnLen = 0;
     napi_get_array_length(env, head, &columnLen);
-    std::vector<uint32_t> columnWidths(columnLen);
+    std::vector<size_t> columnWidths(columnLen);
     std::vector<std::string> rowDivider(columnLen);
     // get maxColumnWidths and get rowDivider(------)
     // get key string length
-    for (uint32_t i = 0; i < columnLen; i++) {
+    for (size_t i = 0; i < columnLen; i++) {
         napi_value element = nullptr;
         napi_get_element(env, head, i, &element);
-        uint32_t stringLen = 0;
+        size_t stringLen = 0;
         GetStringAndStringWidth(env, element, stringLen);
         columnWidths[i] = stringLen;
     }
     // compare key/value string and get max length
-    for (uint32_t i = 0; i < columnLen; i++) {
-        for (uint32_t j = 0; j < length; j++) {
+    for (size_t i = 0; i < columnLen; i++) {
+        for (size_t j = 0; j < length; j++) {
             napi_value element = nullptr;
             napi_get_element(env, columns, i * length + j, &element);
-            uint32_t stringLen = 0;
+            size_t stringLen = 0;
             GetStringAndStringWidth(env, element, stringLen);
             columnWidths[i] = columnWidths[i] > stringLen ? columnWidths[i] :  stringLen;
         }
@@ -399,10 +399,10 @@ napi_value GetKeyArray(napi_env env, napi_value map)
 {
     napi_value mapKeys = nullptr;
     napi_object_get_keys(env, map, &mapKeys);
-    uint32_t maplen = 0;
+    size_t maplen = 0;
     napi_get_array_length(env, mapKeys, &maplen);
 
-    uint32_t keyLength = maplen + 1;
+    size_t keyLength = maplen + 1;
     napi_value outputKeysArray = nullptr;
     napi_create_array_with_length(env, keyLength, &outputKeysArray);
     // set (index) to array
@@ -412,7 +412,7 @@ napi_value GetKeyArray(napi_env env, napi_value map)
     napi_set_element(env, outputKeysArray, 0, result);
 
     // set Keys to array
-    for (uint32_t j = 0; j < maplen ; ++j) {
+    for (size_t j = 0; j < maplen ; ++j) {
         napi_value keyNumber = nullptr;
         napi_get_element(env, mapKeys, j, &keyNumber);
         napi_set_element(env, outputKeysArray, j + 1, keyNumber); // startkeyIdx = 1
@@ -420,31 +420,31 @@ napi_value GetKeyArray(napi_env env, napi_value map)
     return outputKeysArray;
 }
 
-napi_value GetValueArray(napi_env env, napi_value map, const uint32_t& length, napi_value keyArray)
+napi_value GetValueArray(napi_env env, napi_value map, const size_t& length, napi_value keyArray)
 {
     napi_value mapKeys = nullptr;
     napi_object_get_keys(env, map, &mapKeys);
-    uint32_t maplen = 0;
+    size_t maplen = 0;
     napi_get_array_length(env, mapKeys, &maplen);
-    uint32_t keyLength = maplen + 1;
+    size_t keyLength = maplen + 1;
 
-    uint32_t valueLength = keyLength * length;
+    size_t valueLength = keyLength * length;
     napi_value outputValuesArray = nullptr;
     napi_create_array_with_length(env, valueLength, &outputValuesArray);
     // set indexKeyValue
-    uint32_t valueIdx = 0;
-    for (uint32_t j = 0; j < length ; ++j) {
+    size_t valueIdx = 0;
+    for (size_t j = 0; j < length ; ++j) {
         napi_value keyNumber = nullptr;
         napi_get_element(env, keyArray, j, &keyNumber);
         napi_set_element(env, outputValuesArray, valueIdx++, keyNumber);
     }
-    for (uint32_t i = 0; i < maplen ; ++i) {
+    for (size_t i = 0; i < maplen ; ++i) {
         napi_value keyNumber = nullptr;
         napi_get_element(env, mapKeys, i, &keyNumber);
         char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
         napi_value valueNumber = nullptr;
         napi_get_named_property(env, map, innerKey, &valueNumber);
-        for (uint32_t j = 0; j < length ; ++j) {
+        for (size_t j = 0; j < length ; ++j) {
             napi_value value = nullptr;
             napi_get_element(env, valueNumber, j, &value);
             napi_set_element(env, outputValuesArray, valueIdx++, value);
@@ -453,21 +453,21 @@ napi_value GetValueArray(napi_env env, napi_value map, const uint32_t& length, n
     return outputValuesArray;
 }
 
-void SetPrimitive(napi_env env, napi_value map, const uint32_t& length, napi_value valuesKeyArray,
+void SetPrimitive(napi_env env, napi_value map, const size_t& length, napi_value valuesKeyArray,
                   napi_value outputKeysArray, napi_value outputValuesArray)
 {
     napi_value mapKeys = nullptr;
     napi_object_get_keys(env, map, &mapKeys);
-    uint32_t maplen = 0;
+    size_t maplen = 0;
     napi_get_array_length(env, mapKeys, &maplen);
     const char* valuesKey = "Values";
     napi_value result = nullptr;
     napi_create_string_utf8(env, valuesKey, NAPI_AUTO_LENGTH, &result);
     napi_set_element(env, outputKeysArray, maplen + 1, result);
-    uint32_t valuesLen = 0;
+    size_t valuesLen = 0;
     napi_get_array_length(env, valuesKeyArray, &valuesLen);
-    uint32_t startVal = (maplen + 1) * length;
-    for (uint32_t j = 0; j < length ; ++j) {
+    size_t startVal = (maplen + 1) * length;
+    for (size_t j = 0; j < length ; ++j) {
         napi_value value = nullptr;
         napi_get_element(env, valuesKeyArray, j, &value);
         napi_set_element(env, outputValuesArray, startVal + j, value);
@@ -491,7 +491,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
     
     napi_value keyArray = nullptr;
     napi_object_get_keys(env, tabularData, &keyArray);
-    uint32_t length = 0;
+    size_t length = 0;
     napi_get_array_length(env, keyArray, &length);
     napi_value valuesKeyArray = nullptr;
     napi_create_array_with_length(env, length, &valuesKeyArray);
@@ -503,7 +503,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
     napi_value keys = nullptr;
     std::map<std::string, bool> initialMap;
     
-    for (uint32_t i = 0; i < length; i++) {
+    for (size_t i = 0; i < length; i++) {
         // get key
         napi_value napiNumber = nullptr;
         napi_get_element(env, keyArray, i, &napiNumber);
@@ -515,7 +515,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
                             (!Helper::NapiHelper::IsObject(item) && !Helper::NapiHelper::IsFunction(item)));
         if (isPrimitive) {
             if (!primitiveInit) {
-                for (uint32_t j = 0; j < length ; ++j) {
+                for (size_t j = 0; j < length ; ++j) {
                     napi_value result = nullptr;
                     napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &result);
                     napi_set_element(env, valuesKeyArray, j, result);
@@ -526,11 +526,11 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
             napi_set_element(env, valuesKeyArray, i, item);
         } else {
             // get inner keys
-            uint32_t innerLength = 0;
+            size_t innerLength = 0;
             napi_object_get_keys(env, item, &keys);
             napi_get_array_length(env, keys, &innerLength);
             // set value to array
-            for (uint32_t j = 0; j < innerLength ; ++j) {
+            for (size_t j = 0; j < innerLength ; ++j) {
                 napi_value keyNumber = nullptr;
                 napi_get_element(env, keys, j, &keyNumber);
                 char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
@@ -667,7 +667,7 @@ napi_value Console::Trace(napi_env env, napi_callback_info info)
     std::string stack;
     napi_get_stack_trace(env, stack);
     std::string tempStr = "";
-    for (uint32_t i = 0; i < stack.length(); i++) {
+    for (size_t i = 0; i < stack.length(); i++) {
         if (stack[i] == '\n') {
             HILOG_INFO("%{public}s%{public}s", groupIndent.c_str(), tempStr.c_str());
             tempStr = "";

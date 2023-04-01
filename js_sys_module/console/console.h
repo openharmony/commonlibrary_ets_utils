@@ -21,6 +21,7 @@
 
 #include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
 #include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/error_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
@@ -61,12 +62,12 @@ private:
                                       size_t startIdx, bool format = true);
     static std::string GetTimerOrCounterName(napi_env env, napi_callback_info info, size_t argc);
     static void PrintTime(std::string timerName, double time, const std::string& log);
-    static void GraphTable(napi_env env, napi_value head, napi_value columns, const uint32_t& length);
-    static std::string RenderHead(napi_env env, napi_value Head, std::vector<uint32_t> columnWidths);
-    static void PrintRows(napi_env env, napi_value Rows, std::vector<uint32_t> columnWidths, uint32_t indexNum);
-    static std::string StringRepeat(uint32_t number, const std::string& tableChars);
+    static void GraphTable(napi_env env, napi_value head, napi_value columns, const size_t& length);
+    static std::string RenderHead(napi_env env, napi_value Head, std::vector<size_t> columnWidths);
+    static void PrintRows(napi_env env, napi_value Rows, std::vector<size_t> columnWidths, size_t indexNum);
+    static std::string StringRepeat(size_t number, const std::string& tableChars);
     static std::string ArrayJoin(std::vector<std::string> rowDivider, const std::string& tableChars);
-    static std::string GetStringAndStringWidth(napi_env env, napi_value element, uint32_t& stringLen);
+    static std::string GetStringAndStringWidth(napi_env env, napi_value element, size_t& stringLen);
 
     static thread_local std::map<std::string, uint64_t> timerMap;
     static thread_local std::map<std::string, uint32_t> counterMap;
