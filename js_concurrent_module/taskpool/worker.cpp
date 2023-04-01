@@ -21,7 +21,7 @@
 #include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-using namespace OHOS::Js_sys_module;
+using namespace OHOS::JsSysModule;
 
 Worker::Worker(napi_env env) : hostEnv_(env) {}
 

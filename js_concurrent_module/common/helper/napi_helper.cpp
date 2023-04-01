@@ -18,7 +18,7 @@
 #include "native_engine/native_value.h"
 
 namespace Commonlibrary::Concurrent::Common::Helper {
-static constexpr int32_t MAX_CHAR_LENGTH = 200;
+static constexpr uint32_t MAX_CHAR_LENGTH = 1024;
 
 bool NapiHelper::IsString(napi_value value)
 {

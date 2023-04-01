@@ -18,7 +18,7 @@
 #include <vector>
 #include "log.h"
 
-namespace OHOS::Js_sys_module {
+namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
 
 thread_local std::map<std::string, uint64_t> Console::timerMap;
@@ -139,6 +139,10 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
             argv[i] = buffer;
         }
         char* stringValue = Helper::NapiHelper::GetString(env, argv[i]);
+        if (stringValue == nullptr) {
+            HILOG_ERROR("Console log failed to get string object");
+            break;
+        }
         content.emplace_back(std::string(stringValue));
         Helper::CloseHelp::DeletePointer(stringValue, true);
     }
@@ -191,10 +195,17 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
     napi_valuetype valuetype;
     napi_typeof(env, argv[0], &valuetype);
     if (valuetype != napi_string) {
-        napi_throw_error(env, nullptr, "Timer or Counter name must be a String.");
-        return nullptr;
+        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                        "Timer or Counter name must be String.");
+        return "";
     }
-    return Helper::NapiHelper::GetString(env, argv[0]);
+    char* name = Helper::NapiHelper::GetString(env, argv[0]);
+    if (name == nullptr) {
+        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                        "Timer or Counter name must be not null.");
+        return "";
+    }
+    return name;
 }
 
 napi_value Console::Count(napi_env env, napi_callback_info info)
@@ -202,7 +213,7 @@ napi_value Console::Count(napi_env env, napi_callback_info info)
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, info);
     std::string counterName = GetTimerOrCounterName(env, info, argc);
     counterMap[counterName]++;
-    HILOG_INFO("%{public}s%{public}s: %{public}d ",
+    HILOG_INFO("%{public}s%{public}s: %{public}d",
                groupIndent.c_str(), counterName.c_str(), counterMap[counterName]);
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
@@ -233,6 +244,10 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
     napi_value ctor = nullptr;
     ctor = Helper::NapiHelper::GetConstructorName(env, argv[0]);
     char* ctorVal = Helper::NapiHelper::GetString(env, ctor);
+    if (ctorVal == nullptr) {
+        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "ConstructorName must be not null.");
+        return Helper::NapiHelper::GetUndefinedValue(env);
+    }
     // JSON.stringify()
     napi_value globalValue = nullptr;
     napi_get_global(env, &globalValue);
@@ -243,6 +258,10 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
     napi_value transValue = nullptr;
     napi_call_function(env, jsonValue, stringifyValue, 1, &argv[0], &transValue);
     char* content = Helper::NapiHelper::GetString(env, transValue);
+    if (content == nullptr) {
+        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "Dir content must not be null.");
+        return Helper::NapiHelper::GetUndefinedValue(env);
+    }
     bool functionFlag = Helper::NapiHelper::IsFunction(argv[0]);
     if (std::string(ctorVal).size() > 0 && !functionFlag) {
         HILOG_INFO("%{public}s%{public}s: %{public}s", groupIndent.c_str(), ctorVal, content);
@@ -300,8 +319,13 @@ std::string Console::RenderHead(napi_env env, napi_value head, std::vector<size_
         napi_get_value_string_utf8(env, string, nullptr, 0, &stringLen);
         size_t left = (columnWidths[i] - stringLen) / 2; // 2: half
         size_t right = columnWidths[i] - stringLen - left;
-        std::string elemStr = Helper::NapiHelper::GetString(env, string);
-        result += StringRepeat(left, " ") + elemStr + StringRepeat(right, " ");
+        char* elemStr = Helper::NapiHelper::GetString(env, string);
+        if (elemStr == nullptr) {
+            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "elemStr must not be null.");
+            return "";
+        }
+        result += StringRepeat(left, " ") + std::string(elemStr) + StringRepeat(right, " ");
         if (i != length - 1) {
             result += tableChars["middle"];
         }
@@ -314,7 +338,11 @@ std::string Console::GetStringAndStringWidth(napi_env env, napi_value element, s
 {
     napi_value string = nullptr;
     napi_coerce_to_string(env, element, &string);
-    std::string result = Helper::NapiHelper::GetString(env, string);
+    char* result = Helper::NapiHelper::GetString(env, string);
+    if (result == nullptr) {
+        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "result must not be null.");
+        return "";
+    }
     napi_valuetype valuetype;
     napi_typeof(env, element, &valuetype);
     if (valuetype != napi_undefined) {
@@ -442,6 +470,11 @@ napi_value GetValueArray(napi_env env, napi_value map, const size_t& length, nap
         napi_value keyNumber = nullptr;
         napi_get_element(env, mapKeys, i, &keyNumber);
         char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
+        if (innerKey == nullptr) {
+            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "property key must not be null.");
+            return Helper::NapiHelper::GetUndefinedValue(env);
+        }
         napi_value valueNumber = nullptr;
         napi_get_named_property(env, map, innerKey, &valueNumber);
         for (size_t j = 0; j < length ; ++j) {
@@ -508,6 +541,11 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
         napi_value napiNumber = nullptr;
         napi_get_element(env, keyArray, i, &napiNumber);
         char* key = Helper::NapiHelper::GetString(env, napiNumber);
+        if (key == nullptr) {
+            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "property key must not be null.");
+            return Helper::NapiHelper::GetUndefinedValue(env);
+        }
         napi_value item = nullptr;
         napi_get_named_property(env, tabularData, key, &item);
 
@@ -534,6 +572,11 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
                 napi_value keyNumber = nullptr;
                 napi_get_element(env, keys, j, &keyNumber);
                 char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
+                if (innerKey == nullptr) {
+                    Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                                    "property key must not be null.");
+                    return Helper::NapiHelper::GetUndefinedValue(env);
+                }
                 napi_value innerItem = nullptr;
                 if (isPrimitive) {
                     napi_value result = nullptr;
@@ -705,25 +748,25 @@ napi_value Console::Assert(napi_env env, napi_callback_info info)
 void Console::InitConsoleModule(napi_env env)
 {
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_FUNCTION("log", ConsoleLog<LogLevel::INFO>),
-        DECLARE_NAPI_FUNCTION("debug", ConsoleLog<LogLevel::DEBUG>),
-        DECLARE_NAPI_FUNCTION("info", ConsoleLog<LogLevel::INFO>),
-        DECLARE_NAPI_FUNCTION("warn", ConsoleLog<LogLevel::WARN>),
-        DECLARE_NAPI_FUNCTION("error", ConsoleLog<LogLevel::ERROR>),
-        DECLARE_NAPI_FUNCTION("fatal", ConsoleLog<LogLevel::FATAL>),
-        DECLARE_NAPI_FUNCTION("group", Group),
-        DECLARE_NAPI_FUNCTION("groupCollapsed", Group),
-        DECLARE_NAPI_FUNCTION("groupEnd", GroupEnd),
-        DECLARE_NAPI_FUNCTION("table", Table),
-        DECLARE_NAPI_FUNCTION("time", Time),
-        DECLARE_NAPI_FUNCTION("timeLog", TimeLog),
-        DECLARE_NAPI_FUNCTION("timeEnd", TimeEnd),
-        DECLARE_NAPI_FUNCTION("trace", Trace),
-        DECLARE_NAPI_FUNCTION("assert", Assert),
-        DECLARE_NAPI_FUNCTION("count", Count),
-        DECLARE_NAPI_FUNCTION("countReset", CountReset),
-        DECLARE_NAPI_FUNCTION("dir", Dir),
-        DECLARE_NAPI_FUNCTION("dirxml", ConsoleLog<LogLevel::INFO>)
+        DECLARE_NAPI_WRITABLE_FUNCTION("log", ConsoleLog<LogLevel::INFO>),
+        DECLARE_NAPI_WRITABLE_FUNCTION("debug", ConsoleLog<LogLevel::DEBUG>),
+        DECLARE_NAPI_WRITABLE_FUNCTION("info", ConsoleLog<LogLevel::INFO>),
+        DECLARE_NAPI_WRITABLE_FUNCTION("warn", ConsoleLog<LogLevel::WARN>),
+        DECLARE_NAPI_WRITABLE_FUNCTION("error", ConsoleLog<LogLevel::ERROR>),
+        DECLARE_NAPI_WRITABLE_FUNCTION("fatal", ConsoleLog<LogLevel::FATAL>),
+        DECLARE_NAPI_WRITABLE_FUNCTION("group", Group),
+        DECLARE_NAPI_WRITABLE_FUNCTION("groupCollapsed", Group),
+        DECLARE_NAPI_WRITABLE_FUNCTION("groupEnd", GroupEnd),
+        DECLARE_NAPI_WRITABLE_FUNCTION("table", Table),
+        DECLARE_NAPI_WRITABLE_FUNCTION("time", Time),
+        DECLARE_NAPI_WRITABLE_FUNCTION("timeLog", TimeLog),
+        DECLARE_NAPI_WRITABLE_FUNCTION("timeEnd", TimeEnd),
+        DECLARE_NAPI_WRITABLE_FUNCTION("trace", Trace),
+        DECLARE_NAPI_WRITABLE_FUNCTION("assert", Assert),
+        DECLARE_NAPI_WRITABLE_FUNCTION("count", Count),
+        DECLARE_NAPI_WRITABLE_FUNCTION("countReset", CountReset),
+        DECLARE_NAPI_WRITABLE_FUNCTION("dir", Dir),
+        DECLARE_NAPI_WRITABLE_FUNCTION("dirxml", ConsoleLog<LogLevel::INFO>)
     };
     napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
     napi_value console = nullptr;
@@ -731,4 +774,4 @@ void Console::InitConsoleModule(napi_env env)
     napi_define_properties(env, console, sizeof(properties) / sizeof(properties[0]), properties);
     napi_set_named_property(env, globalObj, "console", console);
 }
-} // namespace Commonlibrary::Js_sys_module
+} // namespace Commonlibrary::JsSysModule

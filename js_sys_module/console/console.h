@@ -25,7 +25,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace OHOS::Js_sys_module {
+namespace OHOS::JsSysModule {
 
 enum class LogLevel : uint32_t {
     DEBUG = 0,
@@ -73,5 +73,5 @@ private:
     static thread_local std::map<std::string, uint32_t> counterMap;
     static thread_local std::string groupIndent;
 };
-} // namespace Commonlibrary::Js_sys_module
+} // namespace Commonlibrary::JsSysModule
 #endif // CONSOLE_CONSOLE_H_
