@@ -351,7 +351,7 @@ void Console::PrintRows(napi_env env, napi_value Rows, std::vector<size_t> colum
 
 void Console::GraphTable(napi_env env, napi_value head, napi_value columns, const size_t& length)
 {
-    size_t columnLen = 0;
+    uint32_t columnLen = 0;
     napi_get_array_length(env, head, &columnLen);
     std::vector<size_t> columnWidths(columnLen);
     std::vector<std::string> rowDivider(columnLen);
@@ -399,7 +399,7 @@ napi_value GetKeyArray(napi_env env, napi_value map)
 {
     napi_value mapKeys = nullptr;
     napi_object_get_keys(env, map, &mapKeys);
-    size_t maplen = 0;
+    uint32_t maplen = 0;
     napi_get_array_length(env, mapKeys, &maplen);
 
     size_t keyLength = maplen + 1;
@@ -424,7 +424,7 @@ napi_value GetValueArray(napi_env env, napi_value map, const size_t& length, nap
 {
     napi_value mapKeys = nullptr;
     napi_object_get_keys(env, map, &mapKeys);
-    size_t maplen = 0;
+    uint32_t maplen = 0;
     napi_get_array_length(env, mapKeys, &maplen);
     size_t keyLength = maplen + 1;
 
@@ -458,13 +458,13 @@ void SetPrimitive(napi_env env, napi_value map, const size_t& length, napi_value
 {
     napi_value mapKeys = nullptr;
     napi_object_get_keys(env, map, &mapKeys);
-    size_t maplen = 0;
+    uint32_t maplen = 0;
     napi_get_array_length(env, mapKeys, &maplen);
     const char* valuesKey = "Values";
     napi_value result = nullptr;
     napi_create_string_utf8(env, valuesKey, NAPI_AUTO_LENGTH, &result);
     napi_set_element(env, outputKeysArray, maplen + 1, result);
-    size_t valuesLen = 0;
+    uint32_t valuesLen = 0;
     napi_get_array_length(env, valuesKeyArray, &valuesLen);
     size_t startVal = (maplen + 1) * length;
     for (size_t j = 0; j < length ; ++j) {
@@ -491,7 +491,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
     
     napi_value keyArray = nullptr;
     napi_object_get_keys(env, tabularData, &keyArray);
-    size_t length = 0;
+    uint32_t length = 0;
     napi_get_array_length(env, keyArray, &length);
     napi_value valuesKeyArray = nullptr;
     napi_create_array_with_length(env, length, &valuesKeyArray);
@@ -526,7 +526,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
             napi_set_element(env, valuesKeyArray, i, item);
         } else {
             // get inner keys
-            size_t innerLength = 0;
+            uint32_t innerLength = 0;
             napi_object_get_keys(env, item, &keys);
             napi_get_array_length(env, keys, &innerLength);
             // set value to array
