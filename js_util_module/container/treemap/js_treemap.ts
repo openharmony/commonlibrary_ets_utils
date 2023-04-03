@@ -26,8 +26,8 @@ if (arkPritvate !== undefined) {
   flag = true;
 }
 if (flag || fastTreeMap === undefined) {
-  let RBTreeAbility = requireNapi('util.struct');
-  const ErrorUtil = RBTreeAbility.ErrorUtil;
+  let treeAbility = requireNapi('util.struct');
+  const errorUtil = treeAbility.errorUtil;
   interface IterableIterator<T> {
     next: () => {
       value: T | undefined;
@@ -35,7 +35,7 @@ if (flag || fastTreeMap === undefined) {
     };
   }
   class HandlerTreeMap<K, V> {
-    set(target: TreeMap<K, V>, p: any, value: any): boolean {
+    set(target: TreeMap<K, V>, p: string, value: string): boolean {
       if (p in target) {
         target[p] = value;
         return true;
@@ -55,30 +55,30 @@ if (flag || fastTreeMap === undefined) {
   class TreeMap<K, V> {
     private constitute: any;
     constructor(comparator?: (firstValue: K, secondValue: K) => boolean) {
-      ErrorUtil.checkNewTargetIsNullError("TreeMap", !new.target);
+      errorUtil.checkNewTargetIsNullError('TreeMap', !new.target);
       if (comparator) {
-        ErrorUtil.checkTypeError("comparator", "callable", comparator);
+        errorUtil.checkTypeError('comparator', 'callable', comparator);
       }
-      this.constitute = new RBTreeAbility.RBTreeClass(comparator);
+      this.constitute = new treeAbility.TreeClass(comparator);
       return new Proxy(this, new HandlerTreeMap());
     }
     get length(): number {
       return this.constitute.memberNumber;
     }
     isEmpty(): boolean {
-      ErrorUtil.checkBindError("isEmpty", TreeMap, this);
+      errorUtil.checkBindError('isEmpty', TreeMap, this);
       return this.constitute.memberNumber === 0;
     }
     hasKey(key: K): boolean {
-      ErrorUtil.checkBindError("hasKey", TreeMap, this);
+      errorUtil.checkBindError('hasKey', TreeMap, this);
       return this.constitute.getNode(key) !== undefined;
     }
     hasValue(value: V): boolean {
-      ErrorUtil.checkBindError("hasValue", TreeMap, this);
+      errorUtil.checkBindError('hasValue', TreeMap, this);
       return this.constitute.findNode(value) !== undefined;
     }
     get(key: K): V {
-      ErrorUtil.checkBindError("get", TreeMap, this);
+      errorUtil.checkBindError('get', TreeMap, this);
       let tempNode: any = undefined;
       tempNode = this.constitute.getNode(key);
       if (tempNode === undefined) {
@@ -87,7 +87,7 @@ if (flag || fastTreeMap === undefined) {
       return tempNode.value;
     }
     getFirstKey(): K {
-      ErrorUtil.checkBindError("getFirstKey", TreeMap, this);
+      errorUtil.checkBindError('getFirstKey', TreeMap, this);
       let tempNode: any = undefined;
       tempNode = this.constitute.firstNode();
       if (tempNode === undefined) {
@@ -96,32 +96,33 @@ if (flag || fastTreeMap === undefined) {
       return tempNode.key;
     }
     getLastKey(): K {
-      ErrorUtil.checkBindError("getLastKey", TreeMap, this);
+      errorUtil.checkBindError('getLastKey', TreeMap, this);
       let tempNode: any = undefined;
       tempNode = this.constitute.lastNode();
-      if (tempNode === undefined)
+      if (tempNode === undefined) {
         return tempNode;
+      }
       return tempNode.key;
     }
-    setAll(map: TreeMap<K, V>) {
-      ErrorUtil.checkBindError("setAll", TreeMap, this);
-      ErrorUtil.checkTypeError("map", "TreeMap", map);
+    setAll(map: TreeMap<K, V>): void {
+      errorUtil.checkBindError('setAll', TreeMap, this);
+      errorUtil.checkTypeError('map', 'TreeMap', map);
       this.constitute.setAll(map.constitute);
     }
     set(key: K, value: V): Object {
-      ErrorUtil.checkBindError("set", TreeMap, this);
+      errorUtil.checkBindError('set', TreeMap, this);
       return this.constitute.addNode(key, value);
     }
     remove(key: K): V {
-      ErrorUtil.checkBindError("remove", TreeMap, this);
+      errorUtil.checkBindError('remove', TreeMap, this);
       return this.constitute.removeNode(key);
     }
-    clear() {
-      ErrorUtil.checkBindError("clear", TreeMap, this);
+    clear(): void {
+      errorUtil.checkBindError('clear', TreeMap, this);
       this.constitute.clearTree();
     }
     getLowerKey(key: K): K {
-      ErrorUtil.checkBindError("getLowerKey", TreeMap, this);
+      errorUtil.checkBindError('getLowerKey', TreeMap, this);
       let result: K | undefined = undefined;
       let tempNode: any = undefined;
       tempNode = this.constitute.getNode(key);
@@ -141,7 +142,7 @@ if (flag || fastTreeMap === undefined) {
       return result;
     }
     getHigherKey(key: K): K {
-      ErrorUtil.checkBindError("getHigherKey", TreeMap, this);
+      errorUtil.checkBindError('getHigherKey', TreeMap, this);
       let result: K | undefined = undefined;
       let tempNode: any = undefined;
       tempNode = this.constitute.getNode(key);
@@ -161,11 +162,11 @@ if (flag || fastTreeMap === undefined) {
       return result;
     }
     keys(): IterableIterator<K> {
-      ErrorUtil.checkBindError("keys", TreeMap, this);
+      errorUtil.checkBindError('keys', TreeMap, this);
       let data: any = this.constitute;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: K } {
           let done: boolean = false;
           let value: K = undefined;
           done = count >= data.memberNumber;
@@ -179,11 +180,11 @@ if (flag || fastTreeMap === undefined) {
       };
     }
     values(): IterableIterator<V> {
-      ErrorUtil.checkBindError("values", TreeMap, this);
+      errorUtil.checkBindError('values', TreeMap, this);
       let data: any = this.constitute;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: V } {
           let done: boolean = false;
           let value: V = undefined;
           done = count >= data.memberNumber;
@@ -197,7 +198,7 @@ if (flag || fastTreeMap === undefined) {
       };
     }
     replace(key: K, newValue: V): boolean {
-      ErrorUtil.checkBindError("replace", TreeMap, this);
+      errorUtil.checkBindError('replace', TreeMap, this);
       let targetNode: any = this.constitute.getNode(key);
       if (targetNode === undefined) {
         return false;
@@ -207,8 +208,8 @@ if (flag || fastTreeMap === undefined) {
     }
     forEach(callbackfn: (value?: V, key?: K, map?: TreeMap<K, V>) => void,
       thisArg?: Object): void {
-      ErrorUtil.checkBindError("forEach", TreeMap, this);
-      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
+      errorUtil.checkBindError('forEach', TreeMap, this);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
       let data: any = this.constitute;
       let tagetArray: Array<any> = [];
       tagetArray = data.keyValueArray;
@@ -217,11 +218,11 @@ if (flag || fastTreeMap === undefined) {
       }
     }
     entries(): IterableIterator<[K, V]> {
-      ErrorUtil.checkBindError("entries", TreeMap, this);
+      errorUtil.checkBindError('entries', TreeMap, this);
       let data: any = this.constitute;
       let count: number = 0;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: [K, V] } {
           let done: boolean = false;
           let value: [K, V] = undefined;
           done = count >= data.memberNumber;
@@ -235,7 +236,7 @@ if (flag || fastTreeMap === undefined) {
       };
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
-      ErrorUtil.checkBindError("Symbol.iterator", TreeMap, this);
+      errorUtil.checkBindError('Symbol.iterator', TreeMap, this);
       return this.entries();
     }
   }

@@ -26,15 +26,15 @@ if (arkPritvate !== undefined) {
 }
 declare function requireNapi(s: string): any;
 if (flag || fastArrayList === undefined) {
-  const {ErrorUtil} = requireNapi('util.struct');
+  const { errorUtil } = requireNapi('util.struct');
   class HandlerArrayList<T> {
-    private isOutBounds(obj: ArrayList<T>, prop: any): void {
+    private isOutBounds(obj: ArrayList<T>, prop: string): void {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        ErrorUtil.checkRangeError("index", index, 0, obj.length - 1);
+        errorUtil.checkRangeError('index', index, 0, obj.length - 1);
       }
     }
-    get(obj: ArrayList<T>, prop: any): T {
+    get(obj: ArrayList<T>, prop: string): T {
       if (typeof prop === 'symbol') {
         return obj[prop];
       }
@@ -48,13 +48,13 @@ if (flag || fastArrayList === undefined) {
       }
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        ErrorUtil.checkRangeError("index", index, 0, obj.length);
+        errorUtil.checkRangeError('index', index, 0, obj.length);
         obj[index] = value;
         return true;
       }
       return false;
     }
-    deleteProperty(obj: ArrayList<T>, prop: any): boolean {
+    deleteProperty(obj: ArrayList<T>, prop: string): boolean {
       this.isOutBounds(obj, prop);
       let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
@@ -63,7 +63,7 @@ if (flag || fastArrayList === undefined) {
       }
       return false;
     }
-    has(obj: ArrayList<T>, prop: any): boolean {
+    has(obj: ArrayList<T>, prop: T): boolean {
       return obj.has(prop);
     }
     ownKeys(obj: ArrayList<T>): Array<string> {
@@ -76,13 +76,13 @@ if (flag || fastArrayList === undefined) {
     defineProperty(): boolean {
       return true;
     }
-    getOwnPropertyDescriptor(obj: ArrayList<T>, prop: any): Object {
+    getOwnPropertyDescriptor(obj: ArrayList<T>, prop: string): Object {
       this.isOutBounds(obj, prop);
       let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
-      return;
+      return Object;
     }
     setPrototypeOf(): T {
       throw new Error(`Can't setPrototype on ArrayList Object`);
@@ -96,16 +96,16 @@ if (flag || fastArrayList === undefined) {
   }
   class ArrayList<T> {
     private elementNum: number = 0;
-    private capacity: number = 10;
+    private capacity: number = 10; // 10 : means number
     constructor() {
-      ErrorUtil.checkNewTargetIsNullError("ArrayList", !new.target);
+      errorUtil.checkNewTargetIsNullError('ArrayList', !new.target);
       return new Proxy(this, new HandlerArrayList());
     }
     get length(): number {
       return this.elementNum;
     }
     add(element: T): boolean {
-      ErrorUtil.checkBindError("add", ArrayList, this);
+      errorUtil.checkBindError('add', ArrayList, this);
       if (this.isFull()) {
         this.resize();
       }
@@ -113,9 +113,9 @@ if (flag || fastArrayList === undefined) {
       return true;
     }
     insert(element: T, index: number): void {
-      ErrorUtil.checkBindError("insert", ArrayList, this);
-      ErrorUtil.checkTypeError("index", "Integer", index);
-      ErrorUtil.checkRangeError("index", index, 0, this.elementNum);
+      errorUtil.checkBindError('insert', ArrayList, this);
+      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkRangeError('index', index, 0, this.elementNum);
       if (this.isFull()) {
         this.resize();
       }
@@ -126,7 +126,7 @@ if (flag || fastArrayList === undefined) {
       this.elementNum++;
     }
     has(element: T): boolean {
-      ErrorUtil.checkBindError("has", ArrayList, this);
+      errorUtil.checkBindError('has', ArrayList, this);
       for (let i: number = 0; i < this.elementNum; i++) {
         if (this[i] === element) {
           return true;
@@ -135,7 +135,7 @@ if (flag || fastArrayList === undefined) {
       return false;
     }
     getIndexOf(element: T): number {
-      ErrorUtil.checkBindError("getIndexOf", ArrayList, this);
+      errorUtil.checkBindError('getIndexOf', ArrayList, this);
       for (let i: number = 0; i < this.elementNum; i++) {
         if (element === this[i]) {
           return i;
@@ -144,9 +144,9 @@ if (flag || fastArrayList === undefined) {
       return -1;
     }
     removeByIndex(index: number): T {
-      ErrorUtil.checkBindError("removeByIndex", ArrayList, this);
-      ErrorUtil.checkTypeError("index", "Integer", index);
-      ErrorUtil.checkRangeError("index", index, 0, this.elementNum - 1);
+      errorUtil.checkBindError('removeByIndex', ArrayList, this);
+      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkRangeError('index', index, 0, this.elementNum - 1);
       let result: T = this[index];
       for (let i: number = index; i < this.elementNum - 1; i++) {
         this[i] = this[i + 1];
@@ -155,7 +155,7 @@ if (flag || fastArrayList === undefined) {
       return result;
     }
     remove(element: T): boolean {
-      ErrorUtil.checkBindError("remove", ArrayList, this);
+      errorUtil.checkBindError('remove', ArrayList, this);
       if (this.has(element)) {
         let index: number = this.getIndexOf(element);
         for (let i: number = index; i < this.elementNum - 1; i++) {
@@ -167,7 +167,7 @@ if (flag || fastArrayList === undefined) {
       return false;
     }
     getLastIndexOf(element: T): number {
-      ErrorUtil.checkBindError("getLastIndexOf", ArrayList, this);
+      errorUtil.checkBindError('getLastIndexOf', ArrayList, this);
       for (let i: number = this.elementNum - 1; i >= 0; i--) {
         if (element === this[i]) {
           return i;
@@ -176,12 +176,12 @@ if (flag || fastArrayList === undefined) {
       return -1;
     }
     removeByRange(fromIndex: number, toIndex: number): void {
-      ErrorUtil.checkBindError("removeByRange", ArrayList, this);
-      ErrorUtil.checkTypeError("fromIndex", "Integer", fromIndex);
-      ErrorUtil.checkTypeError("toIndex", "Integer", toIndex);
-      ErrorUtil.checkRangeError("fromIndex", fromIndex, 0,
-                                (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
-      ErrorUtil.checkRangeError("toIndex", toIndex, 0, this.elementNum);
+      errorUtil.checkBindError('removeByRange', ArrayList, this);
+      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex);
+      errorUtil.checkTypeError('toIndex', 'Integer', toIndex);
+      errorUtil.checkRangeError('fromIndex', fromIndex, 0,
+        (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
+      errorUtil.checkRangeError('toIndex', toIndex, 0, this.elementNum);
       let i: number = fromIndex;
       for (let j: number = toIndex; j < this.elementNum; j++) {
         this[i] = this[j];
@@ -191,25 +191,25 @@ if (flag || fastArrayList === undefined) {
     }
     replaceAllElements(callbackfn: (value: T, index?: number, arrList?: ArrayList<T>) => T,
       thisArg?: Object): void {
-      ErrorUtil.checkBindError("replaceAllElements", ArrayList, this);
-      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
+      errorUtil.checkBindError('replaceAllElements', ArrayList, this);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
       for (let i: number = 0; i < this.elementNum; i++) {
         this[i] = callbackfn.call(thisArg, this[i], i, this);
       }
     }
     forEach(callbackfn: (value: T, index?: number, arrList?: ArrayList<T>) => void,
       thisArg?: Object): void {
-      ErrorUtil.checkBindError("forEach", ArrayList, this);
-      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
+      errorUtil.checkBindError('forEach', ArrayList, this);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
       for (let i: number = 0; i < this.elementNum; i++) {
         callbackfn.call(thisArg, this[i], i, this);
       }
     }
     sort(comparator?: (firstValue: T, secondValue: T) => number): void {
-      ErrorUtil.checkBindError("sort", ArrayList, this);
+      errorUtil.checkBindError('sort', ArrayList, this);
       let isSort: boolean = true;
       if (comparator) {
-        ErrorUtil.checkTypeError("comparator", "callable", comparator);
+        errorUtil.checkTypeError('comparator', 'callable', comparator);
         for (let i: number = 0; i < this.elementNum; i++) {
           for (let j: number = 0; j < this.elementNum - 1 - i; j++) {
             if (comparator(this[j], this[j + 1]) > 0) {
@@ -236,27 +236,27 @@ if (flag || fastArrayList === undefined) {
         }
       }
     }
-    private asciSort(curElement: any, nextElement: any): boolean {
+    private asciSort(curElement: string, nextElement: string): boolean {
       if ((Object.prototype.toString.call(curElement) === '[object String]' ||
         Object.prototype.toString.call(curElement) === '[object Number]') &&
         (Object.prototype.toString.call(nextElement) === '[object String]' ||
-        Object.prototype.toString.call(nextElement) === '[object Number]')) {
+          Object.prototype.toString.call(nextElement) === '[object Number]')) {
         curElement = curElement.toString();
         nextElement = nextElement.toString();
         if (curElement > nextElement) {
           return true;
         }
-        return false
+        return false;
       }
       return false;
     }
     subArrayList(fromIndex: number, toIndex: number): ArrayList<T> {
-      ErrorUtil.checkBindError("subArrayList", ArrayList, this);
-      ErrorUtil.checkTypeError("fromIndex", "Integer", fromIndex);
-      ErrorUtil.checkTypeError("toIndex", "Integer", toIndex);
-      ErrorUtil.checkRangeError("fromIndex", fromIndex, 0,
-                                (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
-      ErrorUtil.checkRangeError("toIndex", toIndex, 0, this.elementNum);
+      errorUtil.checkBindError('subArrayList', ArrayList, this);
+      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex);
+      errorUtil.checkTypeError('toIndex', 'Integer', toIndex);
+      errorUtil.checkRangeError('fromIndex', fromIndex, 0,
+        (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
+      errorUtil.checkRangeError('toIndex', toIndex, 0, this.elementNum);
       let arraylist: ArrayList<T> = new ArrayList<T>();
       for (let i: number = fromIndex; i < toIndex; i++) {
         arraylist.add(this[i]);
@@ -264,11 +264,11 @@ if (flag || fastArrayList === undefined) {
       return arraylist;
     }
     clear(): void {
-      ErrorUtil.checkBindError("clear", ArrayList, this);
+      errorUtil.checkBindError('clear', ArrayList, this);
       this.elementNum = 0;
     }
     clone(): ArrayList<T> {
-      ErrorUtil.checkBindError("clone", ArrayList, this);
+      errorUtil.checkBindError('clone', ArrayList, this);
       let clone: ArrayList<T> = new ArrayList<T>();
       for (let i: number = 0; i < this.elementNum; i++) {
         clone.add(this[i]);
@@ -276,11 +276,11 @@ if (flag || fastArrayList === undefined) {
       return clone;
     }
     getCapacity(): number {
-      ErrorUtil.checkBindError("getCapacity", ArrayList, this);
+      errorUtil.checkBindError('getCapacity', ArrayList, this);
       return this.capacity;
     }
     convertToArray(): Array<T> {
-      ErrorUtil.checkBindError("convertToArray", ArrayList, this);
+      errorUtil.checkBindError('convertToArray', ArrayList, this);
       let arr: Array<T> = [];
       for (let i: number = 0; i < this.elementNum; i++) {
         arr[i] = this[i];
@@ -291,29 +291,29 @@ if (flag || fastArrayList === undefined) {
       return this.elementNum === this.capacity;
     }
     private resize(): void {
-      this.capacity = 1.5 * this.capacity;
+      this.capacity = 1.5 * this.capacity; // 1.5 : means number
     }
     isEmpty(): boolean {
-      ErrorUtil.checkBindError("isEmpty", ArrayList, this);
+      errorUtil.checkBindError('isEmpty', ArrayList, this);
       return this.elementNum === 0;
     }
     increaseCapacityTo(newCapacity: number): void {
-      ErrorUtil.checkBindError("increaseCapacityTo", ArrayList, this);
-      ErrorUtil.checkTypeError("newCapacity", "Integer", newCapacity);
+      errorUtil.checkBindError('increaseCapacityTo', ArrayList, this);
+      errorUtil.checkTypeError('newCapacity', 'Integer', newCapacity);
       if (newCapacity >= this.elementNum) {
         this.capacity = newCapacity;
       }
     }
     trimToCurrentLength(): void {
-      ErrorUtil.checkBindError("trimToCurrentLength", ArrayList, this);
+      errorUtil.checkBindError('trimToCurrentLength', ArrayList, this);
       this.capacity = this.elementNum;
     }
     [Symbol.iterator](): IterableIterator<T> {
-      ErrorUtil.checkBindError("Symbol.iterator", ArrayList, this);
+      errorUtil.checkBindError('Symbol.iterator', ArrayList, this);
       let count: number = 0;
       let arraylist: ArrayList<T> = this;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
           done = count >= arraylist.elementNum;
@@ -330,4 +330,3 @@ if (flag || fastArrayList === undefined) {
   fastArrayList = ArrayList;
 }
 export default fastArrayList;
-
