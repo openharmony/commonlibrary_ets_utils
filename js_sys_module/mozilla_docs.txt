@@ -22,7 +22,6 @@ but the implementation of specific functions is independent and self-developed.
 All interfaces are described in d.ts, the following is the interface written in d.ts under to Mozilla license
 
 export declare class console {
-
     debug(message: string, ...arguments: any[]): void;
     log(message: string, ...arguments: any[]): void;
     info(message: string, ...arguments: any[]): void;

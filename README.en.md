@@ -1514,6 +1514,30 @@ commonlibrary/ets_utils/js_sys_module/
     ├── pid                         # PID attribute
     ├── ppid                        # PPID attribute
     └── exitCode                    # exitCode attribute
+|—— Class:CONSOLE 
+    ├── debug()                     # debug method
+    ├── log()                       # log method
+    ├── info()                      # info method
+    ├── warn()                      # warn method
+    ├── error()                     # error method
+    ├── assert()                    # assert method
+    ├── count()                     # count method
+    ├── countReset()                # countReset method
+    ├── dir()                       # dir method
+    ├── dirxml()                    # dirxml method
+    ├── group()                     # group method
+    ├── groupCollapsed()            # groupCollapsed method
+    ├── groupEnd()                  # groupEnd method
+    ├── table()                     # table method
+    ├── time()                      # time method
+    ├── timeEnd()                   # timeEnd method
+    ├── timeLog()                   # timeLog method
+    ├── trace()                     # trace method
+|—— Class:TIMER 
+    ├── setInterval()               # setInterval method
+    ├── setTimeout()                # setTimeout method
+    ├── clearInterval()             # clearInterval method
+    ├── clearTimeout()              # clearTimeout method
 ```
 
 ### How to Use
@@ -1557,6 +1581,28 @@ commonlibrary/ets_utils/js_sys_module/
 | readonly exitCode: number | Indicates the exit code of the child process.|
 | readonly pid: number | Indicates the PID of the child process.|
 | readonly ppid: number | Indicates the PPID of the process.|
+| debug(message: string, ...arguments: any[]): void | print debug information. |
+| log(message: string, ...arguments: any[]): void | print log information. |
+| info(message: string, ...arguments: any[]): void | print info information. |
+| warn(message: string, ...arguments: any[]): void | print warn information. |
+| error(message: string, ...arguments: any[]): void | print error information. |
+| assert(value?: Object, ...arguments: Object[]): void | if value is false，print arguments information. |
+| count(label?: string): void | Counts the label name. |
+| countReset(label?: string): void | Clear the count of label names. |
+| dir(dir?: Object): void | Print the object content. |
+| dirxml(...arguments: Object[]): void | print log information. |
+| group(...arguments: Object[]): void | Indent one group |
+| groupCollapsed(...arguments: Object[]): void | Indent one group |
+| groupEnd(): void | Unindent one group. |
+| table(tableData?: Object): void | Print data in tabular form. |
+| time(label?: string): void | Start the clock. |
+| timeEnd(label?: string): void | End the timer. |
+| timeLog(label?: string, ...arguments: Object[]): void | Print current timing. |
+| trace(...arguments: Object[]): void | Print current stack. |
+|  setInterval(handler: Function \| string, delay: number, ...arguments: any[]): number | Timing to call callback function. |
+|  setTimeout(handler: Function \| string, delay?: number, ...arguments: any[]): number | Call the callback function when the timing ends. |
+|  clearInterval(intervalID?: number): void | Clear the timing callback. |
+|  clearTimeout(timeoutID?: number): void |Clear the timing callback. |
 
 #### How to Use
 
@@ -1818,6 +1864,128 @@ getSystemConfig(){
     var _SC_ARG_MAX = 0;
     var ansu = Process.getSystemConfig(_SC_ARG_MAX)
 }
+```
+37.console.debug()
+```
+console.debug("print debug log");
+}
+```
+38.console.log()
+```
+console.debug("print log");
+}
+```
+39.console.info()
+```
+console.debug("print info log");
+}
+```
+40.console.warn()
+```
+console.debug("print warn log");
+}
+```
+41.console.error()
+```
+console.debug("print error log");
+}
+```
+42.console.assert()
+```
+for (let number = 2; number <= 5; number++) {
+    console.assert(number % 2 === 0, "error");
+}
+```
+43.console.count()
+```
+console.count("myObj");
+```
+44.console.countReset()
+```
+console.count("myObj");
+console.countReset("myObj");
+```
+45.console.dir()
+```
+function cat(name, age, score){
+  this.name = name;
+  this.age = age;
+  this.score = score;
+}
+var c = new cat("ohos", 2, [6,8,7]);
+console.dir(c);
+```
+46.console.dirxml()
+```
+console.xml("print log");
+```
+47.console.group()
+```
+console.group();
+```
+48.console.groupCollapsed()
+```
+console.groupCollapsed();
+```
+49.console.groupEnd()
+```
+console.groupEnd();
+```
+50.console.table()
+```
+var languages = {
+  csharp: { name: "C#", paradigm: "undefined" },
+  fsharp: { name: "F#", paradigm: "functional" }
+};
+console.table(languages);
+```
+51.console.time()
+```
+console.time("timer1");
+```
+52.console.timeEnd()
+```
+console.time("timer1");
+console.timeEnd("timer1");
+```
+53.console.timeLog()
+```
+console.time("timer1");
+console.timeLog("timer1");
+```
+54.console.trace()
+```
+console.trace();
+```
+55.setInterval()
+```
+function callback() {
+  console.log("setInterval");
+};
+setInterval(callback, 100);
+```
+55.setTimeout()
+```
+function callback() {
+  console.log("setTimeout");
+};
+setTimeout(callback, 100);
+```
+55.clearInterval()
+```
+function callback() {
+  console.log("clearInterval");
+};
+var myVar = setInterval(callback, 1000);
+clearInterval(myVar);
+```
+56.clearTimeout()
+```
+function callback() {
+  console.log("clearTimeout");
+};
+var myVar = setTimeout(callback, 1000);
+clearTimeout(myVar);
 ```
 
 ## js_worker_module
@@ -2260,3 +2428,5 @@ parentPort.onmessageerror = function(e) {
 **js_util_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_util_module/mozilla_docs.txt).
 
 **js_worker_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_worker_module/mozilla_docs.txt).
+
+**js_sys_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_sys_module/mozilla_docs.txt).
