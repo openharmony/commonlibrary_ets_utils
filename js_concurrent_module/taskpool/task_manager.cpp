@@ -237,13 +237,21 @@ void TaskManager::NotifyWorkerIdle(Worker *worker)
         std::unique_lock<std::mutex> lock(workersMutex_);
         idleWorkers_.insert(worker);
     }
-    NotifyExecuteTask();
+    if (IsTaskQueueNotEmpty()) {
+        NotifyExecuteTask();
+    }
 }
 
 void TaskManager::NotifyWorkerAdded(Worker *worker)
 {
     std::unique_lock<std::mutex> lock(workersMutex_);
     workers_.insert(worker);
+}
+
+bool TaskManager::IsTaskQueueNotEmpty()
+{
+    std::unique_lock<std::mutex> lock(taskQueuesMutex_);
+    return (!taskQueues_[HIGH]->IsEmpty()) || (!taskQueues_[MEDIUM]->IsEmpty()) || (!taskQueues_[LOW]->IsEmpty());
 }
 
 void TaskManager::EnqueueTask(std::unique_ptr<Task> task, Priority priority)

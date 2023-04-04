@@ -61,6 +61,7 @@ private:
     TaskState QueryState(uint32_t executeId);
 
     bool NeedExpandWorker();
+    bool IsTaskQueueNotEmpty();
 
     void NotifyWorkerAdded(Worker *worker);
     void NotifyExecuteTask();
