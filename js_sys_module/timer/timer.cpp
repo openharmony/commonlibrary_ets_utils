@@ -17,7 +17,7 @@
 
 #include "utils/log.h"
 
-namespace OHOS::Js_sys_module {
+namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
 
 uint32_t Timer::timeCallbackId = 0;
@@ -47,10 +47,10 @@ bool Timer::RegisterTime(napi_env env)
         return false;
     }
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_FUNCTION("setTimeout", SetTimeout),
-        DECLARE_NAPI_FUNCTION("setInterval", SetInterval),
-        DECLARE_NAPI_FUNCTION("clearTimeout", ClearTimer),
-        DECLARE_NAPI_FUNCTION("clearInterval", ClearTimer)
+        DECLARE_NAPI_WRITABLE_FUNCTION("setTimeout", SetTimeout),
+        DECLARE_NAPI_WRITABLE_FUNCTION("setInterval", SetInterval),
+        DECLARE_NAPI_WRITABLE_FUNCTION("clearTimeout", ClearTimer),
+        DECLARE_NAPI_WRITABLE_FUNCTION("clearInterval", ClearTimer)
     };
     napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
     napi_status status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
@@ -115,13 +115,11 @@ void Timer::TimerCallback(uv_timer_t* handle)
     }
     napi_call_function(callbackInfo->env_, undefinedValue, callback,
                        callbackInfo->argc_, callbackArgv, &callbackResult);
-
-    napi_value exception;
-    napi_get_and_clear_last_exception(callbackInfo->env_, &exception);
-    if (exception != nullptr) {
-        HILOG_ERROR("timerCallback occurs exception");
+    if (callbackResult == nullptr) {
+        HILOG_ERROR("call timerCallback error");
+        return;
     }
-    if (!callbackInfo->repeat_ || exception != nullptr) {
+    if (!callbackInfo->repeat_) {
         {
             std::lock_guard<std::mutex> lock(timeLock);
             if (timerTable.find(callbackInfo->tId_) == timerTable.end()) {
@@ -213,4 +211,4 @@ void Timer::ClearEnvironmentTimer(napi_env env)
         }
     }
 }
-} // namespace Commonlibrary::Js_sys_module
+} // namespace Commonlibrary::JsSysModule

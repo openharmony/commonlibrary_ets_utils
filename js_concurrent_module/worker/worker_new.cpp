@@ -20,7 +20,7 @@
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
-using namespace OHOS::Js_sys_module;
+using namespace OHOS::JsSysModule;
 static constexpr int8_t NUM_NEW_WORKER_ARGS = 2;
 static constexpr int8_t MAX_NEW_WORKERS = 8;
 static std::list<NewWorker *> g_newWorkers;

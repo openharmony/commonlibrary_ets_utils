@@ -73,6 +73,16 @@
                       ],
                       "header_base": "//commonlibrary/ets_utils/js_sys_module/timer"
                     }
+                },
+                {
+                    "name": "//commonlibrary/ets_utils/js_sys_module/console:console",
+                    "header": {
+                      "header_files": [
+                        "console.h",
+                        "log.h"
+                      ],
+                      "header_base": "//commonlibrary/ets_utils/js_sys_module/console"
+                    }
                 }
             ],
             "test": [

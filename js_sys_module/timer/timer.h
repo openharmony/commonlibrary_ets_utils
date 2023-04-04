@@ -25,7 +25,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-namespace OHOS::Js_sys_module {
+namespace OHOS::JsSysModule {
 struct TimerCallbackInfo {
     napi_env env_;
     uint32_t tId_;
@@ -68,5 +68,5 @@ private:
     static std::map<uint32_t, TimerCallbackInfo*> timerTable;
     static std::mutex timeLock;
 };
-} // namespace Commonlibrary::Js_sys_module
+} // namespace Commonlibrary::JsSysModule
 #endif // TIMER_TIMER_H_
