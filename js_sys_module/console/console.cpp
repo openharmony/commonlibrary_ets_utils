@@ -135,12 +135,16 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
     for (size_t i = startIdx; i < argc; i++) {
         if (!Helper::NapiHelper::IsString(argv[i])) {
             napi_value buffer;
-            napi_coerce_to_string(env, argv[i], &buffer);
+            napi_status status = napi_coerce_to_string(env, argv[i], &buffer);
+            if (status != napi_ok) {
+                HILOG_ERROR("Console log failed to convert to string object");
+                continue;
+            }
             argv[i] = buffer;
         }
         char* stringValue = Helper::NapiHelper::GetString(env, argv[i]);
         if (stringValue == nullptr) {
-            HILOG_ERROR("Console log failed to get string object");
+            HILOG_ERROR("Console log length exceeds maximum");
             break;
         }
         content.emplace_back(std::string(stringValue));
@@ -192,12 +196,15 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
     napi_value* argv = new napi_value[argc];
     Helper::ObjectScope<napi_value> scope(argv, true);
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-    napi_valuetype valuetype;
-    napi_typeof(env, argv[0], &valuetype);
-    if (valuetype != napi_string) {
-        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                        "Timer or Counter name must be String.");
-        return "";
+    if (!Helper::NapiHelper::IsString(argv[0])) {
+        napi_value buffer = nullptr;
+        napi_status status = napi_coerce_to_string(env, argv[0], &buffer);
+        if (status != napi_ok) {
+            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "Timer or Counter name must be String.");
+            return "";
+        }
+        argv[0] = buffer;
     }
     char* name = Helper::NapiHelper::GetString(env, argv[0]);
     if (name == nullptr) {
@@ -314,7 +321,12 @@ std::string Console::RenderHead(napi_env env, napi_value head, std::vector<size_
         napi_value element = nullptr;
         napi_get_element(env, head, i, &element);
         napi_value string = nullptr;
-        napi_coerce_to_string(env, element, &string);
+        napi_status status = napi_coerce_to_string(env, element, &string);
+        if (status != napi_ok) {
+            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "Table elements can't convert to string.");
+            return "";
+        }
         size_t stringLen = 0;
         napi_get_value_string_utf8(env, string, nullptr, 0, &stringLen);
         size_t left = (columnWidths[i] - stringLen) / 2; // 2: half
@@ -337,7 +349,12 @@ std::string Console::RenderHead(napi_env env, napi_value head, std::vector<size_
 std::string Console::GetStringAndStringWidth(napi_env env, napi_value element, size_t& stringLen)
 {
     napi_value string = nullptr;
-    napi_coerce_to_string(env, element, &string);
+    napi_status status = napi_coerce_to_string(env, element, &string);
+    if (status != napi_ok) {
+        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                        "GetStringAndStringWidth: can't convert to string.");
+        return "";
+    }
     char* result = Helper::NapiHelper::GetString(env, string);
     if (result == nullptr) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "result must not be null.");
@@ -690,7 +707,7 @@ napi_value Console::TimeEnd(napi_env env, napi_callback_info info)
         uint64_t endTime = std::chrono::duration_cast<std::chrono::milliseconds>
                            (std::chrono::high_resolution_clock::now().time_since_epoch()).count();
         uint64_t ms = endTime - timerMap[timerName];
-        PrintTime(timerName, ms, nullptr);
+        PrintTime(timerName, ms, "");
         timerMap.erase(timerName);
     } else {
         HILOG_WARN("%{public}sTimer %{public}s doesn't exists, please check Timer Name.",
