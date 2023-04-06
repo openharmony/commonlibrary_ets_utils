@@ -225,7 +225,9 @@ void TaskManager::NotifyWorkerIdle(Worker *worker)
         std::unique_lock<std::mutex> lock(workersMutex_);
         idleWorkers_.insert(worker);
     }
-    NotifyExecuteTask();
+    if (!taskQueue_.IsEmpty()) {
+        NotifyExecuteTask();
+    }
 }
 
 void TaskManager::NotifyWorkerAdded(Worker *worker)
