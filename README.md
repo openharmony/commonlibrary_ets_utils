@@ -4583,6 +4583,30 @@ commomlibrary/ets_utils/js_sys_module/
     ├── pid                         # pid属性
     ├── ppid                        # ppid属性
     └── exitCode                    # exitCode属性
+|—— Class:CONSOLE 
+    ├── debug()                     # debug方法
+    ├── log()                       # log方法
+    ├── info()                      # info方法
+    ├── warn()                      # warn方法
+    ├── error()                     # error方法
+    ├── assert()                    # assert方法
+    ├── count()                     # count方法
+    ├── countReset()                # countReset方法
+    ├── dir()                       # dir方法
+    ├── dirxml()                    # dirxml方法
+    ├── group()                     # group方法
+    ├── groupCollapsed()            # groupCollapsed方法
+    ├── groupEnd()                  # groupEnd方法
+    ├── table()                     # table方法
+    ├── time()                      # time方法
+    ├── timeEnd()                   # timeEnd方法
+    ├── timeLog()                   # timeLog方法
+    ├── trace()                     # trace方法
+|—— Class:TIMER 
+    ├── setInterval()               # setInterval方法
+    ├── setTimeout()                # setTimeout方法
+    ├── clearInterval()             # clearInterval方法
+    ├── clearTimeout()              # clearTimeout方法
 ```
 
 ### 3.3. 说明
@@ -4626,6 +4650,28 @@ commomlibrary/ets_utils/js_sys_module/
 | readonly exitCode: number | 表示子进程的退出代码。 |
 | readonly pid: number | 表示子进程ID。 |
 | readonly ppid: number | 代表主进程ID。 |
+| debug(message: string, ...arguments: any[]): void | 打印debug信息。 |
+| log(message: string, ...arguments: any[]): void | 打印log信息。 |
+| info(message: string, ...arguments: any[]): void | 打印info信息。 |
+| warn(message: string, ...arguments: any[]): void | 打印warn信息。 |
+| error(message: string, ...arguments: any[]): void | 打印error信息。 |
+| assert(value?: Object, ...arguments: Object[]): void | 若value为假，打印后续内容。 |
+| count(label?: string): void | 对label名计数。 |
+| countReset(label?: string): void | 清除label名的计数。 |
+| dir(dir?: Object): void | 打印对象内容。 |
+| dirxml(...arguments: Object[]): void | 打印日志。 |
+| group(...arguments: Object[]): void | 缩进一组。 |
+| groupCollapsed(...arguments: Object[]): void | 缩进一组。 |
+| groupEnd(): void | 取消缩进一组。 |
+| table(tableData?: Object): void | 以表格形式打印数据。 |
+| time(label?: string): void | 开始计时。 |
+| timeEnd(label?: string): void | 结束计时。 |
+| timeLog(label?: string, ...arguments: Object[]): void | 打印当前计时。 |
+| trace(...arguments: Object[]): void | 打印当前栈。 |
+|  setInterval(handler: Function \| string, delay: number, ...arguments: any[]): number | 定时调用回调函数。 |
+|  setTimeout(handler: Function \| string, delay?: number, ...arguments: any[]): number | 计时结束调用回调函数。 |
+|  clearInterval(intervalID?: number): void | 清除定时回调。 |
+|  clearTimeout(timeoutID?: number): void | 清除计时回调。 |
 
 #### 3.3.2. 使用说明
 
@@ -4887,6 +4933,128 @@ getSystemConfig(){
     var _SC_ARG_MAX = 0;
     var ansu = Process.getSystemConfig(_SC_ARG_MAX)
 }
+```
+37.console.debug()
+```
+console.debug("print debug log");
+}
+```
+38.console.log()
+```
+console.debug("print log");
+}
+```
+39.console.info()
+```
+console.debug("print info log");
+}
+```
+40.console.warn()
+```
+console.debug("print warn log");
+}
+```
+41.console.error()
+```
+console.debug("print error log");
+}
+```
+42.console.assert()
+```
+for (let number = 2; number <= 5; number++) {
+    console.assert(number % 2 === 0, "error");
+}
+```
+43.console.count()
+```
+console.count("myObj");
+```
+44.console.countReset()
+```
+console.count("myObj");
+console.countReset("myObj");
+```
+45.console.dir()
+```
+function cat(name, age, score){
+  this.name = name;
+  this.age = age;
+  this.score = score;
+}
+var c = new cat("ohos", 2, [6,8,7]);
+console.dir(c);
+```
+46.console.dirxml()
+```
+console.xml("print log");
+```
+47.console.group()
+```
+console.group();
+```
+48.console.groupCollapsed()
+```
+console.groupCollapsed();
+```
+49.console.groupEnd()
+```
+console.groupEnd();
+```
+50.console.table()
+```
+var languages = {
+  csharp: { name: "C#", paradigm: "undefined" },
+  fsharp: { name: "F#", paradigm: "functional" }
+};
+console.table(languages);
+```
+51.console.time()
+```
+console.time("timer1");
+```
+52.console.timeEnd()
+```
+console.time("timer1");
+console.timeEnd("timer1");
+```
+53.console.timeLog()
+```
+console.time("timer1");
+console.timeLog("timer1");
+```
+54.console.trace()
+```
+console.trace();
+```
+55.setInterval()
+```
+function callback() {
+  console.log("setInterval");
+};
+setInterval(callback, 100);
+```
+55.setTimeout()
+```
+function callback() {
+  console.log("setTimeout");
+};
+setTimeout(callback, 100);
+```
+55.clearInterval()
+```
+function callback() {
+  console.log("clearInterval");
+};
+var myVar = setInterval(callback, 1000);
+clearInterval(myVar);
+```
+56.clearTimeout()
+```
+function callback() {
+  console.log("clearTimeout");
+};
+var myVar = setTimeout(callback, 1000);
+clearTimeout(myVar);
 ```
 
 ## 4. js_worker_module子模块
@@ -5333,3 +5501,5 @@ js_api_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)�
 js_util_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_util_module/mozilla_docs.txt)。
 
 js_worker_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_worker_module/mozilla_docs.txt)。
+
+js_sys_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_sys_module/mozilla_docs.txt)。
