@@ -84,7 +84,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         HILOG_ERROR("first param should be number");
         return nullptr;
     }
-    TimerCallbackInfo* callbackInfo = nullptr;
+
     {
         std::lock_guard<std::mutex> lock(timeLock);
         auto iter = timerTable.find(tId);
@@ -92,10 +92,10 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
             HILOG_ERROR("timerId is inexistent");
             return nullptr;
         }
-        callbackInfo = iter->second;
+        TimerCallbackInfo* callbackInfo = iter->second;
         timerTable.erase(tId);
+        Helper::CloseHelp::DeletePointer(callbackInfo, false);
     }
-    Helper::CloseHelp::DeletePointer(callbackInfo, false);
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
 
@@ -113,21 +113,24 @@ void Timer::TimerCallback(uv_timer_t* handle)
     for (size_t idx = 0; idx < callbackInfo->argc_; idx++) {
         callbackArgv[idx] = Helper::NapiHelper::GetReferenceValue(callbackInfo->env_, callbackInfo->argv_[idx]);
     }
+
+    bool repeat = callbackInfo->repeat_;
+    uint32_t tId = callbackInfo->tId_;
     napi_call_function(callbackInfo->env_, undefinedValue, callback,
                        callbackInfo->argc_, callbackArgv, &callbackResult);
     if (callbackResult == nullptr) {
         HILOG_ERROR("call timerCallback error");
         return;
     }
-    if (!callbackInfo->repeat_) {
-        {
-            std::lock_guard<std::mutex> lock(timeLock);
-            if (timerTable.find(callbackInfo->tId_) == timerTable.end()) {
-                HILOG_ERROR("erase inexistent timerCallbackInfo");
-            } else {
-                timerTable.erase(callbackInfo->tId_);
-            }
-        }
+
+    // callback maybe contain ClearTimer, so we need check to avoid use-after-free and double-free of callbackInfo
+    std::lock_guard<std::mutex> lock(timeLock);
+    if (timerTable.find(tId) == timerTable.end()) {
+        HILOG_WARN("not found timerCallbackInfo");
+        return;
+    }
+    if (!repeat) {
+        timerTable.erase(tId);
         Helper::CloseHelp::DeletePointer(callbackInfo, false);
     } else {
         uv_timer_again(handle);
