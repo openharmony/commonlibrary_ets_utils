@@ -193,6 +193,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     }
 
     // 6. start timer
+    uv_update_time(Helper::NapiHelper::GetLibUV(env));
     uv_timer_start(callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
     uv_work_t *work = new uv_work_t;
     uv_queue_work(Helper::NapiHelper::GetLibUV(env), work, [](uv_work_t *){ },
