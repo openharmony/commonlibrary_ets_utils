@@ -89,6 +89,10 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     if (type == napi_object) {
         Task* task = nullptr;
         NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void**>(&task)));
+        if (task == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: param type not support");
+            return nullptr;
+        }
         uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
         if (argc > 1) {
             napi_get_value_uint32(env, args[1], &priority);
