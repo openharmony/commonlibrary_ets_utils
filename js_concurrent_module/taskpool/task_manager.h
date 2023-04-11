@@ -27,6 +27,10 @@
 #include "napi/native_api.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+static constexpr char FUNCTION_STR[] = "function";
+static constexpr char ARGUMENTS_STR[] = "arguments";
+static constexpr char TASKID_STR[] = "taskId";
+
 class Worker;
 
 class TaskManager {
@@ -44,12 +48,12 @@ public:
     void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
     bool UpdateState(uint32_t executeId, TaskState state);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
-    void EnqueueTask(std::unique_ptr<Task> task, Priority priority = Priority::DEFAULT);
-    std::unique_ptr<Task> DequeueTask();
+    void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
+    uint32_t DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
     void NotifyWorkerIdle(Worker *worker);
     void InitTaskRunner(napi_env env);
-    TaskInfo* GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId);
+    TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId);
     void ReleaseTaskContent(TaskInfo* taskInfo);
 
 private:
@@ -66,10 +70,10 @@ private:
     void NotifyWorkerAdded(Worker *worker);
     void NotifyExecuteTask();
 
-    std::atomic<int32_t> currentExecuteId_ = 0;
+    std::atomic<int32_t> currentExecuteId_ = 1; // 1: executeId begin from 1, 0 for exception
     std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
-    uint32_t highPriorityTask_ = 0;
-    uint32_t mediumPriorityTask_ = 0;
+    uint32_t highPrioExecuteCount_ = 0;
+    uint32_t mediumPrioExecuteCount_ = 0;
 
     std::unordered_map<uint32_t, TaskInfo*> taskInfos_ {};
     std::shared_mutex taskInfosMutex_;
@@ -84,7 +88,7 @@ private:
     std::set<Worker*> idleWorkers_ {};
     std::mutex workersMutex_;
 
-    std::array<std::unique_ptr<TaskQueue>, Priority::NUMBER> taskQueues_ {};
+    std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};
     std::mutex taskQueuesMutex_;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

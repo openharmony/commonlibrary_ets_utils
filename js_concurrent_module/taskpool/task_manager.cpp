@@ -36,7 +36,7 @@ TaskManager &TaskManager::GetInstance()
 TaskManager::TaskManager()
 {
     for (size_t i = 0; i < taskQueues_.size(); i++) {
-        std::unique_ptr<TaskQueue> taskQueue = std::make_unique<TaskQueue>();
+        std::unique_ptr<ExecuteQueue> taskQueue = std::make_unique<ExecuteQueue>();
         taskQueues_[i] = std::move(taskQueue);
     }
 }
@@ -148,16 +148,14 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
     auto iter = runningInfos_.find(taskId);
     if (iter == runningInfos_.end() || iter->second.empty()) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCAL_NONEXIST_TASK,
-            "taskpool:: can not find the task");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
         return;
     }
-    int32_t result = 0;
     for (auto executeId : iter->second) {
         TaskState state = QueryState(executeId);
         if (state == TaskState::NOT_FOUND) {
-            result = ErrorHelper::ERR_CANCAL_NONEXIST_TASK;
-            break;
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
+            return;
         }
         UpdateState(executeId, TaskState::CANCELED);
         if (state == TaskState::WAITING) {
@@ -169,37 +167,36 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
                 ReleaseTaskContent(taskInfo);
             }
         } else {
-            result = ErrorHelper::ERR_CANCAL_RUNNING_TASK;
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_RUNNING_TASK,
+                                "taskpool:: can not cancel the running task");
+            return;
         }
     }
-
-    if (result == ErrorHelper::ERR_CANCAL_NONEXIST_TASK) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCAL_NONEXIST_TASK,
-            "taskpool:: can not find the task");
-    } else if (result == ErrorHelper::ERR_CANCAL_RUNNING_TASK) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCAL_RUNNING_TASK,
-            "taskpool:: can not cancel the running task");
-    } else {
-        runningInfos_.erase(iter);
-    }
+    runningInfos_.erase(iter);
 }
 
-TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value object, uint32_t taskId, uint32_t executeId)
+TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func,
+                                        napi_value args, uint32_t taskId, uint32_t executeId)
 {
     napi_value undefined;
     napi_get_undefined(env, &undefined);
-    napi_value taskData;
-    napi_status serializeStatus = napi_ok;
-    serializeStatus = napi_serialize(env, object, undefined, &taskData);
-    if (serializeStatus != napi_ok || taskData == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-            "taskpool: failed to serialize message.");
+    napi_value serializationFunction;
+    napi_status status = napi_serialize(env, func, undefined, &serializationFunction);
+    if (status != napi_ok || serializationFunction == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "taskpool: failed to serialize function.");
+        return nullptr;
+    }
+    napi_value serializationArguments;
+    status = napi_serialize(env, args, undefined, &serializationArguments);
+    if (status != napi_ok || serializationArguments == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "taskpool: failed to serialize arguments.");
         return nullptr;
     }
     TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
     taskInfo->env = env;
     taskInfo->executeId = executeId;
-    taskInfo->serializationData = taskData;
+    taskInfo->serializationFunction = serializationFunction;
+    taskInfo->serializationArguments = serializationArguments;
     taskInfo->taskId = taskId;
     taskInfo->onResultSignal = new uv_async_t;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
@@ -254,40 +251,34 @@ bool TaskManager::IsTaskQueueNotEmpty()
     return (!taskQueues_[HIGH]->IsEmpty()) || (!taskQueues_[MEDIUM]->IsEmpty()) || (!taskQueues_[LOW]->IsEmpty());
 }
 
-void TaskManager::EnqueueTask(std::unique_ptr<Task> task, Priority priority)
+void TaskManager::EnqueueExecuteId(uint32_t executeId, Priority priority)
 {
     {
         std::unique_lock<std::mutex> lock(taskQueuesMutex_);
-        taskQueues_[priority]->EnqueueTask(std::move(task));
+        taskQueues_[priority]->EnqueueExecuteId(executeId);
     }
     NotifyExecuteTask();
 }
 
-std::unique_ptr<Task> TaskManager::DequeueTask()
+uint32_t TaskManager::DequeueExecuteId()
 {
     std::unique_lock<std::mutex> lock(taskQueuesMutex_);
-    if (highPriorityTask_ < HIGH_PRIORITY_TASK_COUNT) {
+    if (highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
         auto &highTaskQueue = taskQueues_[Priority::HIGH];
-        auto task = highTaskQueue->DequeueTask();
-        if (task != nullptr) {
-            highPriorityTask_++;
-            return task;
-        }
+        highPrioExecuteCount_++;
+        return highTaskQueue->DequeueExecuteId();
     }
-    highPriorityTask_ = 0;
+    highPrioExecuteCount_ = 0;
 
-    if (mediumPriorityTask_ < MEDIUM_PRIORITY_TASK_COUNT) {
+    if (mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
         auto &mediumTaskQueue = taskQueues_[Priority::MEDIUM];
-        auto task = mediumTaskQueue->DequeueTask();
-        if (task != nullptr) {
-            mediumPriorityTask_++;
-            return task;
-        }
+        mediumPrioExecuteCount_++;
+        return mediumTaskQueue->DequeueExecuteId();
     }
-    mediumPriorityTask_ = 0;
+    mediumPrioExecuteCount_ = 0;
 
     auto &lowTaskQueue = taskQueues_[Priority::LOW];
-    return lowTaskQueue->DequeueTask();
+    return lowTaskQueue->DequeueExecuteId();
 }
 
 void TaskManager::NotifyExecuteTask()

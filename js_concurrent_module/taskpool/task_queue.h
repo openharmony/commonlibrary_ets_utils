@@ -22,19 +22,18 @@
 #include "task.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-class TaskQueue {
+class ExecuteQueue {
 public:
-    TaskQueue() = default;
-    ~TaskQueue() = default;
+    ExecuteQueue() = default;
+    ~ExecuteQueue() = default;
 
-    void EnqueueTask(std::unique_ptr<Task> task);
-
-    std::unique_ptr<Task> DequeueTask();
+    void EnqueueExecuteId(uint32_t executeId);
+    uint32_t DequeueExecuteId();
 
     bool IsEmpty() const;
 
 private:
-    std::queue<std::unique_ptr<Task>> tasks_ {};
+    std::queue<uint32_t> tasks_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_

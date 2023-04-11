@@ -184,13 +184,13 @@ void Worker::PerformTask(const uv_async_t* req)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto worker = static_cast<Worker*>(req->data);
     napi_env env = worker->workerEnv_;
-    std::unique_ptr<Task> task = TaskManager::GetInstance().DequeueTask();
-    if (task == nullptr) {
+    uint32_t executeId = TaskManager::GetInstance().DequeueExecuteId();
+    if (executeId == 0) {
         worker->NotifyIdle();
         return;
     }
 
-    TaskInfo* taskInfo = TaskManager::GetInstance().PopTaskInfo(task->executeId_);
+    TaskInfo* taskInfo = TaskManager::GetInstance().PopTaskInfo(executeId);
     if (taskInfo == nullptr) { // task may have been canceled
         worker->NotifyIdle();
         HILOG_ERROR("taskpool::PerformTask taskInfo is null");
@@ -199,30 +199,35 @@ void Worker::PerformTask(const uv_async_t* req)
     taskInfo->worker = worker;
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::RUNNING);
     napi_handle_scope scope = nullptr;
-    napi_open_handle_scope(env, &scope);
-    if (scope == nullptr) {
-        return;
-    }
+    NAPI_CALL_RETURN_VOID(env, napi_open_handle_scope(env, &scope));
     napi_value undefined;
     napi_get_undefined(env, &undefined);
-    napi_value taskData;
-    napi_status status = napi_deserialize(env, taskInfo->serializationData, &taskData);
-    if (status != napi_ok || taskData == nullptr) {
-        HILOG_ERROR("taskpool::PerformTask napi_deserialize fail");
+    napi_value func;
+    napi_status status = napi_deserialize(env, taskInfo->serializationFunction, &func);
+    if (status != napi_ok || func == nullptr) {
+        HILOG_ERROR("taskpool:: PerformTask deserialize function fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-            "taskpool: failed to deserialize message.");
+            "taskpool: failed to deserialize function.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
-        napi_close_handle_scope(env, scope);
+        NAPI_CALL_RETURN_VOID(env, napi_close_handle_scope(env, scope));
         return;
     }
-    napi_value func;
-    napi_get_named_property(env, taskData, "func", &func);
+    napi_value args;
+    status = napi_deserialize(env, taskInfo->serializationArguments, &args);
+    if (status != napi_ok || args == nullptr) {
+        HILOG_ERROR("taskpool:: PerformTask deserialize arguments fail");
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
+            "taskpool: failed to deserialize arguments.");
+        taskInfo->success = false;
+        NotifyTaskResult(env, taskInfo, err);
+        NAPI_CALL_RETURN_VOID(env, napi_close_handle_scope(env, scope));
+        return;
+    }
+
     auto funcVal = reinterpret_cast<NativeValue*>(func);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->InitTaskPoolFunc(workerEngine, funcVal);
-    napi_value args;
-    napi_get_named_property(env, taskData, "args", &args);
     uint32_t argsNum = 0;
     napi_get_array_length(env, args, &argsNum);
     napi_value argsArray[argsNum];
@@ -247,7 +252,7 @@ void Worker::PerformTask(const uv_async_t* req)
     } else {
         worker->NotifyIdle();
     }
-    napi_close_handle_scope(env, scope);
+    NAPI_CALL_RETURN_VOID(env, napi_close_handle_scope(env, scope));
 }
 
 void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result)
