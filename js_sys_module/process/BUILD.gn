@@ -62,11 +62,7 @@ ohos_source_set("process_static") {
     "native_module_process.cpp",
   ]
 
-  deps = [
-    "$napi_root:ace_napi",
-    "//third_party/icu/icu4c:shared_icuuc",
-  ]
-
+  deps = []
   if (is_cross_platform_build) {
     include_dirs += [
       "$plugins_root/hilog/include",
@@ -78,9 +74,17 @@ ohos_source_set("process_static") {
     }
     if (target_os == "ios") {
       defines = [ "IOS_PLATFORM" ]
-      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
-      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
     }
+    deps += [
+      "$plugins_root/libs/icu:icu_${target_os}",
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/securec:sec_${target_os}",
+    ]
+  } else {
+    deps += [
+      "$napi_root:ace_napi",
+      "//third_party/icu/icu4c:shared_icuuc",
+    ]
   }
 
   if (is_standard_system) {
