@@ -133,8 +133,6 @@ ohos_source_set("uri_static") {
   deps = [
     ":gen_obj_src_uri_abc",
     ":gen_obj_src_uri_js",
-    "//foundation/arkui/napi/:ace_napi",
-    "//third_party/icu/icu4c:shared_icuuc",
   ]
 
   if (is_standard_system) {
@@ -154,10 +152,16 @@ ohos_source_set("uri_static") {
     if (target_os == "android") {
       defines = [ "ANDROID_PLATFORM" ]
     }
-    if (target_os == "ios") {
-      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
-      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
-    }
+    deps += [
+      "$plugins_root/libs/icu:icu_${target_os}",
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/securec:sec_${target_os}",
+    ]
+  } else {
+    deps += [
+      "$napi_root:ace_napi",
+      "//third_party/icu/icu4c:shared_icuuc",
+    ]
   }
 
   subsystem_name = "commonlibrary"
