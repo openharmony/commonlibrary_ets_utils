@@ -27,7 +27,7 @@ interface ConvertXML {
   ConvertXml: NativeConvertXml;
 }
 declare function requireInternal(s: string): ConvertXML;
-const convertXml = requireInternal('ConvertXML');
+const convertXml = requireInternal('convertxml');
 
 const LESS_SIGN_INDEX = 3;
 const TypeErrorCode = 401;
