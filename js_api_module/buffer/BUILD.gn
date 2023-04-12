@@ -152,8 +152,6 @@ ohos_source_set("buffer_static") {
   deps = [
     ":gen_obj_src_buffer_abc",
     ":gen_obj_src_js_buffer",
-    "//foundation/arkui/napi/:ace_napi",
-    "//third_party/icu/icu4c:shared_icuuc",
   ]
 
   configs = [ ":buffer_config" ]
@@ -172,10 +170,16 @@ ohos_source_set("buffer_static") {
     if (target_os == "android") {
       defines = [ "ANDROID_PLATFORM" ]
     }
-    if (target_os == "ios") {
-      deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
-      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
-    }
+    deps += [
+      "$plugins_root/libs/icu:icu_${target_os}",
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/securec:sec_${target_os}",
+    ]
+  } else {
+    deps += [
+      "$napi_root:ace_napi",
+      "//third_party/icu/icu4c:shared_icuuc",
+    ]
   }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
