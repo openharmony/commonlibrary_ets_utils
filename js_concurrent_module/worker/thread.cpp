@@ -21,6 +21,7 @@ Thread::Thread() : tId_() {}
 bool Thread::Start()
 {
     int ret = uv_thread_create(&tId_, [](void* arg) {
+        pthread_setname_np(pthread_self(), "WorkerThread");
         Thread* thread = reinterpret_cast<Thread*>(arg);
         thread->Run();
     }, this);
