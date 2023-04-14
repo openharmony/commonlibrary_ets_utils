@@ -103,14 +103,20 @@ namespace OHOS::xml {
         if (data) {
             std::string strEnd(reinterpret_cast<char*>(data), len);
             strEnd = strEnd.substr(0, std::strlen(strEnd.c_str()));
+            std::string cleanStr;
+            for (char c : strEnd) {
+                if (c != '\r' && c != '\n') {
+                    cleanStr += c;
+              }
+            }
             if (argc == 1) {
-                object = new XmlPullParser(strEnd, "utf-8");
+                object = new XmlPullParser(cleanStr, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
                 NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
                 NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
                 std::string strEncoding = "";
                 XmlSerializer::DealNapiStrValue(env, args[1], strEncoding);
-                object = new XmlPullParser(strEnd, strEncoding);
+                object = new XmlPullParser(cleanStr, strEncoding);
             }
         }
         napi_wrap(
