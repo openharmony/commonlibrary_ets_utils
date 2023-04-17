@@ -183,7 +183,7 @@ void Worker::PublishWorkerOverSignal()
 
 void Worker::ExecuteInThread(const void* data)
 {
-    StartTrace(HITRACE_TAG_COMMONLIBRARY, "Before ReleaseWorkerThreadContent");
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteInThread Before ReleaseWorkerThreadContent");
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
@@ -230,7 +230,7 @@ void Worker::ExecuteInThread(const void* data)
     }
     FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     worker->ReleaseWorkerThreadContent();
-    StartTrace(HITRACE_TAG_COMMONLIBRARY, "After ReleaseWorkerThreadContent");
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteInThread After ReleaseWorkerThreadContent");
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->HostIsStop()) {
         CloseHelp::DeletePointer(worker, false);

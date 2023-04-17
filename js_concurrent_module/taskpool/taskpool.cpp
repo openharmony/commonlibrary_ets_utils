@@ -67,7 +67,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
-    StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteToWorkerEnd");
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, "InitTaskRunner ExecuteToWorkerEnd");
     // get the taskpool instance
     TaskManager::GetInstance().InitTaskRunner(env);
     FinishTrace(HITRACE_TAG_COMMONLIBRARY);
