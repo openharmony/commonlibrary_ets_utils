@@ -21,7 +21,7 @@
 namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
 
-thread_local std::map<std::string, uint64_t> Console::timerMap;
+thread_local std::map<std::string, int64_t> Console::timerMap;
 thread_local std::map<std::string, uint32_t> Console::counterMap;
 thread_local std::string Console::groupIndent;
 constexpr size_t GROUPINDETATIONWIDTH = 2; // 2 : indentation
@@ -672,7 +672,7 @@ napi_value Console::Time(napi_env env, napi_callback_info info)
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, info);
     std::string timerName = GetTimerOrCounterName(env, info, argc);
     if (timerMap.find(timerName) == timerMap.end()) {
-        timerMap[timerName] = std::chrono::duration_cast<std::chrono::milliseconds>
+        timerMap[timerName] = std::chrono::duration_cast<std::chrono::microseconds>
                               (std::chrono::high_resolution_clock::now().time_since_epoch()).count();
     } else {
         HILOG_WARN("Timer %{public}s already exists,  please check Timer Name", timerName.c_str());
@@ -686,9 +686,9 @@ napi_value Console::TimeLog(napi_env env, napi_callback_info info)
     std::string timerName = GetTimerOrCounterName(env, info, argc);
     if (timerMap.find(timerName) != timerMap.end()) {
         // get time in ms
-        uint64_t endTime = std::chrono::duration_cast<std::chrono::milliseconds>
-                           (std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-        uint64_t ms = endTime - timerMap[timerName];
+        int64_t endTime = std::chrono::duration_cast<std::chrono::microseconds>
+                          (std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        double ms = static_cast<uint64_t>(endTime - timerMap[timerName]) / 1000.0;
         std::string content = MakeLogContent(env, info, argc, 1, false); // startInx = 1, format = false;
         PrintTime(timerName, ms, content);
     } else {
@@ -704,9 +704,9 @@ napi_value Console::TimeEnd(napi_env env, napi_callback_info info)
     std::string timerName = GetTimerOrCounterName(env, info, argc);
     if (timerMap.find(timerName) != timerMap.end()) {
         // get time in ms
-        uint64_t endTime = std::chrono::duration_cast<std::chrono::milliseconds>
-                           (std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-        uint64_t ms = endTime - timerMap[timerName];
+        int64_t endTime = std::chrono::duration_cast<std::chrono::microseconds>
+                          (std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        double ms = static_cast<uint64_t>(endTime - timerMap[timerName]) / 1000.0;
         PrintTime(timerName, ms, "");
         timerMap.erase(timerName);
     } else {

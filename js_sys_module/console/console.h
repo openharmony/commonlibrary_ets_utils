@@ -69,7 +69,7 @@ private:
     static std::string ArrayJoin(std::vector<std::string> rowDivider, const std::string& tableChars);
     static std::string GetStringAndStringWidth(napi_env env, napi_value element, size_t& stringLen);
 
-    static thread_local std::map<std::string, uint64_t> timerMap;
+    static thread_local std::map<std::string, int64_t> timerMap;
     static thread_local std::map<std::string, uint32_t> counterMap;
     static thread_local std::string groupIndent;
 };
