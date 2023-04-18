@@ -346,14 +346,11 @@ namespace OHOS::Util {
         size_t tempArgc = 0;
         napi_value thisVar = nullptr;
         napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
-        if (tempArgc == 1) {
+        if (tempArgc == 0) {
+            NAPI_CALL(env, napi_new_instance(env, constructor, tempArgc, nullptr, &objTextDecoder));
+        } else if (tempArgc == 1) {
             napi_value argv = nullptr;
             napi_get_cb_info(env, info, &tempArgc, &argv, nullptr, &data);
-            napi_valuetype valuetype;
-            napi_typeof(env, argv, &valuetype);
-            if (valuetype != napi_string) {
-                return ThrowError(env, "The type of Parameter must be string.");
-            }
             NAPI_CALL(env, napi_new_instance(env, constructor, tempArgc, &argv, &objTextDecoder));
         } else if (tempArgc == 2) { // 2:The number of parameters is 2.
             napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2.
@@ -383,16 +380,24 @@ namespace OHOS::Util {
         char *type = nullptr;
         size_t typeLen = 0;
         std::vector<int> paraVec(2, 0); // 2: Specifies the size of the container to be applied for.
-        if (tempArgc == 1) {
+        if (tempArgc == 0) {
+        } else if (tempArgc == 1) {
             argc = 1;
             napi_value argv = nullptr;
             napi_get_cb_info(env, info, &argc, &argv, nullptr, &data);
-            // first para
-            napi_get_value_string_utf8(env, argv, nullptr, 0, &typeLen);
-            if (typeLen > 0) {
-                type = ApplyMemory(typeLen);
+            napi_valuetype valuetype;
+            napi_typeof(env, argv, &valuetype);
+            if (valuetype == napi_string) {
+                napi_get_value_string_utf8(env, argv, nullptr, 0, &typeLen);
+                if (typeLen > 0) {
+                    type = ApplyMemory(typeLen);
+                }
+                napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
+            } else if (valuetype == napi_object) {
+                GetSecPara(env, argv, paraVec);
+            } else {
+                return ThrowError(env, "The type of Parameter must be string or object.");
             }
-            napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
             argc = 2; // 2: The number of parameters is 2.
             napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
