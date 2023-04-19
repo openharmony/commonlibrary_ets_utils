@@ -26,7 +26,7 @@ if (arkPritvate !== undefined) {
 }
 if (flag || fastVector === undefined) {
   class HandlerVector<T> {
-    private isOutBounds(obj: Vector<T>, prop: any): void {
+    private isOutBounds(obj: Vector<T>, prop: string): void {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
         if (index < 0 || index >= obj.length) {
@@ -34,7 +34,7 @@ if (flag || fastVector === undefined) {
         }
       }
     }
-    get(obj: Vector<T>, prop: any): T {
+    get(obj: Vector<T>, prop: string): T {
       if (typeof prop === 'symbol') {
         return obj[prop];
       }
@@ -57,7 +57,7 @@ if (flag || fastVector === undefined) {
       }
       return false;
     }
-    deleteProperty(obj: Vector<T>, prop: any): boolean {
+    deleteProperty(obj: Vector<T>, prop: string): boolean {
       this.isOutBounds(obj, prop);
       let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
@@ -66,7 +66,7 @@ if (flag || fastVector === undefined) {
       }
       return false;
     }
-    has(obj: Vector<T>, prop: any): boolean {
+    has(obj: Vector<T>, prop: T): boolean {
       return obj.has(prop);
     }
     ownKeys(obj: Vector<T>): Array<string> {
@@ -79,13 +79,13 @@ if (flag || fastVector === undefined) {
     defineProperty(): boolean {
       return true;
     }
-    getOwnPropertyDescriptor(obj: Vector<T>, prop: any): Object {
+    getOwnPropertyDescriptor(obj: Vector<T>, prop: string): Object {
       this.isOutBounds(obj, prop);
       let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
-      return;
+      return Object;
     }
     setPrototypeOf(): T {
       throw new Error(`Can't setPrototype on Vector Object`);
@@ -99,7 +99,7 @@ if (flag || fastVector === undefined) {
   }
   class Vector<T> {
     private elementNum: number = 0;
-    private capacity: number = 10;
+    private capacity: number = 10; // 10 : means number
     constructor() {
       return new Proxy(this, new HandlerVector());
     }
@@ -279,17 +279,17 @@ if (flag || fastVector === undefined) {
         }
       }
     }
-    private asciSort(curElement: any, nextElement: any): boolean {
+    private asciSort(curElement: string, nextElement: string): boolean {
       if ((Object.prototype.toString.call(curElement) === '[object String]' ||
         Object.prototype.toString.call(curElement) === '[object Number]') &&
         (Object.prototype.toString.call(nextElement) === '[object String]' ||
-        Object.prototype.toString.call(nextElement) === '[object Number]')) {
+          Object.prototype.toString.call(nextElement) === '[object Number]')) {
         curElement = curElement.toString();
         nextElement = nextElement.toString();
         if (curElement > nextElement) {
-          return true
+          return true;
         }
-        return false
+        return false;
       }
       return false;
     }
@@ -343,7 +343,7 @@ if (flag || fastVector === undefined) {
       return this.elementNum === this.capacity;
     }
     private resize(): void {
-      this.capacity = 2 * this.capacity;
+      this.capacity = 2 * this.capacity; // 2 : means number
     }
     increaseCapacityTo(newCapacity: number): void {
       if (newCapacity >= this.elementNum) {
@@ -360,7 +360,7 @@ if (flag || fastVector === undefined) {
       let count: number = 0;
       let vector: Vector<T> = this;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
           done = count >= vector.elementNum;

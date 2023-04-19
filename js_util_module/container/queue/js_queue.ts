@@ -26,15 +26,15 @@ if (arkPritvate !== undefined) {
 }
 declare function requireNapi(s: string): any;
 if (flag || fastQueue === undefined) {
-  const {ErrorUtil} = requireNapi('util.struct');
+  const { errorUtil } = requireNapi('util.struct');
   class HandlerQueue<T> {
-    private isOutBounds(obj: Queue<T>, prop: any): void {
+    private isOutBounds(obj: Queue<T>, prop: string): void {
       let index: number = Number.parseInt(prop);
       if (Number.isInteger(index)) {
-        ErrorUtil.checkRangeError("index", index, 0, obj.length);
+        errorUtil.checkRangeError('index', index, 0, obj.length);
       }
     }
-    get(obj: Queue<T>, prop: any): T {
+    get(obj: Queue<T>, prop: string): T {
       if (typeof prop === 'symbol') {
         return obj[prop];
       }
@@ -64,13 +64,13 @@ if (flag || fastQueue === undefined) {
     defineProperty(): boolean {
       return true;
     }
-    getOwnPropertyDescriptor(obj: Queue<T>, prop: any): Object {
+    getOwnPropertyDescriptor(obj: Queue<T>, prop: string): Object {
       this.isOutBounds(obj, prop);
       let index: number = Number.parseInt(prop);
       if (index >= 0 && index < obj.length && Number.isInteger(index)) {
         return Object.getOwnPropertyDescriptor(obj, prop);
       }
-      return
+      return Object;
     }
     setPrototypeOf(): T {
       throw new Error(`Can't setPrototype on Queue Object`);
@@ -87,7 +87,7 @@ if (flag || fastQueue === undefined) {
     private capacity: number;
     private rear: number;
     constructor() {
-      ErrorUtil.checkNewTargetIsNullError("Queue", !new.target);
+      errorUtil.checkNewTargetIsNullError('Queue', !new.target);
       this.front = 0;
       this.capacity = 8;
       this.rear = 0;
@@ -97,7 +97,7 @@ if (flag || fastQueue === undefined) {
       return this.rear - this.front;
     }
     add(element: T): boolean {
-      ErrorUtil.checkBindError("add", Queue, this);
+      errorUtil.checkBindError('add', Queue, this);
       if (this.isFull()) {
         this.increaseCapacity();
       }
@@ -106,14 +106,14 @@ if (flag || fastQueue === undefined) {
       return true;
     }
     getFirst(): T {
-      ErrorUtil.checkBindError("getFirst", Queue, this);
+      errorUtil.checkBindError('getFirst', Queue, this);
       if (this.isEmpty()) {
         return undefined;
       }
       return this[this.front];
     }
     pop(): T {
-      ErrorUtil.checkBindError("pop", Queue, this);
+      errorUtil.checkBindError('pop', Queue, this);
       if (this.isEmpty()) {
         return undefined;
       }
@@ -124,8 +124,8 @@ if (flag || fastQueue === undefined) {
     }
     forEach(callbackfn: (value: T, index?: number, queue?: Queue<T>) => void,
       thisArg?: Object): void {
-      ErrorUtil.checkBindError("forEach", Queue, this);
-      ErrorUtil.checkTypeError("callbackfn", "callable", callbackfn);
+      errorUtil.checkBindError('forEach', Queue, this);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
       let k: number = 0;
       let i: number = this.front;
       if (this.isEmpty()) {
@@ -148,11 +148,11 @@ if (flag || fastQueue === undefined) {
       return this.length === 0;
     }
     [Symbol.iterator](): IterableIterator<T> {
-      ErrorUtil.checkBindError("Symbol.iterator", Queue, this);
+      errorUtil.checkBindError('Symbol.iterator', Queue, this);
       let count: number = this.front;
       let queue: Queue<T> = this;
       return {
-        next: function () {
+        next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
           done = count === queue.rear;
@@ -166,7 +166,7 @@ if (flag || fastQueue === undefined) {
       };
     }
     private increaseCapacity(): void {
-      this.capacity = 2 * this.capacity;
+      this.capacity = 2 * this.capacity; // 2 : means number
     }
   }
   Object.freeze(Queue);
