@@ -16,11 +16,15 @@
 #ifndef PROCESS_JS_CHILDPROCESS_H_
 #define PROCESS_JS_CHILDPROCESS_H_
 
+#include <cerrno>
+#include <semaphore.h>
 #include <string>
 #include <sys/types.h>
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "utils/log.h"
+#include "securec.h"
 namespace OHOS::JsSysModule::Process {
     struct WaitInfo {
         napi_async_work worker = nullptr;
@@ -29,6 +33,19 @@ namespace OHOS::JsSysModule::Process {
     };
 
     struct StdInfo {
+        StdInfo()
+        {
+            if (sem_init(&sem, 0, 0) != EOK) {
+                HILOG_ERROR("sem_init err, errno =  %{public}d", errno);
+            }
+        }
+        ~StdInfo()
+        {
+            if (sem_destroy(&sem) != EOK) {
+                HILOG_ERROR("sem_destroy err, errno =  %{public}d", errno);
+            }
+        }
+        sem_t sem;
         napi_async_work worker = nullptr;
         napi_deferred deferred = nullptr;
         napi_value promise = nullptr;
@@ -46,6 +63,22 @@ namespace OHOS::JsSysModule::Process {
         int32_t killSignal = 0;
         int64_t maxBuffer = 0;
         pid_t pid = 0;
+    };
+
+    class SemPostScope {
+        public:
+            explicit SemPostScope(sem_t *sem)
+            {
+                sem_ = sem;
+            }
+            ~SemPostScope()
+            {
+                if (sem_post(sem_) != EOK) {
+                    HILOG_ERROR("sem_post err, errno =  %{public}d", errno);
+                }
+            }
+        private:
+            sem_t *sem_;
     };
 
     class ChildProcess {

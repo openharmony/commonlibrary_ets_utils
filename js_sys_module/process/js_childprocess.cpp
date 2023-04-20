@@ -23,10 +23,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
-#include "securec.h"
-#include "utils/log.h"
-
 namespace OHOS::JsSysModule::Process {
     constexpr int MAXSIZE = 1024;
     constexpr int TIME_EXCHANGE = 1000;
@@ -155,6 +151,12 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_create_promise(env, &stdOutInfo_->deferred, &stdOutInfo_->promise));
         void* data = nullptr;
         napi_value arrayBuffer = nullptr;
+        if (sem_wait(&(stdOutInfo_->sem)) != EOK) {
+            HILOG_ERROR("sem_wait err, errno = %{public}d", errno);
+            napi_value res = nullptr;
+            NAPI_CALL(env, napi_get_undefined(env, &res));
+            return res;
+        }
         size_t bufferSize = stdOutInfo_->stdData.size() + 1;
         NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdOutInfo_->stdData.c_str()),
@@ -165,7 +167,6 @@ namespace OHOS::JsSysModule::Process {
             NAPI_CALL(env, napi_get_undefined(env, &res));
             return res;
         }
-
         napi_value result = nullptr;
         NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
         NAPI_CALL(env, napi_resolve_deferred(env, stdOutInfo_->deferred, result));
@@ -183,6 +184,12 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_create_promise(env, &stdErrInfo_->deferred, &stdErrInfo_->promise));
         void* data = nullptr;
         napi_value arrayBuffer = nullptr;
+        if (sem_wait(&(stdErrInfo_->sem)) != EOK) {
+            HILOG_ERROR("sem_wait err, errno = %{public}d", errno);
+            napi_value res = nullptr;
+            NAPI_CALL(env, napi_get_undefined(env, &res));
+            return res;
+        }
         size_t bufferSize = stdErrInfo_->stdData.size() + 1;
         NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdErrInfo_->stdData.c_str()),
@@ -193,7 +200,6 @@ namespace OHOS::JsSysModule::Process {
             NAPI_CALL(env, napi_get_undefined(env, &res));
             return res;
         }
-
         napi_value result = nullptr;
         NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
         NAPI_CALL(env, napi_resolve_deferred(env, stdErrInfo_->deferred, result));
@@ -280,6 +286,7 @@ namespace OHOS::JsSysModule::Process {
     {
         auto stdOutInfo = reinterpret_cast<StdInfo*>(data);
         char childStdout[MAXSIZE] = {0};
+        SemPostScope semScpoe(&(stdOutInfo->sem));
         if (stdOutInfo->isNeedRun == nullptr) {
             return;
         }
@@ -307,14 +314,13 @@ namespace OHOS::JsSysModule::Process {
     {
         auto stdOutInfo = reinterpret_cast<StdInfo*>(buffer);
         napi_delete_async_work(env, stdOutInfo->worker);
-        delete stdOutInfo;
-        stdOutInfo = nullptr;
     }
 
     void ChildProcess::ReadStdErr(napi_env env, void* data)
     {
         auto stdErrInfo = reinterpret_cast<StdInfo*>(data);
         char childStderr[MAXSIZE] = {0};
+        SemPostScope semScpoe(&(stdErrInfo->sem));
         if (stdErrInfo->isNeedRun == nullptr) {
             return;
         }
@@ -342,8 +348,6 @@ namespace OHOS::JsSysModule::Process {
     {
         auto stdErrInfo = reinterpret_cast<StdInfo*>(buffer);
         napi_delete_async_work(env, stdErrInfo->worker);
-        delete stdErrInfo;
-        stdErrInfo = nullptr;
     }
 
     int ChildProcess::GetValidSignal(napi_env env, const napi_value signo)
@@ -484,5 +488,13 @@ namespace OHOS::JsSysModule::Process {
             waitpid(optionsInfo_->pid, &status, 0);
         }
         isNeedRun_ = false;
+        if (stdOutInfo_ != nullptr) {
+            delete stdOutInfo_;
+            stdOutInfo_ = nullptr;
+        }
+        if (stdErrInfo_ != nullptr) {
+            delete stdErrInfo_;
+            stdErrInfo_ = nullptr;
+        }
     }
 } // namespace OHOS::JsSysModule::Process

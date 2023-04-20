@@ -1014,6 +1014,8 @@ std::map<SYSArgUnix, SYSArgMacOS> sysconfig_map = {
         NAPI_CALL(env, napi_create_function(env, cbName.c_str(), cbName.size(), CheckUnhandleRejections,
                                              nullptr, &checkcb));
         NAPI_CALL(env, napi_create_reference(env, checkcb, 1, &checkUnhandleRejectionsRef));
+        NAPI_CALL(env, napi_set_promise_rejection_callback(env,
+                  unHandleRejectionCallbackRef, checkUnhandleRejectionsRef));
         napi_value res = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &res));
         return res;
