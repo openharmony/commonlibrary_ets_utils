@@ -18,6 +18,11 @@
 #include "napi/native_node_api.h"
 #include "utils/log.h"
 #include "js_url.h"
+#include <regex>
+#include <sstream>
+#include "securec.h"
+#include "unicode/stringpiece.h"
+#include "unicode/unistr.h"
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -57,11 +62,129 @@ napi_status DealNapiStrValue(napi_env env, const napi_value napiStr, std::string
     return status;
 }
 
-napi_value StrToNapiValue(napi_env env, std::string result)
+napi_value StrToNapiValue(napi_env env, const std::string &result)
 {
     napi_value output = nullptr;
     napi_create_string_utf8(env, result.c_str(), result.size(), &output);
     return output;
+}
+
+bool IsEscapeRange(const char ch)
+{
+    if ((ch > 0 && ch < '*') || (ch > '*' && ch < '-') || (ch == '/') ||
+        (ch > '9' && ch < 'A') || (ch > 'Z' && ch < '_') || (ch == '`') || (ch > 'z')) {
+        return true;
+    }
+    return false;
+}
+
+std::string ReviseStr(std::string &str, std::string *reviseChar)
+{
+    icu::StringPiece sp(str.c_str());
+    icu::UnicodeString wstr = icu::UnicodeString::fromUTF8(sp);
+    const size_t lenStr = static_cast<size_t>(wstr.length());
+    if (lenStr == 0) {
+        return "";
+    }
+    std::string output = "";
+    size_t numOfAscii = 128; // 128:Number of ASCII characters
+    size_t i = 0;
+    for (; i < lenStr; i++) {
+        auto charaEncode = static_cast<size_t>(wstr[i]);
+        if (charaEncode < numOfAscii) {
+            // 2:Defines the escape range of ASCII characters
+            if (IsEscapeRange(charaEncode)) {
+                output += reviseChar[charaEncode];
+            } else {
+                output += str.substr(i, 1);
+            }
+        } else if (charaEncode <= 0x000007FF) { // Convert the Unicode code into two bytes
+            std::string output1 = reviseChar[0x000000C0 | (charaEncode / 64)]; // 64:the first byte
+            std::string output2 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
+            output += output1 + output2;
+        } else if ((charaEncode >= 0x0000E000) || (charaEncode <= 0x0000D7FF)) {
+            std::string output1 = reviseChar[0x000000E0 | (charaEncode / 4096)]; // 4096:Acquisition method
+            std::string output2 = reviseChar[numOfAscii | ((charaEncode / 64) & 0x0000003F)]; // 64:second byte
+            std::string output3 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
+            output += output1 + output2 + output3;
+        } else {
+            const size_t charaEncode1 = static_cast<size_t>(str[++i]) & 1023; // 1023:Convert codes
+            charaEncode = 65536 + (((charaEncode & 1023) << 10) | charaEncode1); // 65536:Specific transcoding
+            std::string output1 = reviseChar[0x000000F0 | (charaEncode / 262144)]; // 262144:the first byte
+            std::string output2 = reviseChar[numOfAscii | ((charaEncode / 4096) & 0x0000003F)]; // 4096:second byte
+            std::string output3 = reviseChar[numOfAscii | ((charaEncode / 64) & 0x0000003F)]; // 64:third byte
+            std::string output4 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
+            output += output1 + output2 + output3 + output4;
+        }
+    }
+    return output;
+}
+
+napi_value ToString(napi_env env, std::vector<std::string> &searchParams)
+{
+    std::string output = "";
+    std::string reviseChar[256] = {""}; // 256:Array length
+    for (size_t i = 0; i < 256; ++i) { // 256:Array length
+        size_t j = i;
+        std::stringstream ioss;
+        std::string str1 = "";
+        ioss << std::hex << j;
+        ioss >> str1;
+        transform(str1.begin(), str1.end(), str1.begin(), ::toupper);
+        if (i < 16) { // 16:Total number of 0-F
+            reviseChar[i] = '%' + ("0" + str1);
+        } else {
+            reviseChar[i] = '%' + str1;
+        }
+    }
+    reviseChar[0x20] = "+"; // 0x20:ASCII value of spaces
+    const size_t lenStr = searchParams.size();
+    napi_value result = nullptr;
+    if (lenStr == 0) {
+        napi_create_string_utf8(env, output.c_str(), output.size(), &result);
+        return result;
+    }
+    std::string firstStrKey = ReviseStr(searchParams[0], reviseChar);
+    std::string firstStrValue = ReviseStr(searchParams[1], reviseChar);
+    output = firstStrKey + "=" + firstStrValue;
+    if (lenStr % 2 == 0) { // 2:Divisible by 2
+        size_t pos = 2; // 2:Initial Position
+        for (; pos < lenStr; pos += 2) { // 2:Searching for the number and number of keys and values
+            std::string strKey = ReviseStr(searchParams[pos], reviseChar);
+            std::string strValue = ReviseStr(searchParams[pos + 1], reviseChar);
+            output += +"&" + strKey + "=" + strValue;
+        }
+    }
+    napi_create_string_utf8(env, output.c_str(), output.size(), &result);
+    return result;
+}
+
+std::vector<std::string> GetParamsStrig(napi_env env, const napi_value tempStr)
+{
+    std::vector<std::string> vec;
+    size_t arraySize = 0;
+    uint32_t length = 0;
+    napi_get_array_length(env, tempStr, &length);
+    napi_value napiStr = nullptr;
+    for (size_t i = 0; i < length; i++) {
+        napi_get_element(env, tempStr, i, &napiStr);
+        if (napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize) != napi_ok) {
+            HILOG_ERROR("can not get napiStr size");
+            return vec;
+        }
+        if (arraySize > 0) {
+            std::string cstr = "";
+            cstr.resize(arraySize);
+            if (napi_get_value_string_utf8(env, napiStr, cstr.data(), arraySize + 1, &arraySize) != napi_ok) {
+                HILOG_ERROR("can not get napiStr size");
+                return vec;
+            }
+            vec.push_back(cstr);
+        } else {
+            vec.push_back("");
+        }
+    }
+    return vec;
 }
 
 HWTEST_F(NativeEngineTest, testUrlConstructs001, testing::ext::TestSize.Level0)
@@ -792,7 +915,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsAppend001, testing::ext::TestSize.
     napi_value input1 = StrToNapiValue(env, "ma");
     napi_value input2 = StrToNapiValue(env, "jk");
     params.Append(env, input1, input2);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "ma=jk");
 }
 
@@ -804,7 +929,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsAppend002, testing::ext::TestSize.
     napi_value input1 = StrToNapiValue(env, "ma 大");
     napi_value input2 = StrToNapiValue(env, "jk￥");
     params.Append(env, input1, input2);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "ma+%E5%A4%A7=jk%EF%BF%A5");
 }
 
@@ -816,7 +943,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsAppend003, testing::ext::TestSize.
     napi_value input1 = StrToNapiValue(env, "foo~!@#$%^&*()_+-=");
     napi_value input2 = StrToNapiValue(env, "jk");
     params.Append(env, input1, input2);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "foo%7E%21%40%23%24%25%5E%26*%28%29_%2B-%3D=jk");
 }
 
@@ -829,7 +958,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsDelete001, testing::ext::TestSize.
     napi_value input2 = StrToNapiValue(env, "jk");
     params.Append(env, input1, input2);
     params.Delete(env, input1);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "");
 }
 
@@ -845,7 +976,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsDelete002, testing::ext::TestSize.
     napi_value input4 = StrToNapiValue(env, "jk");
     params.Append(env, input3, input4);
     params.Delete(env, input1);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "ma=jk");
 }
 
@@ -862,7 +995,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsDelete003, testing::ext::TestSize.
     params.Append(env, input3, input4);
     params.Delete(env, input1);
     params.Delete(env, input3);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "");
 }
 
@@ -1008,7 +1143,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsSet001, testing::ext::TestSize.Lev
     params.Append(env, input1, input2);
     napi_value input3 = StrToNapiValue(env, "aa");
     params.Set(env, input1, input3);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "ma=aa");
 }
 
@@ -1021,7 +1158,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsSet002, testing::ext::TestSize.Lev
     napi_value input2 = StrToNapiValue(env, "aa");
     params.Append(env, input1, input2);
     params.Set(env, input1, input2);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "ma1=aa");
 }
 
@@ -1036,7 +1175,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsSet003, testing::ext::TestSize.Lev
     napi_value input3 = StrToNapiValue(env, "ma1");
     napi_value input4 = StrToNapiValue(env, "aa");
     params.Set(env, input3, input4);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "ma=jk&ma1=aa");
 }
 
@@ -1052,7 +1193,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsSort001, testing::ext::TestSize.Le
     napi_value input4 = StrToNapiValue(env, "jk1");
     params.Append(env, input3, input4);
     params.Sort();
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "a=jk1&ma=jk");
 }
 
@@ -1068,7 +1211,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsSort002, testing::ext::TestSize.Le
     napi_value input4 = StrToNapiValue(env, "jk1");
     params.Append(env, input3, input4);
     params.Sort();
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "foo%7E%21%40%23%24%25%5E%26*%28%29_%2B-%3D=jk1&ma=jk");
 }
 
@@ -1087,7 +1232,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsSort003, testing::ext::TestSize.Le
     napi_value input6 = StrToNapiValue(env, "jk2");
     params.Append(env, input5, input6);
     params.Sort();
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "a=jk2&foo%7E%21%40%23%24%25%5E%26*%28%29_%2B-%3D=jk1&ma=jk");
 }
 
@@ -1099,7 +1246,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsToString001, testing::ext::TestSiz
     napi_value input1 = StrToNapiValue(env, "1 12");
     napi_value input2 = StrToNapiValue(env, "jk");
     params.Append(env, input1, input2);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "1+12=jk");
 }
 
@@ -1111,7 +1260,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsToString002, testing::ext::TestSiz
     napi_value input1 = StrToNapiValue(env, "￥=)");
     napi_value input2 = StrToNapiValue(env, "jk");
     params.Append(env, input1, input2);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "%EF%BF%A5%3D%29=jk");
 }
 
@@ -1123,7 +1274,9 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsToString003, testing::ext::TestSiz
     napi_value input1 = StrToNapiValue(env, "foo~!@#$%^&*()_+-=");
     napi_value input2 = StrToNapiValue(env, "jk");
     params.Append(env, input1, input2);
-    DealNapiStrValue(env, params.ToString(env), output);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "foo%7E%21%40%23%24%25%5E%26*%28%29_%2B-%3D=jk");
 }
 
