@@ -142,7 +142,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     // 1. check args
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        napi_throw_error(env, nullptr, "callback must be a function. received undefined");
+        napi_throw_error(env, nullptr, "StartTimeoutOrInterval, callback info is nullptr.");
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];
@@ -150,8 +150,8 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
     if (!Helper::NapiHelper::IsCallable(env, argv[0])) {
-        napi_throw_error(env, nullptr, "callback must be a function.");
-        return nullptr;
+        HILOG_ERROR( "Set callback timer failed with invalid parameter.");
+        return Helper::NapiHelper::GetUndefinedValue(env);
     }
     int32_t timeout = 0;
     if (argc > 1) {
