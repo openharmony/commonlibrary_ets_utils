@@ -660,18 +660,6 @@ namespace OHOS::Url {
         return nullptr;
     }
 
-    static napi_value ToString(napi_env env, napi_callback_info info)
-    {
-        napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args = nullptr;
-        napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams *object = nullptr;
-        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        napi_value result = object->ToString(env);
-        return result;
-    }
-
     static napi_value IterByKeys(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -699,12 +687,14 @@ namespace OHOS::Url {
     static void IsPlusSign(size_t &strLastPos, const size_t &iteaor, std::string &buf, std::string &stringParm)
     {
         if (strLastPos < iteaor) {
-            buf += stringParm.substr(strLastPos, iteaor - strLastPos);
+            buf += stringParm.substr(strLastPos, iteaor - strLastPos + 1);
+        } else {
+            buf += "";
         }
-        buf += "";
         strLastPos = iteaor + 1;
         return;
     }
+
     static void IsEqualSign(size_t &strLastPos, const size_t &iteaor,
         std::string &buf, std::string &stringParm, std::vector<std::string> &seachParasVec)
     {
@@ -828,7 +818,6 @@ namespace OHOS::Url {
             DECLARE_NAPI_FUNCTION("has", IsHas),
             DECLARE_NAPI_FUNCTION("set", Set),
             DECLARE_NAPI_FUNCTION("sort", Sort),
-            DECLARE_NAPI_FUNCTION("toString", ToString),
             DECLARE_NAPI_FUNCTION("keys", IterByKeys),
             DECLARE_NAPI_FUNCTION("values", IterByValues),
             DECLARE_NAPI_FUNCTION("get", Get),
@@ -856,7 +845,6 @@ namespace OHOS::Url {
             DECLARE_NAPI_FUNCTION("has", IsHas),
             DECLARE_NAPI_FUNCTION("set", Set),
             DECLARE_NAPI_FUNCTION("sort", Sort),
-            DECLARE_NAPI_FUNCTION("toString", ToString),
             DECLARE_NAPI_FUNCTION("keys", IterByKeys),
             DECLARE_NAPI_FUNCTION("values", IterByValues),
             DECLARE_NAPI_FUNCTION("get", Get),

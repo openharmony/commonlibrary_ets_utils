@@ -318,13 +318,6 @@ namespace OHOS::Url {
         void Sort();
 
         /**
-         * Returns a query string suitable for use in a URL.
-         *
-         * @param env NAPI environment parameters.
-         */
-        napi_value ToString(napi_env env);
-
-        /**
          * Returns an iterator allowing to go through all keys contained in this object.
          *
          * @param env NAPI environment parameters.
