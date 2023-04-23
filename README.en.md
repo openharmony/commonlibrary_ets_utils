@@ -19,7 +19,7 @@
         -   [3.3.Illustrate](#3.3.Illustrate)
             -   [3.3.1.Interface Description](#3.3.1.Interface Description)
             -   [3.3.2.Instructions for use](#3.3.2.Instructions for use)
-    -   [4.js_worker_module submodule](#4.js_worker_module submodule)
+    -   [4.js_concurrent_module submodule](#4.js_concurrent_module submodule)
         -   [4.1.Introduction](#4.1.Introduction)
         -   [4.2.Interface description](#4.2.Interface description)
             -   [4.2.1.Worker object description](#4.2.1.Worker object description)
@@ -1849,14 +1849,14 @@ getSystemConfig(){
 }
 ```
 
-## 4.js_worker_module submodule
+## 4.js_concurrent_module submodule
 
 ### 4.1.Introduction
 
 Worker enables JS to have the ability of multithreading, and completes the communication between worker thread and host thread through PostMessage.
 
 ### 4.2.Interface description
-For interface implementation, see: js_worker_module/jsapi/worker
+For interface implementation, see: js_concurrent_module/jsapi/worker
 
 #### 4.2.1.Worker object description
 
