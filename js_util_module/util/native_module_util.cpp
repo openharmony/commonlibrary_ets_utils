@@ -380,8 +380,7 @@ namespace OHOS::Util {
         char *type = nullptr;
         size_t typeLen = 0;
         std::vector<int> paraVec(2, 0); // 2: Specifies the size of the container to be applied for.
-        if (tempArgc == 0) {
-        } else if (tempArgc == 1) {
+        if (tempArgc == 1) {
             argc = 1;
             napi_value argv = nullptr;
             napi_get_cb_info(env, info, &argc, &argv, nullptr, &data);
