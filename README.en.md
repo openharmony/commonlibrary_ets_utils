@@ -1988,11 +1988,11 @@ var myVar = setTimeout(callback, 1000);
 clearTimeout(myVar);
 ```
 
-## js_worker_module
+## js_concurrent_module
 
 ### Introduction
 
-The js_worker_module provides the worker thread, which communicates with the host thread through **postMessage**.
+The js_concurrent_module provides the worker thread, which communicates with the host thread through **postMessage**.
 
 ### Available APIs
 For details about the API implementation, see js_worker_module/worker.
@@ -2427,6 +2427,6 @@ parentPort.onmessageerror = function(e) {
 
 **js_util_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_util_module/mozilla_docs.txt).
 
-**js_worker_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_worker_module/mozilla_docs.txt).
+**js_concurrent_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_concurrent_module/mozilla_docs.txt).
 
 **js_sys_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_sys_module/mozilla_docs.txt).
