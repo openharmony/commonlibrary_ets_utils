@@ -16,23 +16,22 @@
 #include "task_queue.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-void TaskQueue::EnqueueTask(std::unique_ptr<Task> task)
+void ExecuteQueue::EnqueueExecuteId(uint32_t executeId)
 {
-    tasks_.push(std::move(task));
+    tasks_.push(executeId);
 }
 
-std::unique_ptr<Task> TaskQueue::DequeueTask()
+uint32_t ExecuteQueue::DequeueExecuteId()
 {
     if (!tasks_.empty()) {
-        std::unique_ptr<Task> task = std::move(tasks_.front());
+        uint32_t executeId = tasks_.front();
         tasks_.pop();
-        return task;
+        return executeId;
     }
-
-    return nullptr;
+    return 0;
 }
 
-bool TaskQueue::IsEmpty() const
+bool ExecuteQueue::IsEmpty() const
 {
     return tasks_.empty();
 }
