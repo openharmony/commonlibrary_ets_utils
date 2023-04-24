@@ -47,10 +47,10 @@ bool Timer::RegisterTime(napi_env env)
         return false;
     }
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_WRITABLE_FUNCTION("setTimeout", SetTimeout),
-        DECLARE_NAPI_WRITABLE_FUNCTION("setInterval", SetInterval),
-        DECLARE_NAPI_WRITABLE_FUNCTION("clearTimeout", ClearTimer),
-        DECLARE_NAPI_WRITABLE_FUNCTION("clearInterval", ClearTimer)
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("setTimeout", SetTimeout),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("setInterval", SetInterval),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearTimeout", ClearTimer),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearInterval", ClearTimer)
     };
     napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
     napi_status status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
