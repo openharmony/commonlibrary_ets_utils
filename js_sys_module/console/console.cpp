@@ -765,25 +765,25 @@ napi_value Console::Assert(napi_env env, napi_callback_info info)
 void Console::InitConsoleModule(napi_env env)
 {
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_WRITABLE_FUNCTION("log", ConsoleLog<LogLevel::INFO>),
-        DECLARE_NAPI_WRITABLE_FUNCTION("debug", ConsoleLog<LogLevel::DEBUG>),
-        DECLARE_NAPI_WRITABLE_FUNCTION("info", ConsoleLog<LogLevel::INFO>),
-        DECLARE_NAPI_WRITABLE_FUNCTION("warn", ConsoleLog<LogLevel::WARN>),
-        DECLARE_NAPI_WRITABLE_FUNCTION("error", ConsoleLog<LogLevel::ERROR>),
-        DECLARE_NAPI_WRITABLE_FUNCTION("fatal", ConsoleLog<LogLevel::FATAL>),
-        DECLARE_NAPI_WRITABLE_FUNCTION("group", Group),
-        DECLARE_NAPI_WRITABLE_FUNCTION("groupCollapsed", Group),
-        DECLARE_NAPI_WRITABLE_FUNCTION("groupEnd", GroupEnd),
-        DECLARE_NAPI_WRITABLE_FUNCTION("table", Table),
-        DECLARE_NAPI_WRITABLE_FUNCTION("time", Time),
-        DECLARE_NAPI_WRITABLE_FUNCTION("timeLog", TimeLog),
-        DECLARE_NAPI_WRITABLE_FUNCTION("timeEnd", TimeEnd),
-        DECLARE_NAPI_WRITABLE_FUNCTION("trace", Trace),
-        DECLARE_NAPI_WRITABLE_FUNCTION("assert", Assert),
-        DECLARE_NAPI_WRITABLE_FUNCTION("count", Count),
-        DECLARE_NAPI_WRITABLE_FUNCTION("countReset", CountReset),
-        DECLARE_NAPI_WRITABLE_FUNCTION("dir", Dir),
-        DECLARE_NAPI_WRITABLE_FUNCTION("dirxml", ConsoleLog<LogLevel::INFO>)
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("log", ConsoleLog<LogLevel::INFO>),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("debug", ConsoleLog<LogLevel::DEBUG>),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("info", ConsoleLog<LogLevel::INFO>),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("warn", ConsoleLog<LogLevel::WARN>),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("error", ConsoleLog<LogLevel::ERROR>),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("fatal", ConsoleLog<LogLevel::FATAL>),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("group", Group),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("groupCollapsed", Group),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("groupEnd", GroupEnd),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("table", Table),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("time", Time),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("timeLog", TimeLog),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("timeEnd", TimeEnd),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("trace", Trace),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("assert", Assert),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("count", Count),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("countReset", CountReset),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("dir", Dir),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("dirxml", ConsoleLog<LogLevel::INFO>)
     };
     napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
     napi_value console = nullptr;
