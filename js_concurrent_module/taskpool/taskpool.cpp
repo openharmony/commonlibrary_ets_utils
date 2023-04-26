@@ -148,7 +148,7 @@ napi_value TaskPool::ExecuteFunction(napi_env env,
     TaskManager::GetInstance().StoreRunningInfo(taskId, executeId);
     napi_value promise = nullptr;
     napi_create_promise(env, &taskInfo->deferred, &promise);
-    TaskManager::GetInstance().EnqueueExecuteId(executeId);
+    TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
     if (promise == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;

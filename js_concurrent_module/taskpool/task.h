@@ -28,10 +28,15 @@ enum Priority { HIGH, MEDIUM, LOW, NUMBER, DEFAULT = MEDIUM };
 
 class Task {
 public:
+    static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
+
+private:
     Task() = delete;
     ~Task() = delete;
-
-    static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
+    Task(const Task &) = delete;
+    Task& operator=(const Task &) = delete;
+    Task(Task &&) = delete;
+    Task& operator=(Task &&) = delete;
 };
 
 struct TaskInfo {
