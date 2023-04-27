@@ -53,18 +53,15 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
-    // Add a reserved thread for taskpool
-    TaskManager::GetInstance().InitTaskRunner(env);
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, "InitTaskManager");
+    TaskManager::GetInstance().InitTaskManager(env);
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     return exports;
 }
 
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
-    StartTrace(HITRACE_TAG_COMMONLIBRARY, "InitTaskRunner ExecuteToWorkerEnd");
-    // get the taskpool instance
-    TaskManager::GetInstance().InitTaskRunner(env);
-    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     // check the argc
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {

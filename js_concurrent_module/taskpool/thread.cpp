@@ -21,6 +21,7 @@ Thread::Thread() : tid_() {}
 bool Thread::Start()
 {
     int ret = uv_thread_create(&tid_, [](void* arg) {
+        pthread_setname_np(pthread_self(), "TaskPool_Thread");
         Thread* thread = reinterpret_cast<Thread*>(arg);
         thread->Run();
     }, this);

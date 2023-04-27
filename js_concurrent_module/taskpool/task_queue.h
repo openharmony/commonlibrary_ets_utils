@@ -32,6 +32,11 @@ public:
 
     bool IsEmpty() const;
 
+    uint32_t GetTaskNum() const
+    {
+        return tasks_.size();
+    }
+
 private:
     std::queue<uint32_t> tasks_ {};
 };

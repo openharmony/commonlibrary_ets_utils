@@ -31,6 +31,19 @@ ohos_shared_library("taskpool") {
     "worker.cpp",
   ]
 
+  defines = []
+  if (is_ohos) {
+    defines += [ "OHOS_PLATFORM" ]
+  } else if (is_mingw) {
+    defines += [ "WINDOWS_PLATFORM" ]
+  } else if (target_os == "android") {
+    defines += [ "ANDROID_PLATFORM" ]
+  } else if (target_os == "ios") {
+    defines += [ "IOS_PLATFORM" ]
+  } else if (is_mac && target_os != "android") {
+    defines += [ "MAC_PLATFORM" ]
+  }
+
   deps = [ "//foundation/arkui/napi:ace_napi" ]
 
   external_deps = []
