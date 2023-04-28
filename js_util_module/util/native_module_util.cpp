@@ -74,6 +74,7 @@ namespace OHOS::Util {
                 size_t pos = 0;
                 if ((pos = format.find('%', i)) == std::string::npos) {
                     str += format.substr(i);
+                    i = formatSize;
                     break;
                 } else {
                     str += format.substr(i, pos - i);
@@ -515,7 +516,7 @@ namespace OHOS::Util {
 
     static bool CheckEncodingFormat(const std::string &encoding)
     {
-        const std::string conventFormat("utf8-t,UTF-8,gbk,GBK,GB2312,gb2312,GB18030,gb18030");
+        const std::string conventFormat("utf-8,UTF-8,gbk,GBK,GB2312,gb2312,GB18030,gb18030");
         if (conventFormat.find(encoding.c_str()) != conventFormat.npos) {
             return true;
         }
