@@ -23,13 +23,17 @@ import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 # compile .ts to .js.
 action("build_ts_js") {
   script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
+
+  outFile_Path = target_out_dir + "/" + current_cpu
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/js_convertxml.js"),
     "--module-path",
     rebase_path("/commonlibrary/ets_utils/js_api_module/convertxml"),
     "--out-file",
-    rebase_path("./out/js_convertxml.js"),
+    rebase_path(outFile_Path + "/js_convertxml.js"),
+    "--out-filePath",
+    rebase_path(outFile_Path),
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]

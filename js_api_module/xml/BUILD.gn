@@ -21,13 +21,16 @@ import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 action("build_ts_js") {
   script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
 
+  outFile_Path = target_out_dir + "/" + current_cpu
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/js_xml.js"),
     "--module-path",
     rebase_path("/commonlibrary/ets_utils/js_api_module/xml"),
     "--out-file",
-    rebase_path("./out/js_xml.js"),
+    rebase_path(outFile_Path + "/js_xml.js"),
+    "--out-filePath",
+    rebase_path(outFile_Path),
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
