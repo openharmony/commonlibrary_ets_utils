@@ -345,6 +345,7 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
         buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
     } else {
         napi_throw_error(env, nullptr, "parameter type is error");
+        return nullptr;
     }
     
     return GetBufferWrapValue(env, thisVar, buffer);

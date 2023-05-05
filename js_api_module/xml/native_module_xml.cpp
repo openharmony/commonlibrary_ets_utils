@@ -38,6 +38,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
         if (args[0] == nullptr) {
             NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
+            return nullptr;
         } else {
             bool bFlag = false;
             napi_is_arraybuffer(env, args[0], &bFlag);
@@ -161,6 +162,7 @@ namespace OHOS::xml {
         NAPI_ASSERT(env, argc == 1, "Wrong number of arguments(Over)");
         if (args[0] == nullptr) {
             NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
+            return nullptr;
         } else {
             napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
