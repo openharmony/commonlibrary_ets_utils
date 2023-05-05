@@ -50,6 +50,7 @@ namespace OHOS::Util {
         unsigned char *rets = EncodeAchieve(inputEncode_, length);
         if (rets == nullptr) {
             napi_throw_error(env, "-1", "encode input is null");
+            return nullptr;
         }
         void *data = nullptr;
         napi_value arrayBuffer = nullptr;
@@ -80,6 +81,7 @@ namespace OHOS::Util {
         if (ret == nullptr) {
             FreeMemory(ret);
             napi_throw_error(env, "-1", "encodeToString input is null");
+            return nullptr;
         }
         const char *encString = reinterpret_cast<const char*>(ret);
         napi_value resultStr = nullptr;
@@ -159,9 +161,11 @@ namespace OHOS::Util {
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
                     FreeMemory(inputString);
                     napi_throw_error(env, "-1", "decode inputString memset_s failed");
+                    return nullptr;
                 }
             } else {
                 napi_throw_error(env, "-2", "prolen is error !");
+                return nullptr;
             }
             if (inputString != nullptr) {
                 napi_get_value_string_utf8(env, src, inputString, prolen + 1, &prolen);
@@ -212,9 +216,11 @@ namespace OHOS::Util {
             if (memset_s(retDecode, retLen + 1, '\0', retLen + 1) != EOK) {
                 FreeMemory(retDecode);
                 napi_throw_error(env, "-1", "decode retDecode memset_s failed");
+                return nullptr;
             }
         } else {
             napi_throw_error(env, "-2", "retLen is error !");
+            return nullptr;
         }
         if (retDecode == nullptr) {
             return retDecode;
@@ -281,6 +287,7 @@ namespace OHOS::Util {
             // 64:Number of elements in the encoding table.
             if (i == 64 && BASE[i] != ch) {
                 napi_throw_error(env, "-1", "The input string contains unsupported characters");
+                return 0;
             }
         }
         return couts;
@@ -361,9 +368,11 @@ namespace OHOS::Util {
             if (memset_s(ret, outputLen + 1, '\0', outputLen + 1) != EOK) {
                 FreeMemory(ret);
                 napi_throw_error(encodeInfo->env, "-1", "ret path memset_s failed");
+                return nullptr;
             }
         } else {
             napi_throw_error(encodeInfo->env, "-2", "outputLen is error !");
+            return nullptr;
         }
         if (ret == nullptr) {
             return ret;
@@ -460,9 +469,11 @@ namespace OHOS::Util {
                 inputString = new char[prolen + 1];
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
                     napi_throw_error(env, "-1", "decode inputString memset_s failed");
+                    return nullptr;
                 }
             } else {
                 napi_throw_error(env, "-2", "prolen is error !");
+                return nullptr;
             }
             napi_get_value_string_utf8(env, src, inputString, prolen + 1, &prolen);
             CreateDecodePromise(env, inputString, prolen);
@@ -547,9 +558,11 @@ namespace OHOS::Util {
             if (memset_s(retDecode, retLen + 1, '\0', retLen + 1) != EOK) {
                 FreeMemory(retDecode);
                 napi_throw_error(decodeInfo->env, "-1", "decode retDecode memset_s failed");
+                return nullptr;
             }
         } else {
             napi_throw_error(decodeInfo->env, "-2", "retLen is error !");
+            return nullptr;
         }
         while (inp < (inputLen - equalCount)) {
             temp = 0;

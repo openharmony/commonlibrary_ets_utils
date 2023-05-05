@@ -812,6 +812,7 @@ namespace OHOS::Util {
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
             napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            return nullptr;
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
@@ -879,6 +880,7 @@ namespace OHOS::Util {
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
             napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            return nullptr;
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));

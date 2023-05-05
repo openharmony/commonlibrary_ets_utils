@@ -33,6 +33,7 @@ namespace OHOS::JsSysModule::Process {
         } else {
             HILOG_ERROR("command is null");
             NAPI_CALL(env, napi_throw_error(env, "", "command is empty"));
+            return nullptr;
         }
 
         std::vector<std::string> keyStr = {"timeout", "killSignal", "maxBuffer"};
@@ -55,6 +56,7 @@ namespace OHOS::JsSysModule::Process {
                         NAPI_CALL(env, napi_get_value_int32(env, property, &timeout));
                         if (timeout < 0) {
                             NAPI_CALL(env, napi_throw_error(env, "", "options timeout is lessthen zero"));
+                            return nullptr;
                         }
                         break;
                     }
@@ -170,6 +172,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if ((valuetype != napi_valuetype::napi_number) && (valuetype != napi_valuetype::napi_string)) {
             napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            return nullptr;
         }
 
         ChildProcess* object = nullptr;
