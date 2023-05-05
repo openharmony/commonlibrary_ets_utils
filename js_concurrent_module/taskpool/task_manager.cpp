@@ -166,7 +166,7 @@ void TaskManager::RunTaskManager()
     uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(
         TaskManager::TriggerLoadBalance), 0, 1000); // 1000: 1s
     uv_async_init(loop_, notifyRestartTimer_, reinterpret_cast<uv_async_cb>(TaskManager::RestartTimer));
-    pthread_setname_np(pthread_self(), "TaskPool_Mgr");
+    pthread_setname_np(pthread_self(), "TaskMgrThread");
     uv_run(loop_, UV_RUN_DEFAULT);
     uv_loop_close(loop_);
 }
