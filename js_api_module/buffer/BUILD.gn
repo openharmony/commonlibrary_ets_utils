@@ -171,6 +171,8 @@ ohos_source_set("buffer_static") {
     ]
     if (target_os == "android") {
       defines = [ "ANDROID_PLATFORM" ]
+    } else if (target_os == "ios") {
+      defines = [ "IOS_PLATFORM" ]
     }
     deps += [
       "$plugins_root/libs/icu:icu_${target_os}",
