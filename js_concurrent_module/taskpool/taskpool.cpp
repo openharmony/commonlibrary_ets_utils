@@ -135,7 +135,8 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
 napi_value TaskPool::ExecuteFunction(napi_env env,
                                     napi_value function, napi_value arguments, uint32_t taskId, Priority priority)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    std::string strTrace = "ExecuteFunction: taskId is " + std::to_string(taskId);
+    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, strTrace);
     uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, function, arguments, taskId, executeId);
     if (taskInfo == nullptr) {
