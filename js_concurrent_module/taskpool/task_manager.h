@@ -48,7 +48,7 @@ public:
     bool UpdateState(uint32_t executeId, TaskState state);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
-    uint32_t DequeueExecuteId();
+    std::pair<uint32_t, Priority> DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
     void NotifyWorkerIdle(Worker *worker);
     void PopTaskEnvInfo(napi_env env);

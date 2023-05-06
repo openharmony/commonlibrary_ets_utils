@@ -136,7 +136,7 @@ napi_value TaskPool::ExecuteFunction(napi_env env,
                                     napi_value function, napi_value arguments, uint32_t taskId, Priority priority)
 {
     std::string strTrace = "ExecuteFunction: taskId is " + std::to_string(taskId);
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, strTrace);
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, strTrace);
     uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, function, arguments, taskId, executeId);
     if (taskInfo == nullptr) {
@@ -151,6 +151,7 @@ napi_value TaskPool::ExecuteFunction(napi_env env,
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
     }
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     return promise;
 }
 

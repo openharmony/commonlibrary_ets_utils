@@ -786,7 +786,7 @@ void NewWorker::StartExecuteInThread(napi_env env, const char* script)
 
 void NewWorker::ExecuteInThread(const void* data)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto worker = reinterpret_cast<NewWorker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
