@@ -535,24 +535,26 @@ namespace OHOS::Util {
             napi_get_cb_info(env, info, &argc, &src, nullptr, nullptr);
             napi_valuetype valuetype;
             napi_typeof(env, src, &valuetype);
-            if (valuetype != napi_string) {
-                return ThrowError(env, "The type of Parameter must be string.");
+            if (valuetype != napi_undefined) {
+                if (valuetype != napi_string) {
+                    return ThrowError(env, "The type of Parameter must be string.");
+                }
+                std::string buffer = "";
+                size_t bufferSize = 0;
+                if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
+                    HILOG_ERROR("can not get src size");
+                    return nullptr;
+                }
+                buffer.reserve(bufferSize + 1);
+                buffer.resize(bufferSize);
+                if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+                    HILOG_ERROR("can not get src value");
+                    return nullptr;
+                }
+                NAPI_ASSERT(env, CheckEncodingFormat(buffer),
+                            "Wrong encoding format, only support utf-8 gbk gb2312 gb18030");
+                enconding = buffer;
             }
-            std::string buffer = "";
-            size_t bufferSize = 0;
-            if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
-                HILOG_INFO("can not get src size");
-                return nullptr;
-            }
-            buffer.reserve(bufferSize + 1);
-            buffer.resize(bufferSize);
-            if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-                HILOG_INFO("can not get src value");
-                return nullptr;
-            }
-            NAPI_ASSERT(env, CheckEncodingFormat(buffer),
-                        "Wrong encoding format, only support utf-8 gbk gb2312 gb18030");
-            enconding = buffer;
         }
         auto object = new TextEncoder(enconding);
         napi_wrap(
@@ -585,18 +587,25 @@ namespace OHOS::Util {
         size_t argc = 1;
         napi_value args = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr));
+        NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
 
-        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
-
-        napi_valuetype valuetype;
-        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
-
+        napi_value result;
+        if (argc == 1) {
+            napi_valuetype valuetype;
+            NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+            if (valuetype == napi_undefined) {
+                napi_get_undefined(env, &result);
+                return result;
+            }
+            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
+        } else {
+            napi_get_undefined(env, &result);
+            return result;
+        }
         TextEncoder *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
 
-        napi_value result = object->Encode(env, args);
+        result = object->Encode(env, args);
 
         return result;
     }
@@ -607,14 +616,24 @@ namespace OHOS::Util {
         size_t argc = 1;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        napi_valuetype valuetype;
-        napi_typeof(env, args, &valuetype);
-        if (valuetype != napi_string) {
-            return ThrowError(env, "The type of Parameter must be string.");
+        napi_value result;
+        if (argc == 1) {
+            napi_valuetype valuetype;
+            NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+            if (valuetype == napi_undefined) {
+                napi_get_undefined(env, &result);
+                return result;
+            }
+            if (valuetype != napi_string) {
+                return ThrowError(env, "The type of Parameter must be string.");
+            }
+        } else {
+            napi_get_undefined(env, &result);
+            return result;
         }
         TextEncoder *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
-        napi_value result = object->Encode(env, args);
+        result = object->Encode(env, args);
         return result;
     }
 
