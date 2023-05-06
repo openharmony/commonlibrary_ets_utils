@@ -43,7 +43,7 @@ public:
         } else if (errCode == ERR_WORKER_UNSUPPORTED) {
             errTitle = "The invoked API is not supported in workers, ";
         } else if (errCode == ERR_WORKER_SERIALIZATION) {
-            errTitle = "Serializing an uncaught exception failed, ";
+            errTitle = "An exception occurred during serialization, ";
         } else if (errCode == ERR_WORKER_INVALID_FILEPATH) {
             errTitle = "The worker file path is invalid path, ";
         } else if (errCode == ERR_NOT_CONCURRENT_FUNCTION) {
