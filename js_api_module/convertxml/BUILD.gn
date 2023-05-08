@@ -22,7 +22,7 @@ import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
-  script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
+  script = "${ets_util_path}/js_api_module/build_ts_js.py"
 
   outFile_Path = target_out_dir + "/" + current_cpu
   args = [
@@ -54,7 +54,7 @@ gen_obj("js_convertxml") {
 # compile .js to .abc.
 action("gen_convertxml_abc") {
   visibility = [ ":*" ]
-  script = "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+  script = generate_js_bytecode_py
 
   args = [
     "--src-js",
@@ -92,11 +92,10 @@ gen_obj("convertxml_abc") {
 
 ohos_shared_library("convertxml") {
   include_dirs = [
+    "include",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
     "//third_party/libxml2/include",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//commonlibrary/ets_utils/js_api_module/convertxml",
   ]
 
   sources = [
@@ -107,15 +106,14 @@ ohos_shared_library("convertxml") {
   deps = [
     ":gen_obj_src_convertxml_abc",
     ":gen_obj_src_js_convertxml",
-    "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
     "//third_party/libxml2:xml2",
   ]
-
+  external_deps = [ "napi:ace_napi" ]
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
   } else {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
     ]
@@ -128,11 +126,10 @@ ohos_shared_library("convertxml") {
 
 ohos_source_set("convertxml_static") {
   include_dirs = [
+    "include",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
     "//third_party/libxml2/include",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//commonlibrary/ets_utils/js_api_module/convertxml",
   ]
 
   sources = [

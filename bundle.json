@@ -1,5 +1,5 @@
 {
-    "name": "@ohos/js_api_module",
+    "name": "@ohos/ets_utils",
     "version": "",
     "description": "commonlibrary_ets_utils, contains of 4 submodules:js_api_module,js_util_module,js_sys_module,js_worker_module",
     "homePage": "https://gitee.com/openharmony",
@@ -41,9 +41,9 @@
             "SystemCapability.Utils.Lang"
         ],
         "features": [],
-        "adapted_system_type": [],
-        "rom": "",
-        "ram": "",
+        "adapted_system_type": ["standard"],
+        "rom": "1400KB",
+        "ram": "~4096KB",
         "deps": {
             "components": [],
             "third_party": []

@@ -12,11 +12,12 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 ohos_shared_library("taskpool") {
   include_dirs = [
-    "//commonlibrary/ets_utils/js_concurrent_module/common",
-    "//commonlibrary/ets_utils/js_concurrent_module/taskpool",
+    "include",
+    js_concurrent_module_common,
   ]
 
   sources = [
@@ -44,22 +45,19 @@ ohos_shared_library("taskpool") {
     defines += [ "MAC_PLATFORM" ]
   }
 
-  deps = [ "//foundation/arkui/napi:ace_napi" ]
-
-  external_deps = []
+  external_deps = [ "napi:ace_napi" ]
 
   if (is_linux && current_toolchain == host_toolchain) {
-    deps +=
-        [ "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_linux" ]
+    external_deps += [ "innerkits:libhilog_linux" ]
     defines = [
       "LINUX_PLATFORM",
       "PREVIEW",
     ]
   } else {
     if (is_standard_system) {
-      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
     } else {
-      external_deps = [ "hilog:libhilog" ]
+      external_deps += [ "hilog:libhilog" ]
     }
   }
 
