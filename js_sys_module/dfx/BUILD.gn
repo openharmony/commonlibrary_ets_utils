@@ -15,25 +15,18 @@ import("//build/ohos.gni")
 
 ohos_shared_library("dfx") {
   include_dirs = [
-    "//foundation/arkui/napi",
+    "include",
     "//foundation/arkui/napi/native_engine",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//commonlibrary/ets_utils/js_api_module/dfx",
   ]
-
   sources = [ "native_module_dfx.cpp" ]
-
-  deps = [
-    "//foundation/arkui/napi/:ace_napi",
-    "//third_party/icu/icu4c:shared_icuuc",
-  ]
-
+  deps = [ "//third_party/icu/icu4c:shared_icuuc" ]
+  external_deps = [ "napi:ace_napi" ]
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
   } else {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
     ]

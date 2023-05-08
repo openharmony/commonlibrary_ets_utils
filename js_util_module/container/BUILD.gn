@@ -38,7 +38,7 @@ container_names = [
 
 # compile .ts to .js.
 action("build_js_ts") {
-  script = "//commonlibrary/ets_utils/js_util_module/container/build_ts_js.py"
+  script = "${ets_util_path}/js_util_module/container/build_ts_js.py"
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/"),
@@ -80,8 +80,7 @@ template("container_lib") {
   # compile .js to .abc.
   action("gen_" + name + "_abc") {
     visibility = [ ":*" ]
-    script =
-        "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+    script = generate_js_bytecode_py
 
     args = [
       "--src-js",
@@ -120,7 +119,6 @@ template("container_lib") {
   ohos_shared_library(name) {
     include_dirs = [
       "//third_party/node/src",
-      "//foundation/arkui/napi/interfaces/kits",
       "//commonlibrary/ets_utils/js_util_module/container/" + name,
     ]
 
@@ -128,13 +126,10 @@ template("container_lib") {
 
     dep_abc = ":gen_obj_src_" + name + "_abc"
     dep_js = ":gen_obj_src_js_" + name
-    deps = [
-      "$container_root:gen_obj_src_js_" + name,
-      "//foundation/arkui/napi/:ace_napi",
-    ]
+    deps = [ "$container_root:gen_obj_src_js_" + name ]
     deps += [ dep_abc ]
     deps += [ dep_js ]
-
+    external_deps = [ "napi:ace_napi" ]
     if (use_mingw_win) {
       deps += [ "$hilog_windows" ]
     } else if (use_linux) {
@@ -142,7 +137,7 @@ template("container_lib") {
     } else if (use_mac) {
       deps += [ "$hilog_mac" ]
     } else {
-      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
     }
 
     configs = [ ":container_config" ]
