@@ -48,18 +48,19 @@ __attribute__((visibility("default"))) void NAPI_util_Deque_GetABCCode(const cha
     }
 }
 
-static napi_module dequeModule = {
+static napi_module_with_js dequeModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = DequeInit,
     .nm_modname = "util.Deque",
     .nm_priv = ((void *)0),
-    .reserved = {0},
+    .nm_get_abc_code = NAPI_util_Deque_GetABCCode,
+    .nm_get_js_code = NAPI_util_Deque_GetJSCode,
 };
 
-extern "C" __attribute__((constructor)) void RegisterModule()
+extern "C" __attribute__((constructor)) void DequeRegisterModule()
 {
-    napi_module_register(&dequeModule);
+    napi_module_with_js_register(&dequeModule);
 }
 } // namespace  OHOS::Util

@@ -48,17 +48,18 @@ __attribute__((visibility("default"))) void NAPI_util_Vector_GetABCCode(const ch
         *buflen = _binary_vector_abc_end - _binary_vector_abc_start;
     }
 }
-static napi_module vectorModule = {
+static napi_module_with_js vectorModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = VectorInit,
     .nm_modname = "util.Vector",
     .nm_priv = ((void *)0),
-    .reserved = {0},
+    .nm_get_abc_code = NAPI_util_Vector_GetABCCode,
+    .nm_get_js_code = NAPI_util_Vector_GetJSCode,
 };
-extern "C" __attribute__((constructor)) void RegisterModule()
+extern "C" __attribute__((constructor)) void VectorRegisterModule()
 {
-    napi_module_register(&vectorModule);
+    napi_module_with_js_register(&vectorModule);
 }
 } // namespace  OHOS::Util

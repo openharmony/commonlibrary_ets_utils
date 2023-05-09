@@ -50,18 +50,19 @@ __attribute__((visibility("default"))) void NAPI_util_LinkedList_GetABCCode(cons
     }
 }
 
-static napi_module linkedListModule = {
+static napi_module_with_js linkedListModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = LinkedListInit,
     .nm_modname = "util.LinkedList",
     .nm_priv = ((void *)0),
-    .reserved = {0},
+    .nm_get_abc_code = NAPI_util_LinkedList_GetABCCode,
+    .nm_get_js_code = NAPI_util_LinkedList_GetJSCode,
 };
 
-extern "C" __attribute__((constructor)) void RegisterModule()
+extern "C" __attribute__((constructor)) void LinkedListRegisterModule()
 {
-    napi_module_register(&linkedListModule);
+    napi_module_with_js_register(&linkedListModule);
 }
 } // namespace  OHOS::Util
