@@ -14,7 +14,13 @@
  */
 
 #include <cstring>
+
+#ifdef IOS_PLATFORM
+#include <sys/sysctl.h>
+#else
 #include <sys/sysinfo.h>
+#endif
+
 #include <unistd.h>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"

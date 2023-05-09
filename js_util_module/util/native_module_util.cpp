@@ -1641,24 +1641,6 @@ namespace OHOS::Util {
         return exports;
     }
 
-    // util module define
-    static napi_module utilModule = {
-        .nm_version = 1,
-        .nm_flags = 0,
-        .nm_filename = nullptr,
-        .nm_register_func = UtilInit,
-        .nm_modname = "util",
-        .nm_priv = ((void*)0),
-        .reserved = {0},
-    };
-
-    // util module register
-    extern "C"
-    __attribute__((constructor)) void RegisterModule()
-    {
-        napi_module_register(&utilModule);
-    }
-
     // util JS register
     extern "C"
     __attribute__((visibility("default"))) void NAPI_util_GetJSCode(const char **buf, int *buflen)
@@ -1679,5 +1661,24 @@ namespace OHOS::Util {
         if (buflen != nullptr) {
             *buflen = _binary_util_abc_end - _binary_util_abc_start;
         }
+    }
+
+    // util module define
+    static napi_module_with_js utilModule = {
+        .nm_version = 1,
+        .nm_flags = 0,
+        .nm_filename = nullptr,
+        .nm_register_func = UtilInit,
+        .nm_modname = "util",
+        .nm_priv = ((void*)0),
+        .nm_get_abc_code = NAPI_util_GetABCCode,
+        .nm_get_js_code = NAPI_util_GetJSCode,
+    };
+
+    // util module register
+    extern "C"
+    __attribute__((constructor)) void UtilRegisterModule()
+    {
+        napi_module_with_js_register(&utilModule);
     }
 }
