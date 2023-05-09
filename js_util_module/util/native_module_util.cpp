@@ -624,7 +624,9 @@ namespace OHOS::Util {
                 napi_get_undefined(env, &result);
                 return result;
             }
-            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
+            if (valuetype != napi_string) {
+                return ThrowError(env, "The type of Parameter must be string.");
+            }
         } else {
             napi_get_undefined(env, &result);
             return result;
