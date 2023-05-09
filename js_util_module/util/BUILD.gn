@@ -16,10 +16,11 @@ import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
-  script = "${ets_util_path}/js_util_module/build_ts_js.py"
+  script = "$util_module/build_ts_js.py"
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/util_js.js"),
@@ -31,13 +32,6 @@ action("build_ts_js") {
     rebase_path("//", root_build_dir),
   ]
   outputs = [ target_out_dir + "/util_js.js" ]
-}
-base_output_path = get_label_info(":util_js", "target_out_dir")
-util_js_obj_path = base_output_path + "/util.o"
-gen_js_obj("util_js") {
-  input = "$target_out_dir/util_js.js"
-  output = util_js_obj_path
-  dep = ":build_ts_js"
 }
 
 # compile .js to .abc.
@@ -68,16 +62,32 @@ action("gen_util_abc") {
 }
 
 abc_output_path = get_label_info(":util_abc", "target_out_dir")
-util_abc_obj_path = abc_output_path + "/util_abc.o"
-gen_js_obj("util_abc") {
+
+gen_obj("util_js") {
+  input = "$target_out_dir/util_js.js"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    util_obj_path = abc_output_path + "/util.c"
+  } else {
+    util_obj_path = abc_output_path + "/util.o"
+  }
+  output = util_obj_path
+  snapshot_dep = [ ":build_ts_js" ]
+}
+
+gen_obj("util_abc") {
   input = "$target_out_dir/util.abc"
-  output = util_abc_obj_path
-  dep = ":gen_util_abc"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    util_obj_path = abc_output_path + "/util_abc.c"
+  } else {
+    util_obj_path = abc_output_path + "/util_abc.o"
+  }
+  output = util_obj_path
+  snapshot_dep = [ ":gen_util_abc" ]
 }
 
 ohos_shared_library("util") {
   include_dirs = [
-    "//foundation/arkui/napi/native_engine",
+    "$napi_root/native_engine",
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source",
     "//third_party/node/src",
@@ -95,8 +105,8 @@ ohos_shared_library("util") {
   ]
 
   deps = [
-    ":util_abc",
-    ":util_js",
+    ":gen_obj_src_util_abc",
+    ":gen_obj_src_util_js",
     "//third_party/icu/icu4c:shared_icuuc",
     "//third_party/openssl:libcrypto_shared",
   ]
@@ -113,6 +123,64 @@ ohos_shared_library("util") {
   part_name = "ets_utils"
 
   relative_install_dir = "module"
+}
+
+ohos_source_set("util_static") {
+  include_dirs = [
+    "$napi_root/native_engine",
+    "//third_party/icu/icu4c/source",
+    "//third_party/openssl",
+    "//third_party/openssl/include",
+    "$util_module/util",
+  ]
+  configs = [
+    "$icu_root:icu_config",
+    "$napi_root:ace_napi_config",
+  ]
+  sources = [
+    "js_base64.cpp",
+    "js_textdecoder.cpp",
+    "js_textencoder.cpp",
+    "js_types.cpp",
+    "js_uuid.cpp",
+    "native_module_util.cpp",
+  ]
+
+  deps = [
+    ":gen_obj_src_util_abc",
+    ":gen_obj_src_util_js",
+    "//third_party/openssl:libcrypto_shared",
+  ]
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    if (target_os == "android") {
+      defines = [ "ANDROID_PLATFORM" ]
+      deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
+    }
+    if (target_os == "ios") {
+      defines = [ "IOS_PLATFORM" ]
+      deps -= [ "//third_party/openssl:libcrypto_shared" ]
+      deps += [ "//third_party/openssl:libcrypto_static" ]
+    }
+    deps += [
+      "$plugins_root/libs/icu:icu_${target_os}",
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/securec:sec_${target_os}",
+    ]
+  } else {
+    deps += [
+      "$napi_root:ace_napi",
+      "//third_party/icu/icu4c:shared_icuuc",
+    ]
+    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  }
+
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
 }
 
 group("util_packages") {

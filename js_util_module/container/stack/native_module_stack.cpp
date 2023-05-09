@@ -49,18 +49,19 @@ __attribute__((visibility("default"))) void NAPI_util_Stack_GetABCCode(const cha
     }
 }
 
-static napi_module stackModule = {
+static napi_module_with_js stackModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = StackInit,
     .nm_modname = "util.Stack",
     .nm_priv = ((void *)0),
-    .reserved = {0},
+    .nm_get_abc_code = NAPI_util_Stack_GetABCCode,
+    .nm_get_js_code = NAPI_util_Stack_GetJSCode,
 };
 
-extern "C" __attribute__((constructor)) void RegisterModule()
+extern "C" __attribute__((constructor)) void StackRegisterModule()
 {
-    napi_module_register(&stackModule);
+    napi_module_with_js_register(&stackModule);
 }
 } // namespace  OHOS::Util

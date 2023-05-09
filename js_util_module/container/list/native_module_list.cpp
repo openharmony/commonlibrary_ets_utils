@@ -48,17 +48,18 @@ __attribute__((visibility("default"))) void NAPI_util_List_GetABCCode(const char
     }
 }
 
-static napi_module listModule = {
+static napi_module_with_js listModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = ListInit,
     .nm_modname = "util.List",
     .nm_priv = ((void *)0),
-    .reserved = {0},
+    .nm_get_abc_code = NAPI_util_List_GetABCCode,
+    .nm_get_js_code = NAPI_util_List_GetJSCode,
 };
-extern "C" __attribute__((constructor)) void RegisterModule()
+extern "C" __attribute__((constructor)) void ListRegisterModule()
 {
-    napi_module_register(&listModule);
+    napi_module_with_js_register(&listModule);
 }
 } // namespace  OHOS::Util
