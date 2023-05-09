@@ -51,13 +51,16 @@ public:
     uint32_t DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
     void NotifyWorkerIdle(Worker *worker);
+    void NotifyWorkerCreated(Worker *worker);
     void PopTaskEnvInfo(napi_env env);
     void InitTaskManager(napi_env env);
     void UpdateExecutedInfo(uint64_t duration);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId);
     void ReleaseTaskContent(TaskInfo* taskInfo);
+    void TryTriggerLoadBalance();
     uint32_t GetTaskNum();
     uint32_t GetThreadNum();
+    uint32_t GetRunningWorkers();
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -78,7 +81,7 @@ private:
     bool HasTaskEnvInfo(napi_env env);
     int32_t ComputeSuitableThreadNum();
     static void RestartTimer(const uv_async_t* req);
-    static void TriggerLoadBalance(const uv_timer_t* req);
+    static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
     std::atomic<int32_t> currentExecuteId_ = 1; // 1: executeId begin from 1, 0 for exception
     std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
@@ -110,6 +113,7 @@ private:
     std::atomic<uint32_t> retryCount_ = 0;
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
+    std::atomic<uint32_t> expandingCount_ = 0;
 
     bool isInitialized_ = false;
     std::mutex initMutex_;

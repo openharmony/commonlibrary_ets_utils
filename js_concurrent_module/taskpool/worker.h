@@ -46,6 +46,8 @@ private:
 
     void NotifyIdle();
 
+    void NotifyWorkerCreated();
+
     void NotifyTaskRunning()
     {
         runningCount_++;

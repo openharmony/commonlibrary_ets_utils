@@ -33,7 +33,7 @@ public:
     ConcurrentHelper() = delete;
     ~ConcurrentHelper() = delete;
 
-    static int32_t GetProcessNum()
+    static int32_t GetActiveCpus()
     {
 #if defined(OHOS_PLATFORM)
         return sysconf(_SC_NPROCESSORS_ONLN);
