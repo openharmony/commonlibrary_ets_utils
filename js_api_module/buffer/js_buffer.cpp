@@ -298,7 +298,7 @@ void Buffer::WriteByte(uint8_t number, uint32_t offset)
 
 unsigned int Buffer::WriteString(std::string value, unsigned int size)
 {
-    uint8_t *str = reinterpret_cast<uint8_t *>(value.data());
+    uint8_t *str = const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(value.data()));
     bool isWriteSuccess = WriteBytes(str, size, raw_ + byteOffset_);
     return isWriteSuccess ? size : 0; // 0: write failed
 }
@@ -333,7 +333,7 @@ void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end
 std::string Buffer::Utf16StrToStr(std::u16string value)
 {
     string str = "";
-    char16_t *data = value.data();
+    char16_t *data = const_cast<char16_t *>(reinterpret_cast<const char16_t *>(value.data()));
     for (unsigned int i = 0; i < value.length(); i++) {
         char16_t c = data[i];
         char high = (char)((c >> 8) & 0x00FF);

@@ -544,7 +544,7 @@ namespace OHOS::xml {
             while (type != TagEnum::END_DOCUMENT) {
                 ParseOneTag();
                 bool bRec = false;
-                if (tagFunc_ && type == TagEnum::START_TAG) {
+                if (tagFunc_) {
                     napi_value returnVal = nullptr;
                     size_t argc = 3; // 3: number of args
                     napi_value global = nullptr;
