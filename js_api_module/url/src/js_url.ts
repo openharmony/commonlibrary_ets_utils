@@ -474,15 +474,13 @@ class URL {
     if (arguments.length === 0) {
     }
     let nativeUrl !: NativeUrl;
-    if (arguments.length === 1) {
+    if (arguments.length === 1 || (arguments.length === 2 && typeof inputBase === 'undefined')) {
       if (typeof inputUrl === 'string' && inputUrl.length > 0) {
         nativeUrl = new UrlInterface.Url(inputUrl);
       } else {
         console.error('Input parameter error');
       }
-    }
-
-    if (arguments.length === 2) { // 2:The number of parameters is 2
+    } else if (arguments.length === 2) { // 2:The number of parameters is 2
       if (typeof inputUrl === 'string') {
         if (typeof inputBase === 'string') {
           if (inputBase.length > 0) {
@@ -529,10 +527,9 @@ class URL {
       throw new BusinessError(`Parameter error.The type of ${inputUrl} must be string`);
     }
     let nativeUrl !: NativeUrl;
-    if (arguments.length === 1) {
+    if (arguments.length === 1 || (arguments.length === 2 && typeof inputBase === 'undefined')) {
       nativeUrl = new UrlInterface.Url(inputUrl);
-    }
-    if (arguments.length === 2) { // 2:The number of parameters is 2
+    } else if (arguments.length === 2) { // 2:The number of parameters is 2
       if (typeof inputBase === 'string') {
         if (inputBase.length > 0) {
           nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
