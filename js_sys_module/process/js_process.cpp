@@ -82,11 +82,13 @@ namespace OHOS::Js_sys_module::Process {
         int progroups = getgroups(0, nullptr);
         if (progroups == -1) {
             napi_throw_error(env, "-1", "getgroups initialize failed");
+            return nullptr;
         }
         std::vector<gid_t> pgrous(progroups);
         progroups = getgroups(progroups, pgrous.data());
         if (progroups == -1) {
             napi_throw_error(env, "-1", "getgroups");
+            return nullptr;
         }
         pgrous.resize(static_cast<size_t>(progroups));
         gid_t proegid = getegid();
@@ -142,6 +144,7 @@ namespace OHOS::Js_sys_module::Process {
         proerr = uv_chdir(result.c_str());
         if (proerr) {
             napi_throw_error(env, "-1", "chdir");
+            return;
         }
     }
 
@@ -155,6 +158,7 @@ namespace OHOS::Js_sys_module::Process {
         // 64:The maximum valid signal value is 64.
         if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
             napi_throw_error(env, "0", "process exit");
+            return nullptr;
         }
         bool flag = false;
         int err = uv_kill(pid, sig);
@@ -174,6 +178,7 @@ namespace OHOS::Js_sys_module::Process {
         double runsystime = 0.0;
         if (sysinfo(&information)) {
             napi_throw_error(env, "-1", "Failed to get sysinfo");
+            return nullptr;
         }
         systimer = information.uptime;
         if (systimer > 0) {
@@ -181,6 +186,7 @@ namespace OHOS::Js_sys_module::Process {
             NAPI_CALL(env, napi_create_double(env, runsystime, &result));
         } else {
             napi_throw_error(env, "-1", "Failed to get systimer");
+            return nullptr;
         }
         return result;
     }
@@ -200,6 +206,7 @@ namespace OHOS::Js_sys_module::Process {
         int err = uv_cwd(buf, &length);
         if (err) {
             napi_throw_error(env, "1", "uv_cwd");
+            return nullptr;
         }
         napi_create_string_utf8(env, buf, length, &result);
         return result;
@@ -401,6 +408,7 @@ namespace OHOS::Js_sys_module::Process {
         int32_t pri = getpriority(PRIO_PROCESS, proTid);
         if (errno) {
             napi_throw_error(env, "-1", "Invalid tid");
+            return nullptr;
         }
         napi_create_int32(env, pri, &result);
         return result;
@@ -574,6 +582,7 @@ namespace OHOS::Js_sys_module::Process {
             napi_status status = napi_delete_reference(env, iter->second);
             if (status != napi_ok) {
                 napi_throw_error(env, nullptr, "ClearReference failed");
+                return;
             }
             iter++;
         }
@@ -646,6 +655,7 @@ namespace OHOS::Js_sys_module::Process {
         int32_t pri = getpriority(PRIO_PROCESS, proTid);
         if (errno) {
             napi_throw_error(env, "-1", "Invalid tid");
+            return nullptr;
         }
         napi_create_int32(env, pri, &result);
         return result;
@@ -706,6 +716,7 @@ namespace OHOS::Js_sys_module::Process {
         // 64:The maximum valid signal value is 64.
         if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
             napi_throw_error(env, "0", "process exit");
+            return nullptr;
         }
         bool flag = false;
         int err = uv_kill(pid, sig);
