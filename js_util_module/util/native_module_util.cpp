@@ -33,6 +33,19 @@ extern const char _binary_util_js_js_end[];
 extern const char _binary_util_abc_start[];
 extern const char _binary_util_abc_end[];
 namespace OHOS::Util {
+    static bool IsValidValue(napi_env env, napi_value value)
+    {
+        napi_value undefinedRef = nullptr;
+        napi_value nullRef = nullptr;
+        napi_get_undefined(env, &undefinedRef);
+        napi_get_null(env, &nullRef);
+        bool isUndefined = false;
+        bool isNull = false;
+        napi_strict_equals(env, value, undefinedRef, &isUndefined);
+        napi_strict_equals(env, value, nullRef, &isNull);
+        return !(isUndefined || isNull);
+    }
+
     static char* ApplyMemory(const size_t length)
     {
         if (length == 0) {
@@ -40,9 +53,9 @@ namespace OHOS::Util {
         }
         char *type = new char[length + 1];
         if (memset_s(type, length + 1, '\0', length + 1) != EOK) {
-                HILOG_ERROR("type memset_s failed");
-                delete[] type;
-                return nullptr;
+            HILOG_ERROR("type memset_s failed");
+            delete[] type;
+            return nullptr;
         }
         return type;
     }
@@ -535,7 +548,7 @@ namespace OHOS::Util {
             napi_get_cb_info(env, info, &argc, &src, nullptr, nullptr);
             napi_valuetype valuetype;
             napi_typeof(env, src, &valuetype);
-            if (valuetype != napi_undefined) {
+            if (IsValidValue(env, src)) {
                 if (valuetype != napi_string) {
                     return ThrowError(env, "The type of Parameter must be string.");
                 }
@@ -593,7 +606,7 @@ namespace OHOS::Util {
         if (argc == 1) {
             napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-            if (valuetype == napi_undefined) {
+            if (!IsValidValue(env, args)) {
                 napi_get_undefined(env, &result);
                 return result;
             }
@@ -620,7 +633,7 @@ namespace OHOS::Util {
         if (argc == 1) {
             napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-            if (valuetype == napi_undefined) {
+            if (!IsValidValue(env, args)) {
                 napi_get_undefined(env, &result);
                 return result;
             }

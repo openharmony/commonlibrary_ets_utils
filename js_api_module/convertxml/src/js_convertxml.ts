@@ -60,7 +60,7 @@ class ConvertXML {
     if (typeof strXml !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${strXml} must be string`);
     }
-    if (options && typeof options !== 'object') {
+    if (options && !(typeof options === 'undefined' || options === null) && typeof options !== 'object') {
       throw new BusinessError(`Parameter error.The type of ${options} must be object`);
     }
     strXml = dealXml(strXml);
