@@ -210,13 +210,26 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_status status = napi_ok;
     RunningScope runningScope(worker, status);
     NAPI_CALL_RETURN_VOID(env, status);
-    uint32_t executeId = TaskManager::GetInstance().DequeueExecuteId();
-    if (executeId == 0) {
+    auto executeIdAndPriority = TaskManager::GetInstance().DequeueExecuteId();
+    if (executeIdAndPriority.first == 0) {
         worker->NotifyTaskFinished();
         return;
     }
 
-    TaskInfo* taskInfo = TaskManager::GetInstance().PopTaskInfo(executeId);
+    std::string traceInfo = "PerformTask, TaskId: ";
+    TaskInfo* taskInfo = TaskManager::GetInstance().PopTaskInfo(executeIdAndPriority.first);
+    traceInfo += std::to_string(taskInfo->taskId);
+    
+    if (executeIdAndPriority.second == Priority::HIGH) {
+        traceInfo += ", TaskPriority: HIGH";
+    } else if (executeIdAndPriority.second == Priority::MEDIUM) {
+        traceInfo += ", TaskPriority: MEDIUM";
+    } else if (executeIdAndPriority.second == Priority::LOW) {
+       traceInfo += ", TaskPriority: LOW";
+    } else {
+        HILOG_ERROR("taskpool:: task priority value is error");
+    }
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, traceInfo);
     if (taskInfo == nullptr) { // task may have been canceled
         worker->NotifyTaskFinished();
         HILOG_ERROR("taskpool::PerformTask taskInfo is null");
@@ -265,7 +278,7 @@ void Worker::PerformTask(const uv_async_t* req)
 
     napi_value result;
     napi_call_function(env, data, func, argsNum, argsArray, &result);
-
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime;
     TaskManager::GetInstance().UpdateExecutedInfo(duration);
 
