@@ -16,7 +16,6 @@ import("//build/ohos.gni")
 ohos_shared_library("dfx") {
   include_dirs = [
     "include",
-    "//foundation/arkui/napi/native_engine",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
   ]
