@@ -51,18 +51,19 @@ __attribute__((visibility("default"))) void NAPI_util_LightWeightSet_GetABCCode(
     }
 }
 
-static napi_module lightWeightSetModule = {
+static napi_module_with_js lightWeightSetModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = LightWeightSetInit,
     .nm_modname = "util.LightWeightSet",
     .nm_priv = ((void*)0),
-    .reserved = { 0 },
+    .nm_get_abc_code = NAPI_util_LightWeightSet_GetABCCode,
+    .nm_get_js_code = NAPI_util_LightWeightSet_GetJSCode,
 };
 
-extern "C" __attribute__ ((constructor)) void RegisterModule()
+extern "C" __attribute__ ((constructor)) void LightWeightSetRegisterModule()
 {
-    napi_module_register(&lightWeightSetModule);
+    napi_module_with_js_register(&lightWeightSetModule);
 }
 } // namespace  OHOS::Util

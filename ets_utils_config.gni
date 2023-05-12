@@ -17,8 +17,13 @@ if (is_cross_platform_build) {
   plugins_root = "//plugins"
 }
 container_root = "//commonlibrary/ets_utils/js_util_module/container/"
+concurrent_module = "//commonlibrary/ets_utils/js_concurrent_module/"
 process_root = "//commonlibrary/ets_utils/js_sys_module/process"
+sys_module = "//commonlibrary/ets_utils/js_sys_module/"
+util_module = "//commonlibrary/ets_utils/js_util_module/"
 napi_root = "//foundation/arkui/napi"
+openssl_root = "//third_party/openssl"
+icu_root = "//third_party/icu/icu4c"
 hilog_windows =
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_windows"
 hilog_linux =
