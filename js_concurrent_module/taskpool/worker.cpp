@@ -216,10 +216,15 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
 
-    std::string traceInfo = "PerformTask, TaskId: ";
     TaskInfo* taskInfo = TaskManager::GetInstance().PopTaskInfo(executeIdAndPriority.first);
+    if (taskInfo == nullptr) { // task may have been canceled
+        worker->NotifyTaskFinished();
+        HILOG_ERROR("taskpool::PerformTask taskInfo is null");
+        return;
+    }
+    std::string traceInfo = "PerformTask, TaskId: ";
     traceInfo += std::to_string(taskInfo->taskId);
-    
+
     if (executeIdAndPriority.second == Priority::HIGH) {
         traceInfo += ", TaskPriority: HIGH";
     } else if (executeIdAndPriority.second == Priority::MEDIUM) {
@@ -230,11 +235,6 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_ERROR("taskpool:: task priority value is error");
     }
     StartTrace(HITRACE_TAG_COMMONLIBRARY, traceInfo);
-    if (taskInfo == nullptr) { // task may have been canceled
-        worker->NotifyTaskFinished();
-        HILOG_ERROR("taskpool::PerformTask taskInfo is null");
-        return;
-    }
     taskInfo->worker = worker;
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::RUNNING);
