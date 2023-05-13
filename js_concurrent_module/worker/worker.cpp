@@ -183,7 +183,7 @@ void Worker::PublishWorkerOverSignal()
 
 void Worker::ExecuteInThread(const void* data)
 {
-    StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteInThread Before ReleaseWorkerThreadContent");
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
@@ -222,22 +222,21 @@ void Worker::ExecuteInThread(const void* data)
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
         uv_async_send(worker->workerOnMessageSignal_);
+        FinishTrace(HITRACE_TAG_COMMONLIBRARY);
         // 3. start worker loop
         worker->Loop();
     } else {
         HILOG_ERROR("worker:: worker PrepareForWorkerInstance failure");
         worker->UpdateWorkerState(TERMINATED);
+        FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     }
-    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     worker->ReleaseWorkerThreadContent();
-    StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteInThread After ReleaseWorkerThreadContent");
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->HostIsStop()) {
         CloseHelp::DeletePointer(worker, false);
     } else {
         worker->PublishWorkerOverSignal();
     }
-    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
 }
 
 void Worker::HostOnMessage(const uv_async_t* req)

@@ -51,18 +51,19 @@ __attribute__((visibility("default"))) void NAPI_util_TreeSet_GetABCCode(const c
     }
 }
 
-static napi_module treeSetModule = {
+static napi_module_with_js treeSetModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = TreeSetInit,
     .nm_modname = "util.TreeSet",
     .nm_priv = ((void*)0),
-    .reserved = { 0 },
+    .nm_get_abc_code = NAPI_util_TreeSet_GetABCCode,
+    .nm_get_js_code = NAPI_util_TreeSet_GetJSCode,
 };
 
-extern "C" __attribute__ ((constructor)) void RegisterModule()
+extern "C" __attribute__ ((constructor)) void TreeSetRegisterModule()
 {
-    napi_module_register(&treeSetModule);
+    napi_module_with_js_register(&treeSetModule);
 }
 } // namespace  OHOS::Util

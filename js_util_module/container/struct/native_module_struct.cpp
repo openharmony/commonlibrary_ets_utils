@@ -51,18 +51,19 @@ __attribute__((visibility("default"))) void NAPI_util_struct_GetABCCode(const ch
     }
 }
 
-static napi_module structModule = {
+static napi_module_with_js structModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = StructInit,
     .nm_modname = "util.struct",
     .nm_priv = ((void*)0),
-    .reserved = { 0 },
+    .nm_get_abc_code = NAPI_util_struct_GetABCCode,
+    .nm_get_js_code = NAPI_util_struct_GetJSCode,
 };
 
-extern "C" __attribute__ ((constructor)) void RegisterModule()
+extern "C" __attribute__ ((constructor)) void StructRegisterModule()
 {
-    napi_module_register(&structModule);
+    napi_module_with_js_register(&structModule);
 }
 } // namespace  OHOS::Util

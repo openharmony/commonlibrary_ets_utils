@@ -411,25 +411,25 @@ void TaskManager::EnqueueExecuteId(uint32_t executeId, Priority priority)
     NotifyExecuteTask();
 }
 
-uint32_t TaskManager::DequeueExecuteId()
+std::pair<uint32_t, Priority> TaskManager::DequeueExecuteId()
 {
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
     if (highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
         auto &highTaskQueue = taskQueues_[Priority::HIGH];
         highPrioExecuteCount_++;
-        return highTaskQueue->DequeueExecuteId();
+        return std::make_pair(highTaskQueue->DequeueExecuteId(), Priority::HIGH);
     }
     highPrioExecuteCount_ = 0;
 
     if (mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
         auto &mediumTaskQueue = taskQueues_[Priority::MEDIUM];
         mediumPrioExecuteCount_++;
-        return mediumTaskQueue->DequeueExecuteId();
+        return std::make_pair(mediumTaskQueue->DequeueExecuteId(), Priority::MEDIUM);
     }
     mediumPrioExecuteCount_ = 0;
 
     auto &lowTaskQueue = taskQueues_[Priority::LOW];
-    return lowTaskQueue->DequeueExecuteId();
+    return std::make_pair(lowTaskQueue->DequeueExecuteId(), Priority::LOW);
 }
 
 void TaskManager::NotifyExecuteTask()

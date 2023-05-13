@@ -359,11 +359,11 @@ namespace OHOS::Util {
             napi_valuetype firValuetype;
             napi_valuetype secValuetype;
             napi_typeof(env, argvArr[0], &firValuetype);
-            if (firValuetype != napi_string) {
+            if (firValuetype != napi_undefined && firValuetype != napi_string) {
                 return ThrowError(env, "The type of Parameter must be string.");
             }
             napi_typeof(env, argvArr[1], &secValuetype);
-            if (secValuetype != napi_object) {
+            if (secValuetype != napi_undefined && secValuetype != napi_object) {
                 return ThrowError(env, "The type of Parameter must be object.");
             }
             NAPI_CALL(env, napi_new_instance(env, constructor, tempArgc, argvArr, &objTextDecoder));
@@ -395,7 +395,7 @@ namespace OHOS::Util {
                 napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
             } else if (valuetype == napi_object) {
                 GetSecPara(env, argv, paraVec);
-            } else {
+            } else if (valuetype != napi_undefined) {
                 return ThrowError(env, "The type of Parameter must be string or object.");
             }
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
@@ -408,8 +408,12 @@ namespace OHOS::Util {
                 type = ApplyMemory(typeLen);
             }
             napi_get_value_string_utf8(env, argvArr[0], type, typeLen + 1, &typeLen);
-            // second para
-            GetSecPara(env, argvArr[1], paraVec);
+            napi_valuetype valueType1;
+            napi_typeof(env, argvArr[1], &valueType1);
+            if (valueType1 != napi_undefined) {
+                // second para
+                GetSecPara(env, argvArr[1], paraVec);
+            }
         }
         std::string enconding = "utf-8";
         if (type != nullptr) {
@@ -468,17 +472,19 @@ namespace OHOS::Util {
             }
             napi_valuetype valueType1;
             napi_typeof(env, argvArr[1], &valueType1);
-            if (valueType1 != napi_object) {
-                return ThrowError(env, "The type of Parameter must be object.");
-            }
-            napi_value messageKeyStream = nullptr;
-            const char *messageKeyStrStream = "stream";
+            if (valueType1 != napi_undefined) {
+                if (valueType1 != napi_object) {
+                    return ThrowError(env, "The type of Parameter must be object.");
+                }
+                napi_value messageKeyStream = nullptr;
+                const char *messageKeyStrStream = "stream";
 
-            napi_value resultStream = nullptr;
-            NAPI_CALL(env, napi_create_string_utf8(env, messageKeyStrStream, strlen(messageKeyStrStream),
-                &messageKeyStream));
-            NAPI_CALL(env, napi_get_property(env, argvArr[1], messageKeyStream, &resultStream));
-            NAPI_CALL(env, napi_get_value_bool(env, resultStream, &iStream));
+                napi_value resultStream = nullptr;
+                NAPI_CALL(env, napi_create_string_utf8(env, messageKeyStrStream, strlen(messageKeyStrStream),
+                    &messageKeyStream));
+                NAPI_CALL(env, napi_get_property(env, argvArr[1], messageKeyStream, &resultStream));
+                NAPI_CALL(env, napi_get_value_bool(env, resultStream, &iStream));
+            }
             valStr = textDecoder->Decode(env, argvArr[0], iStream);
         }
         return valStr;
@@ -1663,24 +1669,6 @@ namespace OHOS::Util {
         return exports;
     }
 
-    // util module define
-    static napi_module utilModule = {
-        .nm_version = 1,
-        .nm_flags = 0,
-        .nm_filename = nullptr,
-        .nm_register_func = UtilInit,
-        .nm_modname = "util",
-        .nm_priv = ((void*)0),
-        .reserved = {0},
-    };
-
-    // util module register
-    extern "C"
-    __attribute__((constructor)) void RegisterModule()
-    {
-        napi_module_register(&utilModule);
-    }
-
     // util JS register
     extern "C"
     __attribute__((visibility("default"))) void NAPI_util_GetJSCode(const char **buf, int *buflen)
@@ -1701,5 +1689,24 @@ namespace OHOS::Util {
         if (buflen != nullptr) {
             *buflen = _binary_util_abc_end - _binary_util_abc_start;
         }
+    }
+
+    // util module define
+    static napi_module_with_js utilModule = {
+        .nm_version = 1,
+        .nm_flags = 0,
+        .nm_filename = nullptr,
+        .nm_register_func = UtilInit,
+        .nm_modname = "util",
+        .nm_priv = ((void*)0),
+        .nm_get_abc_code = NAPI_util_GetABCCode,
+        .nm_get_js_code = NAPI_util_GetJSCode,
+    };
+
+    // util module register
+    extern "C"
+    __attribute__((constructor)) void UtilRegisterModule()
+    {
+        napi_module_with_js_register(&utilModule);
     }
 }
