@@ -50,18 +50,19 @@ __attribute__((visibility("default"))) void NAPI_util_HashSet_GetABCCode(const c
     }
 }
 
-static napi_module hashSetModule = {
+static napi_module_with_js hashSetModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = HashSetInit,
     .nm_modname = "util.HashSet",
     .nm_priv = ((void*)0),
-    .reserved = { 0 },
+    .nm_get_abc_code = NAPI_util_HashSet_GetABCCode,
+    .nm_get_js_code = NAPI_util_HashSet_GetJSCode,
 };
 
-extern "C" __attribute__ ((constructor)) void RegisterModule()
+extern "C" __attribute__ ((constructor)) void HashSetRegisterModule()
 {
-    napi_module_register(&hashSetModule);
+    napi_module_with_js_register(&hashSetModule);
 }
 } // namespace  OHOS::Util
