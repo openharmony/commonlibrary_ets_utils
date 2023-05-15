@@ -87,7 +87,6 @@ gen_obj("util_abc") {
 
 ohos_shared_library("util") {
   include_dirs = [
-    "$napi_root/native_engine",
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source",
     "//third_party/node/src",

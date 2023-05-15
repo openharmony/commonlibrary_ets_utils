@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/test.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 if (is_standard_system) {
   module_output_path = "jsapi_api/napi"
@@ -20,14 +21,8 @@ if (is_standard_system) {
 ohos_unittest("test_uri_unittest") {
   module_out_path = module_output_path
 
-  configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
   include_dirs = [
-    "//commonlibrary/ets_utils/js_api_module/uri",
-    "//arkcompiler/ets_runtime",
-    "//foundation/arkui/napi",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//foundation/arkui/napi/native_engine",
-    "//foundation/arkui/napi/native_engine/impl/ark",
+    "${ets_util_path}/js_api_module/uri",
     "//third_party/bounds_checking_function/include",
     "//third_party/googletest/include",
     "//third_party/node/src",
@@ -41,10 +36,7 @@ ohos_unittest("test_uri_unittest") {
   ]
 
   deps = [
-    "//arkcompiler/ets_runtime:libark_jsruntime",
-    "//commonlibrary/ets_utils/js_api_module/uri:uri_static",
-    "//foundation/arkui/napi/:ace_napi",
-    "//foundation/arkui/napi/:ace_napi_ark",
+    "${ets_util_path}/js_api_module/uri:uri_static",
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
@@ -52,13 +44,19 @@ ohos_unittest("test_uri_unittest") {
     "//third_party/libuv:uv",
   ]
 
+  external_deps = [
+    "ets_runtime:libark_jsruntime",
+    "napi:ace_napi",
+    "napi:ace_napi_ark",
+  ]
+
   if (is_standard_system) {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hiviewdfx_hilog_native:libhilog",
     ]
   } else {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
     ]
