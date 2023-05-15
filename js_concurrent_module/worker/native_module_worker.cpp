@@ -43,7 +43,7 @@ static napi_module g_workerModule = {
 /*
  * module register
  */
-extern "C" __attribute__((constructor)) void Register()
+extern "C" __attribute__((constructor)) void WorkerRegister()
 {
     napi_module_register(&g_workerModule);
 }
