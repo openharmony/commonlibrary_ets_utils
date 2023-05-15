@@ -33,13 +33,12 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     }
 
     // check 1st param is func
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+    napi_value thisVar;
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     napi_valuetype type;
-    NAPI_CALL(env, napi_typeof(env, args[0], &type));
+    napi_typeof(env, args[0], &type);
     if (type != napi_function) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param of task must be function");
         return nullptr;
@@ -51,24 +50,16 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         napi_set_element(env, argsArray, i, args[i + 1]);
     }
 
-    napi_value object = nullptr;
-    napi_create_object(env, &object);
-    napi_set_named_property(env, object, "func", args[0]);
-    napi_set_named_property(env, object, "args", argsArray);
+    napi_value taskId;
+    napi_create_uint32(env, TaskManager::GetInstance().GenerateTaskId(), &taskId);
 
-    Task* task = new (std::nothrow) Task();
-    napi_create_reference(env, object, 1, &task->objRef_);
-    task->taskId_ = TaskManager::GetInstance().GenerateTaskId();
-    napi_wrap(
-        env, thisVar, task,
-        [](napi_env env, void *data, void *hint) {
-            auto task = reinterpret_cast<Task*>(data);
-            if (task != nullptr) {
-                napi_delete_reference(env, task->objRef_);
-                delete task;
-            }
-        },
-        nullptr, nullptr);
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_PROPERTY(FUNCTION_STR, args[0]),
+        DECLARE_NAPI_PROPERTY(ARGUMENTS_STR, argsArray),
+        DECLARE_NAPI_PROPERTY(TASKID_STR, taskId),
+    };
+    napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
+
     return thisVar;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

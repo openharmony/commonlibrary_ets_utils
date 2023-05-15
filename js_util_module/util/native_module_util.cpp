@@ -74,6 +74,7 @@ namespace OHOS::Util {
                 size_t pos = 0;
                 if ((pos = format.find('%', i)) == std::string::npos) {
                     str += format.substr(i);
+                    i = formatSize;
                     break;
                 } else {
                     str += format.substr(i, pos - i);
@@ -358,11 +359,11 @@ namespace OHOS::Util {
             napi_valuetype firValuetype;
             napi_valuetype secValuetype;
             napi_typeof(env, argvArr[0], &firValuetype);
-            if (firValuetype != napi_string) {
+            if (firValuetype != napi_undefined && firValuetype != napi_string) {
                 return ThrowError(env, "The type of Parameter must be string.");
             }
             napi_typeof(env, argvArr[1], &secValuetype);
-            if (secValuetype != napi_object) {
+            if (secValuetype != napi_undefined && secValuetype != napi_object) {
                 return ThrowError(env, "The type of Parameter must be object.");
             }
             NAPI_CALL(env, napi_new_instance(env, constructor, tempArgc, argvArr, &objTextDecoder));
@@ -380,8 +381,7 @@ namespace OHOS::Util {
         char *type = nullptr;
         size_t typeLen = 0;
         std::vector<int> paraVec(2, 0); // 2: Specifies the size of the container to be applied for.
-        if (tempArgc == 0) {
-        } else if (tempArgc == 1) {
+        if (tempArgc == 1) {
             argc = 1;
             napi_value argv = nullptr;
             napi_get_cb_info(env, info, &argc, &argv, nullptr, &data);
@@ -395,7 +395,7 @@ namespace OHOS::Util {
                 napi_get_value_string_utf8(env, argv, type, typeLen + 1, &typeLen);
             } else if (valuetype == napi_object) {
                 GetSecPara(env, argv, paraVec);
-            } else {
+            } else if (valuetype != napi_undefined) {
                 return ThrowError(env, "The type of Parameter must be string or object.");
             }
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
@@ -408,8 +408,12 @@ namespace OHOS::Util {
                 type = ApplyMemory(typeLen);
             }
             napi_get_value_string_utf8(env, argvArr[0], type, typeLen + 1, &typeLen);
-            // second para
-            GetSecPara(env, argvArr[1], paraVec);
+            napi_valuetype valueType1;
+            napi_typeof(env, argvArr[1], &valueType1);
+            if (valueType1 != napi_undefined) {
+                // second para
+                GetSecPara(env, argvArr[1], paraVec);
+            }
         }
         std::string enconding = "utf-8";
         if (type != nullptr) {
@@ -468,17 +472,19 @@ namespace OHOS::Util {
             }
             napi_valuetype valueType1;
             napi_typeof(env, argvArr[1], &valueType1);
-            if (valueType1 != napi_object) {
-                return ThrowError(env, "The type of Parameter must be object.");
-            }
-            napi_value messageKeyStream = nullptr;
-            const char *messageKeyStrStream = "stream";
+            if (valueType1 != napi_undefined) {
+                if (valueType1 != napi_object) {
+                    return ThrowError(env, "The type of Parameter must be object.");
+                }
+                napi_value messageKeyStream = nullptr;
+                const char *messageKeyStrStream = "stream";
 
-            napi_value resultStream = nullptr;
-            NAPI_CALL(env, napi_create_string_utf8(env, messageKeyStrStream, strlen(messageKeyStrStream),
-                &messageKeyStream));
-            NAPI_CALL(env, napi_get_property(env, argvArr[1], messageKeyStream, &resultStream));
-            NAPI_CALL(env, napi_get_value_bool(env, resultStream, &iStream));
+                napi_value resultStream = nullptr;
+                NAPI_CALL(env, napi_create_string_utf8(env, messageKeyStrStream, strlen(messageKeyStrStream),
+                    &messageKeyStream));
+                NAPI_CALL(env, napi_get_property(env, argvArr[1], messageKeyStream, &resultStream));
+                NAPI_CALL(env, napi_get_value_bool(env, resultStream, &iStream));
+            }
             valStr = textDecoder->Decode(env, argvArr[0], iStream);
         }
         return valStr;
@@ -516,7 +522,7 @@ namespace OHOS::Util {
 
     static bool CheckEncodingFormat(const std::string &encoding)
     {
-        const std::string conventFormat("utf8-t,UTF-8,gbk,GBK,GB2312,gb2312,GB18030,gb18030");
+        const std::string conventFormat("utf-8,UTF-8,gbk,GBK,GB2312,gb2312,GB18030,gb18030");
         if (conventFormat.find(encoding.c_str()) != conventFormat.npos) {
             return true;
         }
@@ -535,24 +541,26 @@ namespace OHOS::Util {
             napi_get_cb_info(env, info, &argc, &src, nullptr, nullptr);
             napi_valuetype valuetype;
             napi_typeof(env, src, &valuetype);
-            if (valuetype != napi_string) {
-                return ThrowError(env, "The type of Parameter must be string.");
+            if (valuetype != napi_undefined) {
+                if (valuetype != napi_string) {
+                    return ThrowError(env, "The type of Parameter must be string.");
+                }
+                std::string buffer = "";
+                size_t bufferSize = 0;
+                if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
+                    HILOG_ERROR("can not get src size");
+                    return nullptr;
+                }
+                buffer.reserve(bufferSize + 1);
+                buffer.resize(bufferSize);
+                if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+                    HILOG_ERROR("can not get src value");
+                    return nullptr;
+                }
+                NAPI_ASSERT(env, CheckEncodingFormat(buffer),
+                            "Wrong encoding format, only support utf-8 gbk gb2312 gb18030");
+                enconding = buffer;
             }
-            std::string buffer = "";
-            size_t bufferSize = 0;
-            if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
-                HILOG_INFO("can not get src size");
-                return nullptr;
-            }
-            buffer.reserve(bufferSize + 1);
-            buffer.resize(bufferSize);
-            if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-                HILOG_INFO("can not get src value");
-                return nullptr;
-            }
-            NAPI_ASSERT(env, CheckEncodingFormat(buffer),
-                        "Wrong encoding format, only support utf-8 gbk gb2312 gb18030");
-            enconding = buffer;
         }
         auto object = new TextEncoder(enconding);
         napi_wrap(
@@ -585,18 +593,25 @@ namespace OHOS::Util {
         size_t argc = 1;
         napi_value args = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr));
+        NAPI_ASSERT(env, argc <= requireArgc, "Wrong number of arguments");
 
-        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
-
-        napi_valuetype valuetype;
-        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
-
+        napi_value result;
+        if (argc == 1) {
+            napi_valuetype valuetype;
+            NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+            if (valuetype == napi_undefined) {
+                napi_get_undefined(env, &result);
+                return result;
+            }
+            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
+        } else {
+            napi_get_undefined(env, &result);
+            return result;
+        }
         TextEncoder *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
 
-        napi_value result = object->Encode(env, args);
+        result = object->Encode(env, args);
 
         return result;
     }
@@ -607,14 +622,24 @@ namespace OHOS::Util {
         size_t argc = 1;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        napi_valuetype valuetype;
-        napi_typeof(env, args, &valuetype);
-        if (valuetype != napi_string) {
-            return ThrowError(env, "The type of Parameter must be string.");
+        napi_value result;
+        if (argc == 1) {
+            napi_valuetype valuetype;
+            NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+            if (valuetype == napi_undefined) {
+                napi_get_undefined(env, &result);
+                return result;
+            }
+            if (valuetype != napi_string) {
+                return ThrowError(env, "The type of Parameter must be string.");
+            }
+        } else {
+            napi_get_undefined(env, &result);
+            return result;
         }
         TextEncoder *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
-        napi_value result = object->Encode(env, args);
+        result = object->Encode(env, args);
         return result;
     }
 
@@ -812,6 +837,7 @@ namespace OHOS::Util {
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
             napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            return nullptr;
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
@@ -879,6 +905,7 @@ namespace OHOS::Util {
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
             napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            return nullptr;
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
@@ -1642,24 +1669,6 @@ namespace OHOS::Util {
         return exports;
     }
 
-    // util module define
-    static napi_module utilModule = {
-        .nm_version = 1,
-        .nm_flags = 0,
-        .nm_filename = nullptr,
-        .nm_register_func = UtilInit,
-        .nm_modname = "util",
-        .nm_priv = ((void*)0),
-        .reserved = {0},
-    };
-
-    // util module register
-    extern "C"
-    __attribute__((constructor)) void RegisterModule()
-    {
-        napi_module_register(&utilModule);
-    }
-
     // util JS register
     extern "C"
     __attribute__((visibility("default"))) void NAPI_util_GetJSCode(const char **buf, int *buflen)
@@ -1680,5 +1689,24 @@ namespace OHOS::Util {
         if (buflen != nullptr) {
             *buflen = _binary_util_abc_end - _binary_util_abc_start;
         }
+    }
+
+    // util module define
+    static napi_module_with_js utilModule = {
+        .nm_version = 1,
+        .nm_flags = 0,
+        .nm_filename = nullptr,
+        .nm_register_func = UtilInit,
+        .nm_modname = "util",
+        .nm_priv = ((void*)0),
+        .nm_get_abc_code = NAPI_util_GetABCCode,
+        .nm_get_js_code = NAPI_util_GetJSCode,
+    };
+
+    // util module register
+    extern "C"
+    __attribute__((constructor)) void UtilRegisterModule()
+    {
+        napi_module_with_js_register(&utilModule);
     }
 }

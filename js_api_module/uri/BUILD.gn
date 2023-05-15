@@ -18,14 +18,18 @@ import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
-  script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
+  script = "${ets_util_path}/js_api_module/build_ts_js.py"
+
+  outFile_Path = target_out_dir + "/" + current_cpu
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/js_uri.js"),
     "--module-path",
     rebase_path("/commonlibrary/ets_utils/js_api_module/uri"),
     "--out-file",
-    rebase_path("./out/js_uri.js"),
+    rebase_path(outFile_Path + "/js_uri.js"),
+    "--out-filePath",
+    rebase_path(outFile_Path),
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
@@ -35,7 +39,7 @@ action("build_ts_js") {
 # compile .js to .abc.
 action("gen_uri_abc") {
   visibility = [ ":*" ]
-  script = "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+  script = generate_js_bytecode_py
 
   args = [
     "--src-js",
@@ -85,10 +89,9 @@ gen_obj("uri_abc") {
 
 ohos_shared_library("uri") {
   include_dirs = [
+    "include",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//commonlibrary/ets_utils/js_api_module/uri",
   ]
 
   sources = [
@@ -99,14 +102,13 @@ ohos_shared_library("uri") {
   deps = [
     ":gen_obj_src_uri_abc",
     ":gen_obj_src_uri_js",
-    "//foundation/arkui/napi/:ace_napi",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
-
+  external_deps = [ "napi:ace_napi" ]
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
   } else {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
     ]
@@ -119,9 +121,8 @@ ohos_shared_library("uri") {
 
 ohos_source_set("uri_static") {
   include_dirs = [
+    "include",
     "//third_party/node/src",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//commonlibrary/ets_utils/js_api_module/uri",
   ]
 
   configs = [ "//third_party/icu/icu4c:icu_config" ]

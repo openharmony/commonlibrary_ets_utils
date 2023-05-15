@@ -47,10 +47,10 @@ bool Timer::RegisterTime(napi_env env)
         return false;
     }
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_WRITABLE_FUNCTION("setTimeout", SetTimeout),
-        DECLARE_NAPI_WRITABLE_FUNCTION("setInterval", SetInterval),
-        DECLARE_NAPI_WRITABLE_FUNCTION("clearTimeout", ClearTimer),
-        DECLARE_NAPI_WRITABLE_FUNCTION("clearInterval", ClearTimer)
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("setTimeout", SetTimeout),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("setInterval", SetInterval),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearTimeout", ClearTimer),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearInterval", ClearTimer)
     };
     napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
     napi_status status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
@@ -142,7 +142,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     // 1. check args
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        napi_throw_error(env, nullptr, "callback must be a function. received undefined");
+        napi_throw_error(env, nullptr, "StartTimeoutOrInterval, callback info is nullptr.");
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];
@@ -150,8 +150,8 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
     if (!Helper::NapiHelper::IsCallable(env, argv[0])) {
-        napi_throw_error(env, nullptr, "callback must be a function.");
-        return nullptr;
+        HILOG_ERROR( "Set callback timer failed with invalid parameter.");
+        return Helper::NapiHelper::GetUndefinedValue(env);
     }
     int32_t timeout = 0;
     if (argc > 1) {
@@ -214,5 +214,14 @@ void Timer::ClearEnvironmentTimer(napi_env env)
             iter++;
         }
     }
+}
+
+bool Timer::HasTimer(napi_env env)
+{
+    std::lock_guard<std::mutex> lock(timeLock);
+    auto iter = std::find_if(timerTable.begin(), timerTable.end(), [env](const auto &item) {
+        return item.second->env_ == env;
+    });
+    return iter != timerTable.end();
 }
 } // namespace Commonlibrary::JsSysModule

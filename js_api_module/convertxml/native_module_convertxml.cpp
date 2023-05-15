@@ -58,6 +58,7 @@ namespace OHOS::Xml {
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         if (args[0] == nullptr) {
             NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
+            return nullptr;
         } else {
             NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
             NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");

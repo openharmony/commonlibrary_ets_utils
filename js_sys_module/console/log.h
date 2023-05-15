@@ -33,14 +33,14 @@
 #undef HILOG_INFO
 #undef HILOG_DEBUG
 
-#define LOG_DOMAIN 0xD003D00
+#define LOG_DOMAIN 0x3D00
 #define LOG_TAG "JSAPP"
 
 
-constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_CORE, LOG_DOMAIN, LOG_TAG };
+constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_APP, LOG_DOMAIN, LOG_TAG };
 
 #define HILOG_PRINT(Level, fmt, ...)     \
-    (void)OHOS::HiviewDFX::HiLog::Level(LOG_LABEL,  fmt, ##__VA_ARGS__)
+    (void)OHOS::HiviewDFX::HiLog::Level(LOG_LABEL, fmt, ##__VA_ARGS__)
 
 
 #define HILOG_FATAL(fmt, ...) HILOG_PRINT(Fatal, fmt, ##__VA_ARGS__)

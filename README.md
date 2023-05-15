@@ -5057,14 +5057,14 @@ var myVar = setTimeout(callback, 1000);
 clearTimeout(myVar);
 ```
 
-## 4. js_worker_module子模块
+## 4. js_concurrent_module子模块
 
 ### 4.1. 简介
 
 worker能够让js拥有多线程的能力，通过postMessage完成worker线程与宿主线程通信。
 
 ### 4.2. 接口说明
-接口实现详见：js_worker_module/worker
+接口实现详见：js_concurrent_module/worker
 
 #### 4.2.1. Worker对象描述
 
@@ -5500,6 +5500,6 @@ js_api_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)�
 
 js_util_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_util_module/mozilla_docs.txt)。
 
-js_worker_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_worker_module/mozilla_docs.txt)。
+js_concurrent_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_concurrent_module/mozilla_docs.txt)。
 
 js_sys_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_sys_module/mozilla_docs.txt)。

@@ -1354,9 +1354,11 @@ class Buffer {
   }
 
   readFloatLE(offset: number): number {
+    if (offset === undefined) {
+      offset = 0;
+    }
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, fourBytes);
-
     let i: number = 0;
     while (i <= 3) { // 3 is uInt8Float32Array->maxIndex
       uInt8Float32Array[i++] = this[offset++];
@@ -1760,6 +1762,9 @@ function alloc(size: number, fill?: string | Buffer | number, encoding?: string)
   if (arguments.length === 2 && fill !== undefined && fill !== 0) {
     buf.fill(fill);
   } else if (arguments.length === 3) {
+    if (encoding === undefined) {
+      encoding = 'utf-8';
+    }
     typeErrorCheck(encoding, ['string'], 'encoding');
     if (fill !== undefined && fill !== 0) {
       buf.fill(fill, undefined, undefined, encoding);

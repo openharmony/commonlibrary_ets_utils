@@ -28,22 +28,23 @@ enum Priority { HIGH, MEDIUM, LOW, NUMBER, DEFAULT = MEDIUM };
 
 class Task {
 public:
-    Task() = default;
-    ~Task() = default;
-
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
 
-    napi_ref objRef_ = nullptr;
-    uint32_t executeId_ = 0;
-    uint32_t taskId_ = 0;
-    Priority priority_ = Priority::DEFAULT;
+private:
+    Task() = delete;
+    ~Task() = delete;
+    Task(const Task &) = delete;
+    Task& operator=(const Task &) = delete;
+    Task(Task &&) = delete;
+    Task& operator=(Task &&) = delete;
 };
 
 struct TaskInfo {
     napi_env env = nullptr;
     napi_deferred deferred = nullptr;
     napi_value result = nullptr;
-    napi_value serializationData = nullptr;
+    napi_value serializationFunction = nullptr;
+    napi_value serializationArguments = nullptr;
     uv_async_t *onResultSignal = nullptr;
     uint32_t taskId;
     uint32_t executeId;

@@ -15,8 +15,8 @@
 
 #include "worker.h"
 
-#include "hitrace_meter.h"
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
+#include "hitrace_meter.h"
 #include "task_manager.h"
 #include "utils/log.h"
 
@@ -33,24 +33,34 @@ Worker* Worker::WorkerConstructor(napi_env env)
     return worker;
 }
 
-Worker::~Worker()
+void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 {
+    auto worker = static_cast<Worker*>(req->data);
     // when there is no active handle, worker loop will stop automatic.
-    uv_close(reinterpret_cast<uv_handle_t*>(performTaskSignal_), [](uv_handle_t* handle) {
+    uv_close(reinterpret_cast<uv_handle_t*>(worker->performTaskSignal_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
             delete reinterpret_cast<uv_async_t*>(handle);
             handle = nullptr;
         }
     });
+
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_close(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_), [](uv_handle_t* handle) {
+    uv_close(reinterpret_cast<uv_handle_t*>(worker->debuggerOnPostTaskSignal_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
             delete reinterpret_cast<uv_async_t*>(handle);
             handle = nullptr;
         }
     });
 #endif
-    uv_loop_t* loop = GetWorkerLoop();
+
+    uv_close(reinterpret_cast<uv_handle_t*>(worker->clearWorkerSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
+
+    uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop != nullptr) {
         uv_stop(loop);
     }
@@ -112,6 +122,11 @@ void Worker::ExecuteInThread(const void* data)
     worker->performTaskSignal_ = new uv_async_t;
     worker->performTaskSignal_->data = worker;
     uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
+
+    worker->clearWorkerSignal_ = new uv_async_t;
+    worker->clearWorkerSignal_->data = worker;
+    uv_async_init(loop, worker->clearWorkerSignal_, reinterpret_cast<uv_async_cb>(Worker::ReleaseWorkerHandles));
+
     FinishTrace(HITRACE_TAG_COMMONLIBRARY);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // Init debugger task post signal
@@ -135,12 +150,11 @@ bool Worker::PrepareForWorkerInstance()
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
-    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     workerEngine->SetDebuggerPostTaskFunc(
         std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
 #endif
-    if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
+    if (!workerEngine->CallInitWorkerFunc(workerEngine)) {
         HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc failure");
         return false;
     }
@@ -162,6 +176,9 @@ void Worker::ReleaseWorkerThreadContent()
     Timer::ClearEnvironmentTimer(workerEnv_);
 
     // 2. delete NativeEngine created in worker thread
+    if (!workerEngine->CallOffWorkerFunc(workerEngine)) {
+        HILOG_ERROR("worker:: CallOffWorkerFunc error");
+    }
     workerEngine->DeleteEngine();
     delete workerEngine;
     workerEnv_ = nullptr;
@@ -179,50 +196,74 @@ void Worker::NotifyIdle()
     TaskManager::GetInstance().NotifyWorkerIdle(this);
 }
 
+void Worker::NotifyTaskFinished()
+{
+    runningCount_--;
+    idlePoint_ = ConcurrentHelper::GetMilliseconds();
+}
+
 void Worker::PerformTask(const uv_async_t* req)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     auto worker = static_cast<Worker*>(req->data);
     napi_env env = worker->workerEnv_;
-    std::unique_ptr<Task> task = TaskManager::GetInstance().DequeueTask();
-    if (task == nullptr) {
-        worker->NotifyIdle();
+    napi_status status = napi_ok;
+    RunningScope runningScope(worker, status);
+    NAPI_CALL_RETURN_VOID(env, status);
+    auto executeIdAndPriority = TaskManager::GetInstance().DequeueExecuteId();
+    if (executeIdAndPriority.first == 0) {
+        worker->NotifyTaskFinished();
         return;
     }
 
-    TaskInfo* taskInfo = TaskManager::GetInstance().PopTaskInfo(task->executeId_);
+    TaskInfo* taskInfo = TaskManager::GetInstance().PopTaskInfo(executeIdAndPriority.first);
     if (taskInfo == nullptr) { // task may have been canceled
-        worker->NotifyIdle();
+        worker->NotifyTaskFinished();
         HILOG_ERROR("taskpool::PerformTask taskInfo is null");
         return;
     }
-    taskInfo->worker = worker;
-    TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::RUNNING);
-    napi_handle_scope scope = nullptr;
-    napi_open_handle_scope(env, &scope);
-    if (scope == nullptr) {
-        return;
+    std::string traceInfo = "PerformTask, TaskId: ";
+    traceInfo += std::to_string(taskInfo->taskId);
+
+    if (executeIdAndPriority.second == Priority::HIGH) {
+        traceInfo += ", TaskPriority: HIGH";
+    } else if (executeIdAndPriority.second == Priority::MEDIUM) {
+        traceInfo += ", TaskPriority: MEDIUM";
+    } else if (executeIdAndPriority.second == Priority::LOW) {
+       traceInfo += ", TaskPriority: LOW";
+    } else {
+        HILOG_ERROR("taskpool:: task priority value is error");
     }
+    StartTrace(HITRACE_TAG_COMMONLIBRARY, traceInfo);
+    taskInfo->worker = worker;
+    uint64_t startTime = ConcurrentHelper::GetMilliseconds();
+    TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::RUNNING);
     napi_value undefined;
     napi_get_undefined(env, &undefined);
-    napi_value taskData;
-    napi_status status = napi_deserialize(env, taskInfo->serializationData, &taskData);
-    if (status != napi_ok || taskData == nullptr) {
-        HILOG_ERROR("taskpool::PerformTask napi_deserialize fail");
+    napi_value func;
+    status = napi_deserialize(env, taskInfo->serializationFunction, &func);
+    if (status != napi_ok || func == nullptr) {
+        HILOG_ERROR("taskpool:: PerformTask deserialize function fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-            "taskpool: failed to deserialize message.");
+            "taskpool: failed to deserialize function.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
-        napi_close_handle_scope(env, scope);
         return;
     }
-    napi_value func;
-    napi_get_named_property(env, taskData, "func", &func);
+    napi_value args;
+    status = napi_deserialize(env, taskInfo->serializationArguments, &args);
+    if (status != napi_ok || args == nullptr) {
+        HILOG_ERROR("taskpool:: PerformTask deserialize arguments fail");
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
+            "taskpool: failed to deserialize arguments.");
+        taskInfo->success = false;
+        NotifyTaskResult(env, taskInfo, err);
+        return;
+    }
+
     auto funcVal = reinterpret_cast<NativeValue*>(func);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->InitTaskPoolFunc(workerEngine, funcVal);
-    napi_value args;
-    napi_get_named_property(env, taskData, "args", &args);
     uint32_t argsNum = 0;
     napi_get_array_length(env, args, &argsNum);
     napi_value argsArray[argsNum];
@@ -237,6 +278,9 @@ void Worker::PerformTask(const uv_async_t* req)
 
     napi_value result;
     napi_call_function(env, data, func, argsNum, argsArray, &result);
+    FinishTrace(HITRACE_TAG_COMMONLIBRARY);
+    uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime;
+    TaskManager::GetInstance().UpdateExecutedInfo(duration);
 
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
@@ -244,10 +288,7 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_ERROR("taskpool::PerformTask occur exception");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, exception);
-    } else {
-        worker->NotifyIdle();
     }
-    napi_close_handle_scope(env, scope);
 }
 
 void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result)
@@ -269,11 +310,10 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
 
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::TERMINATED);
     TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
-    uv_async_send(taskInfo->onResultSignal);
-
-    // Warning: The worker thread maybe released for future taskpool shrinkage strategy?
+    TaskManager::GetInstance().PopTaskEnvInfo(taskInfo->env);
     Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
-    worker->NotifyIdle();
+    uv_async_send(taskInfo->onResultSignal);
+    worker->NotifyTaskFinished();
 }
 
 void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result,

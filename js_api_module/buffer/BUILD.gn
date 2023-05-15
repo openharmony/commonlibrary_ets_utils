@@ -19,19 +19,21 @@ import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
-  script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
+  script = "${ets_util_path}/js_api_module/build_ts_js.py"
 
+  outFile_Path = target_out_dir + "/" + current_cpu
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/js_buffer.js"),
     "--module-path",
     rebase_path("/commonlibrary/ets_utils/js_api_module/buffer"),
     "--out-file",
-    rebase_path("./out/js_buffer.js"),
+    rebase_path(outFile_Path + "/js_buffer.js"),
+    "--out-filePath",
+    rebase_path(outFile_Path),
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
-
   outputs = [ target_out_dir + "/js_buffer.js" ]
 }
 
@@ -57,7 +59,7 @@ gen_obj("js_buffer") {
 # compile .js to .abc.
 action("gen_buffer_abc") {
   visibility = [ ":*" ]
-  script = "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+  script = generate_js_bytecode_py
 
   args = [
     "--src-js",
@@ -95,10 +97,9 @@ gen_obj("buffer_abc") {
 
 ohos_shared_library("buffer") {
   include_dirs = [
+    "include",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//commonlibrary/ets_utils/js_api_module/buffer",
   ]
 
   sources = [
@@ -111,10 +112,11 @@ ohos_shared_library("buffer") {
   deps = [
     ":gen_obj_src_buffer_abc",
     ":gen_obj_src_js_buffer",
-    "//foundation/arkui/napi/:ace_napi",
     "//third_party/bounds_checking_function:libsec_shared",
     "//third_party/icu/icu4c:shared_icuuc",
   ]
+
+  external_deps = [ "napi:ace_napi" ]
 
   if (use_mingw_win) {
     deps += [ "$hilog_windows" ]
@@ -123,7 +125,7 @@ ohos_shared_library("buffer") {
   } else if (use_mac) {
     deps += [ "$hilog_mac" ]
   } else {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
   }
 
   configs = [ ":buffer_config" ]
@@ -135,10 +137,9 @@ ohos_shared_library("buffer") {
 
 ohos_source_set("buffer_static") {
   include_dirs = [
+    "include",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//commonlibrary/ets_utils/js_api_module/buffer",
   ]
 
   sources = [
@@ -169,6 +170,8 @@ ohos_source_set("buffer_static") {
     ]
     if (target_os == "android") {
       defines = [ "ANDROID_PLATFORM" ]
+    } else if (target_os == "ios") {
+      defines = [ "IOS_PLATFORM" ]
     }
     deps += [
       "$plugins_root/libs/icu:icu_${target_os}",
