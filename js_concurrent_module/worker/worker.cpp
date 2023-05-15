@@ -15,7 +15,7 @@
 
 #include "worker.h"
 
-#include "hitrace_meter.h"
+#include "helper/hitrace_helper.h"
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "worker_new.h"
 
@@ -76,7 +76,7 @@ void Worker::CloseInner()
 
 napi_value Worker::CloseWorker(napi_env env, napi_callback_info cbinfo)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     Worker* worker = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, (void**)&worker);
     if (worker != nullptr) {
@@ -183,7 +183,7 @@ void Worker::PublishWorkerOverSignal()
 
 void Worker::ExecuteInThread(const void* data)
 {
-    StartTrace(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
@@ -222,13 +222,13 @@ void Worker::ExecuteInThread(const void* data)
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
         uv_async_send(worker->workerOnMessageSignal_);
-        FinishTrace(HITRACE_TAG_COMMONLIBRARY);
+        HITRACE_HELPER_FINISH_TRACE;
         // 3. start worker loop
         worker->Loop();
     } else {
         HILOG_ERROR("worker:: worker PrepareForWorkerInstance failure");
         worker->UpdateWorkerState(TERMINATED);
-        FinishTrace(HITRACE_TAG_COMMONLIBRARY);
+        HITRACE_HELPER_FINISH_TRACE;
     }
     worker->ReleaseWorkerThreadContent();
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
@@ -241,7 +241,7 @@ void Worker::ExecuteInThread(const void* data)
 
 void Worker::HostOnMessage(const uv_async_t* req)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is null");
@@ -323,7 +323,7 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 
 void Worker::WorkerOnMessage(const uv_async_t* req)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
@@ -426,7 +426,7 @@ void Worker::HostOnMessageInner()
 
 void Worker::TerminateWorker()
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     // when there is no active handle, worker loop will stop automatic.
     uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
@@ -531,7 +531,7 @@ void Worker::WorkerOnMessageErrorInner()
 
 napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Worker param count must be more than 1 with postMessage");
@@ -575,7 +575,7 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
 
 napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Worker param count must be more than 1 with new");
@@ -642,7 +642,7 @@ void Worker::PostMessageInner(MessageDataType data)
 
 napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     Worker* worker = nullptr;
@@ -1086,7 +1086,7 @@ napi_value Worker::RemoveAllListener(napi_env env, napi_callback_info cbinfo)
 
 napi_value Worker::InitWorker(napi_env env, napi_value exports)
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     const char className[] = "Worker";
     napi_property_descriptor properties[] = {
@@ -1213,7 +1213,7 @@ void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* m
 
 void Worker::ReleaseWorkerThreadContent()
 {
-    HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     if (hostEngine != nullptr && workerEngine != nullptr) {
