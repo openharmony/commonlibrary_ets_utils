@@ -53,7 +53,7 @@ namespace OHOS::JsSysModule::Process {
                         NAPI_ASSERT(env, propertyType == napi_number || propertyType == napi_undefined,
                                     "Wrong timeout argument typr. Number expected");
                         int timeout = 0;
-                        napi_get_value_int32(env, property, &timeout);
+                        NAPI_CALL(env, napi_get_value_int32(env, property, &timeout));
                         if (timeout < 0) {
                             NAPI_CALL(env, napi_throw_error(env, "", "options timeout is lessthen zero"));
                             return nullptr;
