@@ -15,7 +15,9 @@
 
 #include "worker.h"
 
+#if !defined(__ARKUI_CROSS__)
 #include "hitrace_meter.h"
+#endif
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "worker_new.h"
 
@@ -76,7 +78,9 @@ void Worker::CloseInner()
 
 napi_value Worker::CloseWorker(napi_env env, napi_callback_info cbinfo)
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     Worker* worker = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, (void**)&worker);
     if (worker != nullptr) {
@@ -183,7 +187,9 @@ void Worker::PublishWorkerOverSignal()
 
 void Worker::ExecuteInThread(const void* data)
 {
+#if !defined(__ARKUI_CROSS__)
     StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteInThread Before ReleaseWorkerThreadContent");
+#endif
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
@@ -228,21 +234,29 @@ void Worker::ExecuteInThread(const void* data)
         HILOG_ERROR("worker:: worker PrepareForWorkerInstance failure");
         worker->UpdateWorkerState(TERMINATED);
     }
+#if !defined(__ARKUI_CROSS__)
     FinishTrace(HITRACE_TAG_COMMONLIBRARY);
+#endif
     worker->ReleaseWorkerThreadContent();
+#if !defined(__ARKUI_CROSS__)
     StartTrace(HITRACE_TAG_COMMONLIBRARY, "ExecuteInThread After ReleaseWorkerThreadContent");
+#endif
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->HostIsStop()) {
         CloseHelp::DeletePointer(worker, false);
     } else {
         worker->PublishWorkerOverSignal();
     }
+#if !defined(__ARKUI_CROSS__)
     FinishTrace(HITRACE_TAG_COMMONLIBRARY);
+#endif
 }
 
 void Worker::HostOnMessage(const uv_async_t* req)
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is null");
@@ -324,7 +338,9 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 
 void Worker::WorkerOnMessage(const uv_async_t* req)
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
@@ -427,7 +443,9 @@ void Worker::HostOnMessageInner()
 
 void Worker::TerminateWorker()
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     // when there is no active handle, worker loop will stop automatic.
     uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
@@ -532,7 +550,9 @@ void Worker::WorkerOnMessageErrorInner()
 
 napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Worker param count must be more than 1 with postMessage");
@@ -576,7 +596,9 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
 
 napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Worker param count must be more than 1 with new");
@@ -643,7 +665,9 @@ void Worker::PostMessageInner(MessageDataType data)
 
 napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     Worker* worker = nullptr;
@@ -1087,7 +1111,9 @@ napi_value Worker::RemoveAllListener(napi_env env, napi_callback_info cbinfo)
 
 napi_value Worker::InitWorker(napi_env env, napi_value exports)
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     const char className[] = "Worker";
     napi_property_descriptor properties[] = {
@@ -1214,7 +1240,9 @@ void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* m
 
 void Worker::ReleaseWorkerThreadContent()
 {
+#if !defined(__ARKUI_CROSS__)
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
+#endif
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     if (hostEngine != nullptr && workerEngine != nullptr) {

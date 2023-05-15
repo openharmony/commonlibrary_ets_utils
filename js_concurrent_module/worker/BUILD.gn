@@ -13,6 +13,8 @@
 
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 ohos_shared_library("worker") {
   include_dirs = [
@@ -55,6 +57,52 @@ ohos_shared_library("worker") {
   part_name = "ets_utils"
 
   relative_install_dir = "module"
+}
+
+ohos_source_set("worker_static") {
+  include_dirs = [
+    js_concurrent_module_common,
+    "$concurrent_module/worker",
+    "$sys_module/timer",
+  ]
+
+  sources = [
+    "$js_concurrent_module_common/helper/napi_helper.cpp",
+    "$sys_module/timer/timer.cpp",
+    "message_queue.cpp",
+    "native_module_worker.cpp",
+    "thread.cpp",
+    "worker.cpp",
+    "worker_new.cpp",
+    "worker_runner.cpp",
+  ]
+  deps = []
+
+  defines = []
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    defines += [ "__ARKUI_CROSS__" ]
+    deps += [
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "//third_party/libuv:uv_static",
+    ]
+    if (target_os == "android") {
+      defines += [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      defines += [ "IOS_PLATFORM" ]
+    }
+  } else {
+    deps += [ "$napi_root:ace_napi" ]
+    external_deps = [ "hitrace_native:hitrace_meter" ]
+  }
+
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
 }
 
 group("worker_packages") {
