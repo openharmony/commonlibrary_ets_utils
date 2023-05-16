@@ -30,6 +30,7 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 static constexpr char FUNCTION_STR[] = "function";
 static constexpr char ARGUMENTS_STR[] = "arguments";
 static constexpr char TASKID_STR[] = "taskId";
+static constexpr char TASKINFO_STR[] = "taskInfo";
 
 class Worker;
 
