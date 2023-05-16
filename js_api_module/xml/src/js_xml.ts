@@ -57,7 +57,8 @@ class XmlSerializer {
     if (typeof obj !== 'object') {
       throw new BusinessError(`Parameter error.The type of ${obj} must be object`);
     }
-    if (arguments.length === 1) {
+    if (arguments.length === 1 ||
+        (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'undefined' || inputStr === null))) {
       const inputType: string = 'utf-8';
       this.xmlSerializerClass = new XML.XmlSerializer(obj, inputType);
     } else if (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'string' && inputStr.length !== 0)) {
@@ -184,7 +185,8 @@ class XmlPullParser {
     if (typeof obj !== 'object') {
       throw new BusinessError(`Parameter error.The type of ${obj} must be object`);
     }
-    if (arguments.length === 1) {
+    if (arguments.length === 1 ||
+        (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'undefined' || inputStr === null))) {
       let str: string = 'utf-8';
       this.xmlPullParserClass = new XML.XmlPullParser(obj, str);
     } else if (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr ===
