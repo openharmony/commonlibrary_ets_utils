@@ -222,9 +222,9 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_ERROR("taskpool::PerformTask taskInfo is null");
         return;
     }
+
     std::string traceInfo = "PerformTask, TaskId: ";
     traceInfo += std::to_string(taskInfo->taskId);
-
     if (executeIdAndPriority.second == Priority::HIGH) {
         traceInfo += ", TaskPriority: HIGH";
     } else if (executeIdAndPriority.second == Priority::MEDIUM) {
@@ -263,7 +263,24 @@ void Worker::PerformTask(const uv_async_t* req)
 
     auto funcVal = reinterpret_cast<NativeValue*>(func);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
-    workerEngine->InitTaskPoolFunc(workerEngine, funcVal);
+    [[maybe_unused]] bool success = workerEngine->InitTaskPoolFunc(workerEngine, funcVal);
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+    if (exception != nullptr) {
+        HILOG_ERROR("taskpool:: InitTaskPoolFunc occur exception");
+        taskInfo->success = false;
+        NotifyTaskResult(env, taskInfo, exception);
+        return;
+    }
+    if (!success) {
+        HILOG_ERROR("taskpool:: InitTaskPoolFunc fail");
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::TYPE_ERROR,
+            "taskpool: function maybe not concurrent.");
+        taskInfo->success = false;
+        NotifyTaskResult(env, taskInfo, err);
+        return;
+    }
+
     uint32_t argsNum = 0;
     napi_get_array_length(env, args, &argsNum);
     napi_value argsArray[argsNum];
@@ -285,7 +302,6 @@ void Worker::PerformTask(const uv_async_t* req)
     uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime;
     TaskManager::GetInstance().UpdateExecutedInfo(duration);
 
-    napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");
