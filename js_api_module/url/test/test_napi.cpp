@@ -310,6 +310,104 @@ HWTEST_F(NativeEngineTest, testUrlConstructs013, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "file:");
 }
 
+HWTEST_F(NativeEngineTest, testUrlConstructs014, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http1://www.example.com");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "http1:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs015, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http2://www.example.com:22/adfee/kk?a=4#saf");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "http2:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs016, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http2://username:password@www.example.com:22/adfee/kk?a=4#saf");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "http2:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs017, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs018, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@/adfee/kk?a=4#saf");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs019, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@/adfee/kk?a=4#saf", "");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs020, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@sda/adfee/kk?a=4#saf", "http://sads/sad");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_TRUE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs021, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("//fdsa", "http://sad");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_TRUE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs022, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("-http://username:password@/adfee/kk?a=4#saf");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlConstructs023, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL base("http://www.example.com");
+    OHOS::Url::URL url("//asd", base);
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_TRUE(value);
+}
+
 HWTEST_F(NativeEngineTest, testUrlProtocol001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:8080/directory/file?query#fragment");
@@ -369,6 +467,18 @@ HWTEST_F(NativeEngineTest, testUrlSetScheme003, testing::ext::TestSize.Level0)
     DealNapiStrValue(env, url.GetScheme(env), output);
     ASSERT_STREQ(output.c_str(), "https:");
     url.SetScheme("-/+");
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetScheme004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://username:password@host:8080/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+    url.SetScheme("file");
     DealNapiStrValue(env, url.GetScheme(env), output);
     ASSERT_STREQ(output.c_str(), "https:");
 }
@@ -526,6 +636,32 @@ HWTEST_F(NativeEngineTest, testUrlSetHost002, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "host:199");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSetHost003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+    url.SetHost("/");
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetHost004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "host:199");
+    url.SetHost("asdzxc:54/");
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_TRUE(value);;
+}
+
 HWTEST_F(NativeEngineTest, testUrlSetHref001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
@@ -605,6 +741,26 @@ HWTEST_F(NativeEngineTest, testUrlPort003, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "");
 }
 
+HWTEST_F(NativeEngineTest, testUrlPort004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:655656/directory/file?query#fragment");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlPort005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:6c3/directory/file?query#fragment");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
 HWTEST_F(NativeEngineTest, testUrlSetPort001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:100/directory/file?query#fragment");
@@ -612,7 +768,7 @@ HWTEST_F(NativeEngineTest, testUrlSetPort001, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetPort(env), output);
     ASSERT_STREQ(output.c_str(), "100");
-    url.SetPort("600");
+    url.SetPort("600?");
     DealNapiStrValue(env, url.GetPort(env), output);
     ASSERT_STREQ(output.c_str(), "600");
 }
@@ -637,11 +793,21 @@ HWTEST_F(NativeEngineTest, testUrlPathname002, testing::ext::TestSize.Level0)
 
 HWTEST_F(NativeEngineTest, testUrlPathname003, testing::ext::TestSize.Level0)
 {
-    OHOS::Url::URL url("http://username:password@host:8080?query#fragment");
+    OHOS::Url::URL url("http2://username:password@host:8080?query#fragment");
     std::string output;
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetPath(env), output);
-    ASSERT_STREQ(output.c_str(), "/");
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlPathname004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080?query#fragment");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_TRUE(value);
 }
 
 HWTEST_F(NativeEngineTest, testUrlSetPath001, testing::ext::TestSize.Level0)
@@ -678,6 +844,28 @@ HWTEST_F(NativeEngineTest, testUrlSetPath003, testing::ext::TestSize.Level0)
     url.SetPath("::");
     DealNapiStrValue(env, url.GetPath(env), output);
     ASSERT_STREQ(output.c_str(), "/::");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetPath004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:8080?query#fragment");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/");
+    url.SetPath("");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetPath005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("file://hostsasf");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    url.SetPath("/askdj");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/askdj");
 }
 
 HWTEST_F(NativeEngineTest, testUrlSearch001, testing::ext::TestSize.Level0)
@@ -858,6 +1046,16 @@ HWTEST_F(NativeEngineTest, testUrlGetOnOrOff001, testing::ext::TestSize.Level0)
     ASSERT_TRUE(value);
 }
 
+HWTEST_F(NativeEngineTest, testUrlGetOnOrOff002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://192.168.259.551:80/index.html");
+    napi_env env = (napi_env)engine_;
+    napi_value result = url.GetOnOrOff(env);
+    bool value = false;
+    napi_get_value_bool(env, result, &value);
+    ASSERT_FALSE(value);
+}
+
 HWTEST_F(NativeEngineTest, testUrlSetHostname001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://0377.0xff.255.1:80/index.html");
@@ -878,6 +1076,19 @@ HWTEST_F(NativeEngineTest, testUrlSetHostname002, testing::ext::TestSize.Level0)
     url.SetHostname(value);
     DealNapiStrValue(env, url.GetHostname(env), output);
     ASSERT_STREQ(output.c_str(), "255.255.255.1");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetHostname003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("file:///www.example.com");
+    napi_env env = (napi_env)engine_;
+    std::string output;
+    std::string value = "localhost/";
+    url.SetHostname(value);
+    napi_value result = url.GetOnOrOff(env);
+    bool value1 = false;
+    napi_get_value_bool(env, result, &value1);
+    ASSERT_TRUE(value1);
 }
 
 HWTEST_F(NativeEngineTest, testUrlSearchParams001, testing::ext::TestSize.Level0)
@@ -949,6 +1160,32 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsAppend003, testing::ext::TestSize.
     ASSERT_STREQ(output.c_str(), "foo%7E%21%40%23%24%25%5E%26*%28%29_%2B-%3D=jk");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSearchParamsAppend004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_value input2 = StrToNapiValue(env, "jk");
+    params.Append(env, result, input2);
+    DealNapiStrValue(env, params.Get(env, input2), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsAppend005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "foo~!@#$%^&*()_+-=");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    params.Append(env, input1, result);
+    DealNapiStrValue(env, params.Get(env, input1), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
 HWTEST_F(NativeEngineTest, testUrlSearchParamsDelete001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
@@ -1001,6 +1238,24 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsDelete003, testing::ext::TestSize.
     ASSERT_STREQ(output.c_str(), "");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSearchParamsDelete004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "foo~!@#$%^&*()_+-=");
+    napi_value input2 = StrToNapiValue(env, "jk");
+    params.Append(env, input1, input2);
+    napi_value input3 = StrToNapiValue(env, "ma");
+    napi_value input4 = StrToNapiValue(env, "jk");
+    params.Append(env, input3, input4);
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    params.Delete(env, result);
+    DealNapiStrValue(env, params.Get(env, input3), output);
+    ASSERT_STREQ(output.c_str(), "jk");
+}
+
 HWTEST_F(NativeEngineTest, testUrlSearchParamsGet001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
@@ -1033,6 +1288,40 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsGet003, testing::ext::TestSize.Lev
     params.Append(env, input1, input2);
     DealNapiStrValue(env, params.Get(env, input1), output);
     ASSERT_STREQ(output.c_str(), "jk");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsGet004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "hello, \U0001F600 world!");
+    DealNapiStrValue(env, params.Get(env, input1), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsGet005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    DealNapiStrValue(env, params.Get(env, result), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsGet006, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "foo~!@#$%^&*()_+-=");
+    napi_value input2 = StrToNapiValue(env, "jk");
+    napi_value input3 = StrToNapiValue(env, "asd");
+    params.Append(env, input1, input2);
+    DealNapiStrValue(env, params.Get(env, input3), output);
+    ASSERT_STREQ(output.c_str(), "");
 }
 
 HWTEST_F(NativeEngineTest, testUrlSearchParamsGetAll001, testing::ext::TestSize.Level0)
@@ -1074,6 +1363,40 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsGetAll003, testing::ext::TestSize.
     params.Append(env, input3, input4);
     napi_value input5 = StrToNapiValue(env, "jk2");
     DealNapiStrValue(env, params.GetAll(env, input5), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsGetAll004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    DealNapiStrValue(env, params.GetAll(env, result), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsGetAll005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "jk");
+    DealNapiStrValue(env, params.GetAll(env, input1), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsGetAll006, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "ma");
+    napi_value input2 = StrToNapiValue(env, "jk");
+    params.Append(env, input1, input2);
+    napi_value input3 = StrToNapiValue(env, "ma");
+    DealNapiStrValue(env, params.GetAll(env, input3), output);
     ASSERT_STREQ(output.c_str(), "");
 }
 
@@ -1133,6 +1456,23 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsHas003, testing::ext::TestSize.Lev
     ASSERT_STREQ(output.c_str(), "");
 }
 
+HWTEST_F(NativeEngineTest, testUrlSearchParamsHas004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "ma");
+    napi_value input2 = StrToNapiValue(env, "jk");
+    params.Append(env, input1, input2);
+    napi_value input3 = StrToNapiValue(env, "foo~!@#$%^&*()_+-=");
+    napi_value input4 = StrToNapiValue(env, "jk1");
+    params.Append(env, input3, input4);
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    DealNapiStrValue(env, params.IsHas(env, result), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
 HWTEST_F(NativeEngineTest, testUrlSearchParamsSet001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
@@ -1180,6 +1520,41 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsSet003, testing::ext::TestSize.Lev
     DealNapiStrValue(env, ToString(env, paramsString), output);
     ASSERT_STREQ(output.c_str(), "ma=jk&ma1=aa");
 }
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsSet004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "ma1");
+    napi_value input2 = StrToNapiValue(env, "aa");
+    params.Append(env, input1, input2);
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    params.Set(env, result, input2);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
+    ASSERT_STREQ(output.c_str(), "ma1=aa");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsSet005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    napi_value input1 = StrToNapiValue(env, "ma1");
+    napi_value input2 = StrToNapiValue(env, "aa");
+    params.Append(env, input1, input2);
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    params.Set(env, input1, result);
+    napi_value tempValue = params.GetArray(env);
+    std::vector<std::string> paramsString = GetParamsStrig(env, tempValue);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
+    ASSERT_STREQ(output.c_str(), "ma1=aa");
+}
+
 
 HWTEST_F(NativeEngineTest, testUrlSearchParamsSort001, testing::ext::TestSize.Level0)
 {
@@ -1399,4 +1774,94 @@ HWTEST_F(NativeEngineTest, testUrlSearchParamsEntries001, testing::ext::TestSize
         }
     }
     ASSERT_EQ(length, 3);
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearchParamsEntries002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    std::string output;
+    params.Entries(env);
+    napi_value input1 = StrToNapiValue(env, "ma");
+    DealNapiStrValue(env, params.Get(env, input1), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities001, testing::ext::TestSize.Level0)
+{
+    std::string inPut = "";
+    OHOS::Url::DecodeSpecialChars(inPut);
+    inPut = "%1238";
+    OHOS::Url::DecodeSpecialChars(inPut);
+    inPut = "    ";
+    OHOS::Url::DeleteC0OrSpace(inPut);
+    inPut = "   123  ";
+    OHOS::Url::DeleteC0OrSpace(inPut);
+    inPut = "dks	aasdd";
+    OHOS::Url::DeleteTabOrNewline(inPut);
+    inPut = "1asdf";
+    std::string temp = "";
+    std::bitset<11> flags; // 11:Each bit of a BIT represents a different parsing state.
+    bool isFalse = OHOS::Url::AnalysisScheme(inPut, temp, flags);
+    ASSERT_FALSE(isFalse);
+    inPut = "1aSdf";
+    isFalse = OHOS::Url::AnalysisScheme(inPut, temp, flags);
+    inPut = "1@Sdf";
+    isFalse = OHOS::Url::AnalysisScheme(inPut, temp, flags);
+    inPut = "@Sdf";
+    OHOS::Url::AnalysisUsernameAndPasswd(inPut, temp, temp, flags);
+    inPut = "12@3@222@Sdf";
+    OHOS::Url::AnalysisUsernameAndPasswd(inPut, temp, temp, flags);
+    inPut = "../../";
+    std::vector<std::string> temp1;
+    OHOS::Url::AnalysisPath(inPut, temp1, flags, true);
+    inPut = "asd#sad";
+    OHOS::Url::AnalysisOpaqueHost(inPut, temp, flags);
+    inPut = "asdsad";
+    OHOS::Url::AnalysisOpaqueHost(inPut, temp, flags);
+    bool IsHexDigit =  OHOS::Url::IsHexDigit('/');
+    ASSERT_FALSE(IsHexDigit);
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::UrlData urlDataInfo;
+    std::string inPut = "192.136.54.22";
+    std::string temp = "";
+    std::bitset<11> flags;
+    OHOS::Url::DealIpv4(inPut);
+    inPut = "1080:0:0:0:8:800:200C:417A";
+    OHOS::Url::FormatIpv6(inPut);
+    inPut = "2136504";
+    size_t i = 0;
+    OHOS::Url::SplitNum(inPut, i);
+    inPut = "192.168.1.55";
+    OHOS::Url::AnalyseIPv4(inPut, temp, flags);
+    inPut = "";
+    OHOS::Url::AnalysisHost(inPut, inPut, flags, true);
+    inPut = "[asjdhkj";
+    OHOS::Url::AnalysisHost(inPut, inPut, flags, true);
+    inPut = "f:11";
+    bool isTrue = OHOS::Url::ISFileNohost(inPut);
+    ASSERT_TRUE(isTrue);
+    inPut = "../../../";
+    OHOS::Url::AnalysisFilePath(inPut, urlDataInfo, flags);
+    OHOS::Url::AnalysisFilescheme(inPut, urlDataInfo, flags);
+    OHOS::Url::AnalyInfoPath(flags, urlDataInfo, inPut);
+    inPut = "sadwasd";
+    OHOS::Url::AnalyHostPath(inPut, flags, urlDataInfo);
+    inPut = "sad@wasd";
+    OHOS::Url::AnalyStrHost(inPut, urlDataInfo, flags);
+    inPut = "";
+    OHOS::Url::AnalyStrHost(inPut, urlDataInfo, flags);
+    inPut = "//sjalkjd";
+    urlDataInfo.scheme = "sa";
+    OHOS::Url::AnalysisNoDefaultProtocol(inPut, urlDataInfo, flags);
+    inPut = "//sjalkjd";
+    urlDataInfo.scheme = "";
+    OHOS::Url::AnalysisNoDefaultProtocol(inPut, urlDataInfo, flags);
+    inPut = "";
+    OHOS::Url::AnalysisOnlyHost(inPut, urlDataInfo, flags, i);
+    bool IsHexDigit =  OHOS::Url::IsHexDigit('b');
+    ASSERT_TRUE(IsHexDigit);
 }
