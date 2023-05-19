@@ -330,6 +330,53 @@ HWTEST_F(NativeEngineTest, textEncodeTest003, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: textEncodeTest004
+ * @tc.desc: Test encode src.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("gbk");
+
+    std::string input = "abc123";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = textEncoder.Encode(env, src);
+
+    char excepted[7] = {0x61, 0x62, 0x63, 0x31, 0x32, 0x33, 0}; // 7:nums of args
+
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void *srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    napi_get_typedarray_info(
+        env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+
+    ASSERT_EQ(srcLength, 6); // 6:string length
+    char *res = reinterpret_cast<char*>(srcData);
+
+    res[srcLength] = 0;
+    ASSERT_STREQ(res, excepted);
+}
+
+/**
+ * @tc.name: textEncodeTest005
+ * @tc.desc: Test encode src.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("utf-8");
+    napi_value src = nullptr;
+    napi_value result = textEncoder.Encode(env, src);
+    ASSERT_TRUE(result == nullptr);
+}
+
+/**
  * @tc.name: textEncodeIntoTest001
  * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
  * @tc.type: FUNC
@@ -564,6 +611,41 @@ HWTEST_F(NativeEngineTest, GetEncoding003, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: GetEncoding004
+ * @tc.desc: Test date type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetEncoding004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = 0;
+    int ignoreBOM = -1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string str = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(str, inputVec);
+    napi_value testString = textDecoder.GetEncoding(env);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    std::string tmpTestStr = "utf-8";
+    size_t strLength = 0;
+    char *buffer = nullptr;
+    if (bufferSize > 0) {
+        buffer = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, buffer, bufferSize + 1, &strLength);
+    }
+    const char *result = tmpTestStr.c_str();
+    size_t resultLength = tmpTestStr.length();
+    ASSERT_STREQ(result, buffer);
+    ASSERT_EQ(resultLength, strLength);
+    if (buffer != nullptr) {
+        delete []buffer;
+        buffer = nullptr;
+    }
+}
+
+/**
  * @tc.name: GetFatal001
  * @tc.desc: Test date type.
  * @tc.type: FUNC
@@ -696,6 +778,27 @@ HWTEST_F(NativeEngineTest, GetIgnoreBOM003, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: GetIgnoreBOM004
+ * @tc.desc: Test date type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetIgnoreBOM004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = 0;
+    int ignoreBOM = -1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string str = "ssn";
+    OHOS::Util::TextDecoder textDecoder(str, inputVec);
+    napi_value naVal = textDecoder.GetIgnoreBOM(env);
+    bool result = false;
+    napi_get_value_bool(env, naVal, &result);
+    ASSERT_FALSE(result);
+}
+
+/**
  * @tc.name: decoderUtf8001 utf-8
  * @tc.desc: Test date type.
  * @tc.type: FUNC
@@ -777,6 +880,32 @@ HWTEST_F(NativeEngineTest, decoderUtf8002, testing::ext::TestSize.Level0)
         delete []ch;
         ch = nullptr;
     }
+}
+
+/**
+ * @tc.name: decoderUtf8003 utf-8
+ * @tc.desc: Test date type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = -1;
+    int ignoreBOM = -1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string str = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(str, inputVec);
+    bool iflag = false;
+    size_t byteLength = 0;
+    void *data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.Decode(env, result2, iflag);
+    ASSERT_TRUE(testString == nullptr);
 }
 
 /**
