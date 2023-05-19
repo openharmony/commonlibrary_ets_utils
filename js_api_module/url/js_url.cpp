@@ -91,8 +91,7 @@ namespace OHOS::Url {
         return (ch == '\t' || ch == '\n' || ch == '\r');
     }
 
-    template<typename T>
-    bool IsHexDigit(const T ch)
+    bool IsHexDigit(const char& ch)
     {
         if (isdigit(ch) || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f')) {
             return true;
@@ -589,7 +588,7 @@ namespace OHOS::Url {
         return -1;
     }
 
-    std::string SplitNum(std::string num, size_t &number)
+    std::string SplitNum(std::string num, size_t& number)
     {
         int val = stoi(num);
         std::vector<std::string> nums;

@@ -57,6 +57,41 @@ namespace OHOS::Url {
         std::string host = "";
     };
 
+    bool IsHexDigit(const char& ch);
+    std::string DecodeSpecialChars(std::string input);
+    void DeleteC0OrSpace(std::string& str);
+    void DeleteTabOrNewline(std::string& str1);
+    std::string DealIpv4(std::string str);
+    std::string SplitNum(std::string num, size_t& number);
+    void FormatIpv6(std::string& str);
+    bool ISFileNohost(const std::string& input);
+    bool AnalysisScheme(std::string& input, std::string& scheme,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalysisUsernameAndPasswd(std::string& input, std::string& username, std::string& password,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalysisPath(std::string& input, std::vector<std::string>& path,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool isSpecial);
+    void AnalysisOpaqueHost(std::string input, std::string& host,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalyseIPv4(const std::string& input, std::string& host,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalysisHost(std::string& input, std::string& host,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool special);
+    void AnalysisFilePath(std::string& input, UrlData& urlinfo,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalysisFilescheme(const std::string& input, UrlData& urlinfo,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalyInfoPath(std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags,
+        UrlData& urlinfo, const std::string& input);
+    void AnalyHostPath(std::string &strHost, std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags,
+        UrlData& urlinfo);
+    void AnalyStrHost(std::string &strHost, UrlData& urlinfo,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags);
+    void AnalysisNoDefaultProtocol(std::string& input, UrlData& urlinfo,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalysisOnlyHost(const std::string& input, UrlData& urlinfo,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, size_t pos);
+
     class URL {
     public:
         /**
