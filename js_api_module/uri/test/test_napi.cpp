@@ -384,6 +384,99 @@ HWTEST_F(NativeEngineTest, ConstructorTest025, testing::ext::TestSize.Level0)
     ASSERT_STREQ(uri.GetFragment().c_str(), "fagment");
 }
 
+HWTEST_F(NativeEngineTest, ConstructorTest026, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "null");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "null");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "null");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "uri is empty");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest027, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("#asd;");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "#It can't be the first");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest028, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("?sa^d:s#asd;");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "Query does not conform to the rule");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest029, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("?sad:s#a^sd;");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "Fragment does not conform to the rule");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest030, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("4http:/username:password@www.baidu.com:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "Scheme the first character must be a letter");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest031, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("ht*tp:/username:password@www.baidu.com:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "scheme does not conform to the rule");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest032, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("/usern]ame/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "SpecialPath does not conform to the rule");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest033, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("/username/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest034, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/userna^me:password@www.baidu.com:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest035, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://?query#fagment");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "http");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest036, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/username:password@www.baidu.com:99/pa^th/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest037, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/username:password@www.baidu.com:9^9/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest038, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/username:password@[1:0:0:1:2:1:2:1]:9^9/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest039, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http:/username:password@[1:0:0:1:2:1:2:1/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest040, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://gg:gaogao@[1:0:0:sfvs1:2:1:2:1]:99/path1?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "ipv6 does not conform to the rule");
+}
+
 HWTEST_F(NativeEngineTest, EqualsTest001, testing::ext::TestSize.Level0)
 {
     OHOS::Uri::Uri uri("http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path1?query#fagment");
@@ -402,6 +495,48 @@ HWTEST_F(NativeEngineTest, EqualsTest003, testing::ext::TestSize.Level0)
 {
     OHOS::Uri::Uri uri("http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path1?query#fagment");
     OHOS::Uri::Uri uri1("http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path1?query#fagment123");
+    ASSERT_FALSE(uri.Equals(uri1));
+}
+
+HWTEST_F(NativeEngineTest, EqualsTest004, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://username:password@www.baidu.com:99/path/path?query#fagment");
+    OHOS::Uri::Uri uri1("http://username:password@www.baidu.com:29/path/path?query#fagment");
+    ASSERT_FALSE(uri.Equals(uri1));
+}
+
+HWTEST_F(NativeEngineTest, EqualsTest005, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://username:password@www.baidu.com:99/path/path?query#fagment");
+    OHOS::Uri::Uri uri1("http://user1name:password@www.baidu.com:99/path/path?query#fagment");
+    ASSERT_FALSE(uri.Equals(uri1));
+}
+
+HWTEST_F(NativeEngineTest, EqualsTest006, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://username:password@www.baidu.com:99/path/path?query#fagment");
+    OHOS::Uri::Uri uri1("http://username:password@w2ww.baidu.com:99/path/path?query#fagment");
+    ASSERT_FALSE(uri.Equals(uri1));
+}
+
+HWTEST_F(NativeEngineTest, EqualsTest007, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://username:password@www.baidu.com:99/path/path?query#fagment");
+    OHOS::Uri::Uri uri1("http://username:password@www.baidu.com:99/pa4th/path?query#fagment");
+    ASSERT_FALSE(uri.Equals(uri1));
+}
+
+HWTEST_F(NativeEngineTest, EqualsTest008, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://username:password@www.baidu.com:99/path/path?qu4ery#fagment");
+    OHOS::Uri::Uri uri1("http://username:password@www.baidu.com:99/path/path?query#fagment");
+    ASSERT_FALSE(uri.Equals(uri1));
+}
+
+HWTEST_F(NativeEngineTest, EqualsTest009, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://username:password@www.baidu.com:99/path/path?query#fagment");
+    OHOS::Uri::Uri uri1("h4ttp://username:password@www.baidu.com:99/path/path?query#fagment");
     ASSERT_FALSE(uri.Equals(uri1));
 }
 
@@ -424,6 +559,13 @@ HWTEST_F(NativeEngineTest, NormalizeTest003, testing::ext::TestSize.Level0)
     OHOS::Uri::Uri uri("http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../path/.././../aa/bb/cc?query#fagment");
     std::string normalize = uri.Normalize();
     ASSERT_STREQ(normalize.c_str(), "http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../../aa/bb/cc?query#fagment");
+}
+
+HWTEST_F(NativeEngineTest, NormalizeTest004, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://gg:gaogao@[1:0:0:1:2:1:2:1]:99?query#fagment");
+    std::string normalize = uri.Normalize();
+    ASSERT_STREQ(normalize.c_str(), "http://gg:gaogao@[1:0:0:1:2:1:2:1]:99?query#fagment");
 }
 
 HWTEST_F(NativeEngineTest, ToStringTest001, testing::ext::TestSize.Level0)
