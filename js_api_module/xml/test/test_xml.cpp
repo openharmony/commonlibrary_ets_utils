@@ -1560,3 +1560,23 @@ HWTEST_F(NativeEngineTest, XmlParseTest0012, testing::ext::TestSize.Level0)
     xmlPullParser.Parse(env, options);
     ASSERT_STREQ(testStr.c_str(), "");
 }
+
+/* @tc.name: Xmlfunctest001
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, Xmlfunctest001, testing::ext::TestSize.Level0)
+{
+    std::string strXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>    <title>Happy</title>    <todo>Work</todo>";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    ASSERT_EQ(xmlPullParser.GetColumnNumber(), 1);
+    ASSERT_EQ(xmlPullParser.GetDepth(), 0);
+    ASSERT_EQ(xmlPullParser.GetLineNumber(), 1);
+    ASSERT_STREQ(xmlPullParser.GetName().c_str(), "");
+    ASSERT_STREQ(xmlPullParser.GetPrefix().c_str(), "");
+    ASSERT_STREQ(xmlPullParser.GetText().c_str(), "");
+    ASSERT_FALSE(xmlPullParser.IsEmptyElementTag());
+    ASSERT_EQ(xmlPullParser.GetAttributeCount(), 0);
+    ASSERT_FALSE(xmlPullParser.IsWhitespace());
+    ASSERT_STREQ(xmlPullParser.GetNamespace().c_str(), "");
+}

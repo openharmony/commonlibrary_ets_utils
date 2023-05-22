@@ -24,6 +24,24 @@
 
 using namespace OHOS::Xml;
 
+napi_value setProperty(napi_env env, napi_value obj, std::vector<std::string> proVec)
+{
+    const size_t boolNum = 8; // the counts of the bool value
+    napi_value val = nullptr;
+    for (size_t i = 0; i < proVec.size();) {
+        if (i < boolNum) {
+            napi_get_boolean(env, false, &val);
+            napi_set_named_property(env, obj, proVec[i].c_str(), val);
+            i++;
+        } else {
+            napi_create_string_utf8(env, proVec[i + 1].c_str(), proVec[i + 1].size(), &val);
+            napi_set_named_property(env, obj, proVec[i].c_str(), val);
+            i += 2; // the length of the value and property
+        }
+    }
+    return obj;
+}
+
 /* @tc.name: ConvertXmlTest001
  * @tc.desc: Convert the xml object containing only declaration items to a js object.
  * @tc.type: FUNC
@@ -370,5 +388,29 @@ HWTEST_F(NativeEngineTest, ConvertTest003, testing::ext::TestSize.Level0)
     
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
+    ASSERT_TRUE(isHas);
+}
+
+/* @tc.name: DealOptionsTest001
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealOptionsTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    std::vector<std::string> proVec = {"trim", "ignoreDeclaration", "ignoreInstruction", "ignoreAttributes",
+        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey","_declaration",
+        "instructionKey", "_instruction", "attributesKey","_attributes","textKey", "_text","cdataKey","_cdata",
+        "doctypeKey", "_doctype", "commentKey", "_comment","parentKey", "_parent","typeKey", "_type",
+        "nameKey", "_name", "elementsKey", "_elements"};
+
+    obj = setProperty(env, obj, proVec);
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    convertXml.DealOptions(env, obj);
+    bool isHas = false;
+    napi_has_named_property(env, obj, "textKey", &isHas);
     ASSERT_TRUE(isHas);
 }
