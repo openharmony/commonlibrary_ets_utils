@@ -159,7 +159,10 @@ class URLParams {
   }
 
   toString(): string {
-    let outPut: string = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
+    let outPut: string = this.urlClass.array[0] + '=' + this.urlClass.array[1];
+    if (this.urlClass.initialNumber !== 0) {
+        outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
+    }
     let arrayLen: number = this.urlClass.array.length;
     if (arrayLen % 2 === 0) {
       let pos: number = 2;
@@ -281,7 +284,10 @@ class URLSearchParams {
   }
 
   toString(): string {
-    let outPut: string = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
+    let outPut: string = this.urlClass.array[0] + '=' + this.urlClass.array[1];
+    if (this.urlClass.initialNumber !== 0) {
+        outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
+    }
     let arrayLen: number = this.urlClass.array.length;
     if (arrayLen % 2 === 0) {
       let pos: number = 2;
@@ -446,6 +452,19 @@ function iteratorMethod(input: Iterable<[string]>) {
   return seachParamsArr;
 }
 
+function decodeURISafely(input: string): string {
+  const hexAdecimal = 16; // 16:Hexadecimal number system
+  const invalidEncodingRegex = /(%[^0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f])/g;
+  const fixedUri = input.replace(invalidEncodingRegex, (match) => {
+    let encodedMatch: string = '';
+    for (let i = 0; i < match.length; i++) {
+      encodedMatch += '%' + match.charCodeAt(i).toString(hexAdecimal).toUpperCase();
+    }
+    return encodedMatch;
+  });
+  return decodeURI(fixedUri);
+}
+
 function initToStringSeachParams(input: string): Array<string> {
   if (typeof input !== 'string') {
     throw new BusinessError(`Parameter error.The type of ${input} must be string`);
@@ -453,7 +472,7 @@ function initToStringSeachParams(input: string): Array<string> {
   if (input[0] === '?') {
     input = input.slice(1);
   }
-  let strVal: string = decodeURI(input);
+  let strVal: string = decodeURISafely(input);
   seachParamsArr = UrlInterface.stringParmas(strVal);
   return seachParamsArr;
 }
