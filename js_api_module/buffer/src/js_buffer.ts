@@ -1354,7 +1354,7 @@ class Buffer {
   }
 
   readFloatLE(offset: number): number {
-    if (offset === undefined) {
+    if (offset === undefined || offset === null) {
       offset = 0;
     }
     typeErrorCheck(offset, ['number'], 'offset');
@@ -1762,7 +1762,7 @@ function alloc(size: number, fill?: string | Buffer | number, encoding?: string)
   if (arguments.length === 2 && fill !== undefined && fill !== 0) {
     buf.fill(fill);
   } else if (arguments.length === 3) {
-    if (encoding === undefined) {
+    if (encoding === undefined || encoding === null) {
       encoding = 'utf-8';
     }
     typeErrorCheck(encoding, ['string'], 'encoding');
