@@ -28,11 +28,11 @@ namespace OHOS::Js_sys_module::Process {
     {
         if (args[0] != nullptr) {
             napi_valuetype valueType = napi_undefined;
-            NAPI_CALL(env, napi_typeof(env, args[0], &valueType));
+            napi_typeof(env, args[0], &valueType);
             NAPI_ASSERT(env, valueType == napi_string, "Wrong argument typr. String expected");
         } else {
             HILOG_ERROR("command is null");
-            NAPI_CALL(env, napi_throw_error(env, "", "command is empty"));
+            napi_throw_error(env, "", "command is empty");
             return nullptr;
         }
 
@@ -45,15 +45,15 @@ namespace OHOS::Js_sys_module::Process {
         for (size_t i = 0; i < size; i++) {
             napi_valuetype propertyType = napi_undefined;
             napi_value property = nullptr;
-            NAPI_CALL(env, napi_get_named_property(env, args[1], keyStr[i].c_str(), &property));
+            napi_get_named_property(env, args[1], keyStr[i].c_str(), &property);
             switch (i) {
                 case 0:
                     {
-                        NAPI_CALL(env, napi_typeof(env, property, &propertyType));
-                        NAPI_ASSERT(env, propertyType == napi_number || propertyType == napi_undefined,
-                                    "Wrong timeout argument typr. Number expected");
+                        napi_typeof(env, property, &propertyType);
+                        NAPI_ASSERT(env, propertyType == napi_number || propertyType == napi_undefined ||
+                                    propertyType == napi_null, "Wrong timeout argument typr. Number expected");
                         int timeout = 0;
-                        NAPI_CALL(env, napi_get_value_int32(env, property, &timeout));
+                        napi_get_value_int32(env, property, &timeout);
                         if (timeout < 0) {
                             NAPI_CALL(env, napi_throw_error(env, "", "options timeout is lessthen zero"));
                             return nullptr;
@@ -61,15 +61,15 @@ namespace OHOS::Js_sys_module::Process {
                         break;
                     }
                 case 1:
-                    NAPI_CALL(env, napi_typeof(env, property, &propertyType));
+                    napi_typeof(env, property, &propertyType);
                     NAPI_ASSERT(env, propertyType == napi_string || propertyType == napi_number
-                                || propertyType == napi_undefined,
+                                || propertyType == napi_undefined || propertyType == napi_null,
                                 "Wrong KillSignal argument typr. String or number expected");
                     break;
                 case 2: // 2:The parameter value
-                    NAPI_CALL(env, napi_typeof(env, property, &propertyType));
-                    NAPI_ASSERT(env, propertyType == napi_number || propertyType == napi_undefined,
-                                "Wrong maxBuffer argument typr. Number expected");
+                    napi_typeof(env, property, &propertyType);
+                    NAPI_ASSERT(env, propertyType == napi_number || propertyType == napi_undefined ||
+                                propertyType == napi_null, "Wrong maxBuffer argument typr. Number expected");
                     break;
                 default:
                     break;
