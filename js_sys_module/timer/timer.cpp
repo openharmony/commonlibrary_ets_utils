@@ -150,7 +150,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     napi_value thisVar = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
     if (!Helper::NapiHelper::IsCallable(env, argv[0])) {
-        HILOG_ERROR( "Set callback timer failed with invalid parameter.");
+        HILOG_ERROR("Set callback timer failed with invalid parameter.");
         return Helper::NapiHelper::GetUndefinedValue(env);
     }
     int32_t timeout = 0;

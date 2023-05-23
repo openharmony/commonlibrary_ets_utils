@@ -40,3 +40,4 @@ js_concurrent_module_common =
     "//commonlibrary/ets_utils/js_concurrent_module/common"
 concurrent_module = "//commonlibrary/ets_utils/js_concurrent_module"
 sys_module = "//commonlibrary/ets_utils/js_sys_module"
+ets_runtime = "//arkcompiler/ets_runtime"

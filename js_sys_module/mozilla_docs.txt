@@ -17,7 +17,7 @@ The definitions of some interfaces implemented in js_sys_module/console/console.
 The definitions of some interfaces implemented in js_sys_module/timer/timer.cpp are released under Mozilla license.
 
 The definitions and functions of these interfaces are consistent with the standard interfaces under mozilla license,
-but the implementation of specific functions is independent and self-developed. 
+but the implementation of specific functions is independent and self-developed.
 
 All interfaces are described in d.ts, the following is the interface written in d.ts under to Mozilla license
 
@@ -39,7 +39,7 @@ export declare class console {
     time(label?: string): void;
     timeEnd(label?: string): void;
     timeLog(label?: string, ...arguments: Object[]): void;
-    trace(...arguments: Object[]): void; 
+    trace(...arguments: Object[]): void;
 }
 
 export declare function setInterval(handler: Function | string, delay: number, ...arguments: any[]): number;
