@@ -27,7 +27,6 @@ public:
     static bool IsNotUndefined(napi_value value);
     static bool IsArray(napi_value value);
     static bool IsFunction(napi_value object);
-    static bool IsConstructor(napi_env env, napi_callback_info cbInfo);
     static bool IsCallable(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_ref value);
     static size_t GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo);

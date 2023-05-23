@@ -44,13 +44,6 @@ bool NapiHelper::IsFunction(napi_value object)
     return valNative == nullptr ? false :  valNative->TypeOf() == NATIVE_FUNCTION;
 }
 
-bool NapiHelper::IsConstructor(napi_env env, napi_callback_info cbInfo)
-{
-    napi_value* funcObj = nullptr;
-    napi_get_new_target(env, cbInfo, funcObj);
-    return funcObj != nullptr;
-}
-
 size_t NapiHelper::GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo)
 {
     size_t argc = 0;
