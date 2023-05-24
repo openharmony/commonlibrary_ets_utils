@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
+#include "native_module_convertxml.h"
 #include "utils/log.h"
 #include "js_convertxml.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 
 extern const char _binary_js_convertxml_js_start[];
 extern const char _binary_js_convertxml_js_end[];
@@ -71,8 +70,7 @@ namespace OHOS::Xml {
         return result;
     }
 
-
-    static napi_value ConvertXmlInit(napi_env env, napi_value exports)
+    napi_value ConvertXmlInit(napi_env env, napi_value exports)
     {
         const char *convertXmlClassName = "ConvertXml";
         napi_value convertXmlClass = nullptr;
