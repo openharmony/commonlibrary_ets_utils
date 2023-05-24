@@ -16,7 +16,7 @@
 The definitions of some interfaces implemented in jsapi/workers/worker.cpp are released under Mozilla license.
 
 The definitions and functions of these interfaces are consistent with the standard interfaces under mozila license,
-but the implementation of specific functions is independent and self-developed. 
+but the implementation of specific functions is independent and self-developed.
 
 All interfaces are described in d.ts, the following is the interface written in d.ts under to Mozilla license
 

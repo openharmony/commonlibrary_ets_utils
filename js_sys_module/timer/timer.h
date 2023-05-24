@@ -57,6 +57,7 @@ public:
     static bool RegisterTime(napi_env env);
     static void ClearEnvironmentTimer(napi_env env);
     static bool HasTimer(napi_env env);
+    friend class TimerTest;
 
 private:
     static napi_value SetTimeout(napi_env env, napi_callback_info cbinfo);

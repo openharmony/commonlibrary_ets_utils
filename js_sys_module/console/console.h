@@ -40,6 +40,7 @@ public:
     Console() = default;
     ~Console() = default;
     static void InitConsoleModule(napi_env env);
+    friend class ConsoleTest;
 
 private:
     template<LogLevel LEVEL>
