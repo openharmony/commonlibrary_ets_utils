@@ -165,6 +165,9 @@ void Buffer::WriteBE(int32_t value, uint32_t bytes)
 
 void Buffer::WriteLE(int32_t value, uint32_t bytes)
 {
+    if (bytes == 0) {
+        return;
+    }
     uint32_t uValue = static_cast<uint32_t>(value);
     for (uint32_t i = 0, len = bytes - 1; i <= len; i++) {
         uint8_t va = static_cast<uint8_t>(uValue & 0x000000FF);
@@ -188,6 +191,9 @@ uint32_t Buffer::ReadBE(uint32_t bytes)
 uint32_t Buffer::ReadLE(uint32_t bytes)
 {
     uint32_t result = 0x0000;
+    if (bytes == 0) {
+        return result;
+    }
     for (uint32_t i = bytes; i > 0; i--) {
         // 8 : shift left 8 bits(i.e 1 byte)
         result = result << 8;
