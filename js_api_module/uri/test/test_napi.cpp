@@ -18,6 +18,7 @@
 #include "napi/native_node_api.h"
 #include "utils/log.h"
 #include "js_uri.h"
+#include "native_module_uri.h"
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -605,4 +606,118 @@ HWTEST_F(NativeEngineTest, IsAbsoluteTest003, testing::ext::TestSize.Level0)
     OHOS::Uri::Uri uri("htt/p://username:password@www.baidu.com:88/path?query#fagment");
     bool res = uri.IsAbsolute();
     ASSERT_FALSE(res);
+}
+
+std::string GetStringUtf8(napi_env env, napi_value str) {
+    std::string buffer = "";
+    size_t bufferSize = 0;
+    if (napi_get_value_string_utf8(env, str, nullptr, 0, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get src size");
+        return buffer;
+    }
+    buffer.resize(bufferSize);
+    if (napi_get_value_string_utf8(env, str, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get src value");
+        return buffer;
+    }
+    return buffer;
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_status status = napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    status = napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+    napi_value getTemp = nullptr;
+    napi_get_named_property(env, instance, "scheme", &getTemp);
+    std::string res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "http");
+
+    napi_get_named_property(env, instance, "authority", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "username:password@www.baidu.com:99");
+
+    napi_get_named_property(env, instance, "ssp", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "//username:password@www.baidu.com:99/path/path?query");
+
+    napi_get_named_property(env, instance, "userInfo", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "username:password");
+
+    napi_get_named_property(env, instance, "host", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "www.baidu.com");
+
+    napi_get_named_property(env, instance, "port", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "99");
+
+    napi_get_named_property(env, instance, "path", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "/path/path");
+
+    napi_get_named_property(env, instance, "query", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "query");
+
+    napi_get_named_property(env, instance, "fragment", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "fagment");
+
+    napi_get_named_property(env, instance, "isFailed", &getTemp);
+    res = GetStringUtf8(env, getTemp);
+    ASSERT_STREQ(res.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+    napi_value tempFn = nullptr;
+    napi_get_named_property(env, instance, "checkIsAbsolute", &tempFn);
+    napi_value result = nullptr;
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    ASSERT_TRUE(result);
+
+    napi_get_named_property(env, instance, "toString", &tempFn);
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    std::string res = GetStringUtf8(env, result);
+    ASSERT_STREQ(res.c_str(), "http://username:password@www.baidu.com:99/path/path?query#fagment");
+
+    napi_get_named_property(env, instance, "normalize", &tempFn);
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    res = GetStringUtf8(env, result);
+    ASSERT_STREQ(res.c_str(), "http://username:password@www.baidu.com:99/path/path?query#fagment");
+
+    napi_value equalsFn = nullptr;
+    napi_get_named_property(env, instance, "equals", &equalsFn);
+    napi_value constructorArgs1[1] = { 0 };
+    std::string input2 = "http://username:password@www.baidu.com:88/path?query1#fagment";
+    napi_create_string_utf8(env, input2.c_str(), input2.size(), &constructorArgs1[0]);
+    napi_value otherInstance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs1, &otherInstance);
+    napi_value args[1] = { otherInstance };
+    napi_value result1 = nullptr;
+    napi_call_function(env, instance, equalsFn, 1, args, &result1);
+    bool res1 = true;
+    napi_get_value_bool(env, result1, &res1);
+    ASSERT_FALSE(res1);
 }

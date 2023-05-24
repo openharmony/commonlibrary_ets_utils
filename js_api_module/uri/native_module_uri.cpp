@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "native_module_uri.h"
 
 #include "js_uri.h"
 #include "securec.h"
@@ -239,7 +240,7 @@ namespace OHOS::Uri {
         return result;
     }
 
-    static napi_value UriInit(napi_env env, napi_value exports)
+    napi_value UriInit(napi_env env, napi_value exports)
     {
         const char *uriClassName = "uri";
         napi_value uriClass = nullptr;

@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "native_module_url.h"
+
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "js_url.h"
@@ -891,7 +893,7 @@ namespace OHOS::Url {
         return exports;
     }
 
-    static napi_value Init(napi_env env, napi_value exports)
+    napi_value Init(napi_env env, napi_value exports)
     {
         napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("stringParmas", StringParmas),
