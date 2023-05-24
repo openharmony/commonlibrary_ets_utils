@@ -23,6 +23,7 @@
 #include "securec.h"
 #include "unicode/stringpiece.h"
 #include "unicode/unistr.h"
+#include "native_module_url.h"
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -1864,4 +1865,220 @@ HWTEST_F(NativeEngineTest, testUrlutilities002, testing::ext::TestSize.Level0)
     OHOS::Url::AnalysisOnlyHost(inPut, urlDataInfo, flags, i);
     bool IsHexDigit =  OHOS::Url::IsHexDigit('b');
     ASSERT_TRUE(IsHexDigit);
+}
+
+std::string GetStringUtf8(napi_env env, napi_value str) {
+    std::string buffer = "";
+    size_t bufferSize = 0;
+    if (napi_get_value_string_utf8(env, str, nullptr, 0, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get src size");
+        return buffer;
+    }
+    buffer.resize(bufferSize);
+    if (napi_get_value_string_utf8(env, str, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get src value");
+        return buffer;
+    }
+    return buffer;
+}
+
+HWTEST_F(NativeEngineTest, testUrlModule001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Url::Init(env, exports);
+    napi_value urlClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Url", &urlClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, urlClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "www.example.com";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "hostname", newValue);
+    napi_value urlProperty = nullptr;
+    napi_get_named_property(env, instance, "hostname", &urlProperty);
+    std::string res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "www.example.com");
+
+    napi_value tempFn = nullptr;
+    napi_get_named_property(env, instance, "onOrOff", &tempFn);
+    bool res1 = false;
+    napi_get_value_bool(env, tempFn, &res1);
+    ASSERT_TRUE(res1);
+
+    napi_get_named_property(env, instance, "GetIsIpv6", &tempFn);
+    res1 = true;
+    napi_get_value_bool(env, tempFn, &res1);
+    ASSERT_FALSE(res1);
+
+    input1 = "query1";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "search", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "search", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "?query1");
+
+    input1 = "username1";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "username", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "username", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "username1");
+
+    input1 = "password1";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "password", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "password", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "password1");
+
+    input1 = "www.example.com:11";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "host", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "host", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "www.example.com:11");
+
+    input1 = "fagment1";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "hash", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "hash", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "#fagment1");
+
+    input1 = "https:";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "protocol", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "protocol", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "https:");
+
+    input1 = "/path/path1";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "pathname", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "pathname", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "/path/path1");
+
+    input1 = "55";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "port", newValue);
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "port", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "55");
+
+    napi_value constructorArgs1[1] =  { 0 };
+    input1 = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs1[0]);
+    napi_value hrefFn = nullptr;
+    napi_get_named_property(env, instance, "href", &hrefFn);
+    napi_value result1 = nullptr;
+    napi_call_function(env, instance, hrefFn, 1, constructorArgs1, &result1);
+
+    urlProperty = nullptr;
+    napi_get_named_property(env, instance, "port", &urlProperty);
+    res = GetStringUtf8(env, urlProperty);
+    ASSERT_STREQ(res.c_str(), "99");
+}
+
+HWTEST_F(NativeEngineTest, testUrlModule002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Url::Init(env, exports);
+    napi_value urlParamsClass = nullptr;
+    napi_get_named_property(env, exports, "URLParams1", &urlParamsClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, urlParamsClass, 0, nullptr, &instance);
+
+    napi_value paramsFn = nullptr;
+    napi_get_named_property(env, instance, "append", &paramsFn);
+    napi_value input1 = StrToNapiValue(env, "ma");
+    napi_value input2 = StrToNapiValue(env, "jk");
+    napi_value args[] = { input1, input2 };
+    napi_value result = nullptr;
+    napi_call_function(env, instance, paramsFn, 2, args, &result);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "set", &paramsFn);
+    napi_value input3 = StrToNapiValue(env, "aa");
+    napi_value args1[] = { input1, input3 };
+    napi_call_function(env, instance, paramsFn, 2, args1, &result);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "array", &paramsFn);
+    std::string output = "";
+    std::vector<std::string> paramsString = GetParamsStrig(env, paramsFn);
+    DealNapiStrValue(env, ToString(env, paramsString), output);
+    ASSERT_STREQ(output.c_str(), "ma=aa");
+    napi_set_named_property(env, instance, "array", paramsFn);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "has", &paramsFn);
+    napi_value args2[1] = { input1 };
+    napi_call_function(env, instance, paramsFn, 1, args2, &result);
+    bool res1 = false;
+    napi_get_value_bool(env, result, &res1);
+    ASSERT_TRUE(res1);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "sort", &paramsFn);
+    napi_call_function(env, instance, paramsFn, 0, nullptr, &result);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "keys", &paramsFn);
+    napi_call_function(env, instance, paramsFn, 0, nullptr, &result);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "values", &paramsFn);
+    napi_call_function(env, instance, paramsFn, 0, nullptr, &result);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "get", &paramsFn);
+
+    napi_value args3[1] = { input1 };
+    napi_call_function(env, instance, paramsFn, 1, args3, &result);
+    DealNapiStrValue(env, result, output);
+    ASSERT_STREQ(output.c_str(), "aa");
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "getAll", &paramsFn);
+
+    napi_value args4[1] = { input1 };
+    napi_call_function(env, instance, paramsFn, 1, args4, &result);
+    DealNapiStrValue(env, result, output);
+    ASSERT_STREQ(output.c_str(), "aa");
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "entries", &paramsFn);
+    napi_call_function(env, instance, paramsFn, 0, nullptr, &result);
+
+    paramsFn = nullptr;
+    napi_get_named_property(env, instance, "delete", &paramsFn);
+    napi_value args5[1] = { input1 };
+    napi_call_function(env, instance, paramsFn, 1, args5, &result);
+    DealNapiStrValue(env, result, output);
+    ASSERT_STREQ(output.c_str(), "aa");
 }
