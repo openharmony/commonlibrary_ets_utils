@@ -36,7 +36,6 @@
         ASSERT_CHECK_CALL(napi_typeof(env, value, &valueType)); \
         ASSERT_EQ(valueType, type);                             \
     }
-
 void FillZero(OHOS::buffer::Buffer *buf, size_t size)
 {
     for (size_t i = 0; i < size; i++) {
@@ -106,6 +105,41 @@ HWTEST_F(NativeEngineTest, ConstructorTest004, testing::ext::TestSize.Level0)
     buf2->Init(data, 0, 4);
     ASSERT_EQ(buf2->GetLength(), 4);
     ASSERT_EQ(buf2->GetByteOffset(), 0);
+}
+
+/**
+ * @tc.name: ConstructorTest005
+ * @tc.desc: Buffer Constructor.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, ConstructorTest005, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(1);
+    ASSERT_EQ(buf->GetLength(), 1);
+    uint32_t res = buf->Copy(nullptr, 0, 0, 0);
+    ASSERT_EQ(res, 0);
+    int result = buf->Compare(nullptr, 0, 0, 0);
+    ASSERT_EQ(result, 0);
+    buf->ReadBytes(nullptr, 0, 0);
+    buf->FillString("abc", 1, 0, "utf16le");
+    buf->FillString("abc", 1, 0, "binary");
+    buf->FillString("abc", 1, 0, "sos");
+    std::vector<uint8_t> array;
+    buf->FillNumber(array, 1, 0);
+    OHOS::buffer::Buffer *buffer = new OHOS::buffer::Buffer();
+    buf->FillBuffer(buffer, 1, 0);
+    buf->FillBuffer(nullptr, 1, 0);
+    buf->SetArray(array, 0);
+    result = buf->LastIndexOf(nullptr, 0, 0);
+    ASSERT_EQ(result, -1);
+    result = buf->IndexOf(nullptr, 0, 0);
+    ASSERT_EQ(result, -1);
+    delete buf;
+    buf = nullptr;
+    delete buffer;
+    buffer = nullptr;
 }
 
 /**
@@ -1024,6 +1058,28 @@ HWTEST_F(NativeEngineTest, BlobConstructorTest003, testing::ext::TestSize.Level0
     blob2->Init(blob, 1, 4);
 
     ASSERT_EQ(blob2->GetLength(), 3);
+}
+
+/**
+ * @tc.name: BlobConstructorTest004
+ * @tc.desc: Blob Constructor
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, BlobConstructorTest004, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
+    uint8_t data[1] = {1};
+    OHOS::buffer::Blob *blob1 = new OHOS::buffer::Blob();
+    blob->Init(blob1, 1, 0);
+    blob->Init(blob1, 1, -1);
+    blob->Init(nullptr, 0, 1);
+    blob->Init(data, 1);
+    ASSERT_EQ(blob->GetLength(), 1);
+    delete blob;
+    blob = nullptr;
+    delete blob1;
+    blob1 = nullptr;
 }
 
 /**
