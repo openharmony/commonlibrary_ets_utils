@@ -13,14 +13,17 @@
  * limitations under the License.
  */
 
-#include "native_module_buffer.h"
-
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
-#include "converter.h"
+#include "commonlibrary/ets_utils/js_api_module/buffer/converter.h"
+#include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
+#include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+
+using namespace std;
 
 extern const char _binary_js_buffer_js_start[];
 extern const char _binary_js_buffer_js_end[];
@@ -52,7 +55,7 @@ void FinalizeBlobCallback(napi_env env, void *finalizeData, void *finalizeHint)
     }
 }
 
-string GetStringUtf8(napi_env env, napi_value strValue)
+static string GetStringUtf8(napi_env env, napi_value strValue)
 {
     string str = "";
     size_t strSize = 0;
@@ -67,7 +70,7 @@ string GetStringUtf8(napi_env env, napi_value strValue)
     return str;
 }
 
-string GetStringASCII(napi_env env, napi_value strValue)
+static string GetStringASCII(napi_env env, napi_value strValue)
 {
     string str = "";
     size_t strSize = 0;
@@ -78,7 +81,7 @@ string GetStringASCII(napi_env env, napi_value strValue)
     return str;
 }
 
-string GetString(napi_env env, EncodingType encodingType, napi_value strValue)
+static string GetString(napi_env env, EncodingType encodingType, napi_value strValue)
 {
     if (encodingType == BASE64 || encodingType == BASE64URL) {
         return GetStringASCII(env, strValue);
@@ -87,10 +90,9 @@ string GetString(napi_env env, EncodingType encodingType, napi_value strValue)
     }
 }
 
-napi_value FromStringUtf8(napi_env env, napi_value thisVar, napi_value str)
+static napi_value FromStringUtf8(napi_env env, napi_value thisVar, napi_value str)
 {
     string utf8Str = GetStringUtf8(env, str);
-    HILOG_ERROR("wb str = %{public}s", utf8Str.c_str());
     Buffer *buffer = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
     buffer->WriteString(utf8Str, utf8Str.length());
@@ -98,7 +100,7 @@ napi_value FromStringUtf8(napi_env env, napi_value thisVar, napi_value str)
     return thisVar;
 }
 
-napi_value FromStringASCII(napi_env env, napi_value thisVar, napi_value str, uint32_t size)
+static napi_value FromStringASCII(napi_env env, napi_value thisVar, napi_value str, uint32_t size)
 {
     string asciiStr = GetStringASCII(env, str);
     Buffer *buffer = nullptr;
@@ -108,14 +110,14 @@ napi_value FromStringASCII(napi_env env, napi_value thisVar, napi_value str, uin
     return thisVar;
 }
 
-std::u16string GetStringUtf16LE(napi_env env, napi_value strValue)
+static std::u16string GetStringUtf16LE(napi_env env, napi_value strValue)
 {
     string utf8Str = GetStringUtf8(env, strValue);
     u16string u16Str = Utf8ToUtf16BE(utf8Str);
     return Utf16BEToLE(u16Str);
 }
 
-napi_value FromStringUtf16LE(napi_env env, napi_value thisVar, napi_value str)
+static napi_value FromStringUtf16LE(napi_env env, napi_value thisVar, napi_value str)
 {
     string utf8Str = GetStringUtf8(env, str);
     Buffer *buffer = nullptr;
@@ -127,14 +129,14 @@ napi_value FromStringUtf16LE(napi_env env, napi_value thisVar, napi_value str)
     return thisVar;
 }
 
-std::string GetStringBase64(napi_env env, napi_value str)
+static std::string GetStringBase64(napi_env env, napi_value str)
 {
     string base64Str = GetStringASCII(env, str);
     string strDecoded = Base64Decode(base64Str);
     return strDecoded;
 }
 
-napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value str, uint32_t size)
+static napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value str, uint32_t size)
 {
     string strDecoded = GetStringBase64(env, str);
     Buffer *buffer = nullptr;
@@ -144,14 +146,14 @@ napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value str, ui
     return thisVar;
 }
 
-std::string GetStringHex(napi_env env, napi_value str)
+static std::string GetStringHex(napi_env env, napi_value str)
 {
     string hexStr = GetStringASCII(env, str);
     string strDecoded = HexDecode(hexStr);
     return strDecoded;
 }
 
-napi_value FromStringHex(napi_env env, napi_value thisVar, napi_value str)
+static napi_value FromStringHex(napi_env env, napi_value thisVar, napi_value str)
 {
     string hexStr = GetStringASCII(env, str);
     Buffer *buffer = nullptr;
@@ -164,7 +166,7 @@ napi_value FromStringHex(napi_env env, napi_value thisVar, napi_value str)
     return thisVar;
 }
 
-napi_value FromString(napi_env env, napi_callback_info info)
+static napi_value FromString(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -203,7 +205,7 @@ napi_value FromString(napi_env env, napi_callback_info info)
     return result;
 }
 
-vector<uint8_t> GetArray(napi_env env, napi_value arr)
+static vector<uint8_t> GetArray(napi_env env, napi_value arr)
 {
     uint32_t length = 0;
     napi_get_array_length(env, arr, &length);
@@ -220,7 +222,7 @@ vector<uint8_t> GetArray(napi_env env, napi_value arr)
     return vec;
 }
 
-napi_value BlobConstructor(napi_env env, napi_callback_info info)
+static napi_value BlobConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     Blob *blob = new Blob();
@@ -260,10 +262,11 @@ napi_value BlobConstructor(napi_env env, napi_callback_info info)
         HILOG_ERROR("can not create blob");
         return nullptr;
     }
+
     return thisVar;
 }
 
-napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *buffer)
+static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *buffer)
 {
     napi_status status = napi_wrap(env, thisVar, buffer, FinalizeBufferCallback, nullptr, nullptr);
     if (status != napi_ok) {
@@ -276,7 +279,7 @@ napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *buffer)
     return thisVar;
 }
 
-napi_value BufferConstructor(napi_env env, napi_callback_info info)
+static napi_value BufferConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     Buffer *buffer = new Buffer();
@@ -344,6 +347,7 @@ napi_value BufferConstructor(napi_env env, napi_callback_info info)
         napi_throw_error(env, nullptr, "parameter type is error");
         return nullptr;
     }
+    
     return GetBufferWrapValue(env, thisVar, buffer);
 }
 
@@ -378,7 +382,7 @@ Buffer *GetOffsetAndBuf(napi_env env, napi_callback_info info, uint32_t *pOffset
     return buf;
 }
 
-napi_value WriteInt32BE(napi_env env, napi_callback_info info)
+static napi_value WriteInt32BE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
     uint32_t offset = 0;
@@ -391,7 +395,7 @@ napi_value WriteInt32BE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value ReadInt32BE(napi_env env, napi_callback_info info)
+static napi_value ReadInt32BE(napi_env env, napi_callback_info info)
 {
     uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
@@ -404,7 +408,7 @@ napi_value ReadInt32BE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value SetArray(napi_env env, napi_callback_info info)
+static napi_value SetArray(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
@@ -426,7 +430,7 @@ napi_value SetArray(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value GetLength(napi_env env, napi_callback_info info)
+static napi_value GetLength(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
@@ -438,7 +442,7 @@ napi_value GetLength(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value GetByteOffset(napi_env env, napi_callback_info info)
+static napi_value GetByteOffset(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
@@ -450,7 +454,7 @@ napi_value GetByteOffset(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value WriteString(napi_env env, napi_callback_info info)
+static napi_value WriteString(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -484,7 +488,7 @@ napi_value WriteString(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value FillString(napi_env env, napi_callback_info info)
+static napi_value FillString(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -514,7 +518,7 @@ napi_value FillString(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value FillNumbers(napi_env env, napi_callback_info info)
+static napi_value FillNumbers(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -540,7 +544,7 @@ napi_value FillNumbers(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value FillBuffer(napi_env env, napi_callback_info info)
+static napi_value FillBuffer(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -567,7 +571,7 @@ napi_value FillBuffer(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value Utf8ByteLength(napi_env env, napi_callback_info info)
+static napi_value Utf8ByteLength(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
@@ -582,7 +586,7 @@ napi_value Utf8ByteLength(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value GetBufferData(napi_env env, napi_callback_info info)
+static napi_value GetBufferData(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
@@ -603,7 +607,7 @@ napi_value GetBufferData(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value Get(napi_env env, napi_callback_info info)
+static napi_value Get(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
@@ -621,7 +625,7 @@ napi_value Get(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value Set(napi_env env, napi_callback_info info)
+static napi_value Set(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -643,7 +647,7 @@ napi_value Set(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value WriteInt32LE(napi_env env, napi_callback_info info)
+static napi_value WriteInt32LE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
     uint32_t offset = 0;
@@ -656,7 +660,7 @@ napi_value WriteInt32LE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value ReadInt32LE(napi_env env, napi_callback_info info)
+static napi_value ReadInt32LE(napi_env env, napi_callback_info info)
 {
     uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
@@ -669,7 +673,7 @@ napi_value ReadInt32LE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value WriteUInt32BE(napi_env env, napi_callback_info info)
+static napi_value WriteUInt32BE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
     uint32_t offset = 0;
@@ -682,7 +686,7 @@ napi_value WriteUInt32BE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value ReadUInt32BE(napi_env env, napi_callback_info info)
+static napi_value ReadUInt32BE(napi_env env, napi_callback_info info)
 {
     uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
@@ -695,7 +699,7 @@ napi_value ReadUInt32BE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value WriteUInt32LE(napi_env env, napi_callback_info info)
+static napi_value WriteUInt32LE(napi_env env, napi_callback_info info)
 {
     int32_t value = 0;
     uint32_t offset = 0;
@@ -708,7 +712,7 @@ napi_value WriteUInt32LE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value ReadUInt32LE(napi_env env, napi_callback_info info)
+static napi_value ReadUInt32LE(napi_env env, napi_callback_info info)
 {
     uint32_t offset = 0;
     Buffer *buf = GetOffsetAndBuf(env, info, &offset);
@@ -721,7 +725,7 @@ napi_value ReadUInt32LE(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value SubBuffer(napi_env env, napi_callback_info info)
+static napi_value SubBuffer(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -737,10 +741,11 @@ napi_value SubBuffer(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
     Buffer *resBuf = buf->SubBuffer(start, end);
+    
     return GetBufferWrapValue(env, thisVar, resBuf);
 }
 
-napi_value Copy(napi_env env, napi_callback_info info)
+static napi_value Copy(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -768,7 +773,7 @@ napi_value Copy(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value Compare(napi_env env, napi_callback_info info)
+static napi_value Compare(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -793,7 +798,7 @@ napi_value Compare(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value ToUtf8(napi_env env, napi_callback_info info)
+static napi_value ToUtf8(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -814,7 +819,7 @@ napi_value ToUtf8(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value ToBase64(napi_env env, napi_callback_info info)
+static napi_value ToBase64(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -834,7 +839,7 @@ napi_value ToBase64(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value IndexOf(napi_env env, napi_callback_info info)
+static napi_value IndexOf(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -899,7 +904,7 @@ napi_value IndexOf(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value Utf8StringToNumbers(napi_env env, napi_callback_info info)
+static napi_value Utf8StringToNumbers(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
@@ -920,7 +925,17 @@ napi_value Utf8StringToNumbers(napi_env env, napi_callback_info info)
     return result;
 }
 
-void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data)
+struct PromiseInfo {
+    napi_env env = nullptr;
+    napi_async_work worker = nullptr;
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    Blob* jsBlob = nullptr;
+    napi_value arrayBuffer = nullptr;
+    napi_value string = nullptr;
+};
+
+static void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data)
 {
     auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
     Blob *blob = promiseInfo->jsBlob;
@@ -933,7 +948,7 @@ void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data)
     delete promiseInfo;
 }
 
-void CopiedBlobToString(napi_env env, napi_status status, void *data)
+static void CopiedBlobToString(napi_env env, napi_status status, void *data)
 {
     auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
     Blob *blob = promiseInfo->jsBlob;
@@ -943,7 +958,7 @@ void CopiedBlobToString(napi_env env, napi_status status, void *data)
     delete promiseInfo;
 }
 
-napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
+static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     PromiseInfo *promiseInfo = new PromiseInfo();
@@ -960,7 +975,7 @@ napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
     return promiseInfo->promise;
 }
 
-napi_value TextAsync(napi_env env, napi_callback_info info)
+static napi_value TextAsync(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     PromiseInfo *promiseInfo = new PromiseInfo();
@@ -975,10 +990,11 @@ napi_value TextAsync(napi_env env, napi_callback_info info)
     napi_create_async_work(env, nullptr, resourceName, nullptr, CopiedBlobToString,
                            reinterpret_cast<void *>(promiseInfo), &promiseInfo->worker);
     napi_queue_async_work(env, promiseInfo->worker);
+
     return promiseInfo->promise;
 }
 
-napi_value GetBytes(napi_env env, napi_callback_info info)
+static napi_value GetBytes(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
@@ -996,7 +1012,7 @@ napi_value GetBytes(napi_env env, napi_callback_info info)
     return result;
 }
 
-napi_value BufferInit(napi_env env, napi_value exports)
+static napi_value BufferInit(napi_env env, napi_value exports)
 {
     string className = "Buffer";
     napi_value bufferClass = nullptr;
@@ -1036,7 +1052,7 @@ napi_value BufferInit(napi_env env, napi_value exports)
     return exports;
 }
 
-napi_value BlobInit(napi_env env, napi_value exports)
+static napi_value BlobInit(napi_env env, napi_value exports)
 {
     string className = "Blob";
     napi_value blobClass = nullptr;
@@ -1054,7 +1070,7 @@ napi_value BlobInit(napi_env env, napi_value exports)
     return exports;
 }
 
-napi_value Init(napi_env env, napi_value exports)
+static napi_value Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_FUNCTION("utf8ByteLength", Utf8ByteLength),
