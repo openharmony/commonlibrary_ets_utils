@@ -142,6 +142,8 @@ namespace OHOS::xml {
          */
         static napi_status DealNapiStrValue(napi_env env, const napi_value napiStr, std::string &result);
 
+        friend class XmlTest;
+
     private:
         char *pStart_;
         size_t iPos_ = 0;
@@ -371,7 +373,7 @@ namespace OHOS::xml {
         void MakeStrUpper(std::string &src) const;
         TagEnum DealLtGroup();
         void DealWhiteSpace(unsigned char c);
-
+        friend class XmlTest;
     private:
         bool bDoctype_ = false;
         bool bIgnoreNS_ = false;

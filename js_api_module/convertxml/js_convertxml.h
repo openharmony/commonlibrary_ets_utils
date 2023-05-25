@@ -105,6 +105,8 @@ namespace OHOS::Xml {
          */
         void DealOptions(napi_env env, const napi_value napiObj);
 
+        friend class CxmlTest;
+
     private:
         void SetAttributes(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const;
         void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
