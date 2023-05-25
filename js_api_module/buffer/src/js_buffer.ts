@@ -35,11 +35,18 @@ class BusinessError extends Error {
   }
 }
 
+const ERROR_CODES = {
+  TYPE_ERROR: 401,  // 401: TYPE_ ERROR code value
+  RANGE_ERROR: 10200001, // 10200001: RANGE_ERROR code value
+  BUFFER_SIZE_ERROR: 10200009, // 10200009: BUFFER_SIZE_ERROR code value
+  PROPERTY_TYPE_ERROR: 10200013 // 10200013: TYPE_ ERROR code value
+};
+
 let errorMap = {
-  'typeError': 401,
-  'rangeError': 10200001,
-  'bufferSizeError': 10200009,
-  'typeErrorForProperty': 10200013
+  'typeError': ERROR_CODES.TYPE_ERROR,
+  'rangeError': ERROR_CODES.RANGE_ERROR,
+  'bufferSizeError': ERROR_CODES.BUFFER_SIZE_ERROR,
+  'typeErrorForProperty': ERROR_CODES.PROPERTY_TYPE_ERROR
 };
 
 enum TypeErrorCategories {
@@ -169,14 +176,14 @@ class ErrorMessage {
   public getString(): string {
     let str = '';
     switch (this.errorNumber) {
-      case 401: //TypeError
-      case 10200013: //TypeErrorForProperty
+      case ERROR_CODES.TYPE_ERROR:
+      case ERROR_CODES.PROPERTY_TYPE_ERROR:
         str = this.getTypeString();
         break;
-      case 10200001: //RangeError
+      case ERROR_CODES.RANGE_ERROR:
         str = this.getRangeString();
         break;
-      case 10200009: //BufferSizeError
+      case ERROR_CODES.BUFFER_SIZE_ERROR:
         str = 'Buffer size must be a multiple of ' + this.receivedObj;
         break;
       default:
@@ -248,11 +255,13 @@ enum ParaType {
   NUMBERS,
   STRING
 }
-const initialPoolSize: number = 8 * 1024;
+const initialPoolSize: number = 8 * 1024; // 8 £º1024 £ºinitialPoolSize number
 let poolSize: number;
 let poolOffset: number;
 let pool: Buffer;
-const MAX_LENGTH = Math.pow(2, 32);
+const MAX_LENGTH: number = Math.pow(2, 32); // 2 : 32 : MAX_LENGTH code
+const TWO_POW_FIFTEEN: number = Math.pow(2, 15); // 2 : 15 : two to power of fifteen code
+const TWO_POW_SEVEN: number = Math.pow(2, 7);  // 2 : 7 : two to power of seven code
 const oneByte: number = 1;
 const twoBytes: number = 2;
 const threeBytes: number = 3;
@@ -264,7 +273,7 @@ const eightBytes: number = 8;
 
 
 type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array |
-  Int32Array | Uint32Array | Float32Array | Float64Array;
+Int32Array | Uint32Array | Float32Array | Float64Array;
 type BackingType = Buffer | TypedArray | DataView | ArrayBuffer | SharedArrayBuffer;
 const float64Array: Float64Array = new Float64Array(1);
 const uInt8Float64Array: Uint8Array = new Uint8Array(float64Array.buffer);
@@ -294,18 +303,18 @@ console.log = function (...args) {
   if (args.length === 1 && args[0] instanceof Buffer) {
     let buf: Buffer = args[0];
     let bufArr: Array<number> = buf[bufferSymbol].getBufferData();
-    let getStr = function (bufArr: Array<number>, len: number) {
-      let str = '';
+    let getStr = function (bufArr: Array<number>, len: number): string {
+      let str: string = '';
       for (let i = 0; i < len; i++) {
-        let strTemp = bufArr[i].toString(16);
+        let strTemp: string = bufArr[i].toString(16);
         strTemp = (strTemp.length === 1) ? `0${strTemp}` : strTemp;
         str += ` ${strTemp}`;
       }
       return str;
     };
-    let msg = '';
+    let msg: string = '';
     if (bufArr.length > 50) {
-      let bufStr = getStr(bufArr, 50); // 50: Maximum number of log displays
+      let bufStr: string = getStr(bufArr, 50); // 50: Maximum number of log displays
       msg = bufStr + ` ... ${bufArr.length - 50} more bytes`;
     } else {
       msg = getStr(bufArr, bufArr.length);
@@ -511,7 +520,7 @@ class Buffer {
       } else if (value instanceof Buffer) {
         this[bufferSymbol] = new internalBuffer.Buffer(ParaType.BUFFER, value[bufferSymbol], byteOffsetOrEncoding, length);
       }
-    } else if (arguments.length === 2 && typeof value === 'string' && typeof byteOffsetOrEncoding === 'string') {
+    } else if (arguments.length === twoBytes && typeof value === 'string' && typeof byteOffsetOrEncoding === 'string') {
       this[bufferSymbol] = new internalBuffer.Buffer(ParaType.STRING, value, byteOffsetOrEncoding);
     } else {
       this[bufferSymbol] = new internalBuffer.Buffer(ParaType.NUMBER, 0);
@@ -535,7 +544,7 @@ class Buffer {
     if (this.length === 0) {
       return this;
     }
-    if (arguments.length === 2) {
+    if (arguments.length === twoBytes) {
       if (typeof offset === 'string') {
         encoding = offset;
         offset = 0;
@@ -591,7 +600,7 @@ class Buffer {
     typeErrorCheck(str, ['string'], 'str');
     if (arguments.length === 1) {
       return this[bufferSymbol].writeString(str, 0, length, 'utf8');
-    } else if (arguments.length === 2) {
+    } else if (arguments.length === twoBytes) {
       if (typeof offset === 'string') {
         encoding = offset;
         let encode = encodingTypeErrorCheck(encoding);
@@ -633,28 +642,28 @@ class Buffer {
 
   convertToBig64BE(value: bigint, offset: number): number {
     let byteValue = Number(utils.getLowerSixtyFour(value));
-    let bitNum = 8;
+    let bitNum: number = eightBytes;
     for (let i = bitNum - 1; i > 0; i--) {
       this[offset + i] = byteValue;
-      if (i === 4) {
+      if (i === fourBytes) {
         byteValue = Number(utils.getLowerSixtyFour(value >> 32n));
       } else {
-        byteValue = byteValue >> 8; // 8 means offset 8 bits
+        byteValue = byteValue >> eightBytes;
       }
     }
     this[offset] = byteValue;
-    return offset + 8;
+    return offset + eightBytes;
   }
 
   convertToBig64LE(value: bigint, offset: number): number {
     let byteValue = Number(utils.getLowerSixtyFour(value));
-    let bitNum = 8;
+    let bitNum = eightBytes;
     for (let i = 0; i < bitNum - 1; i++) {
       this[offset++] = byteValue;
       if (i === 3) {
         byteValue = Number(utils.getLowerSixtyFour(value >> 32n)); // 32 means offset 32-bits
       } else {
-        byteValue = byteValue >> 8; // 8 means offset 8 bits
+        byteValue = byteValue >> eightBytes;
       }
     }
     this[offset++] = byteValue;
@@ -821,9 +830,9 @@ class Buffer {
   readBigInt64BE(offset: number = 0): bigint {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, eightBytes);
-    const val = (this[offset] << 24) + this.calculationBE(offset + 1, 3); // 24 : 3 : the first val for this[offset]
+    const val = (this[offset] << 24) + this.calculationBE(offset + 1, threeBytes); // 24 : the first val for this[offset]
     return (BigInt(val) << 32n) + // 32 means offset 32-bits left
-      BigInt(this.calculationBE(offset + 4, 4)); // 4 means offset 4 bytes
+      BigInt(this.calculationBE(offset + fourBytes, fourBytes));
   }
 
   writeBigInt64LE(value: bigint, offset: number = 0): number {
@@ -839,7 +848,7 @@ class Buffer {
   private calculationLE(offset: number, count: number): number {
     let result: number = 0;
     for (let i = 0; i < count; i++) {
-      result += this[offset++] * Math.pow(2, 8 * i); // 2 : 8 : Represents offset
+      result += this[offset++] * Math.pow(twoBytes, eightBytes * i);
     }
     return result;
   }
@@ -847,7 +856,7 @@ class Buffer {
   private calculationBE(offset: number, count: number): number {
     let result: number = 0;
     for (let i = count - 1; i >= 0; i--) {
-      result += this[offset++] * Math.pow(2, 8 * i); // 2 : 8 : Represents offset
+      result += this[offset++] * Math.pow(twoBytes, eightBytes * i);
     }
     return result;
   }
@@ -855,8 +864,8 @@ class Buffer {
   readBigInt64LE(offset: number = 0): bigint {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, eightBytes);
-    const val = this.calculationLE(offset + 4, 3) + (this[offset + 7] << 24); // 24 means offset 24-bits left
-    return (BigInt(val) << 32n) + BigInt(this.calculationLE(offset, 4)); // 32 means offset 32-bits left
+    const val = this.calculationLE(offset + fourBytes, threeBytes) + (this[offset + sevenBytes] << 24); // 24 means offset 24-bits left
+    return (BigInt(val) << 32n) + BigInt(this.calculationLE(offset, fourBytes)); // 32 means offset 32-bits left
   }
 
   writeBigUInt64BE(value: bigint, offset: number = 0): number {
@@ -872,9 +881,9 @@ class Buffer {
   readBigUInt64BE(offset: number = 0): bigint {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, eightBytes);
-    const hi = this.calculationBE(offset, 4); // 4 means offset 4 bytes
+    const hi = this.calculationBE(offset, fourBytes);
 
-    const lo = this.calculationBE(offset + 4, 4); // 4 means offset 4 bytes
+    const lo = this.calculationBE(offset + fourBytes, fourBytes);
     return (BigInt(hi) << 32n) + BigInt(lo); // 32 means offset 32-bits left
   }
 
@@ -890,8 +899,8 @@ class Buffer {
   readBigUInt64LE(offset: number = 0): bigint {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, eightBytes);
-    const lo = this.calculationLE(offset, 4);
-    const hi = this.calculationLE(offset + 4, 4);
+    const lo = this.calculationLE(offset, fourBytes);
+    const hi = this.calculationLE(offset + fourBytes, fourBytes);
     return BigInt(lo) + (BigInt(hi) << 32n); // 32 means offset 32-bits left
   }
 
@@ -899,7 +908,7 @@ class Buffer {
     typeErrorCheck(value, ['number'], 'value');
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, oneByte);
-    rangeErrorCheck(value, 'value', - (Math.pow(2, 7)), (Math.pow(2, 7) - 1)); // 2 : 7 : The range of 8-bit Int value
+    rangeErrorCheck(value, 'value', - (TWO_POW_SEVEN), (TWO_POW_SEVEN - 1));
     value = +value;
 
     this[offset] = value;
@@ -911,16 +920,16 @@ class Buffer {
     this.checkOffsetRange(offset, oneByte);
     const val = this[offset];
 
-    return val | (val & Math.pow(2, 7)) * 0x1fffffe;
+    return val | (val & TWO_POW_SEVEN) * 0x1fffffe;
   }
 
   writeInt16BE(value: number, offset: number = 0): number {
     typeErrorCheck(value, ['number'], 'value');
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
-    rangeErrorCheck(value, 'value', - (Math.pow(2, 15)), (Math.pow(2, 15) - 1)); // 2 : 15 : The range of 16-bit
+    rangeErrorCheck(value, 'value', - (TWO_POW_FIFTEEN), (TWO_POW_FIFTEEN - 1));
     value = +value;
-    this[offset++] = (value >>> 8); // 8 : calculation offset
+    this[offset++] = (value >>> eightBytes);
     this[offset++] = value;
     return offset;
   }
@@ -928,39 +937,39 @@ class Buffer {
   readInt16BE(offset: number = 0): number {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
-    const val = this.calculationBE(offset, 2); // 2 : calculation offset
-    return val | (val & Math.pow(2, 15)) * 0x1fffe; // 2 : 15 : 0x1fffe : The number of 2 bytes changes to 4 bytes
+    const val = this.calculationBE(offset, twoBytes);
+    return val | (val & TWO_POW_FIFTEEN) * 0x1fffe;
   }
 
   writeInt16LE(value: number, offset: number = 0): number {
     typeErrorCheck(value, ['number'], 'value');
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
-    rangeErrorCheck(value, 'value', -(Math.pow(2, 15)), (Math.pow(2, 15) - 1)); // 2 : 15 : The range of 16-bit
+    rangeErrorCheck(value, 'value', -(TWO_POW_FIFTEEN), (TWO_POW_FIFTEEN - 1));
     value = +value;
     this[offset++] = value;
-    this[offset++] = (value >>> 8);
+    this[offset++] = (value >>> eightBytes);
     return offset;
   }
 
   readInt16LE(offset: number = 0): number {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
-    const val = this[offset] + this[offset + 1] * Math.pow(2, 8); // 8 : means offset 8 bits
-    return val | (val & Math.pow(2, 15)) * 0x1fffe; // 2 : 15 : 0x1fffe : The number of 2 bytes changes to 4 bytes
+    const val = this[offset] + this[offset + 1] * Math.pow(twoBytes, eightBytes);
+    return val | (val & TWO_POW_FIFTEEN) * 0x1fffe;
   }
 
   readUInt16LE(offset: number = 0): number {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
-    return this[offset] + this[offset + 1] * Math.pow(2, 8); // 8 means offset 8 bits
+    return this[offset] + this[offset + 1] * Math.pow(twoBytes, eightBytes); // 8 means offset 8 bits
   }
 
   writeUInt8(value: number, offset: number = 0): number {
     typeErrorCheck(value, ['number'], 'value');
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, oneByte);
-    rangeErrorCheck(value, 'value', 0, 255); // 255 : The range of 8-bit UInt value is from 0 to the 8st power of 2 minus 1
+    rangeErrorCheck(value, 'value', 0, 255); // 255 : The range of 8-bit UInt value is from 0 to the 255
     value = +value;
 
     this[offset] = value;
@@ -983,45 +992,45 @@ class Buffer {
 
   private writeUInt24BE(value: number, offset: number = 0): number {
     this.checkOffsetRange(offset, threeBytes);
-    // 2 : 24 : The range of 24-bit UInt value is from 0 to the 24st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, 2 ** 24 - 1, '0', '2**24 - 1');
+    // 24 : The range of 24-bit UInt value is from 0 to the 24st power of 2 minus 1
+    rangeErrorCheck(value, 'value', 0, twoBytes ** 24 - 1, '0', '2**24 - 1');
     value = +value;
-    for (let i: number = 2; i > 0; i--) {
+    for (let i: number = twoBytes; i > 0; i--) {
       this[offset + i] = value;
-      value = value >>> 8; // 8 means offset 8 bits
+      value = value >>> eightBytes;
     }
     this[offset] = value;
-    return offset + 3; // 3 means offset 3 bytes
+    return offset + threeBytes;
   }
 
   private writeUInt40BE(value: number, offset: number = 0): number {
     this.checkOffsetRange(offset, fiveBytes);
     // 2 : 40 : The range of 40-bit UInt value is from 0 to the 40st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, 2 ** 40 - 1, '0', '2**40 - 1');
+    rangeErrorCheck(value, 'value', 0, twoBytes ** 40 - 1, '0', '2**40 - 1');
     value = +value;
-    this[offset++] = Math.floor(value * Math.pow(2, -32)); // -32 means offset 32 bits to left
+    this[offset++] = Math.floor(value * Math.pow(twoBytes, -32)); // -32 means offset 32 bits to left
     for (let i: number = 3; i > 0; i--) {
       this[offset + i] = value;
-      value = value >>> 8; // 8 means offset 8 bits
+      value = value >>> eightBytes;
     }
     this[offset] = value;
-    return offset + 4; // 4 means offset 4 bytes
+    return offset + fourBytes;
   }
 
   private writeUInt48BE(value: number, offset: number = 0): number {
     this.checkOffsetRange(offset, sixBytes);
-    // 2 : 48 : The range of 48-bit UInt value is from 0 to the 48st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, 2 ** 48 - 1, '0', '2**48 - 1');
+    // 48 : The range of 48-bit UInt value is from 0 to the 48st power of 2 minus 1
+    rangeErrorCheck(value, 'value', 0, twoBytes ** 48 - 1, '0', '2**48 - 1');
     value = +value;
-    const newVal = Math.floor(value * Math.pow(2, -32)); // -32 means offset 32 bits to left
-    this[offset++] = (newVal >>> 8);
+    const newVal = Math.floor(value * Math.pow(twoBytes, -32)); // -32 means offset 32 bits to left
+    this[offset++] = (newVal >>> eightBytes);
     this[offset++] = newVal;
     for (let i: number = 3; i > 0; i--) {
       this[offset + i] = value;
-      value = value >>> 8; // 8 means offset 8 bits
+      value = value >>> eightBytes;
     }
     this[offset] = value;
-    return offset + 4; // 4 means offset 4 bytes
+    return offset + fourBytes;
   }
 
   readIntBE(offset: number, byteLength: number): number | undefined {
@@ -1032,26 +1041,24 @@ class Buffer {
 
   private readInt48BE(offset: number = 0): number {
     this.checkOffsetRange(offset, sixBytes);
-    const val = this.calculationBE(offset, 2);
-    // 2 : 15 : 0x1fffe : The number of 2 bytes changes to 4 bytes, positive high fill 0, negative high fill 1.
-    return (val | (val & Math.pow(2, 15)) * 0x1fffe) * Math.pow(2, 32) + this.calculationBE(offset + 2, 4);
+    const val = this.calculationBE(offset, twoBytes);
+    return (val | (val & TWO_POW_FIFTEEN) * 0x1fffe) * MAX_LENGTH + this.calculationBE(offset + twoBytes, fourBytes);
   }
 
   private readInt40BE(offset: number = 0): number {
     this.checkOffsetRange(offset, fiveBytes);
     const first = this[offset];
-    const last = this[offset + 4];
-    // 2 : 7 : 0x1fffffe : The number of 1 byte changes to 4 bytes, positive high fill 0, negative high fill 1.
-    return (this[offset] | (this[offset] & Math.pow(2, 7)) * 0x1fffffe) * Math.pow(2, 32) + // 32 means offset 32 bits
-      this.calculationBE(++offset, 4); // 4 means offset 4 bytes
+    const last = this[offset + fourBytes];
+    return (this[offset] | (this[offset] & TWO_POW_SEVEN) * 0x1fffffe) * MAX_LENGTH +
+      this.calculationBE(++offset, fourBytes);
   }
 
 
   private readInt24BE(offset: number = 0): number {
     this.checkOffsetRange(offset, threeBytes);
-    const val = this.calculationBE(offset, 3);
-    // 2 : 23 : 0x1fe : The number of 3 bytes changes to 4 bytes, positive high fill 0, negative high fill 1.
-    return val | (val & Math.pow(2, 23)) * 0x1fe;
+    const val = this.calculationBE(offset, threeBytes);
+    // 23 : 0x1fe : The number of 3 bytes changes to 4 bytes, positive high fill 0, negative high fill 1.
+    return val | (val & Math.pow(twoBytes, 23)) * 0x1fe;
   }
 
   writeIntLE(value: number, offset: number, byteLength: number): number | undefined {
@@ -1064,42 +1071,42 @@ class Buffer {
   private writeUInt48LE(value: number, offset: number = 0): number {
     this.checkOffsetRange(offset, sixBytes);
     // 2 : 48 : The range of 48-bit UInt value is from 0 to the 48st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, 2 ** 48 - 1, '0', '2**48 - 1');
+    rangeErrorCheck(value, 'value', 0, twoBytes ** 48 - 1, '0', '2**48 - 1');
     value = +value;
-    const newVal = Math.floor(value * Math.pow(2, -32)); // -32 means offset 32 bits to left
+    const newVal = Math.floor(value * Math.pow(twoBytes, -32)); // -32 means offset 32 bits to left
     for (let i: number = 3; i > 0; i--) {
       this[offset++] = value;
-      value = value >>> 8; // 8 means offset 8 bits
+      value = value >>> eightBytes;
     }
     this[offset++] = value;
     this[offset++] = newVal;
-    this[offset++] = (newVal >>> 8); // 8 means offset 8 bits
+    this[offset++] = (newVal >>> eightBytes);
     return offset;
   }
 
   private writeUInt40LE(value: number, offset: number = 0): number {
     this.checkOffsetRange(offset, fiveBytes);
     // 2 : 40 : The range of 40-bit UInt value is from 0 to the 40st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, 2 ** 40 - 1, '0', '2**40 - 1');
+    rangeErrorCheck(value, 'value', 0, twoBytes ** 40 - 1, '0', '2**40 - 1');
     value = +value;
     const newVal = value;
     for (let i: number = 3; i > 0; i--) {
       this[offset++] = value;
-      value = value >>> 8; // 8 means offset 8 bits
+      value = value >>> eightBytes;
     }
     this[offset++] = value;
-    this[offset++] = Math.floor(newVal * Math.pow(2, -32)); // -32 means offset 32 bits to left
+    this[offset++] = Math.floor(newVal * Math.pow(twoBytes, -32)); // -32 means offset 32 bits to left
     return offset;
   }
 
   private writeUInt24LE(value: number, offset: number = 0): number {
     this.checkOffsetRange(offset, threeBytes);
     // 2 : 24 : The range of 24-bit UInt value is from 0 to the 24st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, 2 ** 24 - 1, '0', '2**24 - 1');
+    rangeErrorCheck(value, 'value', 0, twoBytes ** 24 - 1, '0', '2**24 - 1');
     value = +value;
-    for (let i: number = 2; i > 0; i--) {
+    for (let i: number = twoBytes; i > 0; i--) {
       this[offset++] = value;
-      value = value >>> 8; // 8 means offset 8 bits
+      value = value >>> eightBytes;
     }
     this[offset++] = value;
     return offset;
@@ -1113,23 +1120,21 @@ class Buffer {
 
   private readInt48LE(offset: number = 0): number {
     this.checkOffsetRange(offset, sixBytes);
-    const val = this.calculationLE(offset + 4, 2);
-    // 2 : 15 : 0x1fffe : The number of 2 bytes changes to 4 bytes, positive high fill 0, negative high fill 1.
-    return (val | (val & Math.pow(2, 15)) * 0x1fffe) * Math.pow(2, 32) + this.calculationLE(offset, 4);
+    const val = this.calculationLE(offset + fourBytes, twoBytes);
+    return (val | (val & TWO_POW_FIFTEEN) * 0x1fffe) * MAX_LENGTH + this.calculationLE(offset, fourBytes);
   }
 
   private readInt40LE(offset: number = 0): number {
     this.checkOffsetRange(offset, fiveBytes);
-    // 2 : 7 : 0x1fffffe : The number of 1 byte changes to 4 bytes, positive high fill 0, negative high fill 1.
-    return (this[offset + 4] | (this[offset + 4] & Math.pow(2, 7)) * 0x1fffffe) * Math.pow(2, 32) + // 32 means offset 32 bits
-      this.calculationLE(offset, 4); // 4 means offset 4 bytes
+    return (this[offset + fourBytes] | (this[offset + fourBytes] & TWO_POW_SEVEN) * 0x1fffffe) * MAX_LENGTH +
+      this.calculationLE(offset, fourBytes);
   }
 
   private readInt24LE(offset: number = 0): number {
     this.checkOffsetRange(offset, threeBytes);
-    const val = this.calculationLE(offset, 3); // 3 means get 3 bytes
+    const val = this.calculationLE(offset, threeBytes);
     // 2 : 23 : 0x1fe : The number of 3 bytes changes to 4 bytes, positive high fill 0, negative high fill 1.
-    return val | (val & Math.pow(2, 23)) * 0x1fe;
+    return val | (val & Math.pow(twoBytes, 23)) * 0x1fe;
   }
 
   writeUIntLE(value: number, offset: number, byteLength: number): number | undefined {
@@ -1147,18 +1152,18 @@ class Buffer {
 
   private readUInt48LE(offset: number = 0): number {
     this.checkOffsetRange(offset, sixBytes);
-    return this.calculationLE(offset, 4) +
-      (this.calculationLE(offset + 4, 2)) * Math.pow(2, 32); // 32 means offset 32 bits
+    return this.calculationLE(offset, fourBytes) +
+      (this.calculationLE(offset + fourBytes, twoBytes)) * MAX_LENGTH;
   }
 
   private readUInt40LE(offset: number = 0): number {
     this.checkOffsetRange(offset, fiveBytes);
-    return this.calculationLE(offset, 5); // 5 means get 5 bytes
+    return this.calculationLE(offset, fiveBytes);
   }
 
   private readUInt24LE(offset: number = 0): number {
     this.checkOffsetRange(offset, threeBytes);
-    return this.calculationLE(offset, 3); // 3 means get 3 bytes
+    return this.calculationLE(offset, threeBytes);
   }
 
   writeUIntBE(value: number, offset: number, byteLength: number): number | undefined {
@@ -1176,18 +1181,17 @@ class Buffer {
 
   private readUInt48BE(offset: number = 0): number {
     this.checkOffsetRange(offset, sixBytes);
-    return (this.calculationBE(offset, 2)) * Math.pow(2, 32) + // 32 means offset 32 bits
-      this.calculationBE(offset + 2, 4); // 4 means get 4 bytes
+    return (this.calculationBE(offset, twoBytes)) * MAX_LENGTH + this.calculationBE(offset + twoBytes, fourBytes);
   }
 
   private readUInt40BE(offset: number = 0): number {
     this.checkOffsetRange(offset, fiveBytes);
-    return this.calculationBE(offset, 5); // 5 means get 5 bytes
+    return this.calculationBE(offset, fiveBytes);
   }
 
   private readUInt24BE(offset: number = 0): number {
     this.checkOffsetRange(offset, threeBytes);
-    return this.calculationBE(offset, 3); // 3 means get 3 bytes
+    return this.calculationBE(offset, threeBytes);
   }
 
   writeInt32BE(value: number, offset: number = 0): number {
@@ -1195,11 +1199,11 @@ class Buffer {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, fourBytes);
     // 2 : 31 : The range of 32-bit Int value is from negative the 31st power of 2 to the 31st power of 2 minus 1
-    rangeErrorCheck(value, 'value', - (Math.pow(2, 31)), (Math.pow(2, 31) - 1));
+    rangeErrorCheck(value, 'value', - (Math.pow(twoBytes, 31)), (Math.pow(twoBytes, 31) - 1));
 
     value = +value;
     this[bufferSymbol].writeInt32BE(value, offset);
-    return offset + 4; // 4 means offset 4 bytes
+    return offset + fourBytes;
   }
 
   private checkOffsetRange(offset: number, size: number): void {
@@ -1217,11 +1221,11 @@ class Buffer {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, fourBytes);
     // 2 : 31 : The range of 32-bit Int value is from negative the 31st power of 2 to the 31st power of 2 minus 1
-    rangeErrorCheck(value, 'value', - (Math.pow(2, 31)), (Math.pow(2, 31) - 1));
+    rangeErrorCheck(value, 'value', - (Math.pow(twoBytes, 31)), (Math.pow(twoBytes, 31) - 1));
 
     value = +value;
     this[bufferSymbol].writeInt32LE(value, offset);
-    return offset + 4; // 4 means offset 4 bytes
+    return offset + fourBytes;
   }
 
   readInt32LE(offset: number = 0): number {
@@ -1235,10 +1239,10 @@ class Buffer {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, fourBytes);
     // 2 : 32 : The range of 32-bit UInt value is from zero to the 32st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, (Math.pow(2, 32) - 1));
+    rangeErrorCheck(value, 'value', 0, (MAX_LENGTH - 1));
     value = +value;
     this[bufferSymbol].writeUInt32BE(value, offset);
-    return offset + 4; // 4 means offset 4 bytes
+    return offset + fourBytes;
   }
 
   readUInt32BE(offset: number = 0): number {
@@ -1251,11 +1255,10 @@ class Buffer {
     typeErrorCheck(value, ['number'], 'value');
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, fourBytes);
-    // 2 : 32 : The range of 32-bit UInt value is from zero to the 32st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, (Math.pow(2, 32) - 1));
+    rangeErrorCheck(value, 'value', 0, (MAX_LENGTH - 1));
     value = +value;
     this[bufferSymbol].writeUInt32LE(value, offset);
-    return offset + 4; // 4 means offset 4 bytes
+    return offset + fourBytes;
   }
 
   readUInt32LE(offset: number = 0): number {
@@ -1371,9 +1374,9 @@ class Buffer {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
     // 2 : 16 : The range of 32-bit Int value is from zero to the 16st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, Math.pow(2, 16) - 1);
+    rangeErrorCheck(value, 'value', 0, Math.pow(twoBytes, 16) - 1);
     value = +value;
-    this[offset++] = (value >>> 8); // 8 means offset 8 bits
+    this[offset++] = (value >>> eightBytes);
     this[offset++] = value;
     return offset;
   }
@@ -1383,7 +1386,7 @@ class Buffer {
     this.checkOffsetRange(offset, twoBytes);
     const first = this[offset];
     const last = this[offset + 1];
-    return first * Math.pow(2, 8) + last; // 8 means offset 8 bits
+    return first * Math.pow(twoBytes, eightBytes) + last;
   }
 
   writeUInt16LE(value: number, offset: number = 0): number {
@@ -1391,10 +1394,10 @@ class Buffer {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
     // 2 : 16 : The range of 32-bit Int value is from zero to the 16st power of 2 minus 1
-    rangeErrorCheck(value, 'value', 0, Math.pow(2, 16) - 1);
+    rangeErrorCheck(value, 'value', 0, Math.pow(twoBytes, 16) - 1);
     value = +value;
     this[offset++] = value;
-    this[offset++] = (value >>> 8); // 8 means offset 8 bits
+    this[offset++] = (value >>> eightBytes);
     return offset;
   }
 
@@ -1584,7 +1587,7 @@ class Buffer {
       let times: number = 0;
       let startIndex: number = dealLen * i;
       let endIndex: number = startIndex + dealLen - 1;
-      while (times < dealLen / 2) {
+      while (times < dealLen / twoBytes) {
         let tmp = this[startIndex + times];
         this[startIndex + times] = this[endIndex - times];
         this[endIndex - times] = tmp;
@@ -1596,7 +1599,7 @@ class Buffer {
 
   swap16(): Buffer {
     const len = this.length;
-    const dealLen: number = 2; // Process every 2 bits
+    const dealLen: number = twoBytes;
     if (len % dealLen !== 0) {
       throw bufferSizeError('16-bits');
     }
@@ -1614,7 +1617,7 @@ class Buffer {
 
   swap64(): Buffer {
     const len = this.length;
-    const dealLen: number = 8; // Process every 8 bits
+    const dealLen: number = eightBytes;
     if (len % dealLen !== 0) {
       throw bufferSizeError('64-bits');
     }
@@ -1759,7 +1762,7 @@ function alloc(size: number, fill?: string | Buffer | number, encoding?: string)
   sizeErrorCheck(size, 'size', ['number'], 0, MAX_LENGTH);
   const buf = new Buffer(size);
   buf.fill(0);
-  if (arguments.length === 2 && fill !== undefined && fill !== 0) {
+  if (arguments.length === twoBytes && fill !== undefined && fill !== 0) {
     buf.fill(fill);
   } else if (arguments.length === 3) {
     if (encoding === undefined || encoding === null) {
@@ -1875,8 +1878,8 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
 function hexStrtoNumbers(hex: string): Array<number> {
   let arr = hex.split('');
   let nums: Array<number> = [];
-  for (let i = 0, len = arr.length; i < len / 2; i++) {
-    let tmp = '0x' + arr[i * 2] + arr[i * 2 + 1];
+  for (let i = 0, len = arr.length; i < len / twoBytes; i++) {
+    let tmp = '0x' + arr[i * twoBytes] + arr[i * twoBytes + 1];
     let hexNum = Number(tmp);
     if (isNaN(hexNum)) {
       if (i === 0) {
@@ -1991,7 +1994,7 @@ function toUtf16LE(self: Buffer, start: number, end: number): string {
   let bufData: Array<number> = self[bufferSymbol].getBufferData();
   let val = '';
   for (let i = start; i + 1 < end; i += 2) {
-    val += String.fromCodePoint((bufData[i + 1] << 8) + (bufData[i])); // 8 means offset 8 bits
+    val += String.fromCodePoint((bufData[i + 1] << eightBytes) + (bufData[i]));
   }
   return val;
 }
@@ -2001,7 +2004,10 @@ function toBase64(self: Buffer, start: number, end: number): string {
   return str;
 }
 
-function getEncodingByType(type: string) {
+function getEncodingByType(type: string): {
+  byteLength: (str: string) => number;
+  toString: (self: Buffer, start: number, end: number) => string;
+} | undefined {
   type = type.toLowerCase();
   switch (type) {
     case 'utf8':
@@ -2013,7 +2019,7 @@ function getEncodingByType(type: string) {
     case 'ucs2':
     case 'ucs-2':
       return {
-        byteLength: (str: string) => str.length * 2, // 2 : 2 times of ascii
+        byteLength: (str: string) => str.length * twoBytes, // 2 : 2 times of ascii
         toString: toUtf16LE
       };
     case 'ascii':
@@ -2030,7 +2036,7 @@ function getEncodingByType(type: string) {
     case 'utf16le':
     case 'utf-16le':
       return {
-        byteLength: (str: string) => str.length * 2, // 2 : 2 times of ascii
+        byteLength: (str: string) => str.length * twoBytes,
         toString: toUtf16LE
       };
     case 'base64':
@@ -2063,7 +2069,7 @@ function getBase64ByteLength(str: string): number {
       bytes--;
     }
   }
-  return (bytes * 3) >>> 2; // 3 : 2 : Base64 ratio: 3/4
+  return (bytes * threeBytes) >>> twoBytes;
 }
 
 function compare(buf1: Buffer | Uint8Array, buf2: Buffer | Uint8Array): 1 | 0 | -1 {
