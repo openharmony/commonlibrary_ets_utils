@@ -46,6 +46,7 @@ public:
     static bool GetBooleanValue(napi_env env, napi_value value);
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
     static napi_value GetConstructorName(napi_env env, napi_value object);
+    static napi_value CreateObject(napi_env env);
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_

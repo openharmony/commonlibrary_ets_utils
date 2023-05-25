@@ -319,8 +319,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
 TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func,
                                         napi_value args, uint32_t taskId, uint32_t executeId)
 {
-    napi_value undefined;
-    napi_get_undefined(env, &undefined);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationFunction;
     napi_status status = napi_serialize(env, func, undefined, &serializationFunction);
     if (status != napi_ok || serializationFunction == nullptr) {

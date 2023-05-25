@@ -201,4 +201,11 @@ napi_value NapiHelper::GetConstructorName(napi_env env, napi_value object)
     }
     return nullptr;
 }
+
+napi_value NapiHelper::CreateObject(napi_env env)
+{
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    return obj;
+}
 } // namespace Commonlibrary::Concurrent::Common::Helper

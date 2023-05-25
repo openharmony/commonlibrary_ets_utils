@@ -238,8 +238,7 @@ void Worker::PerformTask(const uv_async_t* req)
     taskInfo->worker = worker;
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     TaskManager::GetInstance().UpdateState(taskInfo->executeId, TaskState::RUNNING);
-    napi_value undefined;
-    napi_get_undefined(env, &undefined);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value func;
     status = napi_deserialize(env, taskInfo->serializationFunction, &func);
     if (status != napi_ok || func == nullptr) {
@@ -263,7 +262,8 @@ void Worker::PerformTask(const uv_async_t* req)
 
     auto funcVal = reinterpret_cast<NativeValue*>(func);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
-    [[maybe_unused]] bool success = workerEngine->InitTaskPoolFunc(workerEngine, funcVal);
+    // Store taskinfo in function
+    [[maybe_unused]] bool success = workerEngine->InitTaskPoolFunc(workerEngine, funcVal, taskInfo);
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
@@ -289,15 +289,9 @@ void Worker::PerformTask(const uv_async_t* req)
         napi_get_element(env, args, i, &val);
         argsArray[i] = val;
     }
-    // Store taskinfo in last argument
-    napi_value data;
-    napi_create_external(env, taskInfo, nullptr, nullptr, &data);
-    napi_value obj;
-    napi_create_object(env, &obj);
-    napi_set_named_property(env, obj, TASKINFO_STR, data);
 
     napi_value result;
-    napi_call_function(env, obj, func, argsNum, argsArray, &result);
+    napi_call_function(env, undefined, func, argsNum, argsArray, &result);
     FinishTrace(HITRACE_TAG_COMMONLIBRARY);
     uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime;
     TaskManager::GetInstance().UpdateExecutedInfo(duration);
@@ -313,8 +307,7 @@ void Worker::PerformTask(const uv_async_t* req)
 void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
-    napi_value undefined;
-    napi_get_undefined(env, &undefined);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
 
     napi_value resultData;
     napi_status status = napi_serialize(env, result, undefined, &resultData);
@@ -335,8 +328,7 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     worker->NotifyTaskFinished();
 }
 
-void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result,
-    bool success, NativeValue* data)
+void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result, bool success, void* data)
 {
     HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, __PRETTY_FUNCTION__);
     if (engine == nullptr) {
@@ -344,23 +336,13 @@ void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result,
         return;
     }
 
+    if (data == nullptr) {
+        HILOG_FATAL("taskpool:: taskInfo is nullptr");
+        return;
+    }
+    TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
+
     auto env = reinterpret_cast<napi_env>(engine);
-    napi_value external;
-    napi_get_named_property(env, reinterpret_cast<napi_value>(data), TASKINFO_STR, &external);
-    napi_valuetype type;
-    napi_typeof(env, external, &type);
-    if (type != napi_external) {
-        HILOG_ERROR("taskpool::TaskResultCallback Concurrent func not called by taskpool.execute");
-        return;
-    }
-
-    TaskInfo* taskInfo = nullptr;
-    napi_get_value_external(env, external, reinterpret_cast<void**>(&taskInfo));
-    if (taskInfo == nullptr) {
-        HILOG_FATAL("taskpool::TaskResultCallback taskInfo is null");
-        return;
-    }
-
     taskInfo->success = success;
     NotifyTaskResult(env, taskInfo, reinterpret_cast<napi_value>(result));
 }
