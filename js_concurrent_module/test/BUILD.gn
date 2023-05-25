@@ -36,7 +36,7 @@ ohos_unittest("test_concurrent_unittest") {
   ]
 
   deps = [
-    "${ets_util_path}/js_concurrent_module/worker:worker_packages",
+    "${ets_util_path}/js_concurrent_module/worker:worker_static",
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
