@@ -16,8 +16,8 @@
 #include "test.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "napi_helper.h"
 #include "utils/log.h"
-#include "napi_helper.cpp"
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -283,7 +283,7 @@ HWTEST_F(NativeEngineTest, IsObject001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value value = nullptr;
-    
+
     napi_create_object(env, &value);
     bool res = false;
     res = NapiHelper::IsObject(value);
@@ -294,7 +294,7 @@ HWTEST_F(NativeEngineTest, GetString001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value value = nullptr;
-    
+
     std::string str = "test";
     napi_create_string_utf8(env, str.c_str(), NAPI_AUTO_LENGTH, &value);
     bool res = false;
