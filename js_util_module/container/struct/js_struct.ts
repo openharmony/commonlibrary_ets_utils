@@ -1052,7 +1052,7 @@ function checkBindError(methodName: string, className: Function, self: unknown):
   }
 }
 
-function checkTypeError(paramName: string, type: string, receivedValue: unknown) {
+function checkTypeError(paramName: string, type: string, receivedValue: unknown): void {
   let tmpType = '';
   if (typeof receivedValue === 'object') {
     tmpType = (receivedValue === null) ? 'Null' : receivedValue.constructor.name;
@@ -1097,7 +1097,7 @@ function checkRangeError(paramName: string, receivedValue: unknown, min?: number
 
 function checkIsEmptyError(isEmpty: boolean): void {
   if (isEmpty) {
-    throw new BusinessError(`Container is empty`, EMPTY_ERROR_CODE);
+    throw new BusinessError('Container is empty', EMPTY_ERROR_CODE);
   }
 }
 
@@ -1113,7 +1113,7 @@ let errorUtil = {
   checkRangeError,
   checkIsEmptyError,
   checkNewTargetIsNullError
-}
+};
 export default {
   isIncludeToArray,
   LightWeightClass,

@@ -18,7 +18,7 @@ interface ArkPrivate {
 }
 let flag: boolean = false;
 let fastVector: object = undefined;
-let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
+let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
 if (arkPritvate !== undefined) {
   fastVector = arkPritvate.Load(arkPritvate.Vector);
 } else {
@@ -219,10 +219,10 @@ if (flag || fastVector === undefined) {
     }
     removeByRange(fromIndex: number, toIndex: number): void {
       if (fromIndex >= toIndex) {
-        throw new RangeError(`the fromIndex cannot be less than or equal to toIndex`);
+        throw new RangeError('the fromIndex cannot be less than or equal to toIndex');
       }
       if (fromIndex >= this.elementNum || fromIndex < 0 || toIndex < 0) {
-        throw new RangeError(`the fromIndex or the toIndex is out-of-bounds`);
+        throw new RangeError('the fromIndex or the toIndex is out-of-bounds');
       }
       toIndex = toIndex >= this.elementNum ? this.elementNum : toIndex;
       let i: number = fromIndex;
@@ -234,7 +234,7 @@ if (flag || fastVector === undefined) {
     }
     setLength(newSize: number): void {
       if (newSize < 0) {
-        throw new RangeError(`An incorrect size was set`);
+        throw new RangeError('An incorrect size was set');
       }
       this.elementNum = newSize;
     }
@@ -295,10 +295,10 @@ if (flag || fastVector === undefined) {
     }
     subVector(fromIndex: number, toIndex: number): Vector<T> {
       if (fromIndex >= toIndex) {
-        throw new RangeError(`the fromIndex cannot be less than or equal to toIndex`);
+        throw new RangeError('the fromIndex cannot be less than or equal to toIndex');
       }
       if (fromIndex >= this.elementNum || fromIndex < 0 || toIndex < 0) {
-        throw new RangeError(`the fromIndex or the toIndex is out-of-bounds`);
+        throw new RangeError('the fromIndex or the toIndex is out-of-bounds');
       }
       toIndex = toIndex >= this.elementNum - 1 ? this.elementNum - 1 : toIndex;
       let vector: Vector<T> = new Vector<T>();

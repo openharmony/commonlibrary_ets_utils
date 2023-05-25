@@ -18,7 +18,7 @@ interface ArkPrivate {
 }
 let flag: boolean = false;
 let fastArrayList: Object = undefined;
-let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
+let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
 if (arkPritvate !== undefined) {
   fastArrayList = arkPritvate.Load(arkPritvate.ArrayList);
 } else {
