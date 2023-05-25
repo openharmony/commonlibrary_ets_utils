@@ -19,7 +19,7 @@ interface ArkPrivate {
 }
 let flag: boolean = false;
 let fastLightWeightSet: Object = undefined;
-let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
+let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
 if (arkPritvate !== undefined) {
   fastLightWeightSet = arkPritvate.Load(arkPritvate.LightWeightSet);
 } else {

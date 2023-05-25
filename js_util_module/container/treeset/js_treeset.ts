@@ -19,7 +19,7 @@ interface ArkPrivate {
 }
 let flag: boolean = false;
 let fastTreeSet: Object = undefined;
-let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
+let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
 if (arkPritvate !== undefined) {
   fastTreeSet = arkPritvate.Load(arkPritvate.TreeSet);
 } else {

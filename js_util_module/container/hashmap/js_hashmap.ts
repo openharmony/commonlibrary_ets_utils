@@ -19,7 +19,7 @@ interface ArkPrivate {
 }
 let flag: boolean = false;
 let fastHashMap: Object = undefined;
-let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
+let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
 if (arkPritvate !== undefined) {
   fastHashMap = arkPritvate.Load(arkPritvate.HashMap);
 } else {

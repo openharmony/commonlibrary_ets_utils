@@ -18,7 +18,7 @@ interface ArkPrivate {
 }
 let flag: boolean = false;
 let fastDeque: Object = undefined;
-let arkPritvate: ArkPrivate = globalThis['ArkPrivate'] || undefined;
+let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
 if (arkPritvate !== undefined) {
   fastDeque = arkPritvate.Load(arkPritvate.Deque);
 } else {
