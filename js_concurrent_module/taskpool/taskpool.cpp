@@ -133,7 +133,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
 }
 
 napi_value TaskPool::ExecuteFunction(napi_env env,
-                                    napi_value function, napi_value arguments, uint32_t taskId, Priority priority)
+                                     napi_value function, napi_value arguments, uint32_t taskId, Priority priority)
 {
     std::string strTrace = "ExecuteFunction: taskId is " + std::to_string(taskId);
     StartTrace(HITRACE_TAG_COMMONLIBRARY, strTrace);

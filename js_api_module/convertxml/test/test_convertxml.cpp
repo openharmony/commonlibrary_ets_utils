@@ -403,9 +403,9 @@ HWTEST_F(NativeEngineTest, DealOptionsTest001, testing::ext::TestSize.Level0)
     napi_create_object(env, &obj);
 
     std::vector<std::string> proVec = {"trim", "ignoreDeclaration", "ignoreInstruction", "ignoreAttributes",
-        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey","_declaration",
-        "instructionKey", "_instruction", "attributesKey","_attributes","textKey", "_text","cdataKey","_cdata",
-        "doctypeKey", "_doctype", "commentKey", "_comment","parentKey", "_parent","typeKey", "_type",
+        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey", "_declaration",
+        "instructionKey", "_instruction", "attributesKey", "_attributes", "textKey", "_text", "cdataKey", "_cdata",
+        "doctypeKey", "_doctype", "commentKey", "_comment", "parentKey", "_parent","typeKey", "_type",
         "nameKey", "_name", "elementsKey", "_elements"};
 
     obj = setProperty(env, obj, proVec);
