@@ -19,6 +19,8 @@
 #include "napi/native_node_api.h"
 
 #include "js_xml.h"
+#include "native_module_xml.h"
+#include "securec.h"
 #include "utils/log.h"
 
 #define ASSERT_CHECK_CALL(call)   \
@@ -1579,4 +1581,140 @@ HWTEST_F(NativeEngineTest, Xmlfunctest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(xmlPullParser.GetAttributeCount(), 0);
     ASSERT_FALSE(xmlPullParser.IsWhitespace());
     ASSERT_STREQ(xmlPullParser.GetNamespace().c_str(), "");
+}
+
+/* @tc.name: XmlSerializertest001
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSerializertest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::xml::XmlSerializerInit(env, exports);
+    napi_value xmlSerializerClass = nullptr;
+    napi_get_named_property(env, exports, "XmlSerializer", &xmlSerializerClass);
+
+    napi_value args[2]; // 2: number of arguments
+    size_t length = 2048; // allocate an ArrayBuffer with a size of 2048 bytes
+    void* pBuffer = nullptr;
+    napi_create_arraybuffer(env, length, &pBuffer, &args[0]);
+    std::string encoding = "utf-8";
+    napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[1]);
+    napi_value instance = nullptr;
+    napi_new_instance(env, xmlSerializerClass, 2, args, &instance); // 2: number of arguments
+
+    std::string name = "importance";
+    napi_create_string_utf8(env, name.c_str(), name.size(), &args[0]);
+    std::string value = "high";
+    napi_create_string_utf8(env, value.c_str(), value.size(), &args[1]);
+    napi_value testFunc = nullptr;
+    napi_get_named_property(env, instance, "setAttributes", &testFunc);
+    napi_value funcResultValue = nullptr;
+    napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+    ASSERT_NE(funcResultValue, nullptr);
+
+    name = "empty";
+    napi_value val = nullptr;
+    napi_create_string_utf8(env, name.c_str(), name.size(), &val);
+    napi_get_named_property(env, instance, "addEmptyElement", &testFunc);
+    napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    napi_get_named_property(env, instance, "setDeclaration", &testFunc);
+    napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    name = "note";
+    napi_create_string_utf8(env, name.c_str(), name.size(), &val);
+    napi_get_named_property(env, instance, "startElement", &testFunc);
+    napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    napi_get_named_property(env, instance, "endElement", &testFunc);
+    napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    name = "h";
+    napi_create_string_utf8(env, name.c_str(), name.size(), &args[0]);
+    value = "http://www.w3.org/TR/html4/";
+    napi_create_string_utf8(env, value.c_str(), value.size(), &args[1]);
+    napi_get_named_property(env, instance, "setNamespace", &testFunc);
+    napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+    ASSERT_NE(funcResultValue, nullptr);
+
+    name = "Hello, World!";
+    napi_create_string_utf8(env, name.c_str(), name.size(), &val);
+    napi_get_named_property(env, instance, "setComment", &testFunc);
+    napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    name = "root SYSTEM";
+    napi_create_string_utf8(env, name.c_str(), name.size(), &val);
+    napi_get_named_property(env, instance, "setCDATA", &testFunc);
+    napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    name = "Happy";
+    napi_create_string_utf8(env, name.c_str(), name.size(), &val);
+    napi_get_named_property(env, instance, "setText", &testFunc);
+    napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    name = "root SYSTEM \"http://www.test.org/test.dtd\"";
+    napi_create_string_utf8(env, name.c_str(), name.size(), &val);
+    napi_get_named_property(env, instance, "setDocType", &testFunc);
+    napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    napi_get_named_property(env, instance, "XmlSerializerError", &testFunc);
+    napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+}
+
+/* @tc.name: XmlPullParsertest001
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlPullParsertest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::xml::XmlPullParserInit(env, exports);
+    napi_value xmlPullParserClass = nullptr;
+    napi_get_named_property(env, exports, "XmlPullParser", &xmlPullParserClass);
+
+    std::string firStr = "<?xml version=\"1.0\" encoding=\"utf-8\"?><note importance=\"high\" logged=\"true\">";
+    std::string secStr = " <title>Happy</title><todo>Work</todo><todo>Play</todo></note>";
+    std::string strXml = firStr + secStr;
+    napi_value args[2]; // 2: number of arguments
+    void* pBuffer = nullptr;
+    size_t strLen = strXml.size();
+    napi_create_arraybuffer(env, strLen, &pBuffer, &args[0]);
+    memcpy_s(pBuffer, strLen, strXml.c_str(), strLen);
+    std::string encoding = "utf-8";
+    napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[1]);
+    napi_value instance = nullptr;
+    napi_new_instance(env, xmlPullParserClass, 2, args, &instance); // 2: number of arguments
+
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    napi_value val;
+    napi_get_boolean(env, true, &val);
+    napi_set_named_property(env, obj, "supportDoctype", val);
+    napi_set_named_property(env, obj, "ignoreNameSpace", val);
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &val);
+    napi_set_named_property(env, obj, "tokenValueCallbackFunction", val);
+    napi_value funcResultValue = nullptr;
+    napi_value testFunc = nullptr;
+    napi_get_named_property(env, instance, "parse", &testFunc);
+    napi_call_function(env, instance, testFunc, 1, &obj, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+
+    napi_get_named_property(env, instance, "XmlPullParserError", &testFunc);
+    napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
 }

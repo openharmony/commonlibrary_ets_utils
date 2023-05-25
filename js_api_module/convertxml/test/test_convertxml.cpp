@@ -20,6 +20,7 @@
 
 #include "js_convertxml.h"
 #include "js_xml.h"
+#include "native_module_convertxml.h"
 #include "utils/log.h"
 
 using namespace OHOS::Xml;
@@ -413,4 +414,42 @@ HWTEST_F(NativeEngineTest, DealOptionsTest001, testing::ext::TestSize.Level0)
     bool isHas = false;
     napi_has_named_property(env, obj, "textKey", &isHas);
     ASSERT_TRUE(isHas);
+}
+
+/* @tc.name: NativeModuleConvertXmlTest001
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, NativeModuleConvertXmlTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Xml::ConvertXmlInit(env, exports);
+    napi_value convertXmlClass = nullptr;
+    napi_get_named_property(env, exports, "ConvertXml", &convertXmlClass);
+
+    napi_value instance = nullptr;
+    napi_new_instance(env, convertXmlClass, 0, nullptr, &instance);
+
+    napi_value args[2]; // 2: number of arguments
+    std::string firXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><note importance=\"high\" logged=\"true\">";
+    std::string secXml = "<title>Happy</title></note>";
+    std::string strXml = firXml + secXml;
+    napi_create_string_utf8(env, strXml.c_str(), strXml.size(), &args[0]);
+
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    std::vector<std::string> proVec = {"trim", "ignoreDeclaration", "ignoreInstruction", "ignoreAttributes",
+        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey","_declaration",
+        "instructionKey", "_instruction", "attributesKey","_attributes","textKey", "_text","cdataKey","_cdata",
+        "doctypeKey", "_doctype", "commentKey", "_comment","parentKey", "_parent","typeKey", "_type",
+        "nameKey", "_name", "elementsKey", "_elements"};
+    args[1] = setProperty(env, obj, proVec);
+
+    napi_value funcResultValue = nullptr;
+    napi_value testFunc = nullptr;
+    napi_get_named_property(env, instance, "convert", &testFunc);
+    napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+    ASSERT_NE(funcResultValue, nullptr);
 }

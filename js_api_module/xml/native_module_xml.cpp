@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
+#include "native_module_xml.h"
 #include "js_xml.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 
 extern const char _binary_js_xml_js_start[];
 extern const char _binary_js_xml_js_end[];
@@ -354,7 +353,7 @@ namespace OHOS::xml {
         return result;
     }
 
-    static napi_value XmlSerializerInit(napi_env env, napi_value exports)
+    napi_value XmlSerializerInit(napi_env env, napi_value exports)
     {
         const char *xmlSerializerClass = "XmlSerializer";
         napi_value xmlClass = nullptr;
@@ -414,7 +413,7 @@ namespace OHOS::xml {
         return result;
     }
 
-    static napi_value XmlPullParserInit(napi_env env, napi_value exports)
+    napi_value XmlPullParserInit(napi_env env, napi_value exports)
     {
         const char *xmlPullParserClass = "XmlPullParser";
         napi_value xmlClass = nullptr;
