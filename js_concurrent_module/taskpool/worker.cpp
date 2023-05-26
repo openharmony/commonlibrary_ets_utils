@@ -230,7 +230,7 @@ void Worker::PerformTask(const uv_async_t* req)
     } else if (executeIdAndPriority.second == Priority::MEDIUM) {
         traceInfo += ", TaskPriority: MEDIUM";
     } else if (executeIdAndPriority.second == Priority::LOW) {
-       traceInfo += ", TaskPriority: LOW";
+        traceInfo += ", TaskPriority: LOW";
     } else {
         HILOG_ERROR("taskpool:: task priority value is error");
     }

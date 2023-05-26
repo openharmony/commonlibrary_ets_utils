@@ -84,7 +84,7 @@ const SyntaxErrorCodeId = 10200002;
 class BusinessError extends Error {
   code: number;
   constructor(msg: string) {
-    super(msg)
+    super(msg);
     this.name = 'BusinessError';
     this.code = TypeErrorCodeId;
   }
@@ -161,7 +161,7 @@ class URLParams {
   toString(): string {
     let outPut: string = this.urlClass.array[0] + '=' + this.urlClass.array[1];
     if (this.urlClass.initialNumber !== 0) {
-        outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
+      outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
     }
     let arrayLen: number = this.urlClass.array.length;
     if (arrayLen % 2 === 0) {
@@ -219,7 +219,7 @@ class URLParams {
       return;
     }
     if (typeof thisArg === 'undefined' || thisArg === null) {
-        thisArg = this;
+      thisArg = this;
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
@@ -286,7 +286,7 @@ class URLSearchParams {
   toString(): string {
     let outPut: string = this.urlClass.array[0] + '=' + this.urlClass.array[1];
     if (this.urlClass.initialNumber !== 0) {
-        outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
+      outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
     }
     let arrayLen: number = this.urlClass.array.length;
     if (arrayLen % 2 === 0) {
@@ -333,7 +333,7 @@ class URLSearchParams {
       return;
     }
     if (typeof thisArg === 'undefined' || thisArg === null) {
-        thisArg = this;
+      thisArg = this;
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
@@ -354,7 +354,7 @@ class URLSearchParams {
   }
 }
 
-function toHleString(arg: string | symbol | number) {
+function toHleString(arg: string | symbol | number): string {
   return arg.toString();
 }
 
@@ -380,21 +380,21 @@ function parameterProcessing(input: object | string | Iterable<[]>) {
   }
 }
 
-function sysObjectParams(input: object | Iterable<[]>) {
+function sysObjectParams(input: object | Iterable<[]>): Array<string> {
   if (typeof input[Symbol.iterator] === 'function') {
     return iteratorMethodThrow(input as Iterable<[string]>);
   }
   return recordMethod(input);
 }
 
-function initObjectSeachParams(input: object | Iterable<[]>) {
+function initObjectSeachParams(input: object | Iterable<[]>): Array<string> {
   if (typeof input[Symbol.iterator] === 'function') {
     return iteratorMethod(input as Iterable<[string]>);
   }
   return recordMethod(input);
 }
 
-function recordMethod(input: object) {
+function recordMethod(input: object) : Array<string> {
   const keys = Reflect.ownKeys(input);
   seachParamsArr = [];
   for (let i = 0; i <= keys.length; i++) {
@@ -409,7 +409,7 @@ function recordMethod(input: object) {
   return seachParamsArr;
 }
 
-function iteratorMethodThrow(input: Iterable<[string]>) {
+function iteratorMethodThrow(input: Iterable<[string]>): Array<string> {
   let pairs = [];
   seachParamsArr = [];
   for (const pair of input) {
@@ -432,7 +432,7 @@ function iteratorMethodThrow(input: Iterable<[string]>) {
   return seachParamsArr;
 }
 
-function iteratorMethod(input: Iterable<[string]>) {
+function iteratorMethod(input: Iterable<[string]>): Array<string> {
   let pairs = [];
   seachParamsArr = [];
   for (const pair of input) {
@@ -492,8 +492,8 @@ class URL {
   searchParamsClass_ !: URLSearchParams;
   URLParamsClass_ !: URLParams;
   c_info !: NativeUrl;
-  public constructor()
-  public constructor(inputUrl: string, inputBase?: string | URL)
+  public constructor();
+  public constructor(inputUrl: string, inputBase?: string | URL);
   public constructor(inputUrl?: string, inputBase?: string | URL) {
     if (arguments.length === 0) {
     }
@@ -538,7 +538,7 @@ class URL {
         this.port_ = nativeUrl.port;
         this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
         this.searchParamsClass_ = new URLSearchParams(this.search_);
-        this.URLParamsClass_ = new URLParams(this.search_)
+        this.URLParamsClass_ = new URLParams(this.search_);
         this.setHref();
       } else {
         console.error('constructor failed');

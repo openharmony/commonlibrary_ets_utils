@@ -107,7 +107,7 @@ namespace OHOS::xml {
             for (char c : strEnd) {
                 if (c != '\r' && c != '\n') {
                     cleanStr += c;
-              }
+                }
             }
             if (argc == 1) {
                 object = new XmlPullParser(cleanStr, "utf-8");

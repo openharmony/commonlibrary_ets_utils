@@ -1096,7 +1096,8 @@ HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
-    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo ";
+    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle\
+                        todoWorktodo todoPlaytodo ";
     std::string res3 = "go thereabba table trtdApplestd tdBananastd trtablenote";
     std::string result = res1 + res2 + res3;
     ASSERT_STREQ(testStr.c_str(), result.c_str());
@@ -1491,7 +1492,8 @@ HWTEST_F(NativeEngineTest, XmlParseTest0010, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, XmlParseTest0011, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ATTLIST operand type src \"dest\">]>";
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ATTLIST operand type src\
+                        \"dest\">]>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
     std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
     std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";

@@ -309,7 +309,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
             }
         } else {
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_RUNNING_TASK,
-                                "taskpool:: can not cancel the running task");
+                                    "taskpool:: can not cancel the running task");
             return;
         }
     }

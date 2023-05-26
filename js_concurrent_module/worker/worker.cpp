@@ -664,7 +664,7 @@ void Worker::TerminateInner()
     if (IsTerminated() || IsTerminating()) {
         HILOG_INFO("worker:: worker is not in running");
         return;
-    } 
+    }
     // 1. Update State
     UpdateWorkerState(TERMINATEING);
     // 2. send null signal
