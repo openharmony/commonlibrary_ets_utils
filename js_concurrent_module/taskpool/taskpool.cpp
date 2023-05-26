@@ -30,8 +30,8 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value taskClass = nullptr;
     napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor, nullptr, 0, nullptr, &taskClass);
 
-    napi_value priorityObj = nullptr;
-    napi_create_object(env, &priorityObj);
+    // define priority
+    napi_value priorityObj = NapiHelper::CreateObject(env);
     napi_value highPriority = nullptr;
     napi_value mediumPriority = nullptr;
     napi_value lowPriority = nullptr;
