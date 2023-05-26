@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "test_xml.h"
 #include "test.h"
 
 #include "napi/native_api.h"
@@ -22,6 +23,8 @@
 #include "native_module_xml.h"
 #include "securec.h"
 #include "utils/log.h"
+
+using namespace OHOS::xml;
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -1617,18 +1620,12 @@ HWTEST_F(NativeEngineTest, XmlSerializertest001, testing::ext::TestSize.Level0)
     napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
     ASSERT_NE(funcResultValue, nullptr);
 
-    name = "empty";
-    napi_value val = nullptr;
-    napi_create_string_utf8(env, name.c_str(), name.size(), &val);
-    napi_get_named_property(env, instance, "addEmptyElement", &testFunc);
-    napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
-    ASSERT_NE(funcResultValue, nullptr);
-
     napi_get_named_property(env, instance, "setDeclaration", &testFunc);
     napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
     ASSERT_NE(funcResultValue, nullptr);
 
     name = "note";
+    napi_value val = nullptr;
     napi_create_string_utf8(env, name.c_str(), name.size(), &val);
     napi_get_named_property(env, instance, "startElement", &testFunc);
     napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
@@ -1719,4 +1716,65 @@ HWTEST_F(NativeEngineTest, XmlPullParsertest001, testing::ext::TestSize.Level0)
     napi_get_named_property(env, instance, "XmlPullParserError", &testFunc);
     napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
     ASSERT_NE(funcResultValue, nullptr);
+}
+
+/* @tc.name: SetDeclaration
+ * @tc.desc: Test SetDeclaration Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, Xmltest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    XmlTest::SetDeclaration(env);
+    XmlTest::SetNamespace(env);
+    XmlTest::StartElement(env);
+    XmlTest::WriteEscaped(env);
+    XmlTest::XmlSerializerError(env);
+
+    std::string strXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>    <title>Happy</title>    <todo>Work</todo>";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    XmlTest::PushSrcLinkList();
+    std::string strTemp = "xml version";
+    xmlPullParser.Replace(strTemp, "xml", "convert");
+    ASSERT_STREQ(strTemp.c_str(), "convert version");
+}
+
+/* @tc.name: GetColumnNumber
+ * @tc.desc: Test GetColumnNumber Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetColumnNumber, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    int res = testXml.TestGetColumnNumber(env);
+    ASSERT_EQ(res, 2); // 2: ColumnNumber
+}
+
+/* @tc.name: GetLineNumber
+ * @tc.desc: Test GetLineNumber Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetLineNumber, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    int res = testXml.TestGetLineNumber(env);
+
+    OHOS::xml::XmlPullParser xml("1\n1", "utf8");
+    xml.ParseInneNotaDecl();
+    ASSERT_EQ(res, 2); // 2: LineNumber
+}
+
+/* @tc.name: GetText
+ * @tc.desc: Test GetText Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetText, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    std::string res = testXml.TestGetText(env);
+    ASSERT_STREQ(res.c_str(), "");
 }

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "test_convertxml.h"
 #include "test.h"
 
 #include "napi/native_api.h"
@@ -452,4 +453,11 @@ HWTEST_F(NativeEngineTest, NativeModuleConvertXmlTest001, testing::ext::TestSize
     napi_get_named_property(env, instance, "convert", &testFunc);
     napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
     ASSERT_NE(funcResultValue, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TrimTest001, testing::ext::TestSize.Level1)
+{
+    CxmlTest::Trim("");
+    std::string res = CxmlTest::Trim(" #e ");
+    ASSERT_STREQ(res.c_str(), "#e");
 }
