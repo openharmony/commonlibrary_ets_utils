@@ -1740,6 +1740,69 @@ HWTEST_F(NativeEngineTest, Xmltest001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(strTemp.c_str(), "convert version");
 }
 
+/* @tc.name: GetNSCount
+ * @tc.desc: Test GetNSCount Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetNSCount001, testing::ext::TestSize.Level0)
+{
+    size_t res = XmlTest::GetNSCount(1);
+    ASSERT_EQ(res, 0);
+
+    std::string str = XmlTest::XmlPullParserError();
+    ASSERT_STREQ(str.c_str(), "IndexOutOfBoundsException");
+}
+
+/* @tc.name: DealExclamationGroup
+ * @tc.desc: Test DealExclamationGroup Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealExclamationGroup001, testing::ext::TestSize.Level0)
+{
+    TagEnum tEnum = XmlTest::DealExclamationGroup("stER");
+    ASSERT_EQ(tEnum, TagEnum::ERROR1);
+
+    tEnum = XmlTest::DealExclamationGroup("stNR");
+    ASSERT_EQ(tEnum, TagEnum::NOTATIONDECL);
+
+    tEnum = XmlTest::DealExclamationGroup("staR");
+    ASSERT_EQ(tEnum, TagEnum::ERROR1);
+}
+
+/* @tc.name: DealLtGroup
+ * @tc.desc: Test DealLtGroup Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealLtGroup001, testing::ext::TestSize.Level0)
+{
+    TagEnum tEnum = XmlTest::DealLtGroup();
+    ASSERT_EQ(tEnum, TagEnum::END_TAG);
+
+    tEnum = XmlTest::ParseTagType();
+    ASSERT_EQ(tEnum, TagEnum::TEXT);
+}
+
+/* @tc.name: MakeStrUpper
+ * @tc.desc: Test MakeStrUpper Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, MakeStrUpper001, testing::ext::TestSize.Level0)
+{
+    std::string strXml = "to";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    std::string src = "C";
+    xmlPullParser.MakeStrUpper(src);
+    ASSERT_STREQ(src.c_str(), "c");
+
+    std::string str = "todo";
+    src = XmlTest::SkipText(strXml, str);
+    ASSERT_STREQ(src.c_str(), "expected: 'todo' but was EOF");
+
+    strXml = "<todo>Work</todo>";
+    src = XmlTest::SkipText(strXml, str);
+    ASSERT_STREQ(src.c_str(), "expected: \"todo\" but was \"<tod...\"");
+}
+
 /* @tc.name: GetColumnNumber
  * @tc.desc: Test GetColumnNumber Func
  * @tc.type: FUNC
@@ -1777,4 +1840,119 @@ HWTEST_F(NativeEngineTest, GetText, testing::ext::TestSize.Level0)
     OHOS::xml::XmlTest testXml;
     std::string res = testXml.TestGetText(env);
     ASSERT_STREQ(res.c_str(), "");
+}
+
+/* @tc.name: ParseStartTagFuncDeal
+ * @tc.desc: Test ParseStartTagFuncDeal Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlPullParser xml("", "utf8");
+    bool res = xml.ParseStartTagFuncDeal(true);
+    ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParseNsp
+ * @tc.desc: Test ParseNsp Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseNsp, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    bool res = testXml.TestParseNsp(env);
+    ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParseDeclaration
+ * @tc.desc: Test ParseDeclaration Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseDeclaration, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    testXml.TestParseDeclaration(env);
+    bool res = false;
+    ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParseDelimiterInfo
+ * @tc.desc: Test ParseDelimiterInfo Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseDelimiterInfo, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    std::string res = testXml.TestParseDelimiterInfo(env);
+    ASSERT_STREQ(res.c_str(), "");
+}
+
+/* @tc.name: ParseEndTag
+ * @tc.desc: Test ParseEndTag Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseEndTag, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    bool res = testXml.TestParseEndTag(env);
+    ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParserDoctInnerInfo
+ * @tc.desc: Test ParserDoctInnerInfo Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParserDoctInnerInfo, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlPullParser xml("S11", "utf8");
+    bool res = xml.ParserDoctInnerInfo(false, true);
+
+    OHOS::xml::XmlPullParser xml1("P11", "utf8");
+    res = xml1.ParserDoctInnerInfo(true, true);
+    OHOS::xml::XmlPullParser xml2("P11", "utf8");
+    res = xml2.ParserDoctInnerInfo(true, false);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: ParseDelimiter
+ * @tc.desc: Test ParseDelimiter Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseDelimiter, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlPullParser xml("\"\'1", "utf8");
+    std::string res = xml.ParseDelimiter(false);
+    ASSERT_STREQ(res.c_str(), "");
+}
+
+/* @tc.name: ParseSpecText
+ * @tc.desc: Test ParseSpecText Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseSpecText, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlPullParser xml("()*", "utf8");
+    xml.ParseSpecText();
+    OHOS::xml::XmlPullParser xml1("E", "utf8");
+    xml1.ParseSpecText();
+    OHOS::xml::XmlPullParser xml2("A", "utf8");
+    xml2.ParseSpecText();
+    bool res = false;
+    ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParseComment
+ * @tc.desc: Test ParseComment Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseComment, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlTest testXml;
+    bool res = testXml.TestParseComment(env);
+    ASSERT_FALSE(res);
 }
