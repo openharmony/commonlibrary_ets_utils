@@ -49,7 +49,7 @@ class BusinessError extends Error {
 }
 
 class URI {
-  uricalss: NativeUri
+  uricalss: NativeUri;
   constructor(input: string) {
     if (typeof input !== 'string' || input.length === 0) {
       throw new BusinessError(`Parameter error.The type of ${input} must be string`);
@@ -165,4 +165,4 @@ function createNewUri(uriStr: string): URI {
 
 export default {
   URI: URI
-}
+};

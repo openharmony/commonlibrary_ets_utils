@@ -35,7 +35,7 @@ class BusinessError extends Error {
   code: number;
   constructor(msg: string) {
     super(msg)
-    this.name = 'BusinessError'
+    this.name = 'BusinessError';
     this.code = TypeErrorCode;
   }
 }
@@ -156,4 +156,4 @@ function dealLaterReplace(strXml: string, idx: number, idxThir: number): string 
 
 export default {
   ConvertXML: ConvertXML
-}
+};
