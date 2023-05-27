@@ -25,9 +25,9 @@ ohos_shared_library("console") {
     "console.cpp",
   ]
 
-  deps = [ "$ace_napi_dep" ]
+  deps = []
 
-  external_deps = []
+  external_deps = [ "napi:ace_napi" ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps += [ "$hilog_linux" ]
