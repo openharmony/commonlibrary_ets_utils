@@ -234,4 +234,4 @@ export default {
   XmlSerializer: XmlSerializer,
   XmlPullParser: XmlPullParser,
   EventType,
-}
+};

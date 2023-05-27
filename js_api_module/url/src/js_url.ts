@@ -798,4 +798,4 @@ export default {
   URLSearchParams: URLSearchParams,
   URL: URL,
   URLParams: URLParams,
-}
+};

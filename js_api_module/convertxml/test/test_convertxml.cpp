@@ -442,9 +442,9 @@ HWTEST_F(NativeEngineTest, NativeModuleConvertXmlTest001, testing::ext::TestSize
     napi_value obj = nullptr;
     napi_create_object(env, &obj);
     std::vector<std::string> proVec = {"trim", "ignoreDeclaration", "ignoreInstruction", "ignoreAttributes",
-        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey","_declaration",
-        "instructionKey", "_instruction", "attributesKey","_attributes","textKey", "_text","cdataKey","_cdata",
-        "doctypeKey", "_doctype", "commentKey", "_comment","parentKey", "_parent","typeKey", "_type",
+        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey", "_declaration",
+        "instructionKey", "_instruction", "attributesKey", "_attributes", "textKey", "_text", "cdataKey", "_cdata",
+        "doctypeKey", "_doctype", "commentKey", "_comment", "parentKey", "_parent", "typeKey", "_type",
         "nameKey", "_name", "elementsKey", "_elements"};
     args[1] = setProperty(env, obj, proVec);
 
