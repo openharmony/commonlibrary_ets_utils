@@ -32,6 +32,8 @@ ohos_shared_library("worker") {
     "worker_runner.cpp",
   ]
 
+  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
+
   external_deps = [ "napi:ace_napi" ]
 
   if (is_linux && current_toolchain == host_toolchain) {
@@ -48,10 +50,7 @@ ohos_shared_library("worker") {
     }
   }
 
-  external_deps += [
-    "ets_utils:timer",
-    "hitrace_native:hitrace_meter",
-  ]
+  external_deps += [ "hitrace_native:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"

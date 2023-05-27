@@ -25,9 +25,9 @@ ohos_shared_library("timer") {
     "timer.cpp",
   ]
 
-  deps = [ "$ace_napi_dep" ]
+  deps = []
 
-  external_deps = []
+  external_deps = [ "napi:ace_napi" ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps += [ "$hilog_linux" ]
@@ -37,9 +37,9 @@ ohos_shared_library("timer") {
     ]
   } else {
     if (is_standard_system) {
-      external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
     } else {
-      external_deps = [ "hilog:libhilog" ]
+      external_deps += [ "hilog:libhilog" ]
     }
   }
 

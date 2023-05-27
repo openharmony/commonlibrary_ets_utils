@@ -45,8 +45,17 @@
         "rom": "1400KB",
         "ram": "~4096KB",
         "deps": {
-            "components": [],
-            "third_party": []
+            "components": [
+                "napi",
+                "hiviewdfx_hilog_native",
+                "hitrace_native"
+            ],
+            "third_party": [
+                "bounds_checking_function",
+                "icu",
+                "libxml2",
+                "openssl"
+            ]
         },
         "build": {
             "sub_component": [
