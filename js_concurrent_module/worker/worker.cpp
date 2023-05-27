@@ -256,6 +256,13 @@ void Worker::HostOnErrorInner()
         HILOG_ERROR("worker:: host thread maybe is over");
         return;
     }
+    napi_handle_scope scope = nullptr;
+    napi_status status = napi_open_handle_scope(hostEnv_, &scope);
+    if (status != napi_ok || scope == nullptr) {
+        HILOG_ERROR("worker:: HostOnError open handle scope failed.");
+        return;
+    }
+
     NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
@@ -266,6 +273,7 @@ void Worker::HostOnErrorInner()
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
     if (!isCallable) {
         HILOG_ERROR("worker:: worker onerror is not Callable");
+        napi_close_handle_scope(hostEnv_, scope);
         return;
     }
     MessageDataType data;
@@ -283,6 +291,7 @@ void Worker::HostOnErrorInner()
     if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
     }
+    napi_close_handle_scope(hostEnv_, scope);
 }
 
 void Worker::HostOnError(const uv_async_t* req)
@@ -370,6 +379,14 @@ void Worker::HostOnMessageInner()
         HILOG_ERROR("worker:: host thread maybe is over");
         return;
     }
+    napi_status status;
+    napi_handle_scope scope = nullptr;
+    status = napi_open_handle_scope(hostEnv_, &scope);
+    if (status != napi_ok || scope == nullptr) {
+        HILOG_ERROR("worker : HostOnMessage open handle scope failed.");
+        return;
+    }
+
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!engine->InitContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
@@ -396,6 +413,7 @@ void Worker::HostOnMessageInner()
                 }
             });
             CloseHostCallback();
+            napi_close_handle_scope(hostEnv_, scope);
             return;
         }
         if (!isCallable) {
@@ -405,7 +423,7 @@ void Worker::HostOnMessageInner()
         }
         // handle data, call worker onMessage function to handle.
         napi_value result = nullptr;
-        napi_status status = napi_deserialize(hostEnv_, data, &result);
+        status = napi_deserialize(hostEnv_, data, &result);
         if (status != napi_ok || result == nullptr) {
             HostOnMessageErrorInner();
             continue;
@@ -422,6 +440,7 @@ void Worker::HostOnMessageInner()
     if (!engine->FinishContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
     }
+    napi_close_handle_scope(hostEnv_, scope);
 }
 
 void Worker::TerminateWorker()
@@ -450,9 +469,17 @@ void Worker::TerminateWorker()
 
 void Worker::HandleException()
 {
+    napi_handle_scope scope = nullptr;
+    napi_status status = napi_open_handle_scope(workerEnv_, &scope);
+    if (status != napi_ok || scope == nullptr) {
+        HILOG_ERROR("worker:: HandleException open handle scope failed.");
+        return;
+    }
+
     napi_value exception;
     napi_get_and_clear_last_exception(workerEnv_, &exception);
     if (exception == nullptr) {
+        napi_close_handle_scope(workerEnv_, scope);
         return;
     }
 
@@ -480,6 +507,7 @@ void Worker::HandleException()
     } else {
         HILOG_ERROR("worker:: host engine is nullptr.");
     }
+    napi_close_handle_scope(workerEnv_, scope);
 }
 
 void Worker::WorkerOnMessageInner()
@@ -487,15 +515,23 @@ void Worker::WorkerOnMessageInner()
     if (IsTerminated()) {
         return;
     }
+    napi_status status;
+    napi_handle_scope scope = nullptr;
+    status = napi_open_handle_scope(workerEnv_, &scope);
+    if (status != napi_ok || scope == nullptr) {
+        HILOG_ERROR("worker:: WorkerOnMessage open handle scope failed.");
+        return;
+    }
     MessageDataType data = nullptr;
     while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker reveive terminate signal");
             TerminateWorker();
+            napi_close_handle_scope(workerEnv_, scope);
             return;
         }
         napi_value result = nullptr;
-        napi_status status = napi_deserialize(workerEnv_, data, &result);
+        status = napi_deserialize(workerEnv_, data, &result);
         if (status != napi_ok || result == nullptr) {
             WorkerOnMessageErrorInner();
             continue;
@@ -510,6 +546,7 @@ void Worker::WorkerOnMessageInner()
             HILOG_ERROR("worker:: call WorkerGlobalScope onmessage error");
         }
     }
+    napi_close_handle_scope(workerEnv_, scope);
 }
 
 void Worker::HostOnMessageErrorInner()
