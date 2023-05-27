@@ -136,7 +136,7 @@ void Worker::ExecuteInThread(const void* data)
 #endif
     if (worker->PrepareForWorkerInstance()) {
         // Call after uv_async_init
-        worker->NotifyIdle();
+        worker->NotifyWorkerCreated();
         worker->RunLoop();
     } else {
         HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
@@ -194,6 +194,11 @@ void Worker::NotifyExecuteTask()
 void Worker::NotifyIdle()
 {
     TaskManager::GetInstance().NotifyWorkerIdle(this);
+}
+
+void Worker::NotifyWorkerCreated()
+{
+    TaskManager::GetInstance().NotifyWorkerCreated(this);
 }
 
 void Worker::NotifyTaskFinished()

@@ -142,12 +142,14 @@ napi_value TaskPool::ExecuteFunction(napi_env env,
     if (taskInfo == nullptr) {
         return nullptr;
     }
+    TaskManager::GetInstance().TryTriggerLoadBalance();
     TaskManager::GetInstance().StoreStateInfo(executeId, TaskState::WAITING);
     TaskManager::GetInstance().StoreRunningInfo(taskId, executeId);
     napi_value promise = nullptr;
     napi_create_promise(env, &taskInfo->deferred, &promise);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
     if (promise == nullptr) {
+        TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
         return nullptr;
     }
