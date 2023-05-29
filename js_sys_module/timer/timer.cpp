@@ -15,8 +15,8 @@
 
 #include "timer.h"
 
-#include "utils/log.h"
 #include "native_engine/native_engine.h"
+#include "utils/log.h"
 
 namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
@@ -106,19 +106,23 @@ void Timer::TimerCallback(uv_timer_t* handle)
     if (callbackInfo == nullptr) {
         return;
     }
-    napi_value callback = Helper::NapiHelper::GetReferenceValue(callbackInfo->env_, callbackInfo->callback_);
-    napi_value undefinedValue = Helper::NapiHelper::GetUndefinedValue(callbackInfo->env_);
-    napi_value callbackResult = nullptr;
-    napi_value* callbackArgv = new napi_value[callbackInfo->argc_];
-    Helper::ObjectScope<napi_value> scope(callbackArgv, true);
-    for (size_t idx = 0; idx < callbackInfo->argc_; idx++) {
-        callbackArgv[idx] = Helper::NapiHelper::GetReferenceValue(callbackInfo->env_, callbackInfo->argv_[idx]);
-    }
-
     // Save the following parameters to ensure that they can still obtained if callback clears the callbackInfo.
     bool repeat = callbackInfo->repeat_;
     uint32_t tId = callbackInfo->tId_;
     napi_env env = callbackInfo->env_;
+
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
+    if (scope == nullptr) {
+        return;
+    }
+    napi_value callback = Helper::NapiHelper::GetReferenceValue(env, callbackInfo->callback_);
+    napi_value undefinedValue = Helper::NapiHelper::GetUndefinedValue(env);
+    napi_value callbackResult = nullptr;
+    napi_value* callbackArgv = new napi_value[callbackInfo->argc_];
+    for (size_t idx = 0; idx < callbackInfo->argc_; idx++) {
+        callbackArgv[idx] = Helper::NapiHelper::GetReferenceValue(env, callbackInfo->argv_[idx]);
+    }
 
     napi_call_function(env, undefinedValue, callback,
                        callbackInfo->argc_, callbackArgv, &callbackResult);
@@ -128,10 +132,13 @@ void Timer::TimerCallback(uv_timer_t* handle)
     if (isPendingException && engine->IsMainThread()) {
         HILOG_ERROR("Pending exception in TimerCallback. Triggering HandleUncaughtException");
         engine->HandleUncaughtException();
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (callbackResult == nullptr) {
         HILOG_ERROR("call timerCallback error");
+        napi_close_handle_scope(env, scope);
+        Helper::CloseHelp::DeletePointer(callbackInfo, false);
         return;
     }
 
@@ -139,12 +146,15 @@ void Timer::TimerCallback(uv_timer_t* handle)
     std::lock_guard<std::mutex> lock(timeLock);
     if (timerTable.find(tId) == timerTable.end()) {
         HILOG_WARN("not found timerCallbackInfo");
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (!repeat) {
         timerTable.erase(tId);
+        napi_close_handle_scope(env, scope);
         Helper::CloseHelp::DeletePointer(callbackInfo, false);
     } else {
+        napi_close_handle_scope(env, scope);
         uv_timer_again(handle);
     }
 }
@@ -205,11 +215,16 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     }
 
     // 6. start timer
-    uv_update_time(Helper::NapiHelper::GetLibUV(env));
+    uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env);
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    if (engine->IsMainThread()) {
+        uv_update_time(loop);
+    }
     uv_timer_start(callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
-    uv_work_t *work = new uv_work_t;
-    uv_queue_work(Helper::NapiHelper::GetLibUV(env), work, [](uv_work_t *){ },
-                  [](uv_work_t *work, int32_t) {delete work; });
+    if (engine->IsMainThread()) {
+        uv_work_t *work = new uv_work_t;
+        uv_queue_work(loop, work, [](uv_work_t *){ }, [](uv_work_t *work, int32_t) {delete work; });
+    }
     return Helper::NapiHelper::CreateUint32(env, tId);
 }
 
