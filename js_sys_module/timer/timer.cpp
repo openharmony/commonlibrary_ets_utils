@@ -16,6 +16,7 @@
 #include "timer.h"
 
 #include "utils/log.h"
+#include "native_engine/native_engine.h"
 
 namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
@@ -114,10 +115,21 @@ void Timer::TimerCallback(uv_timer_t* handle)
         callbackArgv[idx] = Helper::NapiHelper::GetReferenceValue(callbackInfo->env_, callbackInfo->argv_[idx]);
     }
 
+    // Save the following parameters to ensure that they can still obtained if callback clears the callbackInfo.
     bool repeat = callbackInfo->repeat_;
     uint32_t tId = callbackInfo->tId_;
-    napi_call_function(callbackInfo->env_, undefinedValue, callback,
+    napi_env env = callbackInfo->env_;
+
+    napi_call_function(env, undefinedValue, callback,
                        callbackInfo->argc_, callbackArgv, &callbackResult);
+    bool isPendingException = false;
+    napi_is_exception_pending(env, &isPendingException);
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    if (isPendingException && engine->IsMainThread()) {
+        HILOG_ERROR("Pending exception in TimerCallback. Triggering HandleUncaughtException");
+        engine->HandleUncaughtException();
+        return;
+    }
     if (callbackResult == nullptr) {
         HILOG_ERROR("call timerCallback error");
         return;
