@@ -1083,7 +1083,6 @@ HWTEST_F(NativeEngineTest, testUrlSetHostname003, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("file:///www.example.com");
     napi_env env = (napi_env)engine_;
-    std::string output;
     std::string value = "localhost/";
     url.SetHostname(value);
     napi_value result = url.GetOnOrOff(env);
@@ -1805,10 +1804,6 @@ HWTEST_F(NativeEngineTest, testUrlutilities001, testing::ext::TestSize.Level0)
     std::bitset<11> flags; // 11:Each bit of a BIT represents a different parsing state.
     bool isFalse = OHOS::Url::AnalysisScheme(inPut, temp, flags);
     ASSERT_FALSE(isFalse);
-    inPut = "1aSdf";
-    isFalse = OHOS::Url::AnalysisScheme(inPut, temp, flags);
-    inPut = "1@Sdf";
-    isFalse = OHOS::Url::AnalysisScheme(inPut, temp, flags);
     inPut = "@Sdf";
     OHOS::Url::AnalysisUsernameAndPasswd(inPut, temp, temp, flags);
     inPut = "12@3@222@Sdf";
@@ -1989,7 +1984,6 @@ HWTEST_F(NativeEngineTest, testUrlModule001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(res.c_str(), "55");
 
     napi_value constructorArgs1[1] =  { 0 };
-    input1 = "http://username:password@www.baidu.com:99/path/path?query#fagment";
     napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs1[0]);
     napi_value hrefFn = nullptr;
     napi_get_named_property(env, instance, "href", &hrefFn);

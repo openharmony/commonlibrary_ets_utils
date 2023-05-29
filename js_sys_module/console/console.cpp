@@ -71,7 +71,6 @@ void Console::LogPrint(LogLevel level, const char* content)
 std::string Console::ParseLogContent(const std::vector<std::string>& params)
 {
     std::string ret;
-    uint32_t flag = 0;
     if (params.empty()) {
         return ret;
     }
@@ -85,7 +84,6 @@ std::string Console::ParseLogContent(const std::vector<std::string>& params)
             break;
         }
         if (formatStr[pos] == '%') {
-            flag = 1;
             if (pos + 1 >= len) {
                 break;
             }

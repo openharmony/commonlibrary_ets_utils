@@ -36,7 +36,7 @@ class BusinessError extends Error {
 }
 
 const ERROR_CODES = {
-  TYPE_ERROR: 401,  // 401: TYPE_ ERROR code value
+  TYPE_ERROR: 401, // 401: TYPE_ ERROR code value
   RANGE_ERROR: 10200001, // 10200001: RANGE_ERROR code value
   BUFFER_SIZE_ERROR: 10200009, // 10200009: BUFFER_SIZE_ERROR code value
   PROPERTY_TYPE_ERROR: 10200013 // 10200013: TYPE_ ERROR code value
@@ -255,21 +255,21 @@ enum ParaType {
   NUMBERS,
   STRING
 }
-const initialPoolSize: number = 8 * 1024; // 8 £º1024 £ºinitialPoolSize number
+const initialPoolSize: number = 8 * 1024; // 8 * 1024 : initialPoolSize number
 let poolSize: number;
 let poolOffset: number;
 let pool: Buffer;
 const MAX_LENGTH: number = Math.pow(2, 32); // 2 : 32 : MAX_LENGTH code
 const TWO_POW_FIFTEEN: number = Math.pow(2, 15); // 2 : 15 : two to power of fifteen code
-const TWO_POW_SEVEN: number = Math.pow(2, 7);  // 2 : 7 : two to power of seven code
-const oneByte: number = 1;
-const twoBytes: number = 2;
-const threeBytes: number = 3;
-const fourBytes: number = 4;
-const fiveBytes: number = 5;
-const sixBytes: number = 6;
-const sevenBytes: number = 7;
-const eightBytes: number = 8;
+const TWO_POW_SEVEN: number = Math.pow(2, 7); // 2 : 7 : two to power of seven code
+const oneByte: number = 1; // 1 : one Byte 
+const twoBytes: number = 2; // 2 : two Bytes
+const threeBytes: number = 3; // 3 : three Bytes
+const fourBytes: number = 4; // 4 : four Bytes
+const fiveBytes: number = 5; // 5 : five Bytes
+const sixBytes: number = 6; // 6 : six Bytes
+const sevenBytes: number = 7; // 7 : seven Bytes
+const eightBytes: number = 8; // 8 : eight Bytes
 
 
 type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array |
@@ -306,7 +306,7 @@ console.log = function (...args) {
     let getStr = function (bufArr: Array<number>, len: number): string {
       let str: string = '';
       for (let i = 0; i < len; i++) {
-        let strTemp: string = bufArr[i].toString(16);
+        let strTemp: string = bufArr[i].toString(16); // 16 : convert the element to a hexadecimal string
         strTemp = (strTemp.length === 1) ? `0${strTemp}` : strTemp;
         str += ` ${strTemp}`;
       }
@@ -920,7 +920,7 @@ class Buffer {
     this.checkOffsetRange(offset, oneByte);
     const val = this[offset];
 
-    return val | (val & TWO_POW_SEVEN) * 0x1fffffe;
+    return val | (val & TWO_POW_SEVEN) * 0x1fffffe; // 0x1fffffe mean the decimal value is 33554430"
   }
 
   writeInt16BE(value: number, offset: number = 0): number {
@@ -938,7 +938,7 @@ class Buffer {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
     const val = this.calculationBE(offset, twoBytes);
-    return val | (val & TWO_POW_FIFTEEN) * 0x1fffe;
+    return val | (val & TWO_POW_FIFTEEN) * 0x1fffe; // 0x1fffe mean the decimal value is 131070"
   }
 
   writeInt16LE(value: number, offset: number = 0): number {
@@ -956,7 +956,7 @@ class Buffer {
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, twoBytes);
     const val = this[offset] + this[offset + 1] * Math.pow(twoBytes, eightBytes);
-    return val | (val & TWO_POW_FIFTEEN) * 0x1fffe;
+    return val | (val & TWO_POW_FIFTEEN) * 0x1fffe; // 0x1fffe mean the decimal value is 131070"
   }
 
   readUInt16LE(offset: number = 0): number {
@@ -1009,7 +1009,7 @@ class Buffer {
     rangeErrorCheck(value, 'value', 0, twoBytes ** 40 - 1, '0', '2**40 - 1');
     value = +value;
     this[offset++] = Math.floor(value * Math.pow(twoBytes, -32)); // -32 means offset 32 bits to left
-    for (let i: number = 3; i > 0; i--) {
+    for (let i: number = 3; i > 0; i--) { // 3 is array->maxIndex
       this[offset + i] = value;
       value = value >>> eightBytes;
     }
@@ -1025,7 +1025,7 @@ class Buffer {
     const newVal = Math.floor(value * Math.pow(twoBytes, -32)); // -32 means offset 32 bits to left
     this[offset++] = (newVal >>> eightBytes);
     this[offset++] = newVal;
-    for (let i: number = 3; i > 0; i--) {
+    for (let i: number = 3; i > 0; i--) { // 3 is array->maxIndex
       this[offset + i] = value;
       value = value >>> eightBytes;
     }
@@ -1764,7 +1764,7 @@ function alloc(size: number, fill?: string | Buffer | number, encoding?: string)
   buf.fill(0);
   if (arguments.length === twoBytes && fill !== undefined && fill !== 0) {
     buf.fill(fill);
-  } else if (arguments.length === 3) {
+  } else if (arguments.length === 3) { // 3 is array->maxIndex
     if (encoding === undefined || encoding === null) {
       encoding = 'utf-8';
     }
@@ -1993,7 +1993,7 @@ function toHex(self: Buffer, start: number, end: number): string {
 function toUtf16LE(self: Buffer, start: number, end: number): string {
   let bufData: Array<number> = self[bufferSymbol].getBufferData();
   let val = '';
-  for (let i = start; i + 1 < end; i += 2) {
+  for (let i = start; i + 1 < end; i += 2) { // 2 is array->NextIndex
     val += String.fromCodePoint((bufData[i + 1] << eightBytes) + (bufData[i]));
   }
   return val;
