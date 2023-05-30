@@ -343,10 +343,17 @@ void Worker::WorkerOnMessage(const uv_async_t* req)
 
 void Worker::CloseHostCallback() const
 {
+    napi_handle_scope scope = nullptr;
+    napi_status status = napi_open_handle_scope(hostEnv_, &scope);
+    if (status != napi_ok || scope == nullptr) {
+        HILOG_ERROR("worker : CloseHostCallback open handle scope failed.");
+        return;
+    }
     napi_value exitValue = nullptr;
     napi_create_int32(hostEnv_, 1, &exitValue);
     napi_value argv[1] = { exitValue };
     CallHostFunction(1, argv, "onexit");
+    napi_close_handle_scope(hostEnv_, scope);
     CloseHelp::DeletePointer(this, false);
 }
 
@@ -400,6 +407,7 @@ void Worker::HostOnMessageInner()
         // receive close signal.
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker received close signal");
+            napi_close_handle_scope(hostEnv_, scope);
             uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
                 if (handle != nullptr) {
                     delete reinterpret_cast<uv_async_t*>(handle);
@@ -413,7 +421,6 @@ void Worker::HostOnMessageInner()
                 }
             });
             CloseHostCallback();
-            napi_close_handle_scope(hostEnv_, scope);
             return;
         }
         if (!isCallable) {
@@ -526,8 +533,8 @@ void Worker::WorkerOnMessageInner()
     while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker reveive terminate signal");
-            TerminateWorker();
             napi_close_handle_scope(workerEnv_, scope);
+            TerminateWorker();
             return;
         }
         napi_value result = nullptr;
@@ -1217,11 +1224,17 @@ bool Worker::CallWorkerFunction(size_t argc, const napi_value* argv, const char*
 
 void Worker::CloseWorkerCallback()
 {
-    CallWorkerFunction(0, nullptr, "onclose", true);
+    napi_handle_scope scope = nullptr;
+    napi_status status = napi_open_handle_scope(workerEnv_, &scope);
+    if (status != napi_ok || scope == nullptr) {
+        HILOG_ERROR("worker : CloseWorkerCallback open handle scope failed.");
+        return;
+    }
     // off worker inited environment
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop()) {
+            napi_close_handle_scope(workerEnv_, scope);
             return;
         }
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
@@ -1229,6 +1242,7 @@ void Worker::CloseWorkerCallback()
             HILOG_ERROR("worker:: CallOffWorkerFunc error");
         }
     }
+    napi_close_handle_scope(workerEnv_, scope);
 }
 
 void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const
