@@ -71,7 +71,6 @@ void Console::LogPrint(LogLevel level, const char* content)
 std::string Console::ParseLogContent(const std::vector<std::string>& params)
 {
     std::string ret;
-    uint32_t flag = 0;
     if (params.empty()) {
         return ret;
     }
@@ -85,7 +84,6 @@ std::string Console::ParseLogContent(const std::vector<std::string>& params)
             break;
         }
         if (formatStr[pos] == '%') {
-            flag = 1;
             if (pos + 1 >= len) {
                 break;
             }
@@ -144,8 +142,8 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
         }
         char* stringValue = Helper::NapiHelper::GetString(env, argv[i]);
         if (stringValue == nullptr) {
-            HILOG_ERROR("Console log length exceeds maximum");
-            break;
+            HILOG_ERROR("Console log content must not be null.");
+            continue;
         }
         content.emplace_back(std::string(stringValue));
         Helper::CloseHelp::DeletePointer(stringValue, true);
