@@ -29,14 +29,17 @@ using namespace OHOS::JsSysModule;
 
 static constexpr int8_t HIGH_PRIORITY_TASK_COUNT = 5;
 static constexpr int8_t MEDIUM_PRIORITY_TASK_COUNT = 5;
-static constexpr int32_t STEP_SIZE = 2;
 static constexpr int32_t MAX_TASK_DURATION = 100; // 100: 100ms
 static constexpr int32_t MAX_IDLE_TIME = 30000; // 30000: 30s
 static constexpr int32_t MAX_RETRY_COUNT = 40; // 40: counter for stopping timer
-static constexpr int32_t MIN_THREADS = 1; // 1: minimum thread num when idle
-static constexpr int32_t DEFAULT_THREADS = 3;
+static constexpr uint32_t STEP_SIZE = 2;
+static constexpr uint32_t DEFAULT_THREADS = 3;
+static constexpr uint32_t MIN_THREADS = 1; // 1: minimum thread num when idle
+static constexpr uint32_t CHECK_INTERVAL = 60000; // 60000: 1min
+static constexpr uint32_t MIN_TIMEOUT_TIME = 180000; // 180000: 3min
+static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 6000000: 10min
 
-TaskManager &TaskManager::GetInstance()
+TaskManager& TaskManager::GetInstance()
 {
     static TaskManager manager;
     return manager;
@@ -77,7 +80,7 @@ TaskManager::~TaskManager()
 
     {
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-        for (auto &worker : workers_) {
+        for (auto& worker : workers_) {
             delete worker;
         }
         workers_.clear();
@@ -85,7 +88,7 @@ TaskManager::~TaskManager()
 
     {
         std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-        for (auto &[_, taskInfo] : taskInfos_) {
+        for (auto& [_, taskInfo] : taskInfos_) {
             delete taskInfo;
         }
         taskInfos_.clear();
@@ -98,7 +101,7 @@ void TaskManager::UpdateExecutedInfo(uint64_t duration)
     totalExecCount_++;
 }
 
-int32_t TaskManager::ComputeSuitableThreadNum()
+uint32_t TaskManager::ComputeSuitableThreadNum()
 {
     if (GetTaskNum() != 0 && totalExecCount_ == 0) {
         // this branch is used for avoiding time-consuming works that may block the taskpool
@@ -111,48 +114,90 @@ int32_t TaskManager::ComputeSuitableThreadNum()
     return std::ceil(durationPerTask * GetTaskNum() / MAX_TASK_DURATION);
 }
 
-void TaskManager::CreateOrDeleteWorkers(int32_t targetNum)
+void TaskManager::CheckForBlockedWorkers()
+{
+    // monitor the running state
+    uint64_t now = ConcurrentHelper::GetMilliseconds();
+    if (UNLIKELY(nextCheckTime_ < now)) {
+        // the threshold will be dynamically modified to provide more flexibility in detecting exceptions
+        // if the thread num has reached the limit and the idle worker is not available, a short time will be used,
+        // else we will choose the longer one
+        std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+        bool state = GetThreadNum() == ConcurrentHelper::GetActiveCpus() - 1 && GetIdleWorkers() == 0;
+        uint64_t threshold = state ? MIN_TIMEOUT_TIME : MAX_TIMEOUT_TIME;
+        for (auto iter = workers_.begin(); iter != workers_.end();) {
+            auto worker = *iter;
+            std::lock_guard<std::mutex> stateLock(worker->stateMutex_);
+            // if the worker thread is idle, just skip it
+            if (worker->state_ == WorkerState::IDLE) {
+                iter++;
+                continue;
+            }
+
+            if (now - worker->startTime_ >= threshold) {
+                worker->state_ = WorkerState::BLOCKED;
+                timeoutWorkers_.insert(worker);
+                idleWorkers_.erase(worker);
+                workers_.erase(iter++);
+            } else {
+                iter++;
+            }
+        }
+        nextCheckTime_ = now + CHECK_INTERVAL;
+    }
+}
+
+void TaskManager::CreateOrDeleteWorkers(uint32_t targetNum)
 {
     // uv_timer_start should not run on the background frequently when there is no task
     if (targetNum == 0 && retryCount_ >= MAX_RETRY_COUNT) {
         uv_timer_stop(timer_);
         suspend_ = true;
         return;
-    } else if (targetNum == 0) {
+    } else if (GetTimeoutWorkers() == 0 && targetNum == 0) {
         retryCount_++;
     } else {
         retryCount_ = 0;
     }
 
-    int32_t workerCount = static_cast<int32_t>(GetThreadNum());
-    const int32_t maxThreads = std::max(ConcurrentHelper::GetActiveCpus() - 1, DEFAULT_THREADS);
-    targetNum = targetNum | static_cast<int32_t>(1);
+    uint32_t workerCount = GetThreadNum();
+    const uint32_t maxThreads = std::max(ConcurrentHelper::GetActiveCpus() - 1, DEFAULT_THREADS);
+    targetNum |= 1;
     if (workerCount < maxThreads && workerCount < targetNum) {
-        int32_t step = std::min(maxThreads, targetNum) - workerCount;
-        for (int32_t i = 0; i < step; i++) {
-            CreateWorker(hostEnv_);
-        }
+        uint32_t step = std::min(maxThreads, targetNum) - workerCount;
+        CreateWorkers(hostEnv_, step);
     } else if (workerCount > MIN_THREADS && workerCount > targetNum) {
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-        int32_t maxNum = std::max(MIN_THREADS, targetNum);
-        int32_t step = std::min(workerCount - maxNum, STEP_SIZE);
-        for (int32_t i = 0; i < step; i++) {
+        uint32_t maxNum = std::max(MIN_THREADS, targetNum);
+        uint32_t step = std::min(workerCount - maxNum, STEP_SIZE);
+        for (uint32_t i = 0; i < step; i++) {
             auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [this](Worker *worker) {
                 auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
                 return idleTime > MAX_IDLE_TIME && worker->runningCount_ == 0 &&
                     !Timer::HasTimer(worker->workerEnv_) && !HasTaskEnvInfo(worker->workerEnv_);
             });
             if (iter != idleWorkers_.end()) {
-                auto item = workers_.find(*iter);
-                workers_.erase(item);
+                workers_.erase(*iter);
                 uv_async_send((*iter)->clearWorkerSignal_);
                 idleWorkers_.erase(iter);
             }
         }
     }
+    if (UNLIKELY(!timeoutWorkers_.empty())) {
+        for (auto iter = timeoutWorkers_.begin(); iter != timeoutWorkers_.end();) {
+            auto worker = *iter;
+            if (worker->runningCount_ == 0 && worker->state_ == WorkerState::BLOCKED &&
+                !Timer::HasTimer(worker->workerEnv_) && !HasTaskEnvInfo(worker->workerEnv_)) {
+                uv_async_send(worker->clearWorkerSignal_);
+                timeoutWorkers_.erase(iter++);
+            } else {
+                iter++;
+            }
+        }
+    }
 }
 
-void TaskManager::TriggerLoadBalance(const uv_timer_t *req)
+void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
 {
     // Now, we will call triggerLoadBalance when enqueue or by monitor,
     // and taking the time used to create worker threads into consideration,
@@ -162,12 +207,13 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t *req)
         return;
     }
 
-    int32_t targetNum = taskManager.ComputeSuitableThreadNum();
+    taskManager.CheckForBlockedWorkers();
+    uint32_t targetNum = taskManager.ComputeSuitableThreadNum();
     if (targetNum != 0) {
         // We have tasks in the queue, and all workers may be running.
         // Therefore the target runnable threads should be the sum of runnig workers and the calculated result.
-        targetNum = std::min(targetNum, static_cast<int32_t>(taskManager.GetTaskNum()));
-        targetNum += static_cast<int32_t>(taskManager.GetRunningWorkers());
+        targetNum = std::min(targetNum, taskManager.GetTaskNum());
+        targetNum += taskManager.GetRunningWorkers();
     } else {
         // We have no task in the queue. Therefore we do not need extra threads.
         // But, tasks may still be executed in workers or microtask queue,
@@ -468,7 +514,7 @@ void TaskManager::ReleaseTaskContent(TaskInfo* taskInfo)
     taskInfo = nullptr;
 }
 
-void TaskManager::NotifyWorkerIdle(Worker *worker)
+void TaskManager::NotifyWorkerIdle(Worker* worker)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
@@ -479,13 +525,13 @@ void TaskManager::NotifyWorkerIdle(Worker *worker)
     }
 }
 
-void TaskManager::NotifyWorkerCreated(Worker *worker)
+void TaskManager::NotifyWorkerCreated(Worker* worker)
 {
     NotifyWorkerIdle(worker);
     expandingCount_--;
 }
 
-void TaskManager::NotifyWorkerAdded(Worker *worker)
+void TaskManager::NotifyWorkerAdded(Worker* worker)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     workers_.insert(worker);
@@ -499,12 +545,24 @@ void TaskManager::TryTriggerLoadBalance()
     }
 }
 
+uint32_t TaskManager::GetIdleWorkers()
+{
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    return idleWorkers_.size();
+}
+
 uint32_t TaskManager::GetRunningWorkers()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-    return std::count_if(workers_.begin(), workers_.end(), [](const auto &worker) {
+    return std::count_if(workers_.begin(), workers_.end(), [](const auto& worker) {
         return worker->runningCount_ != 0 || Timer::HasTimer(worker->workerEnv_);
     });
+}
+
+uint32_t TaskManager::GetTimeoutWorkers()
+{
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    return timeoutWorkers_.size();
 }
 
 uint32_t TaskManager::GetTaskNum()
@@ -541,20 +599,20 @@ std::pair<uint32_t, Priority> TaskManager::DequeueExecuteId()
 {
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
     if (highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
-        auto &highTaskQueue = taskQueues_[Priority::HIGH];
+        auto& highTaskQueue = taskQueues_[Priority::HIGH];
         highPrioExecuteCount_++;
         return std::make_pair(highTaskQueue->DequeueExecuteId(), Priority::HIGH);
     }
     highPrioExecuteCount_ = 0;
 
     if (mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
-        auto &mediumTaskQueue = taskQueues_[Priority::MEDIUM];
+        auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
         mediumPrioExecuteCount_++;
         return std::make_pair(mediumTaskQueue->DequeueExecuteId(), Priority::MEDIUM);
     }
     mediumPrioExecuteCount_ = 0;
 
-    auto &lowTaskQueue = taskQueues_[Priority::LOW];
+    auto& lowTaskQueue = taskQueues_[Priority::LOW];
     return std::make_pair(lowTaskQueue->DequeueExecuteId(), Priority::LOW);
 }
 
@@ -565,7 +623,7 @@ void TaskManager::NotifyExecuteTask()
         return;
     }
     auto candidator = idleWorkers_.begin();
-    Worker *worker = *candidator;
+    Worker* worker = *candidator;
     idleWorkers_.erase(candidator);
     worker->NotifyExecuteTask();
 }
@@ -576,23 +634,30 @@ void TaskManager::InitTaskManager(napi_env env)
     while (hostEngine != nullptr && !hostEngine->IsMainThread()) {
         hostEngine = hostEngine->GetHostEngine();
     }
-    std::lock_guard<std::mutex> lock(initMutex_);
-    if (!isInitialized_) {
-        isInitialized_ = true;
+    if (!isInitialized_.exchange(true, std::memory_order_relaxed)) {
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
         // Add a reserved thread for taskpool
-        CreateWorker(hostEnv_);
+        CreateWorkers(hostEnv_);
         // Create a timer to manage worker threads
         std::thread workerManager(&TaskManager::RunTaskManager, this);
         workerManager.detach();
     }
 }
 
-void TaskManager::CreateWorker(napi_env env)
+void TaskManager::CreateWorkers(napi_env env, uint32_t num)
 {
-    expandingCount_++;
-    auto worker = Worker::WorkerConstructor(env);
-    NotifyWorkerAdded(worker);
+    for (uint32_t i = 0; i < num; i++) {
+        expandingCount_++;
+        auto worker = Worker::WorkerConstructor(env);
+        NotifyWorkerAdded(worker);
+    }
+}
+
+void TaskManager::RemoveWorker(Worker* worker)
+{
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    idleWorkers_.erase(worker);
+    workers_.erase(worker);
 }
 
 napi_value TaskManager::IsCanceled(napi_env env, napi_callback_info cbinfo)
@@ -607,13 +672,6 @@ napi_value TaskManager::IsCanceled(napi_env env, napi_callback_info cbinfo)
     TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
     bool isCanceled = taskInfo->isCanceled;
     return NapiHelper::CreateBooleanValue(env, isCanceled);
-}
-
-void TaskManager::RemoveWorker(Worker *worker)
-{
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-    idleWorkers_.erase(worker);
-    workers_.erase(worker);
 }
 
 TaskGroupManager &TaskGroupManager::GetInstance()

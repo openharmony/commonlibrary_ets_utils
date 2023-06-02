@@ -17,10 +17,10 @@
 
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
+#include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "task_manager.h"
 #include "utils/log.h"
-#include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;

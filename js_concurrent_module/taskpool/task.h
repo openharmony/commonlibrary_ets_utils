@@ -16,8 +16,6 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
 
-#include <mutex>
-#include <queue>
 #include <uv.h>
 
 #include "napi/native_api.h"
@@ -48,13 +46,13 @@ struct TaskInfo {
     napi_value result = nullptr;
     napi_value serializationFunction = nullptr;
     napi_value serializationArguments = nullptr;
-    uv_async_t *onResultSignal = nullptr;
+    uv_async_t* onResultSignal = nullptr;
     uint32_t taskId;
     uint32_t executeId;
     GroupInfo* groupInfo = nullptr;
     bool success = true;
     bool isCanceled = false;
-    void *worker = nullptr;
+    void* worker = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_

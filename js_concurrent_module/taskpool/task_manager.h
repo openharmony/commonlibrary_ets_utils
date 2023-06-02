@@ -19,12 +19,15 @@
 #include <array>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "task.h"
 #include "task_queue.h"
 #include "napi/native_api.h"
+#include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 static constexpr char FUNCTION_STR[] = "function";
@@ -34,14 +37,12 @@ static constexpr char TASKINFO_STR[] = "taskInfo";
 static constexpr char TRANSFERLIST_STR[] = "transferList";
 static constexpr char GROUP_ID_STR[] = "groupId";
 
-class Worker;
-
 class TaskManager {
 public:
     TaskManager();
     ~TaskManager();
 
-    static TaskManager &GetInstance();
+    static TaskManager& GetInstance();
 
     static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
 
@@ -54,23 +55,33 @@ public:
     bool UpdateExecuteState(uint32_t executeId, ExecuteState state);
     void RemoveExecuteState(uint32_t executeId);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
+    void PopTaskEnvInfo(napi_env env);
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
     const std::list<uint32_t>& QueryRunningTask(napi_env env, uint32_t taskId);
     void CancelExecution(napi_env env, uint32_t executeId);
-    void NotifyWorkerIdle(Worker *worker);
-    void NotifyWorkerCreated(Worker *worker);
-    void InitTaskManager(napi_env env);
-    void UpdateExecutedInfo(uint64_t duration);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId,
                                napi_value transferList = nullptr);
     TaskInfo* GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId);
     void ReleaseTaskContent(TaskInfo* taskInfo);
+    void CancelTask(napi_env env, uint32_t taskId);
+
+    // for worker state
+    void NotifyWorkerIdle(Worker* worker);
+    void NotifyWorkerCreated(Worker* worker);
+    void RemoveWorker(Worker* worker);
+
+    // for load balance
+    void InitTaskManager(napi_env env);
     void TryTriggerLoadBalance();
+    void UpdateExecutedInfo(uint64_t duration);
+
+    // for taskpool state
     uint32_t GetTaskNum();
     uint32_t GetThreadNum();
+    uint32_t GetIdleWorkers();
     uint32_t GetRunningWorkers();
-    void RemoveWorker(Worker *worker);
+    uint32_t GetTimeoutWorkers();
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -79,20 +90,20 @@ private:
     TaskManager& operator=(TaskManager &&) = delete;
 
     ExecuteState QueryExecuteState(uint32_t executeId);
+    void CreateWorkers(napi_env env, uint32_t num = 1);
     void NotifyExecuteTask();
-    void CreateWorker(napi_env env);
-    void NotifyWorkerAdded(Worker *worker);
+    void NotifyWorkerAdded(Worker* worker);
     void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
     bool MarkCanceledState(uint32_t executeId);
     void CancelWaitingExecution(napi_env env, uint32_t executeId);
 
     // for load balance
     void RunTaskManager();
-    void CreateOrDeleteWorkers(int32_t targetNum);
     void StoreTaskEnvInfo(napi_env env);
-    void PopTaskEnvInfo(napi_env env);
+    void CheckForBlockedWorkers();
+    void CreateOrDeleteWorkers(uint32_t targetNum);
     bool HasTaskEnvInfo(napi_env env);
-    int32_t ComputeSuitableThreadNum();
+    uint32_t ComputeSuitableThreadNum();
     static void RestartTimer(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
@@ -118,6 +129,7 @@ private:
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};
+    std::unordered_set<Worker*> timeoutWorkers_ {};
     std::recursive_mutex workersMutex_;
 
     // for load balance
@@ -130,9 +142,9 @@ private:
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
     std::atomic<uint32_t> expandingCount_ = 0;
+    std::atomic<uint64_t> nextCheckTime_ = 0;
 
-    bool isInitialized_ = false;
-    std::mutex initMutex_;
+    std::atomic<bool> isInitialized_ = false;
     std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};
     std::mutex taskQueuesMutex_;
 };
