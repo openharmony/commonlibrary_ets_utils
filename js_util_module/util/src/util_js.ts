@@ -465,7 +465,7 @@ function errnoToString(errnum: number): string {
 }
 
 function randomUUID(entropyCache?: boolean): string {
-  if (entropyCache === undefined) {
+  if (entropyCache === undefined || entropyCache === null) {
     entropyCache = true;
   }
   if (typeof entropyCache !== 'boolean') {
@@ -477,7 +477,7 @@ function randomUUID(entropyCache?: boolean): string {
 }
 
 function randomBinaryUUID(entropyCache?: boolean): Uint8Array {
-  if (entropyCache === undefined) {
+  if (entropyCache === undefined || entropyCache === null) {
     entropyCache = true;
   }
   if (typeof entropyCache !== 'boolean') {
@@ -587,7 +587,7 @@ class LruBuffer {
   public length: number = 0;
 
   public constructor(capacity?: number) {
-    if (capacity !== undefined) {
+    if (capacity !== undefined && capacity !== null) {
       if (capacity <= 0 || capacity % 1 !== 0 || capacity > this.maxNumber) {
         throw new Error('data error');
       }
@@ -797,7 +797,7 @@ class LRUCache {
   public length: number = 0;
 
   public constructor(capacity?: number) {
-    if (capacity !== undefined) {
+    if (capacity !== undefined && capacity !== null) {
       if (capacity <= 0 || capacity % 1 !== 0 || capacity > this.maxNumber) {
         throw new Error('data error');
       }
