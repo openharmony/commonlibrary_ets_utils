@@ -16,7 +16,6 @@
 #ifndef NATIVE_MODULE_URI_H
 #define NATIVE_MODULE_URI_H
 
-#include "native_engine.h"
 #include "js_uri.h"
 
 namespace OHOS::Uri {
