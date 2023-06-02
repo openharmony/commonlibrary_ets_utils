@@ -16,7 +16,6 @@
 #ifndef NATIVE_MODULE_URL_H
 #define NATIVE_MODULE_URL_H
 
-#include "native_engine.h"
 #include "js_url.h"
 
 namespace OHOS::Url {
