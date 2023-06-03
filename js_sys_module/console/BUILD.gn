@@ -54,6 +54,7 @@ ohos_shared_library("console") {
   external_deps += [ "hitrace_native:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
+  innerapi_tags = [ "platformsdk_indirect" ]
   part_name = "ets_utils"
 }
 
