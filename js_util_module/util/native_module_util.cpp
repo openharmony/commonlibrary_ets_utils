@@ -1725,7 +1725,7 @@ namespace OHOS::Util {
     static void UtilPluginJniRegister()
     {
         const char className[] = "ohos.ace.plugin.utilplugin.UtilPlugin";
-        OH_Plugin_RegisterPlugin(&Plugin::UtilPluginJni::Register, className);
+        OH_Plugin_RegisterJavaPlugin(&Plugin::UtilPluginJni::Register, className);
     }
 #endif
     // util module register
@@ -1734,7 +1734,7 @@ namespace OHOS::Util {
     {
         napi_module_with_js_register(&utilModule);
 #ifdef ANDROID_PLATFORM
-        OH_Plugin_RunTaskOnPlatform(&UtilPluginJniRegister);
+        OH_Plugin_RunAsyncTask(&UtilPluginJniRegister, OH_PLUGIN_PLATFORM_THREAD);
 #endif
     }
 }
