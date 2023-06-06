@@ -41,12 +41,18 @@ public:
 
     static TaskManager &GetInstance();
 
+    static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
+
     uint32_t GenerateTaskId();
     uint32_t GenerateExecuteId();
+    bool EraseTaskInfo(uint32_t executeId);
+    TaskInfo* GetTaskInfo(uint32_t executeId);
     TaskInfo* PopTaskInfo(uint32_t executeId);
-    void StoreStateInfo(uint32_t executeId, TaskState state);
+    bool MarkCanceledState(uint32_t executeId);
     void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
-    bool UpdateState(uint32_t executeId, TaskState state);
+    void AddExecuteState(uint32_t executeId);
+    bool UpdateExecuteState(uint32_t executeId, ExecuteState state);
+    void RemoveExecuteState(uint32_t executeId);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
@@ -69,7 +75,7 @@ private:
     TaskManager(TaskManager &&) = delete;
     TaskManager& operator=(TaskManager &&) = delete;
 
-    TaskState QueryState(uint32_t executeId);
+    ExecuteState QueryExecuteState(uint32_t executeId);
     void NotifyExecuteTask();
     void CreateWorker(napi_env env);
     void NotifyWorkerAdded(Worker *worker);
@@ -89,12 +95,15 @@ private:
     uint32_t highPrioExecuteCount_ = 0;
     uint32_t mediumPrioExecuteCount_ = 0;
 
+    // <executeId, TaskInfo>
     std::unordered_map<uint32_t, TaskInfo*> taskInfos_ {};
     std::shared_mutex taskInfosMutex_;
 
-    std::unordered_map<uint32_t, TaskState> taskStates_ {};
-    std::shared_mutex taskStatesMutex_;
+    // <executeId, executeState>
+    std::unordered_map<uint32_t, ExecuteState> executeStates_ {};
+    std::shared_mutex executeStatesMutex_;
 
+    // <taskId, <executeId1, executeId2, ...>>
     std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_ {};
     std::shared_mutex runningInfosMutex_;
 

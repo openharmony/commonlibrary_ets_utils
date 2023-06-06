@@ -45,9 +45,7 @@ private:
     ~Worker() = default;
 
     void NotifyIdle();
-
     void NotifyWorkerCreated();
-
     void NotifyTaskRunning()
     {
         runningCount_++;
@@ -106,6 +104,7 @@ private:
 
     void StartExecuteInThread();
     static void ExecuteInThread(const void* data);
+    bool IsExceptionPending(napi_env env) const;
     bool PrepareForWorkerInstance();
     void ReleaseWorkerThreadContent();
     static void PerformTask(const uv_async_t* req);
