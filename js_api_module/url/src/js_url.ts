@@ -28,7 +28,7 @@ interface NativeURLSearchParams {
   delete(deletename: string): void;
   updateParams(): void;
   array: string[];
-  initialNumber: number;
+  initialValue: Record<string, string[]>;
 }
 
 interface NativeURLParams {
@@ -46,7 +46,7 @@ interface NativeURLParams {
   delete(deletename: string): void;
   updateParams(): void;
   array: string[];
-  initialNumber: number;
+  initialValue: Record<string, string[]>;
 }
 
 interface NativeUrl {
@@ -78,8 +78,8 @@ const UrlInterface = requireInternal('url');
 
 
 var seachParamsArr: Array<string> = [];
-const TypeErrorCodeId = 401;
-const SyntaxErrorCodeId = 10200002;
+const TypeErrorCodeId = 401; // 401:ErrorCodeId
+const SyntaxErrorCodeId = 10200002; // 10200002:SyntaxErrorCodeId
 
 class BusinessError extends Error {
   code: number;
@@ -91,8 +91,8 @@ class BusinessError extends Error {
 }
 
 function customEncodeURIComponent(str: string | number): string {
-  const hexStrLen = 2;
-  const hexAdecimal = 16;
+  const hexStrLen = 2; // 2:String length of hexadecimal encoded values
+  const hexAdecimal = 16; // 16:Hexadecimal number system
   const regex = /[!'()~]/g;
   return encodeURIComponent(str).replace(regex, function (c) {
     let hex = c.charCodeAt(0).toString(hexAdecimal);
@@ -102,8 +102,8 @@ function customEncodeURIComponent(str: string | number): string {
 }
 
 function customEncodeForToString(str: string | number): string {
-  const hexStrLen = 2;
-  const hexAdecimal = 16;
+  const hexStrLen = 2; // 2:String length of hexadecimal encoded values
+  const hexAdecimal = 16; // 16:Hexadecimal number system
   const regex = /[!'()~]/g;
   return encodeURIComponent(str).replace(regex, function (c) {
     let hex = c.charCodeAt(0).toString(hexAdecimal);
@@ -114,13 +114,27 @@ function customEncodeForToString(str: string | number): string {
     .replace(/%2B/g, '+');
 }
 
+function convertArrayToObj(arr: string[]): Record<string, string[]> {
+  return arr.reduce((obj, val, index) => {
+    if (index % 2 === 0) { // 2:Even subscripts exist as key values
+      obj[val] = [arr[index + 1]];
+    } else {
+      if (obj[arr[index - 1]]) {
+        obj[arr[index - 1]].push(val);
+      }
+    }
+    return obj;
+  }, {});
+}
+
 class URLParams {
   urlClass: NativeURLParams;
+  parentUrl: URL | null = null;
   constructor(input: object | string | Iterable<[]> | null | undefined) {
     let out: string[] = parameterProcess(input);
     this.urlClass = new UrlInterface.URLParams1();
     this.urlClass.array = out;
-    this.urlClass.initialNumber = out.length;
+    this.urlClass.initialValue = convertArrayToObj(out);
   }
 
   append(params1: string, params2: string): void {
@@ -133,22 +147,40 @@ class URLParams {
     params1 = customEncodeURIComponent(params1);
     params2 = customEncodeURIComponent(params2);
     this.urlClass.append(params1, params2);
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
-  set(setname: string, setvalues: string): void {
-    if (arguments.length === 0 || typeof setname !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${setname} must be string`);
+  set(setName: string, setValues: string): void {
+    if (arguments.length === 0 || typeof setName !== 'string') {
+      throw new BusinessError(`Parameter error.The type of ${setName} must be string`);
     }
-    if (arguments.length === 1 || typeof setvalues !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${setvalues} must be string`);
+    if (arguments.length === 1 || typeof setValues !== 'string') {
+      throw new BusinessError(`Parameter error.The type of ${setValues} must be string`);
     }
-    setname = customEncodeURIComponent(setname);
-    setvalues = customEncodeURIComponent(setvalues);
-    this.urlClass.set(setname, setvalues);
+    setName = customEncodeURIComponent(setName);
+    setValues = customEncodeURIComponent(setValues);
+    this.urlClass.set(setName, setValues);
+    if (this.urlClass.initialValue.hasOwnProperty(setName)) { 
+      delete this.urlClass.initialValue[setName];
+    }
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
   sort(): void {
     this.urlClass.sort();
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
   has(hasname: string): boolean {
@@ -159,20 +191,17 @@ class URLParams {
   }
 
   toString(): string {
-    let outPut: string = this.urlClass.array[0] + '=' + this.urlClass.array[1];
-    if (this.urlClass.initialNumber !== 0) {
-      outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
-    }
+    let outPut: string = '';
     let arrayLen: number = this.urlClass.array.length;
-    if (arrayLen % 2 === 0) {
-      let pos: number = 2;
-      for (; pos < arrayLen; pos += 2) {
-        if (pos < this.urlClass.initialNumber) {
-          outPut += '&' + customEncodeForToString(this.urlClass.array[pos]) + '=' + customEncodeForToString(this.urlClass.array[pos + 1]);
-        } else {
-          outPut += '&' + this.urlClass.array[pos] + '=' + this.urlClass.array[pos + 1];
-        }
+    for (let pos: number = 0; pos < arrayLen; pos += 2) { // 2:Even subscripts exist as key values
+      let key: string = this.urlClass.array[pos];
+      let value: string = this.urlClass.array[pos + 1];
+      let shouldEncode: boolean = Object.entries(this.urlClass.initialValue).some(([k, v]) => k === key && v.includes(value));
+      if (shouldEncode) {
+        key = customEncodeForToString(key);
+        value = customEncodeForToString(value);
       }
+      outPut += `${pos > 0 ? '&' : ''}${key}=${value}`;
     }
     return outPut;
   }
@@ -203,11 +232,19 @@ class URLParams {
     return this.urlClass.entries();
   }
 
-  delete(deletename: string): void {
-    if (arguments.length === 0 || typeof deletename !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${deletename} must be string`);
+  delete(deleteName: string): void {
+    if (arguments.length === 0 || typeof deleteName !== 'string') {
+      throw new BusinessError(`Parameter error.The type of ${deleteName} must be string`);
     }
-    this.urlClass.delete(deletename);
+    this.urlClass.delete(deleteName);
+    if (this.urlClass.initialValue.hasOwnProperty(deleteName)) { 
+      delete this.urlClass.initialValue[deleteName];
+    }
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
   forEach(objfun: Function, thisArg?: Object) {
@@ -242,11 +279,12 @@ class URLParams {
 
 class URLSearchParams {
   urlClass: NativeURLSearchParams;
+  parentUrl: URL | null = null;
   constructor(input: object | string | Iterable<[]> | null | undefined) {
     let out: string[] = parameterProcessing(input);
     this.urlClass = new UrlInterface.URLSearchParams1();
     this.urlClass.array = out;
-    this.urlClass.initialNumber = out.length;
+    this.urlClass.initialValue = convertArrayToObj(out);
   }
   append(params1: string, params2: string): void {
     if (arguments.length === 0 || typeof params1 !== 'string') {
@@ -258,6 +296,11 @@ class URLSearchParams {
     params1 = customEncodeURIComponent(params1);
     params2 = customEncodeURIComponent(params2);
     this.urlClass.append(params1, params2);
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
   set(setName: string, setValues: string): void {
@@ -270,10 +313,23 @@ class URLSearchParams {
     setName = customEncodeURIComponent(setName);
     setValues = customEncodeURIComponent(setValues);
     this.urlClass.set(setName, setValues);
+    if (this.urlClass.initialValue.hasOwnProperty(setName)) { 
+      delete this.urlClass.initialValue[setName];
+    }
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
   sort(): void {
     this.urlClass.sort();
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
   has(hasname: string): boolean {
@@ -284,20 +340,17 @@ class URLSearchParams {
   }
 
   toString(): string {
-    let outPut: string = this.urlClass.array[0] + '=' + this.urlClass.array[1];
-    if (this.urlClass.initialNumber !== 0) {
-      outPut = customEncodeForToString(this.urlClass.array[0]) + '=' + customEncodeForToString(this.urlClass.array[1]);
-    }
+    let outPut: string = '';
     let arrayLen: number = this.urlClass.array.length;
-    if (arrayLen % 2 === 0) {
-      let pos: number = 2;
-      for (; pos < arrayLen; pos += 2) {
-        if (pos < this.urlClass.initialNumber) {
-          outPut += '&' + customEncodeForToString(this.urlClass.array[pos]) + '=' + customEncodeForToString(this.urlClass.array[pos + 1]);
-        } else {
-          outPut += '&' + this.urlClass.array[pos] + '=' + this.urlClass.array[pos + 1];
-        }
+    for (let pos: number = 0; pos < arrayLen; pos += 2) { // 2:Even subscripts exist as key values
+      let key: string = this.urlClass.array[pos];
+      let value: string = this.urlClass.array[pos + 1];
+      let shouldEncode: boolean = Object.entries(this.urlClass.initialValue).some(([k, v]) => k === key && v.includes(value));
+      if (shouldEncode) {
+        key = customEncodeForToString(key);
+        value = customEncodeForToString(value);
       }
+      outPut += `${pos > 0 ? '&' : ''}${key}=${value}`;
     }
     return outPut;
   }
@@ -319,12 +372,19 @@ class URLSearchParams {
   }
 
   entries(): Object {
-
     return this.urlClass.entries();
   }
 
-  delete(deletename: string): void {
-    this.urlClass.delete(deletename);
+  delete(deleteName: string): void {
+    this.urlClass.delete(deleteName);
+    if (this.urlClass.initialValue.hasOwnProperty(deleteName)) { 
+      delete this.urlClass.initialValue[deleteName];
+    }
+    if (this.parentUrl !== null) {
+      this.parentUrl.c_info.search = this.toString();
+      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      this.parentUrl.setHref();
+    }
   }
 
   forEach(objfun: Function, thisArg?: Object): void {
@@ -522,7 +582,7 @@ class URL {
     if (arguments.length === 1 || arguments.length === 2) { // 2:The number of parameters is 2
       this.c_info = nativeUrl;
       if (nativeUrl.onOrOff) {
-        this.search_ = encodeURI(nativeUrl.search);
+        this.search_ = nativeUrl.search;
         this.username_ = encodeURI(nativeUrl.username);
         this.password_ = encodeURI(nativeUrl.password);
         if (nativeUrl.GetIsIpv6) {
@@ -539,6 +599,8 @@ class URL {
         this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
         this.searchParamsClass_ = new URLSearchParams(this.search_);
         this.URLParamsClass_ = new URLParams(this.search_);
+        this.URLParamsClass_.parentUrl = this;
+        this.searchParamsClass_.parentUrl = this;
         this.setHref();
       } else {
         console.error('constructor failed');
@@ -570,7 +632,7 @@ class URL {
     let urlHelper = new URL();
     urlHelper.c_info = nativeUrl;
     if (nativeUrl.onOrOff) {
-      urlHelper.search_ = encodeURI(nativeUrl.search);
+      urlHelper.search_ = nativeUrl.search;
       urlHelper.username_ = encodeURI(nativeUrl.username);
       urlHelper.password_ = encodeURI(nativeUrl.password);
       if (nativeUrl.GetIsIpv6) {
@@ -587,6 +649,8 @@ class URL {
       urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
       urlHelper.searchParamsClass_ = new URLSearchParams(urlHelper.search_);
       urlHelper.URLParamsClass_ = new URLParams(urlHelper.search_);
+      urlHelper.URLParamsClass_.parentUrl = urlHelper;
+      urlHelper.searchParamsClass_.parentUrl = urlHelper;
       urlHelper.setHref();
     } else {
       let err : BusinessError = new BusinessError('Syntax Error. Invalid Url string');
