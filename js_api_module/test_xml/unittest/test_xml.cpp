@@ -1059,21 +1059,19 @@ HWTEST_F(NativeEngineTest, SetDocTypeTest005, testing::ext::TestSize.Level0)
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
-    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
-    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
-    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
-    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
-    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
-    std::string str8 = "    </h:table></note>";
+    std::string str3 = "<![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "<!--Hello, World!--> <company>John &amp; Hans</company> <title>Happy</title>";
+    std::string str5 = "<title>Happy</title> <todo>Work</todo> <todo>Play</todo> <?go there?>";
+    std::string str6 = "<a><b/></a> <h:table xmlns:h=\"http://www.w3.org/TR/html4/\"> <h:tr>";
+    std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
+    std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     testStr = "";
-
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1094,14 +1092,17 @@ HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabtabletrtdtd");
+    std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
+    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle";
+    std::string res3 = " todoWorktodo todoPlaytodo go thereabba table trtdApplestd tdBananastd trtablenote";
+    std::string result = res1 + res2 + res3;
+    ASSERT_STREQ(testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest002
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -1142,18 +1143,17 @@ HWTEST_F(NativeEngineTest, XmlParseTest002, testing::ext::TestSize.Level0)
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
-    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
-    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
-    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
-    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
-    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
-    std::string str8 = "    </h:table></note>";
+    std::string str3 = "<![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "<!--Hello, World!--> <company>John &amp; Hans</company> <title>Happy</title>";
+    std::string str5 = "<title>Happy</title> <todo>Work</todo> <todo>Play</todo> <?go there?>";
+    std::string str6 = "<a><b/></a> <h:table xmlns:h=\"http://www.w3.org/TR/html4/\"> <h:tr>";
+    std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
+    std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
@@ -1176,14 +1176,17 @@ HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
+    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn amp;amp;";
+    std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
+    std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
+    std::string result = res1 + res2 + res3;
+    ASSERT_STREQ(testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest004
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -1224,18 +1227,17 @@ HWTEST_F(NativeEngineTest, XmlParseTest004, testing::ext::TestSize.Level0)
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
-    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
-    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
-    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
-    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
-    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
-    std::string str8 = "    </h:table></note>";
+    std::string str3 = "<![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "<!--Hello, World!--> <company>John &amp; Hans</company> <title>Happy</title>";
+    std::string str5 = "<title>Happy</title> <todo>Work</todo> <todo>Play</todo> <?go there?>";
+    std::string str6 = "<a><b/></a> <h:table xmlns:h=\"http://www.w3.org/TR/html4/\"> <h:tr>";
+    std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
+    std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
@@ -1258,25 +1260,28 @@ HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
+    std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
+    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle todoWorktodo";
+    std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
+    std::string result = res1 + res2 + res3;
+    ASSERT_STREQ(testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest006
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest006, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
-    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
-    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
-    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
-    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
-    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
-    std::string str8 = "    </h:table></note>";
+    std::string str3 = "<![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "<!--Hello, World!--> <company>John &amp; Hans</company> <title>Happy</title>";
+    std::string str5 = "<title>Happy</title> <todo>Work</todo> <todo>Play</todo> <?go there?>";
+    std::string str6 = "<a><b/></a> <h:table xmlns:h=\"http://www.w3.org/TR/html4/\"> <h:tr>";
+    std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
+    std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
@@ -1298,14 +1303,17 @@ HWTEST_F(NativeEngineTest, XmlParseTest006, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
+    std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
+    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle todoWorktodo";
+    std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
+    std::string result = res1 + res2 + res3;
+    ASSERT_STREQ(testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest007
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest007, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -1346,18 +1354,17 @@ HWTEST_F(NativeEngineTest, XmlParseTest007, testing::ext::TestSize.Level0)
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
-    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
-    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
-    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
-    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
-    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
-    std::string str8 = "    </h:table></note>";
+    std::string str3 = "<![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "<!--Hello, World!--> <company>John &amp; Hans</company> <title>Happy</title>";
+    std::string str5 = "<title>Happy</title> <todo>Work</todo> <todo>Play</todo> <?go there?>";
+    std::string str6 = "<a><b/></a> <h:table xmlns:h=\"http://www.w3.org/TR/html4/\"> <h:tr>";
+    std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
+    std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
@@ -1380,25 +1387,28 @@ HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
+    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn amp;amp;";
+    std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table ";
+    std::string res3 = "h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
+    std::string result = res1 + res2 + res3;
+    ASSERT_STREQ(testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest009
  * @tc.desc: To XML text to JavaScript object.
  * @tc.type: FUNC
  */
-
 HWTEST_F(NativeEngineTest, XmlParseTest009, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
-    std::string str3 = "    <![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
-    std::string str4 = "    <!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>";
-    std::string str5 = "    <title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>";
-    std::string str6 = "    <a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>";
-    std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
-    std::string str8 = "    </h:table></note>";
+    std::string str3 = "<![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>";
+    std::string str4 = "<!--Hello, World!--> <company>John &amp; Hans</company> <title>Happy</title>";
+    std::string str5 = "<title>Happy</title> <todo>Work</todo> <todo>Play</todo> <?go there?>";
+    std::string str6 = "<a><b/></a> <h:table xmlns:h=\"http://www.w3.org/TR/html4/\"> <h:tr>";
+    std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
+    std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
@@ -1420,5 +1430,10 @@ HWTEST_F(NativeEngineTest, XmlParseTest009, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "notecompanytitletitletodotodoabh:tableh:trh:tdh:td");
+    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn amp;amp;";
+    std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
+    std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
+    std::string result = res1 + res2 + res3;
+    ASSERT_STREQ(testStr.c_str(), result.c_str());
+
 }
