@@ -382,6 +382,8 @@ private:
     void WorkerOnMessageErrorInner();
     void WorkerOnErrorInner(napi_value error);
 
+    bool IsExceptionPending(napi_env env) const;
+    void HandleHostException() const;
     void HandleException();
     bool CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch);
     void CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const;

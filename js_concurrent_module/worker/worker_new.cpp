@@ -900,6 +900,7 @@ void NewWorker::HostOnMessage(const uv_async_t* req)
         return;
     }
     worker->HostOnMessageInner();
+    worker->HandleHostException();
 }
 
 void NewWorker::HostOnMessageInner()
@@ -990,6 +991,7 @@ void NewWorker::CallHostFunction(size_t argc, const napi_value* argv, const char
     }
     napi_value callbackResult = nullptr;
     napi_call_function(hostEnv_, obj, callback, argc, argv, &callbackResult);
+    HandleHostException();
 }
 
 void NewWorker::CloseHostCallback() const
@@ -1016,6 +1018,7 @@ void NewWorker::HostOnError(const uv_async_t* req)
         return;
     }
     worker->HostOnErrorInner();
+    worker->HandleHostException();
     worker->TerminateInner();
 }
 
@@ -1263,8 +1266,28 @@ void NewWorker::TranslateErrorEvent(napi_env env, napi_value error, napi_value *
     napi_set_named_property(env, *obj, "error", error);
 }
 
+bool NewWorker::IsExceptionPending(napi_env env) const
+{
+    bool isExceptionPending = false;
+    napi_is_exception_pending(env, &isExceptionPending);
+    return isExceptionPending;
+}
+
+void NewWorker::HandleHostException() const
+{
+    if (!IsExceptionPending(hostEnv_)) {
+        return;
+    }
+    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    hostEngine->HandleUncaughtException();
+}
+
 void NewWorker::HandleException()
 {
+    if (!IsExceptionPending(workerEnv_)) {
+        return;
+    }
+
     napi_handle_scope scope = nullptr;
     napi_status status = napi_open_handle_scope(workerEnv_, &scope);
     if (status != napi_ok || scope == nullptr) {

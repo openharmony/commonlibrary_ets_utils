@@ -248,6 +248,7 @@ void Worker::HostOnMessage(const uv_async_t* req)
         return;
     }
     worker->HostOnMessageInner();
+    worker->HandleHostException();
 }
 
 void Worker::HostOnErrorInner()
@@ -302,6 +303,7 @@ void Worker::HostOnError(const uv_async_t* req)
         return;
     }
     worker->HostOnErrorInner();
+    worker->HandleHostException();
     worker->TerminateInner();
 }
 
@@ -472,8 +474,28 @@ void Worker::TerminateWorker()
     UpdateWorkerState(TERMINATED);
 }
 
+bool Worker::IsExceptionPending(napi_env env) const
+{
+    bool isExceptionPending = false;
+    napi_is_exception_pending(env, &isExceptionPending);
+    return isExceptionPending;
+}
+
+void Worker::HandleHostException() const
+{
+    if (!IsExceptionPending(hostEnv_)) {
+        return;
+    }
+    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    hostEngine->HandleUncaughtException();
+}
+
 void Worker::HandleException()
 {
+    if (!IsExceptionPending(workerEnv_)) {
+        return;
+    }
+
     napi_handle_scope scope = nullptr;
     napi_status status = napi_open_handle_scope(workerEnv_, &scope);
     if (status != napi_ok || scope == nullptr) {
@@ -1251,6 +1273,7 @@ void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* m
     }
     napi_value callbackResult = nullptr;
     napi_call_function(hostEnv_, obj, callback, argc, argv, &callbackResult);
+    HandleHostException();
 }
 
 void Worker::ReleaseWorkerThreadContent()
