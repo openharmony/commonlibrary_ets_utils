@@ -262,7 +262,7 @@ let pool: Buffer;
 const MAX_LENGTH: number = Math.pow(2, 32); // 2 : 32 : MAX_LENGTH code
 const TWO_POW_FIFTEEN: number = Math.pow(2, 15); // 2 : 15 : two to power of fifteen code
 const TWO_POW_SEVEN: number = Math.pow(2, 7); // 2 : 7 : two to power of seven code
-const oneByte: number = 1; // 1 : one Byte 
+const oneByte: number = 1; // 1 : one Byte
 const twoBytes: number = 2; // 2 : two Bytes
 const threeBytes: number = 3; // 3 : three Bytes
 const fourBytes: number = 4; // 4 : four Bytes

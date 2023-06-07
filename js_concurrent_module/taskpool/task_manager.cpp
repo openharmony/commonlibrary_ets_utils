@@ -163,12 +163,12 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t *req)
         // We have tasks in the queue, and all workers may be running.
         // Therefore the target runnable threads should be the sum of runnig workers and the calculated result.
         targetNum = std::min(targetNum, static_cast<int32_t>(taskManager.GetTaskNum()));
-        targetNum += taskManager.GetRunningWorkers();
+        targetNum += static_cast<int32_t>(taskManager.GetRunningWorkers());
     } else {
         // We have no task in the queue. Therefore we do not need extra threads.
         // But, tasks may still be executed in workers or microtask queue,
         // so we should return the num of running workers.
-        targetNum = taskManager.GetRunningWorkers();
+        targetNum = static_cast<int32_t>(taskManager.GetRunningWorkers());
     }
     taskManager.CreateOrDeleteWorkers(targetNum);
 }
