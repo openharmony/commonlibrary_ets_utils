@@ -120,9 +120,9 @@ void TaskManager::CreateOrDeleteWorkers(int32_t targetNum)
         retryCount_ = 0;
     }
 
-    int32_t workerCount = GetThreadNum();
+    int32_t workerCount = static_cast<int32_t>(GetThreadNum());
     const int32_t maxThreads = std::max(ConcurrentHelper::GetActiveCpus() - 1, DEFAULT_THREADS);
-    targetNum = targetNum | 1;
+    targetNum = targetNum | static_cast<int32_t>(1);
     if (workerCount < maxThreads && workerCount < targetNum) {
         int32_t step = std::min(maxThreads, targetNum) - workerCount;
         for (int32_t i = 0; i < step; i++) {

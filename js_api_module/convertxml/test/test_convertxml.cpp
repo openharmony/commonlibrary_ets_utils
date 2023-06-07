@@ -28,7 +28,7 @@ using namespace OHOS::Xml;
 
 napi_value setProperty(napi_env env, napi_value obj, std::vector<std::string> proVec)
 {
-    const size_t boolNum = 8; // the counts of the bool value
+    const size_t boolNum = 8; // 8 : the counts of the bool value
     napi_value val = nullptr;
     for (size_t i = 0; i < proVec.size();) {
         if (i < boolNum) {
@@ -38,7 +38,7 @@ napi_value setProperty(napi_env env, napi_value obj, std::vector<std::string> pr
         } else {
             napi_create_string_utf8(env, proVec[i + 1].c_str(), proVec[i + 1].size(), &val);
             napi_set_named_property(env, obj, proVec[i].c_str(), val);
-            i += 2; // the length of the value and property
+            i += 2; // 2 : the length of the value and property
         }
     }
     return obj;
@@ -50,7 +50,7 @@ napi_value setProperty(napi_env env, napi_value obj, std::vector<std::string> pr
  */
 HWTEST_F(NativeEngineTest, ConvertXmlTest001, testing::ext::TestSize.Level0)
 {
-    size_t size = 1024;
+    size_t size = 1024; // 1024 : the size is 1024 byte
     void* pBuffer = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_env env = (napi_env)engine_;
@@ -87,7 +87,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest001, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ConvertXmlTest002, testing::ext::TestSize.Level0)
 {
-    size_t size = 1024;
+    size_t size = 1024; // 1024 : the size is 1024 byte
     void* pBuffer = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_env env = (napi_env)engine_;
@@ -124,7 +124,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest002, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ConvertXmlTest003, testing::ext::TestSize.Level0)
 {
-    size_t size = 1024;
+    size_t size = 1024; // 1024 : the size is 1024 byte
     void* pBuffer = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_env env = (napi_env)engine_;
@@ -165,7 +165,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest003, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ConvertXmlTest004, testing::ext::TestSize.Level0)
 {
-    size_t size = 1024;
+    size_t size = 1024; // 1024 : the size is 1024 byte
     void* pBuffer = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_env env = (napi_env)engine_;
@@ -203,7 +203,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest004, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ConvertXmlTest005, testing::ext::TestSize.Level0)
 {
-    size_t size = 1024;
+    size_t size = 1024; // 1024 : the size is 1024 byte
     void* pBuffer = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_env env = (napi_env)engine_;
@@ -241,7 +241,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest005, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ConvertXmlTest006, testing::ext::TestSize.Level0)
 {
-    size_t size = 1024;
+    size_t size = 1024; // 1024 : the size is 1024 byte
     void* pBuffer = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_env env = (napi_env)engine_;
