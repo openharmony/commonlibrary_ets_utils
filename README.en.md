@@ -1,5 +1,5 @@
 # ets_utils
-The ets_utils component provides four modules: js_api_module, js_util_module, js_sys_module, and js_worker_module. The following provides an introduction to these modules and describes their directory structures, APIs, and involved repositories.
+The ets_utils component provides four modules: js_api_module, js_util_module, js_sys_module, and js_concurrent_module. The following provides an introduction to these modules and describes their directory structures, APIs, and involved repositories.
 
 # Modules
 ## js_api_module
