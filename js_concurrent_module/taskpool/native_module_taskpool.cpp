@@ -31,7 +31,7 @@ static napi_module g_taskPoolModule = {
 /*
  * module register
  */
-extern "C" __attribute__((constructor)) void Register()
+extern "C" __attribute__((constructor)) void TaskPoolRegister()
 {
     napi_module_register(&g_taskPoolModule);
 }
