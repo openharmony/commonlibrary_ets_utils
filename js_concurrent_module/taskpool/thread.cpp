@@ -21,7 +21,11 @@ Thread::Thread() : tid_() {}
 bool Thread::Start()
 {
     int ret = uv_thread_create(&tid_, [](void* arg) {
+#if defined IOS_PLATFORM || defined MAC_PLATFORM
+        pthread_setname_np("TaskWorkThread");
+#else
         pthread_setname_np(pthread_self(), "TaskWorkThread");
+#endif
         Thread* thread = reinterpret_cast<Thread*>(arg);
         thread->Run();
     }, this);
