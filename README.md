@@ -1,5 +1,5 @@
 # ets_utils组件
-ets_utils组件共提供四个子模块，分别是：js_api_module、js_util_module、js_sys_module和js_worker_module，以下内容将详细介绍各个子模块的简介、目录、说明和涉及仓等相关内容。
+ets_utils组件共提供四个子模块，分别是：js_api_module、js_util_module、js_sys_module和js_concurrent_module，以下内容将详细介绍各个子模块的简介、目录、说明和涉及仓等相关内容。
 
 # 子模块
 ## 1. js_api_module子模块

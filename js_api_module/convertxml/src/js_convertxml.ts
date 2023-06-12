@@ -112,22 +112,24 @@ function dealPriorReplace(strXml: string, idx: number, idxThir: number): string 
   let j: number = idx + 1;
   if (i === idxThir) {
     strXml = strXml.substring(0, j) + strXml.substring(idxThir);
-  } else {
-    for (; j < strXml.indexOf('<', idx); j++) {
-      let cXml: string = strXml.charAt(j);
-      switch (cXml) {
-        case '\n':
-          strXml = strXml.substring(0, j) + '\\n' + strXml.substring(j + 1);
-          break;
-        case '\v':
-          strXml = strXml.substring(0, j) + '\\v' + strXml.substring(j + 1);
-          break;
-        case '\t':
-          strXml = strXml.substring(0, j) + '\\t' + strXml.substring(j + 1);
-          break;
-        default:
-          break;
-      }
+  }
+  if (j < strXml.indexOf('<', idx)) {
+    let temp: string = strXml.substring(j, strXml.indexOf('<', idx));
+    if (temp.indexOf('\n') !== -1 || temp.indexOf('\v') !== -1 || temp.indexOf('\t') !== -1) {
+      let pattern: RegExp = /[\n\v\t]/g;
+      let result: string = temp.replace(pattern, function (match) {
+        switch (match) {
+          case '\n':
+            return '\\n';
+          case '\v':
+            return '\\v';
+          case '\t':
+            return '\\t';
+          default:
+            return match;
+        }
+      });
+      strXml = strXml.replace(temp, result);
     }
   }
   return strXml;
