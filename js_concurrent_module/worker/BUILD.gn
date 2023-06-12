@@ -95,10 +95,15 @@ ohos_source_set("worker_static") {
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
     ]
+    sources -= [
+      "$js_concurrent_module_common/helper/napi_helper.cpp",
+      "$sys_module/timer/timer.cpp",
+    ]
     defines += [ "__ARKUI_CROSS__" ]
     deps += [
       "$plugins_root/libs/napi:napi_${target_os}",
-      "//third_party/libuv:uv_static",
+      "$plugins_root/libs/uv:uv_${target_os}",
+      "$sys_module/timer:timer_static",
     ]
     if (target_os == "android") {
       defines += [ "ANDROID_PLATFORM" ]

@@ -14,23 +14,24 @@
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
+taskpool_sources = [
+  "native_module_taskpool.cpp",
+  "task.cpp",
+  "task_manager.cpp",
+  "task_queue.cpp",
+  "task_runner.cpp",
+  "taskpool.cpp",
+  "thread.cpp",
+  "worker.cpp",
+]
+
 ohos_shared_library("taskpool") {
   include_dirs = [
     "include",
     js_concurrent_module_common,
   ]
-
-  sources = [
-    "../common/helper/napi_helper.cpp",
-    "native_module_taskpool.cpp",
-    "task.cpp",
-    "task_manager.cpp",
-    "task_queue.cpp",
-    "task_runner.cpp",
-    "taskpool.cpp",
-    "thread.cpp",
-    "worker.cpp",
-  ]
+  sources = taskpool_sources
+  sources += [ "../common/helper/napi_helper.cpp" ]
 
   defines = []
   if (is_ohos) {
@@ -69,6 +70,42 @@ ohos_shared_library("taskpool") {
   part_name = "ets_utils"
 
   relative_install_dir = "module"
+}
+
+ohos_source_set("taskpool_static") {
+  include_dirs = [
+    "include",
+    js_concurrent_module_common,
+  ]
+
+  sources = taskpool_sources
+
+  deps = []
+  defines = []
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    defines += [ "__ARKUI_CROSS__" ]
+    deps += [
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/uv:uv_${target_os}",
+      "$sys_module/timer:timer_static",
+    ]
+    if (target_os == "android") {
+      defines += [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      defines += [ "IOS_PLATFORM" ]
+    }
+  } else {
+    deps += [ "$napi_root:ace_napi" ]
+  }
+
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
 }
 
 group("taskpool_packages") {
