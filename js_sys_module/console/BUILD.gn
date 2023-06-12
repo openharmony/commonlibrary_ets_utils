@@ -58,6 +58,41 @@ ohos_shared_library("console") {
   part_name = "ets_utils"
 }
 
+ohos_source_set("console_static") {
+  include_dirs = [
+    js_concurrent_module_common,
+    "../console",
+  ]
+
+  sources = [
+    "$js_concurrent_module_common/helper/napi_helper.cpp",
+    "console.cpp",
+  ]
+
+  deps = []
+
+  defines = []
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    deps += [ "$plugins_root/libs/napi:napi_${target_os}" ]
+    if (target_os == "android") {
+      defines += [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      defines += [ "IOS_PLATFORM" ]
+    }
+  } else {
+    deps += [ "$napi_root:ace_napi" ]
+  }
+
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+}
+
 group("console_packages") {
   deps = [ ":console" ]
 }
