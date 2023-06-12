@@ -50,6 +50,45 @@ ohos_shared_library("timer") {
   part_name = "ets_utils"
 }
 
+ohos_source_set("timer_static") {
+  include_dirs = [
+    js_concurrent_module_common,
+    "../timer",
+  ]
+
+  sources = [
+    "$js_concurrent_module_common/helper/napi_helper.cpp",
+    "timer.cpp",
+  ]
+
+  deps = []
+
+  defines = []
+
+  configs = [ "$napi_root:ace_napi_config" ]
+
+  if (is_cross_platform_build) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+    deps += [
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/uv:uv_${target_os}",
+    ]
+    if (target_os == "android") {
+      defines += [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      defines += [ "IOS_PLATFORM" ]
+    }
+  } else {
+    deps += [ "$napi_root:ace_napi" ]
+  }
+
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+}
 group("timer_packages") {
   deps = [ ":timer" ]
 }

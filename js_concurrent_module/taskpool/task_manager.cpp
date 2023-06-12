@@ -188,7 +188,11 @@ void TaskManager::RunTaskManager()
     uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(
         TaskManager::TriggerLoadBalance), 0, 1000); // 1000: 1s
     uv_async_init(loop_, notifyRestartTimer_, reinterpret_cast<uv_async_cb>(TaskManager::RestartTimer));
+#if defined IOS_PLATFORM || defined MAC_PLATFORM
+    pthread_setname_np("TaskMgrThread");
+#else
     pthread_setname_np(pthread_self(), "TaskMgrThread");
+#endif
     uv_run(loop_, UV_RUN_DEFAULT);
     uv_loop_close(loop_);
 }
