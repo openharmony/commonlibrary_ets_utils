@@ -157,8 +157,6 @@ ohos_source_set("util_static") {
       "$plugins_root/interfaces",
     ]
 
-    configs += [ "$plugins_root/util:util_plugin_config" ]
-
     if (target_os == "android") {
       defines = [ "ANDROID_PLATFORM" ]
       deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
