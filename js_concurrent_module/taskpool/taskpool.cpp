@@ -26,9 +26,13 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
+    HILOG_INFO("taskpool:: Import taskpool");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value taskClass = nullptr;
     napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor, nullptr, 0, nullptr, &taskClass);
+    napi_value isCanceledFunc;
+    napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, TaskManager::IsCanceled, NULL, &isCanceledFunc);
+    napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);
@@ -143,7 +147,7 @@ napi_value TaskPool::ExecuteFunction(napi_env env,
         return nullptr;
     }
     TaskManager::GetInstance().TryTriggerLoadBalance();
-    TaskManager::GetInstance().StoreStateInfo(executeId, TaskState::WAITING);
+    TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().StoreRunningInfo(taskId, executeId);
     napi_value promise = nullptr;
     napi_create_promise(env, &taskInfo->deferred, &promise);

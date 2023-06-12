@@ -40,7 +40,7 @@ private:
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
 
     static napi_value ExecuteFunction(napi_env env, napi_value function, napi_value arguments, uint32_t taskId,
-                                        Priority priority = Priority::DEFAULT);
+                                      Priority priority = Priority::DEFAULT);
     static void HandleTaskResult(const uv_async_t* req);
 
     friend class TaskManager;

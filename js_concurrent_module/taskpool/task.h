@@ -23,7 +23,7 @@
 #include "napi/native_api.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-enum TaskState { NOT_FOUND, WAITING, RUNNING, TERMINATED, CANCELED };
+enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED };
 enum Priority { HIGH, MEDIUM, LOW, NUMBER, DEFAULT = MEDIUM };
 
 class Task {
@@ -49,6 +49,7 @@ struct TaskInfo {
     uint32_t taskId;
     uint32_t executeId;
     bool success = true;
+    bool isCanceled = false;
     void *worker = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

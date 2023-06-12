@@ -241,12 +241,6 @@ void TaskManager::StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo)
     taskInfos_.emplace(executeId, taskInfo);
 }
 
-void TaskManager::StoreStateInfo(uint32_t executeId, TaskState state)
-{
-    std::unique_lock<std::shared_mutex> lock(taskStatesMutex_);
-    taskStates_.emplace(executeId, state);
-}
-
 void TaskManager::StoreRunningInfo(uint32_t taskId, uint32_t executeId)
 {
     std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
@@ -268,9 +262,44 @@ TaskInfo* TaskManager::PopTaskInfo(uint32_t executeId)
     }
 
     TaskInfo* taskInfo = iter->second;
-    // remove the the taskInfo when executed
+    // remove the the taskInfo after call function
     taskInfos_.erase(iter);
     return taskInfo;
+}
+
+TaskInfo* TaskManager::GetTaskInfo(uint32_t executeId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+    auto iter = taskInfos_.find(executeId);
+    if (iter == taskInfos_.end() || iter->second == nullptr) {
+        return nullptr;
+    }
+    return iter->second;
+}
+
+bool TaskManager::EraseTaskInfo(uint32_t executeId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+    auto iter = taskInfos_.find(executeId);
+    if (iter == taskInfos_.end() || iter->second == nullptr) {
+        return false;
+    }
+    taskInfos_.erase(iter);
+    return true;
+}
+
+bool TaskManager::MarkCanceledState(uint32_t executeId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+    auto iter = taskInfos_.find(executeId);
+    if (iter == taskInfos_.end() || iter->second == nullptr) {
+        return false;
+    }
+    if (!UpdateExecuteState(executeId, ExecuteState::CANCELED)) {
+        return false;
+    }
+    iter->second->isCanceled = true;
+    return true;
 }
 
 void TaskManager::PopRunningInfo(uint32_t taskId, uint32_t executeId)
@@ -283,63 +312,83 @@ void TaskManager::PopRunningInfo(uint32_t taskId, uint32_t executeId)
     iter->second.remove(executeId);
 }
 
-TaskState TaskManager::QueryState(uint32_t executeId)
+void TaskManager::AddExecuteState(uint32_t executeId)
 {
-    std::shared_lock<std::shared_mutex> lock(taskStatesMutex_);
-    auto iter = taskStates_.find(executeId);
-    if (iter == taskStates_.end()) {
+    std::unique_lock<std::shared_mutex> lock(executeStatesMutex_);
+    executeStates_.emplace(executeId, ExecuteState::WAITING);
+}
+
+bool TaskManager::UpdateExecuteState(uint32_t executeId, ExecuteState state)
+{
+    std::unique_lock<std::shared_mutex> lock(executeStatesMutex_);
+    auto iter = executeStates_.find(executeId);
+    if (iter == executeStates_.end()) {
+        return false;
+    }
+    iter->second = state;
+    return true;
+}
+
+void TaskManager::RemoveExecuteState(uint32_t executeId)
+{
+    std::unique_lock<std::shared_mutex> lock(executeStatesMutex_);
+    executeStates_.erase(executeId);
+}
+
+ExecuteState TaskManager::QueryExecuteState(uint32_t executeId)
+{
+    std::shared_lock<std::shared_mutex> lock(executeStatesMutex_);
+    auto iter = executeStates_.find(executeId);
+    if (iter == executeStates_.end()) {
         HILOG_ERROR("taskpool:: failed to find the target task");
-        return TaskState::NOT_FOUND;
+        return ExecuteState::NOT_FOUND;
     }
     return iter->second;
 }
 
-bool TaskManager::UpdateState(uint32_t executeId, TaskState state)
-{
-    std::unique_lock<std::shared_mutex> lock(taskStatesMutex_);
-    auto iter = taskStates_.find(executeId);
-    if (iter == taskStates_.end()) {
-        return false;
-    }
-    if (state == TaskState::RUNNING) {
-        iter->second = state;
-    } else {
-        taskStates_.erase(iter);
-    }
-    return true;
-}
-
 void TaskManager::CancelTask(napi_env env, uint32_t taskId)
 {
+    // 1. Cannot find task by taskId, throw error
     std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
     auto iter = runningInfos_.find(taskId);
     if (iter == runningInfos_.end() || iter->second.empty()) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
         return;
     }
+
+    // 2. Cannot find taskInfo by executeId, throw error
+    // 3. Find executing taskInfo, skip it
+    // 4. Find waiting taskInfo, cancel it
+    // 5. Find canceled taskInfo, skip it
     for (auto executeId : iter->second) {
-        TaskState state = QueryState(executeId);
-        if (state == TaskState::NOT_FOUND) {
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
-            return;
-        }
-        UpdateState(executeId, TaskState::CANCELED);
-        if (state == TaskState::WAITING) {
-            TaskInfo* taskInfo = PopTaskInfo(executeId);
-            if (taskInfo != nullptr) {
-                napi_value undefined = nullptr;
-                napi_get_undefined(taskInfo->env, &undefined);
-                napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
-                PopTaskEnvInfo(taskInfo->env);
-                ReleaseTaskContent(taskInfo);
-            }
-        } else {
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_RUNNING_TASK,
-                                    "taskpool:: can not cancel the running task");
-            return;
+        ExecuteState state = QueryExecuteState(executeId);
+        TaskInfo* taskInfo = nullptr;
+        switch (state) {
+            case ExecuteState::NOT_FOUND:
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
+                return;
+            case ExecuteState::RUNNING:
+                if (!MarkCanceledState(executeId)) {
+                    ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK,
+                                            "taskpool:: fail to mark cancel state");
+                    return;
+                }
+                break;
+            case ExecuteState::WAITING:
+                HILOG_DEBUG("taskpool:: Cancel waiting task");
+                taskInfo = PopTaskInfo(executeId);
+                if (taskInfo != nullptr) {
+                    napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
+                    napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
+                    PopTaskEnvInfo(taskInfo->env);
+                    ReleaseTaskContent(taskInfo);
+                }
+                RemoveExecuteState(executeId);
+                break;
+            default: // Default is CANCELED, means task isCanceled, donot neet to mark again.
+                break;
         }
     }
-    runningInfos_.erase(iter);
 }
 
 TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func,
@@ -514,5 +563,19 @@ void TaskManager::CreateWorker(napi_env env)
     expandingCount_++;
     auto worker = Worker::WorkerConstructor(env);
     NotifyWorkerAdded(worker);
+}
+
+napi_value TaskManager::IsCanceled(napi_env env, napi_callback_info cbinfo)
+{
+    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
+    // Get taskInfo and query task cancel state
+    void* data = workerEngine->GetCurrentTaskInfo();
+    if (data == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "Check nonexist task cancel state");
+        return nullptr;
+    }
+    TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
+    bool isCanceled = taskInfo->isCanceled;
+    return NapiHelper::CreateBooleanValue(env, isCanceled);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
