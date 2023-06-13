@@ -54,13 +54,13 @@ node-v12.18.4-linux-x64/bin/node'
         NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-darwin-x64/bin/node'
     if not os.path.exists(NODE_PATH):
-        raise Exception('error:NO such file or directory')
+        raise Exception('error:can not find node at ' + NODE_PATH)
     TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/\
 typescript/bin/tsc'
     CMD_INST = [NODE_PATH, TSC_PATH, "--outDir", INPUT_ARGUMENTS.out_filePath]
     run_command(CMD_INST)
     if not os.path.exists(INPUT_ARGUMENTS.out_file):
-        raise Exception('error:NO such file or directory')
+        raise Exception('error:generate file failed for ' + INPUT_ARGUMENTS.out_file)
     CMD_INST = shutil.copy(INPUT_ARGUMENTS.out_file, INPUT_ARGUMENTS.dst_file)
 
     CMD_INST = shutil.rmtree(INPUT_ARGUMENTS.out_filePath)
