@@ -121,14 +121,3 @@ HWTEST_F(NativeEngineTest, WorkerConstructorTest001, testing::ext::TestSize.Leve
 //     result = Worker_Terminate(env, global);
 //     ASSERT_TRUE(result != nullptr);
 // }
-
-
-// HWTEST_F(NativeEngineTest, PostMessageTest002, testing::ext::TestSize.Level0)
-// {
-//     napi_env env = (napi_env)engine_;
-    
-//     napi_env newEnv = nullptr;
-//     napi_create_runtime(env, &newEnv);
-    
-//     ASSERT_TRUE(newEnv != nullptr);
-// }
