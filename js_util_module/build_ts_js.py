@@ -37,6 +37,8 @@ if __name__ == '__main__':
                         help='the module path')
     PARSER_INST.add_argument('--out-file',
                         help='js output file')
+    PARSER_INST.add_argument('--out-filePath',
+                        help='js output filePath')
     PARSER_INST.add_argument('--relative-path',
                         help='the code root path relative the root_build_dir')
     INPUT_ARGUMENTS = PARSER_INST.parse_args()
@@ -54,12 +56,12 @@ node-v12.18.4-darwin-x64/bin/node'
         raise Exception('error:NO such file or directory')
     TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/\
 typescript/bin/tsc'
-    CMD_INST = [NODE_PATH, TSC_PATH]
+    CMD_INST = [NODE_PATH, TSC_PATH, "--outDir", INPUT_ARGUMENTS.out_filePath]
     run_command(CMD_INST)
     if not os.path.exists(INPUT_ARGUMENTS.out_file):
         raise Exception('error:NO such file or directory')
     CMD_INST = shutil.copy(INPUT_ARGUMENTS.out_file, INPUT_ARGUMENTS.dst_file)
 
-    CMD_INST = shutil.rmtree('./out')
+    CMD_INST = shutil.rmtree(INPUT_ARGUMENTS.out_filePath)
 
     exit(0)
