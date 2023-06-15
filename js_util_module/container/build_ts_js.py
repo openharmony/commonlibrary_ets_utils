@@ -33,6 +33,8 @@ if __name__ == '__main__':
                         help='the converted target file')
     parser.add_argument('--relative-path',
                         help='the code root path relative the root_build_dir')
+    parser.add_argument('--out-filePath',
+                        help='js output filePath')
     input_arguments = parser.parse_args()
 
     build_path = os.path.abspath(os.path.join(os.getcwd(), input_arguments.relative_path))
@@ -46,17 +48,17 @@ node-v12.18.4-linux-x64/bin/node'
         NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-darwin-x64/bin/node'
     TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/typescript/bin/tsc'
-    cmd = [NODE_PATH, TSC_PATH]
+    cmd = [NODE_PATH, TSC_PATH, "--outDir", input_arguments.out_filePath]
     run_command(cmd)
 
-    for dirname in os.listdir("./jscode") :
-        filepath = os.path.join("./jscode", dirname)
+    for dirname in os.listdir(input_arguments.out_filePath) :
+        filepath = os.path.join(input_arguments.out_filePath, dirname)
         for filename in os.listdir(filepath) :
             dstpath = os.path.join(input_arguments.dst_file, filename)
             srcpath = os.path.join(filepath, filename)
             cmd = ['cp', "-r", srcpath, dstpath]
             run_command(cmd)
 
-    cmd = ['rm', "-rf", './jscode']
+    cmd = ['rm', "-rf", input_arguments.out_filePath]
     run_command(cmd)
     exit(0)
