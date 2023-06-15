@@ -349,48 +349,60 @@ ExecuteState TaskManager::QueryExecuteState(uint32_t executeId)
     return iter->second;
 }
 
-void TaskManager::CancelTask(napi_env env, uint32_t taskId)
+const std::list<uint32_t>& TaskManager::QueryRunningTask(napi_env env, uint32_t taskId)
 {
-    // 1. Cannot find task by taskId, throw error
+    // Cannot find task by taskId, throw error
     std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
     auto iter = runningInfos_.find(taskId);
     if (iter == runningInfos_.end() || iter->second.empty()) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
-        return;
+        static const std::list<uint32_t> EMPTY_EXECUTE_ID {};
+        return EMPTY_EXECUTE_ID;
     }
+    return iter->second;
+}
 
-    // 2. Cannot find taskInfo by executeId, throw error
-    // 3. Find executing taskInfo, skip it
-    // 4. Find waiting taskInfo, cancel it
-    // 5. Find canceled taskInfo, skip it
-    for (auto executeId : iter->second) {
-        ExecuteState state = QueryExecuteState(executeId);
-        TaskInfo* taskInfo = nullptr;
-        switch (state) {
-            case ExecuteState::NOT_FOUND:
-                ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
+void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
+{
+    // 1. Cannot find taskInfo by executeId, throw error
+    // 2. Find executing taskInfo, skip it
+    // 3. Find waiting taskInfo, cancel it
+    // 4. Find canceled taskInfo, skip it
+    ExecuteState state = QueryExecuteState(executeId);
+    TaskInfo* taskInfo = nullptr;
+    switch (state) {
+        case ExecuteState::NOT_FOUND:
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
+            return;
+        case ExecuteState::RUNNING:
+            if (!MarkCanceledState(executeId)) {
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK,
+                                        "taskpool:: fail to mark cancel state");
                 return;
-            case ExecuteState::RUNNING:
-                if (!MarkCanceledState(executeId)) {
-                    ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK,
-                                            "taskpool:: fail to mark cancel state");
-                    return;
-                }
-                break;
-            case ExecuteState::WAITING:
-                HILOG_DEBUG("taskpool:: Cancel waiting task");
-                taskInfo = PopTaskInfo(executeId);
-                if (taskInfo != nullptr) {
+            }
+            break;
+        case ExecuteState::WAITING:
+            HILOG_DEBUG("taskpool:: Cancel waiting task");
+            taskInfo = PopTaskInfo(executeId);
+            if (taskInfo != nullptr) {
+                if (taskInfo->groupInfo == nullptr) {
                     napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
                     napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
-                    PopTaskEnvInfo(taskInfo->env);
-                    ReleaseTaskContent(taskInfo);
+                } else {
+                    GroupInfo* groupInfo = taskInfo->groupInfo;
+                    if (TaskGroupManager::GetInstance().IsRunning(groupInfo)) {
+                        napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
+                        napi_reject_deferred(taskInfo->env, groupInfo->deferred, undefined);
+                        TaskGroupManager::GetInstance().ClearGroupInfo(env, groupInfo);
+                    }
                 }
-                RemoveExecuteState(executeId);
-                break;
-            default: // Default is CANCELED, means task isCanceled, donot neet to mark again.
-                break;
-        }
+                PopTaskEnvInfo(taskInfo->env);
+                ReleaseTaskContent(taskInfo);
+            }
+            RemoveExecuteState(executeId);
+            break;
+        default: // Default is CANCELED, means task isCanceled, do not neet to mark again.
+            break;
     }
 }
 
@@ -414,7 +426,7 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "taskpool: failed to serialize arguments.");
         return nullptr;
     }
-    TaskInfo* taskInfo = new (std::nothrow) TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo();
     taskInfo->env = env;
     taskInfo->executeId = executeId;
     taskInfo->serializationFunction = serializationFunction;
@@ -427,6 +439,21 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
 
     StoreTaskInfo(executeId, taskInfo);
     StoreTaskEnvInfo(env);
+    return taskInfo;
+}
+
+TaskInfo* TaskManager::GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId)
+{
+    napi_value function = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
+    napi_value arguments = NapiHelper::GetNameProperty(env, task, ARGUMENTS_STR);
+    napi_value taskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
+    if (function == nullptr || arguments == nullptr || taskId == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task value is error");
+        return nullptr;
+    }
+    napi_value transferList = NapiHelper::GetNameProperty(env, task, TRANSFERLIST_STR);
+    uint32_t id = NapiHelper::GetUint32Value(env, taskId);
+    TaskInfo* taskInfo = GenerateTaskInfo(env, function, arguments, id, executeId, transferList);
     return taskInfo;
 }
 
@@ -591,5 +618,138 @@ void TaskManager::RemoveWorker(Worker *worker)
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     idleWorkers_.erase(worker);
     workers_.erase(worker);
+}
+
+TaskGroupManager &TaskGroupManager::GetInstance()
+{
+    static TaskGroupManager groupManager;
+    return groupManager;
+}
+
+uint32_t TaskGroupManager::GenerateGroupId()
+{
+    return groupId_++;
+}
+
+GroupInfo* TaskGroupManager::GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId)
+{
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->taskNum = taskNum;
+    groupInfo->groupId = groupId;
+    napi_value resArr;
+    napi_create_array_with_length(env, taskNum, &resArr);
+    napi_ref arrRef = NapiHelper::CreateReference(env, resArr, 1);
+    groupInfo->resArr = arrRef;
+    return groupInfo;
+}
+
+void TaskGroupManager::ClearGroupInfo(napi_env env, GroupInfo* groupInfo)
+{
+    RemoveRunningGroupInfo(groupInfo);
+    RemoveGroupInfo(groupInfo);
+    napi_delete_reference(env, groupInfo->resArr);
+    delete groupInfo;
+    groupInfo = nullptr;
+}
+
+void TaskGroupManager::AddTask(uint32_t groupId, napi_ref task)
+{
+    auto iter = tasks_.find(groupId);
+    if (iter == tasks_.end()) {
+        std::list<napi_ref> list {task};
+        tasks_.emplace(groupId, list);
+    } else {
+        iter->second.push_back(task);
+    }
+}
+
+const std::list<napi_ref>& TaskGroupManager::GetTasksByGroup(uint32_t groupId)
+{
+    auto iter = tasks_.find(groupId);
+    if (iter == tasks_.end()) {
+        static const std::list<napi_ref> EMPTY_TASK_LIST {};
+        return EMPTY_TASK_LIST;
+    }
+    return iter->second;
+}
+
+void TaskGroupManager::ClearTasks(napi_env env, uint32_t groupId)
+{
+    auto iter = tasks_.find(groupId);
+    if (iter == tasks_.end()) {
+        return;
+    }
+    for (napi_ref task : iter->second) {
+        napi_delete_reference(env, task);
+    }
+}
+
+void TaskGroupManager::StoreGroupInfo(uint32_t groupId, GroupInfo* info)
+{
+    auto iter = groupInfos_.find(groupId);
+    if (iter == groupInfos_.end()) {
+        std::list<GroupInfo*> list {info};
+        groupInfos_.emplace(groupId, list);
+    } else {
+        iter->second.push_back(info);
+    }
+}
+
+void TaskGroupManager::RemoveGroupInfo(GroupInfo* info)
+{
+    uint32_t groupId = info->groupId;
+    auto iter = groupInfos_.find(groupId);
+    if (iter != groupInfos_.end()) {
+        iter->second.remove(info);
+    }
+    if (iter->second.empty()) {
+        groupInfos_.erase(iter);
+    }
+}
+
+const std::list<GroupInfo*>& TaskGroupManager::GetGroupInfo(uint32_t groupId)
+{
+    auto iter = groupInfos_.find(groupId);
+    if (iter != groupInfos_.end()) {
+        return iter->second;
+    }
+    static const std::list<GroupInfo*> EMPTY_GROUP_INFO {};
+    return EMPTY_GROUP_INFO;
+}
+
+void TaskGroupManager::StoreRunningGroupInfo(GroupInfo* info)
+{
+    std::unique_lock<std::shared_mutex> lock(RunningGroupInfosMutex_);
+    runningGroupInfos_.insert(info);
+}
+
+void TaskGroupManager::RemoveRunningGroupInfo(GroupInfo* info)
+{
+    std::unique_lock<std::shared_mutex> lock(RunningGroupInfosMutex_);
+    auto iter = runningGroupInfos_.find(info);
+    if (iter != runningGroupInfos_.end()) {
+        runningGroupInfos_.erase(iter);
+    }
+}
+
+bool TaskGroupManager::IsRunning(GroupInfo* info)
+{
+    std::unique_lock<std::shared_mutex> lock(RunningGroupInfosMutex_);
+    bool isRunning = runningGroupInfos_.find(info) != runningGroupInfos_.end();
+    return isRunning;
+}
+
+void TaskGroupManager::CancelGroup(napi_env env, std::list<GroupInfo*> groupInfos)
+{
+    for (GroupInfo* info : groupInfos) {
+        bool isRunning = IsRunning(info);
+        if (!isRunning) {
+            return;
+        }
+        std::list<uint32_t>& executeList = info->executeIds;
+        for (uint32_t executeId : executeList) {
+            TaskManager::GetInstance().CancelExecution(env, executeId);
+        }
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

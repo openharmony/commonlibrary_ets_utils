@@ -50,6 +50,8 @@ public:
             errTitle = "The function is not mark as concurrent, ";
         } else if (errCode == ERR_CANCEL_NONEXIST_TASK) {
             errTitle = "The task does not exist when it is canceled, ";
+        } else if (errCode == ERR_CANCEL_NONEXIST_TASK_GROUP) {
+            errTitle = "The TaskGroup does not exist when it is canceled, ";
         } else if (errCode == ERR_CANCEL_RUNNING_TASK) {
             errTitle = "The task is executing when it is canceled, ";
         }
@@ -78,6 +80,7 @@ public:
     static const int32_t ERR_NOT_CONCURRENT_FUNCTION = 10200014; // 10200014 : the function is not mark as concurrent
     static const int32_t ERR_CANCEL_NONEXIST_TASK = 10200015; // 10200015 : the task does not exist when it is canceled
     static const int32_t ERR_CANCEL_RUNNING_TASK = 10200016; // 10200016 : the task is executing when it is canceled
+    static const int32_t ERR_CANCEL_NONEXIST_TASK_GROUP = 10200018; // 10200018 : cancel nonexist task group
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H_

@@ -17,6 +17,7 @@
 
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "helper/hitrace_helper.h"
+#include "task_group.h"
 #include "task_manager.h"
 #include "utils/log.h"
 
@@ -232,7 +233,7 @@ void Worker::PerformTask(const uv_async_t* req)
     TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeIdAndPriority.first);
     if (taskInfo == nullptr) { // task may have been canceled
         worker->NotifyTaskFinished();
-        HILOG_ERROR("taskpool::PerformTask taskInfo is null");
+        HILOG_DEBUG("taskpool::PerformTask taskInfo is null");
         return;
     }
 
@@ -332,7 +333,9 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     taskInfo->result = resultData;
 
     TaskManager::GetInstance().RemoveExecuteState(taskInfo->executeId);
-    TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
+    if (taskInfo->groupInfo == nullptr) {
+        TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
+    }
     TaskManager::GetInstance().PopTaskEnvInfo(taskInfo->env);
     TaskManager::GetInstance().EraseTaskInfo(taskInfo->executeId);
     Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);

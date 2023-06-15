@@ -43,7 +43,12 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param of task must be function");
         return nullptr;
     }
+    CreateTaskByFunc(env, thisVar, args[0], args, argc);
+    return thisVar;
+}
 
+void Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc)
+{
     napi_value argsArray;
     napi_create_array_with_length(env, argc - 1, &argsArray);
     for (size_t i = 0; i < argc - 1; i++) {
@@ -61,9 +66,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         DECLARE_NAPI_PROPERTY(TASKID_STR, taskId),
         DECLARE_NAPI_FUNCTION(SETTRANSFERLIST_STR, SetTransferList),
     };
-    napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-
-    return thisVar;
+    napi_define_properties(env, task, sizeof(properties) / sizeof(properties[0]), properties);
 }
 
 napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
