@@ -39,9 +39,12 @@ container_names = [
 # compile .ts to .js.
 action("build_js_ts") {
   script = "${ets_util_path}/js_util_module/container/build_ts_js.py"
+  outFile_Path = target_out_dir + "/" + current_cpu
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/"),
+    "--out-filePath",
+    rebase_path(outFile_Path),
     "--relative-path",
     rebase_path("//", root_build_dir),
   ]
