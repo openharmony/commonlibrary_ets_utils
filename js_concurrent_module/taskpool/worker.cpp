@@ -109,7 +109,8 @@ void Worker::ExecuteInThread(const void* data)
             return;
         }
         auto workerEngine = reinterpret_cast<NativeEngine*>(worker->workerEnv_);
-        workerEngine->MarkSubThread();
+        // mark worker env is taskpoolThread
+        workerEngine->MarkTaskPoolThread();
         workerEngine->InitTaskPoolThread(workerEngine, Worker::TaskResultCallback);
     }
     uv_loop_t* loop = worker->GetWorkerLoop();

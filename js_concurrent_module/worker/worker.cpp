@@ -199,8 +199,8 @@ void Worker::ExecuteInThread(const void* data)
             napi_throw_error(env, nullptr, "Worker create runtime error");
             return;
         }
-        // mark worker env is subThread
-        reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
+        // mark worker env is workerThread
+        reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
         worker->SetWorkerEnv(workerEnv);
     }
 
@@ -1170,7 +1170,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
         sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
     napi_set_named_property(env, exports, "Worker", workerClazz);
 
-    if (!engine->IsMainThread()) {
+    if (engine->IsWorkerThread()) {
         if (g_workers.size() == 0) {
             HILOG_DEBUG("worker:: The old worker is not used.");
             return exports;
