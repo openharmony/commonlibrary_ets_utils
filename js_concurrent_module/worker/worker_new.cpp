@@ -52,7 +52,7 @@ napi_value NewWorker::InitWorker(napi_env env, napi_value exports)
         sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
     napi_set_named_property(env, exports, "ThreadWorker", workerClazz);
 
-    if (!engine->IsMainThread()) {
+    if (engine->IsWorkerThread()) {
         if (g_newWorkers.size() == 0) {
             HILOG_DEBUG("worker:: The new worker is not used.");
             return exports;
@@ -802,8 +802,8 @@ void NewWorker::ExecuteInThread(const void* data)
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
             return;
         }
-        // mark worker env is subThread
-        reinterpret_cast<NativeEngine*>(workerEnv)->MarkSubThread();
+        // mark worker env is workerThread
+        reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
         worker->SetWorkerEnv(workerEnv);
     }
 
