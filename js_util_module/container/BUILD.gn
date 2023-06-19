@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
+import("//arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
@@ -81,30 +81,14 @@ template("container_lib") {
   }
 
   # compile .js to .abc.
-  action("gen_" + name + "_abc") {
-    visibility = [ ":*" ]
-    script = generate_js_bytecode_py
-
-    args = [
-      "--src-js",
-      rebase_path(target_out_dir + "/js_" + name + ".js"),
-      "--dst-file",
-      rebase_path(target_out_dir + "/" + name + ".abc"),
-      "--node",
-      rebase_path("${node_path}"),
-      "--frontend-tool-path",
-      rebase_path("${ts2abc_build_path}"),
-      "--node-modules",
-      rebase_path("${node_modules}"),
-      "--module",
-    ]
-    deps = [
-      ":build_js_ts",
-      "//arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build",
-    ]
-
-    inputs = [ target_out_dir + "/js_" + name + ".js" ]
-    outputs = [ target_out_dir + "/" + name + ".abc" ]
+  es2abc_gen_abc("gen_" + name + "_abc") {
+    extra_visibility = [ ":*" ]
+    src_js = rebase_path(target_out_dir + "/js_" + name + ".js")
+    dst_file = rebase_path(target_out_dir + "/" + name + ".abc")
+    in_puts = [ target_out_dir + "/js_" + name + ".js" ]
+    out_puts = [ target_out_dir + "/" + name + ".abc" ]
+    extra_args = [ "--module" ]
+    extra_dependencies = [ ":build_js_ts" ]
   }
 
   abc_output_path = get_label_info(":" + name + "_abc", "target_out_dir")

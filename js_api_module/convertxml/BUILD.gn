@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
+import("//arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
@@ -52,30 +52,14 @@ gen_obj("js_convertxml") {
 }
 
 # compile .js to .abc.
-action("gen_convertxml_abc") {
-  visibility = [ ":*" ]
-  script = generate_js_bytecode_py
-
-  args = [
-    "--src-js",
-    rebase_path(target_out_dir + "/js_convertxml.js"),
-    "--dst-file",
-    rebase_path(target_out_dir + "/convertxml.abc"),
-    "--node",
-    rebase_path("${node_path}"),
-    "--frontend-tool-path",
-    rebase_path("${ts2abc_build_path}"),
-    "--node-modules",
-    rebase_path("${node_modules}"),
-    "--module",
-  ]
-  deps = [
-    ":build_ts_js",
-    "//arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build",
-  ]
-
-  inputs = [ target_out_dir + "/js_convertxml.js" ]
-  outputs = [ target_out_dir + "/convertxml.abc" ]
+es2abc_gen_abc("gen_convertxml_abc") {
+  extra_visibility = [ ":*" ]
+  src_js = rebase_path(target_out_dir + "/js_convertxml.js")
+  dst_file = rebase_path(target_out_dir + "/convertxml.abc")
+  in_puts = [ target_out_dir + "/js_convertxml.js" ]
+  out_puts = [ target_out_dir + "/convertxml.abc" ]
+  extra_args = [ "--module" ]
+  extra_dependencies = [ ":build_ts_js" ]
 }
 
 abc_output_path = get_label_info(":convertxml_abc", "target_out_dir")

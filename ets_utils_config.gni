@@ -34,7 +34,7 @@ hilog_android =
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_android"
 ace_napi_dep = "//foundation/arkui/napi:ace_napi"
 generate_js_bytecode_py =
-    "//arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+    "//arkcompiler/ets_frontend/es2panda/scripts/generate_js_bytecode.py"
 ets_util_path = "//commonlibrary/ets_utils"
 js_concurrent_module_common =
     "//commonlibrary/ets_utils/js_concurrent_module/common"
