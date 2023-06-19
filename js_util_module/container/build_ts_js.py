@@ -41,12 +41,7 @@ if __name__ == '__main__':
     os.chdir("%s/commonlibrary/ets_utils/js_util_module/container/" % build_path)
 
     os_name = sys.platform
-    if os_name.lower().startswith('linux'):
-        NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
-node-v12.18.4-linux-x64/bin/node'
-    elif os_name == 'darwin':
-        NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
-node-v12.18.4-darwin-x64/bin/node'
+    NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/current/bin/node'
     TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/typescript/bin/tsc'
     cmd = [NODE_PATH, TSC_PATH, "--outDir", input_arguments.out_filePath]
     run_command(cmd)
