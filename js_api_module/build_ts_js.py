@@ -29,6 +29,8 @@ def run_command(in_cmd):
     stdout, stderr = proc.communicate()
     if stdout != "":
         raise Exception(stdout)
+    if stderr != "":
+        raise Exception(stderr)
 
 if __name__ == '__main__':
     PARSER_INST = argparse.ArgumentParser()
@@ -59,6 +61,8 @@ node-v12.18.4-darwin-x64/bin/node'
 typescript/bin/tsc'
     CMD_INST = [NODE_PATH, TSC_PATH, "--outDir", INPUT_ARGUMENTS.out_filePath]
     run_command(CMD_INST)
+    LOCATE_FILE = ["ls","-la",INPUT_ARGUMENTS.out_filePath]
+    subprocess.Popen(LOCATE_FILE, shell=True, stdout=None, stderr=None).wait()
     if not os.path.exists(INPUT_ARGUMENTS.out_file):
         raise Exception('error:generate file failed for ' + INPUT_ARGUMENTS.out_file)
     CMD_INST = shutil.copy(INPUT_ARGUMENTS.out_file, INPUT_ARGUMENTS.dst_file)
