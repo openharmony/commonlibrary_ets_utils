@@ -208,4 +208,24 @@ napi_value NapiHelper::CreateObject(napi_env env)
     napi_create_object(env, &obj);
     return obj;
 }
+
+bool NapiHelper::IsArrayBuffer(napi_value value)
+{
+    auto valNative = reinterpret_cast<NativeValue*>(value);
+    return valNative == nullptr ? false :  valNative->IsArrayBuffer();
+}
+
+uint32_t NapiHelper::GetArrayLength(napi_env env, napi_value array)
+{
+    uint32_t arrayLength = 0;
+    napi_get_array_length(env, array, &arrayLength);
+    return arrayLength;
+}
+
+uint32_t NapiHelper::GetUint32Value(napi_env env, napi_value value)
+{
+    uint32_t result = 0;
+    napi_get_value_uint32(env, value, &result);
+    return result;
+}
 } // namespace Commonlibrary::Concurrent::Common::Helper

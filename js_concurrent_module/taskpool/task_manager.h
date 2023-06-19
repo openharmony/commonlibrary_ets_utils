@@ -31,6 +31,7 @@ static constexpr char FUNCTION_STR[] = "function";
 static constexpr char ARGUMENTS_STR[] = "arguments";
 static constexpr char TASKID_STR[] = "taskId";
 static constexpr char TASKINFO_STR[] = "taskInfo";
+static constexpr char TRANSFERLIST_STR[] = "transferList";
 
 class Worker;
 
@@ -62,7 +63,8 @@ public:
     void PopTaskEnvInfo(napi_env env);
     void InitTaskManager(napi_env env);
     void UpdateExecutedInfo(uint64_t duration);
-    TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId);
+    TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
+                               uint32_t taskId, uint32_t executeId, napi_value transferList);
     void ReleaseTaskContent(TaskInfo* taskInfo);
     void TryTriggerLoadBalance();
     uint32_t GetTaskNum();

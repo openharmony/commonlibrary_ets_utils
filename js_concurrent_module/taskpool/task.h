@@ -29,6 +29,7 @@ enum Priority { HIGH, MEDIUM, LOW, NUMBER, DEFAULT = MEDIUM };
 class Task {
 public:
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
+    static napi_value SetTransferList(napi_env env, napi_callback_info cbinfo);
 
 private:
     Task() = delete;

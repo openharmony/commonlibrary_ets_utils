@@ -185,8 +185,7 @@ void TaskManager::RunTaskManager()
     timer_ = new uv_timer_t;
     uv_timer_init(loop_, timer_);
     notifyRestartTimer_ = new uv_async_t;
-    uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(
-        TaskManager::TriggerLoadBalance), 0, 1000); // 1000: 1s
+    uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, 1000); // 1000: 1s
     uv_async_init(loop_, notifyRestartTimer_, reinterpret_cast<uv_async_cb>(TaskManager::RestartTimer));
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
     pthread_setname_np("TaskMgrThread");
@@ -391,8 +390,8 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     }
 }
 
-TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func,
-                                        napi_value args, uint32_t taskId, uint32_t executeId)
+TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
+                                        uint32_t taskId, uint32_t executeId, napi_value transferList)
 {
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationFunction;
@@ -402,7 +401,11 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func,
         return nullptr;
     }
     napi_value serializationArguments;
-    status = napi_serialize(env, args, undefined, &serializationArguments);
+    if (transferList == nullptr) {
+        status = napi_serialize(env, args, undefined, &serializationArguments);
+    } else {
+        status = napi_serialize(env, args, transferList, &serializationArguments);
+    }
     if (status != napi_ok || serializationArguments == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "taskpool: failed to serialize arguments.");
         return nullptr;

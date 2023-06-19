@@ -19,8 +19,10 @@
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "task_manager.h"
+#include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+static constexpr char SETTRANSFERLIST_STR[] = "setTransferList";
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
 napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
@@ -37,9 +39,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     ObjectScope<napi_value> scope(args, true);
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
-    napi_valuetype type;
-    napi_typeof(env, args[0], &type);
-    if (type != napi_function) {
+    if (!NapiHelper::IsFunction(args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param of task must be function");
         return nullptr;
     }
@@ -50,16 +50,56 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         napi_set_element(env, argsArray, i, args[i + 1]);
     }
 
-    napi_value taskId;
-    napi_create_uint32(env, TaskManager::GetInstance().GenerateTaskId(), &taskId);
+    napi_value taskId = NapiHelper::CreateUint32(env, TaskManager::GetInstance().GenerateTaskId());
+
+    napi_value setTransferListFunc;
+    napi_create_function(env, SETTRANSFERLIST_STR, NAPI_AUTO_LENGTH, SetTransferList, NULL, &setTransferListFunc);
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY(FUNCTION_STR, args[0]),
         DECLARE_NAPI_PROPERTY(ARGUMENTS_STR, argsArray),
         DECLARE_NAPI_PROPERTY(TASKID_STR, taskId),
+        DECLARE_NAPI_FUNCTION(SETTRANSFERLIST_STR, SetTransferList),
     };
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
 
     return thisVar;
+}
+
+napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = 1;
+    napi_value args[1];
+    napi_value thisVar;
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    if (argc > 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                                "taskpool:: the number of setTransferList parma must be less than 2");
+        return nullptr;
+    }
+    if (argc == 0) {
+        HILOG_DEBUG("taskpool:: set task params not transfer");
+        return nullptr;
+    }
+
+    // setTransferList(ArrayBuffer[]), check ArrayBuffer[]
+    if (!NapiHelper::IsArray(args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setTransferList param must be array");
+        return nullptr;
+    }
+    uint32_t arrayLength = NapiHelper::GetArrayLength(env, args[0]);
+    for (size_t i = 0; i < arrayLength; i++) {
+        napi_value elementVal;
+        napi_get_element(env, args[0], i, &elementVal);
+        if (!NapiHelper::IsArrayBuffer(elementVal)) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                                    "taskpool:: the element in array must be arraybuffer");
+            return nullptr;
+        }
+    }
+    HILOG_DEBUG("taskpool:: check setTransferList param success");
+
+    napi_set_named_property(env, thisVar, TRANSFERLIST_STR, args[0]);
+    return nullptr;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
