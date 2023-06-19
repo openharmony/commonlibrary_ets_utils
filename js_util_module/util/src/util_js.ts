@@ -17,7 +17,7 @@ interface HelpUtil {
   TextEncoder: Object;
   TextDecoder: Object;
   Base64: Object;
-  Base64Helper: Object;
+  Base64Helper: NativeBase64;
   Types: Object;
   dealwithformatstring(formatString: string | Array<string | number | Fn>): string;
   printf(formatString: string | Array<string | number | Fn>,
@@ -38,8 +38,102 @@ const helpUtil = requireInternal('util');
 let textEncoder = helpUtil.TextEncoder;
 let textDecoder = helpUtil.TextDecoder;
 let base64 = helpUtil.Base64;
-let base64Helper = helpUtil.Base64Helper;
 let types = helpUtil.Types;
+
+
+interface NativeBase64 {
+  new(): NativeBase64;
+  encodeSync(src: Uint8Array): Uint8Array;
+  encodeToStringSync(src: Uint8Array, options?: Type): string;
+  decodeSync(src: Uint8Array | string, options?: Type): Uint8Array;
+  encode(src: Uint8Array): Promise<Uint8Array>;
+  encodeToString(src: Uint8Array, options?: Type): Promise<string>;
+  decode(src: Uint8Array | string, options?: Type): Promise<Uint8Array>;
+}
+
+interface Base64Helper {
+  Base64Helper: NativeBase64;
+}
+
+enum Type {
+  BASIC,
+  MIME
+}
+
+class Base64Helper {
+  base64: NativeBase64;
+  constructor() {
+    this.base64 = new helpUtil.Base64Helper();
+  }
+
+  encodeSync(src: Uint8Array): Uint8Array {
+    let result: Uint8Array = this.base64.encodeSync(src);
+    return result;
+  }
+
+  private addBreaks(resultString: string): string {
+    const chunkSize = 76;
+    let i = 0;
+    let newString: string = '';
+    let stringLength = resultString.length;
+    while (i < stringLength && stringLength > chunkSize) {
+      let index = i + chunkSize;
+      if (i + chunkSize > stringLength) {
+        index = stringLength;
+      }
+      let temp: string = resultString.substring(i, index);
+      newString = newString + temp + '\r\n';
+      i += chunkSize;
+    }
+    return newString;
+  }
+
+  encodeToStringSync(src: Uint8Array, options?: Type): string {
+    let resultString: string = this.base64.encodeToStringSync(src);
+    if (options === Type.MIME) {
+      let breakString: string = this.addBreaks(resultString);
+      return breakString;
+    }
+    return resultString;
+  }
+
+  decodeSync(src: Uint8Array | string, options?: Type): Uint8Array {
+    if (typeof src === 'string' && src.indexOf('\r\n') !== -1 && options === Type.MIME) {
+      src = src.replace(/\r\n/g, '');
+    }
+    let result: Uint8Array = this.base64.decodeSync(src);
+    return result;
+  }
+
+  encode(src: Uint8Array): Promise<Uint8Array> {
+    let result: Promise<Uint8Array> = this.base64.encode(src);
+    return result;
+  }
+
+  async ProcessData(src: Uint8Array): Promise<string> {
+    return this.base64.encodeToString(src).then((result: string) => {
+      let breakString: string = this.addBreaks(result);
+      return breakString;
+    });
+  }
+
+  encodeToString(src: Uint8Array, options?: Type): Promise<string> {
+    if (options === Type.MIME) {
+      let result: Promise<string> = this.ProcessData(src);
+      return result;
+    }
+    let base64Result: Promise<string> = this.base64.encodeToString(src);
+    return base64Result;
+  }
+
+  decode(src: Uint8Array | string, options?: Type): Promise<Uint8Array> {
+    if (typeof src === 'string' && src.indexOf('\r\n') !== -1 && options === Type.MIME) {
+      src = src.replace(/\r\n/g, '');
+    }
+    let result: Promise<Uint8Array> = this.base64.decode(src);
+    return result;
+  }
+}
 
 const typeErrorCode = 401;
 const syntaxErrorCode = 10200002;
@@ -1612,11 +1706,12 @@ export default {
   TextEncoder: textEncoder,
   TextDecoder: textDecoder,
   Base64: base64,
-  Base64Helper: base64Helper,
+  Base64Helper: Base64Helper,
   types: types,
   LruBuffer: LruBuffer,
   LRUCache: LRUCache,
   RationalNumber: RationalNumber,
   Scope: Scope,
   ScopeHelper: ScopeHelper,
+  Type: Type,
 };
