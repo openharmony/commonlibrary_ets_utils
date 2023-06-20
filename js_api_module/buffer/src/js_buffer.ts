@@ -1394,7 +1394,7 @@ class Buffer {
   writeDoubleLE(value: number, offset: number = 0): number {
     typeErrorCheck(value, ['number'], 'value');
     if (offset === null) {
-     offset = 0;
+      offset = 0;
     }
     typeErrorCheck(offset, ['number'], 'offset');
     this.checkOffsetRange(offset, eightBytes);

@@ -78,15 +78,15 @@ const UrlInterface = requireInternal('url');
 
 
 var seachParamsArr: Array<string> = [];
-const TypeErrorCodeId = 401; // 401:ErrorCodeId
-const SyntaxErrorCodeId = 10200002; // 10200002:SyntaxErrorCodeId
+const typeErrorCodeId = 401; // 401:ErrorCodeId
+const syntaxErrorCodeId = 10200002; // 10200002:syntaxErrorCodeId
 
 class BusinessError extends Error {
   code: number;
   constructor(msg: string) {
     super(msg);
     this.name = 'BusinessError';
-    this.code = TypeErrorCodeId;
+    this.code = typeErrorCodeId;
   }
 }
 
@@ -654,7 +654,7 @@ class URL {
       urlHelper.setHref();
     } else {
       let err : BusinessError = new BusinessError('Syntax Error. Invalid Url string');
-      err.code = SyntaxErrorCodeId;
+      err.code = syntaxErrorCodeId;
       throw err;
     }
     return urlHelper;
