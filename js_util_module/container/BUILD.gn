@@ -145,11 +145,11 @@ template("container_lib") {
       } else if (use_mac) {
         deps += [ "$hilog_mac" ]
       } else {
-        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+        external_deps = [ "hilog:libhilog" ]
       }
 
       if (is_standard_system) {
-        external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+        external_deps += [ "hilog:libhilog" ]
       } else {
         external_deps += [
           "c_utils:utils",
@@ -187,7 +187,7 @@ template("container_lib") {
       } else if (use_mac) {
         deps += [ "$hilog_mac" ]
       } else {
-        external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+        external_deps += [ "hilog:libhilog" ]
       }
 
       configs = [ ":container_config" ]

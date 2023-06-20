@@ -125,7 +125,7 @@ ohos_shared_library("buffer") {
   } else if (use_mac) {
     deps += [ "$hilog_mac" ]
   } else {
-    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   }
 
   configs = [ ":buffer_config" ]
@@ -158,7 +158,7 @@ ohos_source_set("buffer_static") {
   configs = [ ":buffer_config" ]
 
   if (is_standard_system) {
-    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   } else {
     external_deps += [ "hilog:libhilog" ]
   }
