@@ -47,8 +47,8 @@
         "deps": {
             "components": [
                 "napi",
-                "hiviewdfx_hilog_native",
-                "hitrace_native"
+                "hilog",
+                "hitrace"
             ],
             "third_party": [
                 "bounds_checking_function",

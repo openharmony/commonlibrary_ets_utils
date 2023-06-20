@@ -40,7 +40,7 @@ ohos_shared_library("console") {
   } else if (is_mac && !is_cross_platform_build) {
     deps += [ "$hilog_mac" ]
   } else if (is_standard_system) {
-    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   } else if (is_cross_platform_build) {
     if (target_os == "ios") {
       deps += [ "$hilog_ios" ]
@@ -51,7 +51,7 @@ ohos_shared_library("console") {
     external_deps += [ "hilog:libhilog" ]
   }
 
-  external_deps += [ "hitrace_native:hitrace_meter" ]
+  external_deps += [ "hitrace:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk_indirect" ]

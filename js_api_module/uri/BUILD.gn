@@ -106,7 +106,7 @@ ohos_shared_library("uri") {
   ]
   external_deps = [ "napi:ace_napi" ]
   if (is_standard_system) {
-    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   } else {
     external_deps += [
       "c_utils:utils",
@@ -137,7 +137,7 @@ ohos_source_set("uri_static") {
   ]
 
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps = [ "hilog:libhilog" ]
   } else {
     external_deps = [
       "c_utils:utils",
