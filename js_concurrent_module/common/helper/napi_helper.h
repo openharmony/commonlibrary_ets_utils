@@ -27,6 +27,7 @@ public:
     static bool IsNotUndefined(napi_value value);
     static bool IsArray(napi_value value);
     static bool IsFunction(napi_value object);
+    static bool IsArrayBuffer(napi_value value);
     static bool IsCallable(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_ref value);
     static size_t GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo);
@@ -47,6 +48,8 @@ public:
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
     static napi_value GetConstructorName(napi_env env, napi_value object);
     static napi_value CreateObject(napi_env env);
+    static uint32_t GetArrayLength(napi_env env, napi_value array);
+    static uint32_t GetUint32Value(napi_env env, napi_value value);
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_

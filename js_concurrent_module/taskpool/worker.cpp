@@ -250,7 +250,6 @@ void Worker::PerformTask(const uv_async_t* req)
     taskInfo->worker = worker;
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     TaskManager::GetInstance().UpdateExecuteState(taskInfo->executeId, ExecuteState::RUNNING);
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value func;
     status = napi_deserialize(env, taskInfo->serializationFunction, &func);
     if (status != napi_ok || func == nullptr) {
@@ -293,8 +292,7 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
 
-    uint32_t argsNum = 0;
-    napi_get_array_length(env, args, &argsNum);
+    uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
     napi_value argsArray[argsNum];
     napi_value val;
     for (size_t i = 0; i < argsNum; i++) {
@@ -303,6 +301,7 @@ void Worker::PerformTask(const uv_async_t* req)
     }
 
     napi_value result;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_call_function(env, undefined, func, argsNum, argsArray, &result);
     HITRACE_HELPER_FINISH_TRACE;
     uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime;
@@ -320,7 +319,6 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
-
     napi_value resultData;
     napi_status status = napi_serialize(env, result, undefined, &resultData);
     if ((status != napi_ok || resultData == nullptr) && taskInfo->success) {

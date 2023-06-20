@@ -16,8 +16,8 @@
 #include "taskpool.h"
 
 #include "helper/error_helper.h"
-#include "helper/object_helper.h"
 #include "helper/hitrace_helper.h"
+#include "helper/object_helper.h"
 #include "task_manager.h"
 #include "utils/log.h"
 #include "worker.h"
@@ -79,30 +79,26 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     napi_valuetype type;
     napi_typeof(env, args[0], &type);
-
     if (type == napi_object) {
-        napi_value function = nullptr;
-        napi_value arguments = nullptr;
-        napi_value taskId = nullptr;
-        napi_get_named_property(env, args[0], FUNCTION_STR, &function);
-        napi_get_named_property(env, args[0], ARGUMENTS_STR, &arguments);
-        napi_get_named_property(env, args[0], TASKID_STR, &taskId);
+        napi_value function = NapiHelper::GetNameProperty(env, args[0], FUNCTION_STR);
+        napi_value arguments = NapiHelper::GetNameProperty(env, args[0], ARGUMENTS_STR);
+        napi_value taskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
         if (function == nullptr || arguments == nullptr || taskId == nullptr) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task value is error");
             return nullptr;
         }
-        uint32_t id = 0;
-        napi_get_value_uint32(env, taskId, &id);
+        napi_value transferList = NapiHelper::GetNameProperty(env, args[0], TRANSFERLIST_STR);
 
+        uint32_t id = NapiHelper::GetUint32Value(env, taskId);
         uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
         if (argc > 1) {
-            napi_get_value_uint32(env, args[1], &priority);
+            priority = NapiHelper::GetUint32Value(env, args[1]);
             if (priority >= Priority::NUMBER) {
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority value is error");
                 return nullptr;
             }
         }
-        return ExecuteFunction(env, function, arguments, id, Priority(priority));
+        return ExecuteFunction(env, function, arguments, id, Priority(priority), transferList);
     } else if (type == napi_function) {
         napi_value argsArray;
         napi_create_array_with_length(env, argc - 1, &argsArray);
@@ -127,7 +123,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_open_handle_scope(taskInfo->env, &scope));
     napi_value taskData = nullptr;
     napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
-    if (status != napi_ok || taskData == nullptr || !taskInfo->success) {
+    if (status != napi_ok || taskInfo->isCanceled || taskData == nullptr || !taskInfo->success) {
         napi_reject_deferred(taskInfo->env, taskInfo->deferred, taskData);
     } else {
         napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
@@ -136,13 +132,14 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
 
-napi_value TaskPool::ExecuteFunction(napi_env env,
-                                     napi_value function, napi_value arguments, uint32_t taskId, Priority priority)
+napi_value TaskPool::ExecuteFunction(napi_env env, napi_value function, napi_value arguments, uint32_t taskId,
+                                     Priority priority, napi_value transferList)
 {
     std::string strTrace = "ExecuteFunction: taskId is " + std::to_string(taskId);
     HITRACE_HELPER_START_TRACE(strTrace);
     uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
-    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, function, arguments, taskId, executeId);
+    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, function, arguments,
+                                                                     taskId, executeId, transferList);
     if (taskInfo == nullptr) {
         return nullptr;
     }
@@ -172,20 +169,16 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    napi_valuetype type;
-    napi_typeof(env, args[0], &type);
-    if (type != napi_object) {
+    if (!NapiHelper::IsObject(args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be object");
         return nullptr;
     }
-    napi_value taskId = nullptr;
-    napi_get_named_property(env, args[0], TASKID_STR, &taskId);
+    napi_value taskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
     if (taskId == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be task");
         return nullptr;
     }
-    uint32_t id = 0;
-    napi_get_value_uint32(env, taskId, &id);
+    uint32_t id = NapiHelper::GetUint32Value(env, taskId);
     TaskManager::GetInstance().CancelTask(env, id);
     return nullptr;
 }
