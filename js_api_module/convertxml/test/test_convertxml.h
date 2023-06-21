@@ -24,12 +24,47 @@ public:
     CxmlTest() = default;
     ~CxmlTest() = default;
     static std::string Trim(std::string strXmltrim);
+    static std::string GetNodeType(const xmlElementType enumType);
+    static void GetPrevNodeList(napi_env env, xmlNodePtr curNode);
+    static void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag);
+    static void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject);
+    static void DealSpaces(napi_env env, const napi_value napiObj);
 };
 
 std::string CxmlTest::Trim(std::string strXmltrim)
 {
     ConvertXml convert;
     return convert.Trim(strXmltrim);
+}
+
+std::string CxmlTest::GetNodeType(const xmlElementType enumType)
+{
+    ConvertXml convert;
+    return convert.GetNodeType(enumType);
+}
+
+void CxmlTest::GetPrevNodeList(napi_env env, xmlNodePtr curNode)
+{
+    ConvertXml convert;
+    convert.GetPrevNodeList(env, curNode);
+}
+
+void CxmlTest::SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag)
+{
+    ConvertXml convert;
+    convert.SetXmlElementType(env, curNode, elementsObject, bFlag);
+}
+
+void CxmlTest::SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject)
+{
+    ConvertXml convert;
+    convert.SetNodeInfo(env, curNode, elementsObject);
+}
+
+void CxmlTest::DealSpaces(napi_env env, const napi_value napiObj)
+{
+    ConvertXml convert;
+    convert.DealSpaces(env, napiObj);
 }
 }
 #endif

@@ -461,3 +461,100 @@ HWTEST_F(NativeEngineTest, TrimTest001, testing::ext::TestSize.Level1)
     std::string res = CxmlTest::Trim(" #e ");
     ASSERT_STREQ(res.c_str(), "#e");
 }
+
+HWTEST_F(NativeEngineTest, GetNodeTypeTest001, testing::ext::TestSize.Level1)
+{
+    xmlElementType enumType = XML_ATTRIBUTE_NODE;
+    std::string res = CxmlTest::GetNodeType(enumType);
+    ASSERT_STREQ(res.c_str(), "attribute");
+    enumType = XML_ENTITY_REF_NODE;
+    CxmlTest::GetNodeType(enumType);
+    enumType = XML_ENTITY_NODE;
+    CxmlTest::GetNodeType(enumType);
+    enumType = XML_PI_NODE;
+    CxmlTest::GetNodeType(enumType);
+    enumType = XML_DOCUMENT_NODE;
+    CxmlTest::GetNodeType(enumType);
+    enumType = XML_DOCUMENT_TYPE_NODE;
+    CxmlTest::GetNodeType(enumType);
+    enumType = XML_DOCUMENT_FRAG_NODE;
+    CxmlTest::GetNodeType(enumType);
+    enumType = XML_DOCB_DOCUMENT_NODE;
+    CxmlTest::GetNodeType(enumType);
+    enumType = XML_XINCLUDE_END;
+    res = CxmlTest::GetNodeType(enumType);
+    ASSERT_STREQ(res.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, GetPrevNodeListTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    xmlNodePtr curNode = new xmlNode;
+    xmlNodePtr curNode1 = new xmlNode;
+    curNode->prev = curNode1;
+    curNode1->type = XML_PI_NODE;
+    curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
+    curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
+    CxmlTest::GetPrevNodeList(env, curNode);
+    delete curNode1;
+    delete curNode;
+}
+
+HWTEST_F(NativeEngineTest, SetXmlElementTypeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value elementsObject = nullptr;
+    napi_create_object(env, &elementsObject);
+    xmlNodePtr curNode1 = new xmlNode;
+    curNode1->type = XML_PI_NODE;
+    curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
+    curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
+    bool flag = false;
+    CxmlTest::SetXmlElementType(env, curNode1, elementsObject, flag);
+    flag = false;
+    curNode1->type = XML_COMMENT_NODE;
+    CxmlTest::SetXmlElementType(env, curNode1, elementsObject, flag);
+    delete curNode1;
+    ASSERT_TRUE(flag);
+}
+
+HWTEST_F(NativeEngineTest, SetNodeInfoTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value elementsObject = nullptr;
+    napi_create_object(env, &elementsObject);
+    xmlNodePtr curNode1 = new xmlNode;
+    curNode1->type = XML_PI_NODE;
+    curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
+    curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
+    bool flag = true;
+    CxmlTest::SetNodeInfo(env, curNode1, elementsObject);
+    delete curNode1;
+    ASSERT_TRUE(flag);
+}
+
+HWTEST_F(NativeEngineTest, DealSpacesTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value napiObj = nullptr;
+    napi_create_object(env, &napiObj);
+    napi_value spacesValue;
+    napi_create_string_utf8(env, "hello world", NAPI_AUTO_LENGTH, &spacesValue);
+    napi_set_named_property(env, napiObj, "spaces", spacesValue);
+    bool flag = true;
+    CxmlTest::DealSpaces(env, napiObj);
+    ASSERT_TRUE(flag);
+}
+
+HWTEST_F(NativeEngineTest, DealSpacesTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value napiObj = nullptr;
+    napi_create_object(env, &napiObj);
+    napi_value spacesValue;
+    napi_create_int32(env, 123, &spacesValue);
+    napi_set_named_property(env, napiObj, "spaces", spacesValue);
+    bool flag = true;
+    CxmlTest::DealSpaces(env, napiObj);
+    ASSERT_TRUE(flag);
+}
