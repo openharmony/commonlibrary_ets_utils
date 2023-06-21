@@ -900,7 +900,6 @@ void NewWorker::HostOnMessage(const uv_async_t* req)
         return;
     }
     worker->HostOnMessageInner();
-    worker->HandleHostException();
 }
 
 void NewWorker::HostOnMessageInner()
@@ -964,6 +963,7 @@ void NewWorker::HostOnMessageInner()
         napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
         // handle listeners.
         HandleEventListeners(hostEnv_, obj, 1, argv, "message");
+        HandleHostException();
         napi_close_handle_scope(hostEnv_, scope);
     }
     if (!engine->FinishContainerScopeFunc(scopeId_)) {
@@ -1018,7 +1018,6 @@ void NewWorker::HostOnError(const uv_async_t* req)
         return;
     }
     worker->HostOnErrorInner();
-    worker->HandleHostException();
     worker->TerminateInner();
 }
 
@@ -1059,6 +1058,7 @@ void NewWorker::HostOnErrorInner()
 
         // handle listeners
         HandleEventListeners(hostEnv_, obj, 1, argv, "error");
+        HandleHostException();
     }
     if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
