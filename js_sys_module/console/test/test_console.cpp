@@ -84,6 +84,10 @@ napi_value ConsoleTest::Assert(napi_env env, napi_callback_info info)
 {
     return Console::Assert(env, info);
 }
+void ConsoleTest::PrintTime(std::string timerName, double time, std::string& log)
+{
+    Console::PrintTime(timerName, time, log);
+}
 
 napi_value StrToNapiValue(napi_env env, const std::string &result)
 {
@@ -334,12 +338,19 @@ HWTEST_F(NativeEngineTest, ConsoleTest012, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConsoleTest013, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    size_t argc = 1;
-    NativeValue* nativeMessage = engine_->CreateNumber(5);
-    NativeValue* argv[] = {nativeMessage};
-    napi_callback_info cbinfo1 = napi_create_cbinfo(env, &argc, argv);
+
+    size_t argc = 0;
+    NativeValue* argv1[] = {nullptr};
+    napi_callback_info cbinfo1 = napi_create_cbinfo(env, &argc, argv1);
     napi_value res0 = ConsoleTest::Dir(env, cbinfo1);
     ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+
+    argc = 1;
+    NativeValue* nativeMessage = engine_->CreateNumber(5);
+    NativeValue* argv2[] = {nativeMessage};
+    napi_callback_info cbinfo2 = napi_create_cbinfo(env, &argc, argv2);
+    napi_value res1 = ConsoleTest::Dir(env, cbinfo2);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
 }
 
 /* @tc.name: Console.Group/Console.GroupEnd
@@ -349,14 +360,24 @@ HWTEST_F(NativeEngineTest, ConsoleTest013, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConsoleTest014, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    size_t argc = 1;
-    NativeValue* nativeMessage = engine_->CreateNumber(5); // Random number
-    NativeValue* argv[] = {nativeMessage, nativeMessage};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
-    napi_value res0 = ConsoleTest::Group(env, cbinfo);
-    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
-    napi_value res1 = ConsoleTest::GroupEnd(env, cbinfo);
+    size_t argc = 0;
+    NativeValue* argv1[] = {nullptr};
+    napi_callback_info cbinfo1 = napi_create_cbinfo(env, &argc, argv1);
+    napi_value res1 = ConsoleTest::Group(env, cbinfo1);
     ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+
+    argc = 1;
+    NativeValue* nativeMessage = engine_->CreateNumber(5); // Random number
+    NativeValue* argv2[] = {nativeMessage, nativeMessage};
+    napi_callback_info cbinfo2 = napi_create_cbinfo(env, &argc, argv2);
+    napi_value res2 = ConsoleTest::Group(env, cbinfo2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+    napi_value res3 = ConsoleTest::GroupEnd(env, cbinfo2);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
+    napi_value res4 = ConsoleTest::GroupEnd(env, cbinfo2); // test length < GROUPINDENTATION
+    ASSERT_CHECK_VALUE_TYPE(env, res4, napi_undefined);
+    napi_value res5 = ConsoleTest::GroupEnd(env, cbinfo2);
+    ASSERT_CHECK_VALUE_TYPE(env, res5, napi_undefined);
 }
 
 /* @tc.name: Console.Table
@@ -366,6 +387,13 @@ HWTEST_F(NativeEngineTest, ConsoleTest014, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConsoleTest015, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
+
+    size_t argc = 0;
+    NativeValue* argv1[] = {nullptr};
+    napi_callback_info cbinfo1 = napi_create_cbinfo(env, &argc, argv1);
+    napi_value res1 = ConsoleTest::Table(env, cbinfo1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+
     napi_value tabularData = nullptr;
     uint32_t length0 = 2;
     napi_create_array_with_length(env, length0, &tabularData);
@@ -386,12 +414,12 @@ HWTEST_F(NativeEngineTest, ConsoleTest015, testing::ext::TestSize.Level0)
     napi_set_element(env, array2, 1, strVal);
     napi_set_named_property(env, tabularData, "string", array2);
 
-    size_t argc = 1;
+    argc = 1;
     NativeValue* nativeMessage = reinterpret_cast<NativeValue*>(tabularData);
-    NativeValue* argv[] = {nativeMessage};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
-    napi_value res0 = ConsoleTest::Table(env, cbinfo);
-    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+    NativeValue* argv2[] = {nativeMessage};
+    napi_callback_info cbinfo2 = napi_create_cbinfo(env, &argc, argv2);
+    napi_value res2 = ConsoleTest::Table(env, cbinfo2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
 }
 
 /* @tc.name: Console.Time/Timelog/TimeEnd
@@ -439,13 +467,20 @@ HWTEST_F(NativeEngineTest, ConsoleTest016, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConsoleTest017, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    size_t argc = 1;
+
+    size_t argc = 0;
+    NativeValue* argv1[] = {nullptr};
+    napi_callback_info cbinfo1 = napi_create_cbinfo(env, &argc, argv1);
+    napi_value res1 = ConsoleTest::Trace(env, cbinfo1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+
+    argc = 1;
     std::string message = "abc"; // Random value
     NativeValue* nativeMessage = engine_->CreateString(message.c_str(), message.length());
-    NativeValue* argv[] = {nativeMessage};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
-    napi_value res0 = ConsoleTest::Trace(env, cbinfo);
-    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+    NativeValue* argv2[] = {nativeMessage};
+    napi_callback_info cbinfo2 = napi_create_cbinfo(env, &argc, argv2);
+    napi_value res2 = ConsoleTest::Trace(env, cbinfo2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
 }
 
 /* @tc.name: Console.Assert
@@ -469,14 +504,20 @@ HWTEST_F(NativeEngineTest, ConsoleTest018, testing::ext::TestSize.Level0)
     napi_value res1 = ConsoleTest::Assert(env, cbinfo1);
     ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
 
-    size_t argc2 = 2;
-    NativeValue* nativeMessage1 = engine_->CreateBoolean(0); // False
-    std::string message = "log"; // Message to print
-    NativeValue* nativeMessage2 = engine_->CreateString(message.c_str(), message.length());
-    NativeValue* argv2[] = {nativeMessage1, nativeMessage2};
-    napi_callback_info cbinfo2 = napi_create_cbinfo(env, &argc2, argv2);
+    NativeValue* nativeMessage1 = engine_->CreateBoolean(0); // argc = 1 && False
+    NativeValue* argv2[] = {nativeMessage1};
+    napi_callback_info cbinfo2 = napi_create_cbinfo(env, &argc1, argv2);
     napi_value res2 = ConsoleTest::Assert(env, cbinfo2);
     ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+
+    size_t argc2 = 2;
+    NativeValue* nativeMessage3 = engine_->CreateBoolean(0); // False
+    std::string message = "log"; // Message to print
+    NativeValue* nativeMessage4 = engine_->CreateString(message.c_str(), message.length());
+    NativeValue* argv3[] = {nativeMessage3, nativeMessage4};
+    napi_callback_info cbinfo3 = napi_create_cbinfo(env, &argc2, argv3);
+    napi_value res3 = ConsoleTest::Assert(env, cbinfo3);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
 }
 
 /* @tc.name: Init
@@ -490,4 +531,62 @@ HWTEST_F(NativeEngineTest, ConsoleTest019, testing::ext::TestSize.Level0)
     bool res = 0;
     napi_is_exception_pending(env, &res);
     ASSERT_TRUE(!res);
+}
+
+/* @tc.name: PrintTime
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest020, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string name = "Timer1";
+    std::string log = "log";
+
+    double ms = 50;
+    ConsoleTest::PrintTime(name, ms, log);
+    bool res0 = 0;
+    napi_is_exception_pending(env, &res0);
+    ASSERT_TRUE(!res0);
+
+    double seconds = 1 * 1000;
+    ConsoleTest::PrintTime(name, seconds, log);
+    bool res1 = 0;
+    napi_is_exception_pending(env, &res1);
+    ASSERT_TRUE(!res1);
+
+    double minutes = 60 * seconds;
+    ConsoleTest::PrintTime(name, minutes, log);
+    bool res2 = 0;
+    napi_is_exception_pending(env, &res2);
+    ASSERT_TRUE(!res2);
+
+    double hours = 60 * minutes;
+    ConsoleTest::PrintTime(name, hours, log);
+    bool res3 = 0;
+    napi_is_exception_pending(env, &res3);
+    ASSERT_TRUE(!res3);
+}
+
+/* @tc.name: Console.Log/Console.Info/Console.debug/Console.error/Console.warn
+ * @tc.desc: Test.no input
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest021, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 0;
+    NativeValue* argv[] = {nullptr};
+
+    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
+    napi_value res0 = ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>(env, cbinfo);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+    napi_value res1 = ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::DEBUG>(env, cbinfo);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+    napi_value res2 = ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::ERROR>(env, cbinfo);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+    napi_value res3 =  ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::WARN>(env, cbinfo);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
+    napi_value res4 = ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::FATAL>(env, cbinfo);
+    ASSERT_CHECK_VALUE_TYPE(env, res4, napi_undefined);
 }
