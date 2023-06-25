@@ -552,9 +552,66 @@ HWTEST_F(NativeEngineTest, DealSpacesTest002, testing::ext::TestSize.Level1)
     napi_value napiObj = nullptr;
     napi_create_object(env, &napiObj);
     napi_value spacesValue;
-    napi_create_int32(env, 123, &spacesValue);
+    napi_create_int32(env, 123, &spacesValue); // 123: number of test number
     napi_set_named_property(env, napiObj, "spaces", spacesValue);
     bool flag = true;
     CxmlTest::DealSpaces(env, napiObj);
+    ASSERT_TRUE(flag);
+}
+
+HWTEST_F(NativeEngineTest, SetDefaultKeyTest001, testing::ext::TestSize.Level1)
+{
+    size_t i = 15; // 15: number of default number
+    std::string key = "hello";
+    CxmlTest::SetDefaultKey(i, key);
+    ASSERT_STREQ(key.c_str(), "hello");
+}
+
+HWTEST_F(NativeEngineTest, DealSingleLineTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    std::string key = "xmlsss<zyyzyy>ssa";
+    napi_value napiObj = nullptr;
+    napi_create_object(env, &napiObj);
+    CxmlTest::DealSingleLine(env, key, napiObj);
+    ASSERT_STREQ(key.c_str(), "<node>xmlsss<zyyzyy>ssassa</node>");
+}
+
+HWTEST_F(NativeEngineTest, DealComplexTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    std::string key = "xmlsss<!DOCTYPE>ssa";
+    napi_value napiObj = nullptr;
+    napi_create_object(env, &napiObj);
+    CxmlTest::DealComplex(env, key, napiObj);
+    ASSERT_STREQ(key.c_str(), "xmlsss<!DOCTYPE>ssa<node></node>");
+}
+
+HWTEST_F(NativeEngineTest, ReplaceTest001, testing::ext::TestSize.Level1)
+{
+    std::string str = "xmlsss<!DOCTYPE>ssa";
+    std::string src = "sss";
+    std::string dst = "zyy";
+    CxmlTest::Replace(str, src, dst);
+    ASSERT_STREQ(str.c_str(), "xmlzyy<!DOCTYPE>ssa");
+}
+
+HWTEST_F(NativeEngineTest, DealCDataInfo001, testing::ext::TestSize.Level1)
+{
+    bool flag = true;
+    xmlNodePtr curNode = new xmlNode;
+    xmlNodePtr curNode1 = new xmlNode;
+    xmlNodePtr curNode2 = new xmlNode;
+    curNode->next = curNode1;
+    curNode->type = XML_CDATA_SECTION_NODE;
+    curNode1->type = XML_TEXT_NODE;
+    curNode1->next = curNode2;
+    curNode2->type = XML_CDATA_SECTION_NODE;
+    curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
+    curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
+    CxmlTest::DealCDataInfo(flag, curNode);
+    delete curNode2;
+    delete curNode1;
+    delete curNode;
     ASSERT_TRUE(flag);
 }

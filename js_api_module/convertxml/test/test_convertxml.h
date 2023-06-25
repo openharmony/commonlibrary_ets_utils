@@ -29,6 +29,11 @@ public:
     static void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag);
     static void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject);
     static void DealSpaces(napi_env env, const napi_value napiObj);
+    static void SetDefaultKey(size_t i, const std::string strRecv);
+    static void DealSingleLine(napi_env env, std::string &strXml, const napi_value &object);
+    static void DealComplex(napi_env env, std::string &strXml, const napi_value &object);
+    static void Replace(std::string &str, const std::string src, const std::string dst);
+    static void DealCDataInfo(bool bCData, xmlNodePtr &curNode);
 };
 
 std::string CxmlTest::Trim(std::string strXmltrim)
@@ -65,6 +70,36 @@ void CxmlTest::DealSpaces(napi_env env, const napi_value napiObj)
 {
     ConvertXml convert;
     convert.DealSpaces(env, napiObj);
+}
+
+void CxmlTest::SetDefaultKey(size_t i, const std::string strRecv)
+{
+    ConvertXml convert;
+    convert.SetDefaultKey(i, strRecv);
+}
+
+void CxmlTest::DealSingleLine(napi_env env, std::string &strXml, const napi_value &object)
+{
+    ConvertXml convert;
+    convert.DealSingleLine(env, strXml, object);
+}
+
+void CxmlTest::DealComplex(napi_env env, std::string &strXml, const napi_value &object)
+{
+    ConvertXml convert;
+    convert.DealComplex(env, strXml, object);
+}
+
+void CxmlTest::Replace(std::string &str, const std::string src, const std::string dst)
+{
+    ConvertXml convert;
+    convert.Replace(str, src, dst);
+}
+
+void CxmlTest::DealCDataInfo(bool bCData, xmlNodePtr &curNode)
+{
+    ConvertXml convert;
+    convert.DealCDataInfo(bCData, curNode);
 }
 }
 #endif
