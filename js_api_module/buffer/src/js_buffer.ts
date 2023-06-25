@@ -532,7 +532,7 @@ class Buffer {
   /**
    * Fills buf with the specified value. If the offset and end are not given, the entire buf will be filled.
    * @since 9
-   * @syscap SystemCapability.Utils.Lang 
+   * @syscap SystemCapability.Utils.Lang
    * @param value The value with which to fill buf
    * @param [offset = 0] Number of bytes to skip before starting to fill buf
    * @param [end = buf.length] Where to stop filling buf (not inclusive)

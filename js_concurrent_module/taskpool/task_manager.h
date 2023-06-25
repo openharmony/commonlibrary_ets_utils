@@ -70,6 +70,7 @@ public:
     uint32_t GetTaskNum();
     uint32_t GetThreadNum();
     uint32_t GetRunningWorkers();
+    void RemoveWorker(Worker *worker);
 
 private:
     TaskManager(const TaskManager &) = delete;
