@@ -36,6 +36,16 @@ public:
     static TagEnum DealLtGroup();
     static TagEnum ParseTagType();
     static std::string SkipText(std::string strXml, std::string str);
+    static std::string ParseNameInner(size_t start);
+    static std::string ParseName();
+    static void ParseEntityFunc(std::string out, std::string sysInfo, bool flag, TextEnum textEnum);
+    static std::string ParseEntity();
+    static size_t ParseTagValueInner(size_t &start, std::string &result, size_t position, std::string xmlStr);
+    static std::string ParseTagValue(char delimiter, bool resolveEntities, TextEnum textEnum, size_t max);
+    static std::string GetNamespace(const std::string prefix, size_t depth);
+    static std::string ParseNspFunc();
+    static std::string ParseNspFunction(std::string pushStr);
+    static bool ParseNsp();
     int TestGetColumnNumber(napi_env env);
     int TestGetLineNumber(napi_env env);
     std::string TestGetText(napi_env env);
@@ -44,6 +54,8 @@ public:
     std::string TestParseDelimiterInfo(napi_env env);
     bool TestParseEndTag(napi_env env);
     bool TestParseComment(napi_env env);
+    TagEnum TestParseOneTagFunc();
+    void TestParseEntityDecl();
 };
 
 XmlSerializer XmlTest::construct(napi_env env)
@@ -223,6 +235,152 @@ bool XmlTest::TestParseComment(napi_env env)
     xml.relaxed = true;
     xml.ParseComment(true);
     return false;
+}
+
+TagEnum XmlTest::TestParseOneTagFunc()
+{
+    OHOS::xml::XmlPullParser xml("1", "utf8");
+    xml.type = TagEnum::ERROR1;
+    TagEnum res = xml.ParseOneTagFunc();
+    return res;
+}
+
+void XmlTest::TestParseEntityDecl()
+{
+    OHOS::xml::XmlPullParser xml("%1234", "utf8");
+    xml.ParseEntityDecl();
+}
+
+std::string XmlTest::ParseNameInner(size_t start)
+{
+    std::string strXml = "<todo>Work</todo>";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    xmlPullParser.position_ = 1;
+    xmlPullParser.max_ = 1;
+    xmlPullParser.strXml_ = "version";
+    return xmlPullParser.ParseNameInner(start);
+}
+
+std::string XmlTest::ParseName()
+{
+    std::string strXml = "><todo>Work</todo>";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    xmlPullParser.strXml_ = "encoding";
+    size_t len = xmlPullParser.strXml_.length();
+    xmlPullParser.position_ = len;
+    xmlPullParser.max_ = len;
+    return xmlPullParser.ParseName();
+}
+
+void XmlTest::ParseEntityFunc(std::string out, std::string sysInfo, bool flag, TextEnum textEnum)
+{
+    std::string strXml = "<todo>Work</todo>";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    std::string key = "Work";
+    xmlPullParser.documentEntities[key] = "value";
+    xmlPullParser.bDocDecl = flag;
+    xmlPullParser.sysInfo_ = sysInfo;
+    xmlPullParser.ParseEntityFunc(0, out, true, textEnum);
+}
+
+std::string XmlTest::ParseEntity()
+{
+    std::string strXml = "Wor";
+    std::string out = "W#13434";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    xmlPullParser.position_= 0;
+    xmlPullParser.max_ = 1;
+    xmlPullParser.relaxed = true;
+    xmlPullParser.ParseEntity(out, true, true, TextEnum::ENTITY_DECL);
+    return xmlPullParser.XmlPullParserError();
+}
+
+size_t XmlTest::ParseTagValueInner(size_t &start, std::string &result, size_t position, std::string xmlStr)
+{
+    std::string strXml = "<todo>Work</todo>";
+    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    xmlPullParser.position_ = position;
+    xmlPullParser.max_ = 1;
+    xmlPullParser.strXml_ = xmlStr;
+    return xmlPullParser.ParseTagValueInner(start, result, 'o', TextEnum::ENTITY_DECL, false);
+}
+
+std::string XmlTest::ParseTagValue(char delimiter, bool resolveEntities, TextEnum textEnum, size_t max)
+{
+    std::string xml = "W";
+    OHOS::xml::XmlPullParser xmlPullParser(xml, "utf-8");
+    xmlPullParser.text_ = "xml";
+    xmlPullParser.position_ = 1;
+    xmlPullParser.max_ = max;
+    return xmlPullParser.ParseTagValue(delimiter, resolveEntities, false, textEnum);
+}
+
+std::string XmlTest::GetNamespace(const std::string prefix, size_t depth)
+{
+    std::string xml = "Work";
+    const std::string preStr = prefix;
+    OHOS::xml::XmlPullParser xmlPullParser(xml, "utf-8");
+    xmlPullParser.depth = depth;
+    xmlPullParser.nspCounts_.push_back(0);
+    xmlPullParser.nspCounts_.push_back(1);
+    xmlPullParser.nspCounts_.push_back(2);
+    xmlPullParser.nspStack_.push_back("Q");
+    xmlPullParser.nspStack_.push_back("E");
+    xmlPullParser.nspStack_.push_back("");
+    xmlPullParser.nspStack_.push_back("W");
+    return xmlPullParser.GetNamespace(preStr);
+}
+
+std::string XmlTest::ParseNspFunc()
+{
+    std::string xml = "Work";
+    size_t count = 0;
+    std::string attrName = "sub";
+    bool any = true;
+    OHOS::xml::XmlPullParser xmlPullParser(xml, "utf-8");
+    xmlPullParser.attributes.push_back("q");
+    xmlPullParser.attributes.push_back("e");
+    xmlPullParser.attributes.push_back("r");
+    xmlPullParser.attributes.push_back("");
+    xmlPullParser.nspCounts_.push_back(0);
+    xmlPullParser.nspStack_.push_back("t");
+    xmlPullParser.nspStack_.push_back("c");
+    xmlPullParser.nspStack_.push_back("y");
+    xmlPullParser.nspStack_.push_back("p");
+    xmlPullParser.bKeepNsAttri = true;
+    xmlPullParser.ParseNspFunc(count, attrName, any);
+    return xmlPullParser.XmlPullParserError();
+}
+
+std::string XmlTest::ParseNspFunction(std::string pushStr)
+{
+    std::string xml = "Work";
+    OHOS::xml::XmlPullParser xmlPullParser(xml, "utf-8");
+    xmlPullParser.attriCount_ = 1;
+    xmlPullParser.depth = 1;
+    xmlPullParser.nspCounts_.push_back(0);
+    xmlPullParser.nspCounts_.push_back(1);
+    xmlPullParser.nspCounts_.push_back(2);
+    xmlPullParser.nspStack_.push_back("Q");
+    xmlPullParser.nspStack_.push_back("E");
+    xmlPullParser.nspStack_.push_back("");
+    xmlPullParser.nspStack_.push_back("W");
+    xmlPullParser.attributes.push_back("r");
+    xmlPullParser.attributes.push_back("t");
+    xmlPullParser.attributes.push_back(pushStr);
+    return xmlPullParser.XmlPullParserError();
+}
+
+bool XmlTest::ParseNsp()
+{
+    std::string xml = "Work";
+    OHOS::xml::XmlPullParser xmlPullParser(xml, "utf-8");
+    xmlPullParser.attributes.push_back("");
+    xmlPullParser.attributes.push_back("");
+    xmlPullParser.attributes.push_back("xmlns");
+    xmlPullParser.nspCounts_.push_back(0);
+    xmlPullParser.name_ = ":xml";
+    return xmlPullParser.ParseNsp();
 }
 }
 #endif
