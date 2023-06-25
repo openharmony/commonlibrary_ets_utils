@@ -1954,3 +1954,167 @@ HWTEST_F(NativeEngineTest, ParseComment, testing::ext::TestSize.Level0)
     bool res = testXml.TestParseComment(env);
     ASSERT_FALSE(res);
 }
+
+/* @tc.name: ParseOneTagFunc
+ * @tc.desc: Test ParseOneTagFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseOneTagFunc, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlTest testXml;
+    OHOS::xml::TagEnum res = testXml.TestParseOneTagFunc();
+    ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR1);
+}
+
+/* @tc.name: ParseEntityDecl
+ * @tc.desc: Test ParseEntityDecl Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TestParseEntityDecl, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlTest testXml;
+    testXml.TestParseEntityDecl();
+    bool res = false;
+    ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParseNameInner
+ * @tc.desc: Test ParseNameInner Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseNameInner, testing::ext::TestSize.Level0)
+{
+    std::string res = XmlTest::ParseNameInner(1);
+    ASSERT_STREQ(res.c_str(), "version");
+}
+
+/* @tc.name: ParseName
+ * @tc.desc: Test ParseName Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseName, testing::ext::TestSize.Level0)
+{
+    std::string res = XmlTest::ParseName();
+    ASSERT_STREQ(res.c_str(), "");
+}
+
+/* @tc.name: ParseEntityFunc
+ * @tc.desc: Test ParseEntityFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseEntityFunc, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlPullParser xmlPullParser("xml", "utf8");
+    std::string out = "W#x2";
+    XmlTest::ParseEntityFunc(out, "", true, TextEnum::ENTITY_DECL);
+
+    out = "W#1";
+    XmlTest::ParseEntityFunc(out, "", true, TextEnum::ENTITY_DECL);
+
+    out = "Work1";
+    XmlTest::ParseEntityFunc(out, "", true, TextEnum::ENTITY_DECL);
+
+    out = "Work";
+    XmlTest::ParseEntityFunc(out, "", true, TextEnum::TEXT);
+    XmlTest::ParseEntityFunc(out, "", false, TextEnum::TEXT);
+
+    out = "W";
+    XmlTest::ParseEntityFunc(out, "", true, TextEnum::TEXT);
+    XmlTest::ParseEntityFunc(out, "info", true, TextEnum::TEXT);
+}
+
+/* @tc.name: ParseEntity
+ * @tc.desc: Test ParseEntity Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseEntity, testing::ext::TestSize.Level0)
+{
+    std::string res = XmlTest::ParseEntity();
+    ASSERT_STREQ(res.c_str(), "Should not be reached");
+}
+
+/* @tc.name: ParseTagValueInner
+ * @tc.desc: Test ParseTagValueInner Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseTagValueInner, testing::ext::TestSize.Level0)
+{
+    size_t start = 0;
+    std::string result = "xml";
+    size_t position = 1;
+    std::string xmlStr = "todo";
+    size_t res = XmlTest::ParseTagValueInner(start, result, position, xmlStr);
+    ASSERT_EQ(res, 2);
+
+    start = 1;
+    xmlStr = "t";
+    res = XmlTest::ParseTagValueInner(start, result, position, xmlStr);
+    ASSERT_EQ(res, 0);
+}
+
+/* @tc.name: ParseTagValue
+ * @tc.desc: Test ParseTagValue Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseTagValue, testing::ext::TestSize.Level0)
+{
+    size_t max = 1;
+    std::string strXml = "W";
+    std::string res = XmlTest::ParseTagValue('c', false, TextEnum::TEXT,max);
+    ASSERT_STREQ(res.c_str(), "xml");
+
+    res = XmlTest::ParseTagValue('e', true, TextEnum::ATTRI, max);
+    ASSERT_STREQ(res.c_str(), "");
+}
+
+/* @tc.name: GetNamespace
+ * @tc.desc: Test GetNamespace Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetNamespace, testing::ext::TestSize.Level0)
+{
+    std::string prefix = "";
+    size_t depth = 2;
+    std::string res = XmlTest::GetNamespace(prefix, depth);
+    ASSERT_STREQ(res.c_str(), "W");
+
+    prefix = "fix";
+    depth = 1;
+    std::string res1 = XmlTest::GetNamespace(prefix, depth);
+    ASSERT_STREQ(res1.c_str(), "");
+}
+
+/* @tc.name: ParseNspFunc
+ * @tc.desc: Test ParseNspFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseNspFunc, testing::ext::TestSize.Level0)
+{
+    std::string res = XmlTest::ParseNspFunc();
+    ASSERT_STREQ(res.c_str(), "illegal empty namespace");
+}
+
+/* @tc.name: ParseNspFunction
+ * @tc.desc: Test ParseNspFunction Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseNspFunction, testing::ext::TestSize.Level0)
+{
+    std::string pushStr = "yu:er";
+    std::string res = XmlTest::ParseNspFunction(pushStr);
+    ASSERT_STREQ(res.c_str(), "");
+
+    pushStr = ":yuer";
+    std::string res1 = XmlTest::ParseNspFunction(pushStr);
+    ASSERT_STREQ(res1.c_str(), "");
+}
+
+/* @tc.name: ParseNsp002
+ * @tc.desc: Test ParseNsp Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseNsp002, testing::ext::TestSize.Level0)
+{
+    bool res = XmlTest::ParseNsp();
+    ASSERT_FALSE(res);
+}
