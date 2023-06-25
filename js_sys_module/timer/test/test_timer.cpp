@@ -66,8 +66,10 @@ napi_callback_info napi_create_cbinfo(napi_env env,
 HWTEST_F(NativeEngineTest, TimerTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    bool res = Timer::RegisterTime(env);
-    ASSERT_TRUE(res);
+    bool res0 = Timer::RegisterTime(env);
+    ASSERT_TRUE(res0);
+    bool res1 = Timer::RegisterTime(nullptr);
+    ASSERT_TRUE(!res1);
 }
 
 /* @tc.name: settimeout
@@ -251,3 +253,38 @@ HWTEST_F(NativeEngineTest, TimerTest010, testing::ext::TestSize.Level0)
     bool res1 = Timer::HasTimer(env);
     ASSERT_TRUE(!res1);
 }
+
+/* @tc.name: settimeout
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest011, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;  // argc = 1, timeout = 0
+    NativeValue* nativeMessage1 = engine_->CreateFunction("callback", strlen("callback"),
+                                                          TimerCallback, nullptr);
+    NativeValue* argv[] = {nativeMessage1};
+    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
+    napi_value tId = TimerTest::SetTimeout(env, cbinfo);
+    ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
+}
+
+/* @tc.name: settimeout
+ * @tc.desc: Test: callbackArgc > 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest012, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 3;
+    NativeValue* nativeMessage0 = engine_->CreateNumber(50); // Random number
+    NativeValue* nativeMessage1 = engine_->CreateFunction("callback", strlen("callback"),
+                                                          TimerCallback, nullptr);
+    NativeValue* nativeMessage2 = engine_->CreateNumber(50); // Random number
+    NativeValue* argv[] = {nativeMessage1, nativeMessage0, nativeMessage2};
+    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
+    napi_value tId = TimerTest::SetTimeout(env, cbinfo);
+    ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
+}
+
