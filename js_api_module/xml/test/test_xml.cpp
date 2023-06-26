@@ -2060,7 +2060,7 @@ HWTEST_F(NativeEngineTest, ParseTagValue, testing::ext::TestSize.Level0)
 {
     size_t max = 1;
     std::string strXml = "W";
-    std::string res = XmlTest::ParseTagValue('c', false, TextEnum::TEXT,max);
+    std::string res = XmlTest::ParseTagValue('c', false, TextEnum::TEXT, max);
     ASSERT_STREQ(res.c_str(), "xml");
 
     res = XmlTest::ParseTagValue('e', true, TextEnum::ATTRI, max);
@@ -2102,11 +2102,11 @@ HWTEST_F(NativeEngineTest, ParseNspFunction, testing::ext::TestSize.Level0)
 {
     std::string pushStr = "yu:er";
     std::string res = XmlTest::ParseNspFunction(pushStr);
-    ASSERT_STREQ(res.c_str(), "");
+    ASSERT_STREQ(res.c_str(), "Undefined Prefix: yu in ");
 
     pushStr = ":yuer";
-    std::string res1 = XmlTest::ParseNspFunction(pushStr);
-    ASSERT_STREQ(res1.c_str(), "");
+    res = XmlTest::ParseNspFunction(pushStr);
+    ASSERT_STREQ(res.c_str(), "illegal attribute name: ");
 }
 
 /* @tc.name: ParseNsp002
@@ -2117,4 +2117,54 @@ HWTEST_F(NativeEngineTest, ParseNsp002, testing::ext::TestSize.Level0)
 {
     bool res = XmlTest::ParseNsp();
     ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParseStartTagFuncDeal002
+ * @tc.desc: Test ParseStartTagFuncDeal Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal002, testing::ext::TestSize.Level0)
+{
+    bool res = XmlTest::ParseStartTagFuncDeal("w=", false);
+    ASSERT_FALSE(res);
+
+    res = XmlTest::ParseStartTagFuncDeal("=q", true);
+    ASSERT_TRUE(res);
+
+    res = XmlTest::ParseStartTagFuncDeal("==", false);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: ParseStartTagFunc
+ * @tc.desc: Test ParseStartTagFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseStartTagFunc, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::XmlPullParser xmlPullParser("", "utf-8");
+    bool res = xmlPullParser.ParseStartTagFunc(false, false);
+    ASSERT_FALSE(res);
+}
+
+/* @tc.name: ParseDeclaration002
+ * @tc.desc: Test ParseDeclaration Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseDeclaration002, testing::ext::TestSize.Level0)
+{
+    std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    bool res = XmlTest::ParseDeclaration(xml);
+    ASSERT_TRUE(res);
+
+    xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?><todo>Work</todo>";
+    res = XmlTest::ParseDeclaration(xml);
+    ASSERT_TRUE(res);
+
+    xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"else\"?><todo>Work</todo>";
+    res = XmlTest::ParseDeclaration(xml);
+    ASSERT_TRUE(res);
+
+    xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standa=\"no\"?><todo>Work</todo>";
+    res = XmlTest::ParseDeclaration(xml);
+    ASSERT_TRUE(res);
 }
