@@ -48,7 +48,8 @@
             "components": [
                 "napi",
                 "hilog",
-                "hitrace"
+                "hitrace",
+                "init"
             ],
             "third_party": [
                 "bounds_checking_function",

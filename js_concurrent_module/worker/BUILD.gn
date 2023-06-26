@@ -50,7 +50,10 @@ ohos_shared_library("worker") {
     }
   }
 
-  external_deps += [ "hitrace:hitrace_meter" ]
+  external_deps += [
+    "hitrace:hitrace_meter",
+    "init:libbegetutil",
+  ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
@@ -79,12 +82,11 @@ ohos_source_set("worker_static") {
 
   defines = []
 
-  external_deps = []
-
+  external_deps = [ "init:libbegetutil" ]
   if (is_standard_system) {
-    external_deps = [ "hilog:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   } else {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
     ]
