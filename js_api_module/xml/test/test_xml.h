@@ -46,6 +46,9 @@ public:
     static std::string ParseNspFunc();
     static std::string ParseNspFunction(std::string pushStr);
     static bool ParseNsp();
+    static bool ParseStartTagFuncDeal(std::string xml, bool relax);
+    static bool ParseDeclaration(std::string str);
+    static bool ReadInternalSubset();
     int TestGetColumnNumber(napi_env env);
     int TestGetLineNumber(napi_env env);
     std::string TestGetText(napi_env env);
@@ -323,7 +326,7 @@ std::string XmlTest::GetNamespace(const std::string prefix, size_t depth)
     xmlPullParser.depth = depth;
     xmlPullParser.nspCounts_.push_back(0);
     xmlPullParser.nspCounts_.push_back(1);
-    xmlPullParser.nspCounts_.push_back(2);
+    xmlPullParser.nspCounts_.push_back(2); // values greater than pos_
     xmlPullParser.nspStack_.push_back("Q");
     xmlPullParser.nspStack_.push_back("E");
     xmlPullParser.nspStack_.push_back("");
@@ -360,7 +363,7 @@ std::string XmlTest::ParseNspFunction(std::string pushStr)
     xmlPullParser.depth = 1;
     xmlPullParser.nspCounts_.push_back(0);
     xmlPullParser.nspCounts_.push_back(1);
-    xmlPullParser.nspCounts_.push_back(2);
+    xmlPullParser.nspCounts_.push_back(2); // values greater than pos_
     xmlPullParser.nspStack_.push_back("Q");
     xmlPullParser.nspStack_.push_back("E");
     xmlPullParser.nspStack_.push_back("");
@@ -368,6 +371,7 @@ std::string XmlTest::ParseNspFunction(std::string pushStr)
     xmlPullParser.attributes.push_back("r");
     xmlPullParser.attributes.push_back("t");
     xmlPullParser.attributes.push_back(pushStr);
+    xmlPullParser.ParseNspFunction();
     return xmlPullParser.XmlPullParserError();
 }
 
@@ -381,6 +385,23 @@ bool XmlTest::ParseNsp()
     xmlPullParser.nspCounts_.push_back(0);
     xmlPullParser.name_ = ":xml";
     return xmlPullParser.ParseNsp();
+}
+
+bool XmlTest::ParseStartTagFuncDeal(std::string xml, bool relax)
+{
+    OHOS::xml::XmlPullParser xmlPullParser(xml, "utf-8");
+    xmlPullParser.position_ = 0;
+    xmlPullParser.max_ = 1;
+    xmlPullParser.relaxed = relax;
+    return xmlPullParser.ParseStartTagFuncDeal(true);
+}
+
+bool XmlTest::ParseDeclaration(std::string str)
+{
+    OHOS::xml::XmlPullParser xmlPullParser(str, "utf-8");
+    xmlPullParser.attriCount_ = 3; // values greater than pos_
+    xmlPullParser.ParseDeclaration();
+    return true;
 }
 }
 #endif
