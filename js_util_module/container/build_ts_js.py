@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     os_name = sys.platform
     NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/current/bin/node'
-    TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/typescript/bin/tsc'
+    TSC_PATH = '../../../../third_party/typescript/bin/tsc'
     cmd = [NODE_PATH, TSC_PATH, "--outDir", input_arguments.out_filePath]
     run_command(cmd)
 
