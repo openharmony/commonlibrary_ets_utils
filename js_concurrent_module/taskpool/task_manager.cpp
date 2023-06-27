@@ -52,20 +52,24 @@ TaskManager::TaskManager()
 
 TaskManager::~TaskManager()
 {
-    uv_timer_stop(timer_);
-    uv_close(reinterpret_cast<uv_handle_t*>(timer_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_timer_t*>(handle);
-            handle = nullptr;
-        }
-    });
+    if (timer_ == nullptr) {
+        HILOG_ERROR("taskpool:: timer_ is nullptr");
+    } else {
+        uv_timer_stop(timer_);
+        uv_close(reinterpret_cast<uv_handle_t*>(timer_), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_timer_t*>(handle);
+                handle = nullptr;
+            }
+        });
 
-    uv_close(reinterpret_cast<uv_handle_t*>(notifyRestartTimer_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
-    });
+        uv_close(reinterpret_cast<uv_handle_t*>(notifyRestartTimer_), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
 
     if (loop_ != nullptr) {
         uv_stop(loop_);
@@ -546,7 +550,7 @@ void TaskManager::NotifyExecuteTask()
 void TaskManager::InitTaskManager(napi_env env)
 {
     auto hostEngine = reinterpret_cast<NativeEngine*>(env);
-    while (!hostEngine->IsMainThread()) {
+    while (hostEngine != nullptr && !hostEngine->IsMainThread()) {
         hostEngine = hostEngine->GetHostEngine();
     }
     std::lock_guard<std::mutex> lock(initMutex_);
@@ -580,5 +584,12 @@ napi_value TaskManager::IsCanceled(napi_env env, napi_callback_info cbinfo)
     TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
     bool isCanceled = taskInfo->isCanceled;
     return NapiHelper::CreateBooleanValue(env, isCanceled);
+}
+
+void TaskManager::RemoveWorker(Worker *worker)
+{
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    idleWorkers_.erase(worker);
+    workers_.erase(worker);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

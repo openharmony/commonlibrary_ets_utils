@@ -57,11 +57,7 @@ ohos_shared_library("taskpool") {
       "PREVIEW",
     ]
   } else {
-    if (is_standard_system) {
-      external_deps += [ "hilog:libhilog" ]
-    } else {
-      external_deps += [ "hilog:libhilog" ]
-    }
+    external_deps += [ "hilog:libhilog" ]
   }
 
   external_deps += [ "hitrace:hitrace_meter" ]
@@ -79,9 +75,12 @@ ohos_source_set("taskpool_static") {
   ]
 
   sources = taskpool_sources
+  sources += [ "../common/helper/napi_helper.cpp" ]
 
-  deps = []
+  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
   defines = []
+
+  external_deps = [ "hilog:libhilog" ]
 
   if (is_cross_platform_build) {
     include_dirs += [
@@ -101,7 +100,10 @@ ohos_source_set("taskpool_static") {
       defines += [ "IOS_PLATFORM" ]
     }
   } else {
-    deps += [ "$napi_root:ace_napi" ]
+    external_deps += [
+      "hitrace:hitrace_meter",
+      "napi:ace_napi",
+    ]
   }
 
   subsystem_name = "commonlibrary"

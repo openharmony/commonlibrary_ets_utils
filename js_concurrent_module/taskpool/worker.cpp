@@ -142,6 +142,7 @@ void Worker::ExecuteInThread(const void* data)
     } else {
         HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
     }
+    TaskManager::GetInstance().RemoveWorker(worker);
     worker->ReleaseWorkerThreadContent();
     delete worker;
     worker = nullptr;
