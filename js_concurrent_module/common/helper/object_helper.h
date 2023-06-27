@@ -69,5 +69,23 @@ private:
     const T* data_;
     bool isArray_;
 };
+
+class HandleScope {
+public:
+    HandleScope(napi_env env, napi_status& status) : env_(env)
+    {
+        status = napi_open_handle_scope(env, &scope_);
+    }
+    ~HandleScope()
+    {
+        if (env_ != nullptr && scope_ != nullptr) {
+            napi_close_handle_scope(env_, scope_);
+        }
+    }
+
+private:
+    napi_handle_scope scope_ = nullptr;
+    napi_env env_ = nullptr;
+};
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
