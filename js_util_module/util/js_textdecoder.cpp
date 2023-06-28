@@ -26,6 +26,10 @@
 #include "securec.h"
 #include "unicode/unistr.h"
 #include "utils/log.h"
+
+#if defined (ANDROID_PLATFORM) || defined (IOS_PLATFORM)
+#include "util_plugin.h"
+#endif
 namespace OHOS::Util {
     TextDecoder::TextDecoder(const std::string &buff, std::vector<int> optionVec)
         : label_(0), encStr_(buff), tranTool_(nullptr, nullptr)
@@ -46,7 +50,20 @@ namespace OHOS::Util {
         bool fatal = (i32Flag & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
              static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
         UErrorCode codeflag = U_ZERO_ERROR;
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
         UConverter *conv = ucnv_open(encStr_.c_str(), &codeflag);
+#else
+        const std::string conventFormat("gbk,GBK,GB2312,gb2312,GB18030,gb18030");
+        std::string encodeStr = "";
+        if (conventFormat.find(encStr_.c_str()) != conventFormat.npos) {
+            isChineseEncoding = true;
+            encodeStr = "ISO-8859-1";
+        } else {
+            isChineseEncoding = false;
+            encodeStr = encStr_;
+        }
+        UConverter *conv = ucnv_open(encodeStr.c_str(), &codeflag);
+#endif
         if (U_FAILURE(codeflag)) {
             HILOG_ERROR("ucnv_open failed !");
             return;
@@ -101,6 +118,15 @@ namespace OHOS::Util {
         }
         std::u16string tempStr16(arrDat);
         std::string tepStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(tempStr16);
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+        if(isChineseEncoding) {
+            std::string input = "";
+            for (size_t i = 0; i < length; ++i) {
+                input += static_cast<char>(arrDat[i] & 0xFF);
+            }
+            tepStr = UtilPlugin::Decode(input, encStr_);
+        }
+#endif
         napi_value resultStr = nullptr;
         NAPI_CALL(env, napi_create_string_utf8(env, tepStr.c_str(), tepStr.size(), &resultStr));
         FreedMemory(arr);

@@ -163,6 +163,9 @@ namespace OHOS::Util {
         uint32_t label_;
         std::string encStr_;
         TransformToolPointer tranTool_;
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+        bool isChineseEncoding = false;
+#endif
     };
 }
 #endif // UTIL_JS_TEXTDECODER_H_
