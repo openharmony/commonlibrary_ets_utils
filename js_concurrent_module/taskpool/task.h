@@ -26,10 +26,12 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED };
 enum Priority { HIGH, MEDIUM, LOW, NUMBER, DEFAULT = MEDIUM };
 
+struct GroupInfo;
 class Task {
 public:
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value SetTransferList(napi_env env, napi_callback_info cbinfo);
+    static void CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc);
 
 private:
     Task() = delete;
@@ -49,6 +51,7 @@ struct TaskInfo {
     uv_async_t *onResultSignal = nullptr;
     uint32_t taskId;
     uint32_t executeId;
+    GroupInfo* groupInfo = nullptr;
     bool success = true;
     bool isCanceled = false;
     void *worker = nullptr;

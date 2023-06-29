@@ -209,6 +209,13 @@ napi_value NapiHelper::CreateObject(napi_env env)
     return obj;
 }
 
+napi_value NapiHelper::CreatePromise(napi_env env, napi_deferred* deferred)
+{
+    napi_value promise = nullptr;
+    napi_create_promise(env, deferred, &promise);
+    return promise;
+}
+
 bool NapiHelper::IsArrayBuffer(napi_value value)
 {
     auto valNative = reinterpret_cast<NativeValue*>(value);

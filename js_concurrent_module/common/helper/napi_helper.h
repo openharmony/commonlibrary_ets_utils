@@ -48,6 +48,7 @@ public:
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
     static napi_value GetConstructorName(napi_env env, napi_value object);
     static napi_value CreateObject(napi_env env);
+    static napi_value CreatePromise(napi_env env, napi_deferred* deferred);
     static uint32_t GetArrayLength(napi_env env, napi_value array);
     static uint32_t GetUint32Value(napi_env env, napi_value value);
 };

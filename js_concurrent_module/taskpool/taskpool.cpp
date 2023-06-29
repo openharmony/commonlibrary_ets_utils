@@ -30,18 +30,18 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value taskClass = nullptr;
     napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor, nullptr, 0, nullptr, &taskClass);
+    napi_value taskGroupClass = nullptr;
+    napi_define_class(env, "TaskGroup", NAPI_AUTO_LENGTH, TaskGroup::TaskGroupConstructor, nullptr, 0, nullptr,
+                      &taskGroupClass);
     napi_value isCanceledFunc;
     napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, TaskManager::IsCanceled, NULL, &isCanceledFunc);
     napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    napi_value highPriority = nullptr;
-    napi_value mediumPriority = nullptr;
-    napi_value lowPriority = nullptr;
-    napi_create_int32(env, Priority::HIGH, &highPriority);
-    napi_create_int32(env, Priority::MEDIUM, &mediumPriority);
-    napi_create_int32(env, Priority::LOW, &lowPriority);
+    napi_value highPriority = NapiHelper::CreateUint32(env, Priority::HIGH);
+    napi_value mediumPriority = NapiHelper::CreateUint32(env, Priority::MEDIUM);
+    napi_value lowPriority = NapiHelper::CreateUint32(env, Priority::LOW);
     napi_property_descriptor exportPriority[] = {
         DECLARE_NAPI_PROPERTY("HIGH", highPriority),
         DECLARE_NAPI_PROPERTY("MEDIUM", mediumPriority),
@@ -51,6 +51,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("Task", taskClass),
+        DECLARE_NAPI_PROPERTY("TaskGroup", taskGroupClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
         DECLARE_NAPI_FUNCTION("execute", Execute),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
@@ -79,18 +80,10 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     napi_valuetype type;
     napi_typeof(env, args[0], &type);
-    if (type == napi_object) {
-        napi_value function = NapiHelper::GetNameProperty(env, args[0], FUNCTION_STR);
-        napi_value arguments = NapiHelper::GetNameProperty(env, args[0], ARGUMENTS_STR);
-        napi_value taskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
-        if (function == nullptr || arguments == nullptr || taskId == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task value is error");
-            return nullptr;
-        }
-        napi_value transferList = NapiHelper::GetNameProperty(env, args[0], TRANSFERLIST_STR);
 
-        uint32_t id = NapiHelper::GetUint32Value(env, taskId);
-        uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
+    uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
+    if (type == napi_object) {
+        // Get execution priority
         if (argc > 1) {
             priority = NapiHelper::GetUint32Value(env, args[1]);
             if (priority >= Priority::NUMBER) {
@@ -98,17 +91,57 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
                 return nullptr;
             }
         }
-        return ExecuteFunction(env, function, arguments, id, Priority(priority), transferList);
-    } else if (type == napi_function) {
-        napi_value argsArray;
-        napi_create_array_with_length(env, argc - 1, &argsArray);
-        for (size_t i = 0; i < argc - 1; i++) {
-            napi_set_element(env, argsArray, i, args[i + 1]);
+        bool isGroup = false;
+        napi_has_named_property(env, args[0], GROUP_ID_STR, &isGroup);
+        if (isGroup) {
+            return ExecuteGroup(env, args[0], Priority(priority));
+        } else {
+            uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
+            TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, args[0], executeId);
+            napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
+            TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, executeId);
+            ExecuteFunction(env, taskInfo, Priority(priority));
+            return promise;
         }
-        return ExecuteFunction(env, args[0], argsArray, 0); // 0 : taskpool.execute(function) taskId is 0
     }
-    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: first param must be object or function");
-    return nullptr;
+    if (type != napi_function) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: first param must be object or function");
+        return nullptr;
+    }
+    // Type is napi_function, execute from func directly
+    napi_value argsArray;
+    napi_create_array_with_length(env, argc - 1, &argsArray);
+    for (size_t i = 0; i < argc - 1; i++) {
+        napi_set_element(env, argsArray, i, args[i + 1]);
+    }
+    uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
+    // Set task id to 0 when execute from func directly
+    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, args[0], argsArray, 0, executeId);
+    napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
+    TaskManager::GetInstance().StoreRunningInfo(0, executeId);
+    ExecuteFunction(env, taskInfo);
+    return promise;
+}
+
+napi_value TaskPool::ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority)
+{
+    napi_value groupIdVal = NapiHelper::GetNameProperty(env, taskGroup, GROUP_ID_STR);
+    uint32_t groupId = NapiHelper::GetUint32Value(env, groupIdVal);
+    TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
+    const std::list<napi_ref>& taskRefs = groupManager.GetTasksByGroup(groupId);
+    GroupInfo* groupInfo = groupManager.GenerateGroupInfo(env, taskRefs.size(), groupId);
+    groupManager.StoreGroupInfo(groupId, groupInfo);
+    napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
+    for (auto iter = taskRefs.begin(); iter != taskRefs.end(); iter++) {
+        uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
+        groupInfo->executeIds.push_back(executeId);
+        groupManager.StoreRunningGroupInfo(groupInfo);
+        napi_value task = NapiHelper::GetReferenceValue(env, *iter);
+        TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, task, executeId);
+        taskInfo->groupInfo = groupInfo;
+        ExecuteFunction(env, taskInfo, Priority(priority));
+    }
+    return promise;
 }
 
 void TaskPool::HandleTaskResult(const uv_async_t* req)
@@ -123,39 +156,60 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_open_handle_scope(taskInfo->env, &scope));
     napi_value taskData = nullptr;
     napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
-    if (status != napi_ok || taskInfo->isCanceled || taskData == nullptr || !taskInfo->success) {
-        napi_reject_deferred(taskInfo->env, taskInfo->deferred, taskData);
+    bool success = status == napi_ok && !taskInfo->isCanceled && taskInfo->success;
+    if (taskData == nullptr) {
+        napi_get_undefined(taskInfo->env, &taskData);
+    }
+    if (taskInfo->groupInfo == nullptr) {
+        if (success) {
+            napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
+        } else {
+            napi_reject_deferred(taskInfo->env, taskInfo->deferred, taskData);
+        }
     } else {
-        napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
+        UpdateGroupInfoByResult(taskInfo->env, taskInfo, taskData, success);
     }
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_close_handle_scope(taskInfo->env, scope));
     TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
 
-napi_value TaskPool::ExecuteFunction(napi_env env, napi_value function, napi_value arguments, uint32_t taskId,
-                                     Priority priority, napi_value transferList)
+void TaskPool::UpdateGroupInfoByResult(napi_env env, TaskInfo* taskInfo, napi_value res, bool success)
 {
-    std::string strTrace = "ExecuteFunction: taskId is " + std::to_string(taskId);
-    HITRACE_HELPER_START_TRACE(strTrace);
-    uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
-    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, function, arguments,
-                                                                     taskId, executeId, transferList);
-    if (taskInfo == nullptr) {
-        return nullptr;
+    GroupInfo* groupInfo = taskInfo->groupInfo;
+    bool isRunning = TaskGroupManager::GetInstance().IsRunning(groupInfo);
+    if (!isRunning) {
+        return;
     }
+    uint32_t headId = *groupInfo->executeIds.begin();
+    uint32_t index = taskInfo->executeId - headId;
+    if (success) {
+        // Update res at resArr
+        napi_ref arrRef = groupInfo->resArr;
+        napi_value resArr = NapiHelper::GetReferenceValue(env, arrRef);
+        napi_set_element(env, resArr, index, res);
+
+        groupInfo->finishedTask++;
+        if (groupInfo->finishedTask < groupInfo->taskNum) {
+            return;
+        }
+        napi_resolve_deferred(env, groupInfo->deferred, resArr);
+    } else {
+        napi_value undefined = nullptr;
+        napi_get_undefined(env, &undefined);
+        napi_reject_deferred(env, groupInfo->deferred, undefined);
+    }
+    TaskGroupManager::GetInstance().ClearGroupInfo(env, groupInfo);
+}
+
+void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priority)
+{
+    std::string strTrace = "ExecuteFunction: taskId is " + std::to_string(taskInfo->taskId);
+    HITRACE_HELPER_START_TRACE(strTrace);
+    uint32_t executeId = taskInfo->executeId;
     TaskManager::GetInstance().TryTriggerLoadBalance();
     TaskManager::GetInstance().AddExecuteState(executeId);
-    TaskManager::GetInstance().StoreRunningInfo(taskId, executeId);
-    napi_value promise = nullptr;
-    napi_create_promise(env, &taskInfo->deferred, &promise);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
-    if (promise == nullptr) {
-        TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: create promise error");
-        return nullptr;
-    }
     HITRACE_HELPER_FINISH_TRACE;
-    return promise;
 }
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
@@ -173,13 +227,36 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be object");
         return nullptr;
     }
-    napi_value taskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
-    if (taskId == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be task");
-        return nullptr;
+
+    bool isGroup = false;
+    napi_has_named_property(env, args[0], GROUP_ID_STR, &isGroup);
+    if (!isGroup) {
+        napi_value taskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
+        if (taskId == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be task");
+            return nullptr;
+        }
+        uint32_t id = NapiHelper::GetUint32Value(env, taskId);
+        const std::list<uint32_t>& executeList = TaskManager::GetInstance().QueryRunningTask(env, id);
+        for (uint32_t executeId : executeList) {
+            TaskManager::GetInstance().CancelExecution(env, executeId);
+        }
+    } else {
+        napi_value groupIdVal = NapiHelper::GetNameProperty(env, args[0], GROUP_ID_STR);
+        if (groupIdVal == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                                    "taskpool:: the type of the params must be taskGroup");
+            return nullptr;
+        }
+        uint32_t groupId = NapiHelper::GetUint32Value(env, groupIdVal);
+        const std::list<GroupInfo*>& groupInfos = TaskGroupManager::GetInstance().GetGroupInfo(groupId);
+        if (groupInfos.empty()) {
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP,
+                                    "taskpool:: can not find the taskGroup");
+            return nullptr;
+        }
+        TaskGroupManager::GetInstance().CancelGroup(env, groupInfos);
     }
-    uint32_t id = NapiHelper::GetUint32Value(env, taskId);
-    TaskManager::GetInstance().CancelTask(env, id);
     return nullptr;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
