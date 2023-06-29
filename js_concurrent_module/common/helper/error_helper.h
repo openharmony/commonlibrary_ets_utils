@@ -51,7 +51,7 @@ public:
         } else if (errCode == ERR_CANCEL_NONEXIST_TASK) {
             errTitle = "The task does not exist when it is canceled, ";
         } else if (errCode == ERR_CANCEL_NONEXIST_TASK_GROUP) {
-            errTitle = "The TaskGroup does not exist when it is canceled, ";
+            errTitle = "The task group does not exist when it is canceled, ";
         } else if (errCode == ERR_CANCEL_RUNNING_TASK) {
             errTitle = "The task is executing when it is canceled, ";
         }

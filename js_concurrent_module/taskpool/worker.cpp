@@ -336,8 +336,7 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     if (taskInfo->groupInfo == nullptr) {
         TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
     }
-    TaskManager::GetInstance().PopTaskEnvInfo(taskInfo->env);
-    TaskManager::GetInstance().EraseTaskInfo(taskInfo->executeId);
+    TaskManager::GetInstance().PopTaskInfo(taskInfo->executeId);
     Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
     uv_async_send(taskInfo->onResultSignal);
     worker->NotifyTaskFinished();
