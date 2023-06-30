@@ -443,12 +443,14 @@ void Worker::TerminateWorker()
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     // when there is no active handle, worker loop will stop automatic.
-    uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
-    });
+    if (workerOnMessageSignal_ != nullptr) {
+        uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_close(reinterpret_cast<uv_handle_t*>(&debuggerOnPostTaskSignal_), nullptr);
 #endif
