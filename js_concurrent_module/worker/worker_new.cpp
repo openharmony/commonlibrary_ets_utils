@@ -217,8 +217,7 @@ napi_value NewWorker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
                 worker->TerminateInner();
             }
         },
-        nullptr, nullptr);
-    napi_create_reference(env, thisVar, 1, &worker->workerRef_);
+        nullptr, &worker->workerRef_);
     worker->StartExecuteInThread(env, script);
     return thisVar;
 }
@@ -935,17 +934,14 @@ void NewWorker::HostOnMessageInner()
             return;
         }
         // handle data, call worker onMessage function to handle.
+        napi_status status = napi_ok;
+        HandleScope scope(hostEnv_, status);
+        NAPI_CALL_RETURN_VOID(hostEnv_, status);
         napi_value result = nullptr;
-        napi_status status = napi_deserialize(hostEnv_, data, &result);
+        status = napi_deserialize(hostEnv_, data, &result);
         if (status != napi_ok || result == nullptr) {
             HostOnMessageErrorInner();
             continue;
-        }
-        napi_handle_scope scope = nullptr;
-        status = napi_open_handle_scope(hostEnv_, &scope);
-        if (status != napi_ok || scope == nullptr) {
-            HILOG_ERROR("worker : HostOnMessage open handle scope failed.");
-            return;
         }
         napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
         napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onmessage");
@@ -964,7 +960,6 @@ void NewWorker::HostOnMessageInner()
         // handle listeners.
         HandleEventListeners(hostEnv_, obj, 1, argv, "message");
         HandleHostException();
-        napi_close_handle_scope(hostEnv_, scope);
     }
     if (!engine->FinishContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
@@ -996,17 +991,15 @@ void NewWorker::CallHostFunction(size_t argc, const napi_value* argv, const char
 
 void NewWorker::CloseHostCallback() const
 {
-    napi_handle_scope scope = nullptr;
-    napi_status status = napi_open_handle_scope(hostEnv_, &scope);
-    if (status != napi_ok || scope == nullptr) {
-        HILOG_ERROR("worker : CloseHostCallback open handle scope failed.");
-        return;
+    {
+        napi_status status = napi_ok;
+        HandleScope scope(hostEnv_, status);
+        NAPI_CALL_RETURN_VOID(hostEnv_, status);
+        napi_value exitValue = nullptr;
+        napi_create_int32(hostEnv_, 1, &exitValue);
+        napi_value argv[1] = { exitValue };
+        CallHostFunction(1, argv, "onexit");
     }
-    napi_value exitValue = nullptr;
-    napi_create_int32(hostEnv_, 1, &exitValue);
-    napi_value argv[1] = { exitValue };
-    CallHostFunction(1, argv, "onexit");
-    napi_close_handle_scope(hostEnv_, scope);
     CloseHelp::DeletePointer(this, false);
 }
 
@@ -1027,13 +1020,9 @@ void NewWorker::HostOnErrorInner()
         HILOG_ERROR("worker:: host thread maybe is over when host onerror.");
         return;
     }
-    napi_handle_scope scope = nullptr;
-    napi_status status = napi_open_handle_scope(hostEnv_, &scope);
-    if (status != napi_ok || scope == nullptr) {
-        HILOG_ERROR("worker:: HostOnError open handle scope failed.");
-        return;
-    }
-
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
     NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
@@ -1044,7 +1033,6 @@ void NewWorker::HostOnErrorInner()
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
     if (!isCallable) {
         HILOG_ERROR("worker:: worker onerror is not Callable");
-        napi_close_handle_scope(hostEnv_, scope);
         return;
     }
     MessageDataType data;
@@ -1063,7 +1051,6 @@ void NewWorker::HostOnErrorInner()
     if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
     }
-    napi_close_handle_scope(hostEnv_, scope);
 }
 
 void NewWorker::PostMessageInner(MessageDataType data)
@@ -1196,6 +1183,7 @@ void NewWorker::WorkerOnMessageInner()
     while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker reveive terminate signal");
+            // Close handlescope need before TerminateWorker
             napi_close_handle_scope(workerEnv_, scope);
             TerminateWorker();
             return;
@@ -1288,17 +1276,12 @@ void NewWorker::HandleException()
         return;
     }
 
-    napi_handle_scope scope = nullptr;
-    napi_status status = napi_open_handle_scope(workerEnv_, &scope);
-    if (status != napi_ok || scope == nullptr) {
-        HILOG_ERROR("worker:: HandleException open handle scope failed.");
-        return;
-    }
-
+    napi_status status = napi_ok;
+    HandleScope scope(workerEnv_, status);
+    NAPI_CALL_RETURN_VOID(workerEnv_, status);
     napi_value exception;
     napi_get_and_clear_last_exception(workerEnv_, &exception);
     if (exception == nullptr) {
-        napi_close_handle_scope(workerEnv_, scope);
         return;
     }
 
@@ -1326,7 +1309,6 @@ void NewWorker::HandleException()
     } else {
         HILOG_ERROR("worker:: host engine is nullptr.");
     }
-    napi_close_handle_scope(workerEnv_, scope);
 }
 
 void NewWorker::WorkerOnMessageErrorInner()
@@ -1422,15 +1404,17 @@ void NewWorker::ReleaseHostThreadContent()
     // 2. clear error queue send to host thread
     errorQueue_.Clear(hostEnv_);
     if (!HostIsStop()) {
+        napi_status status = napi_ok;
+        HandleScope scope(hostEnv_, status);
+        NAPI_CALL_RETURN_VOID(hostEnv_, status);
         // 3. set thisVar's nativepointer be null
         napi_value thisVar = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
         NewWorker* worker = nullptr;
         napi_remove_wrap(hostEnv_, thisVar, reinterpret_cast<void**>(&worker));
+        hostEnv_ = nullptr;
         // 4. set workerRef_ be null
-        NapiHelper::DeleteReference(hostEnv_, workerRef_);
+        workerRef_ = nullptr;
     }
-    hostEnv_ = nullptr;
-    workerRef_ = nullptr;
 }
 
 void NewWorker::WorkerOnErrorInner(napi_value error)
