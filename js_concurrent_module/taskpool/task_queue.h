@@ -18,9 +18,6 @@
 
 #include <queue>
 
-#include "napi/native_api.h"
-#include "task.h"
-
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 class ExecuteQueue {
 public:

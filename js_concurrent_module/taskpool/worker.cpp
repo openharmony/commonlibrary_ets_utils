@@ -24,7 +24,17 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
 
-Worker::Worker(napi_env env) : hostEnv_(env) {}
+Worker::RunningScope::~RunningScope()
+{
+    if (scope_ != nullptr) {
+        napi_close_handle_scope(worker_->workerEnv_, scope_);
+    }
+    // only when worker is not blocked can it be inserted
+    std::lock_guard<std::mutex> lock(worker_->stateMutex_);
+    if (LIKELY(worker_->state_ != WorkerState::BLOCKED)) {
+        worker_->NotifyIdle();
+    }
+}
 
 Worker* Worker::WorkerConstructor(napi_env env)
 {
@@ -37,7 +47,7 @@ Worker* Worker::WorkerConstructor(napi_env env)
 void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 {
     auto worker = static_cast<Worker*>(req->data);
-    // when there is no active handle, worker loop will stop automatic.
+    // when there is no active handle, worker loop will stop automatically.
     uv_close(reinterpret_cast<uv_handle_t*>(worker->performTaskSignal_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
             delete reinterpret_cast<uv_async_t*>(handle);
@@ -141,7 +151,7 @@ void Worker::ExecuteInThread(const void* data)
         worker->NotifyWorkerCreated();
         worker->RunLoop();
     } else {
-        HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance failure");
+        HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance fail");
     }
     TaskManager::GetInstance().RemoveWorker(worker);
     worker->ReleaseWorkerThreadContent();
@@ -158,7 +168,7 @@ bool Worker::PrepareForWorkerInstance()
         std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
 #endif
     if (!workerEngine->CallInitWorkerFunc(workerEngine)) {
-        HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc failure");
+        HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc fail");
         return false;
     }
     // register timer interface
@@ -211,7 +221,15 @@ void Worker::NotifyWorkerCreated()
 
 void Worker::NotifyTaskFinished()
 {
-    runningCount_--;
+    if (--runningCount_ != 0) {
+        // the worker state is still RUNNING and the start time will be updated
+        startTime_ = ConcurrentHelper::GetMilliseconds();
+    } else {
+        std::lock_guard<std::mutex> lock(stateMutex_);
+        if (state_ != WorkerState::BLOCKED) {
+            state_ = WorkerState::IDLE;
+        }
+    }
     idlePoint_ = ConcurrentHelper::GetMilliseconds();
 }
 
@@ -223,7 +241,6 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_status status = napi_ok;
     RunningScope runningScope(worker, status);
     NAPI_CALL_RETURN_VOID(env, status);
-
     auto executeIdAndPriority = TaskManager::GetInstance().DequeueExecuteId();
     if (executeIdAndPriority.first == 0) {
         worker->NotifyTaskFinished();
@@ -246,11 +263,10 @@ void Worker::PerformTask(const uv_async_t* req)
     } else if (executeIdAndPriority.second == Priority::LOW) {
         traceInfo += ", TaskPriority: LOW";
     } else {
-        HILOG_ERROR("taskpool:: task priority value is error");
+        HILOG_ERROR("taskpool:: task priority value is invalid");
     }
     HITRACE_HELPER_START_TRACE(traceInfo);
     taskInfo->worker = worker;
-    uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     TaskManager::GetInstance().UpdateExecuteState(taskInfo->executeId, ExecuteState::RUNNING);
     napi_value func;
     status = napi_deserialize(env, taskInfo->serializationFunction, &func);
@@ -276,7 +292,7 @@ void Worker::PerformTask(const uv_async_t* req)
     auto funcVal = reinterpret_cast<NativeValue*>(func);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     // Store taskinfo in function
-    [[maybe_unused]] bool success = workerEngine->InitTaskPoolFunc(workerEngine, funcVal, taskInfo);
+    bool success = workerEngine->InitTaskPoolFunc(workerEngine, funcVal, taskInfo);
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
@@ -288,7 +304,7 @@ void Worker::PerformTask(const uv_async_t* req)
     if (!success) {
         HILOG_ERROR("taskpool:: InitTaskPoolFunc fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::TYPE_ERROR,
-                                               "taskpool: function maybe not concurrent.");
+                                               "taskpool: function may not be concurrent.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
         return;
@@ -306,9 +322,13 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_call_function(env, undefined, func, argsNum, argsArray, &result);
     HITRACE_HELPER_FINISH_TRACE;
-    uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime;
-    TaskManager::GetInstance().UpdateExecutedInfo(duration);
-
+    {
+        std::lock_guard<std::mutex> lock(worker->stateMutex_);
+        if (LIKELY(worker->state_ == WorkerState::RUNNING)) {
+            uint64_t duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
+            TaskManager::GetInstance().UpdateExecutedInfo(duration);
+        }
+    }
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");

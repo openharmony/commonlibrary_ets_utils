@@ -16,8 +16,6 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H_
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H_
 
-#include <mutex>
-
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"

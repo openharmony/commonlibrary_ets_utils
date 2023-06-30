@@ -16,8 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_
 #define JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_
 
-#include <list>
-#include <memory>
+#include <mutex>
 
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
@@ -33,6 +32,8 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
+enum class WorkerState { IDLE, RUNNING, BLOCKED };
+
 class Worker {
 public:
     static Worker* WorkerConstructor(napi_env env);
@@ -40,7 +41,7 @@ public:
     void NotifyExecuteTask();
 
 private:
-    explicit Worker(napi_env env);
+    explicit Worker(napi_env env) : hostEnv_(env) {};
 
     ~Worker() = default;
 
@@ -48,6 +49,8 @@ private:
     void NotifyWorkerCreated();
     void NotifyTaskRunning()
     {
+        state_ = WorkerState::RUNNING;
+        startTime_ = ConcurrentHelper::GetMilliseconds();
         runningCount_++;
     }
 
@@ -89,13 +92,7 @@ private:
             worker_->NotifyTaskRunning();
         }
 
-        ~RunningScope()
-        {
-            worker_->NotifyIdle();
-            if (scope_ != nullptr) {
-                napi_close_handle_scope(worker_->workerEnv_, scope_);
-            }
-        }
+        ~RunningScope();
 
     private:
         Worker* worker_ = nullptr;
@@ -114,15 +111,19 @@ private:
 
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
-    uv_async_t *performTaskSignal_ {nullptr};
-    uv_async_t *clearWorkerSignal_ {nullptr};
+    uv_async_t* performTaskSignal_ {nullptr};
+    uv_async_t* clearWorkerSignal_ {nullptr};
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_async_t *debuggerOnPostTaskSignal_ {nullptr};
+    uv_async_t* debuggerOnPostTaskSignal_ {nullptr};
     std::function<void()> debuggerTask_;
 #endif
     std::unique_ptr<TaskRunner> runner_ {nullptr};
+
+    std::atomic<uint64_t> startTime_ = 0;
     std::atomic<int32_t> runningCount_ = 0;
     std::atomic<uint64_t> idlePoint_ = ConcurrentHelper::GetMilliseconds();
+    WorkerState state_ {WorkerState::IDLE};
+    std::mutex stateMutex_;
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -27,13 +27,21 @@
 #include <sys/sysinfo.h>
 #endif
 
+#if __GNUC__
+#define LIKELY(x) __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define LIKELY(x) (!!(x))
+#define UNLIKELY(x) (!!(x))
+#endif // __GNUC__
+
 namespace Commonlibrary::Concurrent::Common::Helper {
 class ConcurrentHelper {
 public:
     ConcurrentHelper() = delete;
     ~ConcurrentHelper() = delete;
 
-    static int32_t GetActiveCpus()
+    static uint32_t GetActiveCpus()
     {
 #if defined(OHOS_PLATFORM)
         return sysconf(_SC_NPROCESSORS_ONLN);
