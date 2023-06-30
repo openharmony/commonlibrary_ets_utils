@@ -280,17 +280,6 @@ TaskInfo* TaskManager::GetTaskInfo(uint32_t executeId)
     return iter->second;
 }
 
-bool TaskManager::EraseTaskInfo(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-    auto iter = taskInfos_.find(executeId);
-    if (iter == taskInfos_.end() || iter->second == nullptr) {
-        return false;
-    }
-    taskInfos_.erase(iter);
-    return true;
-}
-
 bool TaskManager::MarkCanceledState(uint32_t executeId)
 {
     std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
@@ -369,7 +358,6 @@ void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
     // 3. Find waiting taskInfo, cancel it
     // 4. Find canceled taskInfo, skip it
     ExecuteState state = QueryExecuteState(executeId);
-    TaskInfo* taskInfo = nullptr;
     switch (state) {
         case ExecuteState::NOT_FOUND:
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
@@ -383,27 +371,34 @@ void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
             break;
         case ExecuteState::WAITING:
             HILOG_DEBUG("taskpool:: Cancel waiting task");
-            taskInfo = PopTaskInfo(executeId);
-            if (taskInfo != nullptr) {
-                if (taskInfo->groupInfo == nullptr) {
-                    napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
-                    napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
-                } else {
-                    GroupInfo* groupInfo = taskInfo->groupInfo;
-                    if (TaskGroupManager::GetInstance().IsRunning(groupInfo)) {
-                        napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
-                        napi_reject_deferred(taskInfo->env, groupInfo->deferred, undefined);
-                        TaskGroupManager::GetInstance().ClearGroupInfo(env, groupInfo);
-                    }
-                }
-                PopTaskEnvInfo(taskInfo->env);
-                ReleaseTaskContent(taskInfo);
-            }
+            CancelWaitingExecution(env, executeId);
             RemoveExecuteState(executeId);
             break;
-        default: // Default is CANCELED, means task isCanceled, do not neet to mark again.
+        default: // Default is CANCELED, means task isCanceled, do not need to mark again.
             break;
     }
+}
+
+void TaskManager::CancelWaitingExecution(napi_env env, uint32_t executeId)
+{
+    TaskInfo* taskInfo = PopTaskInfo(executeId);
+    if (taskInfo == nullptr) {
+        HILOG_ERROR("taskpool:: taskInfo is nullptr when cancel waiting execution");
+        return;
+    }
+    if (taskInfo->groupInfo == nullptr) {
+        napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
+        napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
+    } else {
+        GroupInfo* groupInfo = taskInfo->groupInfo;
+        bool isRunning = TaskGroupManager::GetInstance().IsRunning(groupInfo);
+        if (isRunning) {
+            napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
+            napi_reject_deferred(taskInfo->env, groupInfo->deferred, undefined);
+            TaskGroupManager::GetInstance().ClearGroupInfo(env, groupInfo);
+        }
+    }
+    ReleaseTaskContent(taskInfo);
 }
 
 TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
@@ -459,6 +454,7 @@ TaskInfo* TaskManager::GenerateTaskInfoFromTask(napi_env env, napi_value task, u
 
 void TaskManager::ReleaseTaskContent(TaskInfo* taskInfo)
 {
+    PopTaskEnvInfo(taskInfo->env);
     if (taskInfo->onResultSignal != nullptr &&
         !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->onResultSignal))) {
         uv_close(reinterpret_cast<uv_handle_t*>(taskInfo->onResultSignal), [](uv_handle_t* handle) {
@@ -640,6 +636,7 @@ GroupInfo* TaskGroupManager::GenerateGroupInfo(napi_env env, uint32_t taskNum, u
     napi_create_array_with_length(env, taskNum, &resArr);
     napi_ref arrRef = NapiHelper::CreateReference(env, resArr, 1);
     groupInfo->resArr = arrRef;
+    StoreGroupInfo(groupInfo);
     return groupInfo;
 }
 
@@ -684,8 +681,9 @@ void TaskGroupManager::ClearTasks(napi_env env, uint32_t groupId)
     }
 }
 
-void TaskGroupManager::StoreGroupInfo(uint32_t groupId, GroupInfo* info)
+void TaskGroupManager::StoreGroupInfo(GroupInfo* info)
 {
+    uint32_t groupId = info->groupId;
     auto iter = groupInfos_.find(groupId);
     if (iter == groupInfos_.end()) {
         std::list<GroupInfo*> list {info};

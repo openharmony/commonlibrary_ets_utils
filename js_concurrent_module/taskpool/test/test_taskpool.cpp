@@ -97,22 +97,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest009, testing::ext::TestSize.Level0)
 {
     uint32_t executeId = 0;
     TaskManager &taskManager = TaskManager::GetInstance();
-    bool result = taskManager.EraseTaskInfo(executeId);
-    ASSERT_TRUE(!result);
-}
-
-HWTEST_F(NativeEngineTest, TaskpoolTest010, testing::ext::TestSize.Level0)
-{
-    uint32_t executeId = 0;
-    TaskManager &taskManager = TaskManager::GetInstance();
-    bool result = taskManager.MarkCanceledState(executeId);
-    ASSERT_TRUE(!result);
-}
-
-HWTEST_F(NativeEngineTest, TaskpoolTest011, testing::ext::TestSize.Level0)
-{
-    uint32_t executeId = 0;
-    TaskManager &taskManager = TaskManager::GetInstance();
     bool result = taskManager.UpdateExecuteState(executeId, ExecuteState::NOT_FOUND);
     ASSERT_TRUE(!result);
     result = taskManager.UpdateExecuteState(executeId, ExecuteState::RUNNING);
@@ -123,7 +107,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest011, testing::ext::TestSize.Level0)
     ASSERT_TRUE(!result);
 }
 
-HWTEST_F(NativeEngineTest, TaskpoolTest012, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, TaskpoolTest010, testing::ext::TestSize.Level0)
 {
     TaskManager &taskManager = TaskManager::GetInstance();
     std::pair<uint32_t, Priority> result = taskManager.DequeueExecuteId();
@@ -131,28 +115,28 @@ HWTEST_F(NativeEngineTest, TaskpoolTest012, testing::ext::TestSize.Level0)
     ASSERT_TRUE(result.second == Priority::HIGH);
 }
 
-HWTEST_F(NativeEngineTest, TaskpoolTest013, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, TaskpoolTest011, testing::ext::TestSize.Level0)
 {
     TaskManager &taskManager = TaskManager::GetInstance();
     uint32_t result = taskManager.GetTaskNum();
     ASSERT_TRUE(result == 0);
 }
 
-HWTEST_F(NativeEngineTest, TaskpoolTest014, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, TaskpoolTest012, testing::ext::TestSize.Level0)
 {
     ExecuteQueue executeQueue;
     uint32_t result = executeQueue.DequeueExecuteId();
     ASSERT_TRUE(result == 0);
 }
 
-HWTEST_F(NativeEngineTest, TaskpoolTest015, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, TaskpoolTest013, testing::ext::TestSize.Level0)
 {
     ExecuteQueue executeQueue;
     bool result = executeQueue.IsEmpty();
     ASSERT_TRUE(result);
 }
 
-HWTEST_F(NativeEngineTest, TaskpoolTest016, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, TaskpoolTest014, testing::ext::TestSize.Level0)
 {
     ExecuteQueue executeQueue;
     uint32_t result = executeQueue.GetTaskNum();

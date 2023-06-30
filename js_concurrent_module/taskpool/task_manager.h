@@ -47,10 +47,8 @@ public:
 
     uint32_t GenerateTaskId();
     uint32_t GenerateExecuteId();
-    bool EraseTaskInfo(uint32_t executeId);
     TaskInfo* GetTaskInfo(uint32_t executeId);
     TaskInfo* PopTaskInfo(uint32_t executeId);
-    bool MarkCanceledState(uint32_t executeId);
     void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
     void AddExecuteState(uint32_t executeId);
     bool UpdateExecuteState(uint32_t executeId, ExecuteState state);
@@ -62,7 +60,6 @@ public:
     void CancelExecution(napi_env env, uint32_t executeId);
     void NotifyWorkerIdle(Worker *worker);
     void NotifyWorkerCreated(Worker *worker);
-    void PopTaskEnvInfo(napi_env env);
     void InitTaskManager(napi_env env);
     void UpdateExecutedInfo(uint64_t duration);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId,
@@ -86,11 +83,14 @@ private:
     void CreateWorker(napi_env env);
     void NotifyWorkerAdded(Worker *worker);
     void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
+    bool MarkCanceledState(uint32_t executeId);
+    void CancelWaitingExecution(napi_env env, uint32_t executeId);
 
     // for load balance
     void RunTaskManager();
     void CreateOrDeleteWorkers(int32_t targetNum);
     void StoreTaskEnvInfo(napi_env env);
+    void PopTaskEnvInfo(napi_env env);
     bool HasTaskEnvInfo(napi_env env);
     int32_t ComputeSuitableThreadNum();
     static void RestartTimer(const uv_async_t* req);
@@ -145,12 +145,12 @@ public:
     static TaskGroupManager &GetInstance();
 
     uint32_t GenerateGroupId();
-    GroupInfo* GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId);
-    void ClearGroupInfo(napi_env env, GroupInfo* info);
     void AddTask(uint32_t groupId, napi_ref task);
     const std::list<napi_ref>& GetTasksByGroup(uint32_t groupId);
     void ClearTasks(napi_env env, uint32_t groupId);
-    void StoreGroupInfo(uint32_t groupId, GroupInfo* info);
+
+    GroupInfo* GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId);
+    void ClearGroupInfo(napi_env env, GroupInfo* info);
     const std::list<GroupInfo*>& GetGroupInfo(uint32_t groupId);
     void StoreRunningGroupInfo(GroupInfo* info);
     bool IsRunning(GroupInfo* info);
@@ -162,6 +162,7 @@ private:
     TaskGroupManager(TaskGroupManager &&) = delete;
     TaskGroupManager& operator=(TaskGroupManager &&) = delete;
 
+    void StoreGroupInfo(GroupInfo* info);
     void RemoveGroupInfo(GroupInfo* info);
     void RemoveRunningGroupInfo(GroupInfo* info);
 

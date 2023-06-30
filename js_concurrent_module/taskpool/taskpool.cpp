@@ -130,7 +130,6 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value taskGroup, Priority p
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     const std::list<napi_ref>& taskRefs = groupManager.GetTasksByGroup(groupId);
     GroupInfo* groupInfo = groupManager.GenerateGroupInfo(env, taskRefs.size(), groupId);
-    groupManager.StoreGroupInfo(groupId, groupInfo);
     napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
     for (auto iter = taskRefs.begin(); iter != taskRefs.end(); iter++) {
         uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
