@@ -51,8 +51,7 @@ if __name__ == '__main__':
     NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/current/bin/node'
     if not os.path.exists(NODE_PATH):
         raise Exception('error:NO such file or directory')
-    TSC_PATH = '../../../../arkcompiler/ets_frontend/ts2panda/node_modules/\
-typescript/bin/tsc'
+    TSC_PATH = '../../../../third_party/typescript/bin/tsc'
     CMD_INST = [NODE_PATH, TSC_PATH, "--outDir", INPUT_ARGUMENTS.out_filePath]
     run_command(CMD_INST)
     if not os.path.exists(INPUT_ARGUMENTS.out_file):
