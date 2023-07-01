@@ -662,15 +662,20 @@ void TaskManager::RemoveWorker(Worker* worker)
 
 napi_value TaskManager::IsCanceled(napi_env env, napi_callback_info cbinfo)
 {
-    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
-    // Get taskInfo and query task cancel state
-    void* data = workerEngine->GetCurrentTaskInfo();
-    if (data == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "Check nonexist task cancel state");
-        return nullptr;
+    bool isCanceled = false;
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsTaskPoolThread()) {
+        HILOG_ERROR("taskpool:: call isCanceled not in taskpool thread");
+        return NapiHelper::CreateBooleanValue(env, isCanceled);
     }
-    TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
-    bool isCanceled = taskInfo->isCanceled;
+    // Get taskInfo and query task cancel state
+    void* data = engine->GetCurrentTaskInfo();
+    if (data == nullptr) {
+        HILOG_ERROR("taskpool:: call isCanceled not in Concurrent function");
+    } else {
+        TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
+        isCanceled = taskInfo->isCanceled;
+    }
     return NapiHelper::CreateBooleanValue(env, isCanceled);
 }
 
