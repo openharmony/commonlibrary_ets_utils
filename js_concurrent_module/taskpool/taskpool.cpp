@@ -155,6 +155,21 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_open_handle_scope(taskInfo->env, &scope));
     napi_value taskData = nullptr;
     napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
+
+    // trace : Task PerformTask end after deserialize
+    std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(taskInfo->taskId);
+    strTrace += ", executeId : " + std::to_string(taskInfo->executeId);
+    if (taskInfo->isCanceled) {
+        strTrace += " [IsCanceled]";
+    } else if (status != napi_ok) {
+        strTrace += " [DeserializeFailed]";
+    } else if (taskInfo->success) {
+        strTrace += " [Successful]";
+    } else {
+        strTrace += " [Unsuccessful]";
+    }
+    HITRACE_HELPER_METER_NAME(strTrace);
+
     bool success = status == napi_ok && !taskInfo->isCanceled && taskInfo->success;
     if (taskData == nullptr) {
         napi_get_undefined(taskInfo->env, &taskData);
@@ -202,13 +217,16 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, TaskInfo* taskInfo, napi_va
 
 void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priority)
 {
-    std::string strTrace = "ExecuteFunction: taskId is " + std::to_string(taskInfo->taskId);
-    HITRACE_HELPER_START_TRACE(strTrace);
     uint32_t executeId = taskInfo->executeId;
+    taskInfo->priority = priority;
+    std::string strTrace = "Task Allocation: taskId : " + std::to_string(taskInfo->taskId);
+    strTrace += ", executeId : " + std::to_string(executeId);
+    strTrace += ", priority : " + std::to_string(priority);
+    strTrace += ", executeState : " + std::to_string(ExecuteState::WAITING);
+    HITRACE_HELPER_METER_NAME(strTrace);
     TaskManager::GetInstance().TryTriggerLoadBalance();
     TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
-    HITRACE_HELPER_FINISH_TRACE;
 }
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
