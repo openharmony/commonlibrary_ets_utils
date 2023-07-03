@@ -20,6 +20,7 @@
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
+#include "helper/hitrace_helper.h"
 #include "taskpool.h"
 #include "utils/log.h"
 #include "worker.h"
@@ -203,6 +204,26 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
     // and taking the time used to create worker threads into consideration,
     // so we should ensure the the process is atomic.
     TaskManager& taskManager = TaskManager::GetInstance();
+
+    // trace : info about task and thread on the timer.
+    std::string traceInfo = "TaskInfos: ";
+    traceInfo += "taskNum : " + std::to_string(taskManager.GetTaskNum()) + ", ";
+    traceInfo += "[taskId executeId executeState priority] : ";
+    for (const auto& pair : taskManager.taskInfos_) {
+        traceInfo += std::to_string(pair.second->taskId) + ",";
+        traceInfo += std::to_string(pair.first) + ",";
+        traceInfo += std::to_string(taskManager.QueryExecuteState(pair.first)) + ",";
+        traceInfo += std::to_string(pair.second->priority) + " ";
+    }
+    HITRACE_HELPER_METER_NAME(traceInfo);
+
+    std::string traceThreadInfo = "ThreadInfos: ";
+    traceThreadInfo += "threadNum : " + std::to_string(taskManager.GetThreadNum()) + ", ";
+    traceThreadInfo += "runningThreadNum : " + std::to_string(taskManager.GetRunningWorkers()) + ", ";
+    traceThreadInfo += "idleThreadNum : " + std::to_string(taskManager.GetIdleWorkers()) + ", ";
+    traceThreadInfo += "timeoutThreadNum : " + std::to_string(taskManager.GetTimeoutWorkers());
+    HITRACE_HELPER_METER_NAME(traceThreadInfo);
+
     if (taskManager.expandingCount_ != 0) {
         return;
     }
@@ -363,6 +384,10 @@ bool TaskManager::UpdateExecuteState(uint32_t executeId, ExecuteState state)
     if (iter == executeStates_.end()) {
         return false;
     }
+    std::string traceInfo = "UpdateExecuteState: ";
+    traceInfo += "executeId : " + std::to_string(executeId);
+    traceInfo += "state : " + std::to_string(state);
+    HITRACE_HELPER_METER_NAME(traceInfo);
     iter->second = state;
     return true;
 }

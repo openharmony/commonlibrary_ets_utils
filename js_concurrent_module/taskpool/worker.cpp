@@ -38,7 +38,7 @@ Worker::RunningScope::~RunningScope()
 
 Worker* Worker::WorkerConstructor(napi_env env)
 {
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    HITRACE_HELPER_METER_NAME("WorkerConstructor: [Add Thread]");
     Worker* worker = new Worker(env);
     worker->StartExecuteInThread();
     return worker;
@@ -46,6 +46,7 @@ Worker* Worker::WorkerConstructor(napi_env env)
 
 void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 {
+    HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
     auto worker = static_cast<Worker*>(req->data);
     // when there is no active handle, worker loop will stop automatically.
     uv_close(reinterpret_cast<uv_handle_t*>(worker->performTaskSignal_), [](uv_handle_t* handle) {
@@ -254,18 +255,11 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
 
-    std::string traceInfo = "PerformTask, TaskId: ";
-    traceInfo += std::to_string(taskInfo->taskId);
-    if (executeIdAndPriority.second == Priority::HIGH) {
-        traceInfo += ", TaskPriority: HIGH";
-    } else if (executeIdAndPriority.second == Priority::MEDIUM) {
-        traceInfo += ", TaskPriority: MEDIUM";
-    } else if (executeIdAndPriority.second == Priority::LOW) {
-        traceInfo += ", TaskPriority: LOW";
-    } else {
-        HILOG_ERROR("taskpool:: task priority value is invalid");
-    }
-    HITRACE_HELPER_START_TRACE(traceInfo);
+    // trace : Task Perform
+    std::string strTrace = "Task Perform: taskId : " + std::to_string(taskInfo->taskId);
+    strTrace += ", executeId : " + std::to_string(taskInfo->executeId);
+    HITRACE_HELPER_METER_NAME(strTrace);
+
     taskInfo->worker = worker;
     TaskManager::GetInstance().UpdateExecuteState(taskInfo->executeId, ExecuteState::RUNNING);
     napi_value func;
@@ -321,7 +315,6 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_value result;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_call_function(env, undefined, func, argsNum, argsArray, &result);
-    HITRACE_HELPER_FINISH_TRACE;
     {
         std::lock_guard<std::mutex> lock(worker->stateMutex_);
         if (LIKELY(worker->state_ == WorkerState::RUNNING)) {
