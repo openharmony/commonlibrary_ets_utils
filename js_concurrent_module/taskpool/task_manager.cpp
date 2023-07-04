@@ -206,16 +206,19 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
     TaskManager& taskManager = TaskManager::GetInstance();
 
     // trace : info about task and thread on the timer.
-    std::string traceInfo = "TaskInfos: ";
-    traceInfo += "taskNum : " + std::to_string(taskManager.GetTaskNum()) + ", ";
-    traceInfo += "[taskId executeId executeState priority] : ";
-    for (const auto& pair : taskManager.taskInfos_) {
-        traceInfo += std::to_string(pair.second->taskId) + ",";
-        traceInfo += std::to_string(pair.first) + ",";
-        traceInfo += std::to_string(taskManager.QueryExecuteState(pair.first)) + ",";
-        traceInfo += std::to_string(pair.second->priority) + " ";
+    {
+        std::unique_lock<std::shared_mutex> lock(taskManager.taskInfosMutex_);
+        std::string traceInfo = "TaskInfos: ";
+        traceInfo += "taskNum : " + std::to_string(taskManager.GetTaskNum()) + ", ";
+        traceInfo += "[taskId executeId executeState priority] : ";
+        for (const auto& pair : taskManager.taskInfos_) {
+            traceInfo += std::to_string(pair.second->taskId) + ",";
+            traceInfo += std::to_string(pair.first) + ",";
+            traceInfo += std::to_string(taskManager.QueryExecuteState(pair.first)) + ",";
+            traceInfo += std::to_string(pair.second->priority) + " ";
+        }
+        HITRACE_HELPER_METER_NAME(traceInfo);
     }
-    HITRACE_HELPER_METER_NAME(traceInfo);
 
     std::string traceThreadInfo = "ThreadInfos: ";
     traceThreadInfo += "threadNum : " + std::to_string(taskManager.GetThreadNum()) + ", ";
