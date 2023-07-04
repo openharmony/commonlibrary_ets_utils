@@ -930,30 +930,22 @@ struct PromiseInfo {
     napi_async_work worker = nullptr;
     napi_deferred deferred = nullptr;
     napi_value promise = nullptr;
-    Blob* jsBlob = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_value string = nullptr;
 };
 
-static void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data)
+static void CopiedBlobToString(napi_env env, napi_status status, void *data)
 {
     auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
-    Blob *blob = promiseInfo->jsBlob;
-    void *bufdata = nullptr;
-    size_t bufferSize = blob->GetLength();
-    napi_create_arraybuffer(env, bufferSize, &bufdata, &promiseInfo->arrayBuffer);
-    blob->ReadBytes(reinterpret_cast<uint8_t *>(bufdata), bufferSize);
-    napi_resolve_deferred(env, promiseInfo->deferred, promiseInfo->arrayBuffer);
+    napi_resolve_deferred(env, promiseInfo->deferred, promiseInfo->string);
     napi_delete_async_work(env, promiseInfo->worker);
     delete promiseInfo;
 }
 
-static void CopiedBlobToString(napi_env env, napi_status status, void *data)
+static void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data)
 {
     auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
-    Blob *blob = promiseInfo->jsBlob;
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &promiseInfo->string);
-    napi_resolve_deferred(env, promiseInfo->deferred, promiseInfo->string);
+    napi_resolve_deferred(env, promiseInfo->deferred, promiseInfo->arrayBuffer);
     napi_delete_async_work(env, promiseInfo->worker);
     delete promiseInfo;
 }
@@ -966,7 +958,10 @@ static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
-    promiseInfo->jsBlob = blob;
+    size_t bufferSize = blob->GetLength();
+    void *bufdata = nullptr;
+    napi_create_arraybuffer(env, bufferSize, &bufdata, &promiseInfo->arrayBuffer);
+    blob->ReadBytes(reinterpret_cast<uint8_t *>(bufdata), bufferSize);
     napi_create_promise(env, &promiseInfo->deferred, &promiseInfo->promise);
     napi_create_string_utf8(env, "CopyBlobToArrayBuffer", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(env, nullptr, resourceName, [](napi_env env, void* data) {}, CopiedBlobToArrayBuffer,
@@ -983,8 +978,7 @@ static napi_value TextAsync(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
-    promiseInfo->jsBlob = blob;
-
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &promiseInfo->string);
     napi_create_promise(env, &promiseInfo->deferred, &promiseInfo->promise);
     napi_create_string_utf8(env, "GetPromiseOfString", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(env, nullptr, resourceName, [](napi_env env, void* data) {}, CopiedBlobToString,
