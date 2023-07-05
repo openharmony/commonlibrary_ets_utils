@@ -110,7 +110,7 @@ class Base64Helper {
     return result;
   }
 
-  async ProcessData(src: Uint8Array): Promise<string> {
+  async processData(src: Uint8Array): Promise<string> {
     return this.base64.encodeToString(src).then((result: string) => {
       let breakString: string = this.addBreaks(result);
       return breakString;
@@ -119,7 +119,7 @@ class Base64Helper {
 
   encodeToString(src: Uint8Array, options?: Type): Promise<string> {
     if (options === Type.MIME) {
-      let result: Promise<string> = this.ProcessData(src);
+      let result: Promise<string> = this.processData(src);
       return result;
     }
     let base64Result: Promise<string> = this.base64.encodeToString(src);

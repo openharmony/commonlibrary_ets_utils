@@ -15,6 +15,7 @@
 
 #include "commonlibrary/ets_utils/js_util_module/util/js_uuid.h"
 
+#include <map>
 #include "securec.h"
 #include "utils/log.h"
 
@@ -27,30 +28,36 @@ static thread_local std::queue<UUID> g_uuidCache;
 unsigned char CharToHex(char in)
 {
     unsigned char res = 0;  // 0: initialization
-    switch (in) {
-        case '0': res = HEX_ZERO_FLG; break;
-        case '1': res = HEX_ONE_FLG; break;
-        case '2': res = HEX_TWO_FLG; break;
-        case '3': res = HEX_THREE_FLG; break;
-        case '4': res = HEX_FOUR_FLG; break;
-        case '5': res = HEX_FIVE_FLG; break;
-        case '6': res = HEX_SIX_FLG; break;
-        case '7': res = HEX_SEVEN_FLG; break;
-        case '8': res = HEX_EIGHT_FLG; break;
-        case '9': res = HEX_NINE_FLG; break;
-        case 'a': res = HEX_TEN_FLG; break;
-        case 'b': res = HEX_ELEVEN_FLG; break;
-        case 'c': res = HEX_TWELVE_FLG; break;
-        case 'd': res = HEX_THIRTEEN_FLG; break;
-        case 'e': res = HEX_FOURTEEN_FLG; break;
-        case 'f': res = HEX_FIFTEEN_FLG; break;
-        case 'A': res = HEX_TEN_FLG; break;
-        case 'B': res = HEX_ELEVEN_FLG; break;
-        case 'C': res = HEX_TWELVE_FLG; break;
-        case 'D': res = HEX_THIRTEEN_FLG; break;
-        case 'E': res = HEX_FOURTEEN_FLG; break;
-        case 'F': res = HEX_FIFTEEN_FLG; break;
-        default : res = HEX_ZERO_FLG;
+    static const std::map<char, unsigned char> hexMap = {
+        {'0', HEX_ZERO_FLG},
+        {'1', HEX_ONE_FLG},
+        {'2', HEX_TWO_FLG},
+        {'3', HEX_THREE_FLG},
+        {'4', HEX_FOUR_FLG},
+        {'5', HEX_FIVE_FLG},
+        {'6', HEX_SIX_FLG},
+        {'7', HEX_SEVEN_FLG},
+        {'8', HEX_EIGHT_FLG},
+        {'9', HEX_NINE_FLG},
+        {'a', HEX_TEN_FLG},
+        {'b', HEX_ELEVEN_FLG},
+        {'c', HEX_TWELVE_FLG},
+        {'d', HEX_THIRTEEN_FLG},
+        {'e', HEX_FOURTEEN_FLG},
+        {'f', HEX_FIFTEEN_FLG},
+        {'A', HEX_TEN_FLG},
+        {'B', HEX_ELEVEN_FLG},
+        {'C', HEX_TWELVE_FLG},
+        {'D', HEX_THIRTEEN_FLG},
+        {'E', HEX_FOURTEEN_FLG},
+        {'F', HEX_FIFTEEN_FLG}
+    };
+
+    auto it = hexMap.find(in);
+    if (it != hexMap.end()) {
+        res = it->second;
+    } else {
+        res = HEX_ZERO_FLG;
     }
     return res;
 }
