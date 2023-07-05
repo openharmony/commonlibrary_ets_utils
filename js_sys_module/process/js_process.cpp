@@ -622,7 +622,7 @@ std::map<SYSArgUnix, SYSArgMacOS> sysconfig_map = {
     {
         int32_t result = 0;
         napi_get_value_int32(env, number, &result);
-        exit(result);
+        quick_exit(result);
     }
 
     napi_value Process::Cwd(napi_env env) const
@@ -641,7 +641,7 @@ std::map<SYSArgUnix, SYSArgMacOS> sysconfig_map = {
 
     void Process::Abort() const
     {
-        exit(0);
+        quick_exit(0);
     }
 
     void Process::On(napi_env env, napi_value str, napi_value function)
