@@ -927,6 +927,7 @@ namespace OHOS::Url {
         }
         AnalysisHost(strHost, urlinfo.host, flags, true);
     }
+
     void JudgePos(size_t &pos, const size_t &length, const std::string& input)
     {
         for (pos = 0; pos < length; pos++) {
@@ -935,47 +936,59 @@ namespace OHOS::Url {
             }
         }
     }
+
+    void SkipSlashSymbol(std::string& input, size_t& pos)
+    {
+        size_t inputLen = input.size();
+        while (pos < inputLen) {
+            if (input[pos] == '/' || input[pos] == '\\') {
+                pos++;
+                continue;
+            }
+                break;
+        }
+        input = input.substr(pos);
+    }
+
+    void ParsingHostAndPath(std::string& input, UrlData& urlinfo, size_t& pos,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
+    {
+        bool special = true;
+        size_t length = input.size();
+        JudgePos(pos, length, input);
+        std::string strHost = input.substr(0, pos);
+        std::string strPath = input.substr(pos + 1);
+        if (strHost.find('@') != std::string::npos) {
+            AnalysisUsernameAndPasswd(strHost, urlinfo.username, urlinfo.password, flags);
+        }
+        if (strHost.empty()) {
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
+        }
+        if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos) {
+            std::string port = strHost.substr(pos + 1);
+            strHost = strHost.substr(0, pos);
+            AnalysisPort(port, urlinfo, flags);
+        }
+        if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
+            flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
+            return;
+        }
+        AnalysisHost(strHost, urlinfo.host, flags, special);
+        AnalysisPath(strPath, urlinfo.path, flags, special);
+    }
+
     void AnalysisHostAndPath(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         if (flags.test(static_cast<size_t>(BitsetStatusFlag::BIT1))) {
             size_t pos = 0;
-            bool special = true;
-            size_t inputLen = input.size();
-            while (pos < inputLen) {
-                if (input[pos] == '/' || input[pos] == '\\') {
-                    pos++;
-                    continue;
-                }
-                    break;
-            }
-            input = input.substr(pos);
+            SkipSlashSymbol(input, pos);
             if (input.size() == 0) {
                 flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
                 return;
             } else if ((input.find('/') != std::string::npos || input.find('\\') != std::string::npos)) {
-                size_t length = input.size();
-                JudgePos(pos, length, input);
-                std::string strHost = input.substr(0, pos);
-                std::string strPath = input.substr(pos + 1);
-                if (strHost.find('@') != std::string::npos) {
-                    AnalysisUsernameAndPasswd(strHost, urlinfo.username, urlinfo.password, flags);
-                }
-                if (strHost.empty()) {
-                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-                    return;
-                }
-                if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos) {
-                    std::string port = strHost.substr(pos + 1);
-                    strHost = strHost.substr(0, pos);
-                    AnalysisPort(port, urlinfo, flags);
-                }
-                if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
-                    flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
-                    return;
-                }
-                AnalysisHost(strHost, urlinfo.host, flags, special);
-                AnalysisPath(strPath, urlinfo.path, flags, special);
+                ParsingHostAndPath(input, urlinfo, pos, flags);
             } else if (input.size() != 0 && input.find('/') == std::string::npos &&
                 input.find('\\') == std::string::npos) {
                 AnalysisOnlyHost(input, urlinfo, flags, pos);
