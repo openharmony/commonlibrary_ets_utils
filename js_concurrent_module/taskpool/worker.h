@@ -25,12 +25,15 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
+#include "platform/qos_helper.h"
 #include "task.h"
 #include "task_runner.h"
 #include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common;
 using namespace Commonlibrary::Concurrent::Common::Helper;
+using namespace Commonlibrary::Concurrent::Common::Platform;
 
 enum class WorkerState { IDLE, RUNNING, BLOCKED };
 
@@ -99,11 +102,35 @@ private:
         napi_handle_scope scope_ = nullptr;
     };
 
+    // use PriorityScope to manage the priority setting of workers
+    // reset qos_user_initiated when exit PriorityScope
+    class PriorityScope {
+    public:
+        PriorityScope(Worker* worker, Priority taskPriority) : worker_(worker)
+        {
+            if (taskPriority != worker->priority_) {
+                HILOG_DEBUG("taskpool:: reset worker priority to match task priority");
+                SetWorkerPriority(taskPriority);
+                worker->priority_ = taskPriority;
+            }
+        }
+        ~PriorityScope()
+        {
+            if (worker_ != nullptr) {
+                worker_->ResetWorkerPriority();
+            }
+        }
+
+    private:
+        Worker* worker_ = nullptr;
+    };
+
     void StartExecuteInThread();
     static void ExecuteInThread(const void* data);
     bool IsExceptionPending(napi_env env) const;
     bool PrepareForWorkerInstance();
     void ReleaseWorkerThreadContent();
+    void ResetWorkerPriority();
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(NativeEngine* engine, NativeValue* result, bool success, void* data);
     static void NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result);
@@ -124,6 +151,8 @@ private:
     std::atomic<uint64_t> idlePoint_ = ConcurrentHelper::GetMilliseconds();
     WorkerState state_ {WorkerState::IDLE};
     std::mutex stateMutex_;
+    Priority priority_ {Priority::DEFAULT};
+
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -23,6 +23,8 @@
 #include "task_group.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common;
+
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);

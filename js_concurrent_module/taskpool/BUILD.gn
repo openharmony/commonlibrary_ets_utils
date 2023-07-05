@@ -26,13 +26,24 @@ taskpool_sources = [
   "worker.cpp",
 ]
 
+concurrent_helper_sources = [ "../common/helper/napi_helper.cpp" ]
+
+concurrent_platform_sources = []
+
+if (is_ohos) {
+  concurrent_platform_sources += [ "../common/platform/ohos/qos_helper.cpp" ]
+} else {
+  concurrent_platform_sources += [ "../common/platform/default/qos_helper.cpp" ]
+}
+
 ohos_shared_library("taskpool") {
   include_dirs = [
     "include",
     js_concurrent_module_common,
   ]
   sources = taskpool_sources
-  sources += [ "../common/helper/napi_helper.cpp" ]
+  sources += concurrent_helper_sources
+  sources += concurrent_platform_sources
 
   defines = []
   if (is_ohos) {
@@ -49,7 +60,10 @@ ohos_shared_library("taskpool") {
 
   deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "frame_aware_sched:qos_manager",
+    "napi:ace_napi",
+  ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     external_deps += [ "innerkits:libhilog_linux" ]
@@ -76,7 +90,8 @@ ohos_source_set("taskpool_static") {
   ]
 
   sources = taskpool_sources
-  sources += [ "../common/helper/napi_helper.cpp" ]
+  sources += concurrent_helper_sources
+  sources += concurrent_platform_sources
 
   deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
   defines = []
@@ -102,6 +117,7 @@ ohos_source_set("taskpool_static") {
     }
   } else {
     external_deps += [
+      "frame_aware_sched:qos_manager",
       "hitrace:hitrace_meter",
       "napi:ace_napi",
     ]

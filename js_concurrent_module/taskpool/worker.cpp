@@ -243,7 +243,6 @@ void Worker::NotifyTaskFinished()
 
 void Worker::PerformTask(const uv_async_t* req)
 {
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto worker = static_cast<Worker*>(req->data);
     napi_env env = worker->workerEnv_;
     napi_status status = napi_ok;
@@ -255,6 +254,7 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
 
+    PriorityScope priorityScope(worker, executeIdAndPriority.second);
     TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeIdAndPriority.first);
     if (taskInfo == nullptr) { // task may have been canceled
         worker->NotifyTaskFinished();
@@ -263,8 +263,8 @@ void Worker::PerformTask(const uv_async_t* req)
     }
 
     // trace : Task Perform
-    std::string strTrace = "Task Perform: taskId : " + std::to_string(taskInfo->taskId);
-    strTrace += ", executeId : " + std::to_string(taskInfo->executeId);
+    std::string strTrace = "PerformTask: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : "
+        + std::to_string(taskInfo->executeId);
     HITRACE_HELPER_METER_NAME(strTrace);
 
     taskInfo->worker = worker;
@@ -384,5 +384,14 @@ bool Worker::IsExceptionPending(napi_env env) const
     bool isExceptionPending = false;
     napi_is_exception_pending(env, &isExceptionPending);
     return isExceptionPending;
+}
+
+// reset qos_user_initiated after perform task
+void Worker::ResetWorkerPriority()
+{
+    if (priority_ != Priority::HIGH) {
+        SetWorkerPriority(Priority::HIGH);
+        priority_ = Priority::HIGH;
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

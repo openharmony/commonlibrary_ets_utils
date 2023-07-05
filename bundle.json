@@ -49,7 +49,8 @@
                 "napi",
                 "hilog",
                 "hitrace",
-                "init"
+                "init",
+                "frame_aware_sched"
             ],
             "third_party": [
                 "bounds_checking_function",
