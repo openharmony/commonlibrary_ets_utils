@@ -26,7 +26,7 @@ public:
     ErrorHelper() = default;
     ~ErrorHelper() = default;
 
-    static napi_value NewError(napi_env env, int32_t errCode, const char* errMessage)
+    static napi_value NewError(napi_env env, int32_t errCode, const char* errMessage = nullptr)
     {
         std::string errTitle = "";
         napi_value concurrentError = nullptr;
@@ -49,15 +49,19 @@ public:
         } else if (errCode == ERR_NOT_CONCURRENT_FUNCTION) {
             errTitle = "The function is not mark as concurrent, ";
         } else if (errCode == ERR_CANCEL_NONEXIST_TASK) {
-            errTitle = "The task does not exist when it is canceled, ";
+            errTitle = "The task does not exist when it is canceled";
         } else if (errCode == ERR_CANCEL_NONEXIST_TASK_GROUP) {
-            errTitle = "The task group does not exist when it is canceled, ";
+            errTitle = "The task group does not exist when it is canceled";
         } else if (errCode == ERR_CANCEL_RUNNING_TASK) {
-            errTitle = "The task is executing when it is canceled, ";
+            errTitle = "The task is executing when it is canceled";
         }
         napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
         napi_value msg = nullptr;
-        napi_create_string_utf8(env, (errTitle + std::string(errMessage)).c_str(), NAPI_AUTO_LENGTH, &msg);
+        if (errMessage == nullptr) {
+            napi_create_string_utf8(env, errTitle.c_str(), NAPI_AUTO_LENGTH, &msg);
+        } else {
+            napi_create_string_utf8(env, (errTitle + std::string(errMessage)).c_str(), NAPI_AUTO_LENGTH, &msg);
+        }
 
         napi_create_error(env, nullptr, msg, &concurrentError);
         napi_set_named_property(env, concurrentError, "code", code);
@@ -65,7 +69,7 @@ public:
         return concurrentError;
     }
 
-    static void ThrowError(napi_env env, int32_t errCode, const char* errMessage)
+    static void ThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr)
     {
         napi_value concurrentError = NewError(env, errCode, errMessage);
         napi_throw(env, concurrentError);

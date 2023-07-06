@@ -418,7 +418,8 @@ const std::list<uint32_t>& TaskManager::QueryRunningTask(napi_env env, uint32_t 
     std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
     auto iter = runningInfos_.find(taskId);
     if (iter == runningInfos_.end() || iter->second.empty()) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
+        HILOG_ERROR("taskpool:: query nonexist task");
         static const std::list<uint32_t> EMPTY_EXECUTE_ID {};
         return EMPTY_EXECUTE_ID;
     }
@@ -435,7 +436,8 @@ void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
     TaskInfo* taskInfo = nullptr;
     switch (state) {
         case ExecuteState::NOT_FOUND:
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, "taskpool:: can not find the task");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
+            HILOG_ERROR("taskpool:: cancel nonexist task");
             return;
         case ExecuteState::RUNNING:
             if (!MarkCanceledState(executeId)) {

@@ -273,8 +273,8 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         uint32_t groupId = NapiHelper::GetUint32Value(env, groupIdVal);
         const std::list<uint32_t>& ids = TaskGroupManager::GetInstance().GetExecuteIdList(groupId);
         if (ids.empty()) {
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP,
-                                    "taskpool:: can not find the taskGroup");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
+            HILOG_ERROR("taskpool:: cancel nonexist task group");
             return nullptr;
         }
         TaskGroupManager::GetInstance().CancelGroup(env, ids);

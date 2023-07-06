@@ -165,7 +165,7 @@ public:
     void ClearTasks(napi_env env, uint32_t groupId);
 
     GroupInfo* GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId, uint32_t groupExecuteId);
-    void ClearGroupInfo(napi_env env, uint32_t groupExecuteId, GroupInfo* info);
+    void ClearGroupInfo(napi_env env, uint32_t groupExecuteId, GroupInfo* groupInfo);
     const std::list<uint32_t>& GetExecuteIdList(uint32_t groupId);
     void RemoveExecuteId(uint32_t groupId, uint32_t groupExecuteId);
     void ClearExecuteId(uint32_t groupId);
