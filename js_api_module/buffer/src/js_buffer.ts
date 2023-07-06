@@ -1964,34 +1964,13 @@ function normalizeEncoding(enc: string): string | undefined {
 function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | string | object | Array<number>,
   offsetOrEncoding?: number | string, length?: number): Buffer {
   if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
-    offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
-    if (offsetOrEncoding < 0) {
-      throw typeError(offsetOrEncoding, 'offset', ['number']);
-    }
-    if (!length) {
-      length = value.byteLength - offsetOrEncoding;
-    } else {
-      length = isNaN(Number(length)) ? 0 : Number(length);
-    }
-    rangeErrorCheck(offsetOrEncoding, 'byteOffset', 0, value.byteLength);
-    rangeErrorCheck(length, 'length', 0, value.byteLength - offsetOrEncoding);
-    return new Buffer(value, offsetOrEncoding, length);
+    return createBufferFromArrayBuffer(value, offsetOrEncoding, length);
   }
-  if (value instanceof Buffer) {
-    return new Buffer(value);
-  }
-  if (value instanceof Uint8Array) {
+  if (value instanceof Buffer || value instanceof Uint8Array) {
     return new Buffer(value);
   }
   if (value instanceof Array) {
-    if (!pool) {
-      createPool();
-    }
-    let buffer = new Buffer(pool, poolOffset, value.length);
-    poolOffset += value.length;
-    alignPool();
-    buffer[bufferSymbol].setArray(value);
-    return buffer;
+    return createBufferFromArray(value);
   }
   let encoding = '';
   if (typeof value === 'string' || typeof value[Symbol.toPrimitive] === 'function') {
@@ -2007,8 +1986,7 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
   }
   if (typeof value === 'object' && value !== null) {
     const valueOf = value.valueOf && value.valueOf();
-    if (valueOf != null &&
-      valueOf !== value &&
+    if (valueOf != null && valueOf !== value &&
       (typeof valueOf === 'string' || typeof valueOf === 'object')) {
       return from(valueOf, offsetOrEncoding, length);
     }
@@ -2020,6 +1998,33 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
     }
   }
   throw typeError(getTypeName(value), 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like']);
+}
+
+function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
+  offsetOrEncoding?: number | string, length?: number): Buffer {
+  offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
+  if (offsetOrEncoding < 0) {
+    throw typeError(offsetOrEncoding, 'offset', ['number']);
+  }
+  if (!length) {
+    length = value.byteLength - offsetOrEncoding;
+  } else {
+    length = isNaN(Number(length)) ? 0 : Number(length);
+  }
+  rangeErrorCheck(offsetOrEncoding, 'byteOffset', 0, value.byteLength);
+  rangeErrorCheck(length, 'length', 0, value.byteLength - offsetOrEncoding);
+  return new Buffer(value, offsetOrEncoding, length);
+}
+
+function createBufferFromArray(value: Array<number>): Buffer {
+  if (!pool) {
+    createPool();
+  }
+  const buffer = new Buffer(pool, poolOffset, value.length);
+  poolOffset += value.length;
+  alignPool();
+  buffer[bufferSymbol].setArray(value);
+  return buffer;
 }
 
 function hexStrtoNumbers(hex: string): Array<number> {
