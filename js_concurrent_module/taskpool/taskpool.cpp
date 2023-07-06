@@ -129,15 +129,15 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value taskGroup, Priority p
     uint32_t groupId = NapiHelper::GetUint32Value(env, groupIdVal);
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     const std::list<napi_ref>& taskRefs = groupManager.GetTasksByGroup(groupId);
-    GroupInfo* groupInfo = groupManager.GenerateGroupInfo(env, taskRefs.size(), groupId);
+    uint32_t groupExecuteId = groupManager.GenerateGroupExecuteId();
+    GroupInfo* groupInfo = groupManager.GenerateGroupInfo(env, taskRefs.size(), groupId, groupExecuteId);
     napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
     for (auto iter = taskRefs.begin(); iter != taskRefs.end(); iter++) {
         uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
         groupInfo->executeIds.push_back(executeId);
-        groupManager.StoreRunningGroupInfo(groupInfo);
         napi_value task = NapiHelper::GetReferenceValue(env, *iter);
         TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, task, executeId);
-        taskInfo->groupInfo = groupInfo;
+        taskInfo->groupExecuteId = groupExecuteId;
         ExecuteFunction(env, taskInfo, Priority(priority));
     }
     return promise;
@@ -174,7 +174,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     if (taskData == nullptr) {
         napi_get_undefined(taskInfo->env, &taskData);
     }
-    if (taskInfo->groupInfo == nullptr) {
+    if (taskInfo->groupExecuteId == 0) {
         if (success) {
             napi_resolve_deferred(taskInfo->env, taskInfo->deferred, taskData);
         } else {
@@ -189,9 +189,13 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
 
 void TaskPool::UpdateGroupInfoByResult(napi_env env, TaskInfo* taskInfo, napi_value res, bool success)
 {
-    GroupInfo* groupInfo = taskInfo->groupInfo;
-    bool isRunning = TaskGroupManager::GetInstance().IsRunning(groupInfo);
+    uint32_t groupExecuteId = taskInfo->groupExecuteId;
+    bool isRunning = TaskGroupManager::GetInstance().IsRunning(groupExecuteId);
     if (!isRunning) {
+        return;
+    }
+    GroupInfo* groupInfo = TaskGroupManager::GetInstance().GetGroupInfoByExecutionId(groupExecuteId);
+    if (groupInfo == nullptr) {
         return;
     }
     uint32_t headId = *groupInfo->executeIds.begin();
@@ -212,7 +216,8 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, TaskInfo* taskInfo, napi_va
         napi_get_undefined(env, &undefined);
         napi_reject_deferred(env, groupInfo->deferred, undefined);
     }
-    TaskGroupManager::GetInstance().ClearGroupInfo(env, groupInfo);
+    TaskGroupManager::GetInstance().RemoveExecuteId(groupInfo->groupId, groupExecuteId);
+    TaskGroupManager::GetInstance().ClearGroupInfo(env, groupExecuteId, groupInfo);
 }
 
 void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priority)
@@ -266,13 +271,14 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
         uint32_t groupId = NapiHelper::GetUint32Value(env, groupIdVal);
-        const std::list<GroupInfo*>& groupInfos = TaskGroupManager::GetInstance().GetGroupInfo(groupId);
-        if (groupInfos.empty()) {
+        const std::list<uint32_t>& ids = TaskGroupManager::GetInstance().GetExecuteIdList(groupId);
+        if (ids.empty()) {
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP,
                                     "taskpool:: can not find the taskGroup");
             return nullptr;
         }
-        TaskGroupManager::GetInstance().CancelGroup(env, groupInfos);
+        TaskGroupManager::GetInstance().CancelGroup(env, ids);
+        TaskGroupManager::GetInstance().ClearExecuteId(groupId);
     }
     return nullptr;
 }

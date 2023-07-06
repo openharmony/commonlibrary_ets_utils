@@ -147,6 +147,8 @@ private:
     std::atomic<bool> isInitialized_ = false;
     std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};
     std::mutex taskQueuesMutex_;
+
+    friend class TaskGroupManager;
 };
 
 class TaskGroupManager {
@@ -157,16 +159,19 @@ public:
     static TaskGroupManager &GetInstance();
 
     uint32_t GenerateGroupId();
+    uint32_t GenerateGroupExecuteId();
     void AddTask(uint32_t groupId, napi_ref task);
     const std::list<napi_ref>& GetTasksByGroup(uint32_t groupId);
     void ClearTasks(napi_env env, uint32_t groupId);
 
-    GroupInfo* GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId);
-    void ClearGroupInfo(napi_env env, GroupInfo* info);
-    const std::list<GroupInfo*>& GetGroupInfo(uint32_t groupId);
-    void StoreRunningGroupInfo(GroupInfo* info);
-    bool IsRunning(GroupInfo* info);
-    void CancelGroup(napi_env env, std::list<GroupInfo*> groupInfos);
+    GroupInfo* GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId, uint32_t groupExecuteId);
+    void ClearGroupInfo(napi_env env, uint32_t groupExecuteId, GroupInfo* info);
+    const std::list<uint32_t>& GetExecuteIdList(uint32_t groupId);
+    void RemoveExecuteId(uint32_t groupId, uint32_t groupExecuteId);
+    void ClearExecuteId(uint32_t groupId);
+    bool IsRunning(uint32_t groupExecuteId);
+    GroupInfo* GetGroupInfoByExecutionId(uint32_t groupExecuteId);
+    void CancelGroup(napi_env env, const std::list<uint32_t>& groupExecuteIds);
 
 private:
     TaskGroupManager(const TaskGroupManager &) = delete;
@@ -174,21 +179,30 @@ private:
     TaskGroupManager(TaskGroupManager &&) = delete;
     TaskGroupManager& operator=(TaskGroupManager &&) = delete;
 
-    void StoreGroupInfo(GroupInfo* info);
-    void RemoveGroupInfo(GroupInfo* info);
-    void RemoveRunningGroupInfo(GroupInfo* info);
+    void StoreExecuteId(uint32_t groupId, uint32_t groupExecuteId);
+
+    void StoreRunningExecuteId(uint32_t groupExecuteId);
+    void RemoveRunningExecuteId(uint32_t groupExecuteId);
+
+    void AddGroupInfoById(uint32_t groupExecuteId, GroupInfo* info);
+    void RemoveGroupInfoById(uint32_t groupExecuteId);
+
+    void CancelGroupExecution(uint32_t executeId);
 
     std::atomic<uint32_t> groupId_ = 0;
+    std::atomic<uint32_t> groupExecuteId_ = 1; // 1: 0 reserved for those tasks not in any group
 
-    // <groupId, <GroupInfo1, GroupInfo2, ...>>
-    std::unordered_map<uint32_t, std::list<GroupInfo*>> groupInfos_ {};
+    // <groupId, <groupExecuteId1, groupExecuteId2, ...>>
+    std::unordered_map<uint32_t, std::list<uint32_t>> groupExecuteIds_ {};
 
     // <groupId, <task1, task2, ...>>
     std::unordered_map<uint32_t, std::list<napi_ref>> tasks_ {};
 
-    // <groupInfo1, groupInfo2, ...>
-    std::unordered_set<GroupInfo*> runningGroupInfos_ {};
-    std::shared_mutex RunningGroupInfosMutex_;
+    // <groupExecuteId1, groupExecuteId2, ...>
+    std::unordered_set<uint32_t> runningGroupExecutions_ {};
+
+    // <<groupExecuteId1, GroupInfo1>, <groupExecuteId2, GroupInfo2>, ...>
+    std::unordered_map<uint32_t, GroupInfo*> groupInfoMap_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_

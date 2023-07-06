@@ -49,7 +49,7 @@ struct TaskInfo {
     uv_async_t* onResultSignal = nullptr;
     uint32_t taskId;
     uint32_t executeId;
-    GroupInfo* groupInfo = nullptr;
+    uint32_t groupExecuteId = 0;
     bool success = true;
     bool isCanceled = false;
     void* worker = nullptr;

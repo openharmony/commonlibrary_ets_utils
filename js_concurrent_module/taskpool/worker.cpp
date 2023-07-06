@@ -30,10 +30,13 @@ Worker::RunningScope::~RunningScope()
         napi_close_handle_scope(worker_->workerEnv_, scope_);
     }
     // only when worker is not blocked can it be inserted
-    std::lock_guard<std::mutex> lock(worker_->stateMutex_);
-    if (LIKELY(worker_->state_ != WorkerState::BLOCKED)) {
-        worker_->NotifyIdle();
+    {
+        std::lock_guard<std::mutex> lock(worker_->stateMutex_);
+        if (UNLIKELY(worker_->state_ == WorkerState::BLOCKED)) {
+            return;
+        }
     }
+    worker_->NotifyIdle();
 }
 
 Worker* Worker::WorkerConstructor(napi_env env)
@@ -346,7 +349,7 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     taskInfo->result = resultData;
 
     TaskManager::GetInstance().RemoveExecuteState(taskInfo->executeId);
-    if (taskInfo->groupInfo == nullptr) {
+    if (taskInfo->groupExecuteId == 0) {
         TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
     }
     TaskManager::GetInstance().PopTaskInfo(taskInfo->executeId);
