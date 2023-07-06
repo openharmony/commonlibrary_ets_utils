@@ -229,9 +229,9 @@ void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priori
     strTrace += ", priority : " + std::to_string(priority);
     strTrace += ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
-    TaskManager::GetInstance().TryTriggerLoadBalance();
     TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
+    TaskManager::GetInstance().TryTriggerLoadBalance();
 }
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
