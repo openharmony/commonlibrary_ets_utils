@@ -160,13 +160,13 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(taskInfo->taskId);
     strTrace += ", executeId : " + std::to_string(taskInfo->executeId);
     if (taskInfo->isCanceled) {
-        strTrace += " [IsCanceled]";
+        strTrace += ", performResult : IsCanceled";
     } else if (status != napi_ok) {
-        strTrace += " [DeserializeFailed]";
+        strTrace += ", performResult : DeserializeFailed";
     } else if (taskInfo->success) {
-        strTrace += " [Successful]";
+        strTrace += ", performResult : Successful";
     } else {
-        strTrace += " [Unsuccessful]";
+        strTrace += ", performResult : Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
 

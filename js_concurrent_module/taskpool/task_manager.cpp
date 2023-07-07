@@ -136,6 +136,7 @@ void TaskManager::CheckForBlockedWorkers()
             }
 
             if (now - worker->startTime_ >= threshold) {
+                HILOG_DEBUG("taskpool:: The worker is marked for timeout.");
                 worker->state_ = WorkerState::BLOCKED;
                 timeoutWorkers_.insert(worker);
                 idleWorkers_.erase(worker);
@@ -205,27 +206,10 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
     // so we should ensure the the process is atomic.
     TaskManager& taskManager = TaskManager::GetInstance();
 
-    // trace : info about task and thread on the timer.
-    {
-        std::unique_lock<std::shared_mutex> lock(taskManager.taskInfosMutex_);
-        std::string traceInfo = "TaskInfos: ";
-        traceInfo += "taskNum : " + std::to_string(taskManager.GetTaskNum()) + ", ";
-        traceInfo += "[taskId executeId executeState priority] : ";
-        for (const auto& pair : taskManager.taskInfos_) {
-            traceInfo += std::to_string(pair.second->taskId) + ",";
-            traceInfo += std::to_string(pair.first) + ",";
-            traceInfo += std::to_string(taskManager.QueryExecuteState(pair.first)) + ",";
-            traceInfo += std::to_string(pair.second->priority) + " ";
-        }
-        HITRACE_HELPER_METER_NAME(traceInfo);
-    }
-
-    std::string traceThreadInfo = "ThreadInfos: ";
-    traceThreadInfo += "threadNum : " + std::to_string(taskManager.GetThreadNum()) + ", ";
-    traceThreadInfo += "runningThreadNum : " + std::to_string(taskManager.GetRunningWorkers()) + ", ";
-    traceThreadInfo += "idleThreadNum : " + std::to_string(taskManager.GetIdleWorkers()) + ", ";
-    traceThreadInfo += "timeoutThreadNum : " + std::to_string(taskManager.GetTimeoutWorkers());
-    HITRACE_HELPER_METER_NAME(traceThreadInfo);
+    HITRACE_HELPER_COUNT_TRACE("threadNum", static_cast<int64_t>(taskManager.GetThreadNum()));
+    HITRACE_HELPER_COUNT_TRACE("runningThreadNum", static_cast<int64_t>(taskManager.GetRunningWorkers()));
+    HITRACE_HELPER_COUNT_TRACE("idleThreadNum", static_cast<int64_t>(taskManager.GetIdleWorkers()));
+    HITRACE_HELPER_COUNT_TRACE("timeoutThreadNum", static_cast<int64_t>(taskManager.GetTimeoutWorkers()));
 
     if (taskManager.expandingCount_ != 0) {
         return;
@@ -389,7 +373,7 @@ bool TaskManager::UpdateExecuteState(uint32_t executeId, ExecuteState state)
     }
     std::string traceInfo = "UpdateExecuteState: ";
     traceInfo += "executeId : " + std::to_string(executeId);
-    traceInfo += "state : " + std::to_string(state);
+    traceInfo += ", executeState : " + std::to_string(state);
     HITRACE_HELPER_METER_NAME(traceInfo);
     iter->second = state;
     return true;
