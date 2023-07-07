@@ -858,7 +858,7 @@ namespace OHOS::Url {
             AnalysisFilescheme(input, urlinfo, flags);
             return;
         }
-        if (input[0] == '/' && input[1] == '/') {
+        if (input[0] == '/' && input[1] == '/' && input[2] != '/') {
             std::string hostandpath = input.substr(2); // 2:Intercept from 2 subscripts
             if (hostandpath.empty()) {
                 return;
@@ -895,7 +895,7 @@ namespace OHOS::Url {
                 AnalyHostPath(strHost, flags, urlinfo);
                 AnalysisHost(strHost, urlinfo.host, flags, special);
             }
-        } else if (input[1] == '/') {
+        } else if (input[0] == '/' && input[1] == '/') {
             std::string strOfPath = input.substr(1);
             AnalysisPath(strOfPath, urlinfo.path, flags, false);
         } else {
