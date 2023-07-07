@@ -188,11 +188,15 @@ bool Worker::PrepareForWorkerInstance()
 
 void Worker::ReleaseWorkerThreadContent()
 {
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     if (workerEngine == nullptr) {
         HILOG_ERROR("taskpool:: workerEngine is nullptr");
         return;
+    }
+    if (state_ == WorkerState::BLOCKED) {
+        HITRACE_HELPER_METER_NAME("Thread Timeout Exit");
+    } else {
+        HITRACE_HELPER_METER_NAME("Thread Exit");
     }
 
     Timer::ClearEnvironmentTimer(workerEnv_);
