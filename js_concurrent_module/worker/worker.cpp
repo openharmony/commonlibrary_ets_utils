@@ -794,7 +794,7 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     {
         int maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
         std::lock_guard<std::mutex> lock(g_workersMutex);
-        if (g_workers.size() >= maxWorkers) {
+        if (static_cast<int>(g_workers.size()) >= maxWorkers) {
             napi_throw_error(env, nullptr, "Too many workers, the number of workers exceeds the maximum.");
             return nullptr;
         }
