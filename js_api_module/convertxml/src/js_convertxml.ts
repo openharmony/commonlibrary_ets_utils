@@ -91,7 +91,7 @@ function dealXml(strXml: string): string {
       idxCData = strXml.indexOf('<![CDATA', idxCDataSec);
       if (idxSec === idxCData) {
         idxSec = strXml.indexOf(']]>', idxCData);
-        strXml = dealLaterReplace(strXml, idx, idxThir);
+        strXml = dealLaterReplace(strXml, idxCData, idxSec);
         idxCDataSec = idxSec;
       }
     } else {
@@ -137,21 +137,24 @@ function dealPriorReplace(strXml: string, idx: number, idxThir: number): string 
 
 function dealLaterReplace(strXml: string, idx: number, idxThir: number): string {
   let i: number = idx + 1;
-  for (; i < idxThir; i++) {
-    let cXml: string = strXml.charAt(i);
-    switch (cXml) {
-      case '\n':
-        strXml = strXml.substring(0, i) + '\\n' + strXml.substring(i + 1);
-        break;
-      case '\v':
-        strXml = strXml.substring(0, i) + '\\v' + strXml.substring(i + 1);
-        break;
-      case '\t':
-        strXml = strXml.substring(0, i) + '\\t' + strXml.substring(i + 1);
-        break;
-      default:
-        break;
-    }
+  let res = strXml.substring(i, idxThir);
+  if (res.indexOf('\n') !== -1 || res.indexOf('\v') !== -1 || res.indexOf('\t') !== -1 || res.indexOf('\r') !== -1) {
+    let pattern: RegExp = /[\n\v\t\r]/g;
+    let result: string = res.replace(pattern, function (match) {
+      switch (match) {
+        case '\n':
+          return '\\n';
+        case '\v':
+          return '\\v';
+        case '\t':
+          return '\\t';
+        case '\r':
+          return '\\r';
+        default:
+          return match;
+      }
+    });
+    strXml = strXml.replace(res, result);
   }
   return strXml;
 }
