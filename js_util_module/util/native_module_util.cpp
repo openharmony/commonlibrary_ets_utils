@@ -29,7 +29,7 @@
 #include "napi/native_node_api.h"
 
 #ifdef ANDROID_PLATFORM
-#include "plugin_c_utils.h"
+#include "plugin_utils.h"
 #include "util_plugin_jni.h"
 #endif
 
@@ -1725,7 +1725,7 @@ namespace OHOS::Util {
     static void UtilPluginJniRegister()
     {
         const char className[] = "ohos.ace.plugin.utilplugin.UtilPlugin";
-        OH_Plugin_RegisterJavaPlugin(&Plugin::UtilPluginJni::Register, className);
+        ARKUI_X_Plugin_RegisterJavaPlugin(&Plugin::UtilPluginJni::Register, className);
     }
 #endif
     // util module register
@@ -1734,7 +1734,7 @@ namespace OHOS::Util {
     {
         napi_module_with_js_register(&utilModule);
 #ifdef ANDROID_PLATFORM
-        OH_Plugin_RunAsyncTask(&UtilPluginJniRegister, OH_PLUGIN_PLATFORM_THREAD);
+        ARKUI_X_Plugin_RunAsyncTask(&UtilPluginJniRegister, ARKUI_X_PLUGIN_PLATFORM_THREAD);
 #endif
     }
 }
