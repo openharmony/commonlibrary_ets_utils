@@ -585,10 +585,29 @@ namespace OHOS::Xml {
 
     void ConvertXml::Replace(std::string &str, const std::string src, const std::string dst) const
     {
-        size_t index = 0;
-        while ((index = str.find(src)) != std::string::npos) {
-            str.replace(index, src.size(), dst);
+        size_t begCdata = 0;
+        size_t endCdata = 0;
+        size_t pos = 0;
+        size_t flag = 0;
+        size_t count = 0;
+        std::string temp = "";
+        while ((begCdata = str.find("<![CDATA", endCdata - count)) != std::string::npos &&
+            (endCdata = str.find("]]>", begCdata)) != std::string::npos) {
+            size_t strLen = begCdata - flag;
+            temp = str.substr(flag, strLen);
+            count = 0;
+            while ((pos = temp.find(src)) != std::string::npos) {
+                temp.replace(pos, src.size(), dst);
+                count++;
+            }
+            str.replace(flag, strLen, temp);
+            flag = endCdata - count + 3; // 3 : length of "]]>"
         }
+        temp = str.substr(flag);
+        while ((pos = temp.find(src)) != std::string::npos) {
+            temp.replace(pos, src.size(), dst);
+        }
+        str.replace(flag, str.size() - flag, temp);
     }
 
     void ConvertXml::DealCDataInfo(bool bCData, xmlNodePtr &curNode) const
