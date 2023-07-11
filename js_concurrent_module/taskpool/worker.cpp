@@ -31,13 +31,6 @@ Worker::RunningScope::~RunningScope()
     if (scope_ != nullptr) {
         napi_close_handle_scope(worker_->workerEnv_, scope_);
     }
-    // only when worker is not blocked can it be inserted
-    {
-        std::lock_guard<std::mutex> lock(worker_->stateMutex_);
-        if (UNLIKELY(worker_->state_ == WorkerState::BLOCKED)) {
-            return;
-        }
-    }
     worker_->NotifyIdle();
 }
 
@@ -51,36 +44,38 @@ Worker* Worker::WorkerConstructor(napi_env env)
 
 void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 {
-    HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
     auto worker = static_cast<Worker*>(req->data);
+    if (!worker->CheckFreeConditions()) {
+        return;
+    }
+
+    HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
     // when there is no active handle, worker loop will stop automatically.
-    uv_close(reinterpret_cast<uv_handle_t*>(worker->performTaskSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
-    });
-
+    ConcurrentHelper::UvHandleClose(worker->performTaskSignal_);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_close(reinterpret_cast<uv_handle_t*>(worker->debuggerOnPostTaskSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
-    });
+    ConcurrentHelper::UvHandleClose(worker->debuggerOnPostTaskSignal_);
 #endif
-
-    uv_close(reinterpret_cast<uv_handle_t*>(worker->clearWorkerSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
-    });
+    ConcurrentHelper::UvHandleClose(worker->clearWorkerSignal_);
 
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop != nullptr) {
         uv_stop(loop);
     }
+}
+
+bool Worker::CheckFreeConditions()
+{
+    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    // only when all conditions are met can the worker be freed
+    bool res = !Timer::HasTimer(workerEnv_) && !workerEngine->HasWaitingRequest() &&
+        !workerEngine->HasSubEnv() && !workerEngine->HasPendingJob() && !workerEngine->IsProfiling();
+    // if conditions are not met, we will try to free the worker during the next check
+    if (res) {
+        return true;
+    }
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.RestoreWorker(this);
+    return false;
 }
 
 void Worker::StartExecuteInThread()
@@ -236,12 +231,14 @@ void Worker::NotifyTaskFinished()
         // the worker state is still RUNNING and the start time will be updated
         startTime_ = ConcurrentHelper::GetMilliseconds();
     } else {
-        std::lock_guard<std::mutex> lock(stateMutex_);
-        if (state_ != WorkerState::BLOCKED) {
-            state_ = WorkerState::IDLE;
-        }
+        UpdateWorkerState(WorkerState::RUNNING, WorkerState::IDLE);
     }
     idlePoint_ = ConcurrentHelper::GetMilliseconds();
+}
+
+bool Worker::UpdateWorkerState(WorkerState expect, WorkerState desired)
+{
+    return state_.compare_exchange_strong(expect, desired);
 }
 
 void Worker::PerformTask(const uv_async_t* req)
@@ -328,12 +325,10 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_value result;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_call_function(env, undefined, func, argsNum, argsArray, &result);
-    {
-        std::lock_guard<std::mutex> lock(worker->stateMutex_);
-        if (LIKELY(worker->state_ == WorkerState::RUNNING)) {
-            uint64_t duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
-            TaskManager::GetInstance().UpdateExecutedInfo(duration);
-        }
+    // if the worker is blocked, just skip
+    if (LIKELY(worker->state_ != WorkerState::BLOCKED)) {
+        uint64_t duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
+        TaskManager::GetInstance().UpdateExecutedInfo(duration);
     }
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {

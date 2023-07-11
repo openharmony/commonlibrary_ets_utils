@@ -57,7 +57,6 @@ public:
     bool UpdateExecuteState(uint32_t executeId, ExecuteState state);
     void RemoveExecuteState(uint32_t executeId);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
-    void PopTaskEnvInfo(napi_env env);
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
@@ -70,11 +69,12 @@ public:
     void NotifyWorkerIdle(Worker* worker);
     void NotifyWorkerCreated(Worker* worker);
     void RemoveWorker(Worker* worker);
+    void RestoreWorker(Worker* worker);
 
     // for load balance
     void InitTaskManager(napi_env env);
-    void TryTriggerLoadBalance();
     void UpdateExecutedInfo(uint64_t duration);
+    void TryTriggerExpand();
 
     // for taskpool state
     uint32_t GetTaskNum();
@@ -105,12 +105,12 @@ private:
 
     // for load balance
     void RunTaskManager();
-    void StoreTaskEnvInfo(napi_env env);
     void CheckForBlockedWorkers();
-    void CreateOrDeleteWorkers(uint32_t targetNum);
-    bool HasTaskEnvInfo(napi_env env);
+    void TryExpand();
+    void NotifyShrink(uint32_t targetNum);
     uint32_t ComputeSuitableThreadNum();
     static void RestartTimer(const uv_async_t* req);
+    static void NotifyExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
     std::atomic<int32_t> currentExecuteId_ = 1; // 1: executeId begin from 1, 0 for exception
@@ -128,9 +128,6 @@ private:
     std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_ {};
     std::shared_mutex runningInfosMutex_;
 
-    std::unordered_map<napi_env, uint32_t> taskEnvInfo_ {};
-    std::shared_mutex taskEnvInfoMutex_;
-
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};
     std::unordered_set<Worker*> timeoutWorkers_ {};
@@ -140,13 +137,14 @@ private:
     napi_env hostEnv_ = nullptr;
     uv_loop_t* loop_ = nullptr;
     uv_timer_t* timer_ = nullptr;
+    uv_async_t* expandHandle_ = nullptr;
     uv_async_t* notifyRestartTimer_ = nullptr;
     std::atomic<bool> suspend_ = false;
     std::atomic<uint32_t> retryCount_ = 0;
+    std::atomic<uint32_t> expandingCount_ = 0;
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
-    std::atomic<uint32_t> expandingCount_ = 0;
-    std::atomic<uint64_t> nextCheckTime_ = 0;
+    std::atomic<bool> needChecking_ = false;
 
     // for task priority
     uint32_t highPrioExecuteCount_ = 0;

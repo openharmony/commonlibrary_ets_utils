@@ -335,7 +335,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest023, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManger = TaskManager::GetInstance();
     taskManger.InitTaskManager(env);
-    taskManger.PopTaskEnvInfo(env);
     uint32_t taskId = taskManger.GenerateTaskId();
     ASSERT_TRUE(taskId == 5);
     uint32_t executeId = taskManger.GenerateExecuteId();
@@ -379,7 +378,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest027, testing::ext::TestSize.Level0)
     TaskManager& taskManger = TaskManager::GetInstance();
     taskManger.InitTaskManager(env);
     uint32_t executeId = taskManger.GenerateExecuteId();
-    taskManger.TryTriggerLoadBalance();
+    taskManger.TryTriggerExpand();
     ASSERT_TRUE(executeId == 10);
 }
 
