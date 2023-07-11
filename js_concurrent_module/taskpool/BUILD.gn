@@ -76,12 +76,8 @@ ohos_source_set("taskpool_static") {
   ]
 
   sources = taskpool_sources
-  sources += [ "../common/helper/napi_helper.cpp" ]
-
-  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
+  deps = []
   defines = []
-
-  external_deps = [ "hilog:libhilog" ]
 
   if (is_cross_platform_build) {
     include_dirs += [
@@ -89,7 +85,6 @@ ohos_source_set("taskpool_static") {
       "$plugins_root/interfaces",
     ]
     defines += [ "__ARKUI_CROSS__" ]
-    deps -= [ "${ets_util_path}/js_sys_module/timer:timer" ]
     deps += [
       "$plugins_root/libs/napi:napi_${target_os}",
       "$plugins_root/libs/uv:uv_${target_os}",
@@ -102,7 +97,10 @@ ohos_source_set("taskpool_static") {
       defines += [ "IOS_PLATFORM" ]
     }
   } else {
-    external_deps += [
+    sources += [ "../common/helper/napi_helper.cpp" ]
+    deps += [ "${ets_util_path}/js_sys_module/timer:timer" ]
+    external_deps = [
+      "hilog:libhilog",
       "hitrace:hitrace_meter",
       "napi:ace_napi",
     ]

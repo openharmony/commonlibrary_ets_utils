@@ -18,7 +18,9 @@
 #include "helper/hitrace_helper.h"
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "worker_new.h"
+#if !defined(__ARKUI_CROSS__)
 #include "parameters.h"
+#endif
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace OHOS::JsSysModule;
@@ -792,7 +794,11 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     }
     Worker* worker = nullptr;
     {
+#if !defined(__ARKUI_CROSS__)
         int maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
+#else
+        int maxWorkers = MAX_WORKERS;
+#endif
         std::lock_guard<std::mutex> lock(g_workersMutex);
         if (g_workers.size() >= maxWorkers) {
             napi_throw_error(env, nullptr, "Too many workers, the number of workers exceeds the maximum.");
