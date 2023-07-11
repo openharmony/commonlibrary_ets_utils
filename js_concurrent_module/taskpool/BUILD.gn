@@ -89,6 +89,7 @@ ohos_source_set("taskpool_static") {
       "$plugins_root/interfaces",
     ]
     defines += [ "__ARKUI_CROSS__" ]
+    deps -= [ "${ets_util_path}/js_sys_module/timer:timer" ]
     deps += [
       "$plugins_root/libs/napi:napi_${target_os}",
       "$plugins_root/libs/uv:uv_${target_os}",
