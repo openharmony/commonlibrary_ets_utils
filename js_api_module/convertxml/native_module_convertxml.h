@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef NATIVE_MODULE_CONVERTXML_H_
-#define NATIVE_MODULE_CONVERTXML_H_
+#ifndef NATIVE_MODULE_CONVERTXML_H
+#define NATIVE_MODULE_CONVERTXML_H
 
 #include "napi/native_api.h"
 
 namespace OHOS::Xml {
-    napi_value ConvertXmlInit(napi_env env, napi_value exports);
+napi_value ConvertXmlInit(napi_env env, napi_value exports);
 }
-#endif
+#endif // NATIVE_MODULE_CONVERTXML_H

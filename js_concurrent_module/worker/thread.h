@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_WORKER_THREAD_H_
-#define JS_CONCURRENT_MODULE_WORKER_THREAD_H_
+#ifndef JS_CONCURRENT_MODULE_WORKER_THREAD_H
+#define JS_CONCURRENT_MODULE_WORKER_THREAD_H
 
 #include <uv.h>
 
@@ -36,4 +36,4 @@ private:
 };
 }  // namespace Commonlibrary::Concurrent::WorkerModule
 
-#endif // #define JS_CONCURRENT_MODULE_WORKER_THREAD_H_
+#endif // #define JS_CONCURRENT_MODULE_WORKER_THREAD_H

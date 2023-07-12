@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H
+#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H
 
 #include <queue>
 
@@ -38,4 +38,4 @@ private:
     std::queue<uint32_t> tasks_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H

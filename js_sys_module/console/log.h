@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JCONSOLE_LOG_H_
-#define JCONSOLE_LOG_H_
+#ifndef JCONSOLE_LOG_H
+#define JCONSOLE_LOG_H
 
 #ifdef LINUX_PLATFORM
 #include <cstring>
@@ -49,4 +49,4 @@ constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_APP, LOG_DOMAIN, LOG_TAG
 #define HILOG_INFO(fmt, ...) HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
 #define HILOG_DEBUG(fmt, ...) HILOG_PRINT(Debug, fmt, ##__VA_ARGS__)
 
-#endif /* JCONSOLE_LOG_H_ */
+#endif /* JCONSOLE_LOG_H */

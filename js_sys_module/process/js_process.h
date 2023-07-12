@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PROCESS_JS_PROCESS_H_
-#define PROCESS_JS_PROCESS_H_
+#ifndef PROCESS_JS_PROCESS_H
+#define PROCESS_JS_PROCESS_H
 
 #include <cstring>
 #include <map>
@@ -315,4 +315,4 @@ namespace OHOS::JsSysModule::Process {
         int LAST_APPLICATION_UID = 19999;
     };
 } // namespace OHOS::JsSysModule::Process
-#endif // PROCESS_JS_PROCESS_H_
+#endif // PROCESS_JS_PROCESS_H

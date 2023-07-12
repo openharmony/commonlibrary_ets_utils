@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef XML_JS_XML_H_
-#define XML_JS_XML_H_
+#ifndef XML_JS_XML_H
+#define XML_JS_XML_H
 
 #include <algorithm>
 #include <cstring>
@@ -419,4 +419,4 @@ namespace OHOS::xml {
         bool bDocDecl = false;
     };
 } // namespace OHOS::Xml
-#endif // XML_JS_XML_H_
+#endif // XML_JS_XML_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TEST_CONCURRENT_UNITTEST_TEST_H_
-#define TEST_CONCURRENT_UNITTEST_TEST_H_
+#ifndef TEST_CONCURRENT_UNITTEST_TEST_H
+#define TEST_CONCURRENT_UNITTEST_TEST_H
 
 #include "native_engine.h"
 
@@ -29,4 +29,4 @@ public:
 protected:
     NativeEngine *engine_;
 };
-#endif // TEST_CONCURRENT_UNITTEST_TEST_H_
+#endif // TEST_CONCURRENT_UNITTEST_TEST_H

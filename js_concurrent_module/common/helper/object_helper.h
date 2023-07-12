@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
-#define JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
+#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H
+#define JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H
 
 namespace Commonlibrary::Concurrent::Common::Helper {
 class DereferenceHelp {
@@ -88,4 +88,4 @@ private:
     napi_env env_ = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
-#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H_
+#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H

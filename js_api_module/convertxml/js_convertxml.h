@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef CONVERTXML_JS_CONVERTXML_H_
-#define CONVERTXML_JS_CONVERTXML_H_
+#ifndef CONVERTXML_JS_CONVERTXML_H
+#define CONVERTXML_JS_CONVERTXML_H
 
 #include <string>
 #include <vector>
@@ -136,4 +136,4 @@ namespace OHOS::Xml {
         XmlInfo xmlInfo_;
     };
 } // namespace OHOS::Xml
-#endif // CONVERTXML_JS_CONVERTXML_H_
+#endif // CONVERTXML_JS_CONVERTXML_H

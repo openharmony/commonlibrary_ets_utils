@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H_
-#define JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H_
+#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H
+#define JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -87,4 +87,4 @@ public:
     static const int32_t ERR_CANCEL_NONEXIST_TASK_GROUP = 10200018; // 10200018 : cancel nonexist task group
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
-#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H_
+#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TEST_UNITTEST_TEST_H_
-#define TEST_UNITTEST_TEST_H_
+#ifndef TEST_UNITTEST_TEST_H
+#define TEST_UNITTEST_TEST_H
 
 #include "native_engine.h"
 
@@ -47,4 +47,4 @@ protected:
     NativeEngine *engine_;
 };
 
-#endif // TEST_UNITTEST_TEST_H_
+#endif // TEST_UNITTEST_TEST_H

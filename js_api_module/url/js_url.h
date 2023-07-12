@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef URL_JS_URL_H_
-#define URL_JS_URL_H_
+#ifndef URL_JS_URL_H
+#define URL_JS_URL_H
 
 #include <algorithm>
 #include <bitset>
@@ -396,4 +396,4 @@ namespace OHOS::Url {
         std::vector<std::string> searchParams;
     };
 } // namespace OHOS::Url
-#endif // URL_JS_URL_H_
+#endif // URL_JS_URL_H

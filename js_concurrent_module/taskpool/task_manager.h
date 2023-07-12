@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H
+#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H
 
 #include <array>
 #include <list>
@@ -209,4 +209,4 @@ private:
     std::unordered_map<uint32_t, GroupInfo*> groupInfoMap_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H
