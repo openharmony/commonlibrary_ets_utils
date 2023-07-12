@@ -95,14 +95,17 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         napi_has_named_property(env, args[0], GROUP_ID_STR, &isGroup);
         if (isGroup) {
             return ExecuteGroup(env, args[0], Priority(priority));
-        } else {
-            uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
-            TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, args[0], executeId);
-            napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
-            TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, executeId);
-            ExecuteFunction(env, taskInfo, Priority(priority));
-            return promise;
         }
+        uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
+        TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, args[0], executeId);
+        if (taskInfo == nullptr) {
+            HILOG_ERROR("taskpool::ExecuteTask taskInfo is nullptr");
+            return nullptr;
+        }
+        napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
+        TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, executeId);
+        ExecuteFunction(env, taskInfo, Priority(priority));
+        return promise;
     }
     if (type != napi_function) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: first param must be object or function");
@@ -117,6 +120,10 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
     // Set task id to 0 when execute from func directly
     TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, args[0], argsArray, 0, executeId);
+    if (taskInfo == nullptr) {
+        HILOG_ERROR("taskpool::ExecuteFunction taskInfo is nullptr");
+        return nullptr;
+    }
     napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
     TaskManager::GetInstance().StoreRunningInfo(0, executeId);
     ExecuteFunction(env, taskInfo);
