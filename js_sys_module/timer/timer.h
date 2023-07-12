@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TIMER_TIMER_H_
-#define TIMER_TIMER_H_
+#ifndef TIMER_TIMER_H
+#define TIMER_TIMER_H
 
 #include <map>
 #include <mutex>
@@ -71,4 +71,4 @@ private:
     static std::mutex timeLock;
 };
 } // namespace Commonlibrary::JsSysModule
-#endif // TIMER_TIMER_H_
+#endif // TIMER_TIMER_H

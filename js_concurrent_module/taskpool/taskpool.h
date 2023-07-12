@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H
+#define JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -48,4 +48,4 @@ private:
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H

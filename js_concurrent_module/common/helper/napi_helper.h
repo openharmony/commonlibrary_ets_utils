@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_
-#define JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_
+#ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H
+#define JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H
 
 #include <uv.h>
 #include "napi/native_api.h"
@@ -53,4 +53,4 @@ public:
     static uint32_t GetUint32Value(napi_env env, napi_value value);
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
-#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H_
+#endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
+#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
 
 #include <list>
 
@@ -48,4 +48,4 @@ struct GroupInfo {
 };
 
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H

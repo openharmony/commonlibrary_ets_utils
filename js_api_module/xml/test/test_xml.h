@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TEST_XML_H_
-#define TEST_XML_H_
+#ifndef TEST_XML_H
+#define TEST_XML_H
 
 #include "../js_xml.h"
 
@@ -404,4 +404,4 @@ bool XmlTest::ParseDeclaration(std::string str)
     return true;
 }
 }
-#endif
+#endif // TEST_XML_H

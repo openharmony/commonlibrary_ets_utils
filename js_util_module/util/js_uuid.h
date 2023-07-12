@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef UTIL_JS_UUID_H_
-#define UTIL_JS_UUID_H_
+#ifndef UTIL_JS_UUID_H
+#define UTIL_JS_UUID_H
 
 #include <cstring>
 #include <iostream>
@@ -68,4 +68,4 @@ unsigned char CharToHex(char in);
 unsigned char ConvertBits(std::string &input);
 unsigned char HexToChar(unsigned char in);
 }
-#endif // UTIL_JS_UUID_H_
+#endif // UTIL_JS_UUID_H

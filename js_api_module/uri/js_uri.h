@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef URI_JS_URI_H_
-#define URI_JS_URI_H_
+#ifndef URI_JS_URI_H
+#define URI_JS_URI_H
 
 #include <bitset>
 #include <cstdlib>
@@ -149,4 +149,4 @@ namespace OHOS::Uri {
         std::string errStr_;
     };
 } // namespace OHOS::Uri
-#endif // URI_JS_URI_H_
+#endif // URI_JS_URI_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TEST_TIMER_H_
-#define TEST_TIMER_H_
+#ifndef TEST_TIMER_H
+#define TEST_TIMER_H
 
 #include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
 #include "../timer.h"
@@ -44,4 +44,4 @@ napi_value TimerTest::ClearTimer(napi_env env, napi_callback_info cbinfo)
     return Timer::ClearTimer(env, cbinfo);
 };
 }
-#endif
+#endif // TEST_TIMER_H

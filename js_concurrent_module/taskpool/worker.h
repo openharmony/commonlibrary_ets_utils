@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H
+#define JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H
 
 #include <mutex>
 
@@ -156,4 +156,4 @@ private:
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H

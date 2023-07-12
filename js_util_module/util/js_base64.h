@@ -25,8 +25,8 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-#ifndef UTIL_JS_BASE64_H_
-#define UTIL_JS_BASE64_H_
+#ifndef UTIL_JS_BASE64_H
+#define UTIL_JS_BASE64_H
 
 namespace OHOS::Util {
     struct EncodeInfo {
@@ -148,4 +148,4 @@ namespace OHOS::Util {
         static void EndStdDecode(napi_env env, napi_status status, void *buffer);
     };
 }
-#endif // UTIL_JS_BASE64_H_
+#endif // UTIL_JS_BASE64_H

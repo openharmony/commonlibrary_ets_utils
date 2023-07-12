@@ -31,6 +31,6 @@ static const std::map<Priority, QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
 
 int SetWorkerPriority(Priority priority)
 {
-    return SetThreadQos(WORKERPRIORITY_QOSLEVEL_MAP.find(priority)->second);
+    return SetThreadQos(WORKERPRIORITY_QOSLEVEL_MAP.at(priority));
 }
 } // namespace Commonlibrary::Concurrent::Common::Platform

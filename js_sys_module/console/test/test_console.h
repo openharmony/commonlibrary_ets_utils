@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef TEST_CONSOLE_H_
-#define TEST_CONSOLE_H_
+#ifndef TEST_CONSOLE_H
+#define TEST_CONSOLE_H
 
 #include "../console.h"
 
@@ -39,4 +39,4 @@ public:
     static void PrintTime(std::string timerName, double time, std::string& log);
 };
 }
-#endif
+#endif // TEST_CONSOLE_H

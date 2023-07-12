@@ -25,8 +25,8 @@
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 
-#ifndef UTIL_JS_TYPES_H_
-#define UTIL_JS_TYPES_H_
+#ifndef UTIL_JS_TYPES_H
+#define UTIL_JS_TYPES_H
 
 namespace OHOS::Util {
     class Types {
@@ -355,4 +355,4 @@ namespace OHOS::Util {
         napi_value IsWeakSet(napi_env env, napi_value src) const;
     };
 }
-#endif // UTIL_JS_TYPES_H_
+#endif // UTIL_JS_TYPES_H

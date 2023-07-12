@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_WORKER_WORKER_H_
-#define JS_CONCURRENT_MODULE_WORKER_WORKER_H_
+#ifndef JS_CONCURRENT_MODULE_WORKER_WORKER_H
+#define JS_CONCURRENT_MODULE_WORKER_WORKER_H
 
 #include <list>
 #include <map>
@@ -460,4 +460,4 @@ private:
     std::recursive_mutex liveStatusLock_ {};
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
-#endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H_
+#endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H

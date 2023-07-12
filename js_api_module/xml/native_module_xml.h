@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef NATIVE_MODULE_XML_H_
-#define NATIVE_MODULE_XML_H_
+#ifndef NATIVE_MODULE_XML_H
+#define NATIVE_MODULE_XML_H
 
 #include "napi/native_api.h"
 
 namespace OHOS::xml {
-    napi_value XmlSerializerInit(napi_env env, napi_value exports);
-    napi_value XmlPullParserInit(napi_env env, napi_value exports);
+napi_value XmlSerializerInit(napi_env env, napi_value exports);
+napi_value XmlPullParserInit(napi_env env, napi_value exports);
 }
-#endif
+#endif // NATIVE_MODULE_XML_H

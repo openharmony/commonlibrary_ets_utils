@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PROCESS_JS_CHILDPROCESS_H_
-#define PROCESS_JS_CHILDPROCESS_H_
+#ifndef PROCESS_JS_CHILDPROCESS_H
+#define PROCESS_JS_CHILDPROCESS_H
 
 #include <string>
 #include <sys/types.h>
@@ -163,4 +163,4 @@ namespace OHOS::JsSysModule::Process {
         bool isWait_ = true;
     };
 } // namespace OHOS::JsSysModule::Process
-#endif // PROCESS_JS_CHILDPROCESS_H_
+#endif // PROCESS_JS_CHILDPROCESS_H

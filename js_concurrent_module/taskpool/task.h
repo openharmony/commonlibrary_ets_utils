@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
+#define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
 
 #include <uv.h>
 
@@ -58,4 +58,4 @@ struct TaskInfo {
     Priority priority = Priority::DEFAULT;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H

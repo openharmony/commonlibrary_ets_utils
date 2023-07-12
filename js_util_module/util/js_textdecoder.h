@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef UTIL_JS_TEXTDECODER_H_
-#define UTIL_JS_TEXTDECODER_H_
+#ifndef UTIL_JS_TEXTDECODER_H
+#define UTIL_JS_TEXTDECODER_H
 
 #include <memory.h>
 #include <string>
@@ -168,4 +168,4 @@ namespace OHOS::Util {
 #endif
     };
 }
-#endif // UTIL_JS_TEXTDECODER_H_
+#endif // UTIL_JS_TEXTDECODER_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_COMMON_UTILS_H_
-#define JS_CONCURRENT_MODULE_COMMON_UTILS_H_
+#ifndef JS_CONCURRENT_MODULE_COMMON_UTILS_H
+#define JS_CONCURRENT_MODULE_COMMON_UTILS_H
 
 namespace Commonlibrary::Concurrent::Common {
 // for task priority and worker priority
@@ -26,4 +26,4 @@ enum Priority {
     DEFAULT = MEDIUM,
 };
 } // namespace Commonlibrary::Concurrent::Common
-#endif // JS_CONCURRENT_MODULE_COMMON_UTILS_H_
+#endif // JS_CONCURRENT_MODULE_COMMON_UTILS_H

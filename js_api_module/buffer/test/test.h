@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TEST_BUFFER_UNITTEST_TEST_H_
-#define TEST_BUFFER_UNITTEST_TEST_H_
+#ifndef TEST_BUFFER_UNITTEST_TEST_H
+#define TEST_BUFFER_UNITTEST_TEST_H
 
 #include "native_engine.h"
 
@@ -30,4 +30,4 @@ protected:
     NativeEngine *engine_;
 };
 
-#endif // TEST_BUFFER_UNITTEST_TEST_H_
+#endif // TEST_BUFFER_UNITTEST_TEST_H

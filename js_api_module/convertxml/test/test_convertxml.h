@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef TEST_CONVERTXML_H_
-#define TEST_CONVERTXML_H_
+#ifndef TEST_CONVERTXML_H
+#define TEST_CONVERTXML_H
 
 #include "../js_convertxml.h"
 
@@ -102,4 +102,4 @@ void CxmlTest::DealCDataInfo(bool bCData, xmlNodePtr &curNode)
     convert.DealCDataInfo(bCData, curNode);
 }
 }
-#endif
+#endif // TEST_CONVERTXML_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef UTIL_JS_TEXTENCODER_H_
-#define UTIL_JS_TEXTENCODER_H_
+#ifndef UTIL_JS_TEXTENCODER_H
+#define UTIL_JS_TEXTENCODER_H
 
 #include <string>
 
@@ -63,4 +63,4 @@ namespace OHOS::Util {
         std::string encoding_;
     };
 }
-#endif // UTIL_JS_TEXTENCODER_H_
+#endif // UTIL_JS_TEXTENCODER_H

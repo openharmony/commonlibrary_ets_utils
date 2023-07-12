@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef CONSOLE_CONSOLE_H_
-#define CONSOLE_CONSOLE_H_
+#ifndef CONSOLE_CONSOLE_H
+#define CONSOLE_CONSOLE_H
 
 #include <map>
 #include <string>
@@ -75,4 +75,4 @@ private:
     static thread_local std::string groupIndent;
 };
 } // namespace Commonlibrary::JsSysModule
-#endif // CONSOLE_CONSOLE_H_
+#endif // CONSOLE_CONSOLE_H

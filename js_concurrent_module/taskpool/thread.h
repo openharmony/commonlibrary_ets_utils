@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_TASKPOOL_THREAD_H_
-#define JS_CONCURRENT_MODULE_TASKPOOL_THREAD_H_
+#ifndef JS_CONCURRENT_MODULE_TASKPOOL_THREAD_H
+#define JS_CONCURRENT_MODULE_TASKPOOL_THREAD_H
 
 #include <uv.h>
 
@@ -35,4 +35,4 @@ private:
     uv_thread_t tid_ {0};
 };
 }  // namespace Commonlibrary::Concurrent::TaskPoolModule
-#endif // JS_CONCURRENT_MODULE_TASKPOOL_THREAD_H_
+#endif // JS_CONCURRENT_MODULE_TASKPOOL_THREAD_H
