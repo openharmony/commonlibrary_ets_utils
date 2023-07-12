@@ -30,6 +30,8 @@
 #include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common;
+
 static constexpr char FUNCTION_STR[] = "function";
 static constexpr char ARGUMENTS_STR[] = "arguments";
 static constexpr char TASKID_STR[] = "taskId";
@@ -109,8 +111,6 @@ private:
 
     std::atomic<int32_t> currentExecuteId_ = 1; // 1: executeId begin from 1, 0 for exception
     std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
-    uint32_t highPrioExecuteCount_ = 0;
-    uint32_t mediumPrioExecuteCount_ = 0;
 
     // <executeId, TaskInfo>
     std::unordered_map<uint32_t, TaskInfo*> taskInfos_ {};
@@ -144,9 +144,13 @@ private:
     std::atomic<uint32_t> expandingCount_ = 0;
     std::atomic<uint64_t> nextCheckTime_ = 0;
 
-    std::atomic<bool> isInitialized_ = false;
+    // for task priority
+    uint32_t highPrioExecuteCount_ = 0;
+    uint32_t mediumPrioExecuteCount_ = 0;
     std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};
     std::mutex taskQueuesMutex_;
+
+    std::atomic<bool> isInitialized_ = false;
 
     friend class TaskGroupManager;
 };

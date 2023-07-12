@@ -40,6 +40,7 @@ static constexpr uint32_t CHECK_INTERVAL = 60000; // 60000: 1min
 static constexpr uint32_t MIN_TIMEOUT_TIME = 180000; // 180000: 3min
 static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 6000000: 10min
 
+// ----------------------------------- TaskManager ----------------------------------------
 TaskManager& TaskManager::GetInstance()
 {
     static TaskManager manager;
@@ -677,6 +678,7 @@ napi_value TaskManager::IsCanceled(napi_env env, napi_callback_info cbinfo)
     return NapiHelper::CreateBooleanValue(env, isCanceled);
 }
 
+// ----------------------------------- TaskGroupManager ----------------------------------------
 TaskGroupManager &TaskGroupManager::GetInstance()
 {
     static TaskGroupManager groupManager;

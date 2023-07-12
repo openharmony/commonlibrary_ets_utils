@@ -19,10 +19,12 @@
 #include <uv.h>
 
 #include "napi/native_api.h"
+#include "utils.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common;
+
 enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED };
-enum Priority { HIGH, MEDIUM, LOW, NUMBER, DEFAULT = MEDIUM };
 
 struct GroupInfo;
 class Task {
