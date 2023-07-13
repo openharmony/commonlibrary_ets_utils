@@ -179,7 +179,7 @@ bool Worker::PrepareForWorkerInstance()
     Timer::RegisterTime(workerEnv_);
 
     // Check exception after worker construction
-    if (IsExceptionPending(workerEnv_)) {
+    if (NapiHelper::IsExceptionPending(workerEnv_)) {
         HILOG_ERROR("taskpool:: Worker construction occur exception");
         return false;
     }
@@ -377,13 +377,6 @@ void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result, bool 
     auto env = reinterpret_cast<napi_env>(engine);
     taskInfo->success = success;
     NotifyTaskResult(env, taskInfo, reinterpret_cast<napi_value>(result));
-}
-
-bool Worker::IsExceptionPending(napi_env env) const
-{
-    bool isExceptionPending = false;
-    napi_is_exception_pending(env, &isExceptionPending);
-    return isExceptionPending;
 }
 
 // reset qos_user_initiated after perform task

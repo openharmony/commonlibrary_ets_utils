@@ -372,9 +372,8 @@ bool TaskManager::UpdateExecuteState(uint32_t executeId, ExecuteState state)
     if (iter == executeStates_.end()) {
         return false;
     }
-    std::string traceInfo = "UpdateExecuteState: ";
-    traceInfo += "executeId : " + std::to_string(executeId);
-    traceInfo += ", executeState : " + std::to_string(state);
+    std::string traceInfo = "UpdateExecuteState: executeId : " + std::to_string(executeId)
+        + ", executeState : " + std::to_string(state);
     HITRACE_HELPER_METER_NAME(traceInfo);
     iter->second = state;
     return true;
@@ -411,7 +410,7 @@ const std::list<uint32_t>& TaskManager::QueryRunningTask(napi_env env, uint32_t 
     return iter->second;
 }
 
-void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
+void TaskManager::CancelTask(napi_env env, uint32_t executeId)
 {
     // 1. Cannot find taskInfo by executeId, throw error
     // 2. Find executing taskInfo, skip it

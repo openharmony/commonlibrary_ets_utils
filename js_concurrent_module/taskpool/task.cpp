@@ -87,7 +87,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
 
     // setTransferList(ArrayBuffer[]), check ArrayBuffer[]
     if (!NapiHelper::IsArray(args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setTransferList param must be array");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setTransferList first param must be array");
         return nullptr;
     }
     uint32_t arrayLength = NapiHelper::GetArrayLength(env, args[0]);

@@ -1256,16 +1256,9 @@ void NewWorker::TranslateErrorEvent(napi_env env, napi_value error, napi_value *
     napi_set_named_property(env, *obj, "error", error);
 }
 
-bool NewWorker::IsExceptionPending(napi_env env) const
-{
-    bool isExceptionPending = false;
-    napi_is_exception_pending(env, &isExceptionPending);
-    return isExceptionPending;
-}
-
 void NewWorker::HandleHostException() const
 {
-    if (!IsExceptionPending(hostEnv_)) {
+    if (!NapiHelper::IsExceptionPending(hostEnv_)){
         return;
     }
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
@@ -1274,7 +1267,7 @@ void NewWorker::HandleHostException() const
 
 void NewWorker::HandleException()
 {
-    if (!IsExceptionPending(workerEnv_)) {
+    if (!NapiHelper::IsExceptionPending(workerEnv_)) {
         return;
     }
 

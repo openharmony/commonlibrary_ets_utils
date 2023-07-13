@@ -61,12 +61,11 @@ public:
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
     const std::list<uint32_t>& QueryRunningTask(napi_env env, uint32_t taskId);
-    void CancelExecution(napi_env env, uint32_t executeId);
+    void CancelTask(napi_env env, uint32_t executeId);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId,
                                napi_value transferList = nullptr);
     TaskInfo* GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId);
     void ReleaseTaskContent(TaskInfo* taskInfo);
-    void CancelTask(napi_env env, uint32_t taskId);
 
     // for worker state
     void NotifyWorkerIdle(Worker* worker);
