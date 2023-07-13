@@ -99,6 +99,8 @@ ohos_source_set("taskpool_static") {
   external_deps = [ "hilog:libhilog" ]
 
   if (is_cross_platform_build) {
+    sources -= concurrent_helper_sources
+    deps -= [ "${ets_util_path}/js_sys_module/timer:timer" ]
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
