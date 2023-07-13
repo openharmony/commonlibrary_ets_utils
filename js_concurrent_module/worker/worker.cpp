@@ -18,7 +18,9 @@
 #include "helper/hitrace_helper.h"
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "worker_new.h"
+#if defined(OHOS_PLATFORM)
 #include "parameters.h"
+#endif
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace OHOS::JsSysModule;
@@ -792,7 +794,10 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     }
     Worker* worker = nullptr;
     {
-        int maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
+        int maxWorkers = MAX_WORKERS;
+    #if defined(OHOS_PLATFORM)
+        maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
+    #endif
         std::lock_guard<std::mutex> lock(g_workersMutex);
         if (static_cast<int>(g_workers.size()) >= maxWorkers) {
             napi_throw_error(env, nullptr, "Too many workers, the number of workers exceeds the maximum.");

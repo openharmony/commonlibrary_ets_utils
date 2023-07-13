@@ -18,7 +18,9 @@
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
+#if defined(OHOS_PLATFORM)
 #include "parameters.h"
+#endif
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace OHOS::JsSysModule;
@@ -117,7 +119,10 @@ napi_value NewWorker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     }
     NewWorker* worker = nullptr;
     {
-        int maxNewWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_NEW_WORKERS);
+        int maxNewWorkers = MAX_NEW_WORKERS;
+    #if defined(OHOS_PLATFORM)
+        maxNewWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_NEW_WORKERS);
+    #endif
         std::lock_guard<std::mutex> lock(g_newWorkersMutex);
         if (static_cast<int>(g_newWorkers.size()) >= maxNewWorkers) {
             ErrorHelper::ThrowError(env,
