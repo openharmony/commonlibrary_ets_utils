@@ -82,6 +82,10 @@ void XmlTest::SetNamespace(napi_env env)
 {
     XmlSerializer xmlSerializer = construct(env);
     xmlSerializer.type = "isStart";
+    xmlSerializer.iLength_ = 0;
+    xmlSerializer.depth_ = 1;
+    xmlSerializer.elementStack.push_back("");
+    xmlSerializer.elementStack.push_back("");
     xmlSerializer.SetNamespace("xml", "convert");
 }
 
@@ -193,6 +197,7 @@ bool XmlTest::TestParseNsp(napi_env env)
     xml.attributes.push_back("");
     xml.attributes.push_back("");
     xml.attributes.push_back("xmlns");
+    xml.attributes.push_back("");
     xml.nspCounts_.push_back(0);
     xml.name_ = ":";
     return xml.ParseNsp();
