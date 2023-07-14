@@ -372,7 +372,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest026, testing::ext::TestSize.Level0)
     TaskManager& taskManger = TaskManager::GetInstance();
     taskManger.InitTaskManager(env);
     uint32_t executeId = taskManger.GenerateExecuteId();
-    taskManger.CancelExecution(env, executeId);
+    taskManger.CancelTask(env, executeId);
     ASSERT_TRUE(executeId == 9);
 }
 

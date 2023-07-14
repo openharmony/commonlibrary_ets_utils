@@ -467,16 +467,9 @@ void Worker::TerminateWorker()
     UpdateWorkerState(TERMINATED);
 }
 
-bool Worker::IsExceptionPending(napi_env env) const
-{
-    bool isExceptionPending = false;
-    napi_is_exception_pending(env, &isExceptionPending);
-    return isExceptionPending;
-}
-
 void Worker::HandleHostException() const
 {
-    if (!IsExceptionPending(hostEnv_)) {
+    if (!NapiHelper::IsExceptionPending(hostEnv_)) {
         return;
     }
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
@@ -485,7 +478,7 @@ void Worker::HandleHostException() const
 
 void Worker::HandleException()
 {
-    if (!IsExceptionPending(workerEnv_)) {
+    if (!NapiHelper::IsExceptionPending(workerEnv_)) {
         return;
     }
 

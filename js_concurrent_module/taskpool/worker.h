@@ -48,6 +48,11 @@ private:
 
     ~Worker() = default;
 
+    Worker(const Worker &) = delete;
+    Worker& operator=(const Worker &) = delete;
+    Worker(Worker &&) = delete;
+    Worker& operator=(Worker &&) = delete;
+
     void NotifyIdle();
     void NotifyWorkerCreated();
     void NotifyTaskRunning()
@@ -116,9 +121,7 @@ private:
         }
         ~PriorityScope()
         {
-            if (worker_ != nullptr) {
-                worker_->ResetWorkerPriority();
-            }
+            worker_->ResetWorkerPriority();
         }
 
     private:
@@ -127,7 +130,6 @@ private:
 
     void StartExecuteInThread();
     static void ExecuteInThread(const void* data);
-    bool IsExceptionPending(napi_env env) const;
     bool PrepareForWorkerInstance();
     void ReleaseWorkerThreadContent();
     void ResetWorkerPriority();

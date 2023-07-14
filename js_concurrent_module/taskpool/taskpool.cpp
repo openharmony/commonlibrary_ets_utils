@@ -24,6 +24,7 @@
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
+
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     HILOG_INFO("taskpool:: Import taskpool");
@@ -85,6 +86,10 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     if (type == napi_object) {
         // Get execution priority
         if (argc > 1) {
+            if (!NapiHelper::IsNumber(args[1])) {
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority type is error");
+                return nullptr;
+            }
             priority = NapiHelper::GetUint32Value(env, args[1]);
             if (priority >= Priority::NUMBER) {
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority value is error");
@@ -231,10 +236,10 @@ void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priori
 {
     uint32_t executeId = taskInfo->executeId;
     taskInfo->priority = priority;
-    std::string strTrace = "Task Allocation: taskId : " + std::to_string(taskInfo->taskId);
-    strTrace += ", executeId : " + std::to_string(executeId);
-    strTrace += ", priority : " + std::to_string(priority);
-    strTrace += ", executeState : " + std::to_string(ExecuteState::WAITING);
+    std::string strTrace = "Task Allocation: taskId : " + std::to_string(taskInfo->taskId)
+        + ", executeId : " + std::to_string(executeId)
+        + ", priority : " + std::to_string(priority)
+        + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
     TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
@@ -268,7 +273,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         uint32_t id = NapiHelper::GetUint32Value(env, taskId);
         const std::list<uint32_t>& executeList = TaskManager::GetInstance().QueryRunningTask(env, id);
         for (uint32_t executeId : executeList) {
-            TaskManager::GetInstance().CancelExecution(env, executeId);
+            TaskManager::GetInstance().CancelTask(env, executeId);
         }
     } else {
         napi_value groupIdVal = NapiHelper::GetNameProperty(env, args[0], GROUP_ID_STR);

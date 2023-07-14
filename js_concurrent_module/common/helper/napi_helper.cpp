@@ -41,7 +41,19 @@ bool NapiHelper::IsArray(napi_value value)
 bool NapiHelper::IsFunction(napi_value object)
 {
     auto valNative = reinterpret_cast<NativeValue*>(object);
-    return valNative == nullptr ? false :  valNative->TypeOf() == NATIVE_FUNCTION;
+    return valNative == nullptr ? false : valNative->TypeOf() == NATIVE_FUNCTION;
+}
+
+bool NapiHelper::IsArrayBuffer(napi_value value)
+{
+    auto valNative = reinterpret_cast<NativeValue*>(value);
+    return valNative == nullptr ? false : valNative->IsArrayBuffer();
+}
+
+bool NapiHelper::IsNumber(napi_value value)
+{
+    auto valNative = reinterpret_cast<NativeValue*>(value);
+    return valNative == nullptr ? false : valNative->TypeOf() == NATIVE_NUMBER;
 }
 
 size_t NapiHelper::GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo)
@@ -216,12 +228,6 @@ napi_value NapiHelper::CreatePromise(napi_env env, napi_deferred* deferred)
     return promise;
 }
 
-bool NapiHelper::IsArrayBuffer(napi_value value)
-{
-    auto valNative = reinterpret_cast<NativeValue*>(value);
-    return valNative == nullptr ? false :  valNative->IsArrayBuffer();
-}
-
 uint32_t NapiHelper::GetArrayLength(napi_env env, napi_value array)
 {
     uint32_t arrayLength = 0;
@@ -234,5 +240,12 @@ uint32_t NapiHelper::GetUint32Value(napi_env env, napi_value value)
     uint32_t result = 0;
     napi_get_value_uint32(env, value, &result);
     return result;
+}
+
+bool NapiHelper::IsExceptionPending(napi_env env)
+{
+    bool isExceptionPending = false;
+    napi_is_exception_pending(env, &isExceptionPending);
+    return isExceptionPending;
 }
 } // namespace Commonlibrary::Concurrent::Common::Helper
