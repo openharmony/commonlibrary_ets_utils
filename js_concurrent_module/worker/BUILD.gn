@@ -34,6 +34,20 @@ ohos_shared_library("worker") {
 
   deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
 
+  defines = []
+
+  if (is_ohos) {
+    defines += [ "OHOS_PLATFORM" ]
+  } else if (is_mingw) {
+    defines += [ "WINDOWS_PLATFORM" ]
+  } else if (target_os == "android") {
+    defines += [ "ANDROID_PLATFORM" ]
+  } else if (target_os == "ios") {
+    defines += [ "IOS_PLATFORM" ]
+  } else if (is_mac && target_os != "android") {
+    defines += [ "MAC_PLATFORM" ]
+  }
+
   external_deps = [ "napi:ace_napi" ]
 
   if (is_linux && current_toolchain == host_toolchain) {
