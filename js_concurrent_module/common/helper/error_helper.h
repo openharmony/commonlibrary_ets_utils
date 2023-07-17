@@ -16,8 +16,16 @@
 #ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H
 #define JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H
 
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <regex>
+#include <sstream>
+#include <vector>
+
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "napi_helper.h"
 #include "native_engine/native_engine.h"
 
 namespace Commonlibrary::Concurrent::Common::Helper {
@@ -73,6 +81,92 @@ public:
     {
         napi_value concurrentError = NewError(env, errCode, errMessage);
         napi_throw(env, concurrentError);
+    }
+
+    static std::string GetCurrentTimeStamp()
+    {
+        auto now = std::chrono::system_clock::now();
+        std::time_t currentTimeStamp = std::chrono::system_clock::to_time_t(now);
+        std::tm* timeInfo = std::localtime(&currentTimeStamp);
+        std::stringstream ss;
+        ss << std::put_time(timeInfo, "%Y-%m-%d %X");
+        return ss.str();
+    }
+
+    static std::string GetErrorFileInfo(const std::string& input)
+    {
+        std::regex pattern("\\((.*?)\\)");
+        std::smatch match;
+        if (std::regex_search(input, match, pattern)) {
+            return match[1].str();
+        }
+        return "";
+    }
+
+    static std::vector<std::string> SplitErrorFileInfo(const std::string& input, char delimiter, int count)
+    {
+        std::vector<std::string> result;
+        std::string rawErrorInfo = GetErrorFileInfo(input);
+        if (rawErrorInfo.empty()) {
+            return result;
+        }
+
+        int pos = rawErrorInfo.rfind(delimiter);
+        while (pos != std::string::npos && count > 0) {
+            result.push_back(rawErrorInfo.substr(pos + 1));
+            rawErrorInfo = rawErrorInfo.substr(0, pos);
+            pos = rawErrorInfo.rfind(delimiter);
+            count--;
+        }
+        result.push_back(rawErrorInfo);
+        std::reverse(result.begin(), result.end());
+        return result;
+    }
+
+    static void TranslateErrorEvent(napi_env env, napi_value error, napi_value *obj)
+    {
+        napi_create_object(env, obj);
+
+        // add timeStamp
+        std::string current = GetCurrentTimeStamp();
+        napi_value timeStamp = nullptr;
+        napi_create_string_utf8(env, current.c_str(), NAPI_AUTO_LENGTH, &timeStamp);
+        napi_set_named_property(env, *obj, "timeStamp", timeStamp);
+
+        // add backtrace
+        napi_value stack = NapiHelper::GetNameProperty(env, error, "stack");
+        napi_set_named_property(env, *obj, "backtrace", stack);
+        std::string rawStack = NapiHelper::GetString(env, stack);
+        std::vector<std::string> result = SplitErrorFileInfo(rawStack, ':', 2); // 2 : the last two :
+        if (result.size() == 3) { // 3 : the rawStack is divided into three parts by last two :
+            // add filename
+            napi_value filenameValue = nullptr;
+            napi_create_string_utf8(env, result[0].c_str(), NAPI_AUTO_LENGTH, &filenameValue); // 0 : filename
+            napi_set_named_property(env, *obj, "filename", filenameValue);
+
+            // add lineno
+            napi_value lineno = nullptr;
+            napi_create_string_utf8(env, result[1].c_str(), NAPI_AUTO_LENGTH, &lineno); // 1 : lineno
+            napi_set_named_property(env, *obj, "lineno", lineno);
+
+            // add colno
+            napi_value colno = nullptr;
+            napi_create_string_utf8(env, result[2].c_str(), NAPI_AUTO_LENGTH, &colno); // 2 : colno
+            napi_set_named_property(env, *obj, "colno", colno);
+        }
+
+        // add message
+        napi_value msgValue = nullptr;
+        napi_coerce_to_string(env, error, &msgValue);
+        napi_set_named_property(env, *obj, "message", msgValue);
+
+        // add type
+        napi_value eventType = nullptr;
+        napi_create_string_utf8(env, "ErrorEvent", NAPI_AUTO_LENGTH, &eventType);
+        napi_set_named_property(env, *obj, "type", eventType);
+
+        // add error
+        napi_set_named_property(env, *obj, "error", error);
     }
 
     static const int32_t TYPE_ERROR = 401; // 401 : the parameter type is incorrect

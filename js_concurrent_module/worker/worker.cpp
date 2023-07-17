@@ -15,9 +15,9 @@
 
 #include "worker.h"
 
-#include "helper/hitrace_helper.h"
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
-#include "worker_new.h"
+#include "helper/error_helper.h"
+#include "helper/hitrace_helper.h"
 #if defined(OHOS_PLATFORM)
 #include "parameters.h"
 #endif
@@ -128,7 +128,7 @@ bool Worker::PrepareForWorkerInstance()
     }
     // add timer interface
     Timer::RegisterTime(workerEnv_);
-    HILOG_INFO("worker:: stringContent size is %{public}zu", scriptContent.size());
+    HILOG_DEBUG("worker:: stringContent size is %{public}zu", scriptContent.size());
     napi_value execScriptResult = nullptr;
     napi_run_actor(workerEnv_, scriptContent, workerAmi.c_str(), &execScriptResult);
     if (execScriptResult == nullptr) {
@@ -229,7 +229,7 @@ void Worker::ExecuteInThread(const void* data)
         // 3. start worker loop
         worker->Loop();
     } else {
-        HILOG_ERROR("worker:: worker PrepareForWorkerInstance failure");
+        HILOG_ERROR("worker:: worker PrepareForWorkerInstance fail");
         worker->UpdateWorkerState(TERMINATED);
         HITRACE_HELPER_FINISH_TRACE;
     }
@@ -264,31 +264,28 @@ void Worker::HostOnErrorInner()
     NAPI_CALL_RETURN_VOID(hostEnv_, status);
     NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
-        HILOG_ERROR("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
+        HILOG_WARN("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
     }
 
     napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
     napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onerror");
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
-    if (!isCallable) {
-        HILOG_ERROR("worker:: worker onerror is not Callable");
-        return;
-    }
+
     MessageDataType data;
     while (errorQueue_.DeQueue(&data)) {
         napi_value result = nullptr;
         napi_deserialize(hostEnv_, data, &result);
-
         napi_value argv[1] = { result };
-        napi_value callbackResult = nullptr;
-        napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
-
+        if (isCallable) {
+            napi_value callbackResult = nullptr;
+            napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
+        }
         // handle listeners
         HandleEventListeners(hostEnv_, obj, 1, argv, "error");
         HandleHostException();
     }
     if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
-        HILOG_ERROR("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
+        HILOG_WARN("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
     }
 }
 
@@ -339,16 +336,23 @@ void Worker::WorkerOnMessage(const uv_async_t* req)
     worker->WorkerOnMessageInner();
 }
 
-void Worker::CloseHostCallback() const
+void Worker::CloseHostCallback()
 {
     {
         napi_status status = napi_ok;
         HandleScope scope(hostEnv_, status);
         NAPI_CALL_RETURN_VOID(hostEnv_, status);
         napi_value exitValue = nullptr;
-        napi_create_int32(hostEnv_, 1, &exitValue);
+        if (isErrorExit_) {
+            napi_create_int32(hostEnv_, 1, &exitValue); // 1 : exit because of error
+        } else {
+            napi_create_int32(hostEnv_, 0, &exitValue); // 0 : exit normally
+        }
         napi_value argv[1] = { exitValue };
         CallHostFunction(1, argv, "onexit");
+        napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
+        // handle listeners
+        HandleEventListeners(hostEnv_, obj, 1, argv, "exit");
     }
     CloseHelp::DeletePointer(this, false);
 }
@@ -358,7 +362,7 @@ void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, co
     std::string listener(type);
     auto iter = eventListeners_.find(listener);
     if (iter == eventListeners_.end()) {
-        HILOG_DEBUG("worker:: there is no listener for type %{public}s", type);
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s in host thread", type);
         return;
     }
 
@@ -367,6 +371,10 @@ void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, co
     while (it != listeners.end()) {
         WorkerListener* data = *it++;
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
+        if (!NapiHelper::IsCallable(env, callbackObj)) {
+            HILOG_DEBUG("worker:: host thread listener %{public}s is not callable", type);
+            return;
+        }
         napi_value callbackResult = nullptr;
         napi_call_function(env, recv, callbackObj, argc, argv, &callbackResult);
         if (!data->NextIsAvailable()) {
@@ -385,8 +393,12 @@ void Worker::HostOnMessageInner()
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!engine->InitContainerScopeFunc(scopeId_)) {
-        HILOG_ERROR("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
+        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
     }
+
+    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
+    napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onmessage");
+    bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
 
     MessageDataType data = nullptr;
     while (hostMessageQueue_.DeQueue(&data)) {
@@ -418,26 +430,21 @@ void Worker::HostOnMessageInner()
             HostOnMessageErrorInner();
             continue;
         }
-        napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
-        napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onmessage");
-        bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
-        if (!isCallable) {
-            // onmessage is not func, no need to continue
-            HILOG_ERROR("worker:: worker onmessage is not a callable");
-            continue;
-        }
+
         napi_value event = nullptr;
         napi_create_object(hostEnv_, &event);
         napi_set_named_property(hostEnv_, event, "data", result);
         napi_value argv[1] = { event };
-        napi_value callbackResult = nullptr;
-        napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
+        if (isCallable) {
+            napi_value callbackResult = nullptr;
+            napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
+        }
         // handle listeners.
         HandleEventListeners(hostEnv_, obj, 1, argv, "message");
         HandleHostException();
     }
     if (!engine->FinishContainerScopeFunc(scopeId_)) {
-        HILOG_ERROR("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
+        HILOG_WARN("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
     }
 }
 
@@ -492,7 +499,7 @@ void Worker::HandleException()
     }
 
     napi_value obj;
-    NewWorker::TranslateErrorEvent(workerEnv_, exception, &obj);
+    ErrorHelper::TranslateErrorEvent(workerEnv_, exception, &obj);
 
     // add filename
     napi_value filenameValue = nullptr;
@@ -549,10 +556,9 @@ void Worker::WorkerOnMessageInner()
         napi_create_object(workerEnv_, &event);
         napi_set_named_property(workerEnv_, event, "data", result);
         napi_value argv[1] = { event };
-        bool callFeedback = CallWorkerFunction(1, argv, "onmessage", true);
-        if (!callFeedback) {
-            HILOG_ERROR("worker:: call WorkerGlobalScope onmessage error");
-        }
+        CallWorkerFunction(1, argv, "onmessage", true);
+        napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->parentPort_);
+        ParentPortHandleEventListeners(workerEnv_, obj, 1, argv, "message", true);
     }
     napi_close_handle_scope(workerEnv_, scope);
 }
@@ -571,7 +577,10 @@ void Worker::HostOnMessageErrorInner()
 
 void Worker::WorkerOnMessageErrorInner()
 {
+    isErrorExit_ = true;
     CallWorkerFunction(0, nullptr, "onmessageerror", true);
+    napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->parentPort_);
+    ParentPortHandleEventListeners(workerEnv_, obj, 0, nullptr, "messageerror", true);
 }
 
 napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
@@ -922,11 +931,6 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
         }
     }
     char* typeStr = NapiHelper::GetString(env, args[0]);
-    if (typeStr == nullptr) {
-        CloseHelp::DeletePointer(listener, false);
-        napi_throw_error(env, nullptr, "worker listener type create error, please check.");
-        return nullptr;
-    }
     worker->AddListenerInner(env, typeStr, listener);
     CloseHelp::DeletePointer(typeStr, true);
     return NapiHelper::GetUndefinedValue(env);
@@ -1200,8 +1204,11 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
 
 void Worker::WorkerOnErrorInner(napi_value error)
 {
+    isErrorExit_ = true;
     napi_value argv[1] = { error };
     CallWorkerFunction(1, argv, "onerror", false);
+    napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->parentPort_);
+    ParentPortHandleEventListeners(workerEnv_, obj, 1, argv, "error", false);
 }
 
 bool Worker::CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch)
@@ -1212,14 +1219,14 @@ bool Worker::CallWorkerFunction(size_t argc, const napi_value* argv, const char*
     napi_value callback = NapiHelper::GetNamePropertyInParentPort(workerEnv_, parentPort_, methodName);
     bool isCallable = NapiHelper::IsCallable(workerEnv_, callback);
     if (!isCallable) {
-        HILOG_ERROR("worker:: WorkerGlobalScope %{public}s is not Callable", methodName);
+        HILOG_DEBUG("worker:: parentPort %{public}s is not Callable", methodName);
         return false;
     }
     napi_value undefinedValue = NapiHelper::GetUndefinedValue(workerEnv_);
     napi_value callbackResult = nullptr;
     napi_call_function(workerEnv_, undefinedValue, callback, argc, argv, &callbackResult);
     if (tryCatch && callbackResult == nullptr) {
-        // handle exception
+        HILOG_DEBUG("worker:: parentPort %{public}s handle exception", methodName);
         HandleException();
         return false;
     }
@@ -1252,7 +1259,7 @@ void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* m
     napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, methodName);
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
     if (!isCallable) {
-        HILOG_ERROR("worker:: worker %{public}s is not Callable", methodName);
+        HILOG_DEBUG("worker:: host thread %{public}s is not Callable", methodName);
         return;
     }
     napi_value callbackResult = nullptr;
@@ -1266,7 +1273,9 @@ void Worker::ReleaseWorkerThreadContent()
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     if (hostEngine != nullptr && workerEngine != nullptr) {
-        hostEngine->DeleteWorker(workerEngine);
+        if (!hostEngine->DeleteWorker(workerEngine)) {
+            HILOG_ERROR("worker:: DeleteWorker error");
+        }
     }
     // 1. remove worker instance count
     {
@@ -1337,7 +1346,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
         return nullptr;
     }
 
-    if (!worker->IsRunning()) {
+    if (!worker->IsNotTerminate()) {
         // if worker is not running, don't send any message to host thread
         HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
@@ -1353,11 +1362,6 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
         }
     }
     char* typeStr = NapiHelper::GetString(env, args[0]);
-    if (typeStr == nullptr) {
-        CloseHelp::DeletePointer(listener, false);
-        napi_throw_error(env, nullptr, "worker listener type create error, please check.");
-        return nullptr;
-    }
     worker->ParentPortAddListenerInner(env, typeStr, listener);
     CloseHelp::DeletePointer(typeStr, true);
     return NapiHelper::GetUndefinedValue(env);
@@ -1373,7 +1377,7 @@ napi_value Worker::ParentPortRemoveAllListener(napi_env env, napi_callback_info 
         return nullptr;
     }
 
-    if (!worker->IsRunning()) {
+    if (!worker->IsNotTerminate()) {
         // if worker is not running, don't send any message to host thread
         HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
@@ -1410,7 +1414,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
-    if (!worker->IsRunning()) {
+    if (!worker->IsNotTerminate()) {
         // if worker is not running, don't send any message to host thread
         HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return NapiHelper::CreateBooleanValue(env, false);
@@ -1432,7 +1436,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
         CallWorkCallback(env, obj, 1, args, "onmessage");
     }
 
-    worker->ParentPortHandleEventListeners(env, obj, 1, args, typeStr);
+    worker->ParentPortHandleEventListeners(env, obj, 1, args, typeStr, true);
 
     CloseHelp::DeletePointer(typeStr, true);
     return NapiHelper::CreateBooleanValue(env, true);
@@ -1464,7 +1468,7 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
         return nullptr;
     }
 
-    if (!worker->IsRunning()) {
+    if (!worker->IsNotTerminate()) {
         // if worker is not running, don't send any message to host thread
         HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
         return nullptr;
@@ -1540,8 +1544,8 @@ void Worker::ParentPortRemoveListenerInner(napi_env env, const char* type, napi_
     }
 }
 
-void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv,
-                                            size_t argc, const napi_value* argv, const char* type)
+void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_t argc,
+                                            const napi_value* argv, const char* type, bool tryCatch)
 {
     std::string listener(type);
     auto iter = parentPortEventListeners_.find(listener);
@@ -1555,11 +1559,19 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv,
     while (it != listeners.end()) {
         WorkerListener* data = *it++;
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
+        if (!NapiHelper::IsCallable(env, callbackObj)) {
+            HILOG_DEBUG("worker:: parentPort.addEventListener %{public}s is not callable", type);
+            return;
+        }
         napi_value callbackResult = nullptr;
         napi_call_function(env, recv, callbackObj, argc, argv, &callbackResult);
         if (!data->NextIsAvailable()) {
             listeners.remove(data);
             CloseHelp::DeletePointer(data, false);
+        }
+        if (tryCatch && callbackResult == nullptr) {
+            HandleException();
+            return;
         }
     }
 }

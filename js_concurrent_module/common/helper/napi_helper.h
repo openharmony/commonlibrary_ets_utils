@@ -45,6 +45,7 @@ public:
     static napi_value GetReferenceValue(napi_env env, napi_ref ref);
     static void DeleteReference(napi_env env, napi_ref ref);
     static napi_value GetNameProperty(napi_env env, napi_value obj, const char* name);
+    static bool HasNameProperty(napi_env env, napi_value obj, const char* name);
     static bool GetBooleanValue(napi_env env, napi_value value);
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
     static napi_value GetConstructorName(napi_env env, napi_value object);

@@ -297,6 +297,11 @@ public:
     bool UpdateWorkerState(RunnerState state);
     bool UpdateHostState(HostState state);
 
+    bool IsNotTerminate() const
+    {
+        return runnerState_.load(std::memory_order_acquire) <= RUNNING;
+    }
+
     bool IsRunning() const
     {
         return runnerState_.load(std::memory_order_acquire) == RUNNING;
@@ -388,8 +393,8 @@ private:
     void CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const;
 
     void HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type);
-    void ParentPortHandleEventListeners(napi_env env, napi_value recv,
-                                        size_t argc, const napi_value* argv, const char* type);
+    void ParentPortHandleEventListeners(napi_env env, napi_value recv, size_t argc,
+                                        const napi_value* argv, const char* type, bool tryCatch);
     void TerminateInner();
 
     void PostMessageInner(MessageDataType data);
@@ -400,7 +405,7 @@ private:
 
     void PublishWorkerOverSignal();
     void CloseWorkerCallback();
-    void CloseHostCallback() const;
+    void CloseHostCallback();
 
     void ReleaseWorkerThreadContent();
     void ReleaseHostThreadContent();
@@ -408,7 +413,6 @@ private:
     void ParentPortAddListenerInner(napi_env env, const char* type, const WorkerListener* listener);
     void ParentPortRemoveAllListenerInner();
     void ParentPortRemoveListenerInner(napi_env env, const char* type, napi_ref callback);
-    void PreparePandafile();
     void GetContainerScopeId(napi_env env);
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
@@ -446,6 +450,8 @@ private:
     std::atomic<RunnerState> runnerState_ {STARTING};
     std::atomic<HostState> hostState_ {ACTIVE};
     std::unique_ptr<WorkerRunner> runner_ {};
+
+    std::atomic<bool> isErrorExit_ = false;
 
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
