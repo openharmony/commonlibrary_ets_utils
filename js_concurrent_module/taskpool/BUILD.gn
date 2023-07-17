@@ -31,15 +31,16 @@ concurrent_helper_sources = [ "../common/helper/napi_helper.cpp" ]
 concurrent_platform_sources = []
 
 if (is_ohos) {
-  concurrent_platform_sources += [ "../common/platform/ohos/qos_helper.cpp" ]
+  concurrent_platform_sources += [ "$platform_root/ohos/qos_helper.cpp" ]
 } else {
-  concurrent_platform_sources += [ "../common/platform/default/qos_helper.cpp" ]
+  concurrent_platform_sources += [ "$platform_root/default/qos_helper.cpp" ]
 }
 
 ohos_shared_library("taskpool") {
   include_dirs = [
     "include",
     js_concurrent_module_common,
+    platform_root,
   ]
   sources = taskpool_sources
   sources += concurrent_helper_sources
@@ -87,6 +88,7 @@ ohos_source_set("taskpool_static") {
   include_dirs = [
     "include",
     js_concurrent_module_common,
+    platform_root,
   ]
 
   sources = taskpool_sources

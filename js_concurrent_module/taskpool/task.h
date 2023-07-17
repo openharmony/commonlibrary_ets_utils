@@ -22,7 +22,7 @@
 #include "utils.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-using namespace Commonlibrary::Concurrent::Common;
+using namespace Commonlibrary::Platform;
 
 enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED };
 
