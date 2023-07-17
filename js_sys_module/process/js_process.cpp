@@ -37,6 +37,7 @@
 #include <sys/types.h>
 
 #include "securec.h"
+#include "process_helper.h"
 #include "utils/log.h"
 namespace OHOS::JsSysModule::Process {
 
@@ -444,6 +445,7 @@ std::map<SYSArgUnix, SYSArgMacOS> sysconfig_map = {
 };
 #endif
 
+    using namespace Commonlibrary::Platform;
     namespace {
         constexpr int NUM_OF_DATA = 4;
         constexpr int PER_USER_RANGE = 100000;
@@ -622,7 +624,7 @@ std::map<SYSArgUnix, SYSArgMacOS> sysconfig_map = {
     {
         int32_t result = 0;
         napi_get_value_int32(env, number, &result);
-        quick_exit(result);
+        ProcessExit(result);
     }
 
     napi_value Process::Cwd(napi_env env) const
@@ -641,7 +643,7 @@ std::map<SYSArgUnix, SYSArgMacOS> sysconfig_map = {
 
     void Process::Abort() const
     {
-        quick_exit(0);
+        ProcessExit(0);
     }
 
     void Process::On(napi_env env, napi_value str, napi_value function)

@@ -28,6 +28,7 @@ ohos_unittest("test_taskpool_unittest") {
     "//third_party/googletest/include",
     "//third_party/node/src",
     "//third_party/libxml2/include",
+    platform_root,
   ]
 
   cflags = [ "-g3" ]

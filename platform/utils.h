@@ -13,24 +13,17 @@
  * limitations under the License.
  */
 
-#include "platform/qos_helper.h"
+#ifndef PLATFORM_UTILS_H
+#define PLATFORM_UTILS_H
 
-#include <map>
-
-#include "qos.h"
-#include "utils/log.h"
-
-namespace Commonlibrary::Concurrent::Common::Platform {
-using namespace OHOS::QOS;
-
-static const std::map<Priority, QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
-    {Priority::LOW, QosLevel::qos_utility},
-    {Priority::DEFAULT, QosLevel::qos_default},
-    {Priority::HIGH, QosLevel::qos_user_initiated}
+namespace Commonlibrary::Platform {
+// for task priority and worker priority
+enum Priority {
+    HIGH = 0,
+    MEDIUM,
+    LOW,
+    NUMBER = 3,
+    DEFAULT = MEDIUM,
 };
-
-int SetWorkerPriority(Priority priority)
-{
-    return SetThreadQos(WORKERPRIORITY_QOSLEVEL_MAP.at(priority));
-}
-} // namespace Commonlibrary::Concurrent::Common::Platform
+} // namespace Commonlibrary::Platform
+#endif // PLATFORM_UTILS_H

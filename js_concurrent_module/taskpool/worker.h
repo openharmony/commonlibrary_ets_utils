@@ -25,7 +25,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
-#include "platform/qos_helper.h"
+#include "qos_helper.h"
 #include "task.h"
 #include "task_runner.h"
 #include "utils/log.h"
@@ -33,7 +33,7 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 using namespace Commonlibrary::Concurrent::Common::Helper;
-using namespace Commonlibrary::Concurrent::Common::Platform;
+using namespace Commonlibrary::Platform;
 
 enum class WorkerState { IDLE, RUNNING, BLOCKED };
 

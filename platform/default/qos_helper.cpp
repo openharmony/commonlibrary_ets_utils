@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-#include "platform/qos_helper.h"
+#include "qos_helper.h"
 
 #include "utils/log.h"
 
-namespace Commonlibrary::Concurrent::Common::Platform {
+namespace Commonlibrary::Platform {
 int SetWorkerPriority([[maybe_unused]] Priority priority)
 {
     HILOG_DEBUG("SetWorkerPriority not support");
     return 0;
 }
-} // namespace Commonlibrary::Concurrent::Common::Platform
+} // namespace Commonlibrary::Platform
