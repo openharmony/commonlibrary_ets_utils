@@ -13,17 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_COMMON_UTILS_H
-#define JS_CONCURRENT_MODULE_COMMON_UTILS_H
+#ifndef PLATFORM_QOS_HELPER_H
+#define PLATFORM_QOS_HELPER_H
 
-namespace Commonlibrary::Concurrent::Common {
-// for task priority and worker priority
-enum Priority {
-    HIGH = 0,
-    MEDIUM,
-    LOW,
-    NUMBER = 3,
-    DEFAULT = MEDIUM,
-};
-} // namespace Commonlibrary::Concurrent::Common
-#endif // JS_CONCURRENT_MODULE_COMMON_UTILS_H
+#include "utils.h"
+
+namespace Commonlibrary::Platform {
+int SetWorkerPriority(Priority priority);
+} // namespace Commonlibrary::Platform
+#endif // PLATFORM_QOS_HELPER_H
