@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_COMMON_PLATFORM_QOS_HELPER_H
-#define JS_CONCURRENT_MODULE_COMMON_PLATFORM_QOS_HELPER_H
+#ifndef PLATFORM_PROCESS_HELPER_H
+#define PLATFORM_PROCESS_HELPER_H
 
-#include "utils.h"
+#include <cstdlib>
 
-namespace Commonlibrary::Concurrent::Common::Platform {
-int SetWorkerPriority(Priority priority);
-} // namespace Commonlibrary::Concurrent::Common::Platform
-#endif // JS_CONCURRENT_MODULE_COMMON_PLATFORM_QOS_HELPER_H
+namespace Commonlibrary::Platform {
+void ProcessExit(int signal);
+} // namespace Commonlibrary::Platform
+#endif // PLATFORM_PROCESS_HELPER_H

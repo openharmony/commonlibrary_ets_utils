@@ -15,13 +15,25 @@ import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 
+process_sources = [
+  "js_childprocess.cpp",
+  "js_process.cpp",
+  "native_module_process.cpp",
+]
+
+if (is_ohos) {
+  process_sources += [ "$platform_root/ohos/process_helper.cpp" ]
+} else {
+  process_sources += [ "$platform_root/default/process_helper.cpp" ]
+}
+
 ohos_shared_library("process") {
-  include_dirs = [ "include" ]
-  sources = [
-    "js_childprocess.cpp",
-    "js_process.cpp",
-    "native_module_process.cpp",
+  include_dirs = [
+    "include",
+    platform_root,
   ]
+  sources = process_sources
+
   external_deps = [ "napi:ace_napi" ]
   if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]
@@ -43,13 +55,10 @@ ohos_source_set("process_static") {
     "//third_party/node/src",
     "$napi_root/interfaces/kits",
     "$process_root",
+    platform_root,
   ]
 
-  sources = [
-    "js_childprocess.cpp",
-    "js_process.cpp",
-    "native_module_process.cpp",
-  ]
+  sources = process_sources
 
   deps = []
   if (is_cross_platform_build) {
