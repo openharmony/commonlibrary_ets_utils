@@ -227,7 +227,7 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
         // We have no task in the queue. Therefore we do not need extra threads.
         // But, tasks may still be executed in workers or microtask queue,
         // so we should return the num of running workers.
-        targetNum = static_cast<int32_t>(taskManager.GetRunningWorkers());
+        targetNum = taskManager.GetRunningWorkers();
     }
     taskManager.CreateOrDeleteWorkers(targetNum);
 }
@@ -372,8 +372,8 @@ bool TaskManager::UpdateExecuteState(uint32_t executeId, ExecuteState state)
     if (iter == executeStates_.end()) {
         return false;
     }
-    std::string traceInfo = "UpdateExecuteState: executeId : " + std::to_string(executeId)
-        + ", executeState : " + std::to_string(state);
+    std::string traceInfo = "UpdateExecuteState: executeId : " + std::to_string(executeId) +
+                            ", executeState : " + std::to_string(state);
     HITRACE_HELPER_METER_NAME(traceInfo);
     iter->second = state;
     return true;
