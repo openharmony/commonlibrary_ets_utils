@@ -21,7 +21,7 @@ process_sources = [
   "native_module_process.cpp",
 ]
 
-if (target_os == "ios") {
+if (target_os == "ios" || (!is_cross_platform_build && host_os == "mac")) {
   process_sources += [ "$platform_root/ios/process_helper.cpp" ]
 } else {
   process_sources += [ "$platform_root/default/process_helper.cpp" ]
