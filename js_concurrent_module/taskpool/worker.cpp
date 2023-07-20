@@ -263,8 +263,8 @@ void Worker::PerformTask(const uv_async_t* req)
     }
 
     // trace : Task Perform
-    std::string strTrace = "PerformTask: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : "
-        + std::to_string(taskInfo->executeId);
+    std::string strTrace = "PerformTask: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : " +
+                           std::to_string(taskInfo->executeId);
     HITRACE_HELPER_METER_NAME(strTrace);
 
     taskInfo->worker = worker;
