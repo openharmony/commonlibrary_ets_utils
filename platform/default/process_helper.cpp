@@ -15,10 +15,45 @@
 
 #include "process_helper.h"
 
+#include <cstdint>
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/sysinfo.h>
+
 namespace Commonlibrary::Platform {
 
 void ProcessExit(int signal)
 {
-    exit(signal);
+    quick_exit(signal);
+}
+
+int GetSysConfig(int number)
+{
+    auto configinfo = static_cast<int32_t>(sysconf(number));
+    return configinfo;
+}
+
+double GetSysTimer()
+{
+    struct sysinfo information = {0};
+    time_t systimer = 0;
+    if (sysinfo(&information)) {
+        HILOG_ERROR("Failed to get sysinfo");
+        return SYS_INFO_FAILED;
+    }
+    systimer = information.uptime;
+    return static_cast<double>(systimer);
+}
+
+int GetThreadId()
+{
+    auto proTid = static_cast<int64_t>(gettid());
+    return proTid;
+}
+
+int GetThreadPRY(int tid)
+{
+    int32_t pri = getpriority(PRIO_PROCESS, tid);
+    return pri;
 }
 } // namespace Commonlibrary::Platform
