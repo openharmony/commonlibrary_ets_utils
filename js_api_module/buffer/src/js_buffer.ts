@@ -1982,6 +1982,7 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
     }
   }
   if (typeof value === 'string') {
+    value = value.replace(/[\r\n]/g, '');
     return fromString(value, encoding);
   }
   if (typeof value === 'object' && value !== null) {
@@ -2217,9 +2218,6 @@ function getUtf8ByteLength(str: string): number {
 function getBase64ByteLength(str: string): number {
   let bytes = str.length;
   for (let i = 0, len = str.length; i < len; i++) {
-    if (str.charCodeAt(i) === 0x3D) { // 0x3D : ascii code represent of '='
-      bytes--;
-    }
     if (bytes > 1 && str.charCodeAt(i) === 0x3D) { // 0x3D : ascii code represent of '='
       bytes--;
     }
