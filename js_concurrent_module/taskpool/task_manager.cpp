@@ -97,6 +97,70 @@ TaskManager::~TaskManager()
     }
 }
 
+napi_value TaskManager::GetThreadInfos()
+{
+    napi_value threadInfos = nullptr;
+    napi_create_array(hostEnv_, &threadInfos);
+    {
+        std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+        int32_t i = 0;
+        for (auto& worker : workers_) {
+            napi_value tid = nullptr;
+            napi_value priority = nullptr;
+            napi_create_int32(hostEnv_, worker->tid_, &tid);
+            napi_create_int32(hostEnv_, static_cast<int32_t>(worker->priority_), &priority);
+
+            napi_value taskId = nullptr;
+            napi_create_uint32(hostEnv_, worker->currentTaskId_, &taskId);
+
+            // add tasks
+            napi_value threadInfo = nullptr;
+            napi_create_object(hostEnv_, &threadInfo);
+            napi_set_named_property(hostEnv_, threadInfo, "tid", tid);
+            napi_set_named_property(hostEnv_, threadInfo, "priority", priority);
+            // todo add taskIds
+            napi_set_named_property(hostEnv_, threadInfo, "taskIds", taskId);
+
+            // napi_value threadInfo = worker->GetThreadInfo();
+            napi_set_element(hostEnv_, threadInfos, i, threadInfo);
+            i++;
+        }
+    }
+    return threadInfos;
+}
+
+napi_value TaskManager::GetTaskInfos()
+{
+    napi_value taskInfos = nullptr;
+    napi_create_array(hostEnv_, &taskInfos);
+    {
+        std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+        int32_t i = 0;
+        for (auto& [_, taskInfo] : taskInfos_) {
+            napi_value taskInfoValue = nullptr;
+            napi_create_object(hostEnv_, &taskInfoValue);
+            napi_value taskId = nullptr;
+            napi_create_uint32(hostEnv_, taskInfo->taskId, &taskId);
+            napi_value stateValue = nullptr;
+            napi_create_int32(hostEnv_, taskInfo->state, &stateValue);
+            napi_set_named_property(hostEnv_, taskInfoValue, "taskId", taskId);
+            napi_set_named_property(hostEnv_, taskInfoValue, "state", stateValue);
+            napi_value durationValue = nullptr;
+            uint64_t duration = 0;
+            if (taskInfo->state == ExecuteState::RUNNING) {
+                Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
+                duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
+            }
+            napi_create_uint32(hostEnv_, static_cast<uint32_t>(duration), &durationValue);
+            napi_set_named_property(hostEnv_, taskInfoValue, "duration", durationValue);
+
+            napi_set_element(hostEnv_, taskInfos, i, taskInfoValue);
+            i++;
+        }
+    }
+    return taskInfos;
+}
+
 void TaskManager::UpdateExecutedInfo(uint64_t duration)
 {
     totalExecTime_ += duration;
@@ -346,6 +410,7 @@ bool TaskManager::MarkCanceledState(uint32_t executeId)
         return false;
     }
     iter->second->isCanceled = true;
+    iter->second->state = ExecuteState::CANCELED;
     return true;
 }
 

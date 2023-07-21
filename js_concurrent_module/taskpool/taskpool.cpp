@@ -56,6 +56,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
         DECLARE_NAPI_FUNCTION("execute", Execute),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
+        DECLARE_NAPI_FUNCTION("getTaskPoolInfo", GetTaskPoolInfo),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
@@ -63,6 +64,22 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     TaskManager::GetInstance().InitTaskManager(env);
     HITRACE_HELPER_FINISH_TRACE;
     return exports;
+}
+
+napi_value TaskPool::GetTaskPoolInfo(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_value threadInfos = nullptr;
+    napi_value taskInfos = nullptr;
+    threadInfos = TaskManager::GetInstance().GetThreadInfos();
+    taskInfos = TaskManager::GetInstance().GetTaskInfos();
+    napi_set_named_property(env, result, "threadInfos", threadInfos);
+    napi_set_named_property(env, result, "taskInfos", taskInfos);
+    return result;
 }
 
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
@@ -245,6 +262,7 @@ void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priori
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
+    taskInfo->state = ExecuteState::WAITING;
     TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
     TaskManager::GetInstance().TryTriggerLoadBalance();

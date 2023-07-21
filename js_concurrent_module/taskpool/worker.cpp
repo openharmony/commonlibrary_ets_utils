@@ -133,6 +133,8 @@ void Worker::ExecuteInThread(const void* data)
         HILOG_ERROR("taskpool:: loop is nullptr");
         return;
     }
+    // save the worker tid
+    worker->tid_ = gettid();
 
     // Init worker task execute signal
     worker->performTaskSignal_ = new uv_async_t;
@@ -232,6 +234,7 @@ void Worker::NotifyTaskFinished()
     if (--runningCount_ != 0) {
         // the worker state is still RUNNING and the start time will be updated
         startTime_ = ConcurrentHelper::GetMilliseconds();
+        currentTaskId_ = 0;
     } else {
         std::lock_guard<std::mutex> lock(stateMutex_);
         if (state_ != WorkerState::BLOCKED) {
@@ -261,6 +264,7 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_DEBUG("taskpool::PerformTask taskInfo is null");
         return;
     }
+    worker->currentTaskId_ = taskInfo->taskId;
 
     // trace : Task Perform
     std::string strTrace = "PerformTask: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : " +
@@ -268,6 +272,7 @@ void Worker::PerformTask(const uv_async_t* req)
     HITRACE_HELPER_METER_NAME(strTrace);
 
     taskInfo->worker = worker;
+    taskInfo->state = ExecuteState::RUNNING;
     TaskManager::GetInstance().UpdateExecuteState(taskInfo->executeId, ExecuteState::RUNNING);
     napi_value func;
     status = napi_deserialize(env, taskInfo->serializationFunction, &func);

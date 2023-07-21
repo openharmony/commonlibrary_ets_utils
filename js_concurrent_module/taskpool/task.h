@@ -56,6 +56,7 @@ struct TaskInfo {
     bool isCanceled = false;
     void* worker = nullptr;
     Priority priority = Priority::DEFAULT;
+    ExecuteState state = ExecuteState::NOT_FOUND;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H

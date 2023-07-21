@@ -59,6 +59,7 @@ private:
     {
         state_ = WorkerState::RUNNING;
         startTime_ = ConcurrentHelper::GetMilliseconds();
+        currentTaskId_ = 0;
         runningCount_++;
     }
 
@@ -154,6 +155,8 @@ private:
     WorkerState state_ {WorkerState::IDLE};
     std::mutex stateMutex_;
     Priority priority_ {Priority::DEFAULT};
+    pid_t tid_ = 0;
+    uint32_t currentTaskId_ = 0;
 
     friend class TaskManager;
 };
