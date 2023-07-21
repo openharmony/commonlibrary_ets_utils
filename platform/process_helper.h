@@ -17,8 +17,16 @@
 #define PLATFORM_PROCESS_HELPER_H
 
 #include <cstdlib>
+#include <unistd.h>
+#include "utils/log.h"
+
+#define SYS_INFO_FAILED -1
 
 namespace Commonlibrary::Platform {
 void ProcessExit(int signal);
+int GetSysConfig(int number);
+double GetSysTimer();
+int GetThreadId();
+int GetThreadPRY(int tid);
 } // namespace Commonlibrary::Platform
 #endif // PLATFORM_PROCESS_HELPER_H
