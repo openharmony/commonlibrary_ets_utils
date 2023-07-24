@@ -21,10 +21,10 @@
 namespace Commonlibrary::Platform {
 
 #define MACOS_ARG_MAX 4096
-#define MACOS_NOT_EXIST -1
+#define MACOS_NOT_EXIST (-1)
 
 enum class SYSArgUnix : uint8_t {
-    SC_ARG_MAX = 0,//kernel
+    SC_ARG_MAX = 0, // kernel
     SC_CHILD_MAX = 1,
     SC_CLK_TCK = 2,
     SC_NGROUPS_MAX = 3,
@@ -456,7 +456,7 @@ double GetSysTimer()
     gettimeofday(&now, &tz);
     double systimer = -1;
 #define MIB_SIZE 2
-#define MICROSECONDS_OF_SECOND 1000.0*1000.0
+#define MICROSECONDS_OF_SECOND (1000.0*1000.0)
     if (sysctl(mib, MIB_SIZE, &boottime, &size, NULL, 0) != -1 && boottime.tv_sec != 0) {
         systimer = now.tv_sec - boottime.tv_sec;
         systimer += (double)(now.tv_usec - boottime.tv_usec) / MICROSECONDS_OF_SECOND;

@@ -119,7 +119,7 @@ namespace OHOS::Util {
         std::u16string tempStr16(arrDat);
         std::string tepStr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(tempStr16);
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-        if(isChineseEncoding) {
+        if (isChineseEncoding) {
             std::string input = "";
             for (size_t i = 0; i < length; ++i) {
                 input += static_cast<char>(arrDat[i] & 0xFF);

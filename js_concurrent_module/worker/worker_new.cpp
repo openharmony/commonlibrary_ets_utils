@@ -1263,7 +1263,7 @@ void NewWorker::TranslateErrorEvent(napi_env env, napi_value error, napi_value *
 
 void NewWorker::HandleHostException() const
 {
-    if (!NapiHelper::IsExceptionPending(hostEnv_)){
+    if (!NapiHelper::IsExceptionPending(hostEnv_)) {
         return;
     }
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
