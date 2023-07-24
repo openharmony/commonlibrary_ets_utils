@@ -20,7 +20,7 @@
 #include <unistd.h>
 #include "utils/log.h"
 
-#define SYS_INFO_FAILED -1
+#define SYS_INFO_FAILED (-1)
 
 namespace Commonlibrary::Platform {
 void ProcessExit(int signal);
