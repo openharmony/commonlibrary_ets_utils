@@ -234,7 +234,6 @@ void Worker::NotifyTaskFinished()
     if (--runningCount_ != 0) {
         // the worker state is still RUNNING and the start time will be updated
         startTime_ = ConcurrentHelper::GetMilliseconds();
-        currentTaskId_ = 0;
     } else {
         std::lock_guard<std::mutex> lock(stateMutex_);
         if (state_ != WorkerState::BLOCKED) {
@@ -264,7 +263,7 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_DEBUG("taskpool::PerformTask taskInfo is null");
         return;
     }
-    worker->currentTaskId_ = taskInfo->taskId;
+    worker->currentTaskId_.emplace_back(taskInfo->taskId);
 
     // trace : Task Perform
     std::string strTrace = "PerformTask: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : " +
@@ -363,6 +362,8 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     }
     TaskManager::GetInstance().PopTaskInfo(taskInfo->executeId);
     Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
+    worker->currentTaskId_.erase(std::find(worker->currentTaskId_.begin(),
+                                           worker->currentTaskId_.end(), taskInfo->taskId));
     uv_async_send(taskInfo->onResultSignal);
     worker->NotifyTaskFinished();
 }
