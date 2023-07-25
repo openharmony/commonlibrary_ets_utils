@@ -1266,7 +1266,7 @@ void Worker::ReleaseWorkerThreadContent()
     auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     if (hostEngine != nullptr && workerEngine != nullptr) {
-        hostEngine->DeleteWorker(hostEngine, workerEngine);
+        hostEngine->DeleteWorker(workerEngine);
     }
     // 1. remove worker instance count
     {
