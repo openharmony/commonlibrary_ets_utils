@@ -149,6 +149,10 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value taskGroup, Priority p
         groupInfo->executeIds.push_back(executeId);
         napi_value task = NapiHelper::GetReferenceValue(env, *iter);
         TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, task, executeId);
+        if (taskInfo == nullptr) {
+            HILOG_ERROR("taskpool::ExecuteGroup taskInfo is nullptr");
+            return nullptr;
+        }
         taskInfo->groupExecuteId = groupExecuteId;
         ExecuteFunction(env, taskInfo, Priority(priority));
     }
