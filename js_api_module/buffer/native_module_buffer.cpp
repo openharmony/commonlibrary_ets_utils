@@ -588,22 +588,28 @@ static napi_value Utf8ByteLength(napi_env env, napi_callback_info info)
 
 static napi_value GetBufferData(napi_env env, napi_callback_info info)
 {
+    napi_value result = nullptr;
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     uint32_t length = buf->GetLength();
-    uint8_t data[length];
+    uint8_t* data = new uint8_t[length];
+    if (data == nullptr) {
+        HILOG_ERROR("buffer:: data is NULL");
+        return result;
+    }
     buf->ReadBytes(data, 0, length);
-    napi_value result = nullptr;
     NAPI_CALL(env, napi_create_array(env, &result));
     size_t key = 0;
     napi_value value = nullptr;
-    for (int i = 0, len = sizeof(data); i < len; i++) {
+    for (int i = 0, len = length; i < len; i++) {
         napi_create_uint32(env, data[i], &value);
         napi_set_element(env, result, key, value);
         key++;
     }
+    delete[] data;
+    data = nullptr;
     return result;
 }
 
@@ -801,6 +807,7 @@ static napi_value Compare(napi_env env, napi_callback_info info)
 static napi_value ToUtf8(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
+    napi_value result = nullptr;
     size_t argc = 0;
     napi_value args[2] = { 0 };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
@@ -812,10 +819,15 @@ static napi_value ToUtf8(napi_env env, napi_callback_info info)
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
-    uint8_t data[length];
+    uint8_t* data = new uint8_t[length];
+    if (data == nullptr) {
+        HILOG_ERROR("buffer:: data is NULL");
+        return result;
+    }
     buf->ReadBytes(data, start, length);
-    napi_value result = nullptr;
     napi_create_string_utf8(env, reinterpret_cast<char *>(data), length, &result);
+    delete[] data;
+    data = nullptr;
     return result;
 }
 
