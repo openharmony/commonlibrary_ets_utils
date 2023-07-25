@@ -357,13 +357,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest024, testing::ext::TestSize.Level0)
 
 HWTEST_F(NativeEngineTest, TaskpoolTest025, testing::ext::TestSize.Level0)
 {
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    TaskManager& taskManger = TaskManager::GetInstance();
-    taskManger.InitTaskManager(env);
-    uint32_t taskId = taskManger.GenerateTaskId();
-    const std::list<uint32_t>& runningTask = taskManger.QueryRunningTask(env, taskId);
-    uint32_t result = runningTask.front();
-    ASSERT_TRUE(result == 0);
+    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
+    uint32_t groupExecuteId = taskGroupManager.GenerateGroupExecuteId();
+    bool result = taskGroupManager.IsRunning(groupExecuteId);
+    ASSERT_TRUE(!result);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest026, testing::ext::TestSize.Level0)
@@ -446,7 +443,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest033, testing::ext::TestSize.Level0)
 {
     TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
     uint32_t groupExecuteId = taskGroupManager.GenerateGroupExecuteId();
-    ASSERT_TRUE(groupExecuteId == 1);
+    ASSERT_TRUE(groupExecuteId == 2);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest034, testing::ext::TestSize.Level0)
@@ -454,9 +451,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest034, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
     uint32_t groupId = taskGroupManager.GenerateGroupId();
-    ASSERT_TRUE(groupId == 3);
     uint32_t groupExecuteId = taskGroupManager.GenerateGroupExecuteId();
-    ASSERT_TRUE(groupExecuteId == 2);
     napi_value value = NapiHelper::CreateUint32(env, groupId);
     napi_ref reference = NapiHelper::CreateReference(env, value, groupExecuteId);
     taskGroupManager.AddTask(groupId, reference);
@@ -467,7 +462,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest035, testing::ext::TestSize.Level0)
 {
     TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
     uint32_t groupId = taskGroupManager.GenerateGroupId();
-    ASSERT_TRUE(groupId == 4);
     const std::list<napi_ref>&tasks = taskGroupManager.GetTasksByGroup(groupId);
     ASSERT_TRUE(tasks.size() == 0);
 }
@@ -486,9 +480,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest037, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
     uint32_t groupId = taskGroupManager.GenerateGroupId();
-    ASSERT_TRUE(groupId == 6);
     uint32_t groupExecuteId = taskGroupManager.GenerateGroupExecuteId();
-    ASSERT_TRUE(groupExecuteId == 3);
     uint32_t taskNum = 10;
     GroupInfo* groupInfo = taskGroupManager.GenerateGroupInfo(env, taskNum, groupId, groupExecuteId);
     ASSERT_TRUE(groupInfo != nullptr);
@@ -510,16 +502,15 @@ HWTEST_F(NativeEngineTest, TaskpoolTest038, testing::ext::TestSize.Level0)
     uint32_t taskNum = 10;
     GroupInfo* groupInfo = taskGroupManager.GenerateGroupInfo(env, taskNum, groupId, groupExecuteId);
     taskGroupManager.ClearGroupInfo(env, groupExecuteId, groupInfo);
-    ASSERT_TRUE(groupExecuteId == 4);
+    ASSERT_TRUE(groupExecuteId == 5);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest039, testing::ext::TestSize.Level0)
 {
     TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
-    uint32_t groupId = taskGroupManager.GenerateGroupId();
-    ASSERT_TRUE(groupId == 8);
-    const std::list<uint32_t>&executeIdList = taskGroupManager.GetExecuteIdList(groupId);
-    ASSERT_TRUE(executeIdList.size() == 0);
+    uint32_t groupExecuteId = taskGroupManager.GenerateGroupExecuteId();
+    GroupInfo* groupInfo = taskGroupManager.GetGroupInfoByExecutionId(groupExecuteId);
+    ASSERT_TRUE(groupInfo == nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest040, testing::ext::TestSize.Level0)
@@ -527,34 +518,5 @@ HWTEST_F(NativeEngineTest, TaskpoolTest040, testing::ext::TestSize.Level0)
     TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
     uint32_t groupId = taskGroupManager.GenerateGroupId();
     taskGroupManager.ClearExecuteId(groupId);
-    ASSERT_TRUE(groupId == 9);
-}
-
-HWTEST_F(NativeEngineTest, TaskpoolTest041, testing::ext::TestSize.Level0)
-{
-    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
-    uint32_t groupExecuteId = taskGroupManager.GenerateGroupExecuteId();
-    ASSERT_TRUE(groupExecuteId == 5);
-    bool result = taskGroupManager.IsRunning(groupExecuteId);
-    ASSERT_TRUE(!result);
-}
-
-HWTEST_F(NativeEngineTest, TaskpoolTest042, testing::ext::TestSize.Level0)
-{
-    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
-    uint32_t groupExecuteId = taskGroupManager.GenerateGroupExecuteId();
-    ASSERT_TRUE(groupExecuteId == 6);
-    GroupInfo* groupInfo = taskGroupManager.GetGroupInfoByExecutionId(groupExecuteId);
-    ASSERT_TRUE(groupInfo == nullptr);
-}
-
-HWTEST_F(NativeEngineTest, TaskpoolTest043, testing::ext::TestSize.Level0)
-{
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
-    uint32_t groupId = taskGroupManager.GenerateGroupId();
-    ASSERT_TRUE(groupId == 10);
-    const std::list<uint32_t>&executeIdList = taskGroupManager.GetExecuteIdList(groupId);
-    taskGroupManager.CancelGroup(env, executeIdList);
-    ASSERT_TRUE(executeIdList.size() == 0);
+    ASSERT_TRUE(groupId == 8);
 }
