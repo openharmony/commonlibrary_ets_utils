@@ -275,10 +275,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
         uint32_t id = NapiHelper::GetUint32Value(env, taskId);
-        const std::list<uint32_t>& executeList = TaskManager::GetInstance().QueryRunningTask(env, id);
-        for (uint32_t executeId : executeList) {
-            TaskManager::GetInstance().CancelTask(env, executeId);
-        }
+        TaskManager::GetInstance().CancelTask(env, id);
     } else {
         napi_value groupIdVal = NapiHelper::GetNameProperty(env, args[0], GROUP_ID_STR);
         if (groupIdVal == nullptr) {
@@ -287,13 +284,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
         uint32_t groupId = NapiHelper::GetUint32Value(env, groupIdVal);
-        const std::list<uint32_t>& ids = TaskGroupManager::GetInstance().GetExecuteIdList(groupId);
-        if (ids.empty()) {
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
-            HILOG_ERROR("taskpool:: cancel nonexist task group");
-            return nullptr;
-        }
-        TaskGroupManager::GetInstance().CancelGroup(env, ids);
+        TaskGroupManager::GetInstance().CancelGroup(env, groupId);
         TaskGroupManager::GetInstance().ClearExecuteId(groupId);
     }
     return nullptr;

@@ -396,7 +396,7 @@ ExecuteState TaskManager::QueryExecuteState(uint32_t executeId)
     return iter->second;
 }
 
-const std::list<uint32_t>& TaskManager::QueryRunningTask(napi_env env, uint32_t taskId)
+void TaskManager::CancelTask(napi_env env, uint32_t taskId)
 {
     // Cannot find task by taskId, throw error
     std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
@@ -404,13 +404,14 @@ const std::list<uint32_t>& TaskManager::QueryRunningTask(napi_env env, uint32_t 
     if (iter == runningInfos_.end() || iter->second.empty()) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
         HILOG_ERROR("taskpool:: query nonexist task");
-        static const std::list<uint32_t> EMPTY_EXECUTE_ID {};
-        return EMPTY_EXECUTE_ID;
+        return;
     }
-    return iter->second;
+    for (uint32_t executeId : iter->second) {
+        CancelExecution(env, executeId);
+    }
 }
 
-void TaskManager::CancelTask(napi_env env, uint32_t executeId)
+void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
 {
     // 1. Cannot find taskInfo by executeId, throw error
     // 2. Find executing taskInfo, skip it
@@ -716,6 +717,7 @@ void TaskGroupManager::ClearGroupInfo(napi_env env, uint32_t groupExecuteId, Gro
 
 void TaskGroupManager::AddTask(uint32_t groupId, napi_ref task)
 {
+    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
     auto iter = tasks_.find(groupId);
     if (iter == tasks_.end()) {
         std::list<napi_ref> list {task};
@@ -727,6 +729,7 @@ void TaskGroupManager::AddTask(uint32_t groupId, napi_ref task)
 
 const std::list<napi_ref>& TaskGroupManager::GetTasksByGroup(uint32_t groupId)
 {
+    std::shared_lock<std::shared_mutex> lock(tasksMutex_);
     auto iter = tasks_.find(groupId);
     if (iter == tasks_.end()) {
         static const std::list<napi_ref> EMPTY_TASK_LIST {};
@@ -737,6 +740,7 @@ const std::list<napi_ref>& TaskGroupManager::GetTasksByGroup(uint32_t groupId)
 
 void TaskGroupManager::ClearTasks(napi_env env, uint32_t groupId)
 {
+    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
     auto iter = tasks_.find(groupId);
     if (iter == tasks_.end()) {
         return;
@@ -744,10 +748,12 @@ void TaskGroupManager::ClearTasks(napi_env env, uint32_t groupId)
     for (napi_ref task : iter->second) {
         napi_delete_reference(env, task);
     }
+    tasks_.erase(iter);
 }
 
 void TaskGroupManager::StoreExecuteId(uint32_t groupId, uint32_t groupExecuteId)
 {
+    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
     auto iter = groupExecuteIds_.find(groupId);
     if (iter == groupExecuteIds_.end()) {
         std::list<uint32_t> list {groupExecuteId};
@@ -759,6 +765,7 @@ void TaskGroupManager::StoreExecuteId(uint32_t groupId, uint32_t groupExecuteId)
 
 void TaskGroupManager::RemoveExecuteId(uint32_t groupId, uint32_t groupExecuteId)
 {
+    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
     auto iter = groupExecuteIds_.find(groupId);
     if (iter != groupExecuteIds_.end()) {
         iter->second.remove(groupExecuteId);
@@ -770,62 +777,20 @@ void TaskGroupManager::RemoveExecuteId(uint32_t groupId, uint32_t groupExecuteId
 
 void TaskGroupManager::ClearExecuteId(uint32_t groupId)
 {
+    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
     groupExecuteIds_.erase(groupId);
 }
 
-const std::list<uint32_t>& TaskGroupManager::GetExecuteIdList(uint32_t groupId)
+void TaskGroupManager::CancelGroup(napi_env env, uint32_t groupId)
 {
+    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
     auto iter = groupExecuteIds_.find(groupId);
-    if (iter != groupExecuteIds_.end()) {
-        return iter->second;
+    if (iter == groupExecuteIds_.end() || iter->second.empty()) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
+        HILOG_ERROR("taskpool:: cancel nonexist task group");
+        return;
     }
-    static const std::list<uint32_t> EMPTY_GROUP_EXECUTIONS {};
-    return EMPTY_GROUP_EXECUTIONS;
-}
-
-uint32_t TaskGroupManager::GenerateGroupExecuteId()
-{
-    return groupExecuteId_++;
-}
-
-void TaskGroupManager::StoreRunningExecuteId(uint32_t groupExecuteId)
-{
-    runningGroupExecutions_.insert(groupExecuteId);
-}
-
-void TaskGroupManager::RemoveRunningExecuteId(uint32_t groupExecuteId)
-{
-    runningGroupExecutions_.erase(groupExecuteId);
-}
-
-bool TaskGroupManager::IsRunning(uint32_t groupExecuteId)
-{
-    bool isRunning = runningGroupExecutions_.find(groupExecuteId) != runningGroupExecutions_.end();
-    return isRunning;
-}
-
-void TaskGroupManager::AddGroupInfoById(uint32_t groupExecuteId, GroupInfo* info)
-{
-    groupInfoMap_.emplace(groupExecuteId, info);
-}
-
-void TaskGroupManager::RemoveGroupInfoById(uint32_t groupExecuteId)
-{
-    groupInfoMap_.erase(groupExecuteId);
-}
-
-GroupInfo* TaskGroupManager::GetGroupInfoByExecutionId(uint32_t groupExecuteId)
-{
-    auto iter = groupInfoMap_.find(groupExecuteId);
-    if (iter != groupInfoMap_.end()) {
-        return iter->second;
-    }
-    return nullptr;
-}
-
-void TaskGroupManager::CancelGroup(napi_env env, const std::list<uint32_t>& groupExecuteIds)
-{
-    for (uint32_t groupExecuteId : groupExecuteIds) {
+    for (uint32_t groupExecuteId : iter->second) {
         bool isRunning = IsRunning(groupExecuteId);
         if (!isRunning) {
             continue;
@@ -842,6 +807,52 @@ void TaskGroupManager::CancelGroup(napi_env env, const std::list<uint32_t>& grou
         napi_reject_deferred(env, info->deferred, undefined);
         TaskGroupManager::GetInstance().ClearGroupInfo(env, groupExecuteId, info);
     }
+}
+
+uint32_t TaskGroupManager::GenerateGroupExecuteId()
+{
+    return groupExecuteId_++;
+}
+
+void TaskGroupManager::StoreRunningExecuteId(uint32_t groupExecuteId)
+{
+    std::unique_lock<std::shared_mutex> lock(groupExecutionsMutex_);
+    runningGroupExecutions_.insert(groupExecuteId);
+}
+
+void TaskGroupManager::RemoveRunningExecuteId(uint32_t groupExecuteId)
+{
+    std::unique_lock<std::shared_mutex> lock(groupExecutionsMutex_);
+    runningGroupExecutions_.erase(groupExecuteId);
+}
+
+bool TaskGroupManager::IsRunning(uint32_t groupExecuteId)
+{
+    std::shared_lock<std::shared_mutex> lock(groupExecutionsMutex_);
+    bool isRunning = runningGroupExecutions_.find(groupExecuteId) != runningGroupExecutions_.end();
+    return isRunning;
+}
+
+void TaskGroupManager::AddGroupInfoById(uint32_t groupExecuteId, GroupInfo* info)
+{
+    std::unique_lock<std::shared_mutex> lock(groupInfoMapMutex_);
+    groupInfoMap_.emplace(groupExecuteId, info);
+}
+
+void TaskGroupManager::RemoveGroupInfoById(uint32_t groupExecuteId)
+{
+    std::unique_lock<std::shared_mutex> lock(groupInfoMapMutex_);
+    groupInfoMap_.erase(groupExecuteId);
+}
+
+GroupInfo* TaskGroupManager::GetGroupInfoByExecutionId(uint32_t groupExecuteId)
+{
+    std::shared_lock<std::shared_mutex> lock(groupInfoMapMutex_);
+    auto iter = groupInfoMap_.find(groupExecuteId);
+    if (iter != groupInfoMap_.end()) {
+        return iter->second;
+    }
+    return nullptr;
 }
 
 void TaskGroupManager::CancelGroupExecution(uint32_t executeId)
