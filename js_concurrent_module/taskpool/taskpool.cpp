@@ -60,23 +60,16 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
-    HITRACE_HELPER_START_TRACE("InitTaskManager");
     TaskManager::GetInstance().InitTaskManager(env);
-    HITRACE_HELPER_FINISH_TRACE;
     return exports;
 }
 
-napi_value TaskPool::GetTaskPoolInfo(napi_env env, napi_callback_info cbinfo)
+napi_value TaskPool::GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo)
 {
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
-
     napi_value result = nullptr;
     napi_create_object(env, &result);
-    napi_value threadInfos = nullptr;
-    napi_value taskInfos = nullptr;
-    threadInfos = TaskManager::GetInstance().GetThreadInfos();
-    taskInfos = TaskManager::GetInstance().GetTaskInfos();
+    napi_value threadInfos = TaskManager::GetInstance().GetThreadInfos();
+    napi_value taskInfos = TaskManager::GetInstance().GetTaskInfos();
     napi_set_named_property(env, result, "threadInfos", threadInfos);
     napi_set_named_property(env, result, "taskInfos", taskInfos);
     return result;
@@ -189,7 +182,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     napi_value taskData = nullptr;
     napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
 
-    // trace : Task PerformTask end after deserialize
+    // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(taskInfo->taskId);
     strTrace += ", executeId : " + std::to_string(taskInfo->executeId);
     if (taskInfo->isCanceled) {
@@ -257,12 +250,12 @@ void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priori
 {
     uint32_t executeId = taskInfo->executeId;
     taskInfo->priority = priority;
+    // tag for trace parse: Task Allocation
     std::string strTrace = "Task Allocation: taskId : " + std::to_string(taskInfo->taskId)
         + ", executeId : " + std::to_string(executeId)
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
-    taskInfo->state = ExecuteState::WAITING;
     TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
     TaskManager::GetInstance().TryTriggerLoadBalance();

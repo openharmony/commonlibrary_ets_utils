@@ -105,31 +105,32 @@ napi_value TaskManager::GetThreadInfos()
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
         int32_t i = 0;
         for (auto& worker : workers_) {
+            if (worker->workerEnv_ == nullptr) {
+                continue;
+            }
             napi_value tid = nullptr;
             napi_value priority = nullptr;
-            napi_create_int32(hostEnv_, worker->tid_, &tid);
+            napi_create_int32(hostEnv_, static_cast<int32_t>(worker->tid_), &tid);
             napi_create_int32(hostEnv_, static_cast<int32_t>(worker->priority_), &priority);
 
             napi_value taskId = nullptr;
             napi_create_array(hostEnv_, &taskId);
-
             int32_t j = 0;
-            for(auto& currentId : worker->currentTaskId_) {
-                napi_value id = nullptr;
-                napi_create_uint32(hostEnv_, currentId, &id);
-                napi_set_element(hostEnv_, taskId, j, id);
-                j++;
+            {
+                std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
+                for(auto& currentId : worker->currentTaskId_) {
+                    napi_value id = nullptr;
+                    napi_create_uint32(hostEnv_, currentId, &id);
+                    napi_set_element(hostEnv_, taskId, j, id);
+                    j++;
+                }
             }
-
-            // add tasks
             napi_value threadInfo = nullptr;
             napi_create_object(hostEnv_, &threadInfo);
             napi_set_named_property(hostEnv_, threadInfo, "tid", tid);
             napi_set_named_property(hostEnv_, threadInfo, "priority", priority);
-            // todo add taskIds
             napi_set_named_property(hostEnv_, threadInfo, "taskIds", taskId);
 
-            // napi_value threadInfo = worker->GetThreadInfo();
             napi_set_element(hostEnv_, threadInfos, i, threadInfo);
             i++;
         }
@@ -150,18 +151,23 @@ napi_value TaskManager::GetTaskInfos()
             napi_value taskId = nullptr;
             napi_create_uint32(hostEnv_, taskInfo->taskId, &taskId);
             napi_value stateValue = nullptr;
-            napi_create_int32(hostEnv_, taskInfo->state, &stateValue);
+            ExecuteState state;
+            uint64_t duration = 0;
+            if (taskInfo->isCanceled) {
+                state = ExecuteState::CANCELED;
+            } else if (taskInfo->worker != nullptr) {
+                Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
+                duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
+                state = ExecuteState::RUNNING;
+            } else {
+                state = ExecuteState::WAITING;
+            }
+            napi_create_int32(hostEnv_, state, &stateValue);
             napi_set_named_property(hostEnv_, taskInfoValue, "taskId", taskId);
             napi_set_named_property(hostEnv_, taskInfoValue, "state", stateValue);
             napi_value durationValue = nullptr;
-            uint64_t duration = 0;
-            if (taskInfo->state == ExecuteState::RUNNING) {
-                Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
-                duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
-            }
             napi_create_uint32(hostEnv_, static_cast<uint32_t>(duration), &durationValue);
             napi_set_named_property(hostEnv_, taskInfoValue, "duration", durationValue);
-
             napi_set_element(hostEnv_, taskInfos, i, taskInfoValue);
             i++;
         }
@@ -418,7 +424,6 @@ bool TaskManager::MarkCanceledState(uint32_t executeId)
         return false;
     }
     iter->second->isCanceled = true;
-    iter->second->state = ExecuteState::CANCELED;
     return true;
 }
 
@@ -701,6 +706,7 @@ void TaskManager::NotifyExecuteTask()
 
 void TaskManager::InitTaskManager(napi_env env)
 {
+    HITRACE_HELPER_METER_NAME("InitTaskManager");
     auto hostEngine = reinterpret_cast<NativeEngine*>(env);
     while (hostEngine != nullptr && !hostEngine->IsMainThread()) {
         hostEngine = hostEngine->GetHostEngine();

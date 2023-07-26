@@ -17,12 +17,14 @@
 
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "helper/hitrace_helper.h"
+#include "process_helper.h"
 #include "task_group.h"
 #include "task_manager.h"
 #include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
+using namespace Commonlibrary::Platform;
 
 Worker::RunningScope::~RunningScope()
 {
@@ -134,7 +136,7 @@ void Worker::ExecuteInThread(const void* data)
         return;
     }
     // save the worker tid
-    worker->tid_ = gettid();
+    worker->tid_ = GetThreadId();
 
     // Init worker task execute signal
     worker->performTaskSignal_ = new uv_async_t;
@@ -265,13 +267,12 @@ void Worker::PerformTask(const uv_async_t* req)
     }
     worker->currentTaskId_.emplace_back(taskInfo->taskId);
 
-    // trace : Task Perform
-    std::string strTrace = "PerformTask: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : " +
+    // tag for trace parse: Task Perform
+    std::string strTrace = "Task Perform: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : " +
                            std::to_string(taskInfo->executeId);
     HITRACE_HELPER_METER_NAME(strTrace);
 
     taskInfo->worker = worker;
-    taskInfo->state = ExecuteState::RUNNING;
     TaskManager::GetInstance().UpdateExecuteState(taskInfo->executeId, ExecuteState::RUNNING);
     napi_value func;
     status = napi_deserialize(env, taskInfo->serializationFunction, &func);
@@ -362,8 +363,11 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     }
     TaskManager::GetInstance().PopTaskInfo(taskInfo->executeId);
     Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
-    worker->currentTaskId_.erase(std::find(worker->currentTaskId_.begin(),
-                                           worker->currentTaskId_.end(), taskInfo->taskId));
+    {
+        std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
+        worker->currentTaskId_.erase(std::find(worker->currentTaskId_.begin(),
+                                     worker->currentTaskId_.end(), taskInfo->taskId));
+    }
     uv_async_send(taskInfo->onResultSignal);
     worker->NotifyTaskFinished();
 }

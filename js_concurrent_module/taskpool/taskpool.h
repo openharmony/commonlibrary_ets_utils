@@ -39,7 +39,7 @@ private:
 
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
-    static napi_value GetTaskPoolInfo(napi_env env, napi_callback_info cbinfo);
+    static napi_value GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo);
 
     static void ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priority = Priority::DEFAULT);
     static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority);

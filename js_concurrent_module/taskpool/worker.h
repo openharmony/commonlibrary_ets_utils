@@ -156,6 +156,7 @@ private:
     Priority priority_ {Priority::DEFAULT};
     pid_t tid_ = 0;
     std::vector<uint32_t> currentTaskId_ {};
+    std::mutex currentTaskIdMutex_;
 
     friend class TaskManager;
 };
