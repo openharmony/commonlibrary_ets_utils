@@ -118,7 +118,7 @@ napi_value TaskManager::GetThreadInfos()
             int32_t j = 0;
             {
                 std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
-                for(auto& currentId : worker->currentTaskId_) {
+                for (auto& currentId : worker->currentTaskId_) {
                     napi_value id = nullptr;
                     napi_create_uint32(hostEnv_, currentId, &id);
                     napi_set_element(hostEnv_, taskId, j, id);
