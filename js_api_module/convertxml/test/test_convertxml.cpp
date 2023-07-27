@@ -492,12 +492,13 @@ HWTEST_F(NativeEngineTest, GetPrevNodeListTest001, testing::ext::TestSize.Level1
     xmlNodePtr curNode = new xmlNode;
     xmlNodePtr curNode1 = new xmlNode;
     curNode->prev = curNode1;
+    curNode1->prev = nullptr;
     curNode1->type = XML_PI_NODE;
     curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
     curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
     CxmlTest::GetPrevNodeList(env, curNode);
-    delete curNode1;
     delete curNode;
+    delete curNode1;
 }
 
 HWTEST_F(NativeEngineTest, SetXmlElementTypeTest001, testing::ext::TestSize.Level1)
