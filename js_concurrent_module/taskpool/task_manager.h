@@ -60,8 +60,7 @@ public:
     void PopTaskEnvInfo(napi_env env);
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
-    const std::list<uint32_t>& QueryRunningTask(napi_env env, uint32_t taskId);
-    void CancelTask(napi_env env, uint32_t executeId);
+    void CancelTask(napi_env env, uint32_t taskId);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId,
                                napi_value transferList = nullptr);
     TaskInfo* GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId);
@@ -96,7 +95,7 @@ private:
     void NotifyWorkerAdded(Worker* worker);
     void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
     bool MarkCanceledState(uint32_t executeId);
-    void CancelWaitingExecution(napi_env env, uint32_t executeId);
+    void CancelExecution(napi_env env, uint32_t executeId);
 
     // for load balance
     void RunTaskManager();
@@ -169,12 +168,11 @@ public:
 
     GroupInfo* GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId, uint32_t groupExecuteId);
     void ClearGroupInfo(napi_env env, uint32_t groupExecuteId, GroupInfo* groupInfo);
-    const std::list<uint32_t>& GetExecuteIdList(uint32_t groupId);
+    void CancelGroup(napi_env env, uint32_t groupId);
     void RemoveExecuteId(uint32_t groupId, uint32_t groupExecuteId);
     void ClearExecuteId(uint32_t groupId);
     bool IsRunning(uint32_t groupExecuteId);
     GroupInfo* GetGroupInfoByExecutionId(uint32_t groupExecuteId);
-    void CancelGroup(napi_env env, const std::list<uint32_t>& groupExecuteIds);
 
 private:
     TaskGroupManager(const TaskGroupManager &) = delete;
@@ -197,15 +195,19 @@ private:
 
     // <groupId, <groupExecuteId1, groupExecuteId2, ...>>
     std::unordered_map<uint32_t, std::list<uint32_t>> groupExecuteIds_ {};
+    std::mutex groupExecuteIdsMutex_;
 
     // <groupId, <task1, task2, ...>>
     std::unordered_map<uint32_t, std::list<napi_ref>> tasks_ {};
+    std::shared_mutex tasksMutex_;
 
     // <groupExecuteId1, groupExecuteId2, ...>
     std::unordered_set<uint32_t> runningGroupExecutions_ {};
+    std::shared_mutex groupExecutionsMutex_;
 
     // <<groupExecuteId1, GroupInfo1>, <groupExecuteId2, GroupInfo2>, ...>
     std::unordered_map<uint32_t, GroupInfo*> groupInfoMap_ {};
+    std::shared_mutex groupInfoMapMutex_;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H
