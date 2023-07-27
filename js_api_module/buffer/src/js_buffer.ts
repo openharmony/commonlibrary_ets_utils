@@ -1982,7 +1982,6 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
     }
   }
   if (typeof value === 'string') {
-    value = value.replace(/[\r\n]/g, '');
     return fromString(value, encoding);
   }
   if (typeof value === 'object' && value !== null) {
@@ -2046,6 +2045,9 @@ function hexStrtoNumbers(hex: string): Array<number> {
 }
 
 function fromString(value: string, encoding: string): Buffer {
+  if (encoding === 'base64') {
+    value = value.replace(/[\r\n]/g, '');
+  }
   let enc = normalizeEncoding(encoding);
   if (!enc) {
     throw typeErrorForEncoding(encoding, 'encoding');
