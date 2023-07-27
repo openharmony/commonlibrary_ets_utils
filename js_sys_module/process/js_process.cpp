@@ -699,7 +699,7 @@ namespace OHOS::JsSysModule::Process {
     {
         int32_t result = 0;
         napi_get_value_int32(env, number, &result);
-        exit(result);
+        ProcessExit(result);
     }
 
     napi_value ProcessManager::Kill(napi_env env, napi_value signal, napi_value proid)
