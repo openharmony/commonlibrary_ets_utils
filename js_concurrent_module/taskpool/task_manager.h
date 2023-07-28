@@ -85,10 +85,10 @@ public:
     uint32_t GetTimeoutWorkers();
 
     // for get thread info
-    napi_value GetThreadInfos();
+    napi_value GetThreadInfos(napi_env env);
 
     // for get task info
-    napi_value GetTaskInfos();
+    napi_value GetTaskInfos(napi_env env);
 
 private:
     TaskManager(const TaskManager &) = delete;

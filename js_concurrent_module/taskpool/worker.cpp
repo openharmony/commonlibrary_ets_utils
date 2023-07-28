@@ -265,8 +265,10 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_DEBUG("taskpool::PerformTask taskInfo is null");
         return;
     }
-    worker->currentTaskId_.emplace_back(taskInfo->taskId);
-
+    {
+        std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
+        worker->currentTaskId_.emplace_back(taskInfo->taskId);
+    }
     // tag for trace parse: Task Perform
     std::string strTrace = "Task Perform: taskId : " + std::to_string(taskInfo->taskId) + ", executeId : " +
                            std::to_string(taskInfo->executeId);

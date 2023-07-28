@@ -68,8 +68,8 @@ napi_value TaskPool::GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callbac
 {
     napi_value result = nullptr;
     napi_create_object(env, &result);
-    napi_value threadInfos = TaskManager::GetInstance().GetThreadInfos();
-    napi_value taskInfos = TaskManager::GetInstance().GetTaskInfos();
+    napi_value threadInfos = TaskManager::GetInstance().GetThreadInfos(env);
+    napi_value taskInfos = TaskManager::GetInstance().GetTaskInfos(env);
     napi_set_named_property(env, result, "threadInfos", threadInfos);
     napi_set_named_property(env, result, "taskInfos", taskInfos);
     return result;
