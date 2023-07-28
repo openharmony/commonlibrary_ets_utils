@@ -205,7 +205,6 @@ void Worker::ReleaseWorkerThreadContent()
     if (!workerEngine->CallOffWorkerFunc(workerEngine)) {
         HILOG_ERROR("worker:: CallOffWorkerFunc error");
     }
-    workerEngine->DeleteEngine();
     delete workerEngine;
     workerEnv_ = nullptr;
 }

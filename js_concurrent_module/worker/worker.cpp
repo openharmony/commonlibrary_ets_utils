@@ -1285,8 +1285,6 @@ void Worker::ReleaseWorkerThreadContent()
 
     // 3. clear message send to worker thread
     workerMessageQueue_.Clear(workerEnv_);
-    // 4. delete NativeEngine created in worker thread
-    reinterpret_cast<NativeEngine*>(workerEnv_)->DeleteEngine();
     CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
     workerEnv_ = nullptr;
 }
