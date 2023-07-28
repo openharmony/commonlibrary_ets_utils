@@ -46,7 +46,9 @@ namespace OHOS::Util {
             }
         }
         label_ = i32Flag;
+#if !defined(__ARKUI_CROSS__)
         SetHwIcuDirectory();
+#endif
         bool fatal = (i32Flag & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
              static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
         UErrorCode codeflag = U_ZERO_ERROR;
