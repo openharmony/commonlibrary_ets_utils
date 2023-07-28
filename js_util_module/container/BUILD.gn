@@ -102,70 +102,38 @@ template("container_lib") {
     output = arraylist_abc_obj_path
     snapshot_dep = [ ":gen_" + target_name ]
   }
-  if (is_cross_platform_build) {
-    ohos_source_set(name) {
-      include_dirs = [
-        "//third_party/node/src",
+
+  ohos_source_set(name + "_static") {
+    include_dirs = [
+      "//third_party/node/src",
+      "//commonlibrary/ets_utils/js_util_module/container/" + name,
+    ]
+
+    sources = [ name + "/native_module_" + name + ".cpp" ]
+
+    dep_abc = ":gen_obj_src_" + name + "_abc"
+    dep_js = ":gen_obj_src_js_" + name
+    deps = [ "$container_root:gen_obj_src_js_" + name ]
+    deps += [ dep_abc ]
+    deps += [ dep_js ]
+
+    if (is_cross_platform_build) {
+      include_dirs += [
         "$napi_root/interfaces/kits",
-        "//commonlibrary/ets_utils/js_util_module/container/" + name,
         "$plugins_root/hilog/include",
         "$plugins_root/interfaces",
       ]
 
-      sources = [ name + "/native_module_" + name + ".cpp" ]
-
-      dep_abc = ":gen_obj_src_" + name + "_abc"
-      dep_js = ":gen_obj_src_js_" + name
-      deps = [
-        "$container_root:gen_obj_src_js_" + name,
+      deps += [
         "$plugins_root/libs/icu:icu_${target_os}",
         "$plugins_root/libs/napi:napi_${target_os}",
         "$plugins_root/libs/securec:sec_${target_os}",
       ]
-      deps += [ dep_abc ]
-      deps += [ dep_js ]
 
-      if (use_mingw_win) {
-        deps += [ "$hilog_windows" ]
-      } else if (use_linux) {
-        deps += [ "$hilog_linux" ]
-      } else if (use_mac) {
-        deps += [ "$hilog_mac" ]
-      } else {
-        external_deps = [ "hilog:libhilog" ]
-      }
-
-      if (is_standard_system) {
-        external_deps += [ "hilog:libhilog" ]
-      } else {
-        external_deps += [
-          "c_utils:utils",
-          "hilog:libhilog",
-        ]
-      }
       if (target_os == "android") {
         defines = [ "ANDROID_PLATFORM" ]
       }
-
-      configs = [ ":container_config" ]
-
-      subsystem_name = "commonlibrary"
-      part_name = "ets_utils"
-    }
-  } else {
-    ohos_shared_library(name) {
-      include_dirs = [
-        "//third_party/node/src",
-        "//commonlibrary/ets_utils/js_util_module/container/" + name,
-      ]
-
-      sources = [ name + "/native_module_" + name + ".cpp" ]
-
-      dep_abc = ":gen_obj_src_" + name + "_abc"
-      dep_js = ":gen_obj_src_js_" + name
-      deps = [ "$container_root:gen_obj_src_js_" + name ]
-      deps += [ dep_abc ]
-      deps += [ dep_js ]
+    } else {
       external_deps = [ "napi:ace_napi" ]
       if (use_mingw_win) {
         deps += [ "$hilog_windows" ]
@@ -176,14 +144,18 @@ template("container_lib") {
       } else {
         external_deps += [ "hilog:libhilog" ]
       }
-
-      configs = [ ":container_config" ]
-
-      subsystem_name = "commonlibrary"
-      part_name = "ets_utils"
-
-      relative_install_dir = "module/util"
     }
+
+    configs = [ ":container_config" ]
+
+    subsystem_name = "commonlibrary"
+    part_name = "ets_utils"
+  }
+  ohos_shared_library(name) {
+    deps = [ ":${name}_static" ]
+    subsystem_name = "commonlibrary"
+    part_name = "ets_utils"
+    relative_install_dir = "module/util"
   }
 }
 
@@ -191,7 +163,11 @@ container_libs = []
 foreach(item, container_names) {
   container_lib(item) {
   }
-  dep = ":" + item
+  if (is_cross_platform_build) {
+    dep = ":" + item + "_static"
+  } else {
+    dep = ":" + item
+  }
   container_libs += [ dep ]
 }
 
@@ -201,6 +177,10 @@ group("container_packages") {
 
 foreach(name, container_names) {
   group(name + "_packages") {
-    deps = [ ":" + name ]
+    if (is_cross_platform_build) {
+      deps = [ ":" + name + "_static" ]
+    } else {
+      deps = [ ":" + name ]
+    }
   }
 }
