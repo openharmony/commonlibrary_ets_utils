@@ -79,15 +79,40 @@ gen_obj("buffer_abc") {
   snapshot_dep = [ ":gen_buffer_abc" ]
 }
 
-buffer_sources = [
-  "converter.cpp",
-  "js_blob.cpp",
-  "js_buffer.cpp",
-  "native_module_buffer.cpp",
-]
-
 ohos_shared_library("buffer") {
-  deps = [ ":buffer_static" ]
+  include_dirs = [
+    "include",
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/node/src",
+  ]
+
+  sources = [
+    "converter.cpp",
+    "js_blob.cpp",
+    "js_buffer.cpp",
+    "native_module_buffer.cpp",
+  ]
+
+  deps = [
+    ":gen_obj_src_buffer_abc",
+    ":gen_obj_src_js_buffer",
+    "//third_party/bounds_checking_function:libsec_shared",
+    "//third_party/icu/icu4c:shared_icuuc",
+  ]
+
+  external_deps = [ "napi:ace_napi" ]
+
+  if (use_mingw_win) {
+    deps += [ "$hilog_windows" ]
+  } else if (use_linux) {
+    deps += [ "$hilog_linux" ]
+  } else if (use_mac) {
+    deps += [ "$hilog_mac" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
+  }
+
+  configs = [ ":buffer_config" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 
@@ -101,14 +126,26 @@ ohos_source_set("buffer_static") {
     "//third_party/node/src",
   ]
 
-  sources = buffer_sources
+  sources = [
+    "converter.cpp",
+    "js_blob.cpp",
+    "js_buffer.cpp",
+    "native_module_buffer.cpp",
+  ]
 
+  external_deps = [ "c_utils:utils" ]
   deps = [
     ":gen_obj_src_buffer_abc",
     ":gen_obj_src_js_buffer",
   ]
 
   configs = [ ":buffer_config" ]
+
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
+  }
 
   if (is_cross_platform_build) {
     include_dirs += [
@@ -127,22 +164,9 @@ ohos_source_set("buffer_static") {
     ]
   } else {
     deps += [
-      "//third_party/bounds_checking_function:libsec_shared",
+      "$napi_root:ace_napi",
       "//third_party/icu/icu4c:shared_icuuc",
     ]
-
-    external_deps = [ "napi:ace_napi" ]
-    if (use_mingw_win) {
-      deps += [ "$hilog_windows" ]
-    } else if (use_linux) {
-      deps += [ "$hilog_linux" ]
-    } else if (use_mac) {
-      deps += [ "$hilog_mac" ]
-    } else {
-      external_deps += [ "hilog:libhilog" ]
-    }
-
-    deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
   }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"

@@ -72,53 +72,69 @@ gen_obj("util_abc") {
   snapshot_dep = [ ":gen_util_abc" ]
 }
 
-util_sources = [
-  "js_base64.cpp",
-  "js_textdecoder.cpp",
-  "js_textencoder.cpp",
-  "js_types.cpp",
-  "js_uuid.cpp",
-  "native_module_util.cpp",
-]
-
-if (is_cross_platform_build) {
-  util_sources += [ "$platform_root/default/util_helper.cpp" ]
-  if (target_os == "android") {
-    util_sources += [ "$platform_root/android/jni_helper.cpp" ]
-  } else {
-    util_sources += [ "$platform_root/default/jni_helper.cpp" ]
-  }
-} else {
-  util_sources += [ "$platform_root/ohos/util_helper.cpp" ]
-  util_sources += [ "$platform_root/default/jni_helper.cpp" ]
-}
-
 ohos_shared_library("util") {
-  deps = [ ":util_static" ]
-  subsystem_name = "commonlibrary"
-  part_name = "ets_utils"
-  relative_install_dir = "module"
-}
-
-ohos_source_set("util_static") {
   include_dirs = [
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source",
     "//third_party/node/src",
     "//third_party/openssl",
     "//third_party/openssl/include",
-    platform_root,
   ]
-  configs = [
-    "$icu_root:icu_config",
-    "$napi_root:ace_napi_config",
+
+  sources = [
+    "js_base64.cpp",
+    "js_textdecoder.cpp",
+    "js_textencoder.cpp",
+    "js_types.cpp",
+    "js_uuid.cpp",
+    "native_module_util.cpp",
   ]
-  sources = util_sources
 
   deps = [
     ":gen_obj_src_util_abc",
     ":gen_obj_src_util_js",
     "//third_party/icu/icu4c:shared_icuuc",
+    "//third_party/openssl:libcrypto_shared",
+  ]
+  external_deps = [ "napi:ace_napi" ]
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+
+  relative_install_dir = "module"
+}
+
+ohos_source_set("util_static") {
+  include_dirs = [
+    "$napi_root/native_engine",
+    "//third_party/icu/icu4c/source",
+    "//third_party/openssl",
+    "//third_party/openssl/include",
+    "$util_module/util",
+  ]
+  configs = [
+    "$icu_root:icu_config",
+    "$napi_root:ace_napi_config",
+  ]
+  sources = [
+    "js_base64.cpp",
+    "js_textdecoder.cpp",
+    "js_textencoder.cpp",
+    "js_types.cpp",
+    "js_uuid.cpp",
+    "native_module_util.cpp",
+  ]
+
+  deps = [
+    ":gen_obj_src_util_abc",
+    ":gen_obj_src_util_js",
     "//third_party/openssl:libcrypto_shared",
   ]
 
@@ -130,15 +146,13 @@ ohos_source_set("util_static") {
 
     configs += [ "$plugins_root/util:util_plugin_config" ]
 
-    defines = [ "__ARKUI_CROSS__" ]
-
-    deps -= [ "//third_party/icu/icu4c:shared_icuuc" ]
-
     if (target_os == "android") {
-      defines += [ "ANDROID_PLATFORM" ]
+      defines = [ "ANDROID_PLATFORM" ]
+      deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
     }
     if (target_os == "ios") {
-      defines += [ "IOS_PLATFORM" ]
+      defines = [ "IOS_PLATFORM" ]
+      deps += [ "//third_party/icu/icu4c:static_icuuc" ]
       deps -= [ "//third_party/openssl:libcrypto_shared" ]
       deps += [ "//third_party/openssl:libcrypto_static" ]
     }
@@ -149,15 +163,11 @@ ohos_source_set("util_static") {
       "$plugins_root/libs/securec:sec_${target_os}",
     ]
   } else {
-    external_deps = [ "napi:ace_napi" ]
-    if (is_standard_system) {
-      external_deps += [ "hilog:libhilog" ]
-    } else {
-      external_deps += [
-        "c_utils:utils",
-        "hilog:libhilog",
-      ]
-    }
+    deps += [
+      "$napi_root:ace_napi",
+      "//third_party/icu/icu4c:shared_icuuc",
+    ]
+    external_deps = [ "hilog:libhilog" ]
   }
 
   subsystem_name = "commonlibrary"

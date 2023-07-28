@@ -28,14 +28,32 @@ if (target_os == "ios" || (!is_cross_platform_build && host_os == "mac")) {
 }
 
 ohos_shared_library("process") {
-  deps = [ ":process_static" ]
+  include_dirs = [
+    "include",
+    platform_root,
+  ]
+  sources = process_sources
+
+  external_deps = [ "napi:ace_napi" ]
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
+
   relative_install_dir = "module"
 }
 
 ohos_source_set("process_static") {
   include_dirs = [
+    "//third_party/icu/icu4c/source/common",
+    "//third_party/node/src",
+    "$napi_root/interfaces/kits",
     "$process_root",
     platform_root,
   ]
@@ -45,9 +63,6 @@ ohos_source_set("process_static") {
   deps = []
   if (is_cross_platform_build) {
     include_dirs += [
-      "//third_party/icu/icu4c/source/common",
-      "//third_party/node/src",
-      "$napi_root/interfaces/kits",
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
     ]
@@ -64,16 +79,19 @@ ohos_source_set("process_static") {
       "$plugins_root/libs/securec:sec_${target_os}",
     ]
   } else {
-    external_deps = [ "napi:ace_napi" ]
-    if (is_standard_system) {
-      external_deps += [ "hilog:libhilog" ]
-    } else {
-      external_deps += [
-        "c_utils:utils",
-        "hilog:libhilog",
-      ]
-    }
-    deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
+    deps += [
+      "$napi_root:ace_napi",
+      "//third_party/icu/icu4c:shared_icuuc",
+    ]
+  }
+
+  if (is_standard_system) {
+    external_deps = [ "hilog:libhilog" ]
+  } else {
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
   }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
