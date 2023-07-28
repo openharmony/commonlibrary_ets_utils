@@ -72,35 +72,15 @@ gen_obj("url_abc") {
   snapshot_dep = [ ":gen_url_abc" ]
 }
 
+url_sources = [
+  "js_url.cpp",
+  "native_module_url.cpp",
+]
+
 ohos_shared_library("url") {
-  include_dirs = [
-    "include",
-    "//third_party/icu/icu4c/source/common",
-    "//third_party/node/src",
-  ]
-
-  sources = [
-    "js_url.cpp",
-    "native_module_url.cpp",
-  ]
-
-  deps = [
-    ":gen_obj_src_url_abc",
-    ":gen_obj_src_url_js",
-    "//third_party/icu/icu4c:shared_icuuc",
-  ]
-  external_deps = [ "napi:ace_napi" ]
-  if (is_standard_system) {
-    external_deps += [ "hilog:libhilog" ]
-  } else {
-    external_deps += [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  }
+  deps = [ ":url_static" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
-
   relative_install_dir = "module"
 }
 
@@ -111,24 +91,12 @@ ohos_source_set("url_static") {
   ]
 
   configs = [ "//third_party/icu/icu4c:icu_config" ]
-  sources = [
-    "js_url.cpp",
-    "native_module_url.cpp",
-  ]
+  sources = url_sources
 
   deps = [
     ":gen_obj_src_url_abc",
     ":gen_obj_src_url_js",
   ]
-
-  if (is_standard_system) {
-    external_deps = [ "hilog:libhilog" ]
-  } else {
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  }
 
   if (is_cross_platform_build) {
     include_dirs += [
@@ -142,13 +110,19 @@ ohos_source_set("url_static") {
       "$plugins_root/libs/icu:icu_${target_os}",
       "$plugins_root/libs/napi:napi_${target_os}",
       "$plugins_root/libs/securec:sec_${target_os}",
-      "//third_party/icu/icu4c:static_icuuc",
     ]
   } else {
-    deps += [
-      "$napi_root:ace_napi",
-      "//third_party/icu/icu4c:shared_icuuc",
-    ]
+    include_dirs += [ "//third_party/icu/icu4c/source/common" ]
+    if (is_standard_system) {
+      external_deps = [ "hilog:libhilog" ]
+    } else {
+      external_deps = [
+        "c_utils:utils",
+        "hilog:libhilog",
+      ]
+    }
+    external_deps += [ "napi:ace_napi" ]
+    deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
   }
 
   subsystem_name = "commonlibrary"
