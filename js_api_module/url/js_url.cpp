@@ -858,7 +858,7 @@ namespace OHOS::Url {
             AnalysisFilescheme(input, urlinfo, flags);
             return;
         }
-        if (input[0] == '/' && input[1] == '/' && input[2] != '/') {
+        if (input[0] == '/' && input[1] == '/' && input[2] != '/') { // 2:The third character of the input
             std::string hostandpath = input.substr(2); // 2:Intercept from 2 subscripts
             if (hostandpath.empty()) {
                 return;
