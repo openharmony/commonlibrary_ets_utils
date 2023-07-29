@@ -27,17 +27,14 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-
-#ifdef ANDROID_PLATFORM
-#include "plugin_utils.h"
-#include "util_plugin_jni.h"
-#endif
+#include "jni_helper.h"
 
 extern const char _binary_util_js_js_start[];
 extern const char _binary_util_js_js_end[];
 extern const char _binary_util_abc_start[];
 extern const char _binary_util_abc_end[];
 namespace OHOS::Util {
+    using namespace Commonlibrary::Platform;
     static bool IsValidValue(napi_env env, napi_value value)
     {
         napi_value undefinedRef = nullptr;
@@ -1720,21 +1717,11 @@ namespace OHOS::Util {
         .nm_get_abc_code = NAPI_util_GetABCCode,
         .nm_get_js_code = NAPI_util_GetJSCode,
     };
-
-#ifdef ANDROID_PLATFORM
-    static void UtilPluginJniRegister()
-    {
-        const char className[] = "ohos.ace.plugin.utilplugin.UtilPlugin";
-        ARKUI_X_Plugin_RegisterJavaPlugin(&Plugin::UtilPluginJni::Register, className);
-    }
-#endif
     // util module register
     extern "C"
     __attribute__((constructor)) void UtilRegisterModule()
     {
         napi_module_with_js_register(&utilModule);
-#ifdef ANDROID_PLATFORM
-        ARKUI_X_Plugin_RunAsyncTask(&UtilPluginJniRegister, ARKUI_X_PLUGIN_PLATFORM_THREAD);
-#endif
+        UtilPluginJniRegister();
     }
 }

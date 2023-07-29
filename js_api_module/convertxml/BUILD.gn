@@ -75,33 +75,7 @@ gen_obj("convertxml_abc") {
 }
 
 ohos_shared_library("convertxml") {
-  include_dirs = [
-    "include",
-    "//third_party/icu/icu4c/source/common",
-    "//third_party/node/src",
-    "//third_party/libxml2/include",
-  ]
-
-  sources = [
-    "js_convertxml.cpp",
-    "native_module_convertxml.cpp",
-  ]
-
-  deps = [
-    ":gen_obj_src_convertxml_abc",
-    ":gen_obj_src_js_convertxml",
-    "//third_party/icu/icu4c:shared_icuuc",
-    "//third_party/libxml2:xml2",
-  ]
-  external_deps = [ "napi:ace_napi" ]
-  if (is_standard_system) {
-    external_deps += [ "hilog:libhilog" ]
-  } else {
-    external_deps += [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  }
+  deps = [ ":convertxml_static" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 
@@ -127,15 +101,6 @@ ohos_source_set("convertxml_static") {
     "//third_party/libxml2:static_libxml2",
   ]
 
-  if (is_standard_system) {
-    external_deps = [ "hilog:libhilog" ]
-  } else {
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  }
-
   if (defined(is_cross_platform_build) && is_cross_platform_build) {
     include_dirs += [
       "$plugins_root/hilog/include",
@@ -152,10 +117,16 @@ ohos_source_set("convertxml_static") {
       "$plugins_root/libs/securec:sec_${target_os}",
     ]
   } else {
-    deps += [
-      "$napi_root:ace_napi",
-      "//third_party/icu/icu4c:shared_icuuc",
-    ]
+    external_deps = [ "napi:ace_napi" ]
+    if (is_standard_system) {
+      external_deps += [ "hilog:libhilog" ]
+    } else {
+      external_deps += [
+        "c_utils:utils",
+        "hilog:libhilog",
+      ]
+    }
+    deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
   }
 
   subsystem_name = "commonlibrary"

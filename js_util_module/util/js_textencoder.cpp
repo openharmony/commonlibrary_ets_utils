@@ -18,11 +18,10 @@
 #include "native_engine.h"
 #include "securec.h"
 #include "utils/log.h"
-#if defined (ANDROID_PLATFORM) || defined (IOS_PLATFORM)
-#include "util_plugin.h"
-#endif
+#include "util_helper.h"
 
 namespace OHOS::Util {
+    using namespace Commonlibrary::Platform;
     napi_value TextEncoder::GetEncoding(napi_env env) const
     {
         napi_value result = nullptr;
@@ -35,18 +34,7 @@ namespace OHOS::Util {
     {
         std::string buffer = "";
         if (!(encoding_ == "utf-8" || encoding_ == "UTF-8")) {
-#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
-            NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-            NativeValue *nativeValue = reinterpret_cast<NativeValue*>(src);
-            engine->EncodeToChinese(nativeValue, buffer, encoding_);
-#else
-            std::string input = "";
-            size_t inputSize = 0;
-            NAPI_CALL(env, napi_get_value_string_utf8(env, src, nullptr, 0, &inputSize)); // 0:buffer size
-            input.resize(inputSize);
-            NAPI_CALL(env, napi_get_value_string_utf8(env, src, input.data(), inputSize + 1, &inputSize));
-            buffer = UtilPlugin::EncodeIntoChinese(input, encoding_);
-#endif
+        EncodeIntoChinese(env, src, encoding_, buffer);
         } else {
             size_t bufferSize = 0;
             if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
