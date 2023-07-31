@@ -95,6 +95,8 @@ void XmlTest::StartElement(napi_env env)
     xmlSerializer.depth_ = 1;
     xmlSerializer.elementStack[0] = "x";
     xmlSerializer.elementStack.push_back("");
+    xmlSerializer.elementStack.push_back("");
+    xmlSerializer.elementStack.push_back("");
     xmlSerializer.StartElement("val");
 }
 
