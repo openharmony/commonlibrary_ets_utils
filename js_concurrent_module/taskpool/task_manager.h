@@ -83,6 +83,12 @@ public:
     uint32_t GetRunningWorkers();
     uint32_t GetTimeoutWorkers();
 
+    // for get thread info
+    napi_value GetThreadInfos(napi_env env);
+
+    // for get task info
+    napi_value GetTaskInfos(napi_env env);
+
 private:
     TaskManager(const TaskManager &) = delete;
     TaskManager& operator=(const TaskManager &) = delete;

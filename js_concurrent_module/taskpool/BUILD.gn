@@ -36,6 +36,12 @@ if (is_ohos) {
   concurrent_platform_sources += [ "$platform_root/default/qos_helper.cpp" ]
 }
 
+if (target_os == "ios" || (!is_cross_platform_build && is_mac)) {
+  concurrent_platform_sources += [ "$platform_root/ios/process_helper.cpp" ]
+} else {
+  concurrent_platform_sources += [ "$platform_root/default/process_helper.cpp" ]
+}
+
 ohos_shared_library("taskpool") {
   include_dirs = [
     "include",
