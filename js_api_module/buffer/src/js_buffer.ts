@@ -219,7 +219,7 @@ interface NativeBuffer {
   getBufferData(): Array<number>;
   get(index: number): number;
   set(index: number, value: number): undefined;
-  subBuffer(start: number, end: number): NativeBuffer;
+  subBuffer(target: NativeBuffer, start: number, end: number): undefined;
   copy(target: NativeBuffer, targetStart: number, sourceStart: number, sourceEnd: number): number;
   compare(target: NativeBuffer, targetStart: number, sourceStart: number, length: number): number;
   toUtf8(start: number, end: number): string;
@@ -1590,14 +1590,14 @@ class Buffer {
   }
 
   subarray(start: number = 0, end: number = this.length): Buffer {
-    let newBuf = Object.create(this);
+    let newBuf: Buffer = new Buffer(0);
     start = isNaN(start) ? 0 : Number(start);
     end = isNaN(end) ? 0 : Number(end);
     end = (end > this.length) ? this.length : end;
     if (start < 0 || end < 0 || end <= start) {
-      return new Buffer(0);
+      return newBuf;
     }
-    newBuf[bufferSymbol] = this[bufferSymbol].subBuffer(start, end);
+    newBuf[bufferSymbol].subBuffer(this[bufferSymbol], start, end);
     newBuf[lengthSymbol] = (end - start);
     return newBuf;
   }
