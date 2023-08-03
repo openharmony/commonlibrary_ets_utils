@@ -66,7 +66,7 @@ public:
     unsigned int WriteString(std::u16string value, unsigned int offset, unsigned int length);
     unsigned int WriteString(std::string value, unsigned int offset, unsigned int length, std::string encoding);
 
-    Buffer *SubBuffer(uint32_t start, uint32_t end);
+    void SubBuffer(Buffer *tBuf, uint32_t start, uint32_t end);
     uint32_t Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t sEnd);
     int Compare(Buffer *tBuf, uint32_t targetStart, uint32_t sourceStart, uint32_t length);
     int IndexOf(const char *data, uint32_t offset, uint32_t len);

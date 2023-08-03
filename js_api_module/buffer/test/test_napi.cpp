@@ -618,7 +618,8 @@ HWTEST_F(NativeEngineTest, SubBufferTest001, testing::ext::TestSize.Level0)
     FillZero(buf1, 10);
     std::string str = "1234567890";
     buf1->WriteString(str, 0, 10);
-    OHOS::buffer::Buffer *buf2 = buf1->SubBuffer(0, 10);
+    OHOS::buffer::Buffer *buf2 = new OHOS::buffer::Buffer();
+    buf2->SubBuffer(buf1, 0, 10);
     ASSERT_EQ(buf2->GetLength(), 10);
     uint8_t data[11];
     buf2->ReadBytes(data, 0, 10);
@@ -640,7 +641,8 @@ HWTEST_F(NativeEngineTest, SubBufferTest002, testing::ext::TestSize.Level0)
     FillZero(buf1, 10);
     std::string str = "1234567890";
     buf1->WriteString(str, 0, 10);
-    OHOS::buffer::Buffer *buf2 = buf1->SubBuffer(2, 10);
+    OHOS::buffer::Buffer *buf2 = new OHOS::buffer::Buffer();
+    buf2->SubBuffer(buf1, 2, 10);
     ASSERT_EQ(buf2->GetLength(), 8);
     uint8_t data[9];
     buf2->ReadBytes(data, 0, 8);

@@ -119,13 +119,13 @@ unsigned int Buffer::GetByteOffset()
     return byteOffset_;
 }
 
-Buffer* Buffer::SubBuffer(uint32_t start, uint32_t end)
+void Buffer::SubBuffer(Buffer *tBuf, uint32_t start, uint32_t end)
 {
-    Buffer *buffer = new Buffer();
-    if (buffer != nullptr) {
-        buffer->Init(this, this->byteOffset_ + start, (end - start));
+    if (tBuf == nullptr) {
+        HILOG_ERROR("buffer: buffer is nullptr.");
+        return;
     }
-    return buffer;
+    this->Init(tBuf->GetRaw(), tBuf->byteOffset_ + start, (end - start));
 }
 
 uint32_t Buffer::Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t sEnd)

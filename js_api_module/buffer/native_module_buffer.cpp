@@ -735,20 +735,24 @@ static napi_value SubBuffer(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 0;
-    napi_value args[2] = { 0 };
+    napi_value args[3] = { 0 };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    NAPI_ASSERT(env, argc == 3, "Wrong number of arguments");
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr, "Parameter is empty.");
-    Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
-    
+    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr && args[2] != nullptr, "Parameter is empty.");
+    Buffer *newBuf = nullptr;
+    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&newBuf)));
+    Buffer *targetBuf = nullptr;
+    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&targetBuf)));
+
     uint32_t start = 0;
     uint32_t end = 0;
-    NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
-    NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
-    Buffer *resBuf = buf->SubBuffer(start, end);
-    
-    return GetBufferWrapValue(env, thisVar, resBuf);
+    NAPI_CALL(env, napi_get_value_uint32(env, args[1], &start));
+    NAPI_CALL(env, napi_get_value_uint32(env, args[2], &end));
+    newBuf->SubBuffer(targetBuf, start, end);
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    return result;
 }
 
 static napi_value Copy(napi_env env, napi_callback_info info)
