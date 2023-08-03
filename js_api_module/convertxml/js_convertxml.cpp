@@ -345,6 +345,7 @@ namespace OHOS::Xml {
             GetPrevNodeList(env, curNode);
             GetXMLInfo(env, curNode, object, 0);
         }
+        xmlFreeDoc(doc);
         SetSpacesInfo(env, object);
         return object;
     }
