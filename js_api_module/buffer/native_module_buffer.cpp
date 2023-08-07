@@ -603,7 +603,7 @@ static napi_value GetBufferData(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_array(env, &result));
     size_t key = 0;
     napi_value value = nullptr;
-    for (int i = 0, len = length; i < len; i++) {
+    for (uint32_t i = 0, len = length; i < len; i++) {
         napi_create_uint32(env, data[i], &value);
         napi_set_element(env, result, key, value);
         key++;
