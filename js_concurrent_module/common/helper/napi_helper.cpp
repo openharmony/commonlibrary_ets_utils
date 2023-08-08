@@ -178,6 +178,13 @@ napi_value NapiHelper::GetNameProperty(napi_env env, napi_value obj, const char*
     return result;
 }
 
+bool NapiHelper::HasNameProperty(napi_env env, napi_value obj, const char* name)
+{
+    bool result = false;
+    napi_has_named_property(env, obj, name, &result);
+    return result;
+}
+
 bool NapiHelper::GetBooleanValue(napi_env env, napi_value value)
 {
     bool result = false;
