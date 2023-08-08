@@ -305,7 +305,8 @@ void Worker::PerformTask(const uv_async_t* req)
     if (exception != nullptr) {
         HILOG_ERROR("taskpool:: InitTaskPoolFunc occur exception");
         taskInfo->success = false;
-        NotifyTaskResult(env, taskInfo, exception);
+        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
+        NotifyTaskResult(env, taskInfo, errorEvent);
         return;
     }
     if (!success) {
@@ -339,7 +340,8 @@ void Worker::PerformTask(const uv_async_t* req)
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");
         taskInfo->success = false;
-        NotifyTaskResult(env, taskInfo, exception);
+        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
+        NotifyTaskResult(env, taskInfo, errorEvent);
     }
 }
 
