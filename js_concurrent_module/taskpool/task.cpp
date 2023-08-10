@@ -74,6 +74,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     size_t argc = 1;
     napi_value args[1];
     napi_value thisVar;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     if (argc > 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
@@ -82,6 +83,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     }
     if (argc == 0) {
         HILOG_DEBUG("taskpool:: set task params not transfer");
+        napi_set_named_property(env, thisVar, TRANSFERLIST_STR, undefined);
         return nullptr;
     }
 
@@ -91,6 +93,11 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     uint32_t arrayLength = NapiHelper::GetArrayLength(env, args[0]);
+    if (arrayLength == 0) {
+        HILOG_DEBUG("taskpool:: set task params not transfer");
+        napi_set_named_property(env, thisVar, TRANSFERLIST_STR, undefined);
+        return nullptr;
+    }
     for (size_t i = 0; i < arrayLength; i++) {
         napi_value elementVal;
         napi_get_element(env, args[0], i, &elementVal);

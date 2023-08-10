@@ -348,9 +348,8 @@ void Worker::PerformTask(const uv_async_t* req)
 void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value resultData;
-    napi_status status = napi_serialize(env, result, undefined, &resultData);
+    napi_status status = napi_serialize(env, result, result, &resultData);
     if ((status != napi_ok || resultData == nullptr) && taskInfo->success) {
         taskInfo->success = false;
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,

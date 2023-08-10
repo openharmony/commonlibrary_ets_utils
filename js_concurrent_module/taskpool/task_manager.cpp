@@ -536,8 +536,10 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
     }
     napi_value serializationArguments;
     if (transferList == nullptr) {
-        status = napi_serialize(env, args, undefined, &serializationArguments);
+        HILOG_DEBUG("taskpool:: task params default transfer");
+        status = napi_serialize(env, args, args, &serializationArguments);
     } else {
+        HILOG_DEBUG("taskpool:: call setTransferList to set task params transfer or not transfer");
         status = napi_serialize(env, args, transferList, &serializationArguments);
     }
     if (status != napi_ok || serializationArguments == nullptr) {
@@ -569,7 +571,10 @@ TaskInfo* TaskManager::GenerateTaskInfoFromTask(napi_env env, napi_value task, u
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task value is error");
         return nullptr;
     }
-    napi_value transferList = NapiHelper::GetNameProperty(env, task, TRANSFERLIST_STR);
+    napi_value transferList = nullptr;
+    if (NapiHelper::HasNameProperty(env, task, TRANSFERLIST_STR)) {
+        transferList = NapiHelper::GetNameProperty(env, task, TRANSFERLIST_STR);
+    }
     uint32_t id = NapiHelper::GetUint32Value(env, taskId);
     TaskInfo* taskInfo = GenerateTaskInfo(env, function, arguments, id, executeId, transferList);
     return taskInfo;
