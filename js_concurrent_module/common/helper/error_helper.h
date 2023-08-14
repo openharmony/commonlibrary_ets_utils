@@ -123,50 +123,53 @@ public:
         return result;
     }
 
-    static void TranslateErrorEvent(napi_env env, napi_value error, napi_value *obj)
+    static napi_value TranslateErrorEvent(napi_env env, napi_value error)
     {
-        napi_create_object(env, obj);
+        napi_value obj = NapiHelper::CreateObject(env);
+
+        // add message
+        napi_value msgValue = nullptr;
+        napi_coerce_to_string(env, error, &msgValue);
+        napi_set_named_property(env, obj, "message", msgValue);
+
+        // add backtrace
+        napi_value stack = NapiHelper::GetNameProperty(env, error, "stack");
+        napi_set_named_property(env, obj, "backtrace", stack);
 
         // add timeStamp
         std::string current = GetCurrentTimeStamp();
         napi_value timeStamp = nullptr;
         napi_create_string_utf8(env, current.c_str(), NAPI_AUTO_LENGTH, &timeStamp);
-        napi_set_named_property(env, *obj, "timeStamp", timeStamp);
+        napi_set_named_property(env, obj, "timeStamp", timeStamp);
 
-        // add backtrace
-        napi_value stack = NapiHelper::GetNameProperty(env, error, "stack");
-        napi_set_named_property(env, *obj, "backtrace", stack);
         std::string rawStack = NapiHelper::GetString(env, stack);
         std::vector<std::string> result = SplitErrorFileInfo(rawStack, ':', 2); // 2 : the last two :
         if (result.size() == 3) { // 3 : the rawStack is divided into three parts by last two :
             // add filename
             napi_value filenameValue = nullptr;
             napi_create_string_utf8(env, result[0].c_str(), NAPI_AUTO_LENGTH, &filenameValue); // 0 : filename
-            napi_set_named_property(env, *obj, "filename", filenameValue);
+            napi_set_named_property(env, obj, "filename", filenameValue);
 
             // add lineno
             napi_value lineno = nullptr;
             napi_create_string_utf8(env, result[1].c_str(), NAPI_AUTO_LENGTH, &lineno); // 1 : lineno
-            napi_set_named_property(env, *obj, "lineno", lineno);
+            napi_set_named_property(env, obj, "lineno", lineno);
 
             // add colno
             napi_value colno = nullptr;
             napi_create_string_utf8(env, result[2].c_str(), NAPI_AUTO_LENGTH, &colno); // 2 : colno
-            napi_set_named_property(env, *obj, "colno", colno);
+            napi_set_named_property(env, obj, "colno", colno);
         }
-
-        // add message
-        napi_value msgValue = nullptr;
-        napi_coerce_to_string(env, error, &msgValue);
-        napi_set_named_property(env, *obj, "message", msgValue);
 
         // add type
         napi_value eventType = nullptr;
         napi_create_string_utf8(env, "ErrorEvent", NAPI_AUTO_LENGTH, &eventType);
-        napi_set_named_property(env, *obj, "type", eventType);
+        napi_set_named_property(env, obj, "type", eventType);
 
         // add error
-        napi_set_named_property(env, *obj, "error", error);
+        napi_set_named_property(env, obj, "error", error);
+
+        return obj;
     }
 
     static const int32_t TYPE_ERROR = 401; // 401 : the parameter type is incorrect

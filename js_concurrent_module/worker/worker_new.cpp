@@ -1259,8 +1259,7 @@ void NewWorker::HandleException()
         return;
     }
 
-    napi_value obj;
-    ErrorHelper::TranslateErrorEvent(workerEnv_, exception, &obj);
+    napi_value obj = ErrorHelper::TranslateErrorEvent(workerEnv_, exception);
 
     // WorkerGlobalScope onerror
     WorkerOnErrorInner(obj);

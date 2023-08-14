@@ -498,8 +498,7 @@ void Worker::HandleException()
         return;
     }
 
-    napi_value obj;
-    ErrorHelper::TranslateErrorEvent(workerEnv_, exception, &obj);
+    napi_value obj = ErrorHelper::TranslateErrorEvent(workerEnv_, exception);
 
     // add filename
     napi_value filenameValue = nullptr;

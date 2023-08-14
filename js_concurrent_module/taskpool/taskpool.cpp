@@ -106,9 +106,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
                 return nullptr;
             }
         }
-        bool isGroup = false;
-        napi_has_named_property(env, args[0], GROUP_ID_STR, &isGroup);
-        if (isGroup) {
+        if (NapiHelper::HasNameProperty(env, args[0], GROUP_ID_STR)) {
             return ExecuteGroup(env, args[0], Priority(priority));
         }
         uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
@@ -277,9 +275,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    bool isGroup = false;
-    napi_has_named_property(env, args[0], GROUP_ID_STR, &isGroup);
-    if (!isGroup) {
+    if (!NapiHelper::HasNameProperty(env, args[0], GROUP_ID_STR)) {
         napi_value taskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
         if (taskId == nullptr) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be task");
