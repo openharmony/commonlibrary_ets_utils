@@ -28,7 +28,7 @@
 
 namespace Commonlibrary::Platform {
 UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag);
-std::string ConvertToString(UChar * uchar, size_t length);
+std::string ConvertToString(UChar* uchar, size_t length);
 void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer);
 } // namespace Commonlibrary::Platform
 #endif // PLATFORM_UTIL_HELPER_H

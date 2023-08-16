@@ -19,7 +19,8 @@
 
 namespace Commonlibrary::Platform {
 
-UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag) {
+UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag)
+{
     UConverter *conv = ucnv_open(encStr_.c_str(), &codeflag);
     if (U_FAILURE(codeflag)) {
         HILOG_ERROR("Unable to create a UConverter object: %s\n", u_errorName(codeflag));
