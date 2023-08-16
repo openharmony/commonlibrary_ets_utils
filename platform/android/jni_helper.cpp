@@ -30,7 +30,4 @@ void UtilPluginJniRegister()
 {
     ARKUI_X_Plugin_RunAsyncTask(&UtilPluginJniRegisterImpl, ARKUI_X_PLUGIN_PLATFORM_THREAD);
 }
-
-
-
 } // namespace Commonlibrary::Platform

@@ -16,15 +16,16 @@
 #include "util_helper.h"
 
 #include "util_plugin.h"
+#include <cstdio.h>
 #include <unicode/ustring.h>
-#include <stdio.h>
 
 namespace Commonlibrary::Platform {
 using namespace OHOS::Util;
 bool isChineseEncoding = false;
 std::string targetEncStr;
 
-UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag) {
+UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag)
+{
     const std::string convertFormat("gbk,GBK,GB2312,gb2312,GB18030,gb18030");
     targetEncStr = encStr_;
     std::string encodeStr = "";
@@ -38,21 +39,21 @@ UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag) {
     UConverter *conv = ucnv_open(encodeStr.c_str(), &codeflag);
     if (U_FAILURE(codeflag)) {
         HILOG_ERROR("Unable to create a UConverter object");
-        return NULL;
+        return nullptr;
     }
 
     ucnv_setFromUCallBack(conv, UCNV_FROM_U_CALLBACK_SUBSTITUTE, NULL, NULL, NULL, &codeflag);
     if (U_FAILURE(codeflag)) {
         HILOG_ERROR("Unable to set the from Unicode callback function");
         ucnv_close(conv);
-        return NULL;
+        return nullptr;
     }
 
     ucnv_setToUCallBack(conv, UCNV_TO_U_CALLBACK_SUBSTITUTE, NULL, NULL, NULL, &codeflag);
     if (U_FAILURE(codeflag)) {
         HILOG_ERROR("Unable to set the to Unicode callback function");
         ucnv_close(conv);
-        return NULL;
+        return nullptr;
     }
 
     return conv;
@@ -61,7 +62,7 @@ UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag) {
 std::string ConvertToString(UChar * uchar, size_t length)
 {
     std::string tepStr;
-    if(isChineseEncoding) {
+    if (isChineseEncoding) {
         std::string input = "";
         for (size_t i = 0; i < length; ++i) {
             input += static_cast<char>(uchar[i] & 0xFF);
