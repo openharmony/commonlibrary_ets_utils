@@ -332,7 +332,7 @@ namespace OHOS::Util {
         napi_create_string_utf8(env, "ReadStdEncode", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env, nullptr, resourceName, ReadStdEncode, EndStdEncode,
                                reinterpret_cast<void*>(stdEncodeInfo_), &stdEncodeInfo_->worker);
-        napi_queue_async_work(env, stdEncodeInfo_->worker);
+        napi_queue_async_work_with_qos(env, stdEncodeInfo_->worker, napi_qos_user_initiated);
     }
 
     void Base64::CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length)
@@ -345,7 +345,7 @@ namespace OHOS::Util {
         napi_create_string_utf8(env, "ReadStdEncodeToString", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env, nullptr, resourceName, ReadStdEncodeToString, EndStdEncodeToString,
                                reinterpret_cast<void*>(stdEncodeInfo_), &stdEncodeInfo_->worker);
-        napi_queue_async_work(env, stdEncodeInfo_->worker);
+        napi_queue_async_work_with_qos(env, stdEncodeInfo_->worker, napi_qos_user_initiated);
     }
 
     unsigned char *EncodeAchieves(napi_env env, EncodeInfo *encodeInfo)
@@ -495,7 +495,7 @@ namespace OHOS::Util {
         napi_create_string_utf8(env, "ReadStdDecode", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env, nullptr, resourceName, ReadStdDecode, EndStdDecode,
                                reinterpret_cast<void*>(stdDecodeInfo_), &stdDecodeInfo_->worker);
-        napi_queue_async_work(env, stdDecodeInfo_->worker);
+        napi_queue_async_work_with_qos(env, stdDecodeInfo_->worker, napi_qos_user_initiated);
     }
 
     size_t Finds(char ch)
