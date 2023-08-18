@@ -133,6 +133,8 @@ private:
     bool PrepareForWorkerInstance();
     void ReleaseWorkerThreadContent();
     void ResetWorkerPriority();
+    bool CheckFreeConditions();
+    bool UpdateWorkerState(WorkerState expect, WorkerState desired);
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(NativeEngine* engine, NativeValue* result, bool success, void* data);
     static void NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result);
@@ -151,8 +153,7 @@ private:
     std::atomic<uint64_t> startTime_ = 0;
     std::atomic<int32_t> runningCount_ = 0;
     std::atomic<uint64_t> idlePoint_ = ConcurrentHelper::GetMilliseconds();
-    WorkerState state_ {WorkerState::IDLE};
-    std::mutex stateMutex_;
+    std::atomic<WorkerState> state_ {WorkerState::IDLE};
     Priority priority_ {Priority::DEFAULT};
     pid_t tid_ = 0;
     std::vector<uint32_t> currentTaskId_ {};

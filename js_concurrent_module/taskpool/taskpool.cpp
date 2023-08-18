@@ -256,7 +256,7 @@ void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priori
     HITRACE_HELPER_METER_NAME(strTrace);
     TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
-    TaskManager::GetInstance().TryTriggerLoadBalance();
+    TaskManager::GetInstance().TryTriggerExpand();
 }
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)

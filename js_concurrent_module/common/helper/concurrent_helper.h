@@ -17,6 +17,7 @@
 #define JS_CONCURRENT_MODULE_COMMON_HELPER_CONCURRENT_HELPER_H
 
 #include <chrono>
+#include <uv.h>
 #if defined(OHOS_PLATFORM)
 #include <unistd.h>
 #elif defined(WINDOWS_PLATFORM)
@@ -41,21 +42,21 @@ public:
     ConcurrentHelper() = delete;
     ~ConcurrentHelper() = delete;
 
-    static uint32_t GetActiveCpus()
+    static uint32_t GetMaxThreads()
     {
 #if defined(OHOS_PLATFORM)
-        return sysconf(_SC_NPROCESSORS_ONLN);
+        return sysconf(_SC_NPROCESSORS_ONLN) - 1;
 #elif defined(WINDOWS_PLATFORM)
         SYSTEM_INFO sysInfo;
         GetSystemInfo(&sysInfo);
-        return sysInfo.dwNumberOfProcessors;
+        return sysInfo.dwNumberOfProcessors - 1;
 #elif defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
         int32_t numCpu = 0;
         size_t size = sizeof(numCpu);
         sysctlbyname("hw.ncpu", &numCpu, &size, nullptr, 0);
-        return numCpu;
+        return numCpu - 1;
 #elif defined(ANDROID_PLATFORM)
-        return get_nprocs();
+        return get_nprocs() - 1;
 #else
         return 1; // 1: default number
 #endif
@@ -66,6 +67,17 @@ public:
         auto now = std::chrono::system_clock::now();
         auto millisecs = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
         return millisecs.count();
+    }
+
+    template<typename T>
+    static void UvHandleClose(T* handle)
+    {
+        uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<T*>(handle);
+                handle = nullptr;
+            }
+        });
     }
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper

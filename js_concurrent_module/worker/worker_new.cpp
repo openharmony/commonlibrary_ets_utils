@@ -800,6 +800,8 @@ void NewWorker::ExecuteInThread(const void* data)
         }
         // mark worker env is workerThread
         reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
+        // for load balance in taskpool
+        reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
         worker->SetWorkerEnv(workerEnv);
     }
 
@@ -1445,6 +1447,7 @@ void NewWorker::ReleaseWorkerThreadContent()
         if (!hostEngine->DeleteWorker(workerEngine)) {
             HILOG_ERROR("worker:: DeleteWorker error");
         }
+        hostEngine->DecreaseSubEnvCounter();
     }
     // 1. remove worker instance count
     {
