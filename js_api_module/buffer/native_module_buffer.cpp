@@ -989,7 +989,7 @@ static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
     napi_create_string_utf8(env, "CopyBlobToArrayBuffer", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(env, nullptr, resourceName, [](napi_env env, void* data) {}, CopiedBlobToArrayBuffer,
                            reinterpret_cast<void *>(promiseInfo), &promiseInfo->worker);
-    napi_queue_async_work(env, promiseInfo->worker);
+    napi_queue_async_work_with_qos(env, promiseInfo->worker, napi_qos_user_initiated);
     return bufferPromise;
 }
 
@@ -1009,7 +1009,7 @@ static napi_value TextAsync(napi_env env, napi_callback_info info)
     napi_create_string_utf8(env, "GetPromiseOfString", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(env, nullptr, resourceName, [](napi_env env, void* data) {}, CopiedBlobToString,
                            reinterpret_cast<void *>(promiseInfo), &promiseInfo->worker);
-    napi_queue_async_work(env, promiseInfo->worker);
+    napi_queue_async_work_with_qos(env, promiseInfo->worker, napi_qos_user_initiated);
     return textPromise;
 }
 

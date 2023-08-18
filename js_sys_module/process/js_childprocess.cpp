@@ -106,7 +106,7 @@ namespace OHOS::JsSysModule::Process {
                     optionsInfo = nullptr;
                 },
                 reinterpret_cast<void*>(optionsInfo_), &optionsInfo_->worker);
-            napi_queue_async_work(env, optionsInfo_->worker);
+            napi_queue_async_work_with_qos(env, optionsInfo_->worker, napi_qos_user_initiated);
             close(stdErrFd_[1]);
             close(stdOutFd_[1]);
         } else {
@@ -258,7 +258,7 @@ namespace OHOS::JsSysModule::Process {
         napi_create_string_utf8(env, "ReadStdOut", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env, nullptr, resourceName, ReadStdOut, EndStdOut,
                                reinterpret_cast<void*>(stdOutInfo_), &stdOutInfo_->worker);
-        napi_queue_async_work(env, stdOutInfo_->worker);
+        napi_queue_async_work_with_qos(env, stdOutInfo_->worker, napi_qos_user_initiated);
 
         // getstderr
         stdErrInfo_ = new StdInfo();
@@ -273,7 +273,7 @@ namespace OHOS::JsSysModule::Process {
         napi_create_string_utf8(env, "ReadStdErr", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env, nullptr, resourceName, ReadStdErr, EndStdErr,
                                reinterpret_cast<void*>(stdErrInfo_), &stdErrInfo_->worker);
-        napi_queue_async_work(env, stdErrInfo_->worker);
+        napi_queue_async_work_with_qos(env, stdErrInfo_->worker, napi_qos_user_initiated);
     }
 
     void ChildProcess::ReadStdOut(napi_env env, void* data)
