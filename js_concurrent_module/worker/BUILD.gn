@@ -28,7 +28,6 @@ ohos_shared_library("worker") {
     "native_module_worker.cpp",
     "thread.cpp",
     "worker.cpp",
-    "worker_new.cpp",
     "worker_runner.cpp",
   ]
 
@@ -89,7 +88,6 @@ ohos_source_set("worker_static") {
     "native_module_worker.cpp",
     "thread.cpp",
     "worker.cpp",
-    "worker_new.cpp",
     "worker_runner.cpp",
   ]
   deps = []

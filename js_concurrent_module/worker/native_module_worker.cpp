@@ -14,17 +14,13 @@
  */
 
 #include "commonlibrary/ets_utils/js_concurrent_module/worker/worker.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/worker/worker_new.h"
 
 /*
  * module init func
  */
 static napi_value Init(napi_env env, napi_value exports)
 {
-    exports = Commonlibrary::Concurrent::WorkerModule::NewWorker::InitWorker(env, exports);
-    exports = Commonlibrary::Concurrent::WorkerModule::Worker::InitWorker(env, exports);
-
-    return exports;
+    return Commonlibrary::Concurrent::WorkerModule::Worker::InitWorker(env, exports);
 }
 
 /*

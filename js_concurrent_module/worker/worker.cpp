@@ -25,13 +25,759 @@
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace OHOS::JsSysModule;
 static constexpr int8_t NUM_WORKER_ARGS = 2;
-static std::list<Worker*> g_workers;
+static std::list<Worker *> g_workers;
 static constexpr int MAX_WORKERS = 8;
 static std::mutex g_workersMutex;
 
 Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
 {}
+
+napi_value Worker::InitWorker(napi_env env, napi_value exports)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_FUNCTION("postMessage", PostMessage),
+        DECLARE_NAPI_FUNCTION("terminate", Terminate),
+        DECLARE_NAPI_FUNCTION("on", On),
+        DECLARE_NAPI_FUNCTION("once", Once),
+        DECLARE_NAPI_FUNCTION("off", Off),
+        DECLARE_NAPI_FUNCTION("addEventListener", AddEventListener),
+        DECLARE_NAPI_FUNCTION("dispatchEvent", DispatchEvent),
+        DECLARE_NAPI_FUNCTION("removeEventListener", RemoveEventListener),
+        DECLARE_NAPI_FUNCTION("removeAllListener", RemoveAllListener),
+        DECLARE_NAPI_FUNCTION("cancelTasks", CancelTask),
+    };
+    const char threadWorkerName[] = "ThreadWorker";
+    napi_value threadWorkerClazz = nullptr;
+    napi_define_class(env, threadWorkerName, sizeof(threadWorkerName), Worker::ThreadWorkerConstructor, nullptr,
+        sizeof(properties) / sizeof(properties[0]), properties, &threadWorkerClazz);
+    napi_set_named_property(env, exports, "ThreadWorker", threadWorkerClazz);
+    const char workerName[] = "Worker";
+    napi_value workerClazz = nullptr;
+    napi_define_class(env, workerName, sizeof(workerName), Worker::WorkerConstructor, nullptr,
+        sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
+    napi_set_named_property(env, exports, "Worker", workerClazz);
+
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    if (engine->IsWorkerThread()) {
+        Worker* worker = nullptr;
+        for (auto item = g_workers.begin(); item != g_workers.end(); item++) {
+            if ((*item)->IsSameWorkerEnv(env)) {
+                worker = *item;
+            }
+        }
+        if (worker == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null when InitWorker");
+            return exports;
+        }
+
+        napi_property_descriptor properties[] = {
+            DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
+            DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
+            DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
+            DECLARE_NAPI_FUNCTION_WITH_DATA("addEventListener", ParentPortAddEventListener, worker),
+            DECLARE_NAPI_FUNCTION_WITH_DATA("dispatchEvent", ParentPortDispatchEvent, worker),
+            DECLARE_NAPI_FUNCTION_WITH_DATA("removeEventListener", ParentPortRemoveEventListener, worker),
+            DECLARE_NAPI_FUNCTION_WITH_DATA("removeAllListener", ParentPortRemoveAllListener, worker),
+        };
+        napi_value workerPortObj = nullptr;
+        napi_create_object(env, &workerPortObj);
+        napi_define_properties(env, workerPortObj, sizeof(properties) / sizeof(properties[0]), properties);
+
+        // 5. register worker name in DedicatedWorkerGlobalScope
+        std::string workerName = worker->GetName();
+        if (!workerName.empty()) {
+            napi_value nameValue = nullptr;
+            napi_create_string_utf8(env, workerName.c_str(), workerName.length(), &nameValue);
+            napi_set_named_property(env, workerPortObj, "name", nameValue);
+        }
+
+        while (!engine->IsMainThread()) {
+            engine = engine->GetHostEngine();
+        }
+        if (engine->IsTargetWorkerVersion(WorkerVersion::NEW)) {
+            napi_set_named_property(env, exports, "workerPort", workerPortObj);
+        } else {
+            napi_set_named_property(env, exports, "parentPort", workerPortObj);
+        }
+        // register worker parentPort.
+        napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
+    }
+    return exports;
+}
+
+napi_value Worker::ThreadWorkerConstructor(napi_env env, napi_callback_info cbinfo)
+{
+    if (CanCreateWorker(env, WorkerVersion::NEW)) {
+        return Constructor(env, cbinfo);
+    }
+    ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
+        "Using both Worker and ThreadWorker is not supported.");
+    return nullptr;
+}
+
+napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
+{
+    if (CanCreateWorker(env, WorkerVersion::OLD)) {
+        return Constructor(env, cbinfo);
+    }
+    ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
+        "Using both Worker and ThreadWorker is not supported.");
+    return nullptr;
+}
+
+napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar = nullptr;
+    void* data = nullptr;
+    size_t argc = 2;  // 2: max args number is 2
+    napi_value args[argc];
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+    // check argv count
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "the number of create worker param must be more than 1 with new");
+        return nullptr;
+    }
+    // check 1st param is string
+    if (!NapiHelper::IsString(args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of Worker 1st param must be string.");
+        return nullptr;
+    }
+    Worker* worker = nullptr;
+    {
+        int maxWorkers = MAX_WORKERS;
+    #if defined(OHOS_PLATFORM)
+        maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
+    #endif
+        std::lock_guard<std::mutex> lock(g_workersMutex);
+        if (static_cast<int>(g_workers.size()) >= maxWorkers) {
+            ErrorHelper::ThrowError(env,
+                ErrorHelper::ERR_WORKER_INITIALIZATION, "the number of workers exceeds the maximum.");
+            return nullptr;
+        }
+
+        // 2. new worker instance
+        worker = new Worker(env, nullptr);
+        if (worker == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "creat worker error");
+            return nullptr;
+        }
+        g_workers.push_back(worker);
+    }
+
+    if (argc > 1 && NapiHelper::IsObject(args[1])) {
+        napi_value nameValue = NapiHelper::GetNameProperty(env, args[1], "name");
+        if (NapiHelper::IsNotUndefined(nameValue)) {
+            if (NapiHelper::IsString(nameValue)) {
+                char* nameStr = NapiHelper::GetString(env, nameValue);
+                if (nameStr == nullptr) {
+                    ErrorHelper::ThrowError(env,
+                        ErrorHelper::ERR_WORKER_INITIALIZATION, "the name of worker is null.");
+                    return nullptr;
+                }
+                worker->name_ = std::string(nameStr);
+                CloseHelp::DeletePointer(nameStr, true);
+            } else {
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of name in worker must be string.");
+                return nullptr;
+            }
+        }
+
+        napi_value typeValue = NapiHelper::GetNameProperty(env, args[1], "type");
+        if (NapiHelper::IsNotUndefined(typeValue)) {
+            if (NapiHelper::IsString(typeValue)) {
+                char* typeStr = NapiHelper::GetString(env, typeValue);
+                if (typeStr == nullptr) {
+                    ErrorHelper::ThrowError(env,
+                        ErrorHelper::ERR_WORKER_INITIALIZATION, "the type of worker is null.");
+                    return nullptr;
+                }
+                if (strcmp("classic", typeStr) == 0) {
+                    worker->SetScriptMode(CLASSIC);
+                    CloseHelp::DeletePointer(typeStr, true);
+                } else {
+                    ErrorHelper::ThrowError(env,
+                        ErrorHelper::TYPE_ERROR, "the type must be classic, unsupport others now.");
+                    CloseHelp::DeletePointer(typeStr, true);
+                    CloseHelp::DeletePointer(worker, false);
+                    return nullptr;
+                }
+            } else {
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of type must be string.");
+                return nullptr;
+            }
+        }
+    }
+
+    // 3. execute in thread
+    char* script = NapiHelper::GetString(env, args[0]);
+    if (script == nullptr) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::ERR_WORKER_INVALID_FILEPATH, "the file path is invaild, maybe path is null.");
+        return nullptr;
+    }
+    napi_wrap(
+        env, thisVar, worker,
+        [](napi_env env, void* data, void* hint) {
+            Worker* worker = reinterpret_cast<Worker*>(data);
+            {
+                std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+                if (worker->UpdateHostState(INACTIVE)) {
+                    if (worker->hostOnMessageSignal_ != nullptr &&
+                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_))) {
+                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_), [](uv_handle_t* handle) {
+                            if (handle != nullptr) {
+                                delete reinterpret_cast<uv_async_t*>(handle);
+                                handle = nullptr;
+                            }
+                        });
+                    }
+                    if (worker->hostOnErrorSignal_ != nullptr &&
+                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_))) {
+                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_), [](uv_handle_t* handle) {
+                            if (handle != nullptr) {
+                                delete reinterpret_cast<uv_async_t*>(handle);
+                                handle = nullptr;
+                            }
+                        });
+                    }
+                    worker->ReleaseHostThreadContent();
+                }
+                if (!worker->IsRunning()) {
+                    HILOG_DEBUG("worker:: worker is not in running");
+                    return;
+                }
+                worker->TerminateInner();
+            }
+        },
+        nullptr, &worker->workerRef_);
+    worker->StartExecuteInThread(env, script);
+    return thisVar;
+}
+
+napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Worker messageObject must be not null with postMessage");
+        return nullptr;
+    }
+    napi_value* argv = new napi_value[argc];
+    ObjectScope<napi_value> scope(argv, true);
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
+
+    if (worker == nullptr || worker->IsTerminated() || worker->IsTerminating()) {
+        HILOG_ERROR("worker:: worker is nullptr when PostMessage, maybe worker is terminated");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated when PostMessage");
+        return nullptr;
+    }
+
+    napi_value data = nullptr;
+    napi_status serializeStatus = napi_ok;
+    if (argc >= NUM_WORKER_ARGS) {
+        if (!NapiHelper::IsArray(argv[1])) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "transfer list must be an Array");
+            return nullptr;
+        }
+        serializeStatus = napi_serialize(env, argv[0], argv[1], &data);
+    } else {
+        serializeStatus = napi_serialize(env, argv[0], NapiHelper::GetUndefinedValue(env), &data);
+    }
+    if (serializeStatus != napi_ok || data == nullptr) {
+        worker->HostOnMessageErrorInner();
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        return nullptr;
+    }
+    worker->PostMessageInner(data);
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when Terminate, maybe worker is terminated");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr when Terminate");
+        return nullptr;
+    }
+    if (worker->IsTerminated() || worker->IsTerminating()) {
+        HILOG_DEBUG("worker:: worker is not in running when Terminate");
+        return nullptr;
+    }
+    worker->TerminateInner();
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::On(napi_env env, napi_callback_info cbinfo)
+{
+    return AddListener(env, cbinfo, PERMANENT);
+}
+
+napi_value Worker::Once(napi_env env, napi_callback_info cbinfo)
+{
+    return AddListener(env, cbinfo, ONCE);
+}
+
+napi_value Worker::Off(napi_env env, napi_callback_info cbinfo)
+{
+    return RemoveListener(env, cbinfo);
+}
+
+napi_value Worker::RemoveEventListener(napi_env env, napi_callback_info cbinfo)
+{
+    return RemoveListener(env, cbinfo);
+}
+
+napi_value Worker::AddEventListener(napi_env env, napi_callback_info cbinfo)
+{
+    return AddListener(env, cbinfo, PERMANENT);
+}
+
+napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, ListenerMode mode)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < NUM_WORKER_ARGS) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "worker add listener param count must be not less than 2.");
+        return nullptr;
+    }
+    // check 1st param is string
+    napi_value thisVar = nullptr;
+    void* data = nullptr;
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+    if (!NapiHelper::IsString(args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker add listener 1st param must be string");
+        return nullptr;
+    }
+    if (!NapiHelper::IsCallable(env, args[1])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker add listener 2st param must be callable");
+        return nullptr;
+    }
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, (void**)&worker);
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when addListener, maybe worker is terminated");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
+        return nullptr;
+    }
+
+    napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
+    auto listener = new WorkerListener(env, callback, mode);
+    if (mode == ONCE && argc > NUM_WORKER_ARGS) {
+        if (NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
+            napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
+            bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
+            if (!isOnce) {
+                listener->SetMode(PERMANENT);
+            }
+        }
+    }
+    char* typeStr = NapiHelper::GetString(env, args[0]);
+    worker->AddListenerInner(env, typeStr, listener);
+    CloseHelp::DeletePointer(typeStr, true);
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the remove listener param must be not less than 1");
+        return nullptr;
+    }
+    // check 1st param is string
+    napi_value thisVar = nullptr;
+    void* data = nullptr;
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+    if (!NapiHelper::IsString(args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of remove listener 1st param must be string");
+        return nullptr;
+    }
+
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when RemoveListener, maybe worker is terminated");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
+        return nullptr;
+    }
+
+    if (argc > 1 && !NapiHelper::IsCallable(env, args[1])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of remove listener 2st param must be callable");
+        return nullptr;
+    }
+
+    char* typeStr = NapiHelper::GetString(env, args[0]);
+    if (typeStr == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of remove listener type must be not null");
+        return nullptr;
+    }
+
+    napi_ref callback = nullptr;
+    if (argc > 1 && NapiHelper::IsCallable(env, args[1])) {
+        napi_create_reference(env, args[1], 1, &callback);
+    }
+    worker->RemoveListenerInner(env, typeStr, callback);
+    CloseHelp::DeletePointer(typeStr, true);
+    NapiHelper::DeleteReference(env, callback);
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+void CallWorkCallback(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type)
+{
+    napi_value callback = nullptr;
+    napi_get_named_property(env, recv, type, &callback);
+    if (NapiHelper::IsCallable(env, callback)) {
+        napi_value callbackResult = nullptr;
+        napi_call_function(env, recv, callback, argc, argv, &callbackResult);
+    }
+}
+
+napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = 1;
+    napi_value args[1];
+    napi_value thisVar = nullptr;
+    void* data = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "the count of event param must be more than 1 in DispatchEvent");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    // check 1st param is event
+    if (!NapiHelper::IsObject(args[0])) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "the type of event 1st param must be Event in DispatchEvent");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when DispatchEvent, maybe worker is terminated");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker has been terminated");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
+    if (!NapiHelper::IsString(typeValue)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of event type must be string");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerRef_);
+
+    char* typeStr = NapiHelper::GetString(env, typeValue);
+    if (typeStr == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "dispatchEvent event type must be not null");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+    if (strcmp(typeStr, "error") == 0) {
+        CallWorkCallback(env, obj, 1, args, "onerror");
+    } else if (strcmp(typeStr, "messageerror") == 0) {
+        CallWorkCallback(env, obj, 1, args, "onmessageerror");
+    } else if (strcmp(typeStr, "message") == 0) {
+        CallWorkCallback(env, obj, 1, args, "onmessage");
+    }
+
+    worker->HandleEventListeners(env, obj, 1, args, typeStr);
+
+    CloseHelp::DeletePointer(typeStr, true);
+    return NapiHelper::CreateBooleanValue(env, true);
+}
+
+napi_value Worker::RemoveAllListener(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when RemoveAllListener, maybe worker is terminated");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
+        return nullptr;
+    }
+
+    worker->RemoveAllListenerInner();
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::CancelTask(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when CancelTask, maybe worker is terminated");
+        return nullptr;
+    }
+
+    if (worker->IsTerminated() || worker->IsTerminating()) {
+        HILOG_INFO("worker:: worker is not in running");
+        return nullptr;
+    }
+
+    if (!worker->ClearWorkerTasks()) {
+        HILOG_ERROR("worker:: clear worker task error");
+    }
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker param count must be more than 1 with new");
+        return nullptr;
+    }
+    napi_value* argv = new napi_value[argc];
+    ObjectScope<napi_value> scope(argv, true);
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, argv, nullptr, reinterpret_cast<void**>(&worker));
+
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr when post message to host");
+        return nullptr;
+    }
+
+    if (!worker->IsRunning()) {
+        // if worker is not running, don't send any message to host thread
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
+        return nullptr;
+    }
+
+    napi_value data = nullptr;
+    napi_status serializeStatus = napi_ok;
+    if (argc >= NUM_WORKER_ARGS) {
+        if (!NapiHelper::IsArray(argv[1])) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Transfer list must be an Array");
+            return nullptr;
+        }
+        serializeStatus = napi_serialize(env, argv[0], argv[1], &data);
+    } else {
+        serializeStatus = napi_serialize(env, argv[0], NapiHelper::GetUndefinedValue(env), &data);
+    }
+
+    if (serializeStatus != napi_ok || data == nullptr) {
+        worker->WorkerOnMessageErrorInner();
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        return nullptr;
+    }
+    worker->PostMessageToHostInner(data);
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::CloseWorker(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, (void**)&worker);
+    if (worker != nullptr) {
+        worker->CloseInner();
+    } else {
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null");
+        return nullptr;
+    }
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::ParentPortCancelTask(napi_env env, napi_callback_info cbinfo)
+{
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, reinterpret_cast<void**>(&worker));
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when CancelTask, maybe worker is terminated");
+        return nullptr;
+    }
+
+    if (worker->IsTerminated() || worker->IsTerminating()) {
+        HILOG_INFO("worker:: worker is not in running");
+        return nullptr;
+    }
+
+    if (!worker->ClearWorkerTasks()) {
+        HILOG_ERROR("worker:: clear worker task error");
+    }
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < NUM_WORKER_ARGS) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "worker listener param count must be more than WORKPARAMNUM.");
+        return nullptr;
+    }
+
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
+
+    if (!NapiHelper::IsString(args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of worker listener 1st param must be string.");
+        return nullptr;
+    }
+
+    if (!NapiHelper::IsCallable(env, args[1])) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "the type of worker listener 2st param must be callable.");
+        return nullptr;
+    }
+
+    if (worker == nullptr || !worker->IsNotTerminate()) {
+        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is not running.");
+        return nullptr;
+    }
+
+    napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
+    auto listener = new WorkerListener(env, callback, PERMANENT);
+    if (argc > NUM_WORKER_ARGS && NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
+        napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
+        bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
+        if (isOnce) {
+            listener->SetMode(ONCE);
+        }
+    }
+    char* typeStr = NapiHelper::GetString(env, args[0]);
+    worker->ParentPortAddListenerInner(env, typeStr, listener);
+    CloseHelp::DeletePointer(typeStr, true);
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = 1;
+    napi_value args[1];
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "DispatchEvent param count must be more than 1.");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    if (!NapiHelper::IsObject(args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker DispatchEvent 1st param must be Event.");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
+    if (!NapiHelper::IsString(typeValue)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker event type must be string.");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    if (worker == nullptr || !worker->IsNotTerminate()) {
+        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr.");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    char* typeStr = NapiHelper::GetString(env, typeValue);
+    if (typeStr == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener type must be not null.");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerPort_);
+
+    if (strcmp(typeStr, "error") == 0) {
+        CallWorkCallback(env, obj, 1, args, "onerror");
+    } else if (strcmp(typeStr, "messageerror") == 0) {
+        CallWorkCallback(env, obj, 1, args, "onmessageerror");
+    } else if (strcmp(typeStr, "message") == 0) {
+        CallWorkCallback(env, obj, 1, args, "onmessage");
+    }
+
+    worker->ParentPortHandleEventListeners(env, obj, 1, args, typeStr, true);
+
+    CloseHelp::DeletePointer(typeStr, true);
+    return NapiHelper::CreateBooleanValue(env, true);
+}
+
+napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener param count must be more than 2.");
+        return nullptr;
+    }
+
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
+
+    if (!NapiHelper::IsString(args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of worker listener 1st param must be string.");
+        return nullptr;
+    }
+
+    if (argc > 1 && !NapiHelper::IsCallable(env, args[1])) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "the type of worker listener 2st param must be callable with on.");
+        return nullptr;
+    }
+
+    if (worker == nullptr || !worker->IsNotTerminate()) {
+        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is not running.");
+        return nullptr;
+    }
+
+    napi_ref callback = nullptr;
+    if (argc > 1 && NapiHelper::IsCallable(env, args[1])) {
+        napi_create_reference(env, args[1], 1, &callback);
+    }
+
+    char* typeStr = NapiHelper::GetString(env, args[0]);
+    if (typeStr == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener type must be not null.");
+        return nullptr;
+    }
+    worker->ParentPortRemoveListenerInner(env, typeStr, callback);
+    CloseHelp::DeletePointer(typeStr, true);
+    NapiHelper::DeleteReference(env, callback);
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+napi_value Worker::ParentPortRemoveAllListener(napi_env env, napi_callback_info cbinfo)
+{
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, reinterpret_cast<void**>(&worker));
+
+    if (worker == nullptr || !worker->IsNotTerminate()) {
+        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING,
+            "worker is nullptr when ParentPortRemoveAllListener");
+        return nullptr;
+    }
+
+    worker->ParentPortRemoveAllListenerInner();
+    return NapiHelper::GetUndefinedValue(env);
+}
 
 void Worker::GetContainerScopeId(napi_env env)
 {
@@ -44,7 +790,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     // 1. init hostOnMessageSignal_ in host loop
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     if (loop == nullptr) {
-        napi_throw_error(env, nullptr, "worker::engine loop is null");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "engine loop is null");
         CloseHelp::DeletePointer(script, true);
         return;
     }
@@ -71,30 +817,63 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     }
 }
 
-void Worker::CloseInner()
+void Worker::ExecuteInThread(const void* data)
 {
-    UpdateWorkerState(TERMINATEING);
-    TerminateWorker();
-}
-
-napi_value Worker::CloseWorker(napi_env env, napi_callback_info cbinfo)
-{
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, (void**)&worker);
-    if (worker != nullptr) {
-        worker->CloseInner();
+    HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
+    auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
+    // 1. create a runtime, nativeengine
+    napi_env workerEnv = nullptr;
+    {
+        std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+        if (worker->HostIsStop()) {
+            CloseHelp::DeletePointer(worker, false);
+            return;
+        }
+        napi_env env = worker->GetHostEnv();
+        napi_create_runtime(env, &workerEnv);
+        if (workerEnv == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
+            return;
+        }
+        // mark worker env is workerThread
+        reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
+        // for load balance in taskpool
+        reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
+        worker->SetWorkerEnv(workerEnv);
     }
-    return NapiHelper::GetUndefinedValue(env);
-}
 
-void CallWorkCallback(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type)
-{
-    napi_value callback = nullptr;
-    napi_get_named_property(env, recv, type, &callback);
-    if (NapiHelper::IsCallable(env, callback)) {
-        napi_value callbackResult = nullptr;
-        napi_call_function(env, recv, callback, argc, argv, &callbackResult);
+    uv_loop_t* loop = worker->GetWorkerLoop();
+    if (loop == nullptr) {
+        HILOG_ERROR("worker:: Worker loop is nullptr");
+        return;
+    }
+
+    // 2. add some preparation for the worker
+    if (worker->PrepareForWorkerInstance()) {
+        worker->workerOnMessageSignal_ = new uv_async_t;
+        uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::WorkerOnMessage));
+        worker->workerOnMessageSignal_->data = worker;
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+        uv_async_init(loop, &worker->ddebuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
+            Worker::HandleDebuggerTask));
+#endif
+        worker->UpdateWorkerState(RUNNING);
+        // in order to invoke worker send before subThread start
+        uv_async_send(worker->workerOnMessageSignal_);
+        HITRACE_HELPER_FINISH_TRACE;
+        // 3. start worker loop
+        worker->Loop();
+    } else {
+        HILOG_ERROR("worker:: worker PrepareForWorkerInstance fail");
+        worker->UpdateWorkerState(TERMINATED);
+        HITRACE_HELPER_FINISH_TRACE;
+    }
+    worker->ReleaseWorkerThreadContent();
+    std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+    if (worker->HostIsStop()) {
+        CloseHelp::DeletePointer(worker, false);
+    } else {
+        worker->PublishWorkerOverSignal();
     }
 }
 
@@ -112,7 +891,7 @@ bool Worker::PrepareForWorkerInstance()
 
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
         // 2. init worker environment
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(LINUX_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         workerEngine->SetDebuggerPostTaskFunc(
             std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
 #endif
@@ -147,249 +926,21 @@ bool Worker::PrepareForWorkerInstance()
     return true;
 }
 
-bool Worker::UpdateWorkerState(RunnerState state)
-{
-    bool done = false;
-    do {
-        RunnerState oldState = runnerState_.load(std::memory_order_acquire);
-        if (oldState >= state) {
-            // make sure state sequence is start, running, terminating, terminated
-            return false;
-        }
-        done = runnerState_.compare_exchange_strong(oldState, state);
-    } while (!done);
-    return true;
-}
-
-bool Worker::UpdateHostState(HostState state)
-{
-    bool done = false;
-    do {
-        HostState oldState = hostState_.load(std::memory_order_acquire);
-        if (oldState >= state) {
-            // make sure state sequence is ACTIVE, INACTIVE
-            return false;
-        }
-        done = hostState_.compare_exchange_strong(oldState, state);
-    } while (!done);
-    return true;
-}
-
-void Worker::PublishWorkerOverSignal()
-{
-    // post NULL tell host worker is not running
-    if (!HostIsStop()) {
-        hostMessageQueue_.EnQueue(NULL);
-        uv_async_send(hostOnMessageSignal_);
-    }
-}
-
-void Worker::ExecuteInThread(const void* data)
-{
-    HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
-    auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
-    // 1. create a runtime, nativeengine
-    napi_env workerEnv = nullptr;
-    {
-        std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-        if (worker->HostIsStop()) {
-            CloseHelp::DeletePointer(worker, false);
-            return;
-        }
-        napi_env env = worker->GetHostEnv();
-        napi_create_runtime(env, &workerEnv);
-        if (workerEnv == nullptr) {
-            napi_throw_error(env, nullptr, "Worker create runtime error");
-            return;
-        }
-        // mark worker env is workerThread
-        reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
-        // for load balance in taskpool
-        reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
-        worker->SetWorkerEnv(workerEnv);
-    }
-
-    uv_loop_t* loop = worker->GetWorkerLoop();
-    if (loop == nullptr) {
-        HILOG_ERROR("worker:: Worker loop is nullptr");
-        return;
-    }
-
-    // 2. add some preparation for the worker
-    if (worker->PrepareForWorkerInstance()) {
-        worker->workerOnMessageSignal_ = new uv_async_t;
-        uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::WorkerOnMessage));
-        worker->workerOnMessageSignal_->data = worker;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-        uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
-            Worker::HandleDebuggerTask));
-#endif
-        worker->UpdateWorkerState(RUNNING);
-        // in order to invoke worker send before subThread start
-        uv_async_send(worker->workerOnMessageSignal_);
-        HITRACE_HELPER_FINISH_TRACE;
-        // 3. start worker loop
-        worker->Loop();
-    } else {
-        HILOG_ERROR("worker:: worker PrepareForWorkerInstance fail");
-        worker->UpdateWorkerState(TERMINATED);
-        HITRACE_HELPER_FINISH_TRACE;
-    }
-    worker->ReleaseWorkerThreadContent();
-    std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-    if (worker->HostIsStop()) {
-        CloseHelp::DeletePointer(worker, false);
-    } else {
-        worker->PublishWorkerOverSignal();
-    }
-}
-
 void Worker::HostOnMessage(const uv_async_t* req)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is null");
+        HILOG_ERROR("worker:: worker is null when host onmessage.");
         return;
     }
     worker->HostOnMessageInner();
 }
 
-void Worker::HostOnErrorInner()
-{
-    if (hostEnv_ == nullptr || HostIsStop()) {
-        HILOG_ERROR("worker:: host thread maybe is over");
-        return;
-    }
-    napi_status status = napi_ok;
-    HandleScope scope(hostEnv_, status);
-    NAPI_CALL_RETURN_VOID(hostEnv_, status);
-    NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
-    }
-
-    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
-    napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onerror");
-    bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
-
-    MessageDataType data;
-    while (errorQueue_.DeQueue(&data)) {
-        napi_value result = nullptr;
-        napi_deserialize(hostEnv_, data, &result);
-        napi_value argv[1] = { result };
-        if (isCallable) {
-            napi_value callbackResult = nullptr;
-            napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
-        }
-        // handle listeners
-        HandleEventListeners(hostEnv_, obj, 1, argv, "error");
-        HandleHostException();
-    }
-    if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
-    }
-}
-
-void Worker::HostOnError(const uv_async_t* req)
-{
-    Worker* worker = static_cast<Worker*>(req->data);
-    if (worker == nullptr) {
-        HILOG_ERROR("worker::worker is null");
-        return;
-    }
-    worker->HostOnErrorInner();
-    worker->TerminateInner();
-}
-
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-void Worker::HandleDebuggerTask(const uv_async_t* req)
-{
-    Worker* worker = DereferenceHelp::DereferenceOf(&Worker::debuggerOnPostTaskSignal_, req);
-    if (worker == nullptr) {
-        HILOG_ERROR("worker::worker is null");
-        return;
-    }
-
-    worker->debuggerTask_();
-}
-
-void Worker::DebuggerOnPostTask(std::function<void()>&& task)
-{
-    if (IsTerminated()) {
-        HILOG_ERROR("worker:: worker has been terminated.");
-        return;
-    }
-    if (uv_is_active((uv_handle_t*)&debuggerOnPostTaskSignal_)) {
-        debuggerTask_ = std::move(task);
-        uv_async_send(&debuggerOnPostTaskSignal_);
-    }
-}
-#endif
-
-void Worker::WorkerOnMessage(const uv_async_t* req)
-{
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    Worker* worker = static_cast<Worker*>(req->data);
-    if (worker == nullptr) {
-        HILOG_ERROR("worker::worker is null");
-        return;
-    }
-    worker->WorkerOnMessageInner();
-}
-
-void Worker::CloseHostCallback()
-{
-    {
-        napi_status status = napi_ok;
-        HandleScope scope(hostEnv_, status);
-        NAPI_CALL_RETURN_VOID(hostEnv_, status);
-        napi_value exitValue = nullptr;
-        if (isErrorExit_) {
-            napi_create_int32(hostEnv_, 1, &exitValue); // 1 : exit because of error
-        } else {
-            napi_create_int32(hostEnv_, 0, &exitValue); // 0 : exit normally
-        }
-        napi_value argv[1] = { exitValue };
-        CallHostFunction(1, argv, "onexit");
-        napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
-        // handle listeners
-        HandleEventListeners(hostEnv_, obj, 1, argv, "exit");
-    }
-    CloseHelp::DeletePointer(this, false);
-}
-
-void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type)
-{
-    std::string listener(type);
-    auto iter = eventListeners_.find(listener);
-    if (iter == eventListeners_.end()) {
-        HILOG_DEBUG("worker:: there is no listener for type %{public}s in host thread", type);
-        return;
-    }
-
-    std::list<WorkerListener*>& listeners = iter->second;
-    std::list<WorkerListener*>::iterator it = listeners.begin();
-    while (it != listeners.end()) {
-        WorkerListener* data = *it++;
-        napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
-        if (!NapiHelper::IsCallable(env, callbackObj)) {
-            HILOG_DEBUG("worker:: host thread listener %{public}s is not callable", type);
-            return;
-        }
-        napi_value callbackResult = nullptr;
-        napi_call_function(env, recv, callbackObj, argc, argv, &callbackResult);
-        if (!data->NextIsAvailable()) {
-            listeners.remove(data);
-            CloseHelp::DeletePointer(data, false);
-        }
-    }
-}
-
 void Worker::HostOnMessageInner()
 {
     if (hostEnv_ == nullptr || HostIsStop()) {
-        HILOG_ERROR("worker:: host thread maybe is over");
+        HILOG_ERROR("worker:: host thread maybe is over when host onmessage.");
         return;
     }
 
@@ -432,7 +983,6 @@ void Worker::HostOnMessageInner()
             HostOnMessageErrorInner();
             continue;
         }
-
         napi_value event = nullptr;
         napi_create_object(hostEnv_, &event);
         napi_set_named_property(hostEnv_, event, "data", result);
@@ -450,20 +1000,181 @@ void Worker::HostOnMessageInner()
     }
 }
 
+void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const
+{
+    if (hostEnv_ == nullptr) {
+        HILOG_ERROR("worker:: host thread maybe is over");
+        return;
+    }
+    if (HostIsStop()) {
+        HILOG_ERROR("worker:: host thread maybe is over");
+        WorkerThrowError(hostEnv_, ErrorHelper::ERR_WORKER_NOT_RUNNING,
+            "host thread maybe is over when CallHostFunction");
+        return;
+    }
+    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
+    napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, methodName);
+    bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
+    if (!isCallable) {
+        HILOG_DEBUG("worker:: host thread %{public}s is not Callable", methodName);
+        return;
+    }
+    napi_value callbackResult = nullptr;
+    napi_call_function(hostEnv_, obj, callback, argc, argv, &callbackResult);
+    HandleHostException();
+}
+
+void Worker::CloseHostCallback()
+{
+    {
+        napi_status status = napi_ok;
+        HandleScope scope(hostEnv_, status);
+        NAPI_CALL_RETURN_VOID(hostEnv_, status);
+        napi_value exitValue = nullptr;
+        if (isErrorExit_) {
+            napi_create_int32(hostEnv_, 1, &exitValue); // 1 : exit because of error
+        } else {
+            napi_create_int32(hostEnv_, 0, &exitValue); // 0 : exit normally
+        }
+        napi_value argv[1] = { exitValue };
+        CallHostFunction(1, argv, "onexit");
+        napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
+        // handle listeners
+        HandleEventListeners(hostEnv_, obj, 1, argv, "exit");
+    }
+    CloseHelp::DeletePointer(this, false);
+}
+
+void Worker::HostOnError(const uv_async_t* req)
+{
+    Worker* worker = static_cast<Worker*>(req->data);
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is null");
+        return;
+    }
+    worker->HostOnErrorInner();
+    worker->TerminateInner();
+}
+
+void Worker::HostOnErrorInner()
+{
+    if (hostEnv_ == nullptr || HostIsStop()) {
+        HILOG_ERROR("worker:: host thread maybe is over when host onerror.");
+        return;
+    }
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
+    NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
+        HILOG_WARN("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
+    }
+
+    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
+    napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onerror");
+    bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
+
+    MessageDataType data;
+    while (errorQueue_.DeQueue(&data)) {
+        napi_value result = nullptr;
+        napi_deserialize(hostEnv_, data, &result);
+
+        napi_value argv[1] = { result };
+        if (isCallable) {
+            napi_value callbackResult = nullptr;
+            napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
+        }
+        // handle listeners
+        HandleEventListeners(hostEnv_, obj, 1, argv, "error");
+        HandleHostException();
+    }
+    if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
+        HILOG_WARN("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
+    }
+}
+
+void Worker::PostMessageInner(MessageDataType data)
+{
+    if (IsTerminated()) {
+        HILOG_DEBUG("worker:: worker has been terminated when PostMessageInner.");
+        return;
+    }
+    workerMessageQueue_.EnQueue(data);
+    if (workerOnMessageSignal_ != nullptr && uv_is_active((uv_handle_t*)workerOnMessageSignal_)) {
+        uv_async_send(workerOnMessageSignal_);
+    }
+}
+
+void Worker::HostOnMessageErrorInner()
+{
+    if (hostEnv_ == nullptr || HostIsStop()) {
+        HILOG_ERROR("worker:: host thread maybe is over");
+        return;
+    }
+    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
+    CallHostFunction(0, nullptr, "onmessageerror");
+    // handle listeners
+    HandleEventListeners(hostEnv_, obj, 0, nullptr, "messageerror");
+}
+
+void Worker::TerminateInner()
+{
+    if (IsTerminated() || IsTerminating()) {
+        HILOG_INFO("worker:: worker is not in running when TerminateInner");
+        return;
+    }
+    // 1. Update State
+    UpdateWorkerState(TERMINATEING);
+    // 2. send null signal
+    PostMessageInner(NULL);
+}
+
+void Worker::CloseInner()
+{
+    UpdateWorkerState(TERMINATEING);
+    TerminateWorker();
+}
+
+bool Worker::UpdateWorkerState(RunnerState state)
+{
+    bool done = false;
+    do {
+        RunnerState oldState = runnerState_.load(std::memory_order_acquire);
+        if (oldState >= state) {
+            // make sure state sequence is start, running, terminating, terminated
+            return false;
+        }
+        done = runnerState_.compare_exchange_strong(oldState, state);
+    } while (!done);
+    return true;
+}
+
+bool Worker::UpdateHostState(HostState state)
+{
+    bool done = false;
+    do {
+        HostState oldState = hostState_.load(std::memory_order_acquire);
+        if (oldState >= state) {
+            // make sure state sequence is ACTIVE, INACTIVE
+            return false;
+        }
+        done = hostState_.compare_exchange_strong(oldState, state);
+    } while (!done);
+    return true;
+}
+
 void Worker::TerminateWorker()
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     // when there is no active handle, worker loop will stop automatic.
-    if (workerOnMessageSignal_ != nullptr) {
-        uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
-        });
-    }
+    uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_close(reinterpret_cast<uv_handle_t*>(&debuggerOnPostTaskSignal_), nullptr);
+    uv_close(reinterpret_cast<uv_handle_t*>(&ddebuggerOnPostTaskSignal_), nullptr);
 #endif
     CloseWorkerCallback();
     uv_loop_t* loop = GetWorkerLoop();
@@ -476,53 +1187,24 @@ void Worker::TerminateWorker()
     UpdateWorkerState(TERMINATED);
 }
 
-void Worker::HandleHostException() const
+void Worker::PublishWorkerOverSignal()
 {
-    if (!NapiHelper::IsExceptionPending(hostEnv_)) {
-        return;
+    // post NULL tell host worker is not running
+    if (!HostIsStop()) {
+        hostMessageQueue_.EnQueue(NULL);
+        uv_async_send(hostOnMessageSignal_);
     }
-    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    hostEngine->HandleUncaughtException();
 }
 
-void Worker::HandleException()
+void Worker::WorkerOnMessage(const uv_async_t* req)
 {
-    if (!NapiHelper::IsExceptionPending(workerEnv_)) {
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    Worker* worker = static_cast<Worker*>(req->data);
+    if (worker == nullptr) {
+        HILOG_ERROR("worker::worker is null");
         return;
     }
-
-    napi_status status = napi_ok;
-    HandleScope scope(workerEnv_, status);
-    NAPI_CALL_RETURN_VOID(workerEnv_, status);
-    napi_value exception;
-    napi_get_and_clear_last_exception(workerEnv_, &exception);
-    if (exception == nullptr) {
-        return;
-    }
-
-    napi_value obj = ErrorHelper::TranslateErrorEvent(workerEnv_, exception);
-
-    // add filename
-    napi_value filenameValue = nullptr;
-    napi_create_string_utf8(workerEnv_, script_.c_str(), script_.length(), &filenameValue);
-    napi_set_named_property(workerEnv_, obj, "filename", filenameValue);
-
-    // WorkerGlobalScope onerror
-    WorkerOnErrorInner(obj);
-
-    if (hostEnv_ != nullptr) {
-        napi_value data = nullptr;
-        napi_serialize(workerEnv_, obj, NapiHelper::GetUndefinedValue(workerEnv_), &data);
-        {
-            std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-            if (!HostIsStop()) {
-                errorQueue_.EnQueue(data);
-                uv_async_send(hostOnErrorSignal_);
-            }
-        }
-    } else {
-        HILOG_ERROR("worker:: host engine is nullptr.");
-    }
+    worker->WorkerOnMessageInner();
 }
 
 void Worker::WorkerOnMessageInner()
@@ -558,118 +1240,91 @@ void Worker::WorkerOnMessageInner()
         napi_set_named_property(workerEnv_, event, "data", result);
         napi_value argv[1] = { event };
         CallWorkerFunction(1, argv, "onmessage", true);
-        napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->parentPort_);
+
+        napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->workerPort_);
         ParentPortHandleEventListeners(workerEnv_, obj, 1, argv, "message", true);
     }
     napi_close_handle_scope(workerEnv_, scope);
 }
 
-void Worker::HostOnMessageErrorInner()
+void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc,
+                                     const napi_value* argv, const char* type)
 {
-    if (hostEnv_ == nullptr || HostIsStop()) {
-        HILOG_ERROR("worker:: host thread maybe is over");
+    std::string listener(type);
+    auto iter = eventListeners_.find(listener);
+    if (iter == eventListeners_.end()) {
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s in host thread", type);
         return;
     }
-    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
-    CallHostFunction(0, nullptr, "onmessageerror");
-    // handle listeners
-    HandleEventListeners(hostEnv_, obj, 0, nullptr, "messageerror");
+
+    std::list<WorkerListener*>& listeners = iter->second;
+    std::list<WorkerListener*>::iterator it = listeners.begin();
+    while (it != listeners.end()) {
+        WorkerListener* data = *it++;
+        napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
+        if (!NapiHelper::IsCallable(env, callbackObj)) {
+            HILOG_DEBUG("worker:: host thread listener %{public}s is not callable", type);
+            return;
+        }
+        napi_value callbackResult = nullptr;
+        napi_call_function(env, recv, callbackObj, argc, argv, &callbackResult);
+        if (!data->NextIsAvailable()) {
+            listeners.remove(data);
+            CloseHelp::DeletePointer(data, false);
+        }
+    }
+}
+
+void Worker::HandleHostException() const
+{
+    if (!NapiHelper::IsExceptionPending(hostEnv_)) {
+        return;
+    }
+    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    hostEngine->HandleUncaughtException();
+}
+
+void Worker::HandleException()
+{
+    if (!NapiHelper::IsExceptionPending(workerEnv_)) {
+        return;
+    }
+
+    napi_status status = napi_ok;
+    HandleScope scope(workerEnv_, status);
+    NAPI_CALL_RETURN_VOID(workerEnv_, status);
+    napi_value exception;
+    napi_get_and_clear_last_exception(workerEnv_, &exception);
+    if (exception == nullptr) {
+        return;
+    }
+
+    napi_value obj = ErrorHelper::TranslateErrorEvent(workerEnv_, exception);
+
+    // WorkerGlobalScope onerror
+    WorkerOnErrorInner(obj);
+
+    if (hostEnv_ != nullptr) {
+        napi_value data = nullptr;
+        napi_serialize(workerEnv_, obj, NapiHelper::GetUndefinedValue(workerEnv_), &data);
+        {
+            std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+            if (!HostIsStop()) {
+                errorQueue_.EnQueue(data);
+                uv_async_send(hostOnErrorSignal_);
+            }
+        }
+    } else {
+        HILOG_ERROR("worker:: host engine is nullptr.");
+    }
 }
 
 void Worker::WorkerOnMessageErrorInner()
 {
     isErrorExit_ = true;
     CallWorkerFunction(0, nullptr, "onmessageerror", true);
-    napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->parentPort_);
+    napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->workerPort_);
     ParentPortHandleEventListeners(workerEnv_, obj, 0, nullptr, "messageerror", true);
-}
-
-napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
-{
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than 1 with postMessage");
-        return nullptr;
-    }
-    napi_value* argv = new napi_value[argc];
-    ObjectScope<napi_value> scope(argv, true);
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
-
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when PostMessage, maybe worker is terminated");
-        return nullptr;
-    }
-
-    if (worker->IsTerminated() || worker->IsTerminating()) {
-        HILOG_INFO("worker:: worker not in running state");
-        return nullptr;
-    }
-
-    napi_value data = nullptr;
-    napi_status serializeStatus = napi_ok;
-    if (argc >= NUM_WORKER_ARGS) {
-        if (!NapiHelper::IsArray(argv[1])) {
-            napi_throw_error(env, nullptr, "Transfer list must be an Array");
-            return nullptr;
-        }
-        serializeStatus = napi_serialize(env, argv[0], argv[1], &data);
-    } else {
-        serializeStatus = napi_serialize(env, argv[0], NapiHelper::GetUndefinedValue(env), &data);
-    }
-    if (serializeStatus != napi_ok || data == nullptr) {
-        worker->HostOnMessageErrorInner();
-        return nullptr;
-    }
-    worker->PostMessageInner(data);
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
-{
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than 1 with new");
-        return nullptr;
-    }
-    napi_value* argv = new napi_value[argc];
-    ObjectScope<napi_value> scope(argv, true);
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, argv, nullptr, reinterpret_cast<void**>(&worker));
-
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        return nullptr;
-    }
-
-    if (!worker->IsRunning()) {
-        // if worker is not running, don't send any message to host thread
-        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
-        return nullptr;
-    }
-
-    napi_value data = nullptr;
-    napi_status serializeStatus = napi_ok;
-    if (argc >= NUM_WORKER_ARGS) {
-        if (!NapiHelper::IsArray(argv[1])) {
-            napi_throw_error(env, nullptr, "Transfer list must be an Array");
-            return nullptr;
-        }
-        serializeStatus = napi_serialize(env, argv[0], argv[1], &data);
-    } else {
-        serializeStatus = napi_serialize(env, argv[0], NapiHelper::GetUndefinedValue(env), &data);
-    }
-
-    if (serializeStatus != napi_ok || data == nullptr) {
-        worker->WorkerOnMessageErrorInner();
-        return nullptr;
-    }
-    worker->PostMessageToHostInner(data);
-    return NapiHelper::GetUndefinedValue(env);
 }
 
 void Worker::PostMessageToHostInner(MessageDataType data)
@@ -679,262 +1334,8 @@ void Worker::PostMessageToHostInner(MessageDataType data)
         hostMessageQueue_.EnQueue(data);
         uv_async_send(hostOnMessageSignal_);
     } else {
-        HILOG_ERROR("worker:: worker host engine is nullptr.");
+        HILOG_ERROR("worker:: worker host engine is nullptr when PostMessageToHostInner.");
     }
-}
-
-void Worker::PostMessageInner(MessageDataType data)
-{
-    if (IsTerminated()) {
-        HILOG_DEBUG("worker:: worker has been terminated.");
-        return;
-    }
-    workerMessageQueue_.EnQueue(data);
-    if (workerOnMessageSignal_ != nullptr && uv_is_active((uv_handle_t*)workerOnMessageSignal_)) {
-        uv_async_send(workerOnMessageSignal_);
-    }
-}
-
-napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
-{
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when Terminate, maybe worker is terminated");
-        return nullptr;
-    }
-    if (worker->IsTerminated() || worker->IsTerminating()) {
-        HILOG_DEBUG("worker:: worker is not in running");
-        return nullptr;
-    }
-    worker->TerminateInner();
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-void Worker::TerminateInner()
-{
-    if (IsTerminated() || IsTerminating()) {
-        HILOG_INFO("worker:: worker is not in running");
-        return;
-    }
-    // 1. Update State
-    UpdateWorkerState(TERMINATEING);
-    // 2. send null signal
-    PostMessageInner(NULL);
-}
-
-Worker::~Worker()
-{
-    if (!HostIsStop()) {
-        ReleaseHostThreadContent();
-    }
-    RemoveAllListenerInner();
-}
-
-napi_value Worker::CancelTask(napi_env env, napi_callback_info cbinfo)
-{
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when CancelTask, maybe worker is terminated");
-        return nullptr;
-    }
-
-    if (worker->IsTerminated() || worker->IsTerminating()) {
-        HILOG_INFO("worker:: worker is not in running");
-        return nullptr;
-    }
-
-    if (!worker->ClearWorkerTasks()) {
-        HILOG_ERROR("worker:: clear worker task error");
-    }
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-napi_value Worker::ParentPortCancelTask(napi_env env, napi_callback_info cbinfo)
-{
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, reinterpret_cast<void**>(&worker));
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when CancelTask, maybe worker is terminated");
-        return nullptr;
-    }
-
-    if (worker->IsTerminated() || worker->IsTerminating()) {
-        HILOG_INFO("worker:: worker is not in running");
-        return nullptr;
-    }
-
-    if (!worker->ClearWorkerTasks()) {
-        HILOG_ERROR("worker:: clear worker task error");
-    }
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
-{
-    // check argv count
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than 1 with new");
-        return nullptr;
-    }
-
-    // check 1st param is string
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-    if (!NapiHelper::IsString(args[0])) {
-        napi_throw_error(env, nullptr, "Worker 1st param must be string with new");
-        return nullptr;
-    }
-    Worker* worker = nullptr;
-    {
-        int maxWorkers = MAX_WORKERS;
-    #if defined(OHOS_PLATFORM)
-        maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
-    #endif
-        std::lock_guard<std::mutex> lock(g_workersMutex);
-        if (static_cast<int>(g_workers.size()) >= maxWorkers) {
-            napi_throw_error(env, nullptr, "Too many workers, the number of workers exceeds the maximum.");
-            return nullptr;
-        }
-
-        // 2. new worker instance
-        worker = new Worker(env, nullptr);
-        if (worker == nullptr) {
-            napi_throw_error(env, nullptr, "create worker error");
-            return nullptr;
-        }
-        g_workers.push_back(worker);
-    }
-
-    if (argc > 1 && NapiHelper::IsObject(args[1])) {
-        napi_value nameValue = NapiHelper::GetNameProperty(env, args[1], "name");
-        if (NapiHelper::IsString(nameValue)) {
-            char* nameStr = NapiHelper::GetString(env, nameValue);
-            if (nameStr == nullptr) {
-                napi_throw_error(env, nullptr, "worker name create error, please check.");
-                return nullptr;
-            }
-            worker->name_ = std::string(nameStr);
-            CloseHelp::DeletePointer(nameStr, true);
-        }
-
-        napi_value typeValue = NapiHelper::GetNameProperty(env, args[1], "type");
-        if (NapiHelper::IsString(typeValue)) {
-            char* typeStr = NapiHelper::GetString(env, typeValue);
-            if (typeStr == nullptr) {
-                napi_throw_error(env, nullptr, "worker type create error, please check.");
-                return nullptr;
-            }
-            if (strcmp("classic", typeStr) == 0) {
-                worker->SetScriptMode(CLASSIC);
-                CloseHelp::DeletePointer(typeStr, true);
-            } else {
-                napi_throw_error(env, nullptr, "unsupport module");
-                CloseHelp::DeletePointer(typeStr, true);
-                CloseHelp::DeletePointer(worker, false);
-                return nullptr;
-            }
-        }
-    }
-
-    // 3. execute in thread
-    char* script = NapiHelper::GetString(env, args[0]);
-    if (script == nullptr) {
-        napi_throw_error(env, nullptr, "worker script create error, please check.");
-        return nullptr;
-    }
-    napi_wrap(
-        env, thisVar, worker,
-        [](napi_env env, void* data, void* hint) {
-            Worker* worker = reinterpret_cast<Worker*>(data);
-            {
-                std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-                if (worker->UpdateHostState(INACTIVE)) {
-                    if (worker->hostOnMessageSignal_ != nullptr &&
-                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_))) {
-                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_), [](uv_handle_t* handle) {
-                            if (handle != nullptr) {
-                                delete reinterpret_cast<uv_async_t*>(handle);
-                                handle = nullptr;
-                            }
-                        });
-                    }
-                    if (worker->hostOnErrorSignal_ != nullptr &&
-                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_))) {
-                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_), [](uv_handle_t* handle) {
-                            if (handle != nullptr) {
-                                delete reinterpret_cast<uv_async_t*>(handle);
-                                handle = nullptr;
-                            }
-                        });
-                    }
-                    worker->ReleaseHostThreadContent();
-                }
-                if (!worker->IsRunning()) {
-                    HILOG_DEBUG("worker:: worker is not in running");
-                    return;
-                }
-                worker->TerminateInner();
-            }
-        },
-        nullptr, &worker->workerRef_);
-    worker->StartExecuteInThread(env, script);
-    return thisVar;
-}
-
-napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, ListenerMode mode)
-{
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < NUM_WORKER_ARGS) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than WORKPARAMNUM with on");
-        return nullptr;
-    }
-    // check 1st param is string
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-    if (!NapiHelper::IsString(args[0])) {
-        napi_throw_error(env, nullptr, "Worker 1st param must be string with on");
-        return nullptr;
-    }
-    if (!NapiHelper::IsCallable(env, args[1])) {
-        napi_throw_error(env, nullptr, "Worker 2st param must be callable with on");
-        return nullptr;
-    }
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when addListener, maybe worker is terminated");
-        return nullptr;
-    }
-
-    napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
-    auto listener = new WorkerListener(env, callback, mode);
-    if (mode == ONCE && argc > NUM_WORKER_ARGS) {
-        if (NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
-            napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
-            bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
-            if (!isOnce) {
-                listener->SetMode(PERMANENT);
-            }
-        }
-    }
-    char* typeStr = NapiHelper::GetString(env, args[0]);
-    worker->AddListenerInner(env, typeStr, listener);
-    CloseHelp::DeletePointer(typeStr, true);
-    return NapiHelper::GetUndefinedValue(env);
 }
 
 bool Worker::WorkerListener::operator==(const WorkerListener& listener) const
@@ -987,127 +1388,12 @@ void Worker::RemoveListenerInner(napi_env env, const char* type, napi_ref callba
     }
 }
 
-napi_value Worker::On(napi_env env, napi_callback_info cbinfo)
+Worker::~Worker()
 {
-    return AddListener(env, cbinfo, PERMANENT);
-}
-
-napi_value Worker::Once(napi_env env, napi_callback_info cbinfo)
-{
-    return AddListener(env, cbinfo, ONCE);
-}
-
-napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
-{
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than 2 with on");
-        return nullptr;
+    if (!HostIsStop()) {
+        ReleaseHostThreadContent();
     }
-    // check 1st param is string
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-    if (!NapiHelper::IsString(args[0])) {
-        napi_throw_error(env, nullptr, "Worker 1st param must be string with on");
-        return nullptr;
-    }
-
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when RemoveListener, maybe worker is terminated");
-        return nullptr;
-    }
-
-    if (argc > 1 && !NapiHelper::IsCallable(env, args[1])) {
-        napi_throw_error(env, nullptr, "Worker 2st param must be callable with on");
-        return nullptr;
-    }
-
-    char* typeStr = NapiHelper::GetString(env, args[0]);
-    if (typeStr == nullptr) {
-        napi_throw_error(env, nullptr, "worker listener type create error, please check.");
-        return nullptr;
-    }
-
-    napi_ref callback = nullptr;
-    if (argc > 1 && NapiHelper::IsCallable(env, args[1])) {
-        napi_create_reference(env, args[1], 1, &callback);
-    }
-    worker->RemoveListenerInner(env, typeStr, callback);
-    CloseHelp::DeletePointer(typeStr, true);
-    NapiHelper::DeleteReference(env, callback);
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-napi_value Worker::Off(napi_env env, napi_callback_info cbinfo)
-{
-    return RemoveListener(env, cbinfo);
-}
-
-napi_value Worker::AddEventListener(napi_env env, napi_callback_info cbinfo)
-{
-    return AddListener(env, cbinfo, PERMANENT);
-}
-
-napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
-{
-    size_t argc = 1;
-    napi_value args[1];
-    napi_value thisVar = nullptr;
-    void* data = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "worker:: DispatchEvent param count must be more than 1");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    // check 1st param is event
-    if (!NapiHelper::IsObject(args[0])) {
-        napi_throw_error(env, nullptr, "worker DispatchEvent 1st param must be Event");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when DispatchEvent, maybe worker is terminated");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
-    if (!NapiHelper::IsString(typeValue)) {
-        napi_throw_error(env, nullptr, "worker event type must be string");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerRef_);
-
-    char* typeStr = NapiHelper::GetString(env, typeValue);
-    if (typeStr == nullptr) {
-        napi_throw_error(env, nullptr, "worker listener type create error, please check.");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-    if (strcmp(typeStr, "error") == 0) {
-        CallWorkCallback(env, obj, 1, args, "onerror");
-    } else if (strcmp(typeStr, "messageerror") == 0) {
-        CallWorkCallback(env, obj, 1, args, "onmessageerror");
-    } else if (strcmp(typeStr, "message") == 0) {
-        CallWorkCallback(env, obj, 1, args, "onmessage");
-    }
-
-    worker->HandleEventListeners(env, obj, 1, args, typeStr);
-
-    CloseHelp::DeletePointer(typeStr, true);
-    return NapiHelper::CreateBooleanValue(env, true);
-}
-
-napi_value Worker::RemoveEventListener(napi_env env, napi_callback_info cbinfo)
-{
-    return RemoveListener(env, cbinfo);
+    RemoveAllListenerInner();
 }
 
 void Worker::RemoveAllListenerInner()
@@ -1122,85 +1408,24 @@ void Worker::RemoveAllListenerInner()
     eventListeners_.clear();
 }
 
-napi_value Worker::RemoveAllListener(napi_env env, napi_callback_info cbinfo)
+void Worker::ReleaseHostThreadContent()
 {
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&worker));
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: worker is nullptr when RemoveAllListener, maybe worker is terminated");
-        return nullptr;
-    }
-
-    worker->RemoveAllListenerInner();
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-napi_value Worker::InitWorker(napi_env env, napi_value exports)
-{
-    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
-    const char className[] = "Worker";
-    napi_property_descriptor properties[] = {
-        DECLARE_NAPI_FUNCTION("postMessage", PostMessage),
-        DECLARE_NAPI_FUNCTION("terminate", Terminate),
-        DECLARE_NAPI_FUNCTION("on", On),
-        DECLARE_NAPI_FUNCTION("once", Once),
-        DECLARE_NAPI_FUNCTION("off", Off),
-        DECLARE_NAPI_FUNCTION("addEventListener", AddEventListener),
-        DECLARE_NAPI_FUNCTION("dispatchEvent", DispatchEvent),
-        DECLARE_NAPI_FUNCTION("removeEventListener", RemoveEventListener),
-        DECLARE_NAPI_FUNCTION("removeAllListener", RemoveAllListener),
-        DECLARE_NAPI_FUNCTION("cancelTasks", CancelTask),
-    };
-    napi_value workerClazz = nullptr;
-    napi_define_class(env, className, sizeof(className), Worker::WorkerConstructor, nullptr,
-        sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
-    napi_set_named_property(env, exports, "Worker", workerClazz);
-
-    if (engine->IsWorkerThread()) {
-        if (g_workers.size() == 0) {
-            HILOG_DEBUG("worker:: The old worker is not used.");
-            return exports;
-        }
+    // 1. clear message send to host thread
+    hostMessageQueue_.Clear(hostEnv_);
+    // 2. clear error queue send to host thread
+    errorQueue_.Clear(hostEnv_);
+    if (!HostIsStop()) {
+        napi_status status = napi_ok;
+        HandleScope scope(hostEnv_, status);
+        NAPI_CALL_RETURN_VOID(hostEnv_, status);
+        // 3. set thisVar's nativepointer be null
+        napi_value thisVar = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
         Worker* worker = nullptr;
-        for (auto item = g_workers.begin(); item != g_workers.end(); item++) {
-            if ((*item)->IsSameWorkerEnv(env)) {
-                worker = *item;
-            }
-        }
-        if (worker == nullptr) {
-            napi_throw_error(env, nullptr, "worker:: worker is null");
-            return exports;
-        }
-
-        napi_property_descriptor properties[] = {
-            DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("addEventListener", ParentPortAddEventListener, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("dispatchEvent", ParentPortDispatchEvent, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("removeEventListener", ParentPortRemoveEventListener, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("removeAllListener", ParentPortRemoveAllListener, worker),
-        };
-        napi_value parentPortObj = nullptr;
-        napi_create_object(env, &parentPortObj);
-        napi_define_properties(env, parentPortObj, sizeof(properties) / sizeof(properties[0]), properties);
-
-        // 5. register worker name in DedicatedWorkerGlobalScope
-        std::string workerName = worker->GetName();
-        if (!workerName.empty()) {
-            napi_value nameValue = nullptr;
-            napi_create_string_utf8(env, workerName.c_str(), workerName.length(), &nameValue);
-            napi_set_named_property(env, parentPortObj, "name", nameValue);
-        }
-        napi_set_named_property(env, exports, "parentPort", parentPortObj);
-
-        // register worker parentPort.
-        napi_create_reference(env, parentPortObj, 1, &worker->parentPort_);
+        napi_remove_wrap(hostEnv_, thisVar, reinterpret_cast<void**>(&worker));
+        hostEnv_ = nullptr;
+        // 4. set workerRef_ be null
+        workerRef_ = nullptr;
     }
-    return exports;
 }
 
 void Worker::WorkerOnErrorInner(napi_value error)
@@ -1208,26 +1433,27 @@ void Worker::WorkerOnErrorInner(napi_value error)
     isErrorExit_ = true;
     napi_value argv[1] = { error };
     CallWorkerFunction(1, argv, "onerror", false);
-    napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->parentPort_);
+    napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->workerPort_);
     ParentPortHandleEventListeners(workerEnv_, obj, 1, argv, "error", false);
 }
 
 bool Worker::CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch)
 {
     if (workerEnv_ == nullptr) {
+        HILOG_ERROR("Worker:: worker is not running when call workerPort.%{public}s.", methodName);
         return false;
     }
-    napi_value callback = NapiHelper::GetNamePropertyInParentPort(workerEnv_, parentPort_, methodName);
+    napi_value callback = NapiHelper::GetNamePropertyInParentPort(workerEnv_, workerPort_, methodName);
     bool isCallable = NapiHelper::IsCallable(workerEnv_, callback);
     if (!isCallable) {
-        HILOG_DEBUG("worker:: parentPort %{public}s is not Callable", methodName);
+        HILOG_DEBUG("worker:: workerPort.%{public}s is not Callable", methodName);
         return false;
     }
     napi_value undefinedValue = NapiHelper::GetUndefinedValue(workerEnv_);
     napi_value callbackResult = nullptr;
     napi_call_function(workerEnv_, undefinedValue, callback, argc, argv, &callbackResult);
     if (tryCatch && callbackResult == nullptr) {
-        HILOG_DEBUG("worker:: parentPort %{public}s handle exception", methodName);
+        HILOG_DEBUG("worker:: workerPort.%{public}s handle exception", methodName);
         HandleException();
         return false;
     }
@@ -1248,24 +1474,6 @@ void Worker::CloseWorkerCallback()
             HILOG_ERROR("worker:: CallOffWorkerFunc error");
         }
     }
-}
-
-void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const
-{
-    if (hostEnv_ == nullptr || HostIsStop()) {
-        HILOG_ERROR("worker:: host thread maybe is over");
-        return;
-    }
-    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
-    napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, methodName);
-    bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
-    if (!isCallable) {
-        HILOG_DEBUG("worker:: host thread %{public}s is not Callable", methodName);
-        return;
-    }
-    napi_value callbackResult = nullptr;
-    napi_call_function(hostEnv_, obj, callback, argc, argv, &callbackResult);
-    HandleHostException();
 }
 
 void Worker::ReleaseWorkerThreadContent()
@@ -1291,205 +1499,13 @@ void Worker::ReleaseWorkerThreadContent()
     ParentPortRemoveAllListenerInner();
 
     // 2. delete worker's parentPort
-    NapiHelper::DeleteReference(workerEnv_, parentPort_);
-    parentPort_ = nullptr;
+    NapiHelper::DeleteReference(workerEnv_, workerPort_);
+    workerPort_ = nullptr;
 
     // 3. clear message send to worker thread
     workerMessageQueue_.Clear(workerEnv_);
     CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
     workerEnv_ = nullptr;
-}
-
-void Worker::ReleaseHostThreadContent()
-{
-    // 1. clear message send to host thread
-    hostMessageQueue_.Clear(hostEnv_);
-    // 2. clear error queue send to host thread
-    errorQueue_.Clear(hostEnv_);
-    if (!HostIsStop()) {
-        napi_status status = napi_ok;
-        HandleScope scope(hostEnv_, status);
-        NAPI_CALL_RETURN_VOID(hostEnv_, status);
-        // 3. set thisVar's nativepointer be null
-        napi_value thisVar = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
-        Worker* worker = nullptr;
-        napi_remove_wrap(hostEnv_, thisVar, reinterpret_cast<void**>(&worker));
-        hostEnv_ = nullptr;
-        // 4. set workerRef_ be null
-        workerRef_ = nullptr;
-    }
-}
-
-napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info cbinfo)
-{
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < NUM_WORKER_ARGS) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than NUM_WORKER_ARGS with on");
-        return nullptr;
-    }
-
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> scope(args, true);
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
-
-    if (!NapiHelper::IsString(args[0])) {
-        napi_throw_error(env, nullptr, "Worker 1st param must be string with on");
-        return nullptr;
-    }
-
-    if (!NapiHelper::IsCallable(env, args[1])) {
-        napi_throw_error(env, nullptr, "Worker 2st param must be callable with on");
-        return nullptr;
-    }
-
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        return nullptr;
-    }
-
-    if (!worker->IsNotTerminate()) {
-        // if worker is not running, don't send any message to host thread
-        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
-        return nullptr;
-    }
-
-    napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
-    auto listener = new WorkerListener(env, callback, PERMANENT);
-    if (argc > NUM_WORKER_ARGS && NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
-        napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
-        bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
-        if (isOnce) {
-            listener->SetMode(ONCE);
-        }
-    }
-    char* typeStr = NapiHelper::GetString(env, args[0]);
-    worker->ParentPortAddListenerInner(env, typeStr, listener);
-    CloseHelp::DeletePointer(typeStr, true);
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-napi_value Worker::ParentPortRemoveAllListener(napi_env env, napi_callback_info cbinfo)
-{
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, nullptr, reinterpret_cast<void**>(&worker));
-
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        return nullptr;
-    }
-
-    if (!worker->IsNotTerminate()) {
-        // if worker is not running, don't send any message to host thread
-        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
-        return nullptr;
-    }
-
-    worker->ParentPortRemoveAllListenerInner();
-    return NapiHelper::GetUndefinedValue(env);
-}
-
-napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbinfo)
-{
-    size_t argc = 1;
-    napi_value args[1];
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "worker:: DispatchEvent param count must be more than 1");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    if (!NapiHelper::IsObject(args[0])) {
-        napi_throw_error(env, nullptr, "worker DispatchEvent 1st param must be Event");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
-    if (!NapiHelper::IsString(typeValue)) {
-        napi_throw_error(env, nullptr, "worker event type must be string");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    if (!worker->IsNotTerminate()) {
-        // if worker is not running, don't send any message to host thread
-        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    char* typeStr = NapiHelper::GetString(env, typeValue);
-    if (typeStr == nullptr) {
-        napi_throw_error(env, nullptr, "worker listener type create error, please check.");
-        return NapiHelper::CreateBooleanValue(env, false);
-    }
-
-    napi_value obj = NapiHelper::GetReferenceValue(env, worker->parentPort_);
-
-    if (strcmp(typeStr, "error") == 0) {
-        CallWorkCallback(env, obj, 1, args, "onerror");
-    } else if (strcmp(typeStr, "messageerror") == 0) {
-        CallWorkCallback(env, obj, 1, args, "onmessageerror");
-    } else if (strcmp(typeStr, "message") == 0) {
-        CallWorkCallback(env, obj, 1, args, "onmessage");
-    }
-
-    worker->ParentPortHandleEventListeners(env, obj, 1, args, typeStr, true);
-
-    CloseHelp::DeletePointer(typeStr, true);
-    return NapiHelper::CreateBooleanValue(env, true);
-}
-
-napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_info cbinfo)
-{
-    size_t argc = 2;  // 2: max args number is 2
-    napi_value args[argc];
-    Worker* worker = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "Worker param count must be more than 2 with on");
-        return nullptr;
-    }
-
-    if (!NapiHelper::IsString(args[0])) {
-        napi_throw_error(env, nullptr, "Worker 1st param must be string with on");
-        return nullptr;
-    }
-
-    if (argc > 1 && !NapiHelper::IsCallable(env, args[1])) {
-        napi_throw_error(env, nullptr, "Worker 2st param must be callable with on");
-        return nullptr;
-    }
-
-    if (worker == nullptr) {
-        HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        return nullptr;
-    }
-
-    if (!worker->IsNotTerminate()) {
-        // if worker is not running, don't send any message to host thread
-        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
-        return nullptr;
-    }
-
-    napi_ref callback = nullptr;
-    if (argc > 1 && NapiHelper::IsCallable(env, args[1])) {
-        napi_create_reference(env, args[1], 1, &callback);
-    }
-
-    char* typeStr = NapiHelper::GetString(env, args[0]);
-    if (typeStr == nullptr) {
-        napi_throw_error(env, nullptr, "worker listener type create error, please check.");
-        return nullptr;
-    }
-    worker->ParentPortRemoveListenerInner(env, typeStr, callback);
-    CloseHelp::DeletePointer(typeStr, true);
-    NapiHelper::DeleteReference(env, callback);
-    return NapiHelper::GetUndefinedValue(env);
 }
 
 void Worker::ParentPortAddListenerInner(napi_env env, const char* type, const WorkerListener* listener)
@@ -1547,12 +1563,12 @@ void Worker::ParentPortRemoveListenerInner(napi_env env, const char* type, napi_
 }
 
 void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_t argc,
-                                            const napi_value* argv, const char* type, bool tryCatch)
+                                               const napi_value* argv, const char* type, bool tryCatch)
 {
     std::string listener(type);
     auto iter = parentPortEventListeners_.find(listener);
     if (iter == parentPortEventListeners_.end()) {
-        HILOG_DEBUG("worker:: there is no listener for type %{public}s", type);
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s in worker thread", type);
         return;
     }
 
@@ -1562,7 +1578,7 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
         WorkerListener* data = *it++;
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
         if (!NapiHelper::IsCallable(env, callbackObj)) {
-            HILOG_DEBUG("worker:: parentPort.addEventListener %{public}s is not callable", type);
+            HILOG_DEBUG("worker:: workerPort.addEventListener %{public}s is not callable", type);
             return;
         }
         napi_value callbackResult = nullptr;
@@ -1577,4 +1593,53 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
         }
     }
 }
+
+void Worker::WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    while (!engine->IsMainThread()) {
+        engine = engine->GetHostEngine();
+    }
+    if (engine->IsTargetWorkerVersion(WorkerVersion::NEW)) {
+        ErrorHelper::ThrowError(env, errCode, errMessage);
+    }
+}
+
+bool Worker::CanCreateWorker(napi_env env, WorkerVersion target)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    while (!engine->IsMainThread()) {
+        engine = engine->GetHostEngine();
+    }
+    if (engine->CheckAndSetWorkerVersion(WorkerVersion::NONE, target) || engine->IsTargetWorkerVersion(target)) {
+        return true;
+    }
+    return false;
+}
+
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+void Worker::HandleDebuggerTask(const uv_async_t* req)
+{
+    Worker* worker = DereferenceHelp::DereferenceOf(&Worker::ddebuggerOnPostTaskSignal_, req);
+    if (worker == nullptr) {
+        HILOG_ERROR("worker::worker is null");
+        return;
+    }
+
+    worker->debuggerTask_();
+}
+
+void Worker::DebuggerOnPostTask(std::function<void()>&& task)
+{
+    if (IsTerminated()) {
+        HILOG_ERROR("worker:: worker has been terminated.");
+        return;
+    }
+    if (uv_is_active((uv_handle_t*)&ddebuggerOnPostTaskSignal_)) {
+        debuggerTask_ = std::move(task);
+        uv_async_send(&ddebuggerOnPostTaskSignal_);
+    }
+}
+#endif
+
 } // namespace Commonlibrary::Concurrent::WorkerModule
