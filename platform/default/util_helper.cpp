@@ -16,7 +16,7 @@
 #include "util_helper.h"
 
 #include "util_plugin.h"
-#include <cstdio.h>
+#include <cstdio>
 #include <unicode/ustring.h>
 
 namespace Commonlibrary::Platform {
