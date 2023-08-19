@@ -54,6 +54,7 @@ public:
     static uint32_t GetArrayLength(napi_env env, napi_value array);
     static uint32_t GetUint32Value(napi_env env, napi_value value);
     static bool IsExceptionPending(napi_env env);
+    static std::string GetPrintString(napi_env env, napi_value value);
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H
