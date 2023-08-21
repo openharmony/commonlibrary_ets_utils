@@ -217,6 +217,11 @@ void TaskManager::CheckForBlockedWorkers()
 void TaskManager::TryTriggerExpand()
 {
     // post the signal to notify the monitor thread to expand
+    if (UNLIKELY(expandHandle_ == nullptr)) {
+        needChecking_ = true;
+        HILOG_DEBUG("taskpool:: the expandHandle_ is nullptr");
+        return;
+    }
     uv_async_send(expandHandle_);
 }
 
@@ -331,6 +336,10 @@ void TaskManager::RunTaskManager()
 #else
     pthread_setname_np(pthread_self(), "TaskMgrThread");
 #endif
+    if (UNLIKELY(needChecking_)) {
+        needChecking_ = false;
+        uv_async_send(expandHandle_);
+    }
     uv_run(loop_, UV_RUN_DEFAULT);
     uv_loop_close(loop_);
 }
@@ -583,7 +592,7 @@ void TaskManager::NotifyWorkerCreated(Worker* worker)
 {
     NotifyWorkerIdle(worker);
     expandingCount_--;
-    if (UNLIKELY(needChecking_ && expandingCount_ == 0)) {
+    if (UNLIKELY(needChecking_ && expandingCount_ == 0 && expandHandle_ != nullptr)) {
         needChecking_ = false;
         uv_async_send(expandHandle_);
     }
