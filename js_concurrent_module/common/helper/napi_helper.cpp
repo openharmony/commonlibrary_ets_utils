@@ -255,4 +255,14 @@ bool NapiHelper::IsExceptionPending(napi_env env)
     napi_is_exception_pending(env, &isExceptionPending);
     return isExceptionPending;
 }
+
+std::string NapiHelper::GetPrintString(napi_env env, napi_value value)
+{
+    auto nativeValue = reinterpret_cast<NativeValue*>(value);
+    if (nativeValue->TypeOf() == NATIVE_STRING) {
+        auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
+        return nativeString->GetPrintString();
+    }
+    return "";
+}
 } // namespace Commonlibrary::Concurrent::Common::Helper

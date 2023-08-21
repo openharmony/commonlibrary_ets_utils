@@ -140,13 +140,12 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
             }
             argv[i] = buffer;
         }
-        char* stringValue = Helper::NapiHelper::GetString(env, argv[i]);
-        if (stringValue == nullptr) {
+        std::string stringValue = Helper::NapiHelper::GetPrintString(env, argv[i]);
+        if (stringValue.size() == 0) {
             HILOG_ERROR("Console log content must not be null.");
             continue;
         }
         content.emplace_back(std::string(stringValue));
-        Helper::CloseHelp::DeletePointer(stringValue, true);
     }
     if (format) {
         return ParseLogContent(content);
