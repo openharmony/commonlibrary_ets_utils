@@ -234,7 +234,9 @@ public:
      * @param env NAPI environment parameters.
      * @param cbinfo The callback information of the js layer.
      */
+    static napi_value ThreadWorkerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value WorkerConstructor(napi_env env, napi_callback_info cbinfo);
+    static napi_value Constructor(napi_env env, napi_callback_info cbinfo);
 
     /**
      * Initialize the worker.
@@ -291,6 +293,10 @@ public:
      * @param cbinfo The callback information of the js layer.
      */
     static napi_value ParentPortRemoveEventListener(napi_env env, napi_callback_info cbinfo);
+
+    static bool CanCreateWorker(napi_env env, WorkerVersion target);
+
+    static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
 
     void StartExecuteInThread(napi_env env, const char* script);
 
@@ -443,7 +449,7 @@ private:
     uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* hostOnErrorSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_async_t debuggerOnPostTaskSignal_ {};
+    uv_async_t ddebuggerOnPostTaskSignal_ {};
     std::function<void()> debuggerTask_;
 #endif
 
@@ -457,7 +463,7 @@ private:
     napi_env workerEnv_ {nullptr};
 
     napi_ref workerRef_ {nullptr};
-    napi_ref parentPort_ {nullptr};
+    napi_ref workerPort_ {nullptr};
 
     std::map<std::string, std::list<WorkerListener*>> eventListeners_ {};
     std::map<std::string, std::list<WorkerListener*>> parentPortEventListeners_ {};
