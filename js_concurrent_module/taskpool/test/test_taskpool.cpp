@@ -112,7 +112,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest010, testing::ext::TestSize.Level0)
     TaskManager &taskManager = TaskManager::GetInstance();
     std::pair<uint32_t, Priority> result = taskManager.DequeueExecuteId();
     ASSERT_TRUE(result.first == 0);
-    ASSERT_TRUE(result.second == Priority::HIGH);
+    ASSERT_TRUE(result.second == Priority::LOW);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest011, testing::ext::TestSize.Level0)
@@ -350,8 +350,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest024, testing::ext::TestSize.Level0)
     taskManger.EnqueueExecuteId(executeId);
     ASSERT_TRUE(executeId == 8);
     std::pair<uint32_t, Priority> result = taskManger.DequeueExecuteId();
-    ASSERT_TRUE(result.first == 0);
-    ASSERT_TRUE(result.second == 0);
+    ASSERT_TRUE(result.first == 8);
+    ASSERT_TRUE(result.second == Priority::MEDIUM);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest025, testing::ext::TestSize.Level0)
