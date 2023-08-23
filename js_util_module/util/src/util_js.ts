@@ -15,7 +15,7 @@
 
 interface HelpUtil {
   TextEncoder: Object;
-  TextDecoder: Object;
+  TextDecoder: TextDecoder;
   Base64: Object;
   Base64Helper: NativeBase64;
   Types: Object;
@@ -36,10 +36,8 @@ interface Fn {
 declare function requireInternal(s: string): HelpUtil;
 const helpUtil = requireInternal('util');
 let textEncoder = helpUtil.TextEncoder;
-let textDecoder = helpUtil.TextDecoder;
 let base64 = helpUtil.Base64;
 let types = helpUtil.Types;
-
 
 interface NativeBase64 {
   new(): NativeBase64;
@@ -665,6 +663,81 @@ function promisify(func: Function): Function {
       func.apply(null, [...args, callback]);
     });
   };
+}
+
+interface TextDecoder {
+  new(encoding?: string, options?: { fatal?: boolean; ignoreBOM?: boolean }): TextDecoder;
+}
+
+class TextDecoder {
+  static encodeStr: string = '';
+  textDecoder: TextDecoder;
+  constructor(encoding?: string, options?: { fatal?: boolean; ignoreBOM?: boolean }) {
+    if (arguments.length === 0) {
+      this.textDecoder = new helpUtil.TextDecoder();
+    } else if (arguments.length === 1) {
+      this.textDecoder = new helpUtil.TextDecoder(encoding);
+    } else {
+      this.textDecoder = new helpUtil.TextDecoder(encoding, options);
+    }
+  }
+
+  static create(encoding?: string, options?: { fatal?: boolean; ignoreBOM?: boolean }): TextDecoder {
+    if (arguments.length === 0) {
+      TextDecoder.encodeStr = 'utf-8';
+      return new TextDecoder();
+    } else if (arguments.length === 1) {
+      if (typeof encoding !== 'string' && encoding !== undefined && encoding !== null) {
+        throw new BusinessError('The type of Parameter must be string.');
+      }
+      TextDecoder.encodeStr = encoding;
+      return new TextDecoder(encoding);
+    } else {
+      if (typeof encoding !== 'string' && encoding !== undefined && encoding !== null) {
+        throw new BusinessError('The type of Parameter must be string.');
+      }
+      if (typeof options !== 'object' && options !== undefined && options !== null) {
+        throw new BusinessError('The type of Parameter must be object.');
+      }
+      TextDecoder.encodeStr = encoding;
+      return new TextDecoder(encoding, options);
+    }
+  }
+
+  public decodeWithStream(input: Uint8Array, options?: { stream?: boolean }): string {
+    const space: number = 32; // space
+    const endString: number = 0; // null
+    if (TextDecoder.encodeStr === 'utf-8' || TextDecoder.encodeStr === undefined) {
+      input.forEach((element, index, array) => {
+        if (element === endString) {
+          array[index] = space;
+        }
+      });
+    }
+    if (arguments.length === 1) {
+      return this.textDecoder.decodeWithStream(input);
+    }
+    return this.textDecoder.decodeWithStream(input, options);
+  }
+
+  public decode(input: Uint8Array, options?: { stream?: boolean }): string {
+    if (arguments.length === 1) {
+      return this.textDecoder.decode(input);
+    }
+    return this.textDecoder.decode(input, options);
+  }
+
+  get encoding(): string {
+    return this.textDecoder.encoding;
+  }
+
+  get fatal(): boolean {
+    return this.textDecoder.fatal;
+  }
+
+  get ignoreBOM(): boolean {
+    return this.textDecoder.ignoreBOM;
+  }
 }
 
 class LruBuffer {
@@ -1704,7 +1777,7 @@ export default {
   generateRandomBinaryUUID: randomBinaryUUID,
   parseUUID: parseUUID,
   TextEncoder: textEncoder,
-  TextDecoder: textDecoder,
+  TextDecoder: TextDecoder,
   Base64: base64,
   Base64Helper: Base64Helper,
   types: types,
