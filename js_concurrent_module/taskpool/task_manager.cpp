@@ -171,16 +171,21 @@ void TaskManager::UpdateExecutedInfo(uint64_t duration)
 
 uint32_t TaskManager::ComputeSuitableThreadNum()
 {
+    uint32_t targetNum = 0;
     if (GetTaskNum() != 0 && totalExecCount_ == 0) {
         // this branch is used for avoiding time-consuming works that may block the taskpool
-        return STEP_SIZE;
+        targetNum = STEP_SIZE;
     } else if (totalExecCount_ == 0) {
-        return 0; // no task since created
+        targetNum = 0; // no task since created
     }
 
-    auto durationPerTask = static_cast<double>(totalExecTime_) / totalExecCount_;
-    uint32_t targetNum = std::ceil(durationPerTask * GetTaskNum() / MAX_TASK_DURATION);
-    targetNum = std::min(targetNum, GetTaskNum());
+    uint32_t result = 0;
+    if (totalExecCount_ != 0) {
+        auto durationPerTask = static_cast<double>(totalExecTime_) / totalExecCount_;
+        result = std::ceil(durationPerTask * GetTaskNum() / MAX_TASK_DURATION);
+    }
+
+    targetNum += std::min(result, GetTaskNum());
     targetNum += GetRunningWorkers();
     targetNum |= 1;
     return targetNum;
@@ -676,8 +681,9 @@ void TaskManager::NotifyExecuteTask()
     }
     auto candidator = idleWorkers_.begin();
     Worker* worker = *candidator;
-    idleWorkers_.erase(candidator);
+    worker->executeInfo_ = TaskManager::GetInstance().DequeueExecuteId();
     worker->NotifyExecuteTask();
+    idleWorkers_.erase(candidator);
 }
 
 void TaskManager::InitTaskManager(napi_env env)
