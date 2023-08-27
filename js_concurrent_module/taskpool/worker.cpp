@@ -210,8 +210,10 @@ void Worker::ReleaseWorkerThreadContent()
 
 void Worker::NotifyExecuteTask()
 {
-    if (uv_is_active(reinterpret_cast<uv_handle_t*>(performTaskSignal_))) {
+    if (LIKELY(uv_is_active(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
         uv_async_send(performTaskSignal_);
+    } else {
+        TaskManager::GetInstance().EnqueueExecuteId(executeInfo_.first, executeInfo_.second);
     }
 }
 
@@ -247,15 +249,15 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_env env = worker->workerEnv_;
     napi_status status = napi_ok;
     RunningScope runningScope(worker, status);
-    NAPI_CALL_RETURN_VOID(env, status);
-    auto executeIdAndPriority = TaskManager::GetInstance().DequeueExecuteId();
-    if (executeIdAndPriority.first == 0) {
-        worker->NotifyTaskFinished();
+    auto executeInfo = worker->executeInfo_;
+    if (UNLIKELY(status != napi_ok)) {
+        GET_AND_THROW_LAST_ERROR((env));
+        TaskManager::GetInstance().EnqueueExecuteId(executeInfo.first, executeInfo.second);
         return;
     }
 
-    PriorityScope priorityScope(worker, executeIdAndPriority.second);
-    TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeIdAndPriority.first);
+    PriorityScope priorityScope(worker, executeInfo.second);
+    TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeInfo.first);
     if (taskInfo == nullptr) { // task may have been canceled
         worker->NotifyTaskFinished();
         HILOG_DEBUG("taskpool::PerformTask taskInfo is null");
