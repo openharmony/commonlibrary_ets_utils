@@ -224,7 +224,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
     uv_timer_start(callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
     if (engine->IsMainThread()) {
         uv_work_t *work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t *){ },
+        uv_queue_work_with_qos(loop, work, [](uv_work_t *) {},
                                [](uv_work_t *work, int32_t) {delete work; }, uv_qos_user_initiated);
     }
     return Helper::NapiHelper::CreateUint32(env, tId);

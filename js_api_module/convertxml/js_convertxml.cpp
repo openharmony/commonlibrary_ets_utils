@@ -592,8 +592,11 @@ namespace OHOS::Xml {
         size_t flag = 0;
         size_t count = 0;
         std::string temp = "";
-        while ((begCdata = str.find("<![CDATA", endCdata - count)) != std::string::npos &&
-            (endCdata = str.find("]]>", begCdata)) != std::string::npos) {
+        while ((begCdata = str.find("<![CDATA", endCdata - count)) != std::string::npos) {
+            endCdata = str.find("]]>", begCdata);
+            if (endCdata == std::string::npos) {
+                break;
+            }
             size_t strLen = begCdata - flag;
             temp = str.substr(flag, strLen);
             count = 0;
