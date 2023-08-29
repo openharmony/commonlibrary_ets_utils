@@ -43,7 +43,6 @@ ohos_unittest("test_timer_unittest") {
   deps = [
     "$ets_runtime:libark_jsruntime",
     "$napi_root:ace_napi",
-    "$napi_root:ace_napi_ark",
     "$sys_module/timer:timer",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",

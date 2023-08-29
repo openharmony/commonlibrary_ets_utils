@@ -50,7 +50,6 @@ ohos_unittest("test_convertxml_unittest") {
   external_deps = [
     "ets_runtime:libark_jsruntime",
     "napi:ace_napi",
-    "napi:ace_napi_ark",
   ]
 
   if (is_standard_system) {
