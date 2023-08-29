@@ -1100,6 +1100,7 @@ void Worker::PostMessageInner(MessageDataType data)
         return;
     }
     workerMessageQueue_.EnQueue(data);
+    std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
     if (workerOnMessageSignal_ != nullptr && uv_is_active((uv_handle_t*)workerOnMessageSignal_)) {
         uv_async_send(workerOnMessageSignal_);
     }
@@ -1167,12 +1168,15 @@ void Worker::TerminateWorker()
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     // when there is no active handle, worker loop will stop automatic.
-    uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
-    });
+    {
+        std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
+        uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_close(reinterpret_cast<uv_handle_t*>(&ddebuggerOnPostTaskSignal_), nullptr);
 #endif

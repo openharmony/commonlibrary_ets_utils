@@ -469,6 +469,7 @@ private:
     std::map<std::string, std::list<WorkerListener*>> parentPortEventListeners_ {};
 
     std::recursive_mutex liveStatusLock_ {};
+    std::mutex workerOnmessageMutex_ {};
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H
