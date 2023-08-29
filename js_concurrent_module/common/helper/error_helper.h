@@ -111,7 +111,7 @@ public:
             return result;
         }
 
-        int pos = rawErrorInfo.rfind(delimiter);
+        auto pos = rawErrorInfo.rfind(delimiter);
         while (pos != std::string::npos && count > 0) {
             result.push_back(rawErrorInfo.substr(pos + 1));
             rawErrorInfo = rawErrorInfo.substr(0, pos);

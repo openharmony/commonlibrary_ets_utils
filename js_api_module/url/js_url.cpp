@@ -966,11 +966,14 @@ namespace OHOS::Url {
             return;
         }
         if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos) {
-            std::string port = strHost.substr(pos + 1);
-            strHost = strHost.substr(0, pos);
-            AnalysisPort(port, urlinfo, flags);
+            pos = strHost.find_last_of(':');
+            if (pos != std::string::npos) {
+                std::string port = strHost.substr(pos + 1);
+                strHost = strHost.substr(0, pos);
+                AnalysisPort(port, urlinfo, flags);
+            }
         }
-        if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
+        if (strHost[strHost.size() - 1] != ']' && strHost.find_last_of(':') != std::string::npos &&
             flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
             return;
         }
