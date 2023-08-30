@@ -86,10 +86,10 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
         napi_define_properties(env, workerPortObj, sizeof(properties) / sizeof(properties[0]), properties);
 
         // 5. register worker name in DedicatedWorkerGlobalScope
-        std::string workerName = worker->GetName();
-        if (!workerName.empty()) {
+        std::string name = worker->GetName();
+        if (!name.empty()) {
             napi_value nameValue = nullptr;
-            napi_create_string_utf8(env, workerName.c_str(), workerName.length(), &nameValue);
+            napi_create_string_utf8(env, name.c_str(), name.length(), &nameValue);
             napi_set_named_property(env, workerPortObj, "name", nameValue);
         }
 
@@ -1247,8 +1247,7 @@ void Worker::WorkerOnMessageInner()
     napi_close_handle_scope(workerEnv_, scope);
 }
 
-void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc,
-                                     const napi_value* argv, const char* type)
+void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type)
 {
     std::string listener(type);
     auto iter = eventListeners_.find(listener);
@@ -1563,7 +1562,7 @@ void Worker::ParentPortRemoveListenerInner(napi_env env, const char* type, napi_
 }
 
 void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_t argc,
-                                               const napi_value* argv, const char* type, bool tryCatch)
+                                            const napi_value* argv, const char* type, bool tryCatch)
 {
     std::string listener(type);
     auto iter = parentPortEventListeners_.find(listener);
