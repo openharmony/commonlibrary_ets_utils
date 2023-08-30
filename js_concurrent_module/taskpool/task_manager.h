@@ -38,6 +38,7 @@ static constexpr char TASKID_STR[] = "taskId";
 static constexpr char TASKINFO_STR[] = "taskInfo";
 static constexpr char TRANSFERLIST_STR[] = "transferList";
 static constexpr char GROUP_ID_STR[] = "groupId";
+static constexpr char FUNCTION_NAME[] = "name";
 
 class TaskManager {
 public:
@@ -88,6 +89,9 @@ public:
 
     // for get task info
     napi_value GetTaskInfos(napi_env env);
+
+    // for countTrace for worker
+    void CountTraceForWorker();
 
 private:
     TaskManager(const TaskManager &) = delete;

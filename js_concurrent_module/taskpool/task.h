@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
 
+#include <string>
 #include <uv.h>
 
 #include "napi/native_api.h"
@@ -56,6 +57,7 @@ struct TaskInfo {
     bool isCanceled = false;
     void* worker = nullptr;
     Priority priority = Priority::DEFAULT;
+    std::string funcName;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
