@@ -83,6 +83,17 @@ TaskManager::~TaskManager()
         }
         taskInfos_.clear();
     }
+    CountTraceForWorker();
+}
+
+void TaskManager::CountTraceForWorker()
+{
+    int64_t threadNum = static_cast<int64_t>(GetThreadNum());
+    int64_t idleWorkers = static_cast<int64_t>(GetIdleWorkers());
+    HITRACE_HELPER_COUNT_TRACE("timeoutThreadNum", static_cast<int64_t>(GetTimeoutWorkers()));
+    HITRACE_HELPER_COUNT_TRACE("threadNum", threadNum);
+    HITRACE_HELPER_COUNT_TRACE("runningThreadNum", threadNum - idleWorkers);
+    HITRACE_HELPER_COUNT_TRACE("idleThreadNum", idleWorkers);
 }
 
 napi_value TaskManager::GetThreadInfos(napi_env env)
@@ -274,14 +285,11 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
     if (taskManager.expandingCount_ != 0) {
         return;
     }
-    HITRACE_HELPER_COUNT_TRACE("threadNum", static_cast<int64_t>(taskManager.GetThreadNum()));
-    HITRACE_HELPER_COUNT_TRACE("runningThreadNum", static_cast<int64_t>(taskManager.GetRunningWorkers()));
-    HITRACE_HELPER_COUNT_TRACE("idleThreadNum", static_cast<int64_t>(taskManager.GetIdleWorkers()));
-    HITRACE_HELPER_COUNT_TRACE("timeoutThreadNum", static_cast<int64_t>(taskManager.GetTimeoutWorkers()));
 
     taskManager.CheckForBlockedWorkers();
     uint32_t targetNum = taskManager.ComputeSuitableThreadNum();
     taskManager.NotifyShrink(targetNum);
+    taskManager.CountTraceForWorker();
 }
 
 void TaskManager::RestartTimer(const uv_async_t* req)
@@ -534,12 +542,14 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "taskpool: failed to serialize arguments.");
         return nullptr;
     }
+    napi_value funcName = NapiHelper::GetNameProperty(env, func, FUNCTION_NAME);
     TaskInfo* taskInfo = new TaskInfo();
     taskInfo->env = env;
     taskInfo->executeId = executeId;
     taskInfo->serializationFunction = serializationFunction;
     taskInfo->serializationArguments = serializationArguments;
     taskInfo->taskId = taskId;
+    taskInfo->funcName = NapiHelper::GetString(env, funcName);
     taskInfo->onResultSignal = new uv_async_t;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_async_init(loop, taskInfo->onResultSignal, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
@@ -591,6 +601,7 @@ void TaskManager::NotifyWorkerIdle(Worker* worker)
     if (GetTaskNum() != 0) {
         NotifyExecuteTask();
     }
+    CountTraceForWorker();
 }
 
 void TaskManager::NotifyWorkerCreated(Worker* worker)
@@ -684,6 +695,7 @@ void TaskManager::NotifyExecuteTask()
     worker->executeInfo_ = TaskManager::GetInstance().DequeueExecuteId();
     worker->NotifyExecuteTask();
     idleWorkers_.erase(candidator);
+    TaskManager::GetInstance().CountTraceForWorker();
 }
 
 void TaskManager::InitTaskManager(napi_env env)
@@ -710,6 +722,7 @@ void TaskManager::CreateWorkers(napi_env env, uint32_t num)
         auto worker = Worker::WorkerConstructor(env);
         NotifyWorkerAdded(worker);
     }
+    CountTraceForWorker();
 }
 
 void TaskManager::RemoveWorker(Worker* worker)
