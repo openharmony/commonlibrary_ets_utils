@@ -560,17 +560,17 @@ namespace OHOS::xml {
                 if (tagFunc_ && type == TagEnum::START_TAG && !bRec) {
                     break;
                 }
+                if (tokenFunc_) {
+                    bRec = ParseToken(env, thisVar);
+                }
+                if (tokenFunc_ && !bRec) {
+                    break;
+                }
                 if (attrFunc_ && attriCount_) {
                     bRec = ParseAttri(env, thisVar);
                     attriCount_ = 0;
                 }
                 if (attrFunc_ && attriCount_ && !bRec) {
-                    break;
-                }
-                if (tokenFunc_) {
-                    bRec = ParseToken(env, thisVar);
-                }
-                if (tokenFunc_ && !bRec) {
                     break;
                 }
             }
