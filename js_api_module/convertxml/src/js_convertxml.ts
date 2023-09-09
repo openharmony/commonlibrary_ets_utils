@@ -113,8 +113,9 @@ function dealPriorReplace(strXml: string, idx: number, idxThir: number): string 
   if (i === idxThir) {
     strXml = strXml.substring(0, j) + strXml.substring(idxThir);
   }
-  if (j < strXml.indexOf('<', idx)) {
-    let temp: string = strXml.substring(j, strXml.indexOf('<', idx));
+  let endIdx = strXml.indexOf('<', idx);
+  if (j < endIdx) {
+    let temp: string = strXml.substring(j, endIdx);
     if (temp.indexOf('\n') !== -1 || temp.indexOf('\v') !== -1 || temp.indexOf('\t') !== -1) {
       let pattern: RegExp = /[\n\v\t]/g;
       let result: string = temp.replace(pattern, function (match) {
@@ -129,7 +130,7 @@ function dealPriorReplace(strXml: string, idx: number, idxThir: number): string 
             return match;
         }
       });
-      strXml = strXml.replace(temp, result);
+      strXml = strXml.substring(0, j) + result + strXml.substring(endIdx);
     }
   }
   return strXml;
@@ -154,7 +155,7 @@ function dealLaterReplace(strXml: string, idx: number, idxThir: number): string 
           return match;
       }
     });
-    strXml = strXml.replace(res, result);
+    strXml = strXml.substring(0, i) + result + strXml.substring(idxThir);
   }
   return strXml;
 }
