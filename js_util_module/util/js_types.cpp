@@ -200,20 +200,28 @@ namespace OHOS::Util {
         return rst;
     }
 
-    napi_value Types::IsFloat32Array(napi_env env, napi_value src) const
+    bool Types::GetTypeArrayInfo(napi_env env, napi_value src, napi_typedarray_type &type) const
     {
         napi_valuetype valuetype = napi_undefined;
-        bool flag = false;
-        napi_value result = nullptr;
         napi_typeof(env, src, &valuetype);
         if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
             size_t byteOffset = 0;
             size_t length = 0;
             void* resultData = nullptr;
             napi_value resultBuffer = nullptr;
             napi_get_typedarray_info(env, src, &type, &length,
                                      &resultData, &resultBuffer, &byteOffset);
+            return true;
+        }
+        return false;
+    }
+
+    napi_value Types::IsFloat32Array(napi_env env, napi_value src) const
+    {
+        bool flag = false;
+        napi_value result = nullptr;
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_float32_array) {
                 flag = true;
             }
@@ -224,18 +232,10 @@ namespace OHOS::Util {
 
     napi_value Types::IsFloat64Array(napi_env env, napi_value src) const
     {
-        napi_valuetype valuetype = napi_undefined;
         bool flag = false;
         napi_value result = nullptr;
-        napi_typeof(env, src, &valuetype);
-        if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
-            size_t byteOffset = 0;
-            size_t length = 0;
-            void* resultData = nullptr;
-            napi_value resultBuffer = nullptr;
-            napi_get_typedarray_info(env, src, &type, &length,
-                                     &resultData, &resultBuffer, &byteOffset);
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_float64_array) {
                 flag = true;
             }
@@ -290,18 +290,10 @@ namespace OHOS::Util {
 
     napi_value Types::IsInt16Array(napi_env env, napi_value src) const
     {
-        napi_valuetype valuetype = napi_undefined;
         bool flag = false;
         napi_value result = nullptr;
-        napi_typeof(env, src, &valuetype);
-        if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
-            size_t byteOffset = 0;
-            size_t length = 0;
-            void* resultData = nullptr;
-            napi_value resultBuffer = nullptr;
-            napi_get_typedarray_info(env, src, &type, &length,
-                                     &resultData, &resultBuffer, &byteOffset);
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_int16_array) {
                 flag = true;
             }
@@ -312,18 +304,10 @@ namespace OHOS::Util {
 
     napi_value Types::IsInt32Array(napi_env env, napi_value src) const
     {
-        napi_valuetype valuetype = napi_undefined;
         bool flag = false;
         napi_value result = nullptr;
-        napi_typeof(env, src, &valuetype);
-        if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
-            size_t byteOffset = 0;
-            size_t length = 0;
-            void* resultData = nullptr;
-            napi_value resultBuffer = nullptr;
-            napi_get_typedarray_info(env, src, &type, &length,
-                                     &resultData, &resultBuffer, &byteOffset);
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_int32_array) {
                 flag = true;
             }
@@ -472,18 +456,10 @@ namespace OHOS::Util {
 
     napi_value Types::IsUint8Array(napi_env env, napi_value src) const
     {
-        napi_valuetype valuetype = napi_undefined;
         bool flag = false;
         napi_value result = nullptr;
-        napi_typeof(env, src, &valuetype);
-        if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
-            size_t byteOffset = 0;
-            size_t length = 0;
-            void* resultData = nullptr;
-            napi_value resultBuffer = nullptr;
-            napi_get_typedarray_info(env, src, &type, &length,
-                                     &resultData, &resultBuffer, &byteOffset);
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_uint8_array) {
                 flag = true;
             }
@@ -494,18 +470,10 @@ namespace OHOS::Util {
 
     napi_value Types::IsUint8ClampedArray(napi_env env, napi_value src) const
     {
-        napi_valuetype valuetype = napi_undefined;
         bool flag = false;
         napi_value result = nullptr;
-        napi_typeof(env, src, &valuetype);
-        if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
-            size_t byteOffset = 0;
-            size_t length = 0;
-            void* resultData = nullptr;
-            napi_value resultBuffer = nullptr;
-            napi_get_typedarray_info(env, src, &type, &length,
-                                     &resultData, &resultBuffer, &byteOffset);
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_uint8_clamped_array) {
                 flag = true;
             }
@@ -516,18 +484,10 @@ namespace OHOS::Util {
 
     napi_value Types::IsUint16Array(napi_env env, napi_value src) const
     {
-        napi_valuetype valuetype = napi_undefined;
         bool flag = false;
         napi_value result = nullptr;
-        napi_typeof(env, src, &valuetype);
-        if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
-            size_t byteOffset = 0;
-            size_t length = 0;
-            void* resultData = nullptr;
-            napi_value resultBuffer = nullptr;
-            napi_get_typedarray_info(env, src, &type, &length,
-                                     &resultData, &resultBuffer, &byteOffset);
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_uint16_array) {
                 flag = true;
             }
@@ -538,18 +498,10 @@ namespace OHOS::Util {
 
     napi_value Types::IsUint32Array(napi_env env, napi_value src) const
     {
-        napi_valuetype valuetype = napi_undefined;
         bool flag = false;
         napi_value result = nullptr;
-        napi_typeof(env, src, &valuetype);
-        if (valuetype == napi_valuetype::napi_object) {
-            napi_typedarray_type type = napi_int8_array;
-            size_t byteOffset = 0;
-            size_t length = 0;
-            void* resultData = nullptr;
-            napi_value resultBuffer = nullptr;
-            napi_get_typedarray_info(env, src, &type, &length,
-                                     &resultData, &resultBuffer, &byteOffset);
+        napi_typedarray_type type = napi_int8_array;
+        if (GetTypeArrayInfo(env, src, type)) {
             if (type == napi_typedarray_type::napi_uint32_array) {
                 flag = true;
             }
