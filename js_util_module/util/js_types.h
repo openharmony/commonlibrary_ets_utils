@@ -139,6 +139,14 @@ namespace OHOS::Util {
         napi_value IsExternal(napi_env env, napi_value src) const;
 
         /**
+         * Get the array Information if the entered value is the type of array.
+         *
+         * @param env NAPI environment parameters.
+         * @param src Object to be tested.
+         */
+        bool GetTypeArrayInfo(napi_env env, napi_value src, napi_typedarray_type &type) const;
+
+        /**
          * Check whether the entered value is the type of float32array array.
          *
          * @param env NAPI environment parameters.
