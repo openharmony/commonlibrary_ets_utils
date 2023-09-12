@@ -33,6 +33,8 @@ extern const char _binary_util_js_js_start[];
 extern const char _binary_util_js_js_end[];
 extern const char _binary_util_abc_start[];
 extern const char _binary_util_abc_end[];
+static const std::vector<std::string> conventFormat = {"utf-8", "UTF-8", "gbk", "GBK", "GB2312", "gb2312",
+                                                       "GB18030", "gb18030"};
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;
     static bool IsValidValue(napi_env env, napi_value value)
@@ -494,9 +496,10 @@ namespace OHOS::Util {
 
     static bool CheckEncodingFormat(const std::string &encoding)
     {
-        const std::string conventFormat("utf-8,UTF-8,gbk,GBK,GB2312,gb2312,GB18030,gb18030");
-        if (conventFormat.find(encoding.c_str()) != conventFormat.npos) {
-            return true;
+        for (const auto& format : conventFormat) {
+            if (format == encoding) {
+                return true;
+            }
         }
         return false;
     }
@@ -513,18 +516,16 @@ namespace OHOS::Util {
             napi_get_cb_info(env, info, &argc, &src, nullptr, nullptr);
             napi_valuetype valuetype;
             napi_typeof(env, src, &valuetype);
-            if (IsValidValue(env, src)) {
+            if (valuetype != napi_undefined && valuetype != napi_null) {
                 if (valuetype != napi_string) {
                     return ThrowError(env, "The type of Parameter must be string.");
                 }
-                std::string buffer = "";
                 size_t bufferSize = 0;
                 if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
                     HILOG_ERROR("can not get src size");
                     return nullptr;
                 }
-                buffer.reserve(bufferSize + 1);
-                buffer.resize(bufferSize);
+                std::string buffer(bufferSize, '\0');
                 if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
                     HILOG_ERROR("can not get src value");
                     return nullptr;
