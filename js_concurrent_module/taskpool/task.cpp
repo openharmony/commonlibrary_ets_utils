@@ -61,12 +61,13 @@ void Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi
     napi_create_function(env, SETTRANSFERLIST_STR, NAPI_AUTO_LENGTH, SetTransferList, NULL, &setTransferListFunc);
 
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY(FUNCTION_STR, args[0]),
-        DECLARE_NAPI_PROPERTY(ARGUMENTS_STR, argsArray),
-        DECLARE_NAPI_PROPERTY(TASKID_STR, taskId),
         DECLARE_NAPI_FUNCTION(SETTRANSFERLIST_STR, SetTransferList),
     };
+
+    napi_set_named_property(env, task, TASKID_STR, taskId);
     napi_define_properties(env, task, sizeof(properties) / sizeof(properties[0]), properties);
+    napi_set_named_property(env, task, FUNCTION_STR, args[0]);
+    napi_set_named_property(env, task, ARGUMENTS_STR, argsArray);
 }
 
 napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
