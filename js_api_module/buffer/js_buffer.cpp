@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-#include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
+#include "js_buffer.h"
 
 #include <cmath>
 #include <iostream>
 
-#include "commonlibrary/ets_utils/js_api_module/buffer/converter.h"
 #include "securec.h"
 
 using namespace std;
@@ -330,8 +329,8 @@ std::string Buffer::Utf16StrToStr(std::u16string value)
     char16_t *data = const_cast<char16_t *>(reinterpret_cast<const char16_t *>(value.data()));
     for (unsigned int i = 0; i < value.length(); i++) {
         char16_t c = data[i];
-        char high = (char)((c >> 8) & 0x00FF);
-        char low = (char)(c & 0x00FF);
+        char high = static_cast<char>((c >> 8) & 0x00FF);
+        char low = static_cast<char>(c & 0x00FF);
         str.push_back(low);
         str.push_back(high);
     }
@@ -412,7 +411,7 @@ std::string Buffer::GetString(std::string value, EncodingType encodingType)
             break;
         case BASE64:
         case BASE64URL:
-            str = Base64Decode(value);
+            str = Base64Decode(value, encodingType);
             break;
         case BINARY:
             str = Utf8ToUtf16BEToANSI(value);

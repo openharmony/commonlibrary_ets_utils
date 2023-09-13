@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
+#include "js_blob.h"
 #include "securec.h"
 using namespace std;
 

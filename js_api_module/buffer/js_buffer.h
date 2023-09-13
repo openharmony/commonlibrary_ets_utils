@@ -20,21 +20,12 @@
 #include <string>
 #include <vector>
 
+#include "converter.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "utils/log.h"
 
 namespace OHOS::buffer {
-enum EncodingType {
-    ASCII = 1,
-    UTF8,
-    UTF16LE,
-    BASE64,
-    BASE64URL,
-    LATIN1,
-    BINARY,
-    HEX
-};
 class Buffer {
 public:
     Buffer() = default;
