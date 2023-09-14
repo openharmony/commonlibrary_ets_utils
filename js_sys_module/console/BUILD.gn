@@ -36,9 +36,13 @@ ohos_shared_library("console") {
       "PREVIEW",
     ]
   } else if (is_mingw) {
-    deps += [ "$hilog_windows" ]
+    external_deps += [ "hilog:libhilog" ]
+    defines = [
+      "WINDOWS_PLATFORM",
+      "NOGDI",
+    ]
   } else if (is_mac && !is_cross_platform_build) {
-    deps += [ "$hilog_mac" ]
+    external_deps += [ "hilog:libhilog" ]
   } else if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]
   } else if (is_cross_platform_build) {
@@ -50,8 +54,6 @@ ohos_shared_library("console") {
   } else {
     external_deps += [ "hilog:libhilog" ]
   }
-
-  external_deps += [ "hitrace:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk_indirect" ]

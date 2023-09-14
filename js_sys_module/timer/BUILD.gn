@@ -43,7 +43,12 @@ ohos_shared_library("timer") {
     }
   }
 
-  external_deps += [ "hitrace:hitrace_meter" ]
+  if (is_mingw) {
+    defines = [
+      "WINDOWS_PLATFORM",
+      "NOGDI",
+    ]
+  }
 
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk" ]
