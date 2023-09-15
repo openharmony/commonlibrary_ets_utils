@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "commonlibrary/ets_utils/js_api_module/buffer/converter.h"
+#include "converter.h"
 
 #include <codecvt>
 #include <locale>
@@ -21,6 +21,7 @@
 using namespace std;
 
 namespace OHOS::buffer {
+
 bool IsOneByte(uint8_t u8Char)
 {
     return (u8Char & 0x80) == 0;
@@ -48,11 +49,11 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
                 uint8_t c4 = data[++i]; // The forth byte
                 // Calculate the UNICODE code point value (3 bits lower for the first byte, 6 bits for the other)
                 // 3 : shift left 3 times of UTF8_VALID_BITS
-                uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS))
+                uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS)) |
                                      // 2 : shift left 2 times of UTF8_VALID_BITS
-                                     | ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS))
-                                     | ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS)
-                                     | (c4 & LOWER_6_BITS_MASK);
+                                     ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS)) |
+                                     ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
+                                     (c4 & LOWER_6_BITS_MASK);
 
                 // In UTF-16, U+10000 to U+10FFFF represent surrogate pairs with two 16-bit units
                 if (codePoint >= UTF16_SPECIAL_VALUE) {
@@ -73,9 +74,9 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
                 // Calculates the UNICODE code point value
                 // (4 bits lower for the first byte, 6 bits lower for the other)
                 // 2 : shift left 2 times of UTF8_VALID_BITS
-                uint32_t codePoint = ((c1 & LOWER_4_BITS_MASK) << (2 * UTF8_VALID_BITS))
-                                    | ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS)
-                                    | (c3 & LOWER_6_BITS_MASK);
+                uint32_t codePoint = ((c1 & LOWER_4_BITS_MASK) << (2 * UTF8_VALID_BITS)) |
+                                     ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
+                                     (c3 & LOWER_6_BITS_MASK);
                 u16Str.push_back(static_cast<char16_t>(codePoint));
                 break;
             }
@@ -84,8 +85,8 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
                 uint8_t c2 = data[++i]; // The second byte
                 // Calculates the UNICODE code point value
                 // (5 bits lower for the first byte, 6 bits lower for the other)
-                uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << UTF8_VALID_BITS)
-                                    | (c2 & LOWER_6_BITS_MASK);
+                uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << UTF8_VALID_BITS) |
+                                     (c2 & LOWER_6_BITS_MASK);
                 u16Str.push_back(static_cast<char16_t>(codePoint));
                 break;
             }
@@ -137,7 +138,7 @@ string Utf8ToUtf16BEToANSI(const string &str)
 
 bool IsBase64Char(unsigned char c)
 {
-    return (isalnum(c) || (c == '+') || (c == '/'));
+    return (isalnum(c) || (c == '+') || (c == '/') || (c == '-') || (c == '_'));
 }
 
 /**
@@ -207,7 +208,7 @@ string Base64Encode(const unsigned char *src, size_t len)
     return outStr;
 }
 
-string Base64Decode(string const& encodedStr)
+string Base64Decode(string const& encodedStr, EncodingType type)
 {
     size_t len = encodedStr.size();
     unsigned int index = 0;
@@ -215,7 +216,11 @@ string Base64Decode(string const& encodedStr)
     unsigned char charArray4[4] = {0}; // an array to stage a group of indexes for encoded string
     unsigned char charArray3[3] = {0}; // an array to stage a set of original string
     string ret = "";
+    string table = base64Table;
 
+    if (type == BASE64URL) {
+        table = base64UrlTable;
+    }
     while ((encodedStr[cursor] != '=') && IsBase64Char(encodedStr[cursor])) {
         // stage a 4-byte string to charArray4
         charArray4[index] = encodedStr[cursor];
@@ -224,7 +229,7 @@ string Base64Decode(string const& encodedStr)
         if (index == 4) { // 4 : after 4 chars is assigned to charArray4
             // 4 : fill data into charArray4
             for (index = 0; index < 4; index++) {
-                charArray4[index] = base64Table.find(charArray4[index]) & LOWER_8_BITS_MASK;
+                charArray4[index] = table.find(charArray4[index]) & LOWER_8_BITS_MASK;
             }
             // get the last six bits of the first byte of charArray4 and the first valid
             // 2 : 4 : two bits(except two higer bits) of the second byte, combine them to a new byte
@@ -249,7 +254,7 @@ string Base64Decode(string const& encodedStr)
     if (index != 0) {
         // fill data into charArray4
         for (unsigned int i = 0; i < index; i++) {
-            charArray4[i] = base64Table.find(charArray4[i]) & LOWER_8_BITS_MASK;
+            charArray4[i] = table.find(charArray4[i]) & LOWER_8_BITS_MASK;
         }
         // get the last six bits of the first byte of charArray4 and the first valid
         // 2 : 4 : two bits(except two higer bits) of the second byte, combine them to a new byte
@@ -284,7 +289,6 @@ bool IsValidHex(const string &hex)
 
 string HexDecode(const string &hexStr)
 {
-    auto arr = hexStr.c_str();
     string nums = "";
     unsigned int arrSize = hexStr.size();
 
@@ -293,9 +297,9 @@ string HexDecode(const string &hexStr)
         string hexStrTmp = "";
         int num = 0;
         // 2 : offset is i * 2
-        hexStrTmp.push_back(arr[i * 2]);
+        hexStrTmp.push_back(hexStr[i * 2]);
         // 2 : offset is i * 2 + 1
-        hexStrTmp.push_back(arr[i * 2 + 1]);
+        hexStrTmp.push_back(hexStr[i * 2 + 1]);
         if (!IsValidHex(hexStrTmp)) {
             break;
         }

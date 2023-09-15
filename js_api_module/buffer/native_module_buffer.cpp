@@ -17,7 +17,6 @@
 #include <iostream>
 #include <vector>
 
-#include "commonlibrary/ets_utils/js_api_module/buffer/converter.h"
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
 #include "napi/native_api.h"
@@ -129,16 +128,16 @@ static napi_value FromStringUtf16LE(napi_env env, napi_value thisVar, napi_value
     return thisVar;
 }
 
-static std::string GetStringBase64(napi_env env, napi_value str)
+static std::string GetStringBase64(napi_env env, napi_value str, EncodingType type)
 {
     string base64Str = GetStringASCII(env, str);
-    string strDecoded = Base64Decode(base64Str);
+    string strDecoded = Base64Decode(base64Str, type);
     return strDecoded;
 }
 
-static napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value str, uint32_t size)
+static napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value str, uint32_t size, EncodingType type)
 {
-    string strDecoded = GetStringBase64(env, str);
+    string strDecoded = GetStringBase64(env, str, type);
     Buffer *buffer = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
 
@@ -193,7 +192,7 @@ static napi_value FromString(napi_env env, napi_callback_info info)
             return FromStringUtf16LE(env, thisVar, args[0]);
         case BASE64:
         case BASE64URL:
-            return FromStringBase64(env, thisVar, args[0], size);
+            return FromStringBase64(env, thisVar, args[0], size, eType);
         case HEX:
             return FromStringHex(env, thisVar, args[0]);
         default:
@@ -891,7 +890,7 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
         }
         case BASE64:
         case BASE64URL:
-            str = GetStringBase64(env, args[0]);
+            str = GetStringBase64(env, args[0], eType);
             data = str.c_str();
             break;
         case HEX:
