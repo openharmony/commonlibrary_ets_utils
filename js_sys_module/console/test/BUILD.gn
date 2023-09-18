@@ -43,7 +43,6 @@ ohos_unittest("test_console_unittest") {
   deps = [
     "$ets_runtime:libark_jsruntime",
     "$napi_root:ace_napi",
-    "$napi_root:ace_napi_ark",
     "$sys_module/console:console",
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
