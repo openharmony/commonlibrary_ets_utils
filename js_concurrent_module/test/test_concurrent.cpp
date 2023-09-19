@@ -41,7 +41,7 @@ HWTEST_F(NativeEngineTest, IsStringTest001, testing::ext::TestSize.Level0)
     std::string str = "test";
     napi_create_string_utf8(env, str.c_str(), NAPI_AUTO_LENGTH, &value);
     bool res;
-    res = NapiHelper::IsString(value);
+    res = NapiHelper::IsString(env, value);
     ASSERT_TRUE(res);
 }
 
@@ -51,7 +51,7 @@ HWTEST_F(NativeEngineTest, IsNotUndefinedTest001, testing::ext::TestSize.Level0)
     napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_get_undefined(env, &value));
     bool res;
-    res = NapiHelper::IsNotUndefined(value) ? false : true;
+    res = NapiHelper::IsNotUndefined(env, value) ? false : true;
     ASSERT_TRUE(res);
 }
 
@@ -83,7 +83,7 @@ HWTEST_F(NativeEngineTest, IsArrayTest001, testing::ext::TestSize.Level0)
     ASSERT_CHECK_CALL(napi_get_property_names(env, result, &propNames));
     ASSERT_CHECK_VALUE_TYPE(env, propNames, napi_object);
     bool isArray = false;
-    isArray = NapiHelper::IsArray(propNames);
+    isArray = NapiHelper::IsArray(env, propNames);
 
     ASSERT_TRUE(isArray);
 }
@@ -100,7 +100,7 @@ HWTEST_F(NativeEngineTest, IsFunctionTest001, testing::ext::TestSize.Level0)
     napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &value);
     ASSERT_NE(value, nullptr);
     bool res;
-    res = NapiHelper::IsFunction(value);
+    res = NapiHelper::IsFunction(env, value);
     ASSERT_TRUE(res);
 }
 
@@ -169,7 +169,7 @@ HWTEST_F(NativeEngineTest, GetUndefinedValue001, testing::ext::TestSize.Level0)
 
     value = NapiHelper::GetUndefinedValue(env);
     bool res = false;
-    res = NapiHelper::IsNotUndefined(value) ? false : true;
+    res = NapiHelper::IsNotUndefined(env, value) ? false : true;
     ASSERT_TRUE(res);
 }
 
@@ -286,7 +286,7 @@ HWTEST_F(NativeEngineTest, IsObject001, testing::ext::TestSize.Level0)
 
     napi_create_object(env, &value);
     bool res = false;
-    res = NapiHelper::IsObject(value);
+    res = NapiHelper::IsObject(env, value);
     ASSERT_TRUE(res);
 }
 
@@ -298,7 +298,7 @@ HWTEST_F(NativeEngineTest, GetString001, testing::ext::TestSize.Level0)
     std::string str = "test";
     napi_create_string_utf8(env, str.c_str(), NAPI_AUTO_LENGTH, &value);
     bool res = false;
-    res = NapiHelper::IsString(value);
+    res = NapiHelper::IsString(env, value);
     ASSERT_TRUE(res);
 
     char* script = NapiHelper::GetString(env, value);

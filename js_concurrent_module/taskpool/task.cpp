@@ -39,7 +39,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     ObjectScope<napi_value> scope(args, true);
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
-    if (!NapiHelper::IsFunction(args[0])) {
+    if (!NapiHelper::IsFunction(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param of task must be function");
         return nullptr;
     }
@@ -89,7 +89,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     }
 
     // setTransferList(ArrayBuffer[]), check ArrayBuffer[]
-    if (!NapiHelper::IsArray(args[0])) {
+    if (!NapiHelper::IsArray(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setTransferList first param must be array");
         return nullptr;
     }
@@ -102,7 +102,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     for (size_t i = 0; i < arrayLength; i++) {
         napi_value elementVal;
         napi_get_element(env, args[0], i, &elementVal);
-        if (!NapiHelper::IsArrayBuffer(elementVal)) {
+        if (!NapiHelper::IsArrayBuffer(env, elementVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
                                     "taskpool:: the element in array must be arraybuffer");
             return nullptr;

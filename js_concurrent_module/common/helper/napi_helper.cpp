@@ -20,40 +20,71 @@
 namespace Commonlibrary::Concurrent::Common::Helper {
 static constexpr uint32_t MAX_CHAR_LENGTH = 1024;
 
-bool NapiHelper::IsString(napi_value value)
+bool NapiHelper::IsTypeForNapiValue(napi_env env, napi_value param, napi_valuetype expectType)
 {
-    auto valNative = reinterpret_cast<NativeValue*>(value);
-    return valNative == nullptr ? false : valNative->TypeOf() == NATIVE_STRING;
+    napi_valuetype valueType = napi_undefined;
+    if (param == nullptr) {
+        return false;
+    }
+    if (napi_typeof(env, param, &valueType) != napi_ok) {
+        return false;
+    }
+
+    return valueType == expectType;
 }
 
-bool NapiHelper::IsNotUndefined(napi_value value)
+bool NapiHelper::IsString(napi_env env, napi_value value)
 {
-    auto valNative = reinterpret_cast<NativeValue*>(value);
-    return valNative == nullptr ? false : valNative->TypeOf() != NATIVE_UNDEFINED;
+    return IsTypeForNapiValue(env, value, napi_string);
 }
 
-bool NapiHelper::IsArray(napi_value value)
+bool NapiHelper::IsNotUndefined(napi_env env, napi_value value)
 {
-    auto valNative = reinterpret_cast<NativeValue*>(value);
-    return valNative == nullptr ? false : valNative->IsArray();
+    if (value == nullptr) {
+        return false;
+    }
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, value, &valueType) != napi_ok) {
+        return false;
+    }
+
+    return valueType != napi_undefined;
 }
 
-bool NapiHelper::IsFunction(napi_value object)
+bool NapiHelper::IsArray(napi_env env, napi_value value)
 {
-    auto valNative = reinterpret_cast<NativeValue*>(object);
-    return valNative == nullptr ? false : valNative->TypeOf() == NATIVE_FUNCTION;
+    bool isArray = false;
+    if (value == nullptr) {
+        return false;
+    }
+    if (napi_is_array(env, value, &isArray) != napi_ok) {
+        return false;
+    }
+
+    return isArray;
 }
 
-bool NapiHelper::IsArrayBuffer(napi_value value)
+bool NapiHelper::IsFunction(napi_env env, napi_value object)
 {
-    auto valNative = reinterpret_cast<NativeValue*>(value);
-    return valNative == nullptr ? false : valNative->IsArrayBuffer();
+    return IsTypeForNapiValue(env, object, napi_function);
 }
 
-bool NapiHelper::IsNumber(napi_value value)
+bool NapiHelper::IsArrayBuffer(napi_env env, napi_value value)
 {
-    auto valNative = reinterpret_cast<NativeValue*>(value);
-    return valNative == nullptr ? false : valNative->TypeOf() == NATIVE_NUMBER;
+    bool result = false;
+    if (value == nullptr) {
+        return false;
+    }
+    if (napi_is_arraybuffer(env, value, &result) != napi_ok) {
+        return false;
+    }
+
+    return result;
+}
+
+bool NapiHelper::IsNumber(napi_env env, napi_value value)
+{
+    return IsTypeForNapiValue(env, value, napi_number);
 }
 
 size_t NapiHelper::GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo)
@@ -105,10 +136,9 @@ void NapiHelper::SetNamePropertyInGlobal(napi_env env, const char* name, napi_va
     napi_set_named_property(env, object, name, value);
 }
 
-bool NapiHelper::IsObject(napi_value value)
+bool NapiHelper::IsObject(napi_env env, napi_value value)
 {
-    auto nativeValue = reinterpret_cast<NativeValue*>(value);
-    return nativeValue->TypeOf() == NATIVE_OBJECT;
+    return IsTypeForNapiValue(env, value, napi_object);
 }
 
 char* NapiHelper::GetString(napi_env env, napi_value value)
@@ -201,12 +231,12 @@ bool NapiHelper::StrictEqual(napi_env env, napi_value value, napi_value cmpValue
 
 napi_value NapiHelper::GetConstructorName(napi_env env, napi_value object)
 {
-    while (IsNotUndefined(object)) {
+    while (IsNotUndefined(env, object)) {
         napi_value func = nullptr;
         napi_get_own_property_descriptor(env, object, "constructor", &func);
         bool isInstanceof = false;
         napi_instanceof(env, object, func, &isInstanceof);
-        if (IsNotUndefined(func) && isInstanceof) {
+        if (IsNotUndefined(env, func) && isInstanceof) {
             napi_value ctorName = nullptr;
             napi_get_own_property_descriptor(env, func, "name", &ctorName);
             std::string name = GetString(env, ctorName);
@@ -258,10 +288,13 @@ bool NapiHelper::IsExceptionPending(napi_env env)
 
 std::string NapiHelper::GetPrintString(napi_env env, napi_value value)
 {
-    auto nativeValue = reinterpret_cast<NativeValue*>(value);
-    if (nativeValue->TypeOf() == NATIVE_STRING) {
-        auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
-        return nativeString->GetPrintString();
+    if (IsTypeForNapiValue(env, value, napi_string)) {
+        napi_value valueType = nullptr;
+        if (napi_coerce_to_string(env, value, &valueType) != napi_ok) {
+            return "";
+        }
+
+        return GetString(env, valueType);
     }
     return "";
 }
