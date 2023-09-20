@@ -186,6 +186,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     if (taskInfo->isCanceled) {
         strTrace += ", performResult : IsCanceled";
     } else if (status != napi_ok) {
+        HILOG_ERROR("taskpool: failed to deserialize result");
         strTrace += ", performResult : DeserializeFailed";
     } else if (taskInfo->success) {
         strTrace += ", performResult : Successful";
