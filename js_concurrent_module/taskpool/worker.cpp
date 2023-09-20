@@ -357,8 +357,9 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     napi_status status = napi_serialize(env, result, result, &resultData);
     if ((status != napi_ok || resultData == nullptr) && taskInfo->success) {
         taskInfo->success = false;
-        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-                                               "taskpool: failed to serialize result.");
+        std::string errMessage = "taskpool: failed to serialize result.";
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        HILOG_ERROR("%{public}s", errMessage.c_str());
         NotifyTaskResult(env, taskInfo, err);
         return;
     }

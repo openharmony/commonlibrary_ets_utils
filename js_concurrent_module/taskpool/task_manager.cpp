@@ -525,9 +525,12 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
 {
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationFunction;
+    std::string errMessage = "";
     napi_status status = napi_serialize(env, func, undefined, &serializationFunction);
     if (status != napi_ok || serializationFunction == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "taskpool: failed to serialize function.");
+        errMessage = "taskpool: failed to serialize function.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         return nullptr;
     }
     napi_value serializationArguments;
@@ -539,7 +542,9 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
         status = napi_serialize(env, args, transferList, &serializationArguments);
     }
     if (status != napi_ok || serializationArguments == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "taskpool: failed to serialize arguments.");
+        errMessage = "taskpool: failed to serialize arguments.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         return nullptr;
     }
     napi_value funcName = NapiHelper::GetNameProperty(env, func, FUNCTION_NAME);
