@@ -23,19 +23,20 @@
 namespace Commonlibrary::Concurrent::Common::Helper {
 class NapiHelper {
 public:
-    static bool IsString(napi_value value);
-    static bool IsNotUndefined(napi_value value);
-    static bool IsArray(napi_value value);
-    static bool IsFunction(napi_value object);
-    static bool IsArrayBuffer(napi_value value);
-    static bool IsNumber(napi_value value);
+    static bool IsString(napi_env env, napi_value value);
+    static bool IsTypeForNapiValue(napi_env env, napi_value param, napi_valuetype expectType);
+    static bool IsNotUndefined(napi_env env, napi_value value);
+    static bool IsArray(napi_env env, napi_value value);
+    static bool IsFunction(napi_env env, napi_value object);
+    static bool IsArrayBuffer(napi_env env, napi_value value);
+    static bool IsNumber(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_ref value);
     static size_t GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo);
     static napi_value GetNamePropertyInParentPort(napi_env env, napi_ref parentPort, const char* name);
     static void SetNamePropertyInGlobal(napi_env env, const char* name, napi_value value);
     static napi_value GetUndefinedValue(napi_env env);
-    static bool IsObject(napi_value value);
+    static bool IsObject(napi_env env, napi_value value);
     static char* GetString(napi_env env, napi_value value);
     static napi_value CreateBooleanValue(napi_env env, bool value);
     static napi_value GetGlobalObject(napi_env env);

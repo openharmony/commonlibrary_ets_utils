@@ -131,7 +131,7 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
     for (size_t i = startIdx; i < argc; i++) {
-        if (!Helper::NapiHelper::IsString(argv[i])) {
+        if (!Helper::NapiHelper::IsString(env, argv[i])) {
             napi_value buffer;
             napi_status status = napi_coerce_to_string(env, argv[i], &buffer);
             if (status != napi_ok) {
@@ -193,7 +193,7 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
     napi_value* argv = new napi_value[argc];
     Helper::ObjectScope<napi_value> scope(argv, true);
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-    if (!Helper::NapiHelper::IsString(argv[0])) {
+    if (!Helper::NapiHelper::IsString(env, argv[0])) {
         napi_value buffer = nullptr;
         napi_status status = napi_coerce_to_string(env, argv[0], &buffer);
         if (status != napi_ok) {
@@ -266,7 +266,7 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "Dir content must not be null.");
         return Helper::NapiHelper::GetUndefinedValue(env);
     }
-    bool functionFlag = Helper::NapiHelper::IsFunction(argv[0]);
+    bool functionFlag = Helper::NapiHelper::IsFunction(env, argv[0]);
     if (std::string(ctorVal).size() > 0 && !functionFlag) {
         HILOG_INFO("%{public}s%{public}s: %{public}s", groupIndent.c_str(), ctorVal, content);
     } else if (std::string(ctorVal).size() > 0 && functionFlag) {
@@ -530,7 +530,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
     napi_value* argv = new napi_value[argc];
     Helper::ObjectScope<napi_value> scope(argv, true);
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-    if (!Helper::NapiHelper::IsObject(argv[0])) {
+    if (!Helper::NapiHelper::IsObject(env, argv[0])) {
         ConsoleLog<LogLevel::INFO>(env, info);
     }
     napi_value tabularData = argv[0];
@@ -564,7 +564,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
         napi_get_named_property(env, tabularData, key, &item);
 
         bool isPrimitive = ((item == nullptr) ||
-                            (!Helper::NapiHelper::IsObject(item) && !Helper::NapiHelper::IsFunction(item)));
+                            (!Helper::NapiHelper::IsObject(env, item) && !Helper::NapiHelper::IsFunction(env, item)));
         if (isPrimitive) {
             if (!primitiveInit) {
                 for (size_t j = 0; j < length ; ++j) {

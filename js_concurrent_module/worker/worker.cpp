@@ -141,7 +141,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     // check 1st param is string
-    if (!NapiHelper::IsString(args[0])) {
+    if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of Worker 1st param must be string.");
         return nullptr;
     }
@@ -167,10 +167,10 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
         g_workers.push_back(worker);
     }
 
-    if (argc > 1 && NapiHelper::IsObject(args[1])) {
+    if (argc > 1 && NapiHelper::IsObject(env, args[1])) {
         napi_value nameValue = NapiHelper::GetNameProperty(env, args[1], "name");
-        if (NapiHelper::IsNotUndefined(nameValue)) {
-            if (NapiHelper::IsString(nameValue)) {
+        if (NapiHelper::IsNotUndefined(env, nameValue)) {
+            if (NapiHelper::IsString(env, nameValue)) {
                 char* nameStr = NapiHelper::GetString(env, nameValue);
                 if (nameStr == nullptr) {
                     ErrorHelper::ThrowError(env,
@@ -186,8 +186,8 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
         }
 
         napi_value typeValue = NapiHelper::GetNameProperty(env, args[1], "type");
-        if (NapiHelper::IsNotUndefined(typeValue)) {
-            if (NapiHelper::IsString(typeValue)) {
+        if (NapiHelper::IsNotUndefined(env, typeValue)) {
+            if (NapiHelper::IsString(env, typeValue)) {
                 char* typeStr = NapiHelper::GetString(env, typeValue);
                 if (typeStr == nullptr) {
                     ErrorHelper::ThrowError(env,
@@ -282,7 +282,7 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
     if (argc >= NUM_WORKER_ARGS) {
-        if (!NapiHelper::IsArray(argv[1])) {
+        if (!NapiHelper::IsArray(env, argv[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "transfer list must be an Array");
             return nullptr;
         }
@@ -358,7 +358,7 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-    if (!NapiHelper::IsString(args[0])) {
+    if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker add listener 1st param must be string");
         return nullptr;
     }
@@ -377,7 +377,7 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
     auto listener = new WorkerListener(env, callback, mode);
     if (mode == ONCE && argc > NUM_WORKER_ARGS) {
-        if (NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
+        if (NapiHelper::IsObject(env, args[NUM_WORKER_ARGS])) {
             napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
             bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
             if (!isOnce) {
@@ -404,7 +404,7 @@ napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
-    if (!NapiHelper::IsString(args[0])) {
+    if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of remove listener 1st param must be string");
         return nullptr;
     }
@@ -462,7 +462,7 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
     }
 
     // check 1st param is event
-    if (!NapiHelper::IsObject(args[0])) {
+    if (!NapiHelper::IsObject(env, args[0])) {
         ErrorHelper::ThrowError(env,
             ErrorHelper::TYPE_ERROR, "the type of event 1st param must be Event in DispatchEvent");
         return NapiHelper::CreateBooleanValue(env, false);
@@ -477,7 +477,7 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
-    if (!NapiHelper::IsString(typeValue)) {
+    if (!NapiHelper::IsString(env, typeValue)) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of event type must be string");
         return NapiHelper::CreateBooleanValue(env, false);
     }
@@ -569,7 +569,7 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
     if (argc >= NUM_WORKER_ARGS) {
-        if (!NapiHelper::IsArray(argv[1])) {
+        if (!NapiHelper::IsArray(env, argv[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Transfer list must be an Array");
             return nullptr;
         }
@@ -635,7 +635,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
     Worker* worker = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
-    if (!NapiHelper::IsString(args[0])) {
+    if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of worker listener 1st param must be string.");
         return nullptr;
     }
@@ -654,7 +654,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
 
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
     auto listener = new WorkerListener(env, callback, PERMANENT);
-    if (argc > NUM_WORKER_ARGS && NapiHelper::IsObject(args[NUM_WORKER_ARGS])) {
+    if (argc > NUM_WORKER_ARGS && NapiHelper::IsObject(env, args[NUM_WORKER_ARGS])) {
         napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
         bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
         if (isOnce) {
@@ -678,13 +678,13 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
-    if (!NapiHelper::IsObject(args[0])) {
+    if (!NapiHelper::IsObject(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker DispatchEvent 1st param must be Event.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
-    if (!NapiHelper::IsString(typeValue)) {
+    if (!NapiHelper::IsString(env, typeValue)) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker event type must be string.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
@@ -730,7 +730,7 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
     Worker* worker = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
-    if (!NapiHelper::IsString(args[0])) {
+    if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of worker listener 1st param must be string.");
         return nullptr;
     }

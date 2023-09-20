@@ -96,7 +96,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     if (type == napi_object) {
         // Get execution priority
         if (argc > 1) {
-            if (!NapiHelper::IsNumber(args[1])) {
+            if (!NapiHelper::IsNumber(env, args[1])) {
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority type is error");
                 return nullptr;
             }
@@ -271,7 +271,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    if (!NapiHelper::IsObject(args[0])) {
+    if (!NapiHelper::IsObject(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be object");
         return nullptr;
     }
