@@ -97,6 +97,7 @@ private:
         RunningScope(Worker* worker, napi_status& status) : worker_(worker)
         {
             status = napi_open_handle_scope(worker_->workerEnv_, &scope_);
+            worker_->idleState_ = false;
             worker_->NotifyTaskRunning();
         }
 
@@ -150,9 +151,10 @@ private:
 #endif
     std::unique_ptr<TaskRunner> runner_ {nullptr};
 
-    std::atomic<uint64_t> startTime_ = 0;
     std::atomic<int32_t> runningCount_ = 0;
+    std::atomic<bool> idleState_ = true; // true means the worker is idle
     std::atomic<uint64_t> idlePoint_ = ConcurrentHelper::GetMilliseconds();
+    std::atomic<uint64_t> startTime_ = ConcurrentHelper::GetMilliseconds();
     std::atomic<WorkerState> state_ {WorkerState::IDLE};
     Priority priority_ {Priority::DEFAULT};
     pid_t tid_ = 0;

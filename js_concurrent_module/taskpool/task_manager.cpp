@@ -36,7 +36,7 @@ static constexpr uint32_t STEP_SIZE = 2;
 static constexpr uint32_t DEFAULT_THREADS = 3;
 static constexpr uint32_t MIN_THREADS = 1; // 1: minimum thread num when idle
 static constexpr uint32_t MIN_TIMEOUT_TIME = 180000; // 180000: 3min
-static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 6000000: 10min
+static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 600000: 10min
 
 // ----------------------------------- TaskManager ----------------------------------------
 TaskManager& TaskManager::GetInstance()
@@ -60,7 +60,6 @@ TaskManager::~TaskManager()
     } else {
         uv_timer_stop(timer_);
         ConcurrentHelper::UvHandleClose(timer_);
-        ConcurrentHelper::UvHandleClose(notifyRestartTimer_);
         ConcurrentHelper::UvHandleClose(expandHandle_);
     }
 
@@ -185,18 +184,14 @@ uint32_t TaskManager::ComputeSuitableThreadNum()
     uint32_t targetNum = 0;
     if (GetTaskNum() != 0 && totalExecCount_ == 0) {
         // this branch is used for avoiding time-consuming works that may block the taskpool
-        targetNum = STEP_SIZE;
-    } else if (totalExecCount_ == 0) {
-        targetNum = 0; // no task since created
+        targetNum = std::min(STEP_SIZE, GetTaskNum());
     }
-
     uint32_t result = 0;
     if (totalExecCount_ != 0) {
         auto durationPerTask = static_cast<double>(totalExecTime_) / totalExecCount_;
         result = std::ceil(durationPerTask * GetTaskNum() / MAX_TASK_DURATION);
+        targetNum += std::min(result, GetTaskNum());
     }
-
-    targetNum += std::min(result, GetTaskNum());
     targetNum += GetRunningWorkers();
     targetNum |= 1;
     return targetNum;
@@ -208,6 +203,7 @@ void TaskManager::CheckForBlockedWorkers()
     // if the thread num has reached the limit and the idle worker is not available, a short time will be used,
     // else we will choose the longer one
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    bool needChecking = false;
     bool state = (GetThreadNum() == ConcurrentHelper::GetMaxThreads()) && (GetIdleWorkers() == 0);
     uint64_t threshold = state ? MIN_TIMEOUT_TIME : MAX_TIMEOUT_TIME;
     for (auto iter = workers_.begin(); iter != workers_.end();) {
@@ -219,14 +215,33 @@ void TaskManager::CheckForBlockedWorkers()
             iter++;
             continue;
         }
+        // When executing the promise task, the worker state may not be updated and will be
+        // marked as 'BLOCKED', so we should exclude this situation.
+        // Besides, if the worker is not executing sync tasks or micro tasks, it may handle
+        // the task like I/O in uv threads, we should also exclude this situation.
+        auto workerEngine = reinterpret_cast<NativeEngine*>(worker->workerEnv_);
+        if (worker->idleState_ && !workerEngine->IsExecutingPendingJob()) {
+            if (!workerEngine->HasWaitingRequest()) {
+                worker->UpdateWorkerState(WorkerState::BLOCKED, WorkerState::IDLE);
+            } else {
+                worker->UpdateWorkerState(WorkerState::BLOCKED, WorkerState::RUNNING);
+                worker->startTime_ = ConcurrentHelper::GetMilliseconds();
+            }
+            iter++;
+            continue;
+        }
 
-        HILOG_DEBUG("taskpool:: The worker has been marked as timeout.");
-        timeoutWorkers_.insert(worker);
+        HILOG_INFO("taskpool:: The worker has been marked as timeout.");
+        needChecking = true;
+        workerEngine->TerminateExecution();
+
         idleWorkers_.erase(worker);
+        timeoutWorkers_.insert(worker);
         workers_.erase(iter++);
     }
-    if (UNLIKELY(!timeoutWorkers_.empty())) {
-        uv_async_send(expandHandle_);
+    // should trigger the check when we have marked and removed workers
+    if (UNLIKELY(needChecking)) {
+        TryExpand();
     }
 }
 
@@ -272,7 +287,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     }
 
     // stop the timer
-    if ((workers_.size() == MIN_THREADS) && (idleWorkers_.size() == MIN_THREADS) && timeoutWorkers_.empty()) {
+    if ((workers_.size() == GetIdleWorkers()) && workers_.size() <= MIN_THREADS && timeoutWorkers_.empty()) {
         suspend_ = true;
         uv_timer_stop(timer_);
     }
@@ -292,20 +307,10 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
     taskManager.CountTraceForWorker();
 }
 
-void TaskManager::RestartTimer(const uv_async_t* req)
-{
-    TaskManager& taskManager = TaskManager::GetInstance();
-    uv_timer_again(taskManager.timer_);
-}
-
 void TaskManager::TryExpand()
 {
-    {
-        std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-        // only try to create workers when there is no idle worker
-        if (!idleWorkers_.empty()) {
-            return;
-        }
+    if (GetIdleWorkers() != 0) {
+        return;
     }
     // for accuracy, if worker is being created, we will not trigger expansion,
     // and the expansion will be triggered until all workers are created
@@ -324,7 +329,7 @@ void TaskManager::TryExpand()
     }
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
-        uv_async_send(notifyRestartTimer_);
+        uv_timer_again(timer_);
     }
 }
 
@@ -339,10 +344,8 @@ void TaskManager::RunTaskManager()
     loop_ = uv_default_loop();
     timer_ = new uv_timer_t;
     uv_timer_init(loop_, timer_);
-    notifyRestartTimer_ = new uv_async_t;
     expandHandle_ = new uv_async_t;
     uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, 60000); // 60000: 1min
-    uv_async_init(loop_, notifyRestartTimer_, reinterpret_cast<uv_async_cb>(TaskManager::RestartTimer));
     uv_async_init(loop_, expandHandle_, reinterpret_cast<uv_async_cb>(TaskManager::NotifyExpand));
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
     pthread_setname_np("TaskMgrThread");
@@ -628,7 +631,14 @@ void TaskManager::NotifyWorkerAdded(Worker* worker)
 uint32_t TaskManager::GetIdleWorkers()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-    return idleWorkers_.size();
+    uint32_t count = 0;
+    for (const auto& idleWorker : idleWorkers_) {
+        auto engine = reinterpret_cast<NativeEngine*>(idleWorker->workerEnv_);
+        if (!engine->IsExecutingPendingJob()) {
+            count++;
+        }
+    }
+    return count;
 }
 
 uint32_t TaskManager::GetRunningWorkers()
@@ -742,9 +752,8 @@ void TaskManager::RestoreWorker(Worker* worker)
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
-        uv_async_send(notifyRestartTimer_);
+        uv_timer_again(timer_);
     }
-
     if (worker->state_ == WorkerState::BLOCKED) {
         // since the worker is blocked, we should add it to the timeout set
         timeoutWorkers_.insert(worker);
