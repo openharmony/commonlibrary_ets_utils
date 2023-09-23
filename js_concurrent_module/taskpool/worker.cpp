@@ -124,7 +124,7 @@ void Worker::ExecuteInThread(const void* data)
         auto workerEngine = reinterpret_cast<NativeEngine*>(worker->workerEnv_);
         // mark worker env is taskpoolThread
         workerEngine->MarkTaskPoolThread();
-        workerEngine->InitTaskPoolThread(workerEngine, Worker::TaskResultCallback);
+        workerEngine->InitTaskPoolThread(worker->workerEnv_, Worker::TaskResultCallback);
     }
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
@@ -303,10 +303,9 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
 
-    auto funcVal = reinterpret_cast<NativeValue*>(func);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     // Store taskinfo in function
-    bool success = workerEngine->InitTaskPoolFunc(workerEngine, funcVal, taskInfo);
+    bool success = workerEngine->InitTaskPoolFunc(env, func, taskInfo);
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
@@ -379,10 +378,10 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     worker->NotifyTaskFinished();
 }
 
-void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result, bool success, void* data)
+void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, void* data)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    if (engine == nullptr) {
+    if (env == nullptr) {
         HILOG_FATAL("taskpool::TaskResultCallback engine is null");
         return;
     }
@@ -391,9 +390,8 @@ void Worker::TaskResultCallback(NativeEngine* engine, NativeValue* result, bool 
         return;
     }
     TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
-    auto env = reinterpret_cast<napi_env>(engine);
     taskInfo->success = success;
-    NotifyTaskResult(env, taskInfo, reinterpret_cast<napi_value>(result));
+    NotifyTaskResult(env, taskInfo, result);
 }
 
 // reset qos_user_initiated after perform task

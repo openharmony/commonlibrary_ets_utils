@@ -52,8 +52,7 @@ std::string ConvertToString(UChar * uchar, size_t length)
 void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer)
 {
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-    NativeValue *nativeValue = reinterpret_cast<NativeValue*>(src);
-    engine->EncodeToChinese(nativeValue, buffer, encoding);
+    engine->EncodeToChinese(src, buffer, encoding);
 }
 
 } // namespace Commonlibrary::Platform
