@@ -286,6 +286,9 @@ namespace OHOS::Uri {
             errStr_ = "port does not conform to the rule";
             return false;
         } else if (CheckCharacter(port, g_ruleDigit, false)) {
+            if (port.size() == 0) {
+                return false;
+            }
             uriData_.port = std::stoi(port);
             data_ = data_.substr(0, pos);
             return true;
