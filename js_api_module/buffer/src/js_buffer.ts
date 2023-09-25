@@ -2162,6 +2162,11 @@ function toBase64(self: Buffer, start: number, end: number): string {
   return str;
 }
 
+function toBase64Url(self: Buffer, start: number, end: number): string {
+  let str = self[bufferSymbol].toBase64Url(start, end);
+  return str;
+}
+
 function getEncodingByType(type: string): {
   byteLength: (str: string) => number;
   toString: (self: Buffer, start: number, end: number) => string;
@@ -2198,10 +2203,14 @@ function getEncodingByType(type: string): {
         toString: toUtf16LE
       };
     case 'base64':
-    case 'base64url':
       return {
         byteLength: getBase64ByteLength,
         toString: toBase64
+      };
+    case 'base64url':
+      return {
+        byteLength: getBase64ByteLength,
+        toString: toBase64Url
       };
     case 'hex':
       return {

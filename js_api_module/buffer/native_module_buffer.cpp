@@ -854,6 +854,26 @@ static napi_value ToBase64(napi_env env, napi_callback_info info)
     return result;
 }
 
+static napi_value ToBase64Url(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    size_t argc = 0;
+    napi_value args[2] = { 0 };
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+    uint32_t start = 0;
+    uint32_t end = 0;
+    NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
+    NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
+    Buffer *buf = nullptr;
+    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&buf)));
+    uint32_t length = end - start;
+    std::string str = buf->ToBase64Url(start, length);
+    napi_value result = nullptr;
+    napi_create_string_latin1(env, str.c_str(), str.length(), &result);
+    return result;
+}
+
 static napi_value IndexOf(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1059,6 +1079,7 @@ static napi_value BufferInit(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("compare", Compare),
         DECLARE_NAPI_FUNCTION("toUtf8", ToUtf8),
         DECLARE_NAPI_FUNCTION("toBase64", ToBase64),
+        DECLARE_NAPI_FUNCTION("toBase64Url", ToBase64Url),
         DECLARE_NAPI_FUNCTION("indexOf", IndexOf),
     };
     NAPI_CALL(env, napi_define_class(env, className.c_str(), className.length(), BufferConstructor,
