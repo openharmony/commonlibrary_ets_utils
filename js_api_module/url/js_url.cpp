@@ -299,6 +299,9 @@ namespace OHOS::Url {
     void AnalysisPort(std::string input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
+        if (input.size() == 0) {
+            return;
+        }
         for (auto i : input) {
             if (!isdigit(i)) {
                 flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
