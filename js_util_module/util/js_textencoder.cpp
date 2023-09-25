@@ -75,8 +75,7 @@ namespace OHOS::Util {
         int32_t nchars = 0;
         int32_t written = 0;
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-        NativeValue *nativeValue = reinterpret_cast<NativeValue*>(src);
-        engine->EncodeToUtf8(nativeValue, writeResult, &written, length, &nchars);
+        engine->EncodeToUtf8(src, writeResult, &written, length, &nchars);
 
         napi_value result = nullptr;
         NAPI_CALL(env, napi_create_object(env, &result));

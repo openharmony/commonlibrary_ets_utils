@@ -177,42 +177,36 @@ HWTEST_F(NativeEngineTest, TaskpoolTest015, testing::ext::TestSize.Level0)
     ASSERT_TRUE(taskNum == 0);
 }
 
-napi_callback_info napi_create_cbinfo(napi_env env,
-                                      size_t* argc,
-                                      NativeValue** argv)
-{
-    NativeCallbackInfo* info = new NativeCallbackInfo;
-
-    if (argv != nullptr && argc != nullptr) {
-        info->argc = *argc;
-        info->argv = argv;
-        return reinterpret_cast<napi_callback_info>(info);
-    }
-    return nullptr;
-}
-
 HWTEST_F(NativeEngineTest, TaskpoolTest016, testing::ext::TestSize.Level0)
 {
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    size_t argc = 0;
-    NativeValue* argv0[] = {nullptr};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv0);
-    napi_value result = TaskGroup::TaskGroupConstructor(env, cbinfo);
-    ASSERT_TRUE(result == nullptr);
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskGroupConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::TaskGroupConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
+    ASSERT_TRUE(result != nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest017, testing::ext::TestSize.Level0)
 {
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    size_t argc = 0;
-    NativeValue* argv0[] = {nullptr};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv0);
-    napi_value result = TaskGroup::TaskGroupConstructor(env, cbinfo);
-    ASSERT_TRUE(result == nullptr);
-    size_t argc1 = 10;
-    NativeValue* argv1[] = {nullptr};
-    napi_callback_info cbinfo1 = napi_create_cbinfo(env, &argc1, argv1);
-    napi_value result1 = TaskGroup::AddTask(env, cbinfo1);
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskGroupConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::TaskGroupConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
+    ASSERT_TRUE(result != nullptr);
+
+    size_t argc1 = 0;
+    napi_value argv1[] = {nullptr};
+    funcName = "AddTask";
+    cb = nullptr;
+    napi_value result1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::AddTask, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc1, argv1, &result1);
     ASSERT_TRUE(result1 == nullptr);
 }
 
@@ -395,34 +389,47 @@ HWTEST_F(NativeEngineTest, TaskpoolTest028, testing::ext::TestSize.Level0)
 
 HWTEST_F(NativeEngineTest, TaskpoolTest029, testing::ext::TestSize.Level0)
 {
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    size_t argc = 0;
-    NativeValue* argv[] = {nullptr};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
-    napi_value result = Task::TaskConstructor(env, cbinfo);
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
     ASSERT_TRUE(result == nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest030, testing::ext::TestSize.Level0)
 {
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    size_t argc = 0;
-    NativeValue* argv[] = {nullptr};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
-    napi_value result = Task::TaskConstructor(env, cbinfo);
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
     ASSERT_TRUE(result == nullptr);
-    napi_value result1 = Task::SetTransferList(env, cbinfo);
+
+    cb = nullptr;
+    napi_value result1 = nullptr;
+    funcName = "SetTransferList";
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::SetTransferList, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result1);
     ASSERT_TRUE(result1 == nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest031, testing::ext::TestSize.Level0)
 {
-    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_env env = (napi_env)engine_;
     size_t argc = 10;
-    NativeValue* argv[] = {nullptr};
-    napi_callback_info cbinfo = napi_create_cbinfo(env, &argc, argv);
-    napi_value result = Task::TaskConstructor(env, cbinfo);
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
     ASSERT_TRUE(result == nullptr);
+
     napi_value func = TestFunction(env);
     uint32_t number = 10;
     napi_value value = NapiHelper::CreateUint32(env, number);

@@ -136,7 +136,7 @@ private:
     bool CheckFreeConditions();
     bool UpdateWorkerState(WorkerState expect, WorkerState desired);
     static void PerformTask(const uv_async_t* req);
-    static void TaskResultCallback(NativeEngine* engine, NativeValue* result, bool success, void* data);
+    static void TaskResultCallback(napi_env env, napi_value result, bool success, void* data);
     static void NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result);
     static void ReleaseWorkerHandles(const uv_async_t* req);
 
