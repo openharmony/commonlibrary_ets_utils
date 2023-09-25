@@ -57,4 +57,38 @@ void MessageQueue::Clear(napi_env env)
     }
     queueLock_.unlock();
 }
+
+void MarkedMessageQueue::Push(uint32_t id, MessageDataType data)
+{
+    std::unique_lock<std::mutex> lock(queueLock_);
+    queue_.push({id, data});
+}
+
+void MarkedMessageQueue::Pop()
+{
+    std::unique_lock<std::mutex> lock(queueLock_);
+    queue_.pop();
+}
+
+std::pair<uint32_t, MessageDataType> MarkedMessageQueue::Front()
+{
+    std::unique_lock<std::mutex> lock(queueLock_);
+    return queue_.front();
+}
+
+bool MarkedMessageQueue::IsEmpty()
+{
+    std::unique_lock<std::mutex> lock(queueLock_);
+    return queue_.empty();
+}
+
+void MarkedMessageQueue::Clear(napi_env env)
+{
+    std::unique_lock<std::mutex> lock(queueLock_);
+    while (!queue_.empty()) {
+        std::pair<uint32_t, MessageDataType> pair = queue_.front();
+        napi_delete_serialization_data(env, pair.second);
+        queue_.pop();
+    }
+}
 }  // namespace Commonlibrary::Concurrent::WorkerModule

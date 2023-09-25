@@ -16,6 +16,7 @@
 #include "worker.h"
 
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
+#include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
 #if defined(OHOS_PLATFORM)
@@ -25,9 +26,13 @@
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace OHOS::JsSysModule;
 static constexpr int8_t NUM_WORKER_ARGS = 2;
+static constexpr uint8_t NUM_SYNC_CALL_ARGS = 3;
 static std::list<Worker *> g_workers;
 static constexpr int MAX_WORKERS = 8;
 static std::mutex g_workersMutex;
+static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
+static constexpr uint32_t DEFAULT_WAITING_LIMITATION = 5000;
+static constexpr uint32_t SYNC_CALL_ID_MAX = 4294967295;
 
 Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
@@ -40,6 +45,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("postMessage", PostMessage),
         DECLARE_NAPI_FUNCTION("terminate", Terminate),
         DECLARE_NAPI_FUNCTION("on", On),
+        DECLARE_NAPI_FUNCTION("onSyncCall", OnSyncCall),
         DECLARE_NAPI_FUNCTION("once", Once),
         DECLARE_NAPI_FUNCTION("off", Off),
         DECLARE_NAPI_FUNCTION("addEventListener", AddEventListener),
@@ -74,6 +80,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
 
         napi_property_descriptor properties[] = {
             DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
+            DECLARE_NAPI_FUNCTION_WITH_DATA("syncCall", SyncCall, worker),
             DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
             DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
             DECLARE_NAPI_FUNCTION_WITH_DATA("addEventListener", ParentPortAddEventListener, worker),
@@ -243,6 +250,16 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
                             }
                         });
                     }
+                    if (worker->hostOnSyncCallSignal_ != nullptr &&
+                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnSyncCallSignal_))) {
+                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnSyncCallSignal_),
+                            [](uv_handle_t* handle) {
+                            if (handle != nullptr) {
+                                delete reinterpret_cast<uv_async_t*>(handle);
+                                handle = nullptr;
+                            }
+                        });
+                    }
                     worker->ReleaseHostThreadContent();
                 }
                 if (!worker->IsRunning()) {
@@ -327,6 +344,38 @@ napi_value Worker::On(napi_env env, napi_callback_info cbinfo)
 napi_value Worker::Once(napi_env env, napi_callback_info cbinfo)
 {
     return AddListener(env, cbinfo, ONCE);
+}
+
+napi_value Worker::OnSyncCall(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc != NUM_WORKER_ARGS) {
+        ErrorHelper::ThrowError(env,
+            ErrorHelper::TYPE_ERROR, "worker OnSyncCall param count must be 2");
+        return nullptr;
+    }
+    // check 1st param is string
+    napi_value thisVar = nullptr;
+    void* data = nullptr;
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+    if (!NapiHelper::IsString(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "BusinessError 401: Parameter error. The type of 'eventName' must be string");
+        return nullptr;
+    }
+    std::string eventName = NapiHelper::GetString(env, args[0]);
+
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, (void**)&worker);
+    if (worker == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
+        return nullptr;
+    }
+    napi_ref listener = NapiHelper::CreateReference(env, args[1], 1);
+    worker->AddSyncEventListener(eventName, listener);
+    return nullptr;
 }
 
 napi_value Worker::Off(napi_env env, napi_callback_info cbinfo)
@@ -587,6 +636,129 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
     return NapiHelper::GetUndefinedValue(env);
 }
 
+napi_value Worker::SyncCall(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < NUM_SYNC_CALL_ARGS) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "syncCall param must be equal or more than 3");
+        return nullptr;
+    }
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is null when syncCall to host");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null when syncCall to host");
+        return nullptr;
+    }
+
+    if (!worker->IsRunning()) {
+        // if worker is not running, don't send any message to host thread
+        HILOG_DEBUG("worker:: when post message to host occur worker is not in running.");
+        return nullptr;
+    }
+
+    if (!NapiHelper::IsString(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "BusinessError 401: Parameter error. The type of 'eventName' must be string");
+        return nullptr;
+    }
+    if (!NapiHelper::IsString(env, args[1])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "BusinessError 401: Parameter error. The type of 'methodName' must be string");
+        return nullptr;
+    }
+    if (!NapiHelper::IsNumber(env, args[2])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "BusinessError 401: Parameter error. The type of 'timeLimitation' must be number");
+        return nullptr;
+    }
+
+    napi_status serializeStatus = napi_ok;
+    napi_value data = nullptr;
+    napi_value argsArray;
+    napi_create_array_with_length(env, argc - 1, &argsArray);
+    size_t index = 0;
+    uint32_t timeLimitation = 0;
+    for (size_t i = 0; i < argc; i++) {
+        if (i == 2) { // 2: index of time limitation arg
+            timeLimitation = NapiHelper::GetUint32Value(env, args[i]);
+            continue;
+        }
+        napi_set_element(env, argsArray, index, args[i]);
+        index++;
+    }
+    if (timeLimitation <= 0 || timeLimitation > DEFAULT_WAITING_LIMITATION) {
+        timeLimitation = DEFAULT_WAITING_LIMITATION;
+    }
+
+    // defautly not transfer
+    serializeStatus = napi_serialize(env, argsArray, NapiHelper::GetUndefinedValue(env), &data);
+    if (serializeStatus != napi_ok || data == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        return nullptr;
+    }
+    worker->hostSyncEventQueue_.Push(worker->syncCallId_, data);
+
+    std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+    if (env != nullptr && !worker->HostIsStop()) {
+        worker->InitSyncCallStatus(env);
+        uv_async_send(worker->hostOnSyncCallSignal_);
+    } else {
+        HILOG_ERROR("worker:: worker host engine is nullptr when SyncCall.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null");
+        return nullptr;
+    }
+
+    {
+        std::unique_lock lock(worker->syncMessageMutex_);
+        if (!worker->cv_.wait_for(lock, std::chrono::milliseconds(timeLimitation), [worker](){
+            return !worker->workerSyncEventQueue_.IsEmpty() || !worker->syncEventSuccess_;
+        })) {
+            worker->IncreaseSyncCallId();
+            HILOG_ERROR("worker:: syncCall has exceeded the waiting time limitation, skip this turn.");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_EXCEED_WAITING_LIMITATION,
+                std::to_string(timeLimitation).c_str());
+            return nullptr;
+        }
+    }
+    worker->IncreaseSyncCallId();
+    if (!worker->syncEventSuccess_) {
+        worker->HandleSyncCallError(env);
+        return nullptr;
+    }
+    if (!worker->workerSyncEventQueue_.DeQueue(&data)) {
+        HILOG_ERROR("worker:: message returned from host is empty when SyncCall");
+        return nullptr;
+    }
+    napi_value res = nullptr;
+    serializeStatus = napi_deserialize(env, data, &res);
+    if (serializeStatus != napi_ok || res == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        return nullptr;
+    }
+    return res;
+}
+
+void Worker::InitSyncCallStatus(napi_env env)
+{
+    // worker side event data queue shall be empty before uv_async_send
+    workerSyncEventQueue_.Clear(env);
+    ClearSyncCallError(env);
+    syncEventSuccess_ = true;
+}
+
+void Worker::IncreaseSyncCallId()
+{
+    if (UNLIKELY(syncCallId_ == SYNC_CALL_ID_MAX)) {
+        syncCallId_ = 1;
+    } else {
+        syncCallId_++;
+    }
+}
+
 napi_value Worker::CloseWorker(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
@@ -785,6 +957,20 @@ void Worker::GetContainerScopeId(napi_env env)
     scopeId_ = hostEngine->GetContainerScopeIdFunc();
 }
 
+void Worker::AddSyncEventListener(const std::string &eventName, napi_ref listener)
+{
+    syncEventListeners_.insert_or_assign(eventName, listener);
+}
+
+void Worker::ClearSyncEventListener()
+{
+    for (auto iter = syncEventListeners_.begin(); iter != syncEventListeners_.end(); iter++) {
+        napi_ref objRef = iter->second;
+        NapiHelper::DeleteReference(hostEnv_, objRef);
+    }
+    syncEventListeners_.clear();
+}
+
 void Worker::StartExecuteInThread(napi_env env, const char* script)
 {
     // 1. init hostOnMessageSignal_ in host loop
@@ -801,6 +987,9 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     hostOnErrorSignal_ = new uv_async_t;
     uv_async_init(loop, hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnError));
     hostOnErrorSignal_->data = this;
+    hostOnSyncCallSignal_ = new uv_async_t;
+    uv_async_init(loop, hostOnSyncCallSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnSyncCall));
+    hostOnSyncCallSignal_->data = this;
 
     // 2. copy the script
     script_ = std::string(script);
@@ -997,6 +1186,179 @@ void Worker::HostOnMessageInner()
     }
     if (!engine->FinishContainerScopeFunc(scopeId_)) {
         HILOG_WARN("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
+    }
+}
+
+void Worker::HostOnSyncCall(const uv_async_t* req)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    Worker* worker = static_cast<Worker*>(req->data);
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is null");
+        return;
+    }
+    worker->HostOnSyncCallInner();
+}
+
+void Worker::HostOnSyncCallInner()
+{
+    if (hostEnv_ == nullptr || HostIsStop()) {
+        HILOG_ERROR("worker:: host thread maybe is over when host onmessage.");
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    if (!engine->InitContainerScopeFunc(scopeId_)) {
+        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
+    }
+
+    if (hostSyncEventQueue_.IsEmpty()) {
+        HILOG_ERROR("worker:: message queue is empty when hostOnSyncCall");
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+    MessageDataType data = nullptr;
+    uint32_t currentCallId = 0;
+    size_t size = hostSyncEventQueue_.GetSize();
+    for (size_t i = 0; i < size; i++) {
+        std::pair<uint32_t, MessageDataType> pair = hostSyncEventQueue_.Front();
+        hostSyncEventQueue_.Pop();
+        if (pair.first == syncCallId_) {
+            currentCallId = pair.first;
+            data = pair.second;
+            break;
+        }
+        napi_delete_serialization_data(hostEnv_, pair.second);
+    }
+    napi_value argsArray = nullptr;
+    napi_status status = napi_ok;
+    status = napi_deserialize(hostEnv_, data, &argsArray);
+    if (status != napi_ok || argsArray == nullptr) {
+        AddSyncCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+    napi_value eventName = nullptr;
+    napi_get_element(hostEnv_, argsArray, 0, &eventName);
+    napi_value methodName = nullptr;
+    napi_get_element(hostEnv_, argsArray, 1, &methodName);
+
+    std::string eventNameStr = NapiHelper::GetString(hostEnv_, eventName);
+    auto iter = syncEventListeners_.find(eventNameStr);
+    if (iter == syncEventListeners_.end()) {
+        HILOG_ERROR("worker:: there is no listener for sync event: %{public}s", eventNameStr.c_str());
+        AddSyncCallError(ErrorHelper::ERR_TRIGGER_NONEXIST_EVENT);
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+    napi_ref objRef = iter->second;
+    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, objRef);
+    bool hasProperty = false;
+    napi_has_property(hostEnv_, obj, methodName, &hasProperty);
+    if (!hasProperty) {
+        const char* methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
+        HILOG_ERROR("worker:: binding obj for sync event has no method: %{public}s", methodNameStr);
+        AddSyncCallError(ErrorHelper::ERR_CALL_METHOD_ON_BINDING_OBJ);
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+    napi_value method = nullptr;
+    napi_get_property(hostEnv_, obj, methodName, &method);
+    if (!NapiHelper::IsCallable(hostEnv_, method)) {
+        const char* methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
+        HILOG_ERROR("worker:: method %{public}s is not callable", methodNameStr);
+        AddSyncCallError(ErrorHelper::ERR_CALL_METHOD_ON_BINDING_OBJ);
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+    uint32_t argc = 0;
+    napi_get_array_length(hostEnv_, argsArray, &argc);
+    napi_value* args = nullptr;
+    ObjectScope<napi_value> scope(args, true);
+    if (argc > BEGIN_INDEX_OF_ARGUMENTS) {
+        args = new napi_value[argc - BEGIN_INDEX_OF_ARGUMENTS];
+        for (uint32_t index = 0; index < argc - BEGIN_INDEX_OF_ARGUMENTS; index++) {
+            napi_get_element(hostEnv_, argsArray, index + BEGIN_INDEX_OF_ARGUMENTS, &args[index]);
+        }
+    }
+
+    napi_value res = nullptr;
+    napi_call_function(hostEnv_, obj, method, argc - BEGIN_INDEX_OF_ARGUMENTS, args, &res);
+    bool hasPendingException = NapiHelper::IsExceptionPending(hostEnv_);
+    if (hasPendingException) {
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(hostEnv_, &exception);
+        data = nullptr;
+        status = napi_serialize(hostEnv_, exception, NapiHelper::GetUndefinedValue(hostEnv_), &data);
+        if (status != napi_ok || data == nullptr) {
+            ErrorHelper::ThrowError(hostEnv_, ErrorHelper::ERR_WORKER_SERIALIZATION);
+            return;
+        }
+        AddSyncCallError(ErrorHelper::ERR_DURING_SYNC_CALL, data);
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+    // defautly not transfer
+    status = napi_serialize(hostEnv_, res, NapiHelper::GetUndefinedValue(hostEnv_), &data);
+    if (status != napi_ok || data == nullptr) {
+        AddSyncCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
+        syncEventSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
+    // drop and destruct result if timeout
+    if (currentCallId != syncCallId_ || currentCallId == 0) {
+        napi_delete_serialization_data(hostEnv_, data);
+        cv_.notify_one();
+        return;
+    }
+    workerSyncEventQueue_.EnQueue(data);
+    syncEventSuccess_ = true;
+    cv_.notify_one();
+}
+
+void Worker::AddSyncCallError(int32_t errCode, napi_value errData)
+{
+    syncEventErrors_.push({errCode, errData});
+}
+
+void Worker::HandleSyncCallError(napi_env env)
+{
+    while (!syncEventErrors_.empty()) {
+        std::pair<int32_t, napi_value> pair = syncEventErrors_.front();
+        syncEventErrors_.pop();
+        int32_t errCode = pair.first;
+        if (errCode == ErrorHelper::ERR_DURING_SYNC_CALL) {
+            napi_status status = napi_ok;
+            napi_value exception = nullptr;
+            status = napi_deserialize(env, pair.second, &exception);
+            if (status != napi_ok || exception == nullptr) {
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION);
+                return;
+            }
+            napi_throw(env, exception);
+        } else {
+            ErrorHelper::ThrowError(env, errCode);
+        }
+    }
+}
+
+void Worker::ClearSyncCallError(napi_env env)
+{
+    while (!syncEventErrors_.empty()) {
+        std::pair<int32_t, napi_value> pair = syncEventErrors_.front();
+        syncEventErrors_.pop();
+        if (pair.second != nullptr) {
+            napi_delete_serialization_data(env, pair.second);
+        }
     }
 }
 
@@ -1397,6 +1759,7 @@ Worker::~Worker()
         ReleaseHostThreadContent();
     }
     RemoveAllListenerInner();
+    ClearSyncEventListener();
 }
 
 void Worker::RemoveAllListenerInner()
@@ -1415,6 +1778,7 @@ void Worker::ReleaseHostThreadContent()
 {
     // 1. clear message send to host thread
     hostMessageQueue_.Clear(hostEnv_);
+    hostSyncEventQueue_.Clear(hostEnv_);
     // 2. clear error queue send to host thread
     errorQueue_.Clear(hostEnv_);
     if (!HostIsStop()) {
@@ -1507,6 +1871,7 @@ void Worker::ReleaseWorkerThreadContent()
 
     // 3. clear message send to worker thread
     workerMessageQueue_.Clear(workerEnv_);
+    workerSyncEventQueue_.Clear(workerEnv_);
     CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
     workerEnv_ = nullptr;
 }
