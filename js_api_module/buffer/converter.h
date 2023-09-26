@@ -60,8 +60,8 @@ constexpr uint8_t UTF8_TAIL_BYTE_MASK = 0x80;
 constexpr uint8_t UTF8_THREE_BYTES_HEAD_BYTE_MASK = 0xE0;
 constexpr uint8_t UTF8_FOUR_BYTES_HEAD_BYTE_MASK = 0xF0;
 constexpr uint32_t UTF16_SPECIAL_VALUE = 0x10000;
-const std::string base64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-const std::string base64UrlTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const std::string BASE64_TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const std::string BASE64URL_TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /**
 * IsOneByte - checks whether a charactor in a utf8 string is a one byte coding or not
@@ -75,7 +75,7 @@ std::u16string Utf8ToUtf16BE(const std::string &u8Str, bool *ok = nullptr);
 std::string Utf16BEToANSI(const std::wstring &wstr);
 std::u16string Utf16BEToLE(const std::u16string &wstr);
 std::string Utf8ToUtf16BEToANSI(const std::string &str);
-std::string Base64Encode(const unsigned char *src, size_t len);
+std::string Base64Encode(const unsigned char *src, size_t len, EncodingType type);
 std::string Base64Decode(std::string const& encodedStr, EncodingType type);
 std::string HexDecode(const std::string &hexStr);
 int FindLastIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen);

@@ -298,8 +298,7 @@ unsigned int Buffer::WriteString(std::string value, unsigned int size)
 
 unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int size)
 {
-    const char *data = value.c_str();
-    uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
+    uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(value.c_str()));
     bool isWriteSuccess = WriteBytes(str, size, raw_ + byteOffset_ + offset);
     return isWriteSuccess ? size : 0; // 0: write failed
 }
@@ -309,10 +308,9 @@ void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end
     if (end - offset <= 0) {
         return;
     }
-    const char *data = value.c_str();
     unsigned int loop = length > end - offset ? end - offset : length;
 
-    uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(data));
+    uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(value.c_str()));
     while (offset < end) {
         if (loop + offset > end) {
             WriteBytes(str, end - offset, raw_ + byteOffset_ + offset);
@@ -452,7 +450,14 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
 {
     uint8_t data[length];
     ReadBytes(data, start, length);
-    return Base64Encode(reinterpret_cast<const unsigned char*>(data), length);
+    return Base64Encode(reinterpret_cast<const unsigned char*>(data), length, BASE64);
+}
+
+std::string Buffer::ToBase64Url(uint32_t start, uint32_t length)
+{
+    uint8_t data[length];
+    ReadBytes(data, start, length);
+    return Base64Encode(reinterpret_cast<const unsigned char*>(data), length, BASE64URL);
 }
 
 int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len)

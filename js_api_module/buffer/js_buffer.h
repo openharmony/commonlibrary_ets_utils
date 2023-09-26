@@ -63,6 +63,7 @@ public:
     int IndexOf(const char *data, uint32_t offset, uint32_t len);
     int LastIndexOf(const char *data, uint32_t offset, uint32_t len);
     std::string ToBase64(uint32_t start, uint32_t length);
+    std::string ToBase64Url(uint32_t start, uint32_t length);
     static EncodingType GetEncodingType(std::string type);
     void SetArray(std::vector<uint8_t> array, unsigned int offset = 0);
     void FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end);

@@ -50,10 +50,10 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
                 // Calculate the UNICODE code point value (3 bits lower for the first byte, 6 bits for the other)
                 // 3 : shift left 3 times of UTF8_VALID_BITS
                 uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS)) |
-                                     // 2 : shift left 2 times of UTF8_VALID_BITS
-                                     ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS)) |
-                                     ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
-                                     (c4 & LOWER_6_BITS_MASK);
+                    // 2 : shift left 2 times of UTF8_VALID_BITS
+                    ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS)) |
+                    ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
+                    (c4 & LOWER_6_BITS_MASK);
 
                 // In UTF-16, U+10000 to U+10FFFF represent surrogate pairs with two 16-bit units
                 if (codePoint >= UTF16_SPECIAL_VALUE) {
@@ -75,8 +75,8 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
                 // (4 bits lower for the first byte, 6 bits lower for the other)
                 // 2 : shift left 2 times of UTF8_VALID_BITS
                 uint32_t codePoint = ((c1 & LOWER_4_BITS_MASK) << (2 * UTF8_VALID_BITS)) |
-                                     ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
-                                     (c3 & LOWER_6_BITS_MASK);
+                    ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
+                    (c3 & LOWER_6_BITS_MASK);
                 u16Str.push_back(static_cast<char16_t>(codePoint));
                 break;
             }
@@ -86,7 +86,7 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
                 // Calculates the UNICODE code point value
                 // (5 bits lower for the first byte, 6 bits lower for the other)
                 uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << UTF8_VALID_BITS) |
-                                     (c2 & LOWER_6_BITS_MASK);
+                    (c2 & LOWER_6_BITS_MASK);
                 u16Str.push_back(static_cast<char16_t>(codePoint));
                 break;
             }
@@ -148,7 +148,7 @@ bool IsBase64Char(unsigned char c)
 * Returns: Allocated buffer of outLen bytes of encoded data,
 * or empty string on failure
 */
-string Base64Encode(const unsigned char *src, size_t len)
+string Base64Encode(const unsigned char *src, size_t len, EncodingType type)
 {
     if (src == nullptr) {
         return string();
@@ -170,16 +170,21 @@ string Base64Encode(const unsigned char *src, size_t len)
     pEnd = src + len;
     pStart = src;
     pos = out;
+
+    string table = BASE64_TABLE;
+    if (type == BASE64URL) {
+        table = BASE64URL_TABLE;
+    }
     // 3 : 3 bytes is just 24 bits which is 4 times of 6 bits
     while (pEnd - pStart >= 3) {
         // 2 : add two zeros in front of the first set of 6 bits to become a new 8 binary bits
-        *pos = base64Table[pStart[0] >> 2];
+        *pos = table[pStart[0] >> 2];
         // 4 : add two zeros in front of the following second set of 6 bits to become the new 8 binary bits
-        *(pos + 1) = base64Table[((pStart[0] & LOWER_2_BITS_MASK) << 4) | (pStart[1] >> 4)];
+        *(pos + 1) = table[((pStart[0] & LOWER_2_BITS_MASK) << 4) | (pStart[1] >> 4)];
         // 2 : 4 : 6 : add two zeros in front of the following third set of 6 bits to become the new 8 binary bits
-        *(pos + 2) = base64Table[((pStart[1] & LOWER_4_BITS_MASK) << 2) | (pStart[2] >> 6)];
+        *(pos + 2) = table[((pStart[1] & LOWER_4_BITS_MASK) << 2) | (pStart[2] >> 6)];
         // 2 : 3 : add two zeros in front of the following forth set of 6 bits to become the new 8 binary bits
-        *(pos + 3) = base64Table[pStart[2] & LOWER_6_BITS_MASK];
+        *(pos + 3) = table[pStart[2] & LOWER_6_BITS_MASK];
         // 4 : the pointer of pos scrolls off 4 bytes to point the next 4 bytes of encoded chars
         pos += 4;
         // 3 : the pointer of pStart scrolls off 3 bytes to point the next 3 bytes of which will be encoded chars
@@ -189,22 +194,28 @@ string Base64Encode(const unsigned char *src, size_t len)
     // process the last set of less than 3 bytes of data
     if (pEnd - pStart > 0) {
         // 2 : add two zeros in front of the first set of 6 bits to become a new 8 binary bits
-        *pos = base64Table[pStart[0] >> 2];
+        *pos = table[pStart[0] >> 2];
         if (pEnd - pStart == 1) { // one byte remaining
             // 4 : paddle the last two bits of the last byte with two zeros in front of it and four zeros after it
-            *(pos + 1) = base64Table[(pStart[0] & LOWER_2_BITS_MASK) << 4];
+            *(pos + 1) = table[(pStart[0] & LOWER_2_BITS_MASK) << 4];
             // 2 : fill in the missing bytes with '='
             *(pos + 2) = '=';
         } else { // two bytes remaining
             // 4 : add two zeros in front of the second set of 6 bits to become the new 8 binary bits
-            *(pos + 1) = base64Table[((pStart[0] & LOWER_2_BITS_MASK) << 4) | (pStart[1] >> 4)];
+            *(pos + 1) = table[((pStart[0] & LOWER_2_BITS_MASK) << 4) | (pStart[1] >> 4)];
             // 2 : paddle the last four bits of the last byte with two zeros in front of it and two zeros after it
-            *(pos + 2) = base64Table[(pStart[1] & LOWER_4_BITS_MASK) << 2];
+            *(pos + 2) = table[(pStart[1] & LOWER_4_BITS_MASK) << 2];
         }
         // 3 : fill in the missing bytes with '='
         *(pos + 3) = '=';
     }
 
+    if (type == BASE64URL) {
+        size_t poss = outStr.find_last_not_of('=');
+        if (poss != std::string::npos) {
+            outStr.erase(poss + 1);
+        }
+    }
     return outStr;
 }
 
@@ -216,10 +227,10 @@ string Base64Decode(string const& encodedStr, EncodingType type)
     unsigned char charArray4[4] = {0}; // an array to stage a group of indexes for encoded string
     unsigned char charArray3[3] = {0}; // an array to stage a set of original string
     string ret = "";
-    string table = base64Table;
+    string table = BASE64_TABLE;
 
     if (type == BASE64URL) {
-        table = base64UrlTable;
+        table = BASE64URL_TABLE;
     }
     while ((encodedStr[cursor] != '=') && IsBase64Char(encodedStr[cursor])) {
         // stage a 4-byte string to charArray4
