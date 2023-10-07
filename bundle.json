@@ -50,7 +50,7 @@
                 "hilog",
                 "hitrace",
                 "init",
-                "frame_aware_sched"
+                "qos_manager"
             ],
             "third_party": [
                 "bounds_checking_function",
