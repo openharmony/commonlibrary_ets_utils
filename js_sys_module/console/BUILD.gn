@@ -54,6 +54,7 @@ ohos_shared_library("console") {
   } else {
     external_deps += [ "hilog:libhilog" ]
   }
+  cflags = [ "-std=c++17" ]
 
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk_indirect" ]
