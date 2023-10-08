@@ -50,9 +50,9 @@ ohos_unittest("test_taskpool_unittest") {
   external_deps = [
     "c_utils:utils",
     "ets_runtime:libark_jsruntime",
-    "qos_manager:qos",
     "hilog:libhilog",
     "napi:ace_napi",
+    "qos_manager:qos",
   ]
 }
 
