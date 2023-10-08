@@ -49,6 +49,7 @@ ohos_shared_library("timer") {
       "NOGDI",
     ]
   }
+  cflags = [ "-std=c++17" ]
 
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk" ]
