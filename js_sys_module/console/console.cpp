@@ -141,11 +141,11 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
             argv[i] = buffer;
         }
         std::string stringValue = Helper::NapiHelper::GetPrintString(env, argv[i]);
-        if (stringValue.size() == 0) {
+        if (stringValue.empty()) {
             HILOG_ERROR("Console log content must not be null.");
             continue;
         }
-        content.emplace_back(std::string(stringValue));
+        content.emplace_back(stringValue);
     }
     if (format) {
         return ParseLogContent(content);
@@ -203,8 +203,8 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
         }
         argv[0] = buffer;
     }
-    char* name = Helper::NapiHelper::GetString(env, argv[0]);
-    if (name == nullptr) {
+    std::string name = Helper::NapiHelper::GetPrintString(env, argv[0]);
+    if (name.empty()) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
                                         "Timer or Counter name must be not null.");
         return "";
@@ -247,8 +247,8 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     napi_value ctor = nullptr;
     ctor = Helper::NapiHelper::GetConstructorName(env, argv[0]);
-    char* ctorVal = Helper::NapiHelper::GetString(env, ctor);
-    if (ctorVal == nullptr) {
+    std::string ctorVal = Helper::NapiHelper::GetPrintString(env, ctor);
+    if (ctorVal.empty()) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "ConstructorName must be not null.");
         return Helper::NapiHelper::GetUndefinedValue(env);
     }
@@ -261,18 +261,18 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
     napi_get_named_property(env, jsonValue, "stringify", &stringifyValue);
     napi_value transValue = nullptr;
     napi_call_function(env, jsonValue, stringifyValue, 1, &argv[0], &transValue);
-    char* content = Helper::NapiHelper::GetString(env, transValue);
-    if (content == nullptr) {
+    std::string content = Helper::NapiHelper::GetPrintString(env, transValue);
+    if (content.empty()) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "Dir content must not be null.");
         return Helper::NapiHelper::GetUndefinedValue(env);
     }
     bool functionFlag = Helper::NapiHelper::IsFunction(env, argv[0]);
-    if (std::string(ctorVal).size() > 0 && !functionFlag) {
-        HILOG_INFO("%{public}s%{public}s: %{public}s", groupIndent.c_str(), ctorVal, content);
-    } else if (std::string(ctorVal).size() > 0 && functionFlag) {
-        HILOG_INFO("%{public}s[Function %{public}s]", groupIndent.c_str(), ctorVal);
+    if (!ctorVal.empty() && !functionFlag) {
+        HILOG_INFO("%{public}s%{public}s: %{public}s", groupIndent.c_str(), ctorVal.c_str(), content.c_str());
+    } else if (!ctorVal.empty() && functionFlag) {
+        HILOG_INFO("%{public}s[Function %{public}s]", groupIndent.c_str(), ctorVal.c_str());
     } else {
-        HILOG_INFO("%{public}s%{public}s", groupIndent.c_str(), content);
+        HILOG_INFO("%{public}s%{public}s", groupIndent.c_str(), content.c_str());
     }
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
@@ -324,17 +324,11 @@ std::string Console::RenderHead(napi_env env, napi_value head, std::vector<size_
                                             "Table elements can't convert to string.");
             return "";
         }
-        size_t stringLen = 0;
-        napi_get_value_string_utf8(env, string, nullptr, 0, &stringLen);
+        std::string elemStr = Helper::NapiHelper::GetPrintString(env, string);
+        size_t stringLen = elemStr.size();
         size_t left = (columnWidths[i] - stringLen) / 2; // 2: half
         size_t right = columnWidths[i] - stringLen - left;
-        char* elemStr = Helper::NapiHelper::GetString(env, string);
-        if (elemStr == nullptr) {
-            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                            "elemStr must not be null.");
-            return "";
-        }
-        result += StringRepeat(left, " ") + std::string(elemStr) + StringRepeat(right, " ");
+        result += StringRepeat(left, " ") + elemStr + StringRepeat(right, " ");
         if (i != length - 1) {
             result += tableChars["middle"];
         }
@@ -352,15 +346,11 @@ std::string Console::GetStringAndStringWidth(napi_env env, napi_value element, s
                                         "GetStringAndStringWidth: can't convert to string.");
         return "";
     }
-    char* result = Helper::NapiHelper::GetString(env, string);
-    if (result == nullptr) {
-        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "result must not be null.");
-        return "";
-    }
+    std::string result = Helper::NapiHelper::GetPrintString(env, string);
     napi_valuetype valuetype;
     napi_typeof(env, element, &valuetype);
     if (valuetype != napi_undefined) {
-        napi_get_value_string_utf8(env, string, nullptr, 0, &stringLen);
+        stringLen = result.size();  // If element type is undefined, length is 0.
     }
     return result;
 }
@@ -448,9 +438,8 @@ napi_value GetKeyArray(napi_env env, napi_value map)
     napi_value outputKeysArray = nullptr;
     napi_create_array_with_length(env, keyLength, &outputKeysArray);
     // set (index) to array
-    const char* indexKey = "(index)";
     napi_value result = nullptr;
-    napi_create_string_utf8(env, indexKey, NAPI_AUTO_LENGTH, &result);
+    napi_create_string_utf8(env, "(index)", NAPI_AUTO_LENGTH, &result);
     napi_set_element(env, outputKeysArray, 0, result);
 
     // set Keys to array
@@ -491,6 +480,7 @@ napi_value GetValueArray(napi_env env, napi_value map, const size_t& length, nap
         }
         napi_value valueNumber = nullptr;
         napi_get_named_property(env, map, innerKey, &valueNumber);
+        Helper::CloseHelp::DeletePointer(innerKey, true);
         for (size_t j = 0; j < length ; ++j) {
             napi_value value = nullptr;
             napi_get_element(env, valueNumber, j, &value);
@@ -507,9 +497,8 @@ void SetPrimitive(napi_env env, napi_value map, const size_t& length, napi_value
     napi_object_get_keys(env, map, &mapKeys);
     uint32_t maplen = 0;
     napi_get_array_length(env, mapKeys, &maplen);
-    const char* valuesKey = "Values";
     napi_value result = nullptr;
-    napi_create_string_utf8(env, valuesKey, NAPI_AUTO_LENGTH, &result);
+    napi_create_string_utf8(env, "Values", NAPI_AUTO_LENGTH, &result);
     napi_set_element(env, outputKeysArray, maplen + 1, result);
     uint32_t valuesLen = 0;
     napi_get_array_length(env, valuesKeyArray, &valuesLen);
@@ -549,7 +538,6 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
     bool primitiveInit = false;
     napi_value keys = nullptr;
     std::map<std::string, bool> initialMap;
-    
     for (size_t i = 0; i < length; i++) {
         // get key
         napi_value napiNumber = nullptr;
@@ -562,7 +550,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
         }
         napi_value item = nullptr;
         napi_get_named_property(env, tabularData, key, &item);
-
+        Helper::CloseHelp::DeletePointer(key, true);
         bool isPrimitive = ((item == nullptr) ||
                             (!Helper::NapiHelper::IsObject(env, item) && !Helper::NapiHelper::IsFunction(env, item)));
         if (isPrimitive) {
@@ -612,6 +600,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
                     napi_set_element(env, mapArray, i, innerItem);
                     napi_set_named_property(env, map, innerKey, mapArray);
                 }
+                Helper::CloseHelp::DeletePointer(innerKey, true);
             }
         }
     }

@@ -288,14 +288,15 @@ bool NapiHelper::IsExceptionPending(napi_env env)
 
 std::string NapiHelper::GetPrintString(napi_env env, napi_value value)
 {
-    if (IsTypeForNapiValue(env, value, napi_string)) {
-        napi_value valueType = nullptr;
-        if (napi_coerce_to_string(env, value, &valueType) != napi_ok) {
-            return "";
+    std::string str;
+    if (!IsTypeForNapiValue(env, value, napi_string)) {
+        napi_value strValue = nullptr;
+        if (napi_coerce_to_string(env, value, &strValue) != napi_ok) {
+            return str;
         }
-
-        return GetString(env, valueType);
+        value = strValue;
     }
-    return "";
+    napi_get_print_string(env, value, str);
+    return str;
 }
 } // namespace Commonlibrary::Concurrent::Common::Helper
