@@ -68,8 +68,8 @@ ohos_shared_library("taskpool") {
   deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
 
   external_deps = [
-    "frame_aware_sched:qos_manager",
     "napi:ace_napi",
+    "qos_manager:qos",
   ]
 
   if (is_linux && current_toolchain == host_toolchain) {
@@ -127,9 +127,9 @@ ohos_source_set("taskpool_static") {
     }
   } else {
     external_deps += [
-      "frame_aware_sched:qos_manager",
       "hitrace:hitrace_meter",
       "napi:ace_napi",
+      "qos_manager:qos",
     ]
   }
 

@@ -24,9 +24,9 @@ namespace Commonlibrary::Platform {
 using namespace OHOS::QOS;
 
 static const std::map<Priority, QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
-    {Priority::LOW, QosLevel::qos_utility},
-    {Priority::DEFAULT, QosLevel::qos_default},
-    {Priority::HIGH, QosLevel::qos_user_initiated}
+    {Priority::LOW, QosLevel::QOS_UTILITY},
+    {Priority::DEFAULT, QosLevel::QOS_DEFAULT},
+    {Priority::HIGH, QosLevel::QOS_USER_INITIATED}
 };
 
 int SetWorkerPriority(Priority priority)
