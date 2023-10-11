@@ -27,8 +27,9 @@ ohos_unittest("test_convertxml_unittest") {
     "//third_party/bounds_checking_function/include",
     "//third_party/googletest/include",
     "//third_party/node/src",
-    "//third_party/libxml2/include",
   ]
+
+  configs = [ "//third_party/libxml2:libxml2_config" ]
 
   cflags = [ "-g3" ]
 
