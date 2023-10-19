@@ -252,7 +252,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
             // try to free the worker that idle time meets the requirement
             auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [](Worker *worker) {
                 auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-                return idleTime > MAX_IDLE_TIME;
+                return idleTime > MAX_IDLE_TIME && worker->runningCount_ == 0;
             });
             // remove it from all sets
             if (iter != idleWorkers_.end()) {
