@@ -103,20 +103,41 @@ namespace OHOS::xml {
         if (data) {
             std::string strEnd(reinterpret_cast<char*>(data), len);
             strEnd = strEnd.substr(0, std::strlen(strEnd.c_str()));
-            std::string cleanStr;
-            for (char c : strEnd) {
-                if (c != '\r' && c != '\n') {
-                    cleanStr += c;
+            std::string cDataBegin = "<![CDATA[";
+            std::string cDataEnd = "]]>";
+            size_t foundPosBegin = strEnd.find(cDataBegin);
+            size_t foundPosEnd = strEnd.find(cDataEnd);
+            size_t count = 0;
+
+            while (foundPosBegin != std::string::npos) {
+                std::string temp = strEnd.substr(foundPosBegin, foundPosEnd - foundPosBegin + cDataEnd.length());
+                std::string resStr = "";
+                for (char c : temp) {
+                    if (c != '\r' && c != '\n') {
+                        resStr += c;
+                    }
+                    if (c == '\r') {
+                        resStr += "\\r";
+                        count++;
+                    }
+                    if (c == '\n') {
+                        resStr += "\\n";
+                        count++;
+                    }
                 }
+                strEnd.replace(foundPosBegin, temp.length(), resStr);
+                foundPosBegin = strEnd.find(cDataBegin, foundPosBegin + 1);
+                foundPosEnd = strEnd.find(cDataEnd, foundPosEnd + count + 1);
             }
+
             if (argc == 1) {
-                object = new XmlPullParser(cleanStr, "utf-8");
+                object = new XmlPullParser(strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
                 NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
                 NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
                 std::string strEncoding = "";
                 XmlSerializer::DealNapiStrValue(env, args[1], strEncoding);
-                object = new XmlPullParser(cleanStr, strEncoding);
+                object = new XmlPullParser(strEnd, strEncoding);
             }
         }
         napi_wrap(
