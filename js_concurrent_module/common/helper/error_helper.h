@@ -44,24 +44,45 @@ public:
 
         napi_value name = nullptr;
         std::string errName = "BusinessError";
-        if (errCode == ERR_WORKER_INITIALIZATION) {
-            errTitle = "Worker initialization failure, ";
-        } else if (errCode == ERR_WORKER_NOT_RUNNING) {
-            errTitle = "Worker instance is not running, ";
-        } else if (errCode == ERR_WORKER_UNSUPPORTED) {
-            errTitle = "The invoked API is not supported in workers, ";
-        } else if (errCode == ERR_WORKER_SERIALIZATION) {
-            errTitle = "An exception occurred during serialization, ";
-        } else if (errCode == ERR_WORKER_INVALID_FILEPATH) {
-            errTitle = "The worker file path is invalid path, ";
-        } else if (errCode == ERR_NOT_CONCURRENT_FUNCTION) {
-            errTitle = "The function is not mark as concurrent, ";
-        } else if (errCode == ERR_CANCEL_NONEXIST_TASK) {
-            errTitle = "The task does not exist when it is canceled";
-        } else if (errCode == ERR_CANCEL_NONEXIST_TASK_GROUP) {
-            errTitle = "The task group does not exist when it is canceled";
-        } else if (errCode == ERR_CANCEL_RUNNING_TASK) {
-            errTitle = "The task is executing when it is canceled";
+        switch (errCode) {
+            case ERR_WORKER_INITIALIZATION:
+                errTitle = "Worker initialization failure, ";
+                break;
+            case ERR_WORKER_NOT_RUNNING:
+                errTitle = "Worker instance is not running, ";
+                break;
+            case ERR_WORKER_UNSUPPORTED:
+                errTitle = "The invoked API is not supported in workers, ";
+                break;
+            case ERR_WORKER_SERIALIZATION:
+                errTitle = "An exception occurred during serialization, ";
+                break;
+            case ERR_WORKER_INVALID_FILEPATH:
+                errTitle = "The worker file path is invalid path, ";
+                break;
+            case ERR_NOT_CONCURRENT_FUNCTION:
+                errTitle = "The function is not mark as concurrent, ";
+                break;
+            case ERR_CANCEL_NONEXIST_TASK:
+                errTitle = "The task does not exist when it is canceled";
+                break;
+            case ERR_CANCEL_NONEXIST_TASK_GROUP:
+                errTitle = "The task group does not exist when it is canceled";
+                break;
+            case ERR_CANCEL_RUNNING_TASK:
+                errTitle = "The task is executing when it is canceled";
+                break;
+            case ERR_TRIGGER_NONEXIST_EVENT:
+                errTitle = "The triggered event does not exist.";
+                break;
+            case ERR_CALL_METHOD_ON_BINDING_OBJ:
+                errTitle = "The method called on binding object does not exist or is not callable";
+                break;
+            case ERR_EXCEED_WAITING_LIMITATION:
+                errTitle = "SyncCall waiting time has exceeded the time limitation: ";
+                break;
+            default:
+                break;
         }
         napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
         napi_value msg = nullptr;
@@ -182,6 +203,11 @@ public:
     static const int32_t ERR_CANCEL_NONEXIST_TASK = 10200015; // 10200015 : the task does not exist when it is canceled
     static const int32_t ERR_CANCEL_RUNNING_TASK = 10200016; // 10200016 : the task is executing when it is canceled
     static const int32_t ERR_CANCEL_NONEXIST_TASK_GROUP = 10200018; // 10200018 : cancel nonexist task group
+    static const int32_t ERR_TRIGGER_NONEXIST_EVENT = 10200019; // 10200019 : The triggered event does not exist
+    static const int32_t ERR_CALL_METHOD_ON_BINDING_OBJ = 10200020; // 10200020 : call method on binding obj failed
+    static const int32_t ERR_EXCEED_WAITING_LIMITATION = 10200021; // 10200021 : SyncCall exceed waiting time limitation
+    // add for inner implementation
+    static const int32_t ERR_DURING_SYNC_CALL = 10200022; // 10200022 : SyncCall encountered exception during calling
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H

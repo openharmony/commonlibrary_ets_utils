@@ -38,5 +38,23 @@ private:
     std::mutex queueLock_;
     std::queue<MessageDataType> queue_;
 };
+
+class MarkedMessageQueue final {
+public:
+    void Push(uint32_t id, MessageDataType data);
+    void Pop();
+    std::pair<uint32_t, MessageDataType> Front();
+    bool IsEmpty();
+    void Clear(napi_env env);
+    size_t GetSize()
+    {
+        std::unique_lock<std::mutex> lock(queueLock_);
+        return queue_.size();
+    }
+
+private:
+    std::mutex queueLock_;
+    std::queue<std::pair<uint32_t, MessageDataType>> queue_;
+};
 }  // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_MESSAGE_QUEUE_H

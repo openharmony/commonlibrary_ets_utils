@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_WORKER_WORKER_H
 #define JS_CONCURRENT_MODULE_WORKER_WORKER_H
 
+#include <condition_variable>
 #include <list>
 #include <map>
 #include <mutex>
@@ -294,6 +295,24 @@ public:
      */
     static napi_value ParentPortRemoveEventListener(napi_env env, napi_callback_info cbinfo);
 
+    /**
+     * Register a sync event listener on host side.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
+    static napi_value OnSyncCall(napi_env env, napi_callback_info cbinfo);
+
+    /**
+     * Post a sync call request to an object registered on host side.
+     *
+     * @param env NAPI environment parameters.
+     * @param cbinfo The callback information of the js layer.
+     */
+    static napi_value SyncCall(napi_env env, napi_callback_info cbinfo);
+
+    static void HostOnSyncCall(const uv_async_t* req);
+
     static bool CanCreateWorker(napi_env env, WorkerVersion target);
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
@@ -390,6 +409,7 @@ private:
     void HostOnMessageInner();
     void HostOnErrorInner();
     void HostOnMessageErrorInner();
+    void HostOnSyncCallInner();
     void WorkerOnMessageErrorInner();
     void WorkerOnErrorInner(napi_value error);
 
@@ -421,6 +441,14 @@ private:
     void ParentPortRemoveListenerInner(napi_env env, const char* type, napi_ref callback);
     void GetContainerScopeId(napi_env env);
 
+    void AddSyncEventListener(const std::string &eventName, napi_ref listener);
+    void ClearSyncEventListener();
+    void AddSyncCallError(int32_t errCode, napi_value errData = nullptr);
+    void HandleSyncCallError(napi_env env);
+    void ClearSyncCallError(napi_env env);
+    void InitSyncCallStatus(napi_env env);
+    void IncreaseSyncCallId();
+
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
     void DebuggerOnPostTask(std::function<void()>&& task);
@@ -443,11 +471,15 @@ private:
 
     MessageQueue workerMessageQueue_ {};
     MessageQueue hostMessageQueue_ {};
+    std::mutex syncMessageMutex_;
+    MarkedMessageQueue hostSyncEventQueue_ {};
+    MessageQueue workerSyncEventQueue_ {};
     MessageQueue errorQueue_ {};
 
     uv_async_t* workerOnMessageSignal_ = nullptr;
     uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* hostOnErrorSignal_ = nullptr;
+    uv_async_t* hostOnSyncCallSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t ddebuggerOnPostTaskSignal_ {};
     std::function<void()> debuggerTask_;
@@ -467,9 +499,15 @@ private:
 
     std::map<std::string, std::list<WorkerListener*>> eventListeners_ {};
     std::map<std::string, std::list<WorkerListener*>> parentPortEventListeners_ {};
+    std::unordered_map<std::string, napi_ref> syncEventListeners_ {};
+    std::queue<std::pair<int32_t, napi_value>> syncEventErrors_ {};
+    std::atomic<uint32_t> syncCallId_ = 1; // 0: reserved for error check
 
     std::recursive_mutex liveStatusLock_ {};
     std::mutex workerOnmessageMutex_ {};
+
+    std::condition_variable cv_;
+    std::atomic<bool> syncEventSuccess_ = true;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H
