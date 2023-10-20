@@ -229,7 +229,7 @@ bool NapiHelper::StrictEqual(napi_env env, napi_value value, napi_value cmpValue
     return isEqual;
 }
 
-napi_value NapiHelper::GetConstructorName(napi_env env, napi_value object)
+std::string NapiHelper::GetConstructorName(napi_env env, napi_value object)
 {
     while (IsNotUndefined(env, object)) {
         napi_value func = nullptr;
@@ -239,16 +239,16 @@ napi_value NapiHelper::GetConstructorName(napi_env env, napi_value object)
         if (IsNotUndefined(env, func) && isInstanceof) {
             napi_value ctorName = nullptr;
             napi_get_own_property_descriptor(env, func, "name", &ctorName);
-            std::string name = GetString(env, ctorName);
+            std::string name = GetPrintString(env, ctorName);
             if (name.size() > 0) {
-                return ctorName;
+                return name;
             }
         }
         napi_value result = nullptr;
         napi_get_prototype(env, object, &result);
         object = result;
     }
-    return nullptr;
+    return "";
 }
 
 napi_value NapiHelper::CreateObject(napi_env env)
