@@ -50,6 +50,7 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
     }
 
     HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
+    HILOG_INFO("taskpool:: the thread is idle and will be released");
     // when there is no active handle, worker loop will stop automatically.
     ConcurrentHelper::UvHandleClose(worker->performTaskSignal_);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
