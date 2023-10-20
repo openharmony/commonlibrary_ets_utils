@@ -670,7 +670,7 @@ napi_value Worker::SyncCall(napi_env env, napi_callback_info cbinfo)
             "BusinessError 401: Parameter error. The type of 'methodName' must be string");
         return nullptr;
     }
-    if (!NapiHelper::IsNumber(env, args[2])) {
+    if (!NapiHelper::IsNumber(env, args[2])) { // 2: the index of argument "timeLimitation"
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "BusinessError 401: Parameter error. The type of 'timeLimitation' must be number");
         return nullptr;
@@ -714,7 +714,7 @@ napi_value Worker::SyncCall(napi_env env, napi_callback_info cbinfo)
 
     {
         std::unique_lock lock(worker->syncMessageMutex_);
-        if (!worker->cv_.wait_for(lock, std::chrono::milliseconds(timeLimitation), [worker](){
+        if (!worker->cv_.wait_for(lock, std::chrono::milliseconds(timeLimitation), [worker]() {
             return !worker->workerSyncEventQueue_.IsEmpty() || !worker->syncEventSuccess_;
         })) {
             worker->IncreaseSyncCallId();
