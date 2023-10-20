@@ -113,4 +113,23 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     napi_set_named_property(env, thisVar, TRANSFERLIST_STR, args[0]);
     return nullptr;
 }
+
+napi_value Task::IsCanceled(napi_env env, napi_callback_info cbinfo)
+{
+    bool isCanceled = false;
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsTaskPoolThread()) {
+        HILOG_ERROR("taskpool:: call isCanceled not in taskpool thread");
+        return NapiHelper::CreateBooleanValue(env, isCanceled);
+    }
+    // Get taskInfo and query task cancel state
+    void* data = engine->GetCurrentTaskInfo();
+    if (data == nullptr) {
+        HILOG_ERROR("taskpool:: call isCanceled not in Concurrent function");
+    } else {
+        TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
+        isCanceled = taskInfo->isCanceled;
+    }
+    return NapiHelper::CreateBooleanValue(env, isCanceled);
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

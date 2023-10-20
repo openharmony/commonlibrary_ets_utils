@@ -47,8 +47,6 @@ public:
 
     static TaskManager& GetInstance();
 
-    static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
-
     uint32_t GenerateTaskId();
     uint32_t GenerateExecuteId();
     TaskInfo* GetTaskInfo(uint32_t executeId);
