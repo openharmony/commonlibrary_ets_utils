@@ -54,17 +54,31 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("removeAllListener", RemoveAllListener),
         DECLARE_NAPI_FUNCTION("cancelTasks", CancelTask),
     };
+    // for worker.ThreadWorker
     const char threadWorkerName[] = "ThreadWorker";
     napi_value threadWorkerClazz = nullptr;
     napi_define_class(env, threadWorkerName, sizeof(threadWorkerName), Worker::ThreadWorkerConstructor, nullptr,
         sizeof(properties) / sizeof(properties[0]), properties, &threadWorkerClazz);
     napi_set_named_property(env, exports, "ThreadWorker", threadWorkerClazz);
+
+    // for worker.Worker
     const char workerName[] = "Worker";
     napi_value workerClazz = nullptr;
     napi_define_class(env, workerName, sizeof(workerName), Worker::WorkerConstructor, nullptr,
         sizeof(properties) / sizeof(properties[0]), properties, &workerClazz);
     napi_set_named_property(env, exports, "Worker", workerClazz);
 
+    // for worker.LimitedWorker
+    const char limitedWorkerName[] = "RestrictedWorker";
+    napi_value limitedWorkerClazz = nullptr;
+    napi_define_class(env, limitedWorkerName, sizeof(limitedWorkerName), Worker::LimitedWorkerConstructor, nullptr,
+        sizeof(properties) / sizeof(properties[0]), properties, &limitedWorkerClazz);
+    napi_set_named_property(env, exports, "RestrictedWorker", limitedWorkerClazz);
+    return InitPort(env, exports);
+}
+
+napi_value Worker::InitPort(napi_env env, napi_value exports)
+{
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsWorkerThread()) {
         Worker* worker = nullptr;
@@ -108,10 +122,20 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
         } else {
             napi_set_named_property(env, exports, "parentPort", workerPortObj);
         }
-        // register worker parentPort.
+        // register worker Port.
         napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
     }
     return exports;
+}
+
+napi_value Worker::LimitedWorkerConstructor(napi_env env, napi_callback_info cbinfo)
+{
+    if (CanCreateWorker(env, WorkerVersion::NEW)) {
+        return Constructor(env, cbinfo, true);
+    }
+    ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
+        "Using both Worker and LimitedWorker is not supported.");
+    return nullptr;
 }
 
 napi_value Worker::ThreadWorkerConstructor(napi_env env, napi_callback_info cbinfo)
@@ -130,11 +154,11 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
         return Constructor(env, cbinfo);
     }
     ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
-        "Using both Worker and ThreadWorker is not supported.");
+        "Using both Worker and other Workers is not supported.");
     return nullptr;
 }
 
-napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
+napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool limitSign)
 {
     napi_value thisVar = nullptr;
     void* data = nullptr;
@@ -152,6 +176,15 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of Worker 1st param must be string.");
         return nullptr;
     }
+    WorkerParams* workerParams = nullptr;
+    if (argc == 2) {
+        workerParams = CheckWorkerArgs(env, args[1]);
+        if (workerParams == nullptr) {
+            HILOG_ERROR("Worker:: arguments check failed.");
+            return nullptr;
+        }
+    }
+
     Worker* worker = nullptr;
     {
         int maxWorkers = MAX_WORKERS;
@@ -174,49 +207,16 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
         g_workers.push_back(worker);
     }
 
-    if (argc > 1 && NapiHelper::IsObject(env, args[1])) {
-        napi_value nameValue = NapiHelper::GetNameProperty(env, args[1], "name");
-        if (NapiHelper::IsNotUndefined(env, nameValue)) {
-            if (NapiHelper::IsString(env, nameValue)) {
-                char* nameStr = NapiHelper::GetString(env, nameValue);
-                if (nameStr == nullptr) {
-                    ErrorHelper::ThrowError(env,
-                        ErrorHelper::ERR_WORKER_INITIALIZATION, "the name of worker is null.");
-                    return nullptr;
-                }
-                worker->name_ = std::string(nameStr);
-                CloseHelp::DeletePointer(nameStr, true);
-            } else {
-                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of name in worker must be string.");
-                return nullptr;
-            }
+    if (workerParams != nullptr) {
+        if (!workerParams->name_.empty()) {
+            worker->name_ = workerParams->name_;
         }
-
-        napi_value typeValue = NapiHelper::GetNameProperty(env, args[1], "type");
-        if (NapiHelper::IsNotUndefined(env, typeValue)) {
-            if (NapiHelper::IsString(env, typeValue)) {
-                char* typeStr = NapiHelper::GetString(env, typeValue);
-                if (typeStr == nullptr) {
-                    ErrorHelper::ThrowError(env,
-                        ErrorHelper::ERR_WORKER_INITIALIZATION, "the type of worker is null.");
-                    return nullptr;
-                }
-                if (strcmp("classic", typeStr) == 0) {
-                    worker->SetScriptMode(CLASSIC);
-                    CloseHelp::DeletePointer(typeStr, true);
-                } else {
-                    ErrorHelper::ThrowError(env,
-                        ErrorHelper::TYPE_ERROR, "the type must be classic, unsupport others now.");
-                    CloseHelp::DeletePointer(typeStr, true);
-                    CloseHelp::DeletePointer(worker, false);
-                    return nullptr;
-                }
-            } else {
-                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of type must be string.");
-                return nullptr;
-            }
-        }
+        // default classic
+        worker->SetScriptMode(workerParams->type_);
+        CloseHelp::DeletePointer(workerParams, false);
+        workerParams = nullptr;
     }
+    worker->isLimitedWorker_ = limitSign;
 
     // 3. execute in thread
     char* script = NapiHelper::GetString(env, args[0]);
@@ -272,6 +272,55 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo)
         nullptr, &worker->workerRef_);
     worker->StartExecuteInThread(env, script);
     return thisVar;
+}
+
+Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue)
+{
+    WorkerParams* workerParams = nullptr;
+    if (NapiHelper::IsObject(env, argsValue)) {
+        workerParams = new WorkerParams();
+        napi_value nameValue = NapiHelper::GetNameProperty(env, argsValue, "name");
+        if (NapiHelper::IsNotUndefined(env, nameValue)) {
+            if (!NapiHelper::IsString(env, nameValue)) {
+                CloseHelp::DeletePointer(workerParams, false);
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of name in worker must be string.");
+                return nullptr;
+            }
+            char* nameStr = NapiHelper::GetString(env, nameValue);
+            if (nameStr == nullptr) {
+                CloseHelp::DeletePointer(workerParams, false);
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "the name of worker is null.");
+                return nullptr;
+            }
+            workerParams->name_ = std::string(nameStr);
+            CloseHelp::DeletePointer(nameStr, true);
+        }
+        napi_value typeValue = NapiHelper::GetNameProperty(env, argsValue, "type");
+        if (NapiHelper::IsNotUndefined(env, typeValue)) {
+            if (!NapiHelper::IsString(env, typeValue)) {
+                CloseHelp::DeletePointer(workerParams, false);
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of type must be string.");
+                return nullptr;
+            }
+            char* typeStr = NapiHelper::GetString(env, typeValue);
+            if (typeStr == nullptr) {
+                CloseHelp::DeletePointer(workerParams, false);
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "the type of worker is null.");
+                return nullptr;
+            }
+            if (strcmp("classic", typeStr) == 0) {
+                workerParams->type_ = CLASSIC;
+                CloseHelp::DeletePointer(typeStr, true);
+            } else {
+                CloseHelp::DeletePointer(workerParams, false);
+                CloseHelp::DeletePointer(typeStr, true);
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                                        "the type must be classic, unsupport others now.");
+                return nullptr;
+            }
+        }
+    }
+    return workerParams;
 }
 
 napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
@@ -1019,7 +1068,11 @@ void Worker::ExecuteInThread(const void* data)
             return;
         }
         napi_env env = worker->GetHostEnv();
-        napi_create_runtime(env, &workerEnv);
+        if (worker->isLimitedWorker_) {
+            napi_create_limit_runtime(env, &workerEnv);
+        } else {
+            napi_create_runtime(env, &workerEnv);
+        }
         if (workerEnv == nullptr) {
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
             return;
@@ -1028,6 +1081,7 @@ void Worker::ExecuteInThread(const void* data)
         reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
         // for load balance in taskpool
         reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
+
         worker->SetWorkerEnv(workerEnv);
     }
 
