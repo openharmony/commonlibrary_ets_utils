@@ -75,7 +75,6 @@ ohos_shared_library("worker") {
 }
 
 ohos_source_set("worker_static") {
-  testonly = true
   include_dirs = [
     js_concurrent_module_common,
     "$concurrent_module/worker",
