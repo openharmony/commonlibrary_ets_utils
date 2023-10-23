@@ -49,7 +49,7 @@ public:
     static bool HasNameProperty(napi_env env, napi_value obj, const char* name);
     static bool GetBooleanValue(napi_env env, napi_value value);
     static bool StrictEqual(napi_env env, napi_value value, napi_value cmpValue);
-    static napi_value GetConstructorName(napi_env env, napi_value object);
+    static std::string GetConstructorName(napi_env env, napi_value object);
     static napi_value CreateObject(napi_env env);
     static napi_value CreatePromise(napi_env env, napi_deferred* deferred);
     static uint32_t GetArrayLength(napi_env env, napi_value array);

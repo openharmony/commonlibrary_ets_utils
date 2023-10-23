@@ -245,13 +245,7 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
     napi_value* argv = new napi_value[argc];
     Helper::ObjectScope<napi_value> scope(argv, true);
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-    napi_value ctor = nullptr;
-    ctor = Helper::NapiHelper::GetConstructorName(env, argv[0]);
-    std::string ctorVal = Helper::NapiHelper::GetPrintString(env, ctor);
-    if (ctorVal.empty()) {
-        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "ConstructorName must be not null.");
-        return Helper::NapiHelper::GetUndefinedValue(env);
-    }
+    std::string ctorVal = Helper::NapiHelper::GetConstructorName(env, argv[0]);
     // JSON.stringify()
     napi_value globalValue = nullptr;
     napi_get_global(env, &globalValue);
@@ -261,11 +255,11 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
     napi_get_named_property(env, jsonValue, "stringify", &stringifyValue);
     napi_value transValue = nullptr;
     napi_call_function(env, jsonValue, stringifyValue, 1, &argv[0], &transValue);
-    std::string content = Helper::NapiHelper::GetPrintString(env, transValue);
-    if (content.empty()) {
+    if (transValue == nullptr) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "Dir content must not be null.");
         return Helper::NapiHelper::GetUndefinedValue(env);
     }
+    std::string content = Helper::NapiHelper::GetPrintString(env, transValue);
     bool functionFlag = Helper::NapiHelper::IsFunction(env, argv[0]);
     if (!ctorVal.empty() && !functionFlag) {
         HILOG_INFO("%{public}s%{public}s: %{public}s", groupIndent.c_str(), ctorVal.c_str(), content.c_str());
