@@ -36,7 +36,7 @@ Worker::RunningScope::~RunningScope()
 
 Worker* Worker::WorkerConstructor(napi_env env)
 {
-    HITRACE_HELPER_METER_NAME("WorkerConstructor: [Add Thread]");
+    HITRACE_HELPER_METER_NAME("TaskWorkerConstructor: [Add Thread]");
     Worker* worker = new Worker(env);
     worker->StartExecuteInThread();
     return worker;

@@ -116,6 +116,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
 
 napi_value Worker::ThreadWorkerConstructor(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_HELPER_METER_NAME("ThreadWorkerConstructor: [Add Thread]");
     if (CanCreateWorker(env, WorkerVersion::NEW)) {
         return Constructor(env, cbinfo);
     }
@@ -126,6 +127,7 @@ napi_value Worker::ThreadWorkerConstructor(napi_env env, napi_callback_info cbin
 
 napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_HELPER_METER_NAME("WorkerConstructor: [Add Thread]");
     if (CanCreateWorker(env, WorkerVersion::OLD)) {
         return Constructor(env, cbinfo);
     }
