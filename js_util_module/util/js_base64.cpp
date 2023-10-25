@@ -412,6 +412,8 @@ namespace OHOS::Util {
     {
         auto stdEncodeInfo = reinterpret_cast<EncodeInfo*>(buffer);
         void *data = nullptr;
+        napi_handle_scope scope = nullptr;
+        napi_open_handle_scope(env, &scope);
         napi_value arrayBuffer = nullptr;
         size_t bufferSize = stdEncodeInfo->soutputLen;
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
@@ -425,6 +427,7 @@ namespace OHOS::Util {
         napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
         napi_resolve_deferred(env, stdEncodeInfo->deferred, result);
         napi_delete_async_work(env, stdEncodeInfo->worker);
+        napi_close_handle_scope(env, scope);
         delete[] stdEncodeInfo->sinputEncoding;
         delete stdEncodeInfo;
     }
@@ -439,11 +442,14 @@ namespace OHOS::Util {
     void Base64::EndStdEncodeToString(napi_env env, napi_status status, void *buffer)
     {
         auto stdEncodeInfo = reinterpret_cast<EncodeInfo*>(buffer);
+        napi_handle_scope scope = nullptr;
+        napi_open_handle_scope(env, &scope);
         const char *encString = reinterpret_cast<const char*>(stdEncodeInfo->sinputEncoding);
         napi_value resultStr = nullptr;
         napi_create_string_utf8(env, encString, strlen(encString), &resultStr);
         napi_resolve_deferred(env, stdEncodeInfo->deferred, resultStr);
         napi_delete_async_work(env, stdEncodeInfo->worker);
+        napi_close_handle_scope(env, scope);
         delete[] stdEncodeInfo->sinputEncoding;
         delete stdEncodeInfo;
     }
@@ -597,6 +603,8 @@ namespace OHOS::Util {
     {
         auto stdDecodeInfo = reinterpret_cast<DecodeInfo*>(buffer);
         void *data = nullptr;
+        napi_handle_scope scope = nullptr;
+        napi_open_handle_scope(env, &scope);
         napi_value arrayBuffer = nullptr;
         size_t bufferSize = stdDecodeInfo->decodeOutLen;
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
@@ -610,6 +618,7 @@ namespace OHOS::Util {
         napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
         napi_resolve_deferred(env, stdDecodeInfo->deferred, result);
         napi_delete_async_work(env, stdDecodeInfo->worker);
+        napi_close_handle_scope(env, scope);
         delete[] stdDecodeInfo->sinputDecoding;
         delete stdDecodeInfo;
     }
