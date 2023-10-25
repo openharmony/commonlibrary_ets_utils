@@ -100,7 +100,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest002, testing::ext::TestSize.Level0)
     ConvertXml *convertXml = new ConvertXml();
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
     napi_value jsObj = convertXml->Convert(env, xmlStr);
-    
+
     napi_value element = nullptr;
     napi_value elements = nullptr;
     napi_value nameVal = nullptr;
@@ -306,7 +306,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest002, testing::ext::TestSize.Level0)
     napi_create_object(env, &object);
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
-    
+
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
@@ -327,7 +327,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
     napi_create_object(env, &object);
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
-    
+
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
@@ -366,7 +366,7 @@ HWTEST_F(NativeEngineTest, ConvertTest002, testing::ext::TestSize.Level0)
     napi_create_object(env, &object);
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
-    
+
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
@@ -387,7 +387,7 @@ HWTEST_F(NativeEngineTest, ConvertTest003, testing::ext::TestSize.Level0)
     napi_create_object(env, &object);
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
-    
+
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
@@ -497,6 +497,7 @@ HWTEST_F(NativeEngineTest, GetPrevNodeListTest001, testing::ext::TestSize.Level1
     curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
     curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
     CxmlTest::GetPrevNodeList(env, curNode);
+    ASSERT_TRUE(curNode != nullptr);
     delete curNode;
     delete curNode1;
 }
