@@ -128,11 +128,11 @@ namespace OHOS::Xml {
         void Replace(std::string &str, const std::string src, const std::string dst) const;
         void DealCDataInfo(bool bCData, xmlNodePtr &curNode) const;
 
-        SpaceType spaceType_;
-        int32_t iSpace_;
-        std::string strSpace_;
+        SpaceType spaceType_ {SpaceType::T_INIT};
+        int32_t iSpace_ {};
+        std::string strSpace_ {};
         Options options_;
-        std::vector<napi_value> prevObj_;
+        std::vector<napi_value> prevObj_ {};
         XmlInfo xmlInfo_;
     };
 } // namespace OHOS::Xml

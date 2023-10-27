@@ -43,7 +43,7 @@ public:
         void Run() override;
 
     private:
-        const TaskRunner* runner_;
+        const TaskRunner* runner_ {nullptr};
     };
 
     explicit TaskRunner(TaskStartCallback callback);

@@ -50,14 +50,14 @@ struct TaskInfo {
     napi_value serializationFunction = nullptr;
     napi_value serializationArguments = nullptr;
     uv_async_t* onResultSignal = nullptr;
-    uint32_t taskId;
-    uint32_t executeId;
-    uint32_t groupExecuteId = 0; // 0 for task outside taskgroup
-    bool success = true;
-    bool isCanceled = false;
-    void* worker = nullptr;
-    Priority priority = Priority::DEFAULT;
-    std::string funcName;
+    uint32_t taskId {};
+    uint32_t executeId {};
+    uint32_t groupExecuteId {}; // 0 for task outside taskgroup
+    bool success {true};
+    bool isCanceled {};
+    void* worker {nullptr};
+    Priority priority {Priority::DEFAULT};
+    std::string funcName {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H

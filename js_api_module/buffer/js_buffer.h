@@ -83,11 +83,11 @@ private:
     void WriteStringLoop(std::u16string value, unsigned int offset, unsigned int end);
     std::string GetString(std::string value, EncodingType encodingType);
 
-    uint8_t *raw_ = nullptr;
-    uint8_t data_[4] = { 0 };
-    unsigned int byteOffset_ = 0;
-    unsigned int length_ = 0;
-    bool needRelease_ = true;
+    uint8_t *raw_ {nullptr};
+    uint8_t data_[4] = {0};
+    unsigned int byteOffset_ {};
+    unsigned int length_ {};
+    bool needRelease_ {true};
 };
 } // namespace OHOS::Buffer
 #endif // BUFFER_JS_BUFFER_H

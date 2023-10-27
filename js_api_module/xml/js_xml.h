@@ -145,18 +145,18 @@ namespace OHOS::xml {
         friend class XmlTest;
 
     private:
-        char *pStart_;
-        size_t iPos_ = 0;
-        size_t iLength_;
-        std::string xmlSerializerError_;
-        std::string encoding_;
-        size_t depth_ = 0;
-        std::string type;
+        char *pStart_ {nullptr};
+        size_t iPos_ {};
+        size_t iLength_ {};
+        std::string xmlSerializerError_ {};
+        std::string encoding_ {};
+        size_t depth_ {};
+        std::string type {};
         std::vector<std::string> elementStack = { "", "", ""};
         std::map<int, std::map<int, std::string>> multNsp;
-        int CurNspNum = 0;
-        std::string out_;
-        bool isHasDecl = false;
+        int CurNspNum {};
+        std::string out_ {};
+        bool isHasDecl {};
     };
 
     enum class TagEnum {
@@ -375,24 +375,24 @@ namespace OHOS::xml {
         void DealWhiteSpace(unsigned char c);
         friend class XmlTest;
     private:
-        bool bDoctype_ = false;
-        bool bIgnoreNS_ = false;
-        bool bStartDoc_ = true;
-        napi_value tagFunc_ = nullptr;
-        napi_value attrFunc_ = nullptr;
-        napi_value tokenFunc_ = nullptr;
+        bool bDoctype_ {};
+        bool bIgnoreNS_ {};
+        bool bStartDoc_ {true};
+        napi_value tagFunc_ {nullptr};
+        napi_value attrFunc_ {nullptr};
+        napi_value tokenFunc_ {nullptr};
         TagText tagText_;
-        std::string strXml_ = "";
-        std::string version_ = "";
-        std::string encoding_ = "";
-        std::string prefix_ = "";
-        std::string namespace_ = "";
-        std::string name_ = "";
-        std::string text_ = "";
-        std::string sysInfo_ = "";
-        std::string pubInfo_ = "";
-        std::string keyInfo_ = "";
-        std::string xmlPullParserError_ = "";
+        std::string strXml_ {};
+        std::string version_ {};
+        std::string encoding_ {};
+        std::string prefix_ {};
+        std::string namespace_ {};
+        std::string name_ {};
+        std::string text_ {};
+        std::string sysInfo_ {};
+        std::string pubInfo_ {};
+        std::string keyInfo_ {};
+        std::string xmlPullParserError_ {};
         std::vector<size_t> nspCounts_;
         std::vector<std::string> nspStack_;
         std::vector<std::string> elementStack_;
@@ -402,21 +402,21 @@ namespace OHOS::xml {
         std::map<std::string, std::string> DEFAULT_ENTITIES = {
             {"lt;", "<"}, {"gt;", ">"}, {"amp;", "&"}, {"apos;", "'"}, {"quot;", "\""}
         };
-        size_t position_ = 0;
-        size_t depth = 0;
-        size_t max_ = 0;
-        size_t bufferStartLine_ = 0;
-        size_t bufferStartColumn_ = 0;
-        size_t attriCount_ = 0;
+        size_t position_ {};
+        size_t depth {};
+        size_t max_ {};
+        size_t bufferStartLine_ {};
+        size_t bufferStartColumn_ {};
+        size_t attriCount_ {};
         TagEnum type = TagEnum::START_DOCUMENT;
-        bool bWhitespace_ = false;
+        bool bWhitespace_ {};
         SrcLinkList* srcLinkList_ = new SrcLinkList;
-        bool bEndFlag_ = false;
-        bool bAlone_ = false;
-        bool bUnresolved_ = false;
-        bool relaxed = false;
-        bool bKeepNsAttri = false;
-        bool bDocDecl = false;
+        bool bEndFlag_ {};
+        bool bAlone_ {};
+        bool bUnresolved_ {};
+        bool relaxed {};
+        bool bKeepNsAttri {};
+        bool bDocDecl {};
     };
 } // namespace OHOS::Xml
 #endif // XML_JS_XML_H

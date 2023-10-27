@@ -162,8 +162,9 @@ public:
         napi_value timeStamp = nullptr;
         napi_create_string_utf8(env, current.c_str(), NAPI_AUTO_LENGTH, &timeStamp);
         napi_set_named_property(env, obj, "timeStamp", timeStamp);
-
-        std::string rawStack = NapiHelper::GetString(env, stack);
+        char* stackValue = NapiHelper::GetString(env, stack);
+        std::string rawStack = std::string(stackValue);
+        delete[] stackValue;
         std::vector<std::string> result = SplitErrorFileInfo(rawStack, ':', 2); // 2 : the last two :
         if (result.size() == 3) { // 3 : the rawStack is divided into three parts by last two :
             // add filename

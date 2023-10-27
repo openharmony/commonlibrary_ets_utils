@@ -144,9 +144,9 @@ namespace OHOS::Uri {
 
     private:
         UriData uriData_;
-        std::string data_;
-        std::string inputUri_;
-        std::string errStr_;
+        std::string data_ {};
+        std::string inputUri_ {};
+        std::string errStr_ {};
     };
 } // namespace OHOS::Uri
 #endif // URI_JS_URI_H

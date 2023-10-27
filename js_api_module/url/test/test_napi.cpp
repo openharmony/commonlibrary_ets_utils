@@ -660,7 +660,7 @@ HWTEST_F(NativeEngineTest, testUrlSetHost004, testing::ext::TestSize.Level0)
     napi_value result = url.GetOnOrOff(env);
     bool value = false;
     napi_get_value_bool(env, result, &value);
-    ASSERT_TRUE(value);;
+    ASSERT_TRUE(value);
 }
 
 HWTEST_F(NativeEngineTest, testUrlSetHref001, testing::ext::TestSize.Level0)
