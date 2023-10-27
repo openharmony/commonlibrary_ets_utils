@@ -27,14 +27,14 @@
 
 namespace OHOS::JsSysModule {
 struct TimerCallbackInfo {
-    napi_env env_;
-    uint32_t tId_;
-    int32_t timeout_;
-    napi_ref callback_;
-    bool repeat_;
-    uv_timer_t* timeReq_ = nullptr;
-    size_t argc_;
-    napi_ref* argv_;
+    napi_env env_ {nullptr};
+    uint32_t tId_ {};
+    int32_t timeout_ {};
+    napi_ref callback_ {};
+    bool repeat_ {};
+    uv_timer_t* timeReq_ {nullptr};
+    size_t argc_ {};
+    napi_ref* argv_ {nullptr};
 
     TimerCallbackInfo(napi_env env, uint32_t tId, int32_t timeout, napi_ref callback,
                      bool repeat, size_t argc, napi_ref* argv)

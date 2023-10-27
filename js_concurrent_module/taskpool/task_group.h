@@ -40,9 +40,9 @@ private:
 
 struct GroupInfo {
     napi_deferred deferred = nullptr;
-    uint32_t groupId = 0;
-    uint32_t taskNum = 0;
-    uint32_t finishedTask = 0;
+    uint32_t groupId {};
+    uint32_t taskNum {};
+    uint32_t finishedTask {};
     std::list<uint32_t> executeIds {};
     napi_ref resArr = nullptr;
 };

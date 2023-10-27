@@ -23,29 +23,29 @@
 #include "napi/native_node_api.h"
 namespace OHOS::JsSysModule::Process {
     struct WaitInfo {
-        napi_async_work worker = nullptr;
-        napi_deferred deferred = nullptr;
-        int status = 0;
+        napi_async_work worker {nullptr};
+        napi_deferred deferred {nullptr};
+        int status {0};
     };
 
     struct StdInfo {
-        napi_async_work worker = nullptr;
-        napi_deferred deferred = nullptr;
-        napi_value promise = nullptr;
-        std::string stdData = "";
-        bool *isNeedRun = nullptr;
-        int64_t maxBuffSize;
-        int fd = 0;
-        int pid = 0;
+        napi_async_work worker {nullptr};
+        napi_deferred deferred {nullptr};
+        napi_value promise {nullptr};
+        std::string stdData {};
+        bool *isNeedRun {nullptr};
+        int64_t maxBuffSize {};
+        int fd {};
+        int pid {};
     };
 
     struct OptionsInfo {
-        napi_async_work worker = nullptr;
-        bool *isNeedRun = nullptr;
-        int32_t timeout = 0;
-        int32_t killSignal = 0;
-        int64_t maxBuffer = 0;
-        pid_t pid = 0;
+        napi_async_work worker {nullptr};
+        bool *isNeedRun {nullptr};
+        int32_t timeout {};
+        int32_t killSignal {};
+        int64_t maxBuffer {};
+        pid_t pid {};
     };
 
     class ChildProcess {
@@ -149,18 +149,18 @@ namespace OHOS::JsSysModule::Process {
         int GetValidSignal(napi_env env, const napi_value signo);
         void CreateWorker(napi_env env);
 
-        OptionsInfo* optionsInfo_ = nullptr;
-        StdInfo* stdOutInfo_ = nullptr;
-        StdInfo* stdErrInfo_ = nullptr;
+        OptionsInfo* optionsInfo_ {nullptr};
+        StdInfo* stdOutInfo_ {nullptr};
+        StdInfo* stdErrInfo_ {nullptr};
 
-        int exitCode_ = 0;
-        int stdOutFd_[2] = {0};
-        int stdErrFd_[2] = {0};
-        int ppid_ = 0;
+        int exitCode_ {};
+        int stdOutFd_[2] {};
+        int stdErrFd_[2] {};
+        int ppid_ {};
 
-        bool isNeedRun_ = true;
-        bool killed_ = false;
-        bool isWait_ = true;
+        bool isNeedRun_ {true};
+        bool killed_ {};
+        bool isWait_ {true};
     };
 } // namespace OHOS::JsSysModule::Process
 #endif // PROCESS_JS_CHILDPROCESS_H

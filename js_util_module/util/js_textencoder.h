@@ -60,7 +60,7 @@ namespace OHOS::Util {
         napi_value EncodeInto(napi_env env, napi_value src, napi_value dest) const;
 
     private:
-        std::string encoding_;
+        std::string encoding_ {};
     };
 }
 #endif // UTIL_JS_TEXTENCODER_H

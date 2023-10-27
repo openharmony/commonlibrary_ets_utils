@@ -160,8 +160,8 @@ namespace OHOS::Util {
         void SetBomFlag(const UChar *arr, const UErrorCode codeFlag, const DecodeArr decArr,
                         size_t& rstLen, bool& bomFlag);
         void FreedMemory(UChar *pData);
-        uint32_t label_;
-        std::string encStr_;
+        uint32_t label_ {};
+        std::string encStr_ {};
         TransformToolPointer tranTool_;
     };
 }

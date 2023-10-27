@@ -1817,7 +1817,7 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest003, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[26] = {66, 97, 115, 101, 54, 52, 32, 69, 110,
-                              99, 111, 100, 105, 110, 103, 32, 105, 110, 32, 78, 111, 100, 101, 46, 106, 115};;
+                               99, 111, 100, 105, 110, 103, 32, 105, 110, 32, 78, 111, 100, 101, 46, 106, 115};
     napi_value arrayBuffer = nullptr;
     void* data = nullptr;
     size_t arrayBufferSize = 26;

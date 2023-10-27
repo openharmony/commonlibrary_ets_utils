@@ -38,8 +38,8 @@ public:
     unsigned int GetLength();
     void ReadBytes(uint8_t *data, int length);
 private:
-    uint8_t *raw_ = nullptr;
-    unsigned int length_ = 0;
+    uint8_t *raw_ {nullptr};
+    unsigned int length_ {};
 };
 } // namespace OHOS::buffer
 #endif // BLOB_JS_BLOB_H
