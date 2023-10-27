@@ -67,10 +67,13 @@ ohos_shared_library("taskpool") {
 
   deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
 
-  external_deps = [
-    "napi:ace_napi",
-    "qos_manager:qos",
-  ]
+  external_deps = [ "napi:ace_napi" ]
+
+  if (is_ohos && is_standard_system && !is_cross_platform_build &&
+      defined(global_parts_info) && defined(global_parts_info.qos_manager)) {
+    defines += [ "ENABLE_QOS" ]
+    external_deps += [ "qos_manager:qos" ]
+  }
 
   if (is_linux && current_toolchain == host_toolchain) {
     external_deps += [ "innerkits:libhilog_linux" ]
@@ -129,8 +132,12 @@ ohos_source_set("taskpool_static") {
     external_deps += [
       "hitrace:hitrace_meter",
       "napi:ace_napi",
-      "qos_manager:qos",
     ]
+    if (is_ohos && is_standard_system && defined(global_parts_info) &&
+        defined(global_parts_info.qos_manager)) {
+      defines += [ "ENABLE_QOS" ]
+      external_deps += [ "qos_manager:qos" ]
+    }
   }
 
   subsystem_name = "commonlibrary"

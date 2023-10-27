@@ -17,20 +17,29 @@
 
 #include <map>
 
+#ifdef ENABLE_QOS
 #include "qos.h"
+#endif
 #include "utils/log.h"
 
 namespace Commonlibrary::Platform {
-using namespace OHOS::QOS;
 
+#ifdef ENABLE_QOS
 static const std::map<Priority, QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
-    {Priority::LOW, QosLevel::QOS_UTILITY},
-    {Priority::DEFAULT, QosLevel::QOS_DEFAULT},
-    {Priority::HIGH, QosLevel::QOS_USER_INITIATED}
+    {Priority::LOW, OHOS::QOS::QosLevel::QOS_UTILITY},
+    {Priority::DEFAULT, OHOS::QOS::QosLevel::QOS_DEFAULT},
+    {Priority::HIGH, OHOS::QOS::QosLevel::QOS_USER_INITIATED}
 };
 
-int SetWorkerPriority(Priority priority)
+int SetWorkerPriority([[maybe_unused]] Priority priority)
 {
     return SetThreadQos(WORKERPRIORITY_QOSLEVEL_MAP.at(priority));
 }
+#else
+int SetWorkerPriority(Priority priority)
+{
+    HILOG_DEBUG("SetWorkerPriority:: not supported currently.");
+    return 0;
+}
+#endif
 } // namespace Commonlibrary::Platform
