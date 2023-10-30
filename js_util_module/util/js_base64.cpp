@@ -414,6 +414,9 @@ namespace OHOS::Util {
         void *data = nullptr;
         napi_handle_scope scope = nullptr;
         napi_open_handle_scope(env, &scope);
+        if (scope == nullptr) {
+            return;
+        }
         napi_value arrayBuffer = nullptr;
         size_t bufferSize = stdEncodeInfo->soutputLen;
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
@@ -444,6 +447,9 @@ namespace OHOS::Util {
         auto stdEncodeInfo = reinterpret_cast<EncodeInfo*>(buffer);
         napi_handle_scope scope = nullptr;
         napi_open_handle_scope(env, &scope);
+        if (scope == nullptr) {
+            return;
+        }
         const char *encString = reinterpret_cast<const char*>(stdEncodeInfo->sinputEncoding);
         napi_value resultStr = nullptr;
         napi_create_string_utf8(env, encString, strlen(encString), &resultStr);
@@ -605,6 +611,9 @@ namespace OHOS::Util {
         void *data = nullptr;
         napi_handle_scope scope = nullptr;
         napi_open_handle_scope(env, &scope);
+        if (scope == nullptr) {
+            return;
+        }
         napi_value arrayBuffer = nullptr;
         size_t bufferSize = stdDecodeInfo->decodeOutLen;
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
