@@ -334,8 +334,7 @@ void Worker::PerformTask(const uv_async_t* req)
     }
 
     napi_value result;
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    napi_call_function(env, undefined, func, argsNum, argsArray, &result);
+    napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
     // if the worker is blocked, just skip
     if (LIKELY(worker->state_ != WorkerState::BLOCKED)) {
         uint64_t duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;

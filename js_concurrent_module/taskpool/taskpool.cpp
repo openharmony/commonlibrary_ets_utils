@@ -31,12 +31,12 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value taskClass = nullptr;
     napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor, nullptr, 0, nullptr, &taskClass);
+    napi_value isCanceledFunc = nullptr;
+    napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, Task::IsCanceled, NULL, &isCanceledFunc);
+    napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
     napi_value taskGroupClass = nullptr;
     napi_define_class(env, "TaskGroup", NAPI_AUTO_LENGTH, TaskGroup::TaskGroupConstructor, nullptr, 0, nullptr,
                       &taskGroupClass);
-    napi_value isCanceledFunc;
-    napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, TaskManager::IsCanceled, NULL, &isCanceledFunc);
-    napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);

@@ -33,6 +33,7 @@ public:
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value SetTransferList(napi_env env, napi_callback_info cbinfo);
     static void CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc);
+    static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
 
 private:
     Task() = delete;
