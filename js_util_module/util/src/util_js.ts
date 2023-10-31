@@ -1065,6 +1065,7 @@ class LRUCache {
     }
     this.cache.set(key, value);
     this.length = this.cache.size;
+    former = this.cache.get(key);
     return former;
   }
 
