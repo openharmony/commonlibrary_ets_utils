@@ -554,7 +554,9 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
     taskInfo->serializationFunction = serializationFunction;
     taskInfo->serializationArguments = serializationArguments;
     taskInfo->taskId = taskId;
-    taskInfo->funcName = NapiHelper::GetString(env, funcName);
+    char* strValue = NapiHelper::GetString(env, funcName);
+    taskInfo->funcName = std::string(strValue);
+    delete[] strValue;
     taskInfo->onResultSignal = new uv_async_t;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_async_init(loop, taskInfo->onResultSignal, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
