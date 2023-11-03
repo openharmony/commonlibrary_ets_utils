@@ -111,7 +111,6 @@ private:
     void TryExpand();
     void NotifyShrink(uint32_t targetNum);
     uint32_t ComputeSuitableThreadNum();
-    static void RestartTimer(const uv_async_t* req);
     static void NotifyExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
@@ -140,7 +139,6 @@ private:
     uv_loop_t* loop_ = nullptr;
     uv_timer_t* timer_ = nullptr;
     uv_async_t* expandHandle_ = nullptr;
-    uv_async_t* notifyRestartTimer_ = nullptr;
     std::atomic<bool> suspend_ = false;
     std::atomic<uint32_t> retryCount_ = 0;
     std::atomic<uint32_t> expandingCount_ = 0;

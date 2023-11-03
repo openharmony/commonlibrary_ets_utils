@@ -32,6 +32,7 @@ Worker::RunningScope::~RunningScope()
         napi_close_handle_scope(worker_->workerEnv_, scope_);
     }
     worker_->NotifyIdle();
+    worker_->idleState_ = true;
 }
 
 Worker* Worker::WorkerConstructor(napi_env env)
@@ -208,7 +209,6 @@ void Worker::ReleaseWorkerThreadContent()
     }
 
     Timer::ClearEnvironmentTimer(workerEnv_);
-
     // 2. delete NativeEngine created in worker thread
     if (!workerEngine->CallOffWorkerFunc(workerEngine)) {
         HILOG_ERROR("worker:: CallOffWorkerFunc error");
@@ -238,7 +238,8 @@ void Worker::NotifyWorkerCreated()
 
 void Worker::NotifyTaskFinished()
 {
-    if (--runningCount_ != 0) {
+    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    if (--runningCount_ != 0 || workerEngine->HasPendingJob()) {
         // the worker state is still RUNNING and the start time will be updated
         startTime_ = ConcurrentHelper::GetMilliseconds();
     } else {
