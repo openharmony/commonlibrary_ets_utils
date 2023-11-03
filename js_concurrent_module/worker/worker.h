@@ -84,6 +84,11 @@ public:
         napi_ref ref_ {nullptr};
     };
 
+    struct WorkerParams {
+        std::string name_ {};
+        ScriptMode type_ {CLASSIC};
+    };
+
     /**
     * Creates a worker instance.
     *
@@ -235,17 +240,19 @@ public:
      * @param env NAPI environment parameters.
      * @param cbinfo The callback information of the js layer.
      */
+    static napi_value LimitedWorkerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value ThreadWorkerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value WorkerConstructor(napi_env env, napi_callback_info cbinfo);
-    static napi_value Constructor(napi_env env, napi_callback_info cbinfo);
+    static napi_value Constructor(napi_env env, napi_callback_info cbinfo, bool limitSign = false);
 
     /**
-     * Initialize the worker.
+     * Initialize the worker and port.
      *
      * @param env NAPI environment parameters.
      * @param cbinfo The callback information of the js layer.
      */
     static napi_value InitWorker(napi_env env, napi_value exports);
+    static napi_value InitPort(napi_env env, napi_value exports);
 
     /**
      * Cancel the task.
@@ -314,6 +321,8 @@ public:
     static void HostOnSyncCall(const uv_async_t* req);
 
     static bool CanCreateWorker(napi_env env, WorkerVersion target);
+
+    static WorkerParams* CheckWorkerArgs(napi_env env, napi_value argsValue);
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
 
@@ -467,6 +476,7 @@ private:
     std::string script_ {};
     std::string name_ {};
     ScriptMode scriptMode_ {CLASSIC};
+    bool isLimitedWorker_ {false};
     int32_t scopeId_ {-1};
 
     MessageQueue workerMessageQueue_ {};
