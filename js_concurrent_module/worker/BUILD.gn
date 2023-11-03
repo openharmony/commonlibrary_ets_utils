@@ -107,7 +107,7 @@ ohos_source_set("worker_static") {
     ]
   }
 
-  if (is_cross_platform_build) {
+  if (is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",

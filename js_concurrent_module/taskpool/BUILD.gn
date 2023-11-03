@@ -36,7 +36,7 @@ if (is_ohos) {
   concurrent_platform_sources += [ "$platform_root/default/qos_helper.cpp" ]
 }
 
-if (target_os == "ios" || (!is_cross_platform_build && is_mac)) {
+if (target_os == "ios" || (!is_arkui_x && is_mac)) {
   concurrent_platform_sources += [ "$platform_root/ios/process_helper.cpp" ]
 } else {
   concurrent_platform_sources += [ "$platform_root/default/process_helper.cpp" ]
@@ -69,7 +69,7 @@ ohos_shared_library("taskpool") {
 
   external_deps = [ "napi:ace_napi" ]
 
-  if (is_ohos && is_standard_system && !is_cross_platform_build &&
+  if (is_ohos && is_standard_system && !is_arkui_x &&
       defined(global_parts_info) && defined(global_parts_info.qos_manager)) {
     defines += [ "ENABLE_QOS" ]
     external_deps += [ "qos_manager:qos" ]
@@ -109,7 +109,7 @@ ohos_source_set("taskpool_static") {
 
   external_deps = [ "hilog:libhilog" ]
 
-  if (is_cross_platform_build) {
+  if (is_arkui_x) {
     sources -= concurrent_helper_sources
     deps -= [ "${ets_util_path}/js_sys_module/timer:timer" ]
     include_dirs += [

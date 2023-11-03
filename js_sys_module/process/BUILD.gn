@@ -21,7 +21,7 @@ process_sources = [
   "native_module_process.cpp",
 ]
 
-if (target_os == "ios" || (!is_cross_platform_build && host_os == "mac")) {
+if (target_os == "ios" || (!is_arkui_x && host_os == "mac")) {
   process_sources += [ "$platform_root/ios/process_helper.cpp" ]
 } else {
   process_sources += [ "$platform_root/default/process_helper.cpp" ]
@@ -43,7 +43,7 @@ ohos_source_set("process_static") {
   sources = process_sources
 
   deps = []
-  if (is_cross_platform_build) {
+  if (is_arkui_x) {
     include_dirs += [
       "//third_party/icu/icu4c/source/common",
       "//third_party/node/src",
