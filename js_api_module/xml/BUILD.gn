@@ -98,7 +98,7 @@ ohos_source_set("xml_static") {
     ":gen_obj_src_xml_js",
   ]
 
-  if (is_cross_platform_build) {
+  if (is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",

@@ -37,11 +37,11 @@ ohos_shared_library("console") {
     ]
   } else if (is_mingw) {
     deps += [ "$hilog_windows" ]
-  } else if (is_mac && !is_cross_platform_build) {
+  } else if (is_mac && !is_arkui_x) {
     deps += [ "$hilog_mac" ]
   } else if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]
-  } else if (is_cross_platform_build) {
+  } else if (is_arkui_x) {
     if (target_os == "ios") {
       deps += [ "$hilog_ios" ]
     } else if (target_os == "android") {
@@ -73,7 +73,7 @@ ohos_source_set("console_static") {
 
   defines = []
 
-  if (is_cross_platform_build) {
+  if (is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",

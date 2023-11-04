@@ -101,7 +101,7 @@ ohos_source_set("convertxml_static") {
     "//third_party/libxml2:static_libxml2",
   ]
 
-  if (defined(is_cross_platform_build) && is_cross_platform_build) {
+  if (defined(is_arkui_x) && is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
