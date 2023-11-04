@@ -180,7 +180,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         return nullptr;
     }
     WorkerParams* workerParams = nullptr;
-    if (argc == 2) {
+    if (argc == 2) {  // 2: max args number is 2
         workerParams = CheckWorkerArgs(env, args[1]);
         if (workerParams == nullptr) {
             HILOG_ERROR("Worker:: arguments check failed.");
