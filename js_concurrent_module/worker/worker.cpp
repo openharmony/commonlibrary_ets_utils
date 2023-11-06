@@ -1505,7 +1505,13 @@ void Worker::HostOnErrorInner()
             napi_call_function(hostEnv_, NapiHelper::GetGlobalObject(hostEnv_), callback, 1, argv, &callbackResult);
         }
         // handle listeners
-        HandleEventListeners(hostEnv_, obj, 1, argv, "error");
+        bool isHandle = HandleEventListeners(hostEnv_, obj, 1, argv, "error");
+        if (!isCallable && !isHandle) {
+            napi_value businessError = ErrorHelper::ObjectToError(hostEnv_, result);
+            napi_throw(hostEnv_, businessError);
+            HandleHostException();
+            return;
+        }
         HandleHostException();
     }
     if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
@@ -1671,13 +1677,13 @@ void Worker::WorkerOnMessageInner()
     napi_close_handle_scope(workerEnv_, scope);
 }
 
-void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type)
+bool Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type)
 {
     std::string listener(type);
     auto iter = eventListeners_.find(listener);
     if (iter == eventListeners_.end()) {
         HILOG_DEBUG("worker:: there is no listener for type %{public}s in host thread", type);
-        return;
+        return false;
     }
 
     std::list<WorkerListener*>& listeners = iter->second;
@@ -1687,7 +1693,7 @@ void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, co
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
         if (!NapiHelper::IsCallable(env, callbackObj)) {
             HILOG_DEBUG("worker:: host thread listener %{public}s is not callable", type);
-            return;
+            return false;
         }
         napi_value callbackResult = nullptr;
         napi_call_function(env, NapiHelper::GetGlobalObject(env), callbackObj, argc, argv, &callbackResult);
@@ -1696,6 +1702,7 @@ void Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, co
             CloseHelp::DeletePointer(data, false);
         }
     }
+    return true;
 }
 
 void Worker::HandleHostException() const
