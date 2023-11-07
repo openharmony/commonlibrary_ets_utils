@@ -22,6 +22,9 @@
 
 #include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
 #include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "core/common/container_scope.h"
+#endif
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
@@ -35,6 +38,9 @@ struct TimerCallbackInfo {
     uv_timer_t* timeReq_ {nullptr};
     size_t argc_ {};
     napi_ref* argv_ {nullptr};
+#ifdef ENABLE_CONTAINER_SCOPE
+    int32_t containerScopeId_ {-1};
+#endif
 
     TimerCallbackInfo(napi_env env, uint32_t tId, int32_t timeout, napi_ref callback,
                      bool repeat, size_t argc, napi_ref* argv)

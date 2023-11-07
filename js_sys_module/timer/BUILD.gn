@@ -27,7 +27,10 @@ ohos_shared_library("timer") {
 
   deps = []
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "napi:ace_container_scope",
+    "napi:ace_napi",
+  ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps += [ "$hilog_linux" ]
@@ -89,7 +92,10 @@ ohos_source_set("timer_static") {
       defines += [ "IOS_PLATFORM" ]
     }
   } else {
-    deps += [ "$napi_root:ace_napi" ]
+    deps += [
+      "$napi_root:ace_container_scope_static",
+      "$napi_root:ace_napi",
+    ]
   }
 
   subsystem_name = "commonlibrary"
