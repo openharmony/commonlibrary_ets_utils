@@ -73,7 +73,7 @@ ohos_source_set("timer_static") {
 
   configs = [ "$napi_root:ace_napi_config" ]
 
-  if (is_cross_platform_build) {
+  if (is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
