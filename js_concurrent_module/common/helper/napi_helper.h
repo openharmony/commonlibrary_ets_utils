@@ -32,6 +32,8 @@ public:
     static bool IsNumber(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_ref value);
+    static bool IsAsyncFunction(napi_env env, napi_value value);
+    static bool IsGeneratorFunction(napi_env env, napi_value value);
     static size_t GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo);
     static napi_value GetNamePropertyInParentPort(napi_env env, napi_ref parentPort, const char* name);
     static void SetNamePropertyInGlobal(napi_env env, const char* name, napi_value value);
