@@ -194,6 +194,17 @@ public:
         return obj;
     }
 
+    static napi_value ObjectToError(napi_env env, napi_value error)
+    {
+        napi_value message = NapiHelper::GetNameProperty(env, error, "message");
+        napi_value backtrace = NapiHelper::GetNameProperty(env, error, "backtrace");
+        napi_value businessError = nullptr;
+        napi_create_error(env, nullptr, message, &businessError);
+        napi_set_named_property(env, businessError, "stack", backtrace);
+        napi_set_named_property(env, businessError, "name", message);
+        return businessError;
+    }
+
     static const int32_t TYPE_ERROR = 401; // 401 : the parameter type is incorrect
     static const int32_t ERR_WORKER_INITIALIZATION = 10200003; // 10200003 : worker initialization failure
     static const int32_t ERR_WORKER_NOT_RUNNING = 10200004; // 10200004 : worker instance is not running

@@ -427,7 +427,7 @@ private:
     bool CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch);
     void CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const;
 
-    void HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type);
+    bool HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type);
     void ParentPortHandleEventListeners(napi_env env, napi_value recv, size_t argc,
                                         const napi_value* argv, const char* type, bool tryCatch);
     void TerminateInner();
