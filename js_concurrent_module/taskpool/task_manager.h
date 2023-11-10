@@ -153,6 +153,7 @@ private:
     std::mutex taskQueuesMutex_;
 
     std::atomic<bool> isInitialized_ = false;
+    bool enableShrink_ = false;
 
     friend class TaskGroupManager;
 };
