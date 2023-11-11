@@ -259,7 +259,7 @@ void TaskManager::TryTriggerExpand()
 void TaskManager::NotifyShrink(uint32_t targetNum)
 {
     uint32_t workerCount = GetThreadNum();
-    if (workerCount > MIN_THREADS && workerCount > targetNum) {
+    if (enableShrink_ && workerCount > MIN_THREADS && workerCount > targetNum) {
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
         uint32_t maxNum = std::max(MIN_THREADS, targetNum);
         uint32_t step = std::min(workerCount - maxNum, STEP_SIZE);
@@ -278,16 +278,14 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
             }
         }
     }
-
     // remove all timeout workers
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     for (auto iter = timeoutWorkers_.begin(); iter != timeoutWorkers_.end();) {
         uv_async_send((*iter)->clearWorkerSignal_);
         timeoutWorkers_.erase(iter++);
     }
-
     // stop the timer
-    if ((workers_.size() == GetIdleWorkers()) && workers_.size() <= MIN_THREADS && timeoutWorkers_.empty()) {
+    if ((workers_.size() == GetIdleWorkers()) && timeoutWorkers_.empty()) {
         suspend_ = true;
         uv_timer_stop(timer_);
     }
