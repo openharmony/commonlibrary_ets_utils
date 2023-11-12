@@ -27,6 +27,8 @@ ohos_shared_library("timer") {
 
   deps = []
 
+  defines = []
+
   external_deps = [
     "napi:ace_container_scope",
     "napi:ace_napi",
@@ -34,7 +36,7 @@ ohos_shared_library("timer") {
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps += [ "$hilog_linux" ]
-    defines = [
+    defines += [
       "LINUX_PLATFORM",
       "PREVIEW",
     ]
@@ -47,12 +49,14 @@ ohos_shared_library("timer") {
   }
 
   if (is_mingw) {
-    defines = [
+    defines += [
       "WINDOWS_PLATFORM",
       "NOGDI",
     ]
   }
   cflags = [ "-std=c++17" ]
+
+  defines += [ "ENABLE_CONTAINER_SCOPE" ]
 
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk" ]
@@ -97,6 +101,8 @@ ohos_source_set("timer_static") {
       "$napi_root:ace_napi",
     ]
   }
+
+  defines += [ "ENABLE_CONTAINER_SCOPE" ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
