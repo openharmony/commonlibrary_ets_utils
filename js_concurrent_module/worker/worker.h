@@ -457,6 +457,9 @@ private:
     void ClearSyncCallError(napi_env env);
     void InitSyncCallStatus(napi_env env);
     void IncreaseSyncCallId();
+    napi_value SyncFunc(napi_env env, napi_value* args, size_t argc, Worker* worker);
+    void Func(MessageDataType data, napi_value methodName, napi_value obj,
+              napi_value argsArray, uint32_t currentCallId);
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
