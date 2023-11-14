@@ -29,10 +29,7 @@ ohos_shared_library("timer") {
 
   defines = []
 
-  external_deps = [
-    "napi:ace_container_scope",
-    "napi:ace_napi",
-  ]
+  external_deps = [ "napi:ace_napi" ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps += [ "$hilog_linux" ]
@@ -48,6 +45,11 @@ ohos_shared_library("timer") {
     }
   }
 
+  if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {
+    external_deps += [ "napi:ace_container_scope" ]
+    defines += [ "ENABLE_CONTAINER_SCOPE" ]
+  }
+
   if (is_mingw) {
     defines += [
       "WINDOWS_PLATFORM",
@@ -55,8 +57,6 @@ ohos_shared_library("timer") {
     ]
   }
   cflags = [ "-std=c++17" ]
-
-  defines += [ "ENABLE_CONTAINER_SCOPE" ]
 
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk" ]
@@ -96,17 +96,18 @@ ohos_source_set("timer_static") {
       defines += [ "IOS_PLATFORM" ]
     }
   } else {
-    deps += [
-      "$napi_root:ace_container_scope_static",
-      "$napi_root:ace_napi",
-    ]
+    deps += [ "$napi_root:ace_napi" ]
   }
 
-  defines += [ "ENABLE_CONTAINER_SCOPE" ]
+  if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {
+    deps += [ "$napi_root:ace_container_scope_static" ]
+    defines += [ "ENABLE_CONTAINER_SCOPE" ]
+  }
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 }
+
 group("timer_packages") {
   deps = [ ":timer" ]
 }
