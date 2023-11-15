@@ -19,8 +19,10 @@
 #include <string>
 #include <uv.h>
 
+#include "helper/concurrent_helper.h"
 #include "napi/native_api.h"
 #include "utils.h"
+#include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
@@ -32,8 +34,10 @@ class Task {
 public:
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value SetTransferList(napi_env env, napi_callback_info cbinfo);
-    static void CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc);
+    static uint32_t CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc);
     static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
+    static napi_value OnReceiveData(napi_env env, napi_callback_info cbinfo);
+    static void Destructor(napi_env env, void* nativeObject, void* finalize);
 
 private:
     Task() = delete;
@@ -59,6 +63,33 @@ struct TaskInfo {
     void* worker {nullptr};
     Priority priority {Priority::DEFAULT};
     std::string funcName {};
+};
+
+struct CallbackInfo {
+    CallbackInfo(napi_env env, uint32_t count, napi_ref ref) : hostEnv(env),
+        refCount(count), callbackRef(ref), onCallbackSignal(nullptr) {}
+    ~CallbackInfo()
+    {
+        napi_delete_reference(hostEnv, callbackRef);
+        if (onCallbackSignal != nullptr) {
+            Common::Helper::ConcurrentHelper::UvHandleClose(onCallbackSignal);
+        }
+    }
+
+    napi_env hostEnv;
+    uint32_t refCount;
+    napi_ref callbackRef;
+    uv_async_t* onCallbackSignal;
+};
+
+struct TaskResultInfo {
+    TaskResultInfo(napi_env env, uint32_t id, napi_value args) : hostEnv(env),
+        taskId(id), serializationArgs(args) {}
+    ~TaskResultInfo() = default;
+
+    napi_env hostEnv;
+    uint32_t taskId;
+    napi_value serializationArgs;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H

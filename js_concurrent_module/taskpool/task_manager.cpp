@@ -274,6 +274,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
                 auto worker = *iter;
                 workers_.erase(worker);
                 idleWorkers_.erase(worker);
+                HILOG_DEBUG("taskpool:: try to release idle thread: %{public}d", worker->tid_);
                 uv_async_send(worker->clearWorkerSignal_);
             }
         }
@@ -281,6 +282,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     // remove all timeout workers
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     for (auto iter = timeoutWorkers_.begin(); iter != timeoutWorkers_.end();) {
+        HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", (*iter)->tid_);
         uv_async_send((*iter)->clearWorkerSignal_);
         timeoutWorkers_.erase(iter++);
     }
@@ -288,6 +290,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     if ((workers_.size() == GetIdleWorkers()) && timeoutWorkers_.empty()) {
         suspend_ = true;
         uv_timer_stop(timer_);
+        HILOG_DEBUG("taskpool:: timer will be suspended");
     }
 }
 
@@ -323,6 +326,8 @@ void TaskManager::TryExpand()
     const uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
+        HILOG_INFO("taskpool:: the maxThreads is %{public}u and %{public}u additional threads will be created",
+            maxThreads, step);
         CreateWorkers(hostEnv_, step);
     }
     if (UNLIKELY(suspend_)) {
@@ -626,6 +631,8 @@ void TaskManager::NotifyWorkerAdded(Worker* worker)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     workers_.insert(worker);
+    HILOG_INFO("taskpool:: a new worker has been added and the current num is %{public}u",
+        static_cast<uint32_t>(workers_.size()));
 }
 
 uint32_t TaskManager::GetIdleWorkers()
@@ -762,14 +769,81 @@ void TaskManager::RestoreWorker(Worker* worker)
     // Since the worker may be executing some tasks in IO thread, we should add it to the
     // worker sets and call the 'NotifyWorkerIdle', which can still execute some tasks in its own thread.
     workers_.emplace(worker);
+    HILOG_DEBUG("taskpool:: worker has been restored and the current num is: %{public}u",
+        static_cast<uint32_t>(workers_.size()));
     idleWorkers_.emplace_hint(idleWorkers_.end(), worker);
     if (GetTaskNum() != 0) {
         NotifyExecuteTask();
     }
 }
 
+void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    callbackTable_[taskId] = callbackInfo;
+}
+
+std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint32_t taskId)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto iter = callbackTable_.find(taskId);
+    if (iter == callbackTable_.end() || iter->second == nullptr) {
+        HILOG_ERROR("taskpool:: the callback does not exist");
+        return nullptr;
+    }
+    return iter->second;
+}
+
+void TaskManager::IncreaseRefCount(uint32_t taskId)
+{
+    if (taskId == 0) { // do not support func
+        return;
+    }
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto iter = callbackTable_.find(taskId);
+    if (iter == callbackTable_.end() || iter->second == nullptr) {
+        return;
+    }
+    iter->second->refCount++;
+}
+
+void TaskManager::DecreaseRefCount(napi_env env, uint32_t taskId)
+{
+    if (taskId == 0) { // do not support func
+        return;
+    }
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto iter = callbackTable_.find(taskId);
+    if (iter == callbackTable_.end() || iter->second == nullptr) {
+        return;
+    }
+    iter->second->refCount--;
+    if (iter->second->refCount == 0) {
+        callbackTable_.erase(iter);
+    }
+}
+
+napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, TaskInfo* taskInfo)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto iter = callbackTable_.find(taskInfo->taskId);
+    if (iter == callbackTable_.end() || iter->second == nullptr) {
+        HILOG_ERROR("taskpool:: the callback in SendData is not registered on the host side");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_REGISTERED);
+        delete resultInfo;
+        return nullptr;
+    }
+    Worker* worker = static_cast<Worker*>(taskInfo->worker);
+    worker->Enqueue(resultInfo);
+    auto callbackInfo = iter->second;
+    callbackInfo->refCount++;
+    callbackInfo->onCallbackSignal->data = worker;
+    uv_async_send(callbackInfo->onCallbackSignal);
+    return nullptr;
+}
+
 // ----------------------------------- TaskGroupManager ----------------------------------------
-TaskGroupManager &TaskGroupManager::GetInstance()
+TaskGroupManager& TaskGroupManager::GetInstance()
 {
     static TaskGroupManager groupManager;
     return groupManager;

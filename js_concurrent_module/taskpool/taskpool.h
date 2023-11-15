@@ -28,6 +28,8 @@ using namespace Commonlibrary::Concurrent::Common;
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
+    static napi_value SendData(napi_env env, napi_callback_info cbinfo);
+    static void ExecuteCallback(uv_async_t* req);
 
 private:
     TaskPool() = delete;
@@ -47,6 +49,25 @@ private:
     static void UpdateGroupInfoByResult(napi_env env, TaskInfo* taskInfo, napi_value res, bool success);
 
     friend class TaskManager;
+};
+
+class CallbackScope {
+public:
+    CallbackScope(napi_env env, uint32_t taskId, napi_status& status): env_(env), taskId_(taskId)
+    {
+        status = napi_open_handle_scope(env_, &scope_);
+    }
+    ~CallbackScope()
+    {
+        TaskManager::GetInstance().DecreaseRefCount(env_, taskId_);
+        if (scope_ != nullptr) {
+            napi_close_handle_scope(env_, scope_);
+        }
+    }
+private:
+    napi_env env_;
+    uint32_t taskId_;
+    napi_handle_scope scope_ = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASKPOOL_H

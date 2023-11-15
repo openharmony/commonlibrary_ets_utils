@@ -19,8 +19,10 @@
 #include "helper/hitrace_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
+#include "message_queue.h"
 #include "task_manager.h"
 #include "utils/log.h"
+#include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -57,11 +59,99 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("execute", Execute),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
         DECLARE_NAPI_FUNCTION("getTaskPoolInfo", GetTaskPoolInfo),
+        DECLARE_NAPI_FUNCTION("sendData", SendData),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
     TaskManager::GetInstance().InitTaskManager(env);
     return exports;
+}
+
+napi_value TaskPool::SendData(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    napi_value args[argc];
+    napi_value thisVar;
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+
+    napi_value argsArray;
+    napi_create_array_with_length(env, argc, &argsArray);
+    for (size_t i = 0; i < argc; i++) {
+        napi_set_element(env, argsArray, i, args[i]);
+    }
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsTaskPoolThread()) {
+        HILOG_ERROR("taskpool:: SendData is not called in the taskpool thread");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_IN_TASKPOOL_THREAD);
+        return nullptr;
+    }
+    TaskInfo* taskInfo = nullptr;
+    void* data = engine->GetCurrentTaskInfo();
+    if (data == nullptr) {
+        HILOG_ERROR("taskpool:: SendData is not called in the concurrent function");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_IN_CONCURRENT_FUNCTION);
+        return nullptr;
+    } else {
+        taskInfo = static_cast<TaskInfo*>(data);
+    }
+
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value serializationArgs;
+    napi_status status = napi_serialize(env, argsArray, undefined, &serializationArgs);
+    if (status != napi_ok || serializationArgs == nullptr) {
+        std::string errMessage = "taskpool:: failed to serialize function";
+        HILOG_ERROR("taskpool:: failed to serialize function in SendData");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        return nullptr;
+    }
+    TaskResultInfo* resultInfo = new TaskResultInfo(taskInfo->env, taskInfo->taskId, serializationArgs);
+    return TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, taskInfo);
+}
+
+void TaskPool::ExecuteCallback(uv_async_t* req)
+{
+    auto worker = static_cast<Worker*>(req->data);
+    while (!worker->IsQueueEmpty()) {
+        auto resultInfo = worker->Dequeue();
+        ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
+        napi_status status = napi_ok;
+        CallbackScope callbackScope(resultInfo->hostEnv, resultInfo->taskId, status);
+        if (status != napi_ok) {
+            HILOG_ERROR("napi_open_handle_scope failed");
+            return;
+        }
+        auto env = resultInfo->hostEnv;
+        auto callbackInfo = TaskManager::GetInstance().GetCallbackInfo(resultInfo->taskId);
+        if (callbackInfo == nullptr) {
+            HILOG_ERROR("taskpool:: the callback in SendData is not registered on the host side");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_REGISTERED);
+            continue;
+        }
+        auto func = NapiHelper::GetReferenceValue(env, callbackInfo->callbackRef);
+        napi_value args;
+        napi_value result;
+        status = napi_deserialize(env, resultInfo->serializationArgs, &args);
+        if (status != napi_ok || args == nullptr) {
+            HILOG_ERROR("taskpool:: failed to serialize function in SendData");
+            std::string errMessage = "taskpool:: failed to serialize function";
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+            continue;
+        }
+        uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
+        napi_value argsArray[argsNum];
+        napi_value val;
+        for (size_t i = 0; i < argsNum; i++) {
+            napi_get_element(env, args, i, &val);
+            argsArray[i] = val;
+        }
+        napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
+        if (NapiHelper::IsExceptionPending(env)) {
+            napi_value exception = nullptr;
+            napi_get_and_clear_last_exception(env, &exception);
+            HILOG_ERROR("taskpool:: an exception has occurred napi_call_function");
+        }
+    }
 }
 
 napi_value TaskPool::GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo)
@@ -209,6 +299,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         UpdateGroupInfoByResult(taskInfo->env, taskInfo, taskData, success);
     }
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_close_handle_scope(taskInfo->env, scope));
+    TaskManager::GetInstance().DecreaseRefCount(taskInfo->env, taskInfo->taskId);
     TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
 
@@ -255,6 +346,7 @@ void TaskPool::ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priori
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
+    TaskManager::GetInstance().IncreaseRefCount(taskInfo->taskId);
     TaskManager::GetInstance().AddExecuteState(executeId);
     TaskManager::GetInstance().EnqueueExecuteId(executeId, priority);
     TaskManager::GetInstance().TryTriggerExpand();
