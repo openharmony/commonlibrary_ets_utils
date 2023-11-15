@@ -73,13 +73,13 @@ public:
                 errTitle = "The task is executing when it is canceled";
                 break;
             case ERR_TRIGGER_NONEXIST_EVENT:
-                errTitle = "The triggered event does not exist.";
+                errTitle = "The specific global call object does not exist";
                 break;
             case ERR_CALL_METHOD_ON_BINDING_OBJ:
                 errTitle = "The method called on binding object does not exist or is not callable";
                 break;
             case ERR_EXCEED_WAITING_LIMITATION:
-                errTitle = "SyncCall waiting time has exceeded the time limitation: ";
+                errTitle = "Call globalCallObject method waiting time has exceeded the timeout: ";
                 break;
             default:
                 break;
@@ -219,7 +219,7 @@ public:
     static const int32_t ERR_CALL_METHOD_ON_BINDING_OBJ = 10200020; // 10200020 : call method on binding obj failed
     static const int32_t ERR_EXCEED_WAITING_LIMITATION = 10200021; // 10200021 : SyncCall exceed waiting time limitation
     // add for inner implementation
-    static const int32_t ERR_DURING_SYNC_CALL = 10200022; // 10200022 : SyncCall encountered exception during calling
+    static const int32_t ERR_DURING_GLOBAL_CALL = 10200022; // 10200022 : SyncCall encountered exception during calling
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H
