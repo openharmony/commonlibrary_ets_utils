@@ -727,7 +727,13 @@ napi_value Worker::SyncCall(napi_env env, napi_callback_info cbinfo)
             "BusinessError 401: Parameter error. The type of 'timeLimitation' must be number");
         return nullptr;
     }
+    napi_value value = nullptr;
+    value = worker->SyncFunc(env, args, argc, worker);
+    return value;
+}
 
+napi_value Worker::SyncFunc(napi_env env, napi_value* args, size_t argc, Worker* worker)
+{
     napi_status serializeStatus = napi_ok;
     napi_value data = nullptr;
     napi_value argsArray;
@@ -793,6 +799,7 @@ napi_value Worker::SyncCall(napi_env env, napi_callback_info cbinfo)
     }
     return res;
 }
+
 
 void Worker::InitSyncCallStatus(napi_env env)
 {
@@ -1315,6 +1322,13 @@ void Worker::HostOnSyncCallInner()
     }
     napi_ref objRef = iter->second;
     napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, objRef);
+    Func(data, methodName, obj, argsArray, currentCallId);
+}
+
+void Worker::Func(MessageDataType data, napi_value methodName, napi_value obj,
+                  napi_value argsArray, uint32_t currentCallId)
+{
+    napi_status status = napi_ok;
     bool hasProperty = false;
     napi_has_property(hostEnv_, obj, methodName, &hasProperty);
     if (!hasProperty) {
@@ -1357,11 +1371,17 @@ void Worker::HostOnSyncCallInner()
         status = napi_serialize(hostEnv_, exception, NapiHelper::GetUndefinedValue(hostEnv_), &data);
         if (status != napi_ok || data == nullptr) {
             ErrorHelper::ThrowError(hostEnv_, ErrorHelper::ERR_WORKER_SERIALIZATION);
+            if (args != nullptr) {
+                delete[] args;
+            }
             return;
         }
         AddSyncCallError(ErrorHelper::ERR_DURING_SYNC_CALL, data);
         syncEventSuccess_ = false;
         cv_.notify_one();
+        if (args != nullptr) {
+            delete[] args;
+        }
         return;
     }
     // defautly not transfer
@@ -1370,17 +1390,26 @@ void Worker::HostOnSyncCallInner()
         AddSyncCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
         syncEventSuccess_ = false;
         cv_.notify_one();
+        if (args != nullptr) {
+            delete[] args;
+        }
         return;
     }
     // drop and destruct result if timeout
     if (currentCallId != syncCallId_ || currentCallId == 0) {
         napi_delete_serialization_data(hostEnv_, data);
         cv_.notify_one();
+        if (args != nullptr) {
+            delete[] args;
+        }
         return;
     }
     workerSyncEventQueue_.EnQueue(data);
     syncEventSuccess_ = true;
     cv_.notify_one();
+    if (args != nullptr) {
+        delete[] args;
+    }
 }
 
 void Worker::AddSyncCallError(int32_t errCode, napi_value errData)
