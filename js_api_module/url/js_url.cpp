@@ -81,7 +81,7 @@ namespace OHOS::Url {
                 input.replace(pos, oldlen, newstr);
                 continue;
             }
-                break;
+            break;
         }
     }
 
@@ -136,7 +136,7 @@ namespace OHOS::Url {
                 i++;
                 continue;
             }
-                break;
+            break;
         }
         str = str.substr(i);
         strlen = str.size();
@@ -148,7 +148,7 @@ namespace OHOS::Url {
                 str.pop_back();
                 continue;
             }
-                break;
+            break;
         }
     }
 
@@ -358,7 +358,7 @@ namespace OHOS::Url {
 
             temp.push_back(hexVal);
             left = pos + 1;
-            }
+        }
         val = str.substr(left);
         if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
             HILOG_ERROR("sprintf_s is falie");
@@ -404,16 +404,16 @@ namespace OHOS::Url {
             for (j = 0; j < strLen; ++j) {
                 if (ipv6[i][j] != '0') {
                     break;
-        }
-                    count++;
                 }
+                count++;
+            }
             if (count == strLen) {
                 ipv6[i] = "0";
             } else if (count != 0) {
                 ipv6[i] = ipv6[i].substr(j);
-                }
             }
         }
+    }
 
     std::string ZeroCompression(std::vector<std::string> &ipv6)
     {
@@ -430,24 +430,24 @@ namespace OHOS::Url {
                 isNeedZeroCompression = true;
                 size++;
                 i++;
-                }
+            }
             if (maxSize < size) {
                 maxSize = size;
                 maxIndex = index;
             }
-            }
+        }
         std::string res = "";
         size_t ipv6Len = ipv6.size();
         for (size_t i = 0; i < ipv6Len; ++i) {
             if (isNeedZeroCompression && i == maxIndex) {
                 if (maxIndex == 0) {
                     res += "::";
-        } else {
+                } else {
                     res += ":";
-        }
+                }
                 i += maxSize - 1;
                 continue;
-    }
+            }
             res += ipv6[i];
             i != (ipv6Len - 1) ? res += ":" : "";
         }
@@ -460,8 +460,8 @@ namespace OHOS::Url {
         for (size_t i = 0; i < strLen; ++i) {
             if (isupper(str[i])) {
                 str[i] = static_cast<size_t>(tolower(str[i]));
+            }
         }
-    }
     }
 
     std::string Compress(std::string str)
@@ -478,7 +478,7 @@ namespace OHOS::Url {
         std::string res = ZeroCompression(temp);
         ToLower(res);
         return res;
-        }
+    }
 
     void IPv6Host(std::string& input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
@@ -494,9 +494,9 @@ namespace OHOS::Url {
                         "(([0-9A-Fa-f]{1,4}:){5}:)|(([0-9A-Fa-f]{1,4}:){6}))((25[0-5]|2[0-4]\\d|1\\d{2}|"
                         "[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)))(%[a-zA-Z0-9._]+)?");
         if (!std::regex_match(input, ipv6)) {
-                flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-                return;
-            }
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
+        }
         size_t pos = 0;
         pos = input.find('.');
         if (pos != std::string::npos) {
@@ -515,10 +515,10 @@ namespace OHOS::Url {
         for (size_t i = 0; i < len; ++i) {
             if (radix.find(num[i]) == std::string::npos) {
                 return false;
-                }
             }
-        return true;
         }
+        return true;
+    }
 
     bool IsNumber(std::string num, int &radix)
     {
@@ -532,10 +532,9 @@ namespace OHOS::Url {
         } else if (IsRadix(num, "0123456789")) {
             radix = 10; // 10:decimal
             return true;
-    }
-
-        return false;
         }
+        return false;
+    }
 
     std::string BinaryConversion(std::string num, int radix)
     {
@@ -544,7 +543,7 @@ namespace OHOS::Url {
             if (sscanf_s(num.c_str(), "%x", &val) == -1) {
                 HILOG_ERROR("sscanf_s is falie");
                 return num;
-        }
+            }
             return std::to_string(val);
         } else if (radix == 8) { // 8:octal
             if (sscanf_s(num.c_str(), "%o", &val) == -1) {
@@ -564,8 +563,12 @@ namespace OHOS::Url {
         while ((pos = str.find(".", left)) != std::string::npos) {
             temp.push_back(str.substr(left, pos - left));
             left = pos + 1;
-            }
-        temp.push_back(str.substr(left));
+        }
+
+        if (left != str.size()) {
+            temp.push_back(str.substr(left));
+        }
+
         size_t tmpLen = temp.size();
         std::vector<std::string> res;
         for (size_t i = 0; i < tmpLen; ++i) {
@@ -600,7 +603,7 @@ namespace OHOS::Url {
             int numConver = val % 256; // 256:ipv4 max value
             nums.push_back(std::to_string(numConver));
             val /= 256; // 256:ipv4 max value
-            }
+        }
         for (int i = static_cast<int>(nums.size()) - 1; i >= 0; --i) {
             res += nums[i] + ".";
         }
@@ -617,7 +620,7 @@ namespace OHOS::Url {
         if (index == -1) {
             for (size_t i = 0; i < len - 1; ++i) {
                 res += nums[i] + ".";
-                }
+            }
             for (size_t i = 0; i < 4 - len; ++i) { // 4:ipv4 max size
                 res += "0.";
             }
@@ -627,23 +630,23 @@ namespace OHOS::Url {
         } else if (index == static_cast<int>(len - 1)) {
             for (size_t i = 0; i < len - 1; ++i) {
                 res += nums[i] + ".";
-        }
+            }
             size_t number = 0;
             std::string temp = SplitNum(nums[index], number);
             if (number + (len - 1) > 4) { // 4:ipv4 max size
                 flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
                 return;
-        }
+            }
             for (size_t i = 0; i < 4 - (len - 1 + number); ++i) { // 4:ipv4 max size
                 temp = "0." + temp;
-        }
+            }
             host = res + temp;
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
         } else {
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
             return;
-            }
-            }
+        }
+    }
 
     void AnalyseIPv4(const std::string& input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
@@ -668,7 +671,7 @@ namespace OHOS::Url {
                 if (IsFormatIpv4(temp) == -1) {
                     host = res;
                     flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
-            } else {
+                } else {
                     flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
                 }
             } else {
@@ -677,9 +680,10 @@ namespace OHOS::Url {
         } else {
             ToLower(res);
             host = res;
-        flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
         }
     }
+
     void AnalysisHost(std::string& input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool special)
     {
@@ -709,6 +713,7 @@ namespace OHOS::Url {
         }
         AnalyseIPv4(decodeInput, host, flags);
     }
+
     bool ISFileNohost(const std::string& input)
     {
         if ((isalpha(input[0]) && (input[1] == ':' || input[1] == '|'))) {
@@ -716,6 +721,7 @@ namespace OHOS::Url {
         }
         return false;
     }
+
     void AnalysisFilePath(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
@@ -1074,6 +1080,7 @@ namespace OHOS::Url {
         }
         baseData.path.pop_back();
     }
+
     void InitOnlyInput(std::string& input, UrlData& urlData,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
@@ -1111,6 +1118,7 @@ namespace OHOS::Url {
             return;
         }
     }
+
     void ToolHasBase(std::string input, std::string &strInput, UrlData &urlData,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags)
     {
