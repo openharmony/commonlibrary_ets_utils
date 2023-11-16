@@ -30,6 +30,9 @@ static constexpr uint8_t NUM_GLOBAL_CALL_ARGS = 3;
 static std::list<Worker *> g_workers;
 static constexpr int MAX_WORKERS = 8;
 static std::mutex g_workersMutex;
+static std::list<Worker *> g_limitedworkers;
+static constexpr int MAX_LIMITEDWORKERS = 16;
+static std::mutex g_limitedworkersMutex;
 static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
@@ -81,52 +84,64 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
 napi_value Worker::InitPort(napi_env env, napi_value exports)
 {
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    Worker* worker = nullptr;
+    if (engine->IsRestrictedWorkerThread()) {
+        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+        for (auto item = g_limitedworkers.begin(); item != g_limitedworkers.end(); item++) {
+            if ((*item)->IsSameWorkerEnv(env)) {
+                worker = *item;
+            }
+        }
+    }
     if (engine->IsWorkerThread()) {
-        Worker* worker = nullptr;
+        std::lock_guard<std::mutex> lock(g_workersMutex);
         for (auto item = g_workers.begin(); item != g_workers.end(); item++) {
             if ((*item)->IsSameWorkerEnv(env)) {
                 worker = *item;
             }
         }
-        if (worker == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null when InitWorker");
-            return exports;
-        }
-
-        napi_property_descriptor properties[] = {
-            DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("callGlobalCallObjectMethod", GlobalCall, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("addEventListener", ParentPortAddEventListener, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("dispatchEvent", ParentPortDispatchEvent, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("removeEventListener", ParentPortRemoveEventListener, worker),
-            DECLARE_NAPI_FUNCTION_WITH_DATA("removeAllListener", ParentPortRemoveAllListener, worker),
-        };
-        napi_value workerPortObj = NapiHelper::GetGlobalObject(env);
-        napi_define_properties(env, workerPortObj, sizeof(properties) / sizeof(properties[0]), properties);
-
-        // 5. register worker name in DedicatedWorkerGlobalScope
-        std::string name = worker->GetName();
-        if (!name.empty()) {
-            napi_value nameValue = nullptr;
-            napi_create_string_utf8(env, name.c_str(), name.length(), &nameValue);
-            napi_set_named_property(env, workerPortObj, "name", nameValue);
-        }
-
-        napi_set_named_property(env, workerPortObj, "self", workerPortObj);
-
-        while (!engine->IsMainThread()) {
-            engine = engine->GetHostEngine();
-        }
-        if (engine->IsTargetWorkerVersion(WorkerVersion::NEW)) {
-            napi_set_named_property(env, exports, "workerPort", workerPortObj);
-        } else {
-            napi_set_named_property(env, exports, "parentPort", workerPortObj);
-        }
-        // register worker Port.
-        napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
+    } else {
+        return exports;
     }
+
+    if (worker == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null when InitWorker");
+        return exports;
+    }
+
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("callGlobalCallObjectMethod", GlobalCall, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("addEventListener", ParentPortAddEventListener, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("dispatchEvent", ParentPortDispatchEvent, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("removeEventListener", ParentPortRemoveEventListener, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("removeAllListener", ParentPortRemoveAllListener, worker),
+    };
+    napi_value workerPortObj = NapiHelper::GetGlobalObject(env);
+    napi_define_properties(env, workerPortObj, sizeof(properties) / sizeof(properties[0]), properties);
+
+    // 5. register worker name in DedicatedWorkerGlobalScope
+    std::string name = worker->GetName();
+    if (!name.empty()) {
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(env, name.c_str(), name.length(), &nameValue);
+        napi_set_named_property(env, workerPortObj, "name", nameValue);
+    }
+
+    napi_set_named_property(env, workerPortObj, "self", workerPortObj);
+
+    while (!engine->IsMainThread()) {
+        engine = engine->GetHostEngine();
+    }
+    if (engine->IsTargetWorkerVersion(WorkerVersion::NEW)) {
+        napi_set_named_property(env, exports, "workerPort", workerPortObj);
+    } else {
+        napi_set_named_property(env, exports, "parentPort", workerPortObj);
+    }
+    // register worker Port.
+    napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
     return exports;
 }
 
@@ -190,7 +205,22 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     }
 
     Worker* worker = nullptr;
-    {
+    if (limitSign) {
+        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+        if (static_cast<int>(g_limitedworkers.size()) >= MAX_LIMITEDWORKERS) {
+            ErrorHelper::ThrowError(env,
+                ErrorHelper::ERR_WORKER_INITIALIZATION, "the number of limiteworkers exceeds the maximum.");
+            return nullptr;
+        }
+
+        // 2. new worker instance
+        worker = new Worker(env, nullptr);
+        if (worker == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "creat worker error");
+            return nullptr;
+        }
+        g_limitedworkers.push_back(worker);
+    } else {
         int maxWorkers = MAX_WORKERS;
     #if defined(OHOS_PLATFORM)
         maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
@@ -1128,8 +1158,12 @@ void Worker::ExecuteInThread(const void* data)
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
             return;
         }
-        // mark worker env is workerThread
-        reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
+        if (worker->isLimitedWorker_) {
+            reinterpret_cast<NativeEngine*>(workerEnv)->MarkRestrictedWorkerThread();
+        } else {
+            // mark worker env is workerThread
+            reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
+        }
         // for load balance in taskpool
         reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
 
@@ -1658,9 +1692,7 @@ void Worker::TerminateWorker()
     CloseWorkerCallback();
     uv_loop_t* loop = GetWorkerLoop();
     if (loop != nullptr) {
-        if (g_workers.size() <= 1) {
-            Timer::ClearEnvironmentTimer(workerEnv_);
-        }
+        Timer::ClearEnvironmentTimer(workerEnv_);
         uv_stop(loop);
     }
     UpdateWorkerState(TERMINATED);
@@ -1969,11 +2001,17 @@ void Worker::ReleaseWorkerThreadContent()
         hostEngine->DecreaseSubEnvCounter();
     }
     // 1. remove worker instance count
-    {
+    if (!workerEngine->IsRestrictedWorkerThread()) {
         std::lock_guard<std::mutex> lock(g_workersMutex);
         std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
         if (it != g_workers.end()) {
             g_workers.erase(it);
+        }
+    } else {
+        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+        std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
+        if (it != g_limitedworkers.end()) {
+            g_limitedworkers.erase(it);
         }
     }
 
