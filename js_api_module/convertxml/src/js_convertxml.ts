@@ -64,7 +64,12 @@ class ConvertXML {
       throw new BusinessError(`Parameter error.The type of ${options} must be object`);
     }
     strXml = dealXml(strXml);
-    let converted: ReceiveObject = this.convertxmlclass.convert(strXml, options);
+    let converted: ReceiveObject;
+    if (arguments.length === 1) {
+      converted = this.convertxmlclass.convert(strXml);
+    } else {
+      converted = this.convertxmlclass.convert(strXml, options);
+    }
     let strEnd: string = '';
     if (converted.hasOwnProperty('spaces')) {
       let space: string | number | undefined = converted.spaces;
