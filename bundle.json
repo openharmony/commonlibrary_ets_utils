@@ -94,6 +94,15 @@
                       ],
                       "header_base": "//commonlibrary/ets_utils/js_sys_module/console"
                     }
+                },
+                {
+                    "name": "//commonlibrary/ets_utils/js_concurrent_module/worker:worker",
+                    "header": {
+                      "header_files": [
+                        "worker.h"
+                      ],
+                      "header_base": "//commonlibrary/ets_utils/js_concurrent_module/worker"
+                    }
                 }
             ],
             "test": [
