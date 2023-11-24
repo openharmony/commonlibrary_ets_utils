@@ -346,9 +346,9 @@ void TaskManager::RunTaskManager()
     uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, 60000); // 60000: 1min
     uv_async_init(loop_, expandHandle_, reinterpret_cast<uv_async_cb>(TaskManager::NotifyExpand));
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
-    pthread_setname_np("TaskMgrThread");
+    pthread_setname_np("OS_TaskMgrThread");
 #else
-    pthread_setname_np(pthread_self(), "TaskMgrThread");
+    pthread_setname_np(pthread_self(), "OS_TaskMgrThread");
 #endif
     if (UNLIKELY(needChecking_)) {
         needChecking_ = false;

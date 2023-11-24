@@ -34,10 +34,10 @@ bool MessageQueue::DeQueue(MessageDataType *data)
     if (data != nullptr) {
         *data = queue_.front();
         queue_.pop();
-        queueLock_.unlock();
     } else {
         HILOG_ERROR("worker:: data is nullptr.");
     }
+    queueLock_.unlock();
     return true;
 }
 
