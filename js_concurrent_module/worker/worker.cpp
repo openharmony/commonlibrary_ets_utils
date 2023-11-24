@@ -780,17 +780,17 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
 
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "BusinessError 401: Parameter error. The type of 'instanceName' must be string");
+            "Parameter error. The type of 'instanceName' must be string");
         return nullptr;
     }
     if (!NapiHelper::IsString(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "BusinessError 401: Parameter error. The type of 'methodName' must be string");
+            "Parameter error. The type of 'methodName' must be string");
         return nullptr;
     }
     if (!NapiHelper::IsNumber(env, args[2])) { // 2: the index of argument "timeout"
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "BusinessError 401: Parameter error. The type of 'timeout' must be number");
+            "Parameter error. The type of 'timeout' must be number");
         return nullptr;
     }
 
@@ -837,8 +837,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         })) {
             worker->IncreaseGlobalCallId();
             HILOG_ERROR("worker:: callGlobalCallObjectMethod has exceeded the waiting time limitation, skip this turn");
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_EXCEED_WAITING_LIMITATION,
-                std::to_string(timeout).c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_GLOBAL_CALL_TIMEOUT, std::to_string(timeout).c_str());
             return nullptr;
         }
     }
@@ -1410,7 +1409,9 @@ void Worker::HostOnGlobalCallInner()
     napi_value method = nullptr;
     napi_get_property(hostEnv_, obj, methodName, &method);
     // call method must not be generator function or async function
-    if (!NapiHelper::IsCallable(hostEnv_, method)) {
+    bool validMethod = NapiHelper::IsCallable(hostEnv_, method) && !NapiHelper::IsAsyncFunction(hostEnv_, method) &&
+        !NapiHelper::IsGeneratorFunction(hostEnv_, method);
+    if (!validMethod) {
         const char* methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
         HILOG_ERROR("worker:: method %{public}s shall be callable and not async or generator method", methodNameStr);
         AddGlobalCallError(ErrorHelper::ERR_CALL_METHOD_ON_BINDING_OBJ);
@@ -1436,13 +1437,7 @@ void Worker::HostOnGlobalCallInner()
     if (hasPendingException) {
         napi_value exception = nullptr;
         napi_get_and_clear_last_exception(hostEnv_, &exception);
-        data = nullptr;
-        status = napi_serialize(hostEnv_, exception, NapiHelper::GetUndefinedValue(hostEnv_), &data);
-        if (status != napi_ok || data == nullptr) {
-            ErrorHelper::ThrowError(hostEnv_, ErrorHelper::ERR_WORKER_SERIALIZATION);
-            return;
-        }
-        AddGlobalCallError(ErrorHelper::ERR_DURING_GLOBAL_CALL, data);
+        napi_throw(hostEnv_, exception);
         globalCallSuccess_ = false;
         cv_.notify_one();
         return;
@@ -1477,18 +1472,7 @@ void Worker::HandleGlobalCallError(napi_env env)
         std::pair<int32_t, napi_value> pair = globalCallErrors_.front();
         globalCallErrors_.pop();
         int32_t errCode = pair.first;
-        if (errCode == ErrorHelper::ERR_DURING_GLOBAL_CALL) {
-            napi_status status = napi_ok;
-            napi_value exception = nullptr;
-            status = napi_deserialize(env, pair.second, &exception);
-            if (status != napi_ok || exception == nullptr) {
-                ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION);
-                return;
-            }
-            napi_throw(env, exception);
-        } else {
-            ErrorHelper::ThrowError(env, errCode);
-        }
+        ErrorHelper::ThrowError(env, errCode);
     }
 }
 

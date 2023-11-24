@@ -129,6 +129,20 @@ bool NapiHelper::IsCallable(napi_env env, napi_ref value)
     return IsCallable(env, obj);
 }
 
+bool NapiHelper::IsAsyncFunction(napi_env env, napi_value value)
+{
+    bool res = false;
+    napi_is_async_function(env, value, &res);
+    return res;
+}
+
+bool NapiHelper::IsGeneratorFunction(napi_env env, napi_value value)
+{
+    bool res = false;
+    napi_is_generator_function(env, value, &res);
+    return res;
+}
+
 void NapiHelper::SetNamePropertyInGlobal(napi_env env, const char* name, napi_value value)
 {
     napi_value object = nullptr;

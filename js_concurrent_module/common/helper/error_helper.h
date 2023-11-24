@@ -73,12 +73,13 @@ public:
                 errTitle = "The task is executing when it is canceled";
                 break;
             case ERR_TRIGGER_NONEXIST_EVENT:
-                errTitle = "The specific global call object does not exist";
+                errTitle = "The globalCallObject is not registered";
                 break;
             case ERR_CALL_METHOD_ON_BINDING_OBJ:
-                errTitle = "The method called on binding object does not exist or is not callable";
+                errTitle = "The method called on globalCallObject does not exist or is not callable or is"
+                    " async/generator function";
                 break;
-            case ERR_EXCEED_WAITING_LIMITATION:
+            case ERR_GLOBAL_CALL_TIMEOUT:
                 errTitle = "Call globalCallObject method waiting time has exceeded the timeout: ";
                 break;
             default:
@@ -216,10 +217,9 @@ public:
     static const int32_t ERR_CANCEL_RUNNING_TASK = 10200016; // 10200016 : the task is executing when it is canceled
     static const int32_t ERR_CANCEL_NONEXIST_TASK_GROUP = 10200018; // 10200018 : cancel nonexist task group
     static const int32_t ERR_TRIGGER_NONEXIST_EVENT = 10200019; // 10200019 : The triggered event does not exist
-    static const int32_t ERR_CALL_METHOD_ON_BINDING_OBJ = 10200020; // 10200020 : call method on binding obj failed
-    static const int32_t ERR_EXCEED_WAITING_LIMITATION = 10200021; // 10200021 : SyncCall exceed waiting time limitation
-    // add for inner implementation
-    static const int32_t ERR_DURING_GLOBAL_CALL = 10200022; // 10200022 : SyncCall encountered exception during calling
+    // 10200020 : The called method is not callable or async or generator
+    static const int32_t ERR_CALL_METHOD_ON_BINDING_OBJ = 10200020;
+    static const int32_t ERR_GLOBAL_CALL_TIMEOUT = 10200021; // 10200021 : Global call has exceeded the timeout
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H
