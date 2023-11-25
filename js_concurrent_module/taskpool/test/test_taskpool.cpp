@@ -275,11 +275,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest021, testing::ext::TestSize.Level0)
     uint32_t executeId = taskManger.GenerateExecuteId();
     napi_value args = NapiHelper::CreateUint32(env, taskId);
     napi_value task = nullptr;
+    napi_value taskName = NapiHelper::CreateEmptyString(env);
     napi_value function = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
     napi_value function1 = TestFunction(env);
-    TaskInfo* taskInfo = taskManger.GenerateTaskInfo(env, function, args, taskId, executeId);
+    TaskInfo* taskInfo = taskManger.GenerateTaskInfo(env, function, args, taskName, taskId, executeId);
     ASSERT_TRUE(taskInfo == nullptr);
-    taskInfo = taskManger.GenerateTaskInfo(env, function1, args, taskId, executeId);
+    taskInfo = taskManger.GenerateTaskInfo(env, function1, args, taskName, taskId, executeId);
     ASSERT_TRUE(taskInfo == nullptr);
     TaskInfo* taskInfo1 = taskManger.GetTaskInfo(executeId);
     ASSERT_TRUE(taskInfo1 == nullptr);
@@ -434,7 +435,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest031, testing::ext::TestSize.Level0)
     uint32_t number = 10;
     napi_value value = NapiHelper::CreateUint32(env, number);
     napi_value* args = new napi_value[argc];
-    Task::CreateTaskByFunc(env, value, func, args, argc);
+    napi_value taskName = NapiHelper::CreateEmptyString(env);
+    Task::CreateTaskByFunc(env, value, func, taskName, args, argc);
     ASSERT_TRUE(args != nullptr);
 }
 

@@ -526,7 +526,7 @@ void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
     }
 }
 
-TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
+TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_value args, napi_value taskName,
                                         uint32_t taskId, uint32_t executeId, napi_value transferList)
 {
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
@@ -553,7 +553,7 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         return nullptr;
     }
-    napi_value funcName = NapiHelper::GetNameProperty(env, func, FUNCTION_NAME);
+    napi_value funcName = NapiHelper::GetNameProperty(env, func, NAME);
     TaskInfo* taskInfo = new TaskInfo();
     taskInfo->env = env;
     taskInfo->executeId = executeId;
@@ -563,6 +563,7 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
     char* strValue = NapiHelper::GetString(env, funcName);
     taskInfo->funcName = std::string(strValue);
     delete[] strValue;
+    taskInfo->taskName = std::string(NapiHelper::GetString(env, taskName));
     taskInfo->onResultSignal = new uv_async_t;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_async_init(loop, taskInfo->onResultSignal, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
@@ -578,6 +579,7 @@ TaskInfo* TaskManager::GenerateTaskInfoFromTask(napi_env env, napi_value task, u
     napi_value function = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
     napi_value arguments = NapiHelper::GetNameProperty(env, task, ARGUMENTS_STR);
     napi_value taskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
+    napi_value taskName = NapiHelper::GetNameProperty(env, task, NAME);
     if (function == nullptr || arguments == nullptr || taskId == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task value is error");
         return nullptr;
@@ -587,7 +589,7 @@ TaskInfo* TaskManager::GenerateTaskInfoFromTask(napi_env env, napi_value task, u
         transferList = NapiHelper::GetNameProperty(env, task, TRANSFERLIST_STR);
     }
     uint32_t id = NapiHelper::GetUint32Value(env, taskId);
-    TaskInfo* taskInfo = GenerateTaskInfo(env, function, arguments, id, executeId, transferList);
+    TaskInfo* taskInfo = GenerateTaskInfo(env, function, arguments, taskName, id, executeId, transferList);
     return taskInfo;
 }
 

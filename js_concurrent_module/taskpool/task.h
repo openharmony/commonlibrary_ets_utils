@@ -34,7 +34,8 @@ class Task {
 public:
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value SetTransferList(napi_env env, napi_callback_info cbinfo);
-    static uint32_t CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc);
+    static uint32_t CreateTaskByFunc(napi_env env, napi_value task, napi_value func,
+                                     napi_value name, napi_value* args, size_t argc);
     static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
     static napi_value OnReceiveData(napi_env env, napi_callback_info cbinfo);
     static napi_value SendData(napi_env env, napi_callback_info cbinfo);
@@ -64,6 +65,7 @@ struct TaskInfo {
     void* worker {nullptr};
     Priority priority {Priority::DEFAULT};
     std::string funcName {};
+    std::string taskName {};
 };
 
 struct CallbackInfo {

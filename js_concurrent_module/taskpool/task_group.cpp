@@ -26,8 +26,24 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbinfo)
 {
+    size_t argc = 2;
+    napi_value args[2];
     napi_value thisVar;
-    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    napi_value name = NapiHelper::CreateEmptyString(env);
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    if (argc > 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the number of params must be zero or one");
+        return nullptr;
+    }
+
+    if (argc == 1) {
+        // check 1st param is taskGroupName
+        if (!NapiHelper::IsString(env, args[0])) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the first param of task must be string");
+            return nullptr;
+        }
+        name = args[0];
+    }
 
     napi_value groupId;
     uint32_t id = TaskGroupManager::GetInstance().GenerateGroupId();
@@ -36,6 +52,7 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
         DECLARE_NAPI_PROPERTY(GROUP_ID_STR, groupId),
         DECLARE_NAPI_FUNCTION_WITH_DATA("addTask", AddTask, thisVar),
     };
+    napi_set_named_property(env, thisVar, NAME, name);
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
     uint32_t* data = new uint32_t();
     *data = id;
@@ -78,8 +95,9 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     } else if (type == napi_function) {
         napi_value task = nullptr;
+        napi_value name = NapiHelper::CreateEmptyString(env);
         napi_create_object(env, &task);
-        Task::CreateTaskByFunc(env, task, args[0], args, argc);
+        Task::CreateTaskByFunc(env, task, args[0], name, args + 1, argc - 1);
         napi_ref taskRef = NapiHelper::CreateReference(env, task, 1);
         TaskGroupManager::GetInstance().AddTask(groupId, taskRef);
         return nullptr;
