@@ -432,6 +432,7 @@ private:
 
     void HandleHostException() const;
     void HandleException();
+    void HandleUncaughtException(napi_value exception);
     bool CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch);
     void CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const;
 
