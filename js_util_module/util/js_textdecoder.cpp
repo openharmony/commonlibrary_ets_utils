@@ -66,7 +66,6 @@ namespace OHOS::Util {
         tranTool_ = std::move(tempTranTool);
     }
 
-
     napi_value TextDecoder::Decode(napi_env env, napi_value src, bool iflag)
     {
         uint8_t flags = 0;
@@ -80,7 +79,6 @@ namespace OHOS::Util {
         napi_value arrayBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &data1, &arrayBuffer, &byteOffset));
         const char *source = static_cast<char*>(data1);
-        UErrorCode codeFlag = U_ZERO_ERROR;
         size_t limit = GetMinByteSize() * length;
         size_t len = limit * sizeof(UChar);
         UChar *arr = nullptr;
@@ -97,7 +95,12 @@ namespace OHOS::Util {
         }
         UChar *target = arr;
         size_t tarStartPos = reinterpret_cast<uintptr_t>(arr);
+        UErrorCode codeFlag = U_ZERO_ERROR;
         ucnv_toUnicode(GetConverterPtr(), &target, target + len, &source, source + length, nullptr, flush, &codeFlag);
+        if (codeFlag != U_ZERO_ERROR) {
+            return ThrowError(env, "TextDecoder decoding error.");
+        }
+
         size_t resultLength = 0;
         bool omitInitialBom = false;
         DecodeArr decArr(target, tarStartPos, limit);
@@ -193,5 +196,25 @@ namespace OHOS::Util {
                 }
             }
         }
+    }
+
+    napi_value TextDecoder::ThrowError(napi_env env, const char* errMessage)
+    {
+        napi_value utilError = nullptr;
+        napi_value code = nullptr;
+        uint32_t errCode = 10200019;
+        napi_create_uint32(env, errCode, &code);
+        napi_value name = nullptr;
+        std::string errName = "BusinessError";
+        napi_value msg = nullptr;
+        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
+        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
+        napi_create_error(env, nullptr, msg, &utilError);
+        napi_set_named_property(env, utilError, "code", code);
+        napi_set_named_property(env, utilError, "name", name);
+        napi_throw(env, utilError);
+        napi_value res = nullptr;
+        NAPI_CALL(env, napi_get_undefined(env, &res));
+        return res;
     }
 }
