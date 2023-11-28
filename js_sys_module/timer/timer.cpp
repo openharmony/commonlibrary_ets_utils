@@ -137,7 +137,7 @@ void Timer::TimerCallback(uv_timer_t* handle)
     bool isExceptionPending = false;
     napi_is_exception_pending(env, &isExceptionPending);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
-    if (isExceptionPending) {
+    if (isExceptionPending && engine->IsMainThread()) {
         HILOG_ERROR("Pending exception in TimerCallback. Triggering HandleUncaughtException");
         engine->HandleUncaughtException();
         napi_close_handle_scope(env, scope);
