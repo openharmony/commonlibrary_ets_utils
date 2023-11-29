@@ -379,6 +379,9 @@ public:
     void SetWorkerEnv(napi_env workerEnv)
     {
         workerEnv_ = workerEnv;
+        if (workerEnvCallback_) {
+            workerEnvCallback_(workerEnv_);
+        }
     }
 
     std::string GetScript() const
@@ -419,6 +422,24 @@ public:
             HILOG_ERROR("worker:: Worker loop is nullptr when start worker loop");
             return;
         }
+    }
+
+    void RegisterCallbackForWorkerEnv(std::function<void (napi_env)> callback)
+    {
+        workerEnvCallback_ = callback;
+        if (workerEnv_ != nullptr) {
+            workerEnvCallback_(nullptr);
+        }
+    }
+
+    napi_env GetWorkerEnv() const
+    {
+        return workerEnv_;
+    }
+
+    napi_env GetHostEnv() const
+    {
+        return hostEnv_;
     }
 
 private:
@@ -473,16 +494,6 @@ private:
     void DebuggerOnPostTask(std::function<void()>&& task);
 #endif
 
-    napi_env GetHostEnv() const
-    {
-        return hostEnv_;
-    }
-
-    napi_env GetWorkerEnv() const
-    {
-        return workerEnv_;
-    }
-
     std::string script_ {};
     std::string name_ {};
     ScriptMode scriptMode_ {CLASSIC};
@@ -528,6 +539,7 @@ private:
 
     std::condition_variable cv_;
     std::atomic<bool> globalCallSuccess_ = true;
+    std::function<void(napi_env)> workerEnvCallback_;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H
