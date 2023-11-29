@@ -1222,8 +1222,6 @@ bool Worker::PrepareForWorkerInstance()
         workerEngine->SetDebuggerPostTaskFunc(
             std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
 #endif
-        workerEngine->RegisterNapiUncaughtExceptionHandler(
-            std::bind(&Worker::HandleUncaughtException, this, std::placeholders::_1));
         if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
             HILOG_ERROR("worker:: CallInitWorkerFunc error");
             return false;
