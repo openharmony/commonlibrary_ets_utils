@@ -22,6 +22,7 @@
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
+#include "message_queue.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
@@ -42,6 +43,9 @@ public:
     static Worker* WorkerConstructor(napi_env env);
 
     void NotifyExecuteTask();
+    void Enqueue(TaskResultInfo* resultInfo);
+    TaskResultInfo* Dequeue();
+    bool IsQueueEmpty();
 
 private:
     explicit Worker(napi_env env) : hostEnv_(env) {};
@@ -161,7 +165,7 @@ private:
     std::pair<uint32_t, Priority> executeInfo_ {0, Priority::DEFAULT};
     std::vector<uint32_t> currentTaskId_ {};
     std::mutex currentTaskIdMutex_;
-
+    MessageQueue<TaskResultInfo*> hostMessageQueue_ {};
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

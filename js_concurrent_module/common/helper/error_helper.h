@@ -82,6 +82,15 @@ public:
             case ERR_GLOBAL_CALL_TIMEOUT:
                 errTitle = "Call globalCallObject method waiting time has exceeded the timeout: ";
                 break;
+            case ERR_NOT_IN_TASKPOOL_THREAD:
+                errTitle = "The function is not called in the taskpool thread";
+                break;
+            case ERR_NOT_IN_CONCURRENT_FUNCTION:
+                errTitle = "The function is not called in the concurrent function";
+                break;
+            case ERR_NOT_REGISTERED:
+                errTitle = "The callback is not registered on the host side";
+                break;
             default:
                 break;
         }
@@ -220,6 +229,11 @@ public:
     // 10200020 : The called method is not callable or async or generator
     static const int32_t ERR_CALL_METHOD_ON_BINDING_OBJ = 10200020;
     static const int32_t ERR_GLOBAL_CALL_TIMEOUT = 10200021; // 10200021 : Global call has exceeded the timeout
+    // 10200022 : The function is not called in the taskpool thread
+    static const int32_t ERR_NOT_IN_TASKPOOL_THREAD = 10200022;
+    // 10200023 : The function is not called in the concurrent function
+    static const int32_t ERR_NOT_IN_CONCURRENT_FUNCTION = 10200023;
+    static const int32_t ERR_NOT_REGISTERED = 10200024; // 10200024 : The callback is not registered on the host side
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H

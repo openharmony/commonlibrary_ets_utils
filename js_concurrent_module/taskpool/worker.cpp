@@ -46,12 +46,14 @@ Worker* Worker::WorkerConstructor(napi_env env)
 void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 {
     auto worker = static_cast<Worker*>(req->data);
+    HILOG_DEBUG("taskpool:: enter the worker loop and try to release thread: %{public}d", worker->tid_);
     if (!worker->CheckFreeConditions()) {
         return;
     }
 
     HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
-    HILOG_INFO("taskpool:: the thread is idle and will be released");
+    HILOG_INFO("taskpool:: the thread is idle and will be released, and the total num is %{public}u now",
+        TaskManager::GetInstance().GetThreadNum());
     // when there is no active handle, worker loop will stop automatically.
     ConcurrentHelper::UvHandleClose(worker->performTaskSignal_);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
@@ -75,6 +77,7 @@ bool Worker::CheckFreeConditions()
     if (res) {
         return true;
     }
+    HILOG_DEBUG("taskpool:: the worker %{public}d can't be released due to not meeting the conditions", tid_);
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.RestoreWorker(this);
     taskManager.CountTraceForWorker();
@@ -403,5 +406,20 @@ void Worker::ResetWorkerPriority()
         SetWorkerPriority(Priority::HIGH);
         priority_ = Priority::HIGH;
     }
+}
+
+void Worker::Enqueue(TaskResultInfo* resultInfo)
+{
+    hostMessageQueue_.EnQueue(resultInfo);
+}
+
+TaskResultInfo* Worker::Dequeue()
+{
+    return hostMessageQueue_.DeQueue();
+}
+
+bool Worker::IsQueueEmpty()
+{
+    return hostMessageQueue_.IsEmpty();
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

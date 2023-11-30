@@ -32,13 +32,14 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
-static constexpr char FUNCTION_STR[] = "function";
 static constexpr char ARGUMENTS_STR[] = "arguments";
+static constexpr char FUNCTION_NAME[] = "name";
+static constexpr char FUNCTION_STR[] = "function";
+static constexpr char GROUP_ID_STR[] = "groupId";
+static constexpr char TASKCALLBACK_STR[] = "onReceiveDataCallback";
 static constexpr char TASKID_STR[] = "taskId";
 static constexpr char TASKINFO_STR[] = "taskInfo";
 static constexpr char TRANSFERLIST_STR[] = "transferList";
-static constexpr char GROUP_ID_STR[] = "groupId";
-static constexpr char FUNCTION_NAME[] = "name";
 
 class TaskManager {
 public:
@@ -90,6 +91,12 @@ public:
 
     // for countTrace for worker
     void CountTraceForWorker();
+
+    std::shared_ptr<CallbackInfo> GetCallbackInfo(uint32_t taskId);
+    void RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo);
+    void IncreaseRefCount(uint32_t taskId);
+    void DecreaseRefCount(napi_env env, uint32_t taskId);
+    napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, TaskInfo* taskInfo);
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -154,6 +161,9 @@ private:
 
     std::atomic<bool> isInitialized_ = false;
     bool enableShrink_ = false;
+
+    std::mutex callbackMutex_;
+    std::map<uint32_t, std::shared_ptr<CallbackInfo>> callbackTable_ {};
 
     friend class TaskGroupManager;
 };

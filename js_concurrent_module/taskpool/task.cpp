@@ -19,10 +19,13 @@
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "task_manager.h"
+#include "taskpool.h"
 #include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+static constexpr char ONRECEIVEDATA_STR[] = "onReceiveData";
 static constexpr char SETTRANSFERLIST_STR[] = "setTransferList";
+
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
 napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
@@ -43,11 +46,20 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param of task must be function");
         return nullptr;
     }
-    CreateTaskByFunc(env, thisVar, args[0], args, argc);
+    uint32_t taskId = CreateTaskByFunc(env, thisVar, args[0], args, argc);
+    uint32_t* idPointer = new uint32_t(taskId);
+    napi_wrap(env, thisVar, idPointer, Destructor, nullptr, nullptr);
     return thisVar;
 }
 
-void Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc)
+void Task::Destructor(napi_env env, void* data, [[maybe_unused]] void* hint)
+{
+    uint32_t* taskId = reinterpret_cast<uint32_t*>(data);
+    TaskManager::GetInstance().DecreaseRefCount(env, *taskId);
+    delete taskId;
+}
+
+uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc)
 {
     napi_value argsArray;
     napi_create_array_with_length(env, argc - 1, &argsArray);
@@ -56,18 +68,16 @@ void Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi
     }
 
     napi_value taskId = NapiHelper::CreateUint32(env, TaskManager::GetInstance().GenerateTaskId());
-
-    napi_value setTransferListFunc;
-    napi_create_function(env, SETTRANSFERLIST_STR, NAPI_AUTO_LENGTH, SetTransferList, NULL, &setTransferListFunc);
-
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION(SETTRANSFERLIST_STR, SetTransferList),
+        DECLARE_NAPI_FUNCTION(ONRECEIVEDATA_STR, OnReceiveData),
     };
 
     napi_set_named_property(env, task, TASKID_STR, taskId);
     napi_define_properties(env, task, sizeof(properties) / sizeof(properties[0]), properties);
     napi_set_named_property(env, task, FUNCTION_STR, args[0]);
     napi_set_named_property(env, task, ARGUMENTS_STR, argsArray);
+    return NapiHelper::GetUint32Value(env, taskId);
 }
 
 napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
@@ -131,5 +141,47 @@ napi_value Task::IsCanceled(napi_env env, napi_callback_info cbinfo)
         isCanceled = taskInfo->isCanceled;
     }
     return NapiHelper::CreateBooleanValue(env, isCanceled);
+}
+
+napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc >= 2) { // 2: the number of parmas
+        HILOG_ERROR("taskpool:: the number of OnReceiveData parma must be less than 2");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "taskpool:: the number of OnReceiveData parma must be less than 2");
+        return nullptr;
+    }
+
+    napi_value thisVar;
+    if (argc == 0) {
+        HILOG_INFO("taskpool:: Set taskpool.Task.onReceiveData to undefined");
+        napi_get_cb_info(env, cbinfo, &argc, nullptr, &thisVar, nullptr);
+        napi_value id = NapiHelper::GetNameProperty(env, thisVar, "taskId");
+        uint32_t taskId = NapiHelper::GetUint32Value(env, id);
+        TaskManager::GetInstance().RegisterCallback(env, taskId, nullptr);
+        return nullptr;
+    }
+
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    napi_valuetype type;
+    NAPI_CALL(env, napi_typeof(env, args[0], &type));
+    if (type != napi_function) {
+        HILOG_ERROR("taskpool:: OnReceiveData's parameter should be function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "taskpool:: OnReceiveData's parameter should be function");
+        return nullptr;
+    }
+    // store callbackInfo
+    napi_value id = NapiHelper::GetNameProperty(env, thisVar, "taskId");
+    uint32_t taskId = NapiHelper::GetUint32Value(env, id);
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
+    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
+    callbackInfo->onCallbackSignal = new uv_async_t;
+    auto loop = NapiHelper::GetLibUV(env);
+    uv_async_init(loop, callbackInfo->onCallbackSignal, TaskPool::ExecuteCallback);
+    TaskManager::GetInstance().RegisterCallback(env, taskId, callbackInfo);
+    return nullptr;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
