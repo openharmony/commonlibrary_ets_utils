@@ -92,8 +92,7 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
                 worker = *item;
             }
         }
-    }
-    if (engine->IsWorkerThread()) {
+    } else if (engine->IsWorkerThread()) {
         std::lock_guard<std::mutex> lock(g_workersMutex);
         for (auto item = g_workers.begin(); item != g_workers.end(); item++) {
             if ((*item)->IsSameWorkerEnv(env)) {
@@ -445,7 +444,7 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "BusinessError 401: Parameter error. The type of 'instanceName' must be string");
+            "BusinessError 401:: Parameter error. The type of 'instanceName' must be string");
         return nullptr;
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);
@@ -477,7 +476,7 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "BusinessError 401: Parameter error. The type of 'instanceName' must be string");
+            "BusinessError 401:: Parameter error. The type of 'instanceName' must be string");
         return nullptr;
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);

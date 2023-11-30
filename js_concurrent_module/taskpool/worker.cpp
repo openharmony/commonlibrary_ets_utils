@@ -292,7 +292,7 @@ void Worker::PerformTask(const uv_async_t* req)
     if (status != napi_ok || func == nullptr) {
         HILOG_ERROR("taskpool:: PerformTask deserialize function fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-                                               "taskpool: failed to deserialize function.");
+                                               "taskpool:: failed to deserialize function.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
         return;
@@ -302,7 +302,7 @@ void Worker::PerformTask(const uv_async_t* req)
     if (status != napi_ok || args == nullptr) {
         HILOG_ERROR("taskpool:: PerformTask deserialize arguments fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-                                               "taskpool: failed to deserialize arguments.");
+                                               "taskpool:: failed to deserialize arguments.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
         return;
@@ -323,7 +323,7 @@ void Worker::PerformTask(const uv_async_t* req)
     if (!success) {
         HILOG_ERROR("taskpool:: InitTaskPoolFunc fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::TYPE_ERROR,
-                                               "taskpool: function may not be concurrent.");
+                                               "taskpool:: function may not be concurrent.");
         taskInfo->success = false;
         NotifyTaskResult(env, taskInfo, err);
         return;
