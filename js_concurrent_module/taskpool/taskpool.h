@@ -28,7 +28,6 @@ using namespace Commonlibrary::Concurrent::Common;
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
-    static napi_value SendData(napi_env env, napi_callback_info cbinfo);
     static void ExecuteCallback(uv_async_t* req);
 
 private:

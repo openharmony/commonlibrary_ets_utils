@@ -37,6 +37,7 @@ public:
     static uint32_t CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc);
     static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
     static napi_value OnReceiveData(napi_env env, napi_callback_info cbinfo);
+    static napi_value SendData(napi_env env, napi_callback_info cbinfo);
     static void Destructor(napi_env env, void* nativeObject, void* finalize);
 
 private:

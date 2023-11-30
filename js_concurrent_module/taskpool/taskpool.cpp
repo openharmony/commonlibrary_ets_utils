@@ -36,6 +36,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value isCanceledFunc = nullptr;
     napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, Task::IsCanceled, NULL, &isCanceledFunc);
     napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
+    napi_value sendDataFunc = nullptr;
+    napi_create_function(env, "sendData", NAPI_AUTO_LENGTH, Task::SendData, NULL, &sendDataFunc);
+    napi_set_named_property(env, taskClass, "sendData", sendDataFunc);
     napi_value taskGroupClass = nullptr;
     napi_define_class(env, "TaskGroup", NAPI_AUTO_LENGTH, TaskGroup::TaskGroupConstructor, nullptr, 0, nullptr,
                       &taskGroupClass);
@@ -59,54 +62,11 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("execute", Execute),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
         DECLARE_NAPI_FUNCTION("getTaskPoolInfo", GetTaskPoolInfo),
-        DECLARE_NAPI_FUNCTION("sendData", SendData),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
     TaskManager::GetInstance().InitTaskManager(env);
     return exports;
-}
-
-napi_value TaskPool::SendData(napi_env env, napi_callback_info cbinfo)
-{
-    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    napi_value args[argc];
-    napi_value thisVar;
-    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
-
-    napi_value argsArray;
-    napi_create_array_with_length(env, argc, &argsArray);
-    for (size_t i = 0; i < argc; i++) {
-        napi_set_element(env, argsArray, i, args[i]);
-    }
-
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    if (!engine->IsTaskPoolThread()) {
-        HILOG_ERROR("taskpool:: SendData is not called in the taskpool thread");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_IN_TASKPOOL_THREAD);
-        return nullptr;
-    }
-    TaskInfo* taskInfo = nullptr;
-    void* data = engine->GetCurrentTaskInfo();
-    if (data == nullptr) {
-        HILOG_ERROR("taskpool:: SendData is not called in the concurrent function");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_IN_CONCURRENT_FUNCTION);
-        return nullptr;
-    } else {
-        taskInfo = static_cast<TaskInfo*>(data);
-    }
-
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    napi_value serializationArgs;
-    napi_status status = napi_serialize(env, argsArray, undefined, &serializationArgs);
-    if (status != napi_ok || serializationArgs == nullptr) {
-        std::string errMessage = "taskpool:: failed to serialize function";
-        HILOG_ERROR("taskpool:: failed to serialize function in SendData");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
-        return nullptr;
-    }
-    TaskResultInfo* resultInfo = new TaskResultInfo(taskInfo->env, taskInfo->taskId, serializationArgs);
-    return TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, taskInfo);
 }
 
 void TaskPool::ExecuteCallback(uv_async_t* req)
