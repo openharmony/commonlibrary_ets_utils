@@ -184,4 +184,46 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     TaskManager::GetInstance().RegisterCallback(env, taskId, callbackInfo);
     return nullptr;
 }
+
+napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    napi_value args[argc];
+    napi_value thisVar;
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+
+    napi_value argsArray;
+    napi_create_array_with_length(env, argc, &argsArray);
+    for (size_t i = 0; i < argc; i++) {
+        napi_set_element(env, argsArray, i, args[i]);
+    }
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsTaskPoolThread()) {
+        HILOG_ERROR("taskpool:: SendData is not called in the taskpool thread");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_IN_TASKPOOL_THREAD);
+        return nullptr;
+    }
+    TaskInfo* taskInfo = nullptr;
+    void* data = engine->GetCurrentTaskInfo();
+    if (data == nullptr) {
+        HILOG_ERROR("taskpool:: SendData is not called in the concurrent function");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_IN_CONCURRENT_FUNCTION);
+        return nullptr;
+    } else {
+        taskInfo = static_cast<TaskInfo*>(data);
+    }
+
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value serializationArgs;
+    napi_status status = napi_serialize(env, argsArray, undefined, &serializationArgs);
+    if (status != napi_ok || serializationArgs == nullptr) {
+        std::string errMessage = "taskpool:: failed to serialize function";
+        HILOG_ERROR("taskpool:: failed to serialize function in SendData");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        return nullptr;
+    }
+    TaskResultInfo* resultInfo = new TaskResultInfo(taskInfo->env, taskInfo->taskId, serializationArgs);
+    return TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, taskInfo);
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
