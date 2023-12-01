@@ -446,7 +446,7 @@ namespace OHOS::xml {
             keyInfo_.append(strXml_, 0, position_);
         }
 
-        if (max_ != position_) {
+        if (max_ > position_) {
             max_ -= position_;
             for (size_t j = 0; j < max_; ++j) {
                 strXml_[j] = strXml_[position_ + j];
