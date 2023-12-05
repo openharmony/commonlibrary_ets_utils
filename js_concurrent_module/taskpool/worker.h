@@ -162,10 +162,11 @@ private:
     std::atomic<WorkerState> state_ {WorkerState::IDLE};
     Priority priority_ {Priority::DEFAULT};
     pid_t tid_ = 0;
-    std::pair<uint32_t, Priority> executeInfo_ {0, Priority::DEFAULT};
     std::vector<uint32_t> currentTaskId_ {};
     std::mutex currentTaskIdMutex_;
     MessageQueue<TaskResultInfo*> hostMessageQueue_ {};
+    uint64_t lastCpuTime_ = 0;
+    uint32_t idleCount_ = 0;
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -15,6 +15,7 @@
 
 #include "task_manager.h"
 
+#include <securec.h>
 #include <thread>
 
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
@@ -31,12 +32,13 @@ using namespace OHOS::JsSysModule;
 static constexpr int8_t HIGH_PRIORITY_TASK_COUNT = 5;
 static constexpr int8_t MEDIUM_PRIORITY_TASK_COUNT = 5;
 static constexpr int32_t MAX_TASK_DURATION = 100; // 100: 100ms
-static constexpr int32_t MAX_IDLE_TIME = 50000; // 50000: 50s
 static constexpr uint32_t STEP_SIZE = 2;
 static constexpr uint32_t DEFAULT_THREADS = 3;
 static constexpr uint32_t MIN_THREADS = 1; // 1: minimum thread num when idle
 static constexpr uint32_t MIN_TIMEOUT_TIME = 180000; // 180000: 3min
 static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 600000: 10min
+static constexpr int32_t MAX_IDLE_TIME = 50000; // 50000: 50s
+[[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2min later will release the thread
 
 // ----------------------------------- TaskManager ----------------------------------------
 TaskManager& TaskManager::GetInstance()
@@ -206,13 +208,12 @@ void TaskManager::CheckForBlockedWorkers()
     bool needChecking = false;
     bool state = (GetThreadNum() == ConcurrentHelper::GetMaxThreads()) && (GetIdleWorkers() == 0);
     uint64_t threshold = state ? MIN_TIMEOUT_TIME : MAX_TIMEOUT_TIME;
-    for (auto iter = workers_.begin(); iter != workers_.end();) {
+    for (auto iter = workers_.begin(); iter != workers_.end(); iter++) {
         auto worker = *iter;
         // if the worker thread is idle, just skip it, and only the worker in running state can be marked as timeout
         if ((worker->state_ == WorkerState::IDLE) ||
             (ConcurrentHelper::GetMilliseconds() - worker->startTime_ < threshold) ||
             !worker->UpdateWorkerState(WorkerState::RUNNING, WorkerState::BLOCKED)) {
-            iter++;
             continue;
         }
         // When executing the promise task, the worker state may not be updated and will be
@@ -227,7 +228,6 @@ void TaskManager::CheckForBlockedWorkers()
                 worker->UpdateWorkerState(WorkerState::BLOCKED, WorkerState::RUNNING);
                 worker->startTime_ = ConcurrentHelper::GetMilliseconds();
             }
-            iter++;
             continue;
         }
 
@@ -237,7 +237,6 @@ void TaskManager::CheckForBlockedWorkers()
 
         idleWorkers_.erase(worker);
         timeoutWorkers_.insert(worker);
-        workers_.erase(iter++);
     }
     // should trigger the check when we have marked and removed workers
     if (UNLIKELY(needChecking)) {
@@ -256,28 +255,132 @@ void TaskManager::TryTriggerExpand()
     uv_async_send(expandHandle_);
 }
 
+#if defined(OHOS_PLATFORM)
+// read /proc/[pid]/task/[tid]/stat to get the number of idle threads.
+bool TaskManager::ReadThreadInfo(Worker* worker, char* buf, uint32_t size)
+{
+    char path[128]; // 128: buffer for path
+    pid_t pid = getpid();
+    pid_t tid = worker->tid_;
+    ssize_t bytesLen = -1;
+    snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/stat", pid, tid);
+    int fd = open(path, O_RDONLY | O_NONBLOCK);
+    if (UNLIKELY(fd == -1)) {
+        return false;
+    }
+    bytesLen = read(fd, buf, size - 1);
+    close(fd);
+    if (bytesLen <= 0) {
+        HILOG_ERROR("taskpool:: failed to read %{public}s", path);
+        return false;
+    }
+    buf[bytesLen] = '\0';
+    return true;
+}
+
+uint32_t TaskManager::GetIdleWorkers()
+{
+    char buf[4096]; // 4096: buffer for thread info
+    uint32_t idleCount = 0;
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    for (auto& worker : idleWorkers_) {
+        if (!ReadThreadInfo(worker, buf, sizeof(buf))) {
+            continue;
+        }
+        char state;
+        if (sscanf_s(buf, "%*d %*s %c", &state, sizeof(state)) != 1) { // 1: state
+            HILOG_ERROR("taskpool: sscanf_s of state failed for %{public}c", state);
+            return 0;
+        }
+        if (state == 'S') {
+            idleCount++;
+        }
+    }
+    return idleCount;
+}
+
+void TaskManager::GetIdleWorkersList(uint32_t step)
+{
+    char buf[4096]; // 4096: buffer for thread info
+    for (auto& worker : idleWorkers_) {
+        if (!ReadThreadInfo(worker, buf, sizeof(buf))) {
+            continue;
+        }
+        char state;
+        uint64_t utime;
+        if (sscanf_s(buf, "%*d %*s %c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %llu",
+            &state, sizeof(state), &utime) != 2) { // 2: state and utime
+            HILOG_ERROR("taskpool: sscanf_s of state failed for %{public}d", worker->tid_);
+            return;
+        }
+        if (state != 'S' || utime != worker->lastCpuTime_) {
+            worker->idleCount_ = 0;
+            worker->lastCpuTime_ = utime;
+            continue;
+        }
+        if (++worker->idleCount_ >= IDLE_THRESHOLD) {
+            freeList_.emplace_back(worker);
+        }
+    }
+}
+
+void TaskManager::TriggerShrink(uint32_t step)
+{
+    GetIdleWorkersList(step);
+    step = std::min(step, static_cast<uint32_t>(freeList_.size()));
+    uint32_t count = 0;
+    for (size_t i = 0; i < freeList_.size(); i++) {
+        auto worker = freeList_[i];
+        if (worker->state_ != WorkerState::IDLE) { // may in I/O
+            continue;
+        }
+        auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
+        if (idleTime < MAX_IDLE_TIME || worker->runningCount_ != 0) {
+            continue;
+        }
+        idleWorkers_.erase(worker);
+        HILOG_DEBUG("taskpool:: try to release idle thread: %{public}d", worker->tid_);
+        uv_async_send(worker->clearWorkerSignal_);
+        if (++count == step) {
+            break;
+        }
+    }
+    freeList_.clear();
+}
+#else
+uint32_t TaskManager::GetIdleWorkers()
+{
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    return idleWorkers_.size();
+}
+
+void TaskManager::TriggerShrink(uint32_t step)
+{
+    for (uint32_t i = 0; i < step; i++) {
+        // try to free the worker that idle time meets the requirement
+        auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [](Worker *worker) {
+            auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
+            return idleTime > MAX_IDLE_TIME && worker->runningCount_ == 0;
+        });
+        // remove it from all sets
+        if (iter != idleWorkers_.end()) {
+            auto worker = *iter;
+            idleWorkers_.erase(worker);
+            HILOG_DEBUG("taskpool:: try to release idle thread: %{public}d", worker->tid_);
+            uv_async_send(worker->clearWorkerSignal_);
+        }
+    }
+}
+#endif
+
 void TaskManager::NotifyShrink(uint32_t targetNum)
 {
     uint32_t workerCount = GetThreadNum();
-    if (enableShrink_ && workerCount > MIN_THREADS && workerCount > targetNum) {
+    if (workerCount > MIN_THREADS && workerCount > targetNum) {
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-        uint32_t maxNum = std::max(MIN_THREADS, targetNum);
-        uint32_t step = std::min(workerCount - maxNum, STEP_SIZE);
-        for (uint32_t i = 0; i < step; i++) {
-            // try to free the worker that idle time meets the requirement
-            auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [](Worker *worker) {
-                auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-                return idleTime > MAX_IDLE_TIME && worker->runningCount_ == 0;
-            });
-            // remove it from all sets
-            if (iter != idleWorkers_.end()) {
-                auto worker = *iter;
-                workers_.erase(worker);
-                idleWorkers_.erase(worker);
-                HILOG_DEBUG("taskpool:: try to release idle thread: %{public}d", worker->tid_);
-                uv_async_send(worker->clearWorkerSignal_);
-            }
-        }
+        targetNum = std::max(MIN_THREADS, targetNum);
+        uint32_t step = std::min(workerCount - targetNum, STEP_SIZE);
+        TriggerShrink(step);
     }
     // remove all timeout workers
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
@@ -287,7 +390,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
         timeoutWorkers_.erase(iter++);
     }
     // stop the timer
-    if ((workers_.size() == GetIdleWorkers()) && timeoutWorkers_.empty()) {
+    if ((workers_.size() == idleWorkers_.size() && workers_.size() == MIN_THREADS) && timeoutWorkers_.empty()) {
         suspend_ = true;
         uv_timer_stop(timer_);
         HILOG_DEBUG("taskpool:: timer will be suspended");
@@ -322,7 +425,7 @@ void TaskManager::TryExpand()
     needChecking_ = false; // do not need to check
     uint32_t targetNum = ComputeSuitableThreadNum();
     targetNum |= 1;
-    uint32_t workerCount = GetThreadNum() + GetTimeoutWorkers();
+    uint32_t workerCount = GetThreadNum();
     const uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
@@ -631,27 +734,13 @@ void TaskManager::NotifyWorkerAdded(Worker* worker)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     workers_.insert(worker);
-    HILOG_INFO("taskpool:: a new worker has been added and the current num is %{public}u",
-        static_cast<uint32_t>(workers_.size()));
+    HILOG_INFO("taskpool:: a new worker has been added and the current num is %{public}zu", workers_.size());
 }
 
 void TaskManager::NotifyWorkerRunning(Worker* worker)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     idleWorkers_.erase(worker);
-}
-
-uint32_t TaskManager::GetIdleWorkers()
-{
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-    uint32_t count = 0;
-    for (const auto& idleWorker : idleWorkers_) {
-        auto engine = reinterpret_cast<NativeEngine*>(idleWorker->workerEnv_);
-        if (!engine->IsExecutingPendingJob()) {
-            count++;
-        }
-    }
-    return count;
 }
 
 uint32_t TaskManager::GetRunningWorkers()
@@ -769,9 +858,7 @@ void TaskManager::RestoreWorker(Worker* worker)
     }
     // Since the worker may be executing some tasks in IO thread, we should add it to the
     // worker sets and call the 'NotifyWorkerIdle', which can still execute some tasks in its own thread.
-    workers_.emplace(worker);
-    HILOG_DEBUG("taskpool:: worker has been restored and the current num is: %{public}u",
-        static_cast<uint32_t>(workers_.size()));
+    HILOG_DEBUG("taskpool:: worker has been restored and the current num is: %{public}zu", workers_.size());
     idleWorkers_.emplace_hint(idleWorkers_.end(), worker);
     if (GetTaskNum() != 0) {
         NotifyExecuteTask();
