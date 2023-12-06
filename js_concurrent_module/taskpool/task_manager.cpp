@@ -322,7 +322,7 @@ void TaskManager::TryExpand()
     needChecking_ = false; // do not need to check
     uint32_t targetNum = ComputeSuitableThreadNum();
     targetNum |= 1;
-    uint32_t workerCount = GetThreadNum();
+    uint32_t workerCount = GetThreadNum() + GetTimeoutWorkers();
     const uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
@@ -635,6 +635,12 @@ void TaskManager::NotifyWorkerAdded(Worker* worker)
         static_cast<uint32_t>(workers_.size()));
 }
 
+void TaskManager::NotifyWorkerRunning(Worker* worker)
+{
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    idleWorkers_.erase(worker);
+}
+
 uint32_t TaskManager::GetIdleWorkers()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
@@ -709,14 +715,9 @@ std::pair<uint32_t, Priority> TaskManager::DequeueExecuteId()
 void TaskManager::NotifyExecuteTask()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-    if (idleWorkers_.empty()) {
-        return;
+    for (auto& worker : idleWorkers_) {
+        worker->NotifyExecuteTask();
     }
-    auto candidator = idleWorkers_.begin();
-    Worker* worker = *candidator;
-    worker->executeInfo_ = TaskManager::GetInstance().DequeueExecuteId();
-    worker->NotifyExecuteTask();
-    idleWorkers_.erase(candidator);
     TaskManager::GetInstance().CountTraceForWorker();
 }
 

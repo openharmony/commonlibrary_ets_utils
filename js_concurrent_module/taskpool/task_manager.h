@@ -68,6 +68,7 @@ public:
     // for worker state
     void NotifyWorkerIdle(Worker* worker);
     void NotifyWorkerCreated(Worker* worker);
+    void NotifyWorkerRunning(Worker* worker);
     void RemoveWorker(Worker* worker);
     void RestoreWorker(Worker* worker);
 
