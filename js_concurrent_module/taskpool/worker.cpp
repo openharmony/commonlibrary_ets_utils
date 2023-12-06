@@ -224,8 +224,6 @@ void Worker::NotifyExecuteTask()
 {
     if (LIKELY(uv_is_active(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
         uv_async_send(performTaskSignal_);
-    } else {
-        TaskManager::GetInstance().EnqueueExecuteId(executeInfo_.first, executeInfo_.second);
     }
 }
 
@@ -262,7 +260,12 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_env env = worker->workerEnv_;
     napi_status status = napi_ok;
     RunningScope runningScope(worker, status);
-    auto executeInfo = worker->executeInfo_;
+    TaskManager::GetInstance().NotifyWorkerRunning(worker);
+    auto executeInfo = TaskManager::GetInstance().DequeueExecuteId();
+    if (executeInfo.first == 0) {
+        worker->NotifyTaskFinished();
+        return;
+    }
     if (UNLIKELY(status != napi_ok)) {
         GET_AND_THROW_LAST_ERROR((env));
         TaskManager::GetInstance().EnqueueExecuteId(executeInfo.first, executeInfo.second);
