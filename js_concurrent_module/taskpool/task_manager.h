@@ -44,6 +44,9 @@ static constexpr char TASKINFO_STR[] = "taskInfo";
 static constexpr char TRANSFERLIST_STR[] = "transferList";
 static constexpr char ADD_DEPENDENCY_STR[] = "addDependency";
 static constexpr char REMOVE_DEPENDENCY_STR[] = "removeDependency";
+static constexpr char TASK_CPU_TIME[] = "cpuDuration";
+static constexpr char TASK_IO_TIME[] = "ioDuration";
+static constexpr char TASK_TOTAL_TIME[] = "totalDuration";
 
 class TaskManager {
 public:
@@ -127,6 +130,10 @@ public:
     // for SequnceRunner
     uint32_t GenerateSeqRunnerId();
 
+    // for duration
+    void StoreTaskDuration(uint32_t taskId, uint64_t totalDuration, uint64_t cpuDuration);
+    uint64_t GetTaskDuration(uint32_t taskId, std::string durationType);
+
 private:
     TaskManager(const TaskManager &) = delete;
     TaskManager& operator=(const TaskManager &) = delete;
@@ -180,6 +187,10 @@ private:
     // <<pendingExecuteId1, priority>, <pendingExecuteId2, priority>, ...>
     std::unordered_map<uint32_t, Priority> pendingExecuteInfos_ {};
     std::shared_mutex pendingExecuteInfosMutex_;
+
+    // <<taskId1, <totalDuration1, cpuDuration1>>, <taskId2, <totalDuration2, cpuDuration2>>, ...>
+    std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> taskDurationInfos_ {};
+    std::shared_mutex taskDurationInfosMutex_;
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};

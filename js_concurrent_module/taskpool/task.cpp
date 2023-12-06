@@ -91,6 +91,9 @@ uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func,
         DECLARE_NAPI_FUNCTION(ONRECEIVEDATA_STR, OnReceiveData),
         DECLARE_NAPI_FUNCTION(ADD_DEPENDENCY_STR, AddDependency),
         DECLARE_NAPI_FUNCTION(REMOVE_DEPENDENCY_STR, RemoveDependency),
+        DECLARE_NAPI_GETTER(TASK_TOTAL_TIME, GetTotalDuration),
+        DECLARE_NAPI_GETTER(TASK_CPU_TIME, GetCPUDuration),
+        DECLARE_NAPI_GETTER(TASK_IO_TIME, GetIODuration)
     };
 
     // add task name to task
@@ -327,5 +330,32 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         }
     }
     return nullptr;
+}
+
+napi_value Task::GetTaskDuration(napi_env env, napi_callback_info& cbinfo, std::string durationType)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    napi_value taskId = NapiHelper::GetNameProperty(env, thisVar, TASKID_STR);
+    uint32_t taskIdVal = NapiHelper::GetUint32Value(env, taskId);
+    uint64_t totalDuration = TaskManager::GetInstance().GetTaskDuration(taskIdVal, durationType);
+    napi_value result = nullptr;
+    napi_create_bigint_uint64(env, totalDuration, &result);
+    return result;
+}
+
+napi_value Task::GetTotalDuration(napi_env env, napi_callback_info cbinfo)
+{
+    return GetTaskDuration(env, cbinfo, TASK_TOTAL_TIME);
+}
+
+napi_value Task::GetCPUDuration(napi_env env, napi_callback_info cbinfo)
+{
+    return GetTaskDuration(env, cbinfo, TASK_CPU_TIME);
+}
+
+napi_value Task::GetIODuration(napi_env env, napi_callback_info cbinfo)
+{
+    return GetTaskDuration(env, cbinfo, TASK_IO_TIME);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
