@@ -464,17 +464,28 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
 napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc != 1) {
+    if (argc > 1) {
         ErrorHelper::ThrowError(env,
-            ErrorHelper::TYPE_ERROR, "worker unregisterGlobalCallObject param count must be 1");
+            ErrorHelper::TYPE_ERROR, "worker unregisterGlobalCallObject param count shall be 1 or 0");
         return nullptr;
     }
-    // check 1st param is string
     napi_value thisVar = nullptr;
     void* data = nullptr;
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
+    Worker* worker = nullptr;
+    napi_unwrap(env, thisVar, (void**)&worker);
+    if (worker == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
+        return nullptr;
+    }
+    if (argc == 0) {
+        worker->ClearGlobalCallObject();
+        HILOG_DEBUG("worker:: clear all registered globalCallObject");
+        return nullptr;
+    }
+    // check 1st param is string
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "BusinessError 401:: Parameter error. The type of 'instanceName' must be string");
@@ -482,12 +493,6 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);
 
-    Worker* worker = nullptr;
-    napi_unwrap(env, thisVar, (void**)&worker);
-    if (worker == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
-        return nullptr;
-    }
     if (!worker->RemoveGlobalCallObject(instanceName)) {
         HILOG_ERROR("worker:: unregister unexist globalCallObject");
     }
