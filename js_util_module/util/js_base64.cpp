@@ -175,6 +175,12 @@ namespace OHOS::Util {
             inputDecode_ = static_cast<const char*>(resultData);
             pret = DecodeAchieve(env, inputDecode_, length);
         }
+        if (pret == nullptr) {
+            if (inputString != nullptr) {
+                FreeMemory(inputString);
+            }
+            return nullptr;
+        }
         void *data = nullptr;
         napi_value arrayBuffer = nullptr;
         size_t bufferSize = decodeOutLen;
@@ -232,7 +238,12 @@ namespace OHOS::Util {
                 if (inp >= (inputLen - equalCount)) {
                     break;
                 }
-                bitWise = (bitWise << TRAGET_SIX) | (Finds(env, input[inp]));
+                int findsData = Finds(env, input[inp]);
+                if (findsData == -1) {
+                    FreeMemory(retDecode);
+                    return nullptr;
+                }
+                bitWise = (bitWise << TRAGET_SIX) | static_cast<size_t>(findsData);
                 inp++;
                 temp++;
             }
@@ -275,11 +286,11 @@ namespace OHOS::Util {
     }
 
     /* Decoding lookup function */
-    size_t Base64::Finds(napi_env env, char ch)
+    int Base64::Finds(napi_env env, char ch)
     {
-        size_t couts = 0;
+        int couts = 0;
         // 65:Number of elements in the encoding table.
-        for (size_t i = 0; i < 65; i++) {
+        for (int i = 0; i < 65; i++) {
             if (BASE[i] == ch) {
                 couts = i;
                 break;
@@ -287,7 +298,7 @@ namespace OHOS::Util {
             // 64:Number of elements in the encoding table.
             if (i == 64 && BASE[i] != ch) {
                 napi_throw_error(env, "-1", "The input string contains unsupported characters");
-                return 0;
+                return -1;
             }
         }
         return couts;
