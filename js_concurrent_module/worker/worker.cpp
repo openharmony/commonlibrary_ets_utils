@@ -1122,6 +1122,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
 
     // 2. copy the script
     script_ = std::string(script);
+    CloseHelp::DeletePointer(script, true);
     // if worker file is packed in har, need find moduleName in hostVM, and concat new recordName.
     if (script_.find_first_of('@') == 0 && script_.find("@bundle:") == std::string::npos) {
         std::string moduleName;
@@ -1129,7 +1130,6 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
         script_ = moduleName + script_;
         HILOG_INFO("Worker filePath is %{public}s )", script_.c_str());
     }
-    CloseHelp::DeletePointer(script, true);
 
     // 3. create WorkerRunner to Execute
     if (!runner_) {
