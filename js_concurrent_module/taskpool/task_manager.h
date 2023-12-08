@@ -23,6 +23,7 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "task.h"
 #include "task_queue.h"
@@ -36,7 +37,6 @@ static constexpr char ARGUMENTS_STR[] = "arguments";
 static constexpr char FUNCTION_NAME[] = "name";
 static constexpr char FUNCTION_STR[] = "function";
 static constexpr char GROUP_ID_STR[] = "groupId";
-static constexpr char TASKCALLBACK_STR[] = "onReceiveDataCallback";
 static constexpr char TASKID_STR[] = "taskId";
 static constexpr char TASKINFO_STR[] = "taskInfo";
 static constexpr char TRANSFERLIST_STR[] = "transferList";
@@ -79,10 +79,12 @@ public:
 
     // for taskpool state
     uint32_t GetTaskNum();
-    uint32_t GetThreadNum();
     uint32_t GetIdleWorkers();
+    uint32_t GetThreadNum();
     uint32_t GetRunningWorkers();
     uint32_t GetTimeoutWorkers();
+    void GetIdleWorkersList(uint32_t step);
+    bool ReadThreadInfo(Worker* worker, char* buf, uint32_t size);
 
     // for get thread info
     napi_value GetThreadInfos(napi_env env);
@@ -118,6 +120,7 @@ private:
     void CheckForBlockedWorkers();
     void TryExpand();
     void NotifyShrink(uint32_t targetNum);
+    void TriggerShrink(uint32_t step);
     uint32_t ComputeSuitableThreadNum();
     static void NotifyExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
@@ -161,11 +164,10 @@ private:
     std::mutex taskQueuesMutex_;
 
     std::atomic<bool> isInitialized_ = false;
-    bool enableShrink_ = false;
 
     std::mutex callbackMutex_;
     std::map<uint32_t, std::shared_ptr<CallbackInfo>> callbackTable_ {};
-
+    std::vector<Worker*> freeList_ {};
     friend class TaskGroupManager;
 };
 

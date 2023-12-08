@@ -65,7 +65,10 @@ ohos_shared_library("taskpool") {
     defines += [ "MAC_PLATFORM" ]
   }
 
-  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
+  deps = [
+    "${ets_util_path}/js_sys_module/timer:timer",
+    "//third_party/bounds_checking_function:libsec_shared",
+  ]
 
   external_deps = [ "napi:ace_napi" ]
 
@@ -119,6 +122,7 @@ ohos_source_set("taskpool_static") {
     defines += [ "__ARKUI_CROSS__" ]
     deps += [
       "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/securec:sec_${target_os}",
       "$plugins_root/libs/uv:uv_${target_os}",
       "$sys_module/timer:timer_static",
     ]
@@ -138,6 +142,7 @@ ohos_source_set("taskpool_static") {
       defines += [ "ENABLE_QOS" ]
       external_deps += [ "qos_manager:qos" ]
     }
+    deps += [ "//third_party/bounds_checking_function:libsec_shared" ]
   }
 
   subsystem_name = "commonlibrary"

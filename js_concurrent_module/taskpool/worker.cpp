@@ -51,6 +51,7 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
         return;
     }
 
+    TaskManager::GetInstance().RemoveWorker(worker);
     HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
     HILOG_INFO("taskpool:: the thread is idle and will be released, and the total num is %{public}u now",
         TaskManager::GetInstance().GetThreadNum());
@@ -71,10 +72,19 @@ bool Worker::CheckFreeConditions()
 {
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     // only when all conditions are met can the worker be freed
-    bool res = !Timer::HasTimer(workerEnv_) && !workerEngine->HasWaitingRequest() &&
-        !workerEngine->HasSubEnv() && !workerEngine->HasPendingJob() && !workerEngine->IsProfiling();
-    // if conditions are not met, we will try to free the worker during the next check
-    if (res) {
+    if (workerEngine->HasListeningCounter()) {
+        HILOG_DEBUG("taskpool:: listening operation exits, the worker thread will not exit");
+    } else if (Timer::HasTimer(workerEnv_)) {
+        HILOG_DEBUG("taskpool:: timer exits, the worker thread will not exit");
+    } else if (workerEngine->HasWaitingRequest()) {
+        HILOG_DEBUG("taskpool:: waiting request exits, the worker thread will not exit");
+    } else if (workerEngine->HasSubEnv()) {
+        HILOG_DEBUG("taskpool:: sub env exits, the worker thread will not exit");
+    } else if (workerEngine->HasPendingJob()) {
+        HILOG_DEBUG("taskpool:: pending job exits, the worker thread will not exit");
+    } else if (workerEngine->IsProfiling()) {
+        HILOG_DEBUG("taskpool:: the worker thread will not exit during profiling");
+    } else {
         return true;
     }
     HILOG_DEBUG("taskpool:: the worker %{public}d can't be released due to not meeting the conditions", tid_);
@@ -259,16 +269,17 @@ void Worker::PerformTask(const uv_async_t* req)
     auto worker = static_cast<Worker*>(req->data);
     napi_env env = worker->workerEnv_;
     napi_status status = napi_ok;
-    RunningScope runningScope(worker, status);
     TaskManager::GetInstance().NotifyWorkerRunning(worker);
     auto executeInfo = TaskManager::GetInstance().DequeueExecuteId();
     if (executeInfo.first == 0) {
-        worker->NotifyTaskFinished();
+        worker->NotifyIdle();
         return;
     }
+    RunningScope runningScope(worker, status);
     if (UNLIKELY(status != napi_ok)) {
         GET_AND_THROW_LAST_ERROR((env));
         TaskManager::GetInstance().EnqueueExecuteId(executeInfo.first, executeInfo.second);
+        worker->NotifyTaskFinished();
         return;
     }
 
