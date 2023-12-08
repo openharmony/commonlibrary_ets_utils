@@ -1127,7 +1127,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
         std::string moduleName;
         reinterpret_cast<NativeEngine*>(env)->GetCurrentModuleName(moduleName);
         script_ = moduleName + script_;
-        HILOG_INFO("Woker filePath is %{public}s )", script_.c_str());
+        HILOG_INFO("Worker filePath is %{public}s )", script_.c_str());
     }
     CloseHelp::DeletePointer(script, true);
 
