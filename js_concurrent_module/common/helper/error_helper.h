@@ -91,6 +91,12 @@ public:
             case ERR_NOT_REGISTERED:
                 errTitle = "The callback is not registered on the host side";
                 break;
+            case ERR_CIRCULAR_DEPENDENCY:
+                errTitle = "There is a circular dependency";
+                break;
+            case ERR_INEXISTENT_DEPENDENCY:
+                errTitle = "The dependency does not exist";
+                break;
             default:
                 break;
         }
@@ -234,6 +240,8 @@ public:
     // 10200023 : The function is not called in the concurrent function
     static const int32_t ERR_NOT_IN_CONCURRENT_FUNCTION = 10200023;
     static const int32_t ERR_NOT_REGISTERED = 10200024; // 10200024 : The callback is not registered on the host side
+    static const int32_t ERR_CIRCULAR_DEPENDENCY = 10200026; // 10200026 : There is a circular dependency
+    static const int32_t ERR_INEXISTENT_DEPENDENCY = 10200027; // 10200027: The dependency does not exist
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H

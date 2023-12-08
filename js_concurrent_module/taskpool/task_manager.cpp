@@ -786,19 +786,34 @@ std::pair<uint32_t, Priority> TaskManager::DequeueExecuteId()
     if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
         auto& highTaskQueue = taskQueues_[Priority::HIGH];
         highPrioExecuteCount_++;
-        return std::make_pair(highTaskQueue->DequeueExecuteId(), Priority::HIGH);
+        uint32_t executeId = highTaskQueue->DequeueExecuteId();
+        if (!CheckDependencyByExecuteId(executeId)) {
+            EnqueuePendingExecuteInfo(executeId, Priority::HIGH);
+            return std::make_pair(0, Priority::HIGH);
+        }
+        return std::make_pair(executeId, Priority::HIGH);
     }
     highPrioExecuteCount_ = 0;
 
     auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
     if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
         mediumPrioExecuteCount_++;
-        return std::make_pair(mediumTaskQueue->DequeueExecuteId(), Priority::MEDIUM);
+        uint32_t executeId = mediumTaskQueue->DequeueExecuteId();
+        if (!CheckDependencyByExecuteId(executeId)) {
+            EnqueuePendingExecuteInfo(executeId, Priority::MEDIUM);
+            return std::make_pair(0, Priority::MEDIUM);
+        }
+        return std::make_pair(executeId, Priority::MEDIUM);
     }
     mediumPrioExecuteCount_ = 0;
 
     auto& lowTaskQueue = taskQueues_[Priority::LOW];
-    return std::make_pair(lowTaskQueue->DequeueExecuteId(), Priority::LOW);
+    uint32_t executeId = lowTaskQueue->DequeueExecuteId();
+    if (!CheckDependencyByExecuteId(executeId)) {
+        EnqueuePendingExecuteInfo(executeId, Priority::LOW);
+        return std::make_pair(0, Priority::LOW);
+    }
+    return std::make_pair(executeId, Priority::LOW);
 }
 
 void TaskManager::NotifyExecuteTask()
@@ -1130,5 +1145,167 @@ void TaskGroupManager::CancelGroupExecution(uint32_t executeId)
         default: // Default is CANCELED, means task isCanceled, do not need to mark again.
             break;
     }
+}
+
+void TaskManager::NotifyPendingExecuteInfo(uint32_t taskId)
+{
+    auto iter = dependentTaskInfos_.find(taskId);
+    if (iter == dependentTaskInfos_.end()) {
+        return;
+    }
+    for (const auto& id : iter->second) {
+        {
+            std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+            auto dIter = dependTaskInfos_.find(id);
+            auto dependIter = dIter->second.find(taskId);
+            if (dependIter != dIter->second.end()) {
+                dIter->second.erase(dependIter);
+            }
+        }
+
+        auto executeIter = runningInfos_.find(id);
+        if (executeIter == runningInfos_.end()) {
+            return;
+        }
+        for (const auto& executeId : executeIter->second) {
+            auto executeIdInfo = TaskManager::GetInstance().DequeuePendingExecuteInfo(executeId);
+            if (executeIdInfo.first == 0) {
+                return;
+            }
+            TaskManager::GetInstance().EnqueueExecuteId(executeIdInfo.first, executeIdInfo.second);
+        }
+    }
+    dependentTaskInfos_.erase(iter);
+}
+
+bool TaskManager::CheckDependencyByExecuteId(uint32_t executeId)
+{
+    TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeId);
+    if (taskInfo == nullptr) {
+        return false;
+    }
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    auto iter = dependTaskInfos_.find(taskInfo->taskId);
+    if (iter == dependTaskInfos_.end() || iter->second.size() == 0) {
+        return true;
+    }
+    return false;
+}
+
+bool TaskManager::StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet)
+{
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    auto iter = dependTaskInfos_.find(taskId);
+    if (iter == dependTaskInfos_.end()) {
+        for (const auto& id : taskIdSet) {
+            auto idIter = dependTaskInfos_.find(id);
+            if (idIter == dependTaskInfos_.end()) {
+                continue;
+            }
+            if (!CheckCircularDependency(taskIdSet, idIter->second, taskId)) {
+                return false;
+            }
+        }
+        dependTaskInfos_.emplace(taskId, std::move(taskIdSet));
+        return true;
+    }
+
+    for (const auto& id : iter->second) {
+        auto idIter = dependTaskInfos_.find(id);
+        if (idIter == dependTaskInfos_.end()) {
+            continue;
+        }
+        if (!CheckCircularDependency(iter->second, idIter->second, taskId)) {
+            return false;
+        }
+    }
+    iter->second.insert(taskIdSet.begin(), taskIdSet.end());
+    return true;
+}
+
+bool TaskManager::CheckCircularDependency(std::set<uint32_t> dependentIdSet, std::set<uint32_t> idSet, uint32_t taskId)
+{
+    for (const auto& id : idSet) {
+        if (id == taskId) {
+            return false;
+        }
+        auto iter = dependentIdSet.find(id);
+        if (iter != dependentIdSet.end()) {
+            continue;
+        }
+        auto dIter = dependTaskInfos_.find(id);
+        if (dIter == dependTaskInfos_.end()) {
+            continue;
+        }
+        if (!CheckCircularDependency(dependentIdSet, dIter->second, taskId)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool TaskManager::RemoveTaskDependency(uint32_t taskId, uint32_t dependentId)
+{
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    auto iter = dependTaskInfos_.find(taskId);
+    if (iter == dependTaskInfos_.end()) {
+        return false;
+    }
+    auto dependIter = iter->second.find(dependentId);
+    if (dependIter ==  iter->second.end()) {
+        return false;
+    }
+    iter->second.erase(dependIter);
+    return true;
+}
+
+void TaskManager::EnqueuePendingExecuteInfo(uint32_t executeId, Priority priority)
+{
+    pendingExecuteInfos_.emplace(executeId, priority);
+}
+
+std::pair<uint32_t, Priority> TaskManager::DequeuePendingExecuteInfo(uint32_t executeId)
+{
+    if (pendingExecuteInfos_.empty()) {
+        return std::make_pair(0, Priority::DEFAULT);
+    }
+    std::pair<uint32_t, Priority> result;
+    for (auto it = pendingExecuteInfos_.begin(); it != pendingExecuteInfos_.end(); ++it) {
+        if (it->first == executeId) {
+            result = std::make_pair(it->first, it->second);
+            it = pendingExecuteInfos_.erase(it);
+            break;
+        }
+    }
+    return result;
+}
+
+void TaskManager::StoreDependentTaskInfo(std::set<uint32_t> dependentTaskIdSet, uint32_t taskId)
+{
+    for (const auto& id : dependentTaskIdSet) {
+        auto iter = dependentTaskInfos_.find(id);
+        if (iter == dependentTaskInfos_.end()) {
+            std::set<uint32_t> set{taskId};
+            dependentTaskInfos_.emplace(id, std::move(set));
+        } else {
+            auto dIter = iter->second.find(taskId);
+            if (dIter == iter->second.end()) {
+                iter->second.emplace(taskId);
+            }
+        }
+    }
+}
+
+void TaskManager::RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t taskId)
+{
+    auto iter = dependentTaskInfos_.find(dependentTaskId);
+    if (iter == dependentTaskInfos_.end()) {
+        return;
+    }
+    auto taskIter = iter->second.find(taskId);
+    if (taskIter == iter->second.end()) {
+        return;
+    }
+    iter->second.erase(taskIter);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

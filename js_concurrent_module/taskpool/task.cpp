@@ -71,6 +71,8 @@ uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION(SETTRANSFERLIST_STR, SetTransferList),
         DECLARE_NAPI_FUNCTION(ONRECEIVEDATA_STR, OnReceiveData),
+        DECLARE_NAPI_FUNCTION(ADD_DEPENDENCY_STR, AddDependency),
+        DECLARE_NAPI_FUNCTION(REMOVE_DEPENDENCY_STR, RemoveDependency),
     };
 
     napi_set_named_property(env, task, TASKID_STR, taskId);
@@ -225,5 +227,87 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     }
     TaskResultInfo* resultInfo = new TaskResultInfo(taskInfo->env, taskInfo->taskId, serializationArgs);
     return TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, taskInfo);
+}
+
+napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc == 0) {
+        std::string errMessage = "taskpool:: addDependency has no params";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
+
+    napi_status status = napi_ok;
+    HandleScope scope(env, status);
+    napi_value args[argc];
+    napi_value task;
+    napi_get_cb_info(env, cbinfo, &argc, args, &task, nullptr);
+    napi_value taskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
+    uint32_t taskIdVal = NapiHelper::GetUint32Value(env, taskId);
+    std::set<uint32_t> idSet;
+    for (size_t i = 0; i < argc; i++) {
+        if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
+            std::string errMessage = "taskpool:: addDependency param is not task";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        } else {
+            napi_value id = NapiHelper::GetNameProperty(env, args[i], TASKID_STR);
+            uint32_t idVal = NapiHelper::GetUint32Value(env, id);
+            if (idVal == taskIdVal) {
+                std::string errMessage = "taskpool:: there is a circular dependency";
+                HILOG_ERROR("%{public}s", errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                return nullptr;
+            }
+            idSet.emplace(idVal);
+        }
+    }
+    if (!TaskManager::GetInstance().StoreTaskDependency(taskIdVal, idSet)) {
+        std::string errMessage = "taskpool:: there is a circular dependency";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+    }
+    TaskManager::GetInstance().StoreDependentTaskInfo(idSet, taskIdVal);
+    return nullptr;
+}
+
+napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc == 0) {
+        std::string errMessage = "taskpool:: removeDependency has no params";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
+
+    napi_status status = napi_ok;
+    HandleScope scope(env, status);
+    napi_value args[argc];
+    napi_value task;
+    napi_get_cb_info(env, cbinfo, &argc, args, &task, nullptr);
+    napi_value taskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
+    uint32_t taskIdVal = NapiHelper::GetUint32Value(env, taskId);
+    for (size_t i = 0; i < argc; i++) {
+        if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
+            std::string errMessage = "taskpool:: removeDependency param is not task";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        napi_value dependentId = NapiHelper::GetNameProperty(env, args[i], TASKID_STR);
+        uint32_t dependentIdVal = NapiHelper::GetUint32Value(env, dependentId);
+        if (!TaskManager::GetInstance().RemoveTaskDependency(taskIdVal, dependentIdVal)) {
+            std::string errMessage = "taskpool:: the dependency does not exist";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        TaskManager::GetInstance().RemoveDependentTaskInfo(dependentIdVal, taskIdVal);
+    }
+    return nullptr;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -39,6 +39,8 @@ public:
     static napi_value OnReceiveData(napi_env env, napi_callback_info cbinfo);
     static napi_value SendData(napi_env env, napi_callback_info cbinfo);
     static void Destructor(napi_env env, void* nativeObject, void* finalize);
+    static napi_value AddDependency(napi_env env, napi_callback_info cbinfo);
+    static napi_value RemoveDependency(napi_env env, napi_callback_info cbinfo);
 
 private:
     Task() = delete;
