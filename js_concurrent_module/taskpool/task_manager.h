@@ -20,6 +20,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <shared_mutex>
 #include <unordered_map>
 #include <unordered_set>
@@ -40,6 +41,8 @@ static constexpr char GROUP_ID_STR[] = "groupId";
 static constexpr char TASKID_STR[] = "taskId";
 static constexpr char TASKINFO_STR[] = "taskInfo";
 static constexpr char TRANSFERLIST_STR[] = "transferList";
+static constexpr char ADD_DEPENDENCY_STR[] = "addDependency";
+static constexpr char REMOVE_DEPENDENCY_STR[] = "removeDependency";
 
 class TaskManager {
 public:
@@ -101,6 +104,17 @@ public:
     void DecreaseRefCount(napi_env env, uint32_t taskId);
     napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, TaskInfo* taskInfo);
 
+    // for task dependency
+    bool CheckDependencyByExecuteId(uint32_t executeId);
+    void NotifyPendingExecuteInfo(uint32_t taskId);
+    bool StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet);
+    bool RemoveTaskDependency(uint32_t taskId, uint32_t dependentId);
+    bool CheckCircularDependency(std::set<uint32_t> dependentIdSet, std::set<uint32_t> idSet, uint32_t taskId);
+    void EnqueuePendingExecuteInfo(uint32_t executeId, Priority priority);
+    std::pair<uint32_t, Priority> DequeuePendingExecuteInfo(uint32_t executeId);
+    void StoreDependentTaskInfo(std::set<uint32_t> dependTaskIdSet, uint32_t taskId);
+    void RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t taskId);
+
 private:
     TaskManager(const TaskManager &) = delete;
     TaskManager& operator=(const TaskManager &) = delete;
@@ -139,6 +153,16 @@ private:
     // <taskId, <executeId1, executeId2, ...>>
     std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_ {};
     std::shared_mutex runningInfosMutex_;
+
+    // <taskId, <dependent taskId1, dependent taskId2, ...>>, update when removeDependency or executeTask
+    std::unordered_map<uint32_t, std::set<uint32_t>> dependTaskInfos_ {};
+    std::shared_mutex dependTaskInfosMutex_;
+
+    // <<pendingExecuteId1, priority>, <pendingExecuteId2, priority>, ...>
+    std::unordered_map<uint32_t, Priority> pendingExecuteInfos_ {};
+
+    // <dependent taskId, <taskId1, taskId2, ...>>, update when removeDependency or executeTask
+    std::unordered_map<uint32_t, std::set<uint32_t>> dependentTaskInfos_ {};
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};

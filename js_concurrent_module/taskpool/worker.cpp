@@ -275,6 +275,7 @@ void Worker::PerformTask(const uv_async_t* req)
         worker->NotifyIdle();
         return;
     }
+
     RunningScope runningScope(worker, status);
     if (UNLIKELY(status != napi_ok)) {
         GET_AND_THROW_LAST_ERROR((env));
@@ -353,6 +354,7 @@ void Worker::PerformTask(const uv_async_t* req)
 
     napi_value result;
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
+    TaskManager::GetInstance().NotifyPendingExecuteInfo(taskInfo->taskId);
     // if the worker is blocked, just skip
     if (LIKELY(worker->state_ != WorkerState::BLOCKED)) {
         uint64_t duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
@@ -409,6 +411,7 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         return;
     }
     TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
+    TaskManager::GetInstance().NotifyPendingExecuteInfo(taskInfo->taskId);
     taskInfo->success = success;
     NotifyTaskResult(env, taskInfo, result);
 }
