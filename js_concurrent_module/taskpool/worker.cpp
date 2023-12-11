@@ -284,6 +284,7 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
 
+    TaskManager::GetInstance().UpdateExecuteState(executeInfo.first, ExecuteState::RUNNING);
     PriorityScope priorityScope(worker, executeInfo.second);
     TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeInfo.first);
     if (taskInfo == nullptr) { // task may have been canceled
@@ -301,7 +302,6 @@ void Worker::PerformTask(const uv_async_t* req)
     HITRACE_HELPER_METER_NAME(strTrace);
 
     taskInfo->worker = worker;
-    TaskManager::GetInstance().UpdateExecuteState(taskInfo->executeId, ExecuteState::RUNNING);
     napi_value func;
     status = napi_deserialize(env, taskInfo->serializationFunction, &func);
     if (status != napi_ok || func == nullptr) {
