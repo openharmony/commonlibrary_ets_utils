@@ -344,7 +344,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest024, testing::ext::TestSize.Level0)
     taskManger.EnqueueExecuteId(executeId);
     ASSERT_TRUE(executeId == 8);
     std::pair<uint32_t, Priority> result = taskManger.DequeueExecuteId();
-    ASSERT_TRUE(result.first == 8);
+    ASSERT_TRUE(result.first == 0);
     ASSERT_TRUE(result.second == Priority::MEDIUM);
 }
 

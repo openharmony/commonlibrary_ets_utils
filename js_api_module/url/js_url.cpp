@@ -587,7 +587,7 @@ namespace OHOS::Url {
     {
         size_t len = nums.size();
         for (size_t i = 0; i < len; ++i) {
-            if (stoi(nums[i]) > 255) { // 255:ipv4 max value
+            if (!nums[i].empty() && stoi(nums[i]) > 255) { // 255:ipv4 max value
                 return i;
             }
         }
