@@ -857,6 +857,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     }
     napi_value res = nullptr;
     serializeStatus = napi_deserialize(env, data, &res);
+    napi_delete_serialization_data(env, data);
     if (serializeStatus != napi_ok || res == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
         return nullptr;
@@ -1318,6 +1319,7 @@ void Worker::HostOnMessageInner()
         NAPI_CALL_RETURN_VOID(hostEnv_, status);
         napi_value result = nullptr;
         status = napi_deserialize(hostEnv_, data, &result);
+        napi_delete_serialization_data(hostEnv_, data);
         if (status != napi_ok || result == nullptr) {
             HostOnMessageErrorInner();
             continue;
@@ -1386,6 +1388,7 @@ void Worker::HostOnGlobalCallInner()
     napi_value argsArray = nullptr;
     napi_status status = napi_ok;
     status = napi_deserialize(hostEnv_, data, &argsArray);
+    napi_delete_serialization_data(hostEnv_, data);
     if (status != napi_ok || argsArray == nullptr) {
         AddGlobalCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
         globalCallSuccess_ = false;
@@ -1576,6 +1579,7 @@ void Worker::HostOnErrorInner()
     while (errorQueue_.DeQueue(&data)) {
         napi_value result = nullptr;
         napi_deserialize(hostEnv_, data, &result);
+        napi_delete_serialization_data(hostEnv_, data);
 
         napi_value argv[1] = { result };
         if (isCallable) {
@@ -1736,6 +1740,7 @@ void Worker::WorkerOnMessageInner()
         }
         napi_value result = nullptr;
         status = napi_deserialize(workerEnv_, data, &result);
+        napi_delete_serialization_data(workerEnv_, data);
         if (status != napi_ok || result == nullptr) {
             WorkerOnMessageErrorInner();
             continue;
