@@ -96,8 +96,8 @@ class Base64Helper {
   }
 
   decodeSync(src: Uint8Array | string, options?: Type): Uint8Array {
-    if (typeof src === 'string' && src.indexOf('\r\n') !== -1 && options === Type.MIME) {
-      src = src.replace(/\r\n/g, '');
+    if (typeof src === 'string' && options === Type.MIME) {
+      src = src.replace(/[\r\n]/g, '');
     }
     let result: Uint8Array = this.base64.decodeSync(src);
     return result;
@@ -125,8 +125,8 @@ class Base64Helper {
   }
 
   decode(src: Uint8Array | string, options?: Type): Promise<Uint8Array> {
-    if (typeof src === 'string' && src.indexOf('\r\n') !== -1 && options === Type.MIME) {
-      src = src.replace(/\r\n/g, '');
+    if (typeof src === 'string' && options === Type.MIME) {
+      src = src.replace(/[\r\n]/g, '');
     }
     let result: Promise<Uint8Array> = this.base64.decode(src);
     return result;
