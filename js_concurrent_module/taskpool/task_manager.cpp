@@ -945,6 +945,14 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
     return nullptr;
 }
 
+uint32_t TaskManager::GenerateSeqRunnerId()
+{
+    if (seqRunnerId_ == 0) {
+        seqRunnerId_ += 1;
+    }
+    return seqRunnerId_++;
+}
+
 // ----------------------------------- TaskGroupManager ----------------------------------------
 TaskGroupManager& TaskGroupManager::GetInstance()
 {
@@ -1192,6 +1200,16 @@ bool TaskManager::CheckDependencyByExecuteId(uint32_t executeId)
     return false;
 }
 
+bool TaskManager::IsDependentByTaskId(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    auto iter = dependTaskInfos_.find(taskId);
+    if (iter == dependTaskInfos_.end() || iter->second.size() == 0) {
+        return false;
+    }
+    return true;
+}
+
 bool TaskManager::StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet)
 {
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
@@ -1307,5 +1325,98 @@ void TaskManager::RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t tas
         return;
     }
     iter->second.erase(taskIter);
+}
+
+void TaskGroupManager::AddSeqRunnerInfoById(uint32_t seqRunnerId, SeqRunnerInfo* info)
+{
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    seqRunnerMap_.emplace(seqRunnerId, info);
+}
+
+void TaskGroupManager::RemoveSeqRunnerInfoById(uint32_t seqRunnerId)
+{
+    auto iter = seqRunnerMap_.find(seqRunnerId);
+    if (iter == seqRunnerMap_.end()) {
+        HILOG_ERROR("seqRunner:: seqRunner already free.");
+        return;
+    }
+    // free seqRunner
+    delete iter->second;
+    iter->second = nullptr;
+    seqRunnerMap_.erase(iter);
+    HILOG_INFO("seqRunner:: free seqRunner %{public}d.", seqRunnerId);
+}
+
+SeqRunnerInfo* TaskGroupManager::GetSeqRunnerInfoById(uint32_t seqRunnerId)
+{
+    std::shared_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    auto iter = seqRunnerMap_.find(seqRunnerId);
+    if (iter != seqRunnerMap_.end()) {
+        return iter->second;
+    }
+    return nullptr;
+}
+
+void TaskGroupManager::AddTaskToSeqRunner(uint32_t seqRunnerId, TaskInfo* task)
+{
+    std::shared_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    auto iter = seqRunnerMap_.find(seqRunnerId);
+    if (iter == seqRunnerMap_.end()) {
+        HILOG_ERROR("seqRunner:: seqRunnerInfo not found.");
+        return;
+    } else {
+        iter->second->seqRunnerTasks.push(task);
+    }
+}
+
+bool TaskGroupManager::TriggerSeqRunner(napi_env env, TaskInfo* lastTask)
+{
+    std::shared_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    uint32_t seqRunnerId = lastTask->seqRunnerId;
+    SeqRunnerInfo* seqRunnerInfo = GetSeqRunnerInfoById(seqRunnerId);
+    if (seqRunnerInfo == nullptr) {
+        HILOG_ERROR("seqRunner:: trigger seqRunner not exist.");
+        return false;
+    }
+    if (seqRunnerInfo->currentExeId != lastTask->executeId) {
+        HILOG_ERROR("seqRunner:: only front task can trigger seqRunner.");
+        return false;
+    }
+    if (seqRunnerInfo->seqRunnerTasks.empty()) {
+        HILOG_DEBUG("seqRunner:: seqRunner %{public}d empty.", seqRunnerId);
+        seqRunnerInfo->currentExeId = 0;
+        // seqRunner to be free
+        if (seqRunnerInfo->releasable) {
+            RemoveSeqRunnerInfoById(seqRunnerId);
+        }
+        return true;
+    }
+    TaskInfo* taskInfo = seqRunnerInfo->seqRunnerTasks.front();
+    HILOG_DEBUG("seqRunner:: Trig %{public}d in seqRunner %{public}d.", taskInfo->executeId, seqRunnerId);
+    TaskManager::GetInstance().AddExecuteState(taskInfo->executeId);
+    TaskManager::GetInstance().EnqueueExecuteId(taskInfo->executeId, seqRunnerInfo->priority);
+    TaskManager::GetInstance().TryTriggerExpand();
+    seqRunnerInfo->currentExeId = taskInfo->executeId;
+    seqRunnerInfo->seqRunnerTasks.pop();
+    return true;
+}
+
+void TaskGroupManager::ClearSeqRunner(uint32_t seqRunnerId)
+{
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    auto iter = seqRunnerMap_.find(seqRunnerId);
+    if (iter == seqRunnerMap_.end()) {
+        HILOG_ERROR("seqRunner:: seqRunner already free.");
+        return;
+    }
+    // free seqRunner
+    SeqRunnerInfo* info = iter->second;
+    if (info->seqRunnerTasks.empty() && info->currentExeId == 0) {
+        RemoveSeqRunnerInfoById(seqRunnerId);
+        return;
+    }
+    // seqRunner is busy now, free later
+    info->releasable = true;
+    HILOG_INFO("seqRunner:: seqRunner %{public}d to be free.", seqRunnerId);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

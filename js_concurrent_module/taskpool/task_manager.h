@@ -30,6 +30,7 @@
 #include "task_queue.h"
 #include "napi/native_api.h"
 #include "worker.h"
+#include "sequence_runner.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
@@ -106,6 +107,7 @@ public:
 
     // for task dependency
     bool CheckDependencyByExecuteId(uint32_t executeId);
+    bool IsDependentByTaskId(uint32_t taskId);
     void NotifyPendingExecuteInfo(uint32_t taskId);
     bool StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet);
     bool RemoveTaskDependency(uint32_t taskId, uint32_t dependentId);
@@ -114,6 +116,9 @@ public:
     std::pair<uint32_t, Priority> DequeuePendingExecuteInfo(uint32_t executeId);
     void StoreDependentTaskInfo(std::set<uint32_t> dependTaskIdSet, uint32_t taskId);
     void RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t taskId);
+
+    // for SequnceRunner
+    uint32_t GenerateSeqRunnerId();
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -141,6 +146,7 @@ private:
 
     std::atomic<int32_t> currentExecuteId_ = 1; // 1: executeId begin from 1, 0 for exception
     std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
+    std::atomic<uint32_t> seqRunnerId_ = 1; // 1: 0 reserved for task without runner
 
     // <executeId, TaskInfo>
     std::unordered_map<uint32_t, TaskInfo*> taskInfos_ {};
@@ -215,6 +221,11 @@ public:
     void ClearExecuteId(uint32_t groupId);
     bool IsRunning(uint32_t groupExecuteId);
     GroupInfo* GetGroupInfoByExecutionId(uint32_t groupExecuteId);
+    void AddSeqRunnerInfoById(uint32_t seqRunnerId, SeqRunnerInfo* info);
+    SeqRunnerInfo* GetSeqRunnerInfoById(uint32_t seqRunnerId);
+    void AddTaskToSeqRunner(uint32_t seqRunnerId, TaskInfo* task);
+    bool TriggerSeqRunner(napi_env env, TaskInfo* lastTask);
+    void ClearSeqRunner(uint32_t seqRunnerId);
 
 private:
     TaskGroupManager(const TaskGroupManager &) = delete;
@@ -231,6 +242,7 @@ private:
     void RemoveGroupInfoById(uint32_t groupExecuteId);
 
     void CancelGroupExecution(uint32_t executeId);
+    void RemoveSeqRunnerInfoById(uint32_t seqRunnerId);
 
     std::atomic<uint32_t> groupId_ = 0;
     std::atomic<uint32_t> groupExecuteId_ = 1; // 1: 0 reserved for those tasks not in any group
@@ -250,6 +262,10 @@ private:
     // <<groupExecuteId1, GroupInfo1>, <groupExecuteId2, GroupInfo2>, ...>
     std::unordered_map<uint32_t, GroupInfo*> groupInfoMap_ {};
     std::shared_mutex groupInfoMapMutex_;
+
+    // <seqRunnerId, <SeqRunnerInfo*>>
+    std::unordered_map<uint32_t, SeqRunnerInfo*> seqRunnerMap_ {};
+    std::shared_mutex seqRunnerMutex_;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H

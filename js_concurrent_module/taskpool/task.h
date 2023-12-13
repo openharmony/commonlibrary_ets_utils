@@ -61,6 +61,7 @@ struct TaskInfo {
     uint32_t taskId {};
     uint32_t executeId {};
     uint32_t groupExecuteId {}; // 0 for task outside taskgroup
+    uint32_t seqRunnerId {}; // 0 for task without seqRunner
     bool success {true};
     bool isCanceled {};
     void* worker {nullptr};

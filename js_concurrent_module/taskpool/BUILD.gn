@@ -16,6 +16,7 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 taskpool_sources = [
   "native_module_taskpool.cpp",
+  "sequence_runner.cpp",
   "task.cpp",
   "task_group.cpp",
   "task_manager.cpp",
