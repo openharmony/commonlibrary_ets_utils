@@ -304,6 +304,7 @@ void Worker::PerformTask(const uv_async_t* req)
     TaskManager::GetInstance().UpdateExecuteState(taskInfo->executeId, ExecuteState::RUNNING);
     napi_value func;
     status = napi_deserialize(env, taskInfo->serializationFunction, &func);
+    napi_delete_serialization_data(env, taskInfo->serializationFunction);
     if (status != napi_ok || func == nullptr) {
         HILOG_ERROR("taskpool:: PerformTask deserialize function fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
@@ -314,6 +315,7 @@ void Worker::PerformTask(const uv_async_t* req)
     }
     napi_value args;
     status = napi_deserialize(env, taskInfo->serializationArguments, &args);
+    napi_delete_serialization_data(env, taskInfo->serializationArguments);
     if (status != napi_ok || args == nullptr) {
         HILOG_ERROR("taskpool:: PerformTask deserialize arguments fail");
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,

@@ -92,6 +92,7 @@ void TaskPool::ExecuteCallback(uv_async_t* req)
         napi_value args;
         napi_value result;
         status = napi_deserialize(env, resultInfo->serializationArgs, &args);
+        napi_delete_serialization_data(env, resultInfo->serializationArgs);
         if (status != napi_ok || args == nullptr) {
             HILOG_ERROR("taskpool:: failed to serialize function in SendData");
             std::string errMessage = "taskpool:: failed to serialize function";
@@ -229,6 +230,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_open_handle_scope(taskInfo->env, &scope));
     napi_value taskData = nullptr;
     napi_status status = napi_deserialize(taskInfo->env, taskInfo->result, &taskData);
+    napi_delete_serialization_data(taskInfo->env, taskInfo->result);
 
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(taskInfo->taskId);
