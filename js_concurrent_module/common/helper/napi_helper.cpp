@@ -279,6 +279,14 @@ napi_value NapiHelper::CreatePromise(napi_env env, napi_deferred* deferred)
     return promise;
 }
 
+napi_value NapiHelper::CreateEmptyString(napi_env env)
+{
+    napi_value str = nullptr;
+    const char* name = "";
+    napi_create_string_utf8(env, name, 0, &str);
+    return str;
+}
+
 uint32_t NapiHelper::GetArrayLength(napi_env env, napi_value array)
 {
     uint32_t arrayLength = 0;

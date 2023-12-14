@@ -37,16 +37,33 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    // check 1st param is func
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_value thisVar;
+    napi_value func = nullptr;
+    napi_value name = NapiHelper::CreateEmptyString(env);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
-    if (!NapiHelper::IsFunction(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param of task must be function");
+    // if the first is task name, the second might be func
+    if (argc > 1 && NapiHelper::IsString(env, args[0])) {
+        name = args[0];
+        func = args[1];
+        // the fun params start from the third
+        args += 2;
+        argc -= 2;
+    } else {
+        func = args[0];
+        // the fun params start from the second
+        args += 1;
+        argc -= 1;
+    }
+
+    // check 1st or 2nd param is func
+    if (!NapiHelper::IsFunction(env, func)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                                "taskpool:: the first or second param of task must be function");
         return nullptr;
     }
-    uint32_t taskId = CreateTaskByFunc(env, thisVar, args[0], args, argc);
+    uint32_t taskId = CreateTaskByFunc(env, thisVar, func, name, args, argc);
     uint32_t* idPointer = new uint32_t(taskId);
     napi_wrap(env, thisVar, idPointer, Destructor, nullptr, nullptr);
     return thisVar;
@@ -59,12 +76,13 @@ void Task::Destructor(napi_env env, void* data, [[maybe_unused]] void* hint)
     delete taskId;
 }
 
-uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, napi_value* args, size_t argc)
+uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func,
+                                napi_value name, napi_value* args, size_t argc)
 {
     napi_value argsArray;
-    napi_create_array_with_length(env, argc - 1, &argsArray);
-    for (size_t i = 0; i < argc - 1; i++) {
-        napi_set_element(env, argsArray, i, args[i + 1]);
+    napi_create_array_with_length(env, argc, &argsArray);
+    for (size_t i = 0; i < argc; i++) {
+        napi_set_element(env, argsArray, i, args[i]);
     }
 
     napi_value taskId = NapiHelper::CreateUint32(env, TaskManager::GetInstance().GenerateTaskId());
@@ -75,9 +93,11 @@ uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func, 
         DECLARE_NAPI_FUNCTION(REMOVE_DEPENDENCY_STR, RemoveDependency),
     };
 
+    // add task name to task
+    napi_set_named_property(env, task, NAME, name);
+    napi_set_named_property(env, task, FUNCTION_STR, func);
     napi_set_named_property(env, task, TASKID_STR, taskId);
     napi_define_properties(env, task, sizeof(properties) / sizeof(properties[0]), properties);
-    napi_set_named_property(env, task, FUNCTION_STR, args[0]);
     napi_set_named_property(env, task, ARGUMENTS_STR, argsArray);
     return NapiHelper::GetUint32Value(env, taskId);
 }

@@ -35,7 +35,7 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
 static constexpr char ARGUMENTS_STR[] = "arguments";
-static constexpr char FUNCTION_NAME[] = "name";
+static constexpr char NAME[] = "name";
 static constexpr char FUNCTION_STR[] = "function";
 static constexpr char GROUP_ID_STR[] = "groupId";
 static constexpr char TASKID_STR[] = "taskId";
@@ -63,8 +63,8 @@ public:
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
-    TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, uint32_t taskId, uint32_t executeId,
-                               napi_value transferList = nullptr);
+    TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, napi_value taskName, uint32_t taskId,
+                               uint32_t executeId, napi_value transferList = nullptr);
     TaskInfo* GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId);
     void ReleaseTaskContent(TaskInfo* taskInfo);
 
