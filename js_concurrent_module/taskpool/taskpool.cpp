@@ -42,6 +42,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value taskGroupClass = nullptr;
     napi_define_class(env, "TaskGroup", NAPI_AUTO_LENGTH, TaskGroup::TaskGroupConstructor, nullptr, 0, nullptr,
                       &taskGroupClass);
+    napi_value seqRunnerClass = nullptr;
+    napi_define_class(env, "SequenceRunner", NAPI_AUTO_LENGTH, SequenceRunner::SeqRunnerConstructor,
+                      nullptr, 0, nullptr, &seqRunnerClass);
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);
@@ -58,6 +61,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("Task", taskClass),
         DECLARE_NAPI_PROPERTY("TaskGroup", taskGroupClass),
+        DECLARE_NAPI_PROPERTY("SequenceRunner", seqRunnerClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
         DECLARE_NAPI_FUNCTION("execute", Execute),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
@@ -262,6 +266,13 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         UpdateGroupInfoByResult(taskInfo->env, taskInfo, taskData, success);
     }
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_close_handle_scope(taskInfo->env, scope));
+    // seqRunner task will trigger the next
+    if (taskInfo->seqRunnerId) {
+        if (!TaskGroupManager::GetInstance().TriggerSeqRunner(taskInfo->env, taskInfo)) {
+            HILOG_ERROR("seqRunner:: task %{public}d trigger in seqRunner %{public}d failed",
+                        taskInfo->groupExecuteId, taskInfo->seqRunnerId);
+        }
+    }
     TaskManager::GetInstance().DecreaseRefCount(taskInfo->env, taskInfo->taskId);
     TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
 }
