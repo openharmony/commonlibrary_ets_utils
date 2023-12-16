@@ -48,8 +48,8 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         name = args[0];
         func = args[1];
         // the fun params start from the third
-        args += 2;
-        argc -= 2;
+        args += 2; // 2: skip name and func
+        argc -= 2; // 2: skip name and func
     } else {
         func = args[0];
         // the fun params start from the second
