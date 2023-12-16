@@ -1157,35 +1157,45 @@ void TaskGroupManager::CancelGroupExecution(uint32_t executeId)
     }
 }
 
-void TaskManager::NotifyPendingExecuteInfo(uint32_t taskId)
+void TaskManager::NotifyPendingExecuteInfo(uint32_t taskId, uint32_t executeId)
 {
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(taskId);
-    if (iter == dependentTaskInfos_.end()) {
+    if (iter == dependentTaskInfos_.end() || iter->second.size() == 0) {
         return;
     }
-    for (const auto& id : iter->second) {
+    for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end(); ) {
+        auto addDependIter = addDependExecuteStateInfos_.find(*taskIdIter);
+        if (addDependIter == addDependExecuteStateInfos_.end()) {
+            taskIdIter = iter->second.erase(taskIdIter);
+            continue;
+        }
+        if (executeId < addDependIter->second) {
+            ++taskIdIter;
+            continue;
+        }
         {
-            std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
-            auto dIter = dependTaskInfos_.find(id);
-            auto dependIter = dIter->second.find(taskId);
-            if (dependIter != dIter->second.end()) {
-                dIter->second.erase(dependIter);
+            std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
+            auto runningIter = runningInfos_.find(*taskIdIter);
+            if (runningIter == runningInfos_.end()) {
+                taskIdIter = iter->second.erase(taskIdIter);
+                continue;
+            }
+            for (const auto& eId : runningIter->second) {
+                auto executeIdInfo = TaskManager::GetInstance().DequeuePendingExecuteInfo(eId);
+                if (executeIdInfo.first == 0) {
+                    continue;
+                }
+                TaskManager::GetInstance().EnqueueExecuteId(executeIdInfo.first, executeIdInfo.second);
             }
         }
-
-        auto executeIter = runningInfos_.find(id);
-        if (executeIter == runningInfos_.end()) {
-            return;
+        auto dependTaskIter = dependTaskInfos_.find(*taskIdIter);
+        auto depentIter = dependTaskIter->second.find(taskId);
+        if (depentIter != dependTaskIter->second.end()) {
+            dependTaskIter->second.erase(depentIter);
         }
-        for (const auto& executeId : executeIter->second) {
-            auto executeIdInfo = TaskManager::GetInstance().DequeuePendingExecuteInfo(executeId);
-            if (executeIdInfo.first == 0) {
-                return;
-            }
-            TaskManager::GetInstance().EnqueueExecuteId(executeIdInfo.first, executeIdInfo.second);
-        }
+        taskIdIter = iter->second.erase(taskIdIter);
     }
-    dependentTaskInfos_.erase(iter);
 }
 
 bool TaskManager::CheckDependencyByExecuteId(uint32_t executeId)
@@ -1197,6 +1207,13 @@ bool TaskManager::CheckDependencyByExecuteId(uint32_t executeId)
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskInfo->taskId);
     if (iter == dependTaskInfos_.end() || iter->second.size() == 0) {
+        return true;
+    }
+    auto addDependIter = addDependExecuteStateInfos_.find(taskInfo->taskId);
+    if (addDependIter == addDependExecuteStateInfos_.end()) {
+        return true;
+    }
+    if (executeId < addDependIter->second) {
         return true;
     }
     return false;
@@ -1215,10 +1232,12 @@ bool TaskManager::IsDependentByTaskId(uint32_t taskId)
 bool TaskManager::StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet)
 {
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    StoreAddDependendExecuteInfo(taskId);
+    StoreDependentTaskInfo(taskIdSet, taskId);
     auto iter = dependTaskInfos_.find(taskId);
     if (iter == dependTaskInfos_.end()) {
-        for (const auto& id : taskIdSet) {
-            auto idIter = dependTaskInfos_.find(id);
+        for (const auto& dependentId : taskIdSet) {
+            auto idIter = dependTaskInfos_.find(dependentId);
             if (idIter == dependTaskInfos_.end()) {
                 continue;
             }
@@ -1230,8 +1249,8 @@ bool TaskManager::StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskId
         return true;
     }
 
-    for (const auto& id : iter->second) {
-        auto idIter = dependTaskInfos_.find(id);
+    for (const auto& dependentId : iter->second) {
+        auto idIter = dependTaskInfos_.find(dependentId);
         if (idIter == dependTaskInfos_.end()) {
             continue;
         }
@@ -1267,6 +1286,8 @@ bool TaskManager::CheckCircularDependency(std::set<uint32_t> dependentIdSet, std
 bool TaskManager::RemoveTaskDependency(uint32_t taskId, uint32_t dependentId)
 {
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    RemoveAddDependExecuteInfo(taskId, 0);
+    RemoveDependentTaskInfo(dependentId, taskId);
     auto iter = dependTaskInfos_.find(taskId);
     if (iter == dependTaskInfos_.end()) {
         return false;
@@ -1281,11 +1302,16 @@ bool TaskManager::RemoveTaskDependency(uint32_t taskId, uint32_t dependentId)
 
 void TaskManager::EnqueuePendingExecuteInfo(uint32_t executeId, Priority priority)
 {
+    if (executeId == 0) {
+        return;
+    }
+    std::unique_lock<std::shared_mutex> lock(pendingExecuteInfosMutex_);
     pendingExecuteInfos_.emplace(executeId, priority);
 }
 
 std::pair<uint32_t, Priority> TaskManager::DequeuePendingExecuteInfo(uint32_t executeId)
 {
+    std::unique_lock<std::shared_mutex> lock(pendingExecuteInfosMutex_);
     if (pendingExecuteInfos_.empty()) {
         return std::make_pair(0, Priority::DEFAULT);
     }
@@ -1308,10 +1334,7 @@ void TaskManager::StoreDependentTaskInfo(std::set<uint32_t> dependentTaskIdSet, 
             std::set<uint32_t> set{taskId};
             dependentTaskInfos_.emplace(id, std::move(set));
         } else {
-            auto dIter = iter->second.find(taskId);
-            if (dIter == iter->second.end()) {
-                iter->second.emplace(taskId);
-            }
+            iter->second.emplace(taskId);
         }
     }
 }
@@ -1420,5 +1443,25 @@ void TaskGroupManager::ClearSeqRunner(uint32_t seqRunnerId)
     // seqRunner is busy now, free later
     info->releasable = true;
     HILOG_INFO("seqRunner:: seqRunner %{public}d to be free.", seqRunnerId);
+}
+
+void TaskManager::StoreAddDependendExecuteInfo(uint32_t taskId)
+{
+    auto executeIter = addDependExecuteStateInfos_.find(taskId);
+    if (executeIter == addDependExecuteStateInfos_.end()) {
+        uint32_t executeId = GetCurrentExecuteId();
+        addDependExecuteStateInfos_.emplace(taskId, executeId);
+    }
+}
+
+void TaskManager::RemoveAddDependExecuteInfo(uint32_t taskId, uint32_t executeId)
+{
+    auto executeIter = addDependExecuteStateInfos_.find(taskId);
+    if (executeIter == addDependExecuteStateInfos_.end()) {
+        return;
+    }
+    if (executeId >= executeIter->second || executeId == 0) { // 0 : update when removeDependency
+        addDependExecuteStateInfos_.erase(executeIter);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
