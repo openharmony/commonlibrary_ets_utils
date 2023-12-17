@@ -290,7 +290,6 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
     }
-    TaskManager::GetInstance().StoreDependentTaskInfo(idSet, taskIdVal);
     return nullptr;
 }
 
@@ -326,7 +325,6 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
             return nullptr;
         }
-        TaskManager::GetInstance().RemoveDependentTaskInfo(dependentIdVal, taskIdVal);
     }
     return nullptr;
 }

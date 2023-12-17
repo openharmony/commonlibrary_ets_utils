@@ -108,7 +108,7 @@ public:
     // for task dependency
     bool CheckDependencyByExecuteId(uint32_t executeId);
     bool IsDependentByTaskId(uint32_t taskId);
-    void NotifyPendingExecuteInfo(uint32_t taskId);
+    void NotifyPendingExecuteInfo(uint32_t taskId, uint32_t executeId);
     bool StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet);
     bool RemoveTaskDependency(uint32_t taskId, uint32_t dependentId);
     bool CheckCircularDependency(std::set<uint32_t> dependentIdSet, std::set<uint32_t> idSet, uint32_t taskId);
@@ -116,6 +116,13 @@ public:
     std::pair<uint32_t, Priority> DequeuePendingExecuteInfo(uint32_t executeId);
     void StoreDependentTaskInfo(std::set<uint32_t> dependTaskIdSet, uint32_t taskId);
     void RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t taskId);
+    void StoreAddDependendExecuteInfo(uint32_t taskId);
+    void RemoveAddDependExecuteInfo(uint32_t taskId, uint32_t executeId);
+
+    uint32_t GetCurrentExecuteId()
+    {
+        return currentExecuteId_;
+    }
 
     // for SequnceRunner
     uint32_t GenerateSeqRunnerId();
@@ -164,11 +171,15 @@ private:
     std::unordered_map<uint32_t, std::set<uint32_t>> dependTaskInfos_ {};
     std::shared_mutex dependTaskInfosMutex_;
 
-    // <<pendingExecuteId1, priority>, <pendingExecuteId2, priority>, ...>
-    std::unordered_map<uint32_t, Priority> pendingExecuteInfos_ {};
-
     // <dependent taskId, <taskId1, taskId2, ...>>, update when removeDependency or executeTask
     std::unordered_map<uint32_t, std::set<uint32_t>> dependentTaskInfos_ {};
+
+    // <<taskId, executeId when add deppendency>, ...>
+    std::unordered_map<uint32_t, uint32_t> addDependExecuteStateInfos_ {};
+
+    // <<pendingExecuteId1, priority>, <pendingExecuteId2, priority>, ...>
+    std::unordered_map<uint32_t, Priority> pendingExecuteInfos_ {};
+    std::shared_mutex pendingExecuteInfosMutex_;
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};
