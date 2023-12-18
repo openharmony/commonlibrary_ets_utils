@@ -1975,8 +1975,8 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
   let encoding = '';
   if (typeof value === 'string' || typeof value[Symbol.toPrimitive] === 'function') {
     offsetOrEncoding = offsetOrEncoding ? offsetOrEncoding : 'utf8';
-    if (typeof offsetOrEncoding == 'number') {
-        offsetOrEncoding = 'utf8'
+    if (typeof offsetOrEncoding === 'number') {
+        offsetOrEncoding = 'utf8';
     }
     encoding = encodingTypeErrorCheck(offsetOrEncoding);
   }
