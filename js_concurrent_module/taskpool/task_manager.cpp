@@ -1164,7 +1164,7 @@ void TaskManager::NotifyPendingExecuteInfo(uint32_t taskId, uint32_t executeId)
     if (iter == dependentTaskInfos_.end() || iter->second.size() == 0) {
         return;
     }
-    for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end(); ) {
+    for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
         auto addDependIter = addDependExecuteStateInfos_.find(*taskIdIter);
         if (addDependIter == addDependExecuteStateInfos_.end()) {
             taskIdIter = iter->second.erase(taskIdIter);
@@ -1190,9 +1190,11 @@ void TaskManager::NotifyPendingExecuteInfo(uint32_t taskId, uint32_t executeId)
             }
         }
         auto dependTaskIter = dependTaskInfos_.find(*taskIdIter);
-        auto depentIter = dependTaskIter->second.find(taskId);
-        if (depentIter != dependTaskIter->second.end()) {
-            dependTaskIter->second.erase(depentIter);
+        if (dependTaskIter != dependTaskInfos_.end()) {
+            auto dependTaskInnerIter = dependTaskIter->second.find(taskId);
+            if (dependTaskInnerIter != dependTaskIter->second.end()) {
+                dependTaskIter->second.erase(dependTaskInnerIter);
+            }
         }
         taskIdIter = iter->second.erase(taskIdIter);
     }
