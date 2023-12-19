@@ -110,33 +110,12 @@ function dealPriorReplace(strXml: string, idx: number, idxThir: number): string 
   let i: number = idx + 1;
   for (; i < idxThir; i++) {
     let cXml: string = strXml.charAt(i);
-    if (cXml !== '\n' && cXml !== '\v' && cXml !== '\t' && cXml !== ' ') {
+    if (cXml !== '\r' && cXml !== '\n' && cXml !== '\v' && cXml !== '\t' && cXml !== ' ') {
       break;
     }
   }
-  let j: number = idx + 1;
   if (i === idxThir) {
-    strXml = strXml.substring(0, j) + strXml.substring(idxThir);
-  }
-  let endIdx = strXml.indexOf('<', idx);
-  if (j < endIdx) {
-    let temp: string = strXml.substring(j, endIdx);
-    if (temp.indexOf('\n') !== -1 || temp.indexOf('\v') !== -1 || temp.indexOf('\t') !== -1) {
-      let pattern: RegExp = /[\n\v\t]/g;
-      let result: string = temp.replace(pattern, function (match) {
-        switch (match) {
-          case '\n':
-            return '\\n';
-          case '\v':
-            return '\\v';
-          case '\t':
-            return '\\t';
-          default:
-            return match;
-        }
-      });
-      strXml = strXml.substring(0, j) + result + strXml.substring(endIdx);
-    }
+    strXml = strXml.substring(0, idx + 1) + strXml.substring(idxThir);
   }
   return strXml;
 }
@@ -144,24 +123,9 @@ function dealPriorReplace(strXml: string, idx: number, idxThir: number): string 
 function dealLaterReplace(strXml: string, idx: number, idxThir: number): string {
   let i: number = idx + 1;
   let res = strXml.substring(i, idxThir);
-  if (res.indexOf('\n') !== -1 || res.indexOf('\v') !== -1 || res.indexOf('\t') !== -1 || res.indexOf('\r') !== -1) {
-    let pattern: RegExp = /[\n\v\t\r]/g;
-    let result: string = res.replace(pattern, function (match) {
-      switch (match) {
-        case '\n':
-          return '\\n';
-        case '\v':
-          return '\\v';
-        case '\t':
-          return '\\t';
-        case '\r':
-          return '\\r';
-        default:
-          return match;
-      }
-    });
-    strXml = strXml.substring(0, i) + result + strXml.substring(idxThir);
-  }
+  res = res.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t').replace(/\v/g, '\\v');
+  strXml = strXml.substring(0, i) + res + strXml.substring(idxThir);
   return strXml;
 }
 
