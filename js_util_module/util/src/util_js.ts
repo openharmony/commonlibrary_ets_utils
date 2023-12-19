@@ -33,6 +33,9 @@ interface HelpUtil {
 interface Fn {
   (): void;
 }
+
+type AnyType = Object | null | undefined;
+
 declare function requireInternal(s: string): HelpUtil;
 const helpUtil = requireInternal('util');
 let textEncoder = helpUtil.TextEncoder;
@@ -1764,6 +1767,117 @@ class ScopeHelper {
   }
 }
 
+class Aspect {
+  private static checkMethodType(func: Function, methodName: string): boolean {
+    if (typeof func !== 'function') {
+      let error = new BusinessError(`Parameter error. ${methodName} must be a method of targetClass,
+      but it is ${func}`);
+      throw error;
+    }
+    return func.constructor.name === 'AsyncFunction';
+  }
+
+  private static checkParameters(targetClass: Object, methodName: string, isStatic: boolean): void {
+    if (typeof (targetClass as Object) === 'undefined') {
+      let error = new BusinessError(`Parameter error. The type of targetClass should be Object,
+      but it is ${targetClass}`);
+      throw error;
+    }
+    if (typeof methodName !== 'string') {
+      let error = new BusinessError(`Parameter error. The type of methodName should be string,
+      but it is ${methodName}`);
+      throw error;
+    }
+    if (typeof isStatic !== 'boolean') {
+      let error = new BusinessError(`Parameter error. The type of isStatic should be boolean,
+      but it is ${isStatic}`);
+      throw error;
+    }
+  }
+
+  static addBefore(targetClass: Object, methodName: string, isStatic: boolean, before: Function): void {
+    Aspect.checkParameters(targetClass, methodName, isStatic);
+    if (typeof before !== 'function') {
+      let error = new BusinessError(`Parameter error. The type of before should be function, but it is ${before}`);
+      throw error;
+    }
+    let obj = isStatic ? targetClass : Reflect.get(targetClass, 'prototype');
+    if (!obj) {
+      return;
+    }
+    let oldFunc = obj[methodName];
+    if (!Aspect.checkMethodType(oldFunc, methodName)) {
+      let newFunc = function(...args : AnyType[]): AnyType {
+        before(this, ...args);
+        let ret = oldFunc.bind(this)(...args);
+        return ret;
+      };
+      obj[methodName] = newFunc;
+    } else {
+      let newFunc = async function (...args : AnyType[]): Promise<AnyType> {
+        before(this, ...args);
+        let ret = await oldFunc.bind(this)(...args);
+        return ret;
+      };
+      obj[methodName] = newFunc;
+    }
+  }
+
+  static addAfter(targetClass: Object, methodName: string, isStatic: boolean, after: Function): void {
+    Aspect.checkParameters(targetClass, methodName, isStatic);
+    if (typeof after !== 'function') {
+      let error = new BusinessError(`Parameter error. The type of after should be function, but it is ${after}`);
+      throw error;
+    }
+    let obj = isStatic ? targetClass : Reflect.get(targetClass, 'prototype');
+    if (!obj) {
+      return;
+    }
+    let oldFunc = obj[methodName];
+    if (!Aspect.checkMethodType(oldFunc, methodName)) {
+      let newFunc = function(...args : AnyType[]): AnyType {
+        let ret1 = oldFunc.bind(this)(...args);
+        let ret2 = after(this, ret1, ...args);
+        return ret2;
+      };
+      obj[methodName] = newFunc;
+    } else {
+      let newFunc = async function (...args : AnyType[]): Promise<AnyType> {
+        let ret1 = await oldFunc.bind(this)(...args);
+        let ret2 = after(this, ret1, ...args);
+        return ret2;
+      };
+      obj[methodName] = newFunc;
+    }
+  }
+
+  static replace(targetClass: Object, methodName: string, isStatic: boolean, instead: Function) : void {
+    Aspect.checkParameters(targetClass, methodName, isStatic);
+    if (typeof instead !== 'function') {
+      let error = new BusinessError(`Parameter error. The type of instead should be function, but it is ${instead}`);
+      throw error;
+    }
+    let obj = isStatic ? targetClass : Reflect.get(targetClass, 'prototype');
+    if (!obj) {
+      return;
+    }
+    let oldFunc = obj[methodName];
+    if (!Aspect.checkMethodType(oldFunc, methodName)) {
+      let func = function(...args : AnyType[]): AnyType {
+        let ret = instead(this, ...args);
+        return ret;
+      };
+      obj[methodName] = func;
+    } else {
+      let func = async function (...args : AnyType[]): Promise<AnyType> {
+        let ret = await instead(this, ...args);
+        return ret;
+      };
+      obj[methodName] = func;
+    }
+  }
+}
+
 export default {
   printf: printf,
   format: format,
@@ -1788,4 +1902,5 @@ export default {
   Scope: Scope,
   ScopeHelper: ScopeHelper,
   Type: Type,
+  Aspect: Aspect,
 };
