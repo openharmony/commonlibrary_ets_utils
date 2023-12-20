@@ -314,11 +314,6 @@ namespace OHOS::Xml {
         if (status != napi_ok) {
             return nullptr;
         }
-        Replace(strXml, "\\r", "\r");
-        Replace(strXml, "\\n", "\n");
-        Replace(strXml, "\\v", "\v");
-        Replace(strXml, "\\t", "\t");
-        Replace(strXml, "]]><![CDATA", "]]> <![CDATA");
         size_t len = strXml.size();
         doc = xmlParseMemory(strXml.c_str(), len);
         if (!doc) {
@@ -586,32 +581,10 @@ namespace OHOS::Xml {
 
     void ConvertXml::Replace(std::string &str, const std::string src, const std::string dst) const
     {
-        size_t begCdata = 0;
-        size_t endCdata = 0;
-        size_t pos = 0;
-        size_t flag = 0;
-        size_t count = 0;
-        std::string temp = "";
-        while ((begCdata = str.find("<![CDATA", endCdata - count)) != std::string::npos) {
-            endCdata = str.find("]]>", begCdata);
-            if (endCdata == std::string::npos) {
-                break;
-            }
-            size_t strLen = begCdata - flag;
-            temp = str.substr(flag, strLen);
-            count = 0;
-            while ((pos = temp.find(src)) != std::string::npos) {
-                temp.replace(pos, src.size(), dst);
-                count++;
-            }
-            str.replace(flag, strLen, temp);
-            flag = endCdata - count + 3; // 3 : length of "]]>"
+        size_t index = 0;
+        while ((index = str.find(src)) != std::string::npos) {
+            str.replace(index, src.size(), dst);
         }
-        temp = str.substr(flag);
-        while ((pos = temp.find(src)) != std::string::npos) {
-            temp.replace(pos, src.size(), dst);
-        }
-        str.replace(flag, str.size() - flag, temp);
     }
 
     void ConvertXml::DealCDataInfo(bool bCData, xmlNodePtr &curNode) const
