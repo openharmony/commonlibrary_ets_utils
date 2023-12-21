@@ -428,7 +428,7 @@ public:
     {
         workerEnvCallback_ = callback;
         if (workerEnv_ != nullptr) {
-            workerEnvCallback_(nullptr);
+            workerEnvCallback_(workerEnv_);
         }
     }
 
