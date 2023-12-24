@@ -26,36 +26,32 @@ namespace OHOS::xml {
     {
         napi_value thisVar = nullptr;
         void *data = nullptr;
-        size_t argc = 0;
-        napi_value args[2] = { 0 }; // 2:The number of parameters is 2
+        size_t argc = 2;
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
         XmlSerializer *object = nullptr;
         size_t iLength = 0;
         size_t offPos = 0;
         napi_value arraybuffer = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
-        NAPI_ASSERT(env, argc == 1 || argc == 2, "Wrong number of arguments"); // 2: number of args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
-        if (args[0] == nullptr) {
-            NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
-            return nullptr;
-        } else {
-            bool bFlag = false;
-            napi_is_arraybuffer(env, args[0], &bFlag);
-            if (bFlag) {
-                napi_get_arraybuffer_info(env, args[0], &data, &iLength);
-            }
-            napi_is_dataview(env, args[0], &bFlag);
-            if (bFlag) {
-                napi_get_dataview_info(env, args[0], &iLength, &data, &arraybuffer, &offPos);
-            }
+        NAPI_ASSERT(env, argc == 1 || argc == 2, "Wrong number of arguments"); // 2: number of args
+
+        bool bFlag = false;
+        napi_is_arraybuffer(env, args[0], &bFlag);
+        if (bFlag) {
+            napi_get_arraybuffer_info(env, args[0], &data, &iLength);
         }
+        napi_is_dataview(env, args[0], &bFlag);
+        if (bFlag) {
+            napi_get_dataview_info(env, args[0], &iLength, &data, &arraybuffer, &offPos);
+        }
+
         if (argc == 1) {
             object = new XmlSerializer(reinterpret_cast<char*>(data), iLength);
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             std::string encoding = "";
             napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
-            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
+            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
             napi_status status = napi_ok;
             status = XmlSerializer::DealNapiStrValue(env, args[1], encoding);
             if (status == napi_ok) {
@@ -78,20 +74,18 @@ namespace OHOS::xml {
     {
         napi_value thisVar = nullptr;
         void *data = nullptr;
-        size_t argc = 0;
-        napi_value args[2] = { 0 }; // 2:two args
+        size_t argc = 2;
+        napi_value args[2] = { nullptr }; // 2:two args
         XmlPullParser *object = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
-        NAPI_ASSERT(env, argc == 1 || argc == 2, "Wrong number of arguments"); // 2:two args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
+        NAPI_ASSERT(env, argc == 1 || argc == 2, "Wrong number of arguments"); // 2:two args
         napi_valuetype valuetype = napi_null;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument typr. Object(DataView or ArrayBuffer) expected.");
+        NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument type: DataView or ArrayBuffer expected.");
         bool bFlag = false;
         size_t len = 0;
         size_t offPos = 0;
         napi_value arraybuffer = nullptr;
-        NAPI_ASSERT(env, args[0] != nullptr, "Wrong argument value. (not nullptr expected).");
         napi_is_arraybuffer(env, args[0], &bFlag);
         if (bFlag) {
             napi_get_arraybuffer_info(env, args[0], &data, &len);
@@ -134,7 +128,7 @@ namespace OHOS::xml {
                 object = new XmlPullParser(strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
                 NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
-                NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
+                NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
                 std::string strEncoding = "";
                 XmlSerializer::DealNapiStrValue(env, args[1], strEncoding);
                 object = new XmlPullParser(strEnd, strEncoding);
@@ -155,18 +149,15 @@ namespace OHOS::xml {
     static napi_value SetAttributes(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args[2] = { 0 }; // 2:two args
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+        size_t argc = 2;
+        napi_value args[2] = { nullptr }; // 2:two args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc == 2, "Wrong number of arguments"); // 2: number of args
         napi_valuetype valuetype = napi_null;
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
-        NAPI_ASSERT(env, args[1] != nullptr, "Parameter is empty.");
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. Object expected.");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. string expected.");
         NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. Object expected.");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. string expected.");
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string name;
@@ -185,20 +176,17 @@ namespace OHOS::xml {
         size_t argc = 1;
         napi_value args[1] = { 0 };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments(Over)");
-        if (args[0] == nullptr) {
-            NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
-            return nullptr;
-        } else {
-            napi_valuetype valuetype;
-            NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
-            XmlSerializer *object = nullptr;
-            NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-            std::string name;
-            object->DealNapiStrValue(env, args[0], name);
-            object->AddEmptyElement(name);
-        }
+        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments.");
+
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
+        XmlSerializer *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        std::string name;
+        object->DealNapiStrValue(env, args[0], name);
+        object->AddEmptyElement(name);
+
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -219,12 +207,10 @@ namespace OHOS::xml {
     static napi_value StartElement(napi_env env, napi_callback_info info)
     {
         size_t argc = 1;
-        napi_value args[1] = { 0 };
+        napi_value args[1] = { nullptr };
         napi_value thisVar = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
-        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments");
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
+        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments");
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string name;
@@ -250,18 +236,15 @@ namespace OHOS::xml {
     static napi_value SetNamespace(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args[2] = { 0 }; // 2:two args
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+        size_t argc = 2;
+        napi_value args[2] = { nullptr }; // 2:two args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc == 2, "Wrong number of arguments"); // 2:two args
         napi_valuetype valuetype = napi_null;
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
-        NAPI_ASSERT(env, args[1] != nullptr, "Parameter is empty.");
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. Object expected.");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. Object expected.");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string prefix;
@@ -277,15 +260,13 @@ namespace OHOS::xml {
     static napi_value SetComment(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args[1] = { 0 };
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments");
+        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments.");
         napi_valuetype valuetype = napi_null;
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty).");
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string comment;
@@ -299,15 +280,13 @@ namespace OHOS::xml {
     static napi_value SetCData(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args[1] = { 0 };
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc == 1, "Wrong number of arguments");
         napi_valuetype valuetype = napi_null;
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty).");
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string data;
@@ -321,15 +300,13 @@ namespace OHOS::xml {
     static napi_value SetText(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args[1] = { 0 };
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc == 1, "Wrong number of arguments");
         napi_valuetype valuetype = napi_null;
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty).");
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string text;
@@ -343,15 +320,13 @@ namespace OHOS::xml {
     static napi_value SetDocType(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args[1] = { 0 };
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc == 1, "Wrong number of arguments");
         napi_valuetype valuetype = napi_null;
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty).");
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         std::string text;
@@ -403,15 +378,13 @@ namespace OHOS::xml {
     static napi_value Parse(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t argc = 0;
-        napi_value args[1] = { 0 };
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
-        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments, one expected.");
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
+        NAPI_ASSERT(env, argc == 1, "Wrong number of arguments, one expected.");
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument typr. Object expected.");
+        NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument type: object expected.");
         XmlPullParser *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         object->DealOptionInfo(env, args[0]);

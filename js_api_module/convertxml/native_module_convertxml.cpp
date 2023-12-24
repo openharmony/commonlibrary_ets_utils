@@ -47,7 +47,7 @@ namespace OHOS::Xml {
         size_t requireMaxArgc = 2; // 2:MaxArgc
         size_t requireMinArgc = 1;
         size_t argc = 2; // 2:The number of parameters is 2
-        napi_value args[2] = {nullptr};
+        napi_value args[2] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc <= requireMaxArgc, "Wrong number of arguments(Over)");
         NAPI_ASSERT(env, argc >= requireMinArgc, "Wrong number of arguments(Less)");
@@ -55,15 +55,12 @@ namespace OHOS::Xml {
         napi_valuetype valuetype;
         ConvertXml *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
-        if (args[0] == nullptr) {
-            NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
-            return nullptr;
-        } else {
-            NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
-            NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument typr. String expected.");
-            object->DealNapiStrValue(env, args[0], strXml);
-        }
-        if (args[1] != nullptr) {
+
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
+        object->DealNapiStrValue(env, args[0], strXml);
+
+        if (argc > 1) {
             object->DealOptions(env, args[1]);
         }
         napi_value result = object->Convert(env, strXml);

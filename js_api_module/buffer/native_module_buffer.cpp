@@ -168,13 +168,12 @@ static napi_value FromStringHex(napi_env env, napi_value thisVar, napi_value str
 static napi_value FromString(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[3] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 3;
+    napi_value args[3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     // 2 : the third argument
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr && args[2] != nullptr, "Parameter is empty.");
-    
+    NAPI_ASSERT(env, argc > 2, "Wrong number of arguments");
+
     uint32_t size = 0;
     // 2 : the third argument
     NAPI_CALL(env, napi_get_value_uint32(env, args[2], &size));
@@ -228,9 +227,8 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
     if (blob == nullptr) {
         return nullptr;
     }
-    size_t argc = 0;
-    napi_value argv[3] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 3;
+    napi_value argv[3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
 
     if (argc == 1) { // Array
@@ -285,9 +283,8 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
     if (buffer == nullptr) {
         return nullptr;
     }
-    size_t argc = 0;
-    napi_value argv[4] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 4;
+    napi_value argv[4] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
 
     int32_t pType = -1;
@@ -353,11 +350,10 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
 Buffer *GetValueOffsetAndBuf(napi_env env, napi_callback_info info, int32_t *pValue, uint32_t *pOffset)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[2] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 2;
+    napi_value args[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc > 1, "Wrong number of arguments.");
 
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
@@ -370,11 +366,10 @@ Buffer *GetOffsetAndBuf(napi_env env, napi_callback_info info, uint32_t *pOffset
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
-    napi_value args[1] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    napi_value args[1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
-    
+    NAPI_ASSERT(env, argc > 0, "Wrong number of arguments.");
+
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], pOffset));
@@ -411,10 +406,9 @@ static napi_value SetArray(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
-    napi_value args[1] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    napi_value args[1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc > 0, "Wrong number of arguments.");
     
     bool isArray = false;
     NAPI_CALL(env, napi_is_array(env, args[0], &isArray));
@@ -456,15 +450,11 @@ static napi_value GetByteOffset(napi_env env, napi_callback_info info)
 static napi_value WriteString(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[4] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 4;
+    napi_value args[4] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     // 4 : 4 arguments is right
-    NAPI_ASSERT(env, argc == 4, "Wrong number of arguments");
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr &&
-                // 2 : 3 : the third argument and the forth argument
-                args[2] != nullptr && args[3] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc == 4, "Wrong number of arguments.");
 
     // 3 : the forth argument
     string encoding = GetStringASCII(env, args[3]);
@@ -490,13 +480,10 @@ static napi_value WriteString(napi_env env, napi_callback_info info)
 static napi_value FillString(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[4] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 4;
+    napi_value args[4] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr &&
-                // 2 : 3 : the third argument and the forth argument
-                args[2] != nullptr && args[3] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc > 3, "Wrong number of arguments.");
 
     string encoding = GetStringASCII(env, args[3]);
     EncodingType encodingType = Buffer::GetEncodingType(encoding);
@@ -520,12 +507,11 @@ static napi_value FillString(napi_env env, napi_callback_info info)
 static napi_value FillNumbers(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[3] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 3;
+    napi_value args[3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     // 2 : the third argument
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr && args[2] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc > 2, "Wrong number of arguments.");
 
     uint32_t offset = 0;
     uint32_t end = 0;
@@ -546,12 +532,11 @@ static napi_value FillNumbers(napi_env env, napi_callback_info info)
 static napi_value FillBuffer(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[3] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 3;
+    napi_value args[3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     // 2 : the third argument
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr && args[2] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc > 2, "Wrong number of arguments.");
 
     uint32_t offset = 0;
     uint32_t end = 0;
@@ -574,10 +559,9 @@ static napi_value Utf8ByteLength(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
-    napi_value args[1] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    napi_value args[1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc > 0, "Wrong number of arguments.");
     size_t byteLen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, args[0], nullptr, 0, &byteLen));
     napi_value result = nullptr;
@@ -616,10 +600,9 @@ static napi_value Get(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     size_t argc = 1;
-    napi_value args[1] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    napi_value args[1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc > 0, "Wrong number of arguments.");
     uint32_t index = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &index));
     Buffer *buf = nullptr;
@@ -633,12 +616,11 @@ static napi_value Get(napi_env env, napi_callback_info info)
 static napi_value Set(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[2] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 2;
+    napi_value args[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr, "Parameter is empty.");
-    
+    NAPI_ASSERT(env, argc > 1, "Wrong number of arguments.");
+
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     
@@ -733,12 +715,11 @@ static napi_value ReadUInt32LE(napi_env env, napi_callback_info info)
 static napi_value SubBuffer(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[3] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
-    NAPI_ASSERT(env, argc == 3, "Wrong number of arguments");
+    size_t argc = 3;
+    napi_value args[3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, args[0] != nullptr && args[1] != nullptr && args[2] != nullptr, "Parameter is empty.");
+    NAPI_ASSERT(env, argc == 3, "Wrong number of arguments");
+
     Buffer *newBuf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&newBuf)));
     Buffer *targetBuf = nullptr;
@@ -757,9 +738,8 @@ static napi_value SubBuffer(napi_env env, napi_callback_info info)
 static napi_value Copy(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[4] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 4;
+    napi_value args[4] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     // 4 : 4 arguments is right
     NAPI_ASSERT(env, argc == 4, "Wrong number of arguments");
@@ -785,9 +765,8 @@ static napi_value Copy(napi_env env, napi_callback_info info)
 static napi_value Compare(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[4] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 4;
+    napi_value args[4] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     uint32_t targetStart = 0;
     uint32_t sourceStart = 0;
@@ -811,9 +790,8 @@ static napi_value ToUtf8(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
     napi_value result = nullptr;
-    size_t argc = 0;
-    napi_value args[2] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 2;
+    napi_value args[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     uint32_t start = 0;
     uint32_t end = 0;
@@ -837,9 +815,8 @@ static napi_value ToUtf8(napi_env env, napi_callback_info info)
 static napi_value ToBase64(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[2] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 2;
+    napi_value args[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     uint32_t start = 0;
     uint32_t end = 0;
@@ -857,9 +834,8 @@ static napi_value ToBase64(napi_env env, napi_callback_info info)
 static napi_value ToBase64Url(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[2] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 2;
+    napi_value args[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     uint32_t start = 0;
     uint32_t end = 0;
@@ -877,9 +853,8 @@ static napi_value ToBase64Url(napi_env env, napi_callback_info info)
 static napi_value IndexOf(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[4] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 4;
+    napi_value args[4] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     uint32_t offset = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &offset));
@@ -942,9 +917,8 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
 static napi_value Utf8StringToNumbers(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 0;
-    napi_value args[1] = { 0 };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    size_t argc = 1;
+    napi_value args[1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
 
     std::string str = GetStringUtf8(env, args[0]);
