@@ -76,6 +76,7 @@ napi_value Worker_Terminate(napi_env env, napi_value global)
     napi_call_function(env, global, cb, 0, nullptr, &result);
     return result;
 }
+
 // worker WorkerConstructor
 HWTEST_F(NativeEngineTest, WorkerConstructorTest001, testing::ext::TestSize.Level0)
 {
@@ -97,6 +98,7 @@ HWTEST_F(NativeEngineTest, WorkerConstructorTest001, testing::ext::TestSize.Leve
 
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker PostMessage
 HWTEST_F(NativeEngineTest, PostMessageTest001, testing::ext::TestSize.Level0)
 {
@@ -128,6 +130,7 @@ HWTEST_F(NativeEngineTest, PostMessageTest001, testing::ext::TestSize.Level0)
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker PostMessage
 HWTEST_F(NativeEngineTest, PostMessageTest002, testing::ext::TestSize.Level0)
 {
@@ -151,6 +154,7 @@ HWTEST_F(NativeEngineTest, PostMessageTest002, testing::ext::TestSize.Level0)
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker PostMessage
 HWTEST_F(NativeEngineTest, PostMessageTest003, testing::ext::TestSize.Level0)
 {
@@ -182,6 +186,7 @@ HWTEST_F(NativeEngineTest, PostMessageTest003, testing::ext::TestSize.Level0)
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker PostMessage
 HWTEST_F(NativeEngineTest, PostMessageToHostTest001, testing::ext::TestSize.Level0)
 {
@@ -212,6 +217,7 @@ HWTEST_F(NativeEngineTest, PostMessageToHostTest001, testing::ext::TestSize.Leve
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker PostMessageToHost
 HWTEST_F(NativeEngineTest, PostMessageToHostTest002, testing::ext::TestSize.Level0)
 {
@@ -234,6 +240,7 @@ HWTEST_F(NativeEngineTest, PostMessageToHostTest002, testing::ext::TestSize.Leve
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker PostMessageToHost
 HWTEST_F(NativeEngineTest, PostMessageToHostTest003, testing::ext::TestSize.Level0)
 {
@@ -287,6 +294,7 @@ HWTEST_F(NativeEngineTest, PostMessageToHostTest003, testing::ext::TestSize.Leve
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker EventListener
 HWTEST_F(NativeEngineTest, EventListenerTest001, testing::ext::TestSize.Level0)
 {
@@ -336,6 +344,7 @@ HWTEST_F(NativeEngineTest, EventListenerTest001, testing::ext::TestSize.Level0)
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker EventListener
 HWTEST_F(NativeEngineTest, EventListenerTest002, testing::ext::TestSize.Level0)
 {
@@ -369,6 +378,7 @@ HWTEST_F(NativeEngineTest, EventListenerTest002, testing::ext::TestSize.Level0)
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker DispatchEvent
 HWTEST_F(NativeEngineTest, DispatchEventTest001, testing::ext::TestSize.Level0)
 {
@@ -414,6 +424,7 @@ HWTEST_F(NativeEngineTest, DispatchEventTest001, testing::ext::TestSize.Level0)
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker ParentPortAddEventListener
 HWTEST_F(NativeEngineTest, ParentPortAddEventListenerTest001, testing::ext::TestSize.Level0)
 {
@@ -425,9 +436,16 @@ HWTEST_F(NativeEngineTest, ParentPortAddEventListenerTest001, testing::ext::Test
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->UpdateWorkerState(Worker::RunnerState::RUNNING);
+
+    // ------- workerEnv---------
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+
     napi_value argv[3] = {nullptr};
     std::string message = "host";
-    napi_create_string_utf8(env, message.c_str(), message.length(), &argv[0]);
+    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
     auto func = [](napi_env env, napi_callback_info info) -> napi_value {
         return nullptr;
     };
@@ -435,18 +453,21 @@ HWTEST_F(NativeEngineTest, ParentPortAddEventListenerTest001, testing::ext::Test
     std::string funcName = "ParentPortAddEventListener";
     napi_value cb = nullptr;
     napi_value funcValue = nullptr;
-    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
+    napi_create_function(workerEnv, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
     argv[1] = funcValue;
-    cb = nullptr;
     napi_value myobject = nullptr;
-    napi_create_object(env, &myobject);
-
+    napi_create_object(workerEnv, &myobject);
     argv[2] = myobject;
-    napi_create_function(env, funcName.c_str(), funcName.size(), Worker::ParentPortAddEventListener, worker, &cb);
-    napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ParentPortAddEventListener, worker, &cb);
+    napi_value callResult = nullptr;
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    // ------- workerEnv---------
+
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker ParentPortRemoveAllListener
 HWTEST_F(NativeEngineTest, ParentPortRemoveAllListenerTest001, testing::ext::TestSize.Level0)
 {
@@ -459,18 +480,26 @@ HWTEST_F(NativeEngineTest, ParentPortRemoveAllListenerTest001, testing::ext::Tes
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->UpdateWorkerState(Worker::RunnerState::RUNNING);
 
+    // ------- workerEnv---------
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+
     napi_value argv[1] = {nullptr};
     std::string message = "host";
-    napi_create_string_utf8(env, message.c_str(), message.length(), &argv[0]);
+    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
     std::string funcName = "ParentPortRemoveAllListener";
     napi_value cb = nullptr;
-    cb = nullptr;
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ParentPortRemoveAllListener, worker, &cb);
+    napi_value callResult = nullptr;
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    // ------- workerEnv---------
 
-    napi_create_function(env, funcName.c_str(), funcName.size(), Worker::ParentPortRemoveAllListener, worker, &cb);
-    napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker ParentPortDispatchEvent
 HWTEST_F(NativeEngineTest, ParentPortDispatchEventTest001, testing::ext::TestSize.Level0)
 {
@@ -482,30 +511,36 @@ HWTEST_F(NativeEngineTest, ParentPortDispatchEventTest001, testing::ext::TestSiz
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->UpdateWorkerState(Worker::RunnerState::RUNNING);
-    napi_value argv[1] = {nullptr};
-    napi_value message;
-    napi_create_string_utf8(env, "message", NAPI_AUTO_LENGTH, &message);
 
+    // ------- workerEnv---------
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+
+    napi_value argv[1] = {nullptr};
     napi_value objresult = nullptr;
-    napi_create_object(env, &objresult);
+    napi_create_object(workerEnv, &objresult);
     napi_value cb = nullptr;
     std::string funcName = "ParentPortDispatchEvent";
     napi_value messageKey = nullptr;
     const char* messageKeyStr = "type";
-    napi_create_string_latin1(env, messageKeyStr, strlen(messageKeyStr), &messageKey);
+    napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &messageKey);
     napi_value messageValue = nullptr;
     const char* messageValueStr = "message";
-    napi_create_string_latin1(env, messageValueStr, strlen(messageValueStr), &messageValue);
-    napi_set_property(env, objresult, messageKey, messageValue);
+    napi_create_string_latin1(workerEnv, messageValueStr, strlen(messageValueStr), &messageValue);
+    napi_set_property(workerEnv, objresult, messageKey, messageValue);
     argv[0] = objresult;
-    cb = nullptr;
 
-    napi_create_function(env, funcName.c_str(), funcName.size(), Worker::ParentPortDispatchEvent, worker, &cb);
-    napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ParentPortDispatchEvent, worker, &cb);
+    napi_value callResult = nullptr;
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    // ------- workerEnv---------
 
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
+
 //worker ParentPortRemoveEventListener
 HWTEST_F(NativeEngineTest, ParentPortRemoveEventListenerTest001, testing::ext::TestSize.Level0)
 {
@@ -517,9 +552,16 @@ HWTEST_F(NativeEngineTest, ParentPortRemoveEventListenerTest001, testing::ext::T
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->UpdateWorkerState(Worker::RunnerState::RUNNING);
+
+    // ------- workerEnv---------
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+
     napi_value argv[2] = {nullptr};
     std::string message = "host";
-    napi_create_string_utf8(env, message.c_str(), message.length(), &argv[0]);
+    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
     auto func = [](napi_env env, napi_callback_info info) -> napi_value {
         return nullptr;
     };
@@ -527,12 +569,13 @@ HWTEST_F(NativeEngineTest, ParentPortRemoveEventListenerTest001, testing::ext::T
     std::string funcName = "ParentPortRemoveEventListener";
     napi_value cb = nullptr;
     napi_value funcValue = nullptr;
-    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
+    napi_create_function(workerEnv, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
     argv[1] = funcValue;
-    cb = nullptr;
 
-    napi_create_function(env, funcName.c_str(), funcName.size(), Worker::ParentPortAddEventListener, worker, &cb);
-    napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ParentPortAddEventListener, worker, &cb);
+    napi_value callResult = nullptr;
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    // ------- workerEnv---------
 
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
