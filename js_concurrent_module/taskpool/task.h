@@ -42,6 +42,10 @@ public:
     static void Destructor(napi_env env, void* nativeObject, void* finalize);
     static napi_value AddDependency(napi_env env, napi_callback_info cbinfo);
     static napi_value RemoveDependency(napi_env env, napi_callback_info cbinfo);
+    static napi_value GetTotalDuration(napi_env env, napi_callback_info info);
+    static napi_value GetCPUDuration(napi_env env, napi_callback_info info);
+    static napi_value GetIODuration(napi_env env, napi_callback_info info);
+    static napi_value GetTaskDuration(napi_env env, napi_callback_info& info, std::string durationType);
 
 private:
     Task() = delete;
@@ -69,6 +73,9 @@ struct TaskInfo {
     Priority priority {Priority::DEFAULT};
     std::string funcName {};
     std::string taskName {};
+    uint64_t startTime {};
+    uint64_t cpuTime {};
+    uint64_t ioTime {};
 };
 
 struct CallbackInfo {

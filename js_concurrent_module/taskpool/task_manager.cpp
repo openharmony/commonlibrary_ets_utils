@@ -1466,4 +1466,38 @@ void TaskManager::RemoveAddDependExecuteInfo(uint32_t taskId, uint32_t executeId
         addDependExecuteStateInfos_.erase(executeIter);
     }
 }
+
+void TaskManager::StoreTaskDuration(uint32_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
+{
+    std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
+    auto iter = taskDurationInfos_.find(taskId);
+    if (iter == taskDurationInfos_.end()) {
+        std::pair<uint64_t, uint64_t> durationData = std::make_pair(totalDuration, cpuDuration);
+        taskDurationInfos_.emplace(taskId, std::move(durationData));
+    } else {
+        if (totalDuration != 0) {
+            iter->second.first = totalDuration;
+        }
+        if (cpuDuration != 0) {
+            iter->second.second = cpuDuration;
+        }
+    }
+}
+
+uint64_t TaskManager::GetTaskDuration(uint32_t taskId, std::string durationType)
+{
+    std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
+    auto iter = taskDurationInfos_.find(taskId);
+    if (iter == taskDurationInfos_.end()) {
+        return 0;
+    }
+    if (durationType == TASK_TOTAL_TIME) {
+        return iter->second.first;
+    } else if (durationType == TASK_CPU_TIME) {
+        return iter->second.second;
+    } else if (iter->second.first == 0) {
+        return 0;
+    }
+    return iter->second.first - iter->second.second;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -266,6 +266,7 @@ bool Worker::UpdateWorkerState(WorkerState expect, WorkerState desired)
 
 void Worker::PerformTask(const uv_async_t* req)
 {
+    uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     auto worker = static_cast<Worker*>(req->data);
     napi_env env = worker->workerEnv_;
     napi_status status = napi_ok;
@@ -292,6 +293,7 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_DEBUG("taskpool::PerformTask taskInfo is null");
         return;
     }
+    taskInfo->startTime = startTime;
     {
         std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
         worker->currentTaskId_.emplace_back(taskInfo->taskId);
@@ -358,6 +360,14 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_value result;
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
     TaskManager::GetInstance().NotifyPendingExecuteInfo(taskInfo->taskId, taskInfo->executeId);
+    taskInfo->cpuTime = ConcurrentHelper::GetMilliseconds();
+    uint64_t cpuDuration = taskInfo->cpuTime - taskInfo->startTime;
+    if (taskInfo->ioTime != 0) {
+        uint64_t ioDuration = taskInfo->ioTime - taskInfo->startTime;
+        TaskManager::GetInstance().StoreTaskDuration(taskInfo->taskId, std::max(cpuDuration, ioDuration), cpuDuration);
+    } else {
+        TaskManager::GetInstance().StoreTaskDuration(taskInfo->taskId, 0, cpuDuration);
+    }
     // if the worker is blocked, just skip
     if (LIKELY(worker->state_ != WorkerState::BLOCKED)) {
         uint64_t duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
@@ -414,6 +424,12 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         return;
     }
     TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
+    taskInfo->ioTime = ConcurrentHelper::GetMilliseconds();
+    if (taskInfo->cpuTime != 0) {
+        uint64_t ioDuration = taskInfo->ioTime - taskInfo->startTime;
+        uint64_t cpuDuration = taskInfo->cpuTime - taskInfo->startTime;
+        TaskManager::GetInstance().StoreTaskDuration(taskInfo->taskId, std::max(ioDuration, cpuDuration), cpuDuration);
+    }
     TaskManager::GetInstance().NotifyPendingExecuteInfo(taskInfo->taskId, taskInfo->executeId);
     taskInfo->success = success;
     NotifyTaskResult(env, taskInfo, result);
