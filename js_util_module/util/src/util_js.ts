@@ -1770,8 +1770,7 @@ class ScopeHelper {
 class Aspect {
   private static checkMethodType(func: Function, methodName: string): boolean {
     if (typeof func !== 'function') {
-      let error = new BusinessError(`Parameter error. ${methodName} must be a method of targetClass,
-      but it is ${func}`);
+      let error = new BusinessError(`Parameter error. ${methodName} must be a method of targetClass, but it is ${func}`);
       throw error;
     }
     return func.constructor.name === 'AsyncFunction';
@@ -1779,18 +1778,15 @@ class Aspect {
 
   private static checkParameters(targetClass: Object, methodName: string, isStatic: boolean): void {
     if (typeof (targetClass as Object) === 'undefined') {
-      let error = new BusinessError(`Parameter error. The type of targetClass should be Object,
-      but it is ${targetClass}`);
+      let error = new BusinessError(`Parameter error. The type of targetClass should be Object, but it is ${targetClass}`);
       throw error;
     }
     if (typeof methodName !== 'string') {
-      let error = new BusinessError(`Parameter error. The type of methodName should be string,
-      but it is ${methodName}`);
+      let error = new BusinessError(`Parameter error. The type of methodName should be string, but it is ${methodName}`);
       throw error;
     }
     if (typeof isStatic !== 'boolean') {
-      let error = new BusinessError(`Parameter error. The type of isStatic should be boolean,
-      but it is ${isStatic}`);
+      let error = new BusinessError(`Parameter error. The type of isStatic should be boolean, but it is ${isStatic}`);
       throw error;
     }
   }
