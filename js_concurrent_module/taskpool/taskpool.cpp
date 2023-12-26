@@ -64,6 +64,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("SequenceRunner", seqRunnerClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
         DECLARE_NAPI_FUNCTION("execute", Execute),
+        DECLARE_NAPI_FUNCTION("executeDelayed", ExecuteDelayed),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
         DECLARE_NAPI_FUNCTION("getTaskPoolInfo", GetTaskPoolInfo),
     };
@@ -196,6 +197,92 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
     TaskManager::GetInstance().StoreRunningInfo(0, executeId);
     ExecuteFunction(env, taskInfo);
+    return promise;
+}
+
+void TaskPool::DelayTask(uv_timer_t* handle)
+{
+    TaskMessage *taskMessage = reinterpret_cast<TaskMessage *>(handle->data);
+    TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
+    TaskManager::GetInstance().AddExecuteState(taskMessage->executeId);
+    TaskManager::GetInstance().EnqueueExecuteId(taskMessage->executeId, Priority(taskMessage->priority));
+    TaskManager::GetInstance().TryTriggerExpand();
+    uv_timer_stop(handle);
+    uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_timer_t*>(handle);
+            handle = nullptr;
+        }
+    });
+    delete taskMessage;
+    taskMessage = nullptr;
+}
+
+napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    size_t argc = 4;
+    napi_value args[4];
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
+    if (argc < 2 || argc > 3) { // 2: delayTime and task 3: delayTime、 task and priority
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be two or three");
+        return nullptr;
+    }
+
+    // check the first param is number
+    if (!NapiHelper::IsNumber(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: delayTime type is error");
+        return nullptr;
+    }
+
+    int32_t delayTime = NapiHelper::GetInt32Value(env, args[0]);
+    if (delayTime < 0) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_DELAY_TIME_ERROR);
+        return nullptr;
+    }
+
+    // check the second param is object
+    napi_valuetype type;
+    napi_typeof(env, args[1], &type);
+    if (type != napi_object) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task type is error");
+        return nullptr;
+    }
+
+    // get execution priority
+    uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
+    if (argc > 2) { // 2: the params might have priority
+        if (!NapiHelper::IsNumber(env, args[2])) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority type is error");
+            return nullptr;
+        }
+        priority = NapiHelper::GetUint32Value(env, args[2]); // 2: get task priority
+        if (priority >= Priority::NUMBER) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority value is error");
+            return nullptr;
+        }
+    }
+
+    uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
+    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, args[1], executeId);
+    if (taskInfo == nullptr) {
+        HILOG_ERROR("taskpool::ExecuteTask taskInfo is nullptr");
+        return nullptr;
+    }
+    uv_loop_t* loop = uv_default_loop();
+    uv_update_time(loop);
+    uv_timer_t* timer = new uv_timer_t;
+    uv_timer_init(loop, timer);
+    TaskMessage *taskMessage = new TaskMessage();
+    taskMessage->executeId = executeId;
+    taskMessage->priority = priority;
+    taskMessage->taskId = taskInfo->taskId;
+    timer->data = taskMessage;
+    uv_timer_start(timer, reinterpret_cast<uv_timer_cb>(DelayTask), delayTime, 0);
+    uv_work_t *work = new uv_work_t;
+    uv_queue_work_with_qos(loop, work, [](uv_work_t *) {},
+                           [](uv_work_t *work, int32_t) {delete work; }, uv_qos_user_initiated);
+    napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
     return promise;
 }
 

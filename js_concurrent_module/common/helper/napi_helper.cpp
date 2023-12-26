@@ -301,6 +301,13 @@ uint32_t NapiHelper::GetUint32Value(napi_env env, napi_value value)
     return result;
 }
 
+int32_t NapiHelper::GetInt32Value(napi_env env, napi_value value)
+{
+    int32_t result = 0;
+    napi_get_value_int32(env, value, &result);
+    return result;
+}
+
 bool NapiHelper::IsExceptionPending(napi_env env)
 {
     bool isExceptionPending = false;

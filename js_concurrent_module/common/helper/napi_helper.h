@@ -57,6 +57,7 @@ public:
     static napi_value CreateEmptyString(napi_env env);
     static uint32_t GetArrayLength(napi_env env, napi_value array);
     static uint32_t GetUint32Value(napi_env env, napi_value value);
+    static int32_t GetInt32Value(napi_env env, napi_value value);
     static bool IsExceptionPending(napi_env env);
     static std::string GetPrintString(napi_env env, napi_value value);
 };

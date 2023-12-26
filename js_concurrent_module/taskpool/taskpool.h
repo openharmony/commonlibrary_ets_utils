@@ -25,6 +25,12 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
+struct TaskMessage {
+    uint32_t executeId {};
+    uint32_t priority {};
+    uint32_t taskId {};
+};
+
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
@@ -38,7 +44,9 @@ private:
     TaskPool(TaskPool &&) = delete;
     TaskPool& operator=(TaskPool &&) = delete;
 
+    static void DelayTask(uv_timer_t* handle);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
+    static napi_value ExecuteDelayed(napi_env env, napi_callback_info cbinfo);
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
     static napi_value GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo);
 
