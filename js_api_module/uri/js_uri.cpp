@@ -114,10 +114,10 @@ namespace OHOS::Uri {
             }
         } else if (data_[0] == '/') {
             uriData_.path = data_;
-            uriData_.SchemeSpecificPart = data_ + uriData_.query;
+            uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
             data_ = "";
-        } else if (!data_.empty()) {
-            uriData_.SchemeSpecificPart = data_ + uriData_.query;
+        } else {
+            uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
             uriData_.query = "";
             data_ = "";
         }
@@ -197,6 +197,35 @@ namespace OHOS::Uri {
         }
     }
 
+    void Uri::AnalysisHost(bool isLawfulProt)
+    {
+        // find ipv4 or ipv6 or host
+        if (data_[0] == '[') {
+            if (data_[data_.size() - 1] == ']') {
+                // IPV6
+                if (!isLawfulProt) {
+                    errStr_ = "Prot does not conform to the rule";
+                    return;
+                }
+                AnalysisIPV6();
+            } else {
+                errStr_ = "IPv6 is missing a closing bracket";
+                return;
+            }
+        } else {
+            if (data_.find('[') != std::string::npos || data_.find(']') != std::string::npos) {
+                errStr_ = "host does not conform to the rule";
+                return;
+            }
+            // ipv4
+            if (!isLawfulProt || !AnalysisIPV4()) {
+                uriData_.port = -1;
+                uriData_.host = "";
+                uriData_.userInfo = "";
+            }
+        }
+    }
+
     void Uri::AnalysisHostAndPath()
     {
         if (data_.empty()) {
@@ -210,9 +239,7 @@ namespace OHOS::Uri {
                 return;
             }
         }
-
         uriData_.authority = data_;
-
         // find UserInfo
         pos = data_.find('@');
         if (pos != std::string::npos) {
@@ -233,28 +260,7 @@ namespace OHOS::Uri {
             return;
             }
         }
-
-        // find ipv4 or ipv6 or host
-        if (data_[0] == '[') {
-            if (data_[data_.size() - 1] == ']') {
-                // IPV6
-                if (!isLawfulProt) {
-                    errStr_ = "Prot does not conform to the rule";
-                    return;
-                }
-                AnalysisIPV6();
-            } else {
-                errStr_ = "IPv6 is missing a closing bracket";
-                return;
-            }
-        } else {
-            // ipv4
-            if (!isLawfulProt || !AnalysisIPV4()) {
-                uriData_.port = -1;
-                uriData_.host = "";
-                uriData_.userInfo = "";
-            }
-        }
+        AnalysisHost(isLawfulProt);
     }
 
     void Uri::AnalysisPath(size_t pos)
@@ -458,20 +464,13 @@ namespace OHOS::Uri {
         return normalizeUri;
     }
 
-
     std::string Uri::GetScheme() const
     {
-        if (uriData_.scheme.empty()) {
-            return "null";
-        }
         return uriData_.scheme;
     }
 
     std::string Uri::GetAuthority() const
     {
-        if (uriData_.authority.empty()) {
-            return "null";
-        }
         return uriData_.authority;
     }
 
@@ -485,17 +484,11 @@ namespace OHOS::Uri {
 
     std::string Uri::GetUserinfo() const
     {
-        if (uriData_.userInfo.empty()) {
-            return "null";
-        }
         return uriData_.userInfo;
     }
 
     std::string Uri::GetHost() const
     {
-        if (uriData_.host.empty()) {
-            return "null";
-        }
         return uriData_.host;
     }
 
@@ -506,25 +499,16 @@ namespace OHOS::Uri {
 
     std::string Uri::GetPath() const
     {
-        if (uriData_.path.empty()) {
-            return "null";
-        }
         return uriData_.path;
     }
 
     std::string Uri::GetQuery() const
     {
-        if (uriData_.query.empty()) {
-            return "null";
-        }
         return uriData_.query;
     }
 
     std::string Uri::GetFragment() const
     {
-        if (uriData_.fragment.empty()) {
-            return "null";
-        }
         return uriData_.fragment;
     }
 } // namespace OHOS::Uri

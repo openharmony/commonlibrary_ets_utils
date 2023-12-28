@@ -132,6 +132,7 @@ namespace OHOS::Uri {
         void AnalysisQuery(size_t pos);
         void AnalysisScheme(size_t pos);
         void AnalysisHostAndPath();
+        void AnalysisHost(bool isLawfulProt);
         void AnalysisPath(size_t pos);
         void AnalysisUserInfo(size_t pos);
         void AnalysisIPV6();

@@ -131,6 +131,10 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetScheme();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
         return result;
@@ -144,6 +148,10 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetAuthority();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
         return result;
@@ -170,6 +178,10 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetUserinfo();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
         return result;
@@ -183,6 +195,10 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetHost();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
         return result;
@@ -209,6 +225,10 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetPath();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
         return result;
@@ -222,6 +242,10 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetQuery();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
         return result;
@@ -235,6 +259,10 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetFragment();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
         return result;

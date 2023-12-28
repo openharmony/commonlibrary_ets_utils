@@ -19,15 +19,15 @@ interface NativeUri {
   equalsTo(other: NativeUri): boolean;
   checkIsAbsolute(): boolean;
   toString(): string;
-  scheme: string;
-  authority: string;
+  scheme: string | null;
+  authority: string | null;
   ssp: string;
-  userInfo: string;
-  host: string;
+  userInfo: string | null;
+  host: string | null;
   port: string;
-  path: string;
-  query: string;
-  fragment: string;
+  path: string | null;
+  query: string | null;
+  fragment: string | null;
   isFailed: string;
 }
 interface UriInterface {
@@ -86,11 +86,14 @@ class URI {
     return createNewUri(uriStr);
   }
 
-  get scheme(): string {
+  get scheme(): string | null {
     return this.uricalss.scheme;
   }
 
-  get authority(): string {
+  get authority(): string | null {
+    if (this.uricalss.authority === null) {
+      return this.uricalss.authority;
+    }
     let thisAuthority: string = this.uricalss.authority;
     if (thisAuthority.indexOf('[') !== -1) {
       let arr: string[] = thisAuthority.split('[');
@@ -120,11 +123,11 @@ class URI {
     }
   }
 
-  get userInfo(): string {
-    return decodeURIComponent(this.uricalss.userInfo);
+  get userInfo(): string | null {
+    return this.uricalss.userInfo === null ? this.uricalss.userInfo : decodeURIComponent(this.uricalss.userInfo);
   }
 
-  get host(): string {
+  get host(): string | null {
     return this.uricalss.host;
   }
 
@@ -132,31 +135,21 @@ class URI {
     return this.uricalss.port;
   }
 
-  get path(): string {
-    return decodeURIComponent(this.uricalss.path);
+  get path(): string | null {
+    return this.uricalss.path === null ? this.uricalss.path : decodeURIComponent(this.uricalss.path);
   }
 
-  get query(): string {
-    return decodeURIComponent(this.uricalss.query);
+  get query(): string | null {
+    return this.uricalss.query === null ? this.uricalss.query : decodeURIComponent(this.uricalss.query);
   }
 
-  get fragment(): string {
-    return decodeURIComponent(this.uricalss.fragment);
+  get fragment(): string | null {
+    return this.uricalss.fragment === null ? this.uricalss.fragment : decodeURIComponent(this.uricalss.fragment);
   }
 }
 
 function toAscllString(uriStr: string): string {
-  if (uriStr.indexOf('[') !== -1) {
-    let arr: string[] = uriStr.split('[');
-    let brr: string[] = arr[1].split(']');
-    arr[1] = '[' + brr[0] + ']';
-    arr[2] = brr[1];
-    arr[0] = encodeURI(arr[0]);
-    arr[2] = encodeURI(arr[2]);
-    return arr.join('');
-  } else {
-    return encodeURI(uriStr);
-  }
+  return encodeURI(uriStr).replace(/%5B/g, '[').replace(/%5D/g, ']').replace(/%25/g, '%');
 }
 
 function createNewUri(uriStr: string): URI {
