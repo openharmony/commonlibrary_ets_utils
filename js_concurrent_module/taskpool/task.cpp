@@ -72,7 +72,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
 void Task::Destructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     uint32_t* taskId = reinterpret_cast<uint32_t*>(data);
-    TaskManager::GetInstance().DecreaseRefCount(env, *taskId);
+    TaskManager::GetInstance().ReleaseTaskData(env, *taskId);
     delete taskId;
 }
 
