@@ -64,13 +64,17 @@ public:
     bool UpdateExecuteState(uint32_t executeId, ExecuteState state);
     void RemoveExecuteState(uint32_t executeId);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
+    void RemoveRunningInfo(uint32_t taskId);
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, napi_value taskName, uint32_t taskId,
                                uint32_t executeId, napi_value transferList = nullptr);
     TaskInfo* GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId);
+    void StoreReleaseTaskContentState(uint32_t executeId);
+    bool CanReleaseTaskContent(uint32_t executeId);
     void ReleaseTaskContent(TaskInfo* taskInfo);
+    void ReleaseTaskData(napi_env env, uint32_t taskId);
 
     // for worker state
     void NotifyWorkerIdle(Worker* worker);
@@ -133,6 +137,7 @@ public:
     // for duration
     void StoreTaskDuration(uint32_t taskId, uint64_t totalDuration, uint64_t cpuDuration);
     uint64_t GetTaskDuration(uint32_t taskId, std::string durationType);
+    void RemoveTaskDuration(uint32_t taskId);
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -191,6 +196,10 @@ private:
     // <<taskId1, <totalDuration1, cpuDuration1>>, <taskId2, <totalDuration2, cpuDuration2>>, ...>
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> taskDurationInfos_ {};
     std::shared_mutex taskDurationInfosMutex_;
+
+    // <<executeId1, taskInfoState>, <executeId2, taskInfoState>, ...>
+    std::unordered_map<uint32_t, bool> taskInfosForRelease_ {};
+    std::shared_mutex taskInfosForReleaseMutex_;
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};

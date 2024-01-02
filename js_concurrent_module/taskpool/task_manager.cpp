@@ -81,6 +81,7 @@ TaskManager::~TaskManager()
         std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
         for (auto& [_, taskInfo] : taskInfos_) {
             delete taskInfo;
+            taskInfo = nullptr;
         }
         taskInfos_.clear();
     }
@@ -545,6 +546,15 @@ void TaskManager::PopRunningInfo(uint32_t taskId, uint32_t executeId)
     iter->second.remove(executeId);
 }
 
+void TaskManager::RemoveRunningInfo(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
+    auto iter = runningInfos_.find(taskId);
+    if (iter != runningInfos_.end()) {
+        runningInfos_.erase(iter);
+    }
+}
+
 void TaskManager::AddExecuteState(uint32_t executeId)
 {
     std::unique_lock<std::shared_mutex> lock(executeStatesMutex_);
@@ -710,6 +720,27 @@ void TaskManager::ReleaseTaskContent(TaskInfo* taskInfo)
     }
     delete taskInfo;
     taskInfo = nullptr;
+}
+
+void TaskManager::StoreReleaseTaskContentState(uint32_t executeId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskInfosForReleaseMutex_);
+    taskInfosForRelease_.emplace(executeId, false);
+}
+
+bool TaskManager::CanReleaseTaskContent(uint32_t executeId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskInfosForReleaseMutex_);
+    auto iter = taskInfosForRelease_.find(executeId);
+    if (iter == taskInfosForRelease_.end()) {
+        return false;
+    }
+    if (!iter->second) {
+        iter->second = true;
+        return false;
+    }
+    taskInfosForRelease_.erase(iter);
+    return true;
 }
 
 void TaskManager::NotifyWorkerIdle(Worker* worker)
@@ -1151,7 +1182,7 @@ void TaskGroupManager::CancelGroupExecution(uint32_t executeId)
             HILOG_DEBUG("taskpool:: Cancel waiting task in group");
             taskInfo = TaskManager::GetInstance().PopTaskInfo(executeId);
             if (taskInfo == nullptr) {
-                HILOG_ERROR("taskpool:: taskInfo is nullptr when cancel waiting execution");
+                HILOG_ERROR("taskpool:: taskInfo is nullptr when cancel waiting group execution");
                 return;
             }
             TaskManager::GetInstance().RemoveExecuteState(executeId);
@@ -1504,5 +1535,37 @@ uint64_t TaskManager::GetTaskDuration(uint32_t taskId, std::string durationType)
         return 0;
     }
     return iter->second.first - iter->second.second;
+}
+
+void TaskManager::RemoveTaskDuration(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
+    auto iter = taskDurationInfos_.find(taskId);
+    if (iter != taskDurationInfos_.end()) {
+        taskDurationInfos_.erase(iter);
+    }
+}
+
+void TaskManager::ReleaseTaskData(napi_env env, uint32_t taskId)
+{
+    DecreaseRefCount(env, taskId);
+    RemoveRunningInfo(taskId);
+    RemoveTaskDuration(taskId);
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    for (auto dependentTaskIter = dependentTaskInfos_.begin(); dependentTaskIter != dependentTaskInfos_.end();) {
+        if (dependentTaskIter->second.find(taskId) != dependentTaskIter->second.end()) {
+            dependentTaskIter = dependentTaskInfos_.erase(dependentTaskIter);
+        } else {
+            ++dependentTaskIter;
+        }
+    }
+    auto dependTaskIter = dependTaskInfos_.find(taskId);
+    if (dependTaskIter != dependTaskInfos_.end()) {
+        dependTaskInfos_.erase(dependTaskIter);
+    }
+    auto executeIter = addDependExecuteStateInfos_.find(taskId);
+    if (executeIter != addDependExecuteStateInfos_.end()) {
+        addDependExecuteStateInfos_.erase(executeIter);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

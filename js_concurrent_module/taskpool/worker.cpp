@@ -356,6 +356,7 @@ void Worker::PerformTask(const uv_async_t* req)
         argsArray[i] = val;
     }
 
+    TaskManager::GetInstance().StoreReleaseTaskContentState(taskInfo->executeId);
     napi_value result;
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
     TaskManager::GetInstance().NotifyPendingExecuteInfo(taskInfo->taskId, taskInfo->executeId);
@@ -378,6 +379,9 @@ void Worker::PerformTask(const uv_async_t* req)
         taskInfo->success = false;
         napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
         NotifyTaskResult(env, taskInfo, errorEvent);
+    }
+    if (TaskManager::GetInstance().CanReleaseTaskContent(taskInfo->executeId)) {
+        TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
     }
 }
 

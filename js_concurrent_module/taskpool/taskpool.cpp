@@ -361,7 +361,9 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         }
     }
     TaskManager::GetInstance().DecreaseRefCount(taskInfo->env, taskInfo->taskId);
-    TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
+    if (TaskManager::GetInstance().CanReleaseTaskContent(taskInfo->executeId)) {
+        TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
+    }
 }
 
 void TaskPool::UpdateGroupInfoByResult(napi_env env, TaskInfo* taskInfo, napi_value res, bool success)
