@@ -71,8 +71,7 @@ struct TaskInfo {
     bool isCanceled {};
     void* worker {nullptr};
     Priority priority {Priority::DEFAULT};
-    std::string funcName {};
-    std::string taskName {};
+    std::string name {};
     uint64_t startTime {};
     uint64_t cpuTime {};
     uint64_t ioTime {};

@@ -150,7 +150,9 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
             napi_create_object(env, &taskInfoValue);
             napi_value taskId = nullptr;
             napi_create_uint32(env, taskInfo->taskId, &taskId);
-            napi_value stateValue = nullptr;
+            napi_value name = nullptr;
+            napi_create_string_utf8(env, taskInfo->name.c_str(), taskInfo->name.size(), &name);
+            napi_set_named_property(env, taskInfoValue, "name", name);
             ExecuteState state;
             uint64_t duration = 0;
             if (taskInfo->isCanceled) {
@@ -162,6 +164,7 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
             } else {
                 state = ExecuteState::WAITING;
             }
+            napi_value stateValue = nullptr;
             napi_create_int32(env, state, &stateValue);
             napi_set_named_property(env, taskInfoValue, "taskId", taskId);
             napi_set_named_property(env, taskInfoValue, "state", stateValue);
@@ -663,10 +666,12 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
     taskInfo->serializationFunction = serializationFunction;
     taskInfo->serializationArguments = serializationArguments;
     taskInfo->taskId = taskId;
-    char* strValue = NapiHelper::GetString(env, funcName);
-    taskInfo->funcName = std::string(strValue);
-    delete[] strValue;
-    taskInfo->taskName = std::string(NapiHelper::GetString(env, taskName));
+    char* name = NapiHelper::GetString(env, taskName);
+    if (strlen(name) == 0) {
+        name = NapiHelper::GetString(env, funcName);
+    }
+    taskInfo->name = std::string(name);
+    delete[] name;
     taskInfo->onResultSignal = new uv_async_t;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_async_init(loop, taskInfo->onResultSignal, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));

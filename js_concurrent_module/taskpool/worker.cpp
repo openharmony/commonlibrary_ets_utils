@@ -299,9 +299,8 @@ void Worker::PerformTask(const uv_async_t* req)
         worker->currentTaskId_.emplace_back(taskInfo->taskId);
     }
     // tag for trace parse: Task Perform
-    std::string strTrace = "Task Perform: functionName : "  + taskInfo->funcName + ", taskName : " + taskInfo->taskName
-                           + ", taskId : " + std::to_string(taskInfo->taskId) + ", executeId : " +
-                           std::to_string(taskInfo->executeId);
+    std::string strTrace = "Task Perform: name : "  + taskInfo->name + ", taskId : " + std::to_string(taskInfo->taskId)
+                           + ", executeId : " + std::to_string(taskInfo->executeId);
     HITRACE_HELPER_METER_NAME(strTrace);
 
     taskInfo->worker = worker;
