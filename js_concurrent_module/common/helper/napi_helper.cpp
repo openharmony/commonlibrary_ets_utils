@@ -143,6 +143,20 @@ bool NapiHelper::IsGeneratorFunction(napi_env env, napi_value value)
     return res;
 }
 
+bool NapiHelper::IsStrictEqual(napi_env env, napi_value lhs, napi_value rhs)
+{
+    bool res = false;
+    napi_strict_equals(env, lhs, rhs, &res);
+    return res;
+}
+
+bool NapiHelper::IsSendablObject(napi_env env, napi_value value)
+{
+    bool res = false;
+    napi_is_sendable_object(env, value, &res);
+    return res;
+}
+
 void NapiHelper::SetNamePropertyInGlobal(napi_env env, const char* name, napi_value value)
 {
     napi_value object = nullptr;

@@ -389,7 +389,11 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value resultData;
-    napi_status status = napi_serialize(env, result, result, &resultData);
+    bool defaultCloneSendable = true;
+    bool defaultTransfer = true;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_status status = napi_serialize(env, result, undefined, undefined, defaultTransfer, defaultCloneSendable,
+                                        &resultData);
     if ((status != napi_ok || resultData == nullptr) && taskInfo->success) {
         taskInfo->success = false;
         std::string errMessage = "taskpool: failed to serialize result.";

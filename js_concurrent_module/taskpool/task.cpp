@@ -25,6 +25,7 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 static constexpr char ONRECEIVEDATA_STR[] = "onReceiveData";
 static constexpr char SETTRANSFERLIST_STR[] = "setTransferList";
+static constexpr char SET_CLONE_LIST_STR[] = "setCloneList";
 
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
@@ -88,6 +89,7 @@ uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func,
     napi_value taskId = NapiHelper::CreateUint32(env, TaskManager::GetInstance().GenerateTaskId());
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION(SETTRANSFERLIST_STR, SetTransferList),
+        DECLARE_NAPI_FUNCTION(SET_CLONE_LIST_STR, SetCloneList),
         DECLARE_NAPI_FUNCTION(ONRECEIVEDATA_STR, OnReceiveData),
         DECLARE_NAPI_FUNCTION(ADD_DEPENDENCY_STR, AddDependency),
         DECLARE_NAPI_FUNCTION(REMOVE_DEPENDENCY_STR, RemoveDependency),
@@ -102,6 +104,10 @@ uint32_t Task::CreateTaskByFunc(napi_env env, napi_value task, napi_value func,
     napi_set_named_property(env, task, TASKID_STR, taskId);
     napi_define_properties(env, task, sizeof(properties) / sizeof(properties[0]), properties);
     napi_set_named_property(env, task, ARGUMENTS_STR, argsArray);
+    napi_value trueVal = NapiHelper::CreateBooleanValue(env, true);
+    napi_set_named_property(env, task, DEFAULT_TRANSFER_STR, trueVal);
+    napi_value falseVal = NapiHelper::CreateBooleanValue(env, false);
+    napi_set_named_property(env, task, DEFAULT_CLONE_SENDABLE_STR, falseVal);
     return NapiHelper::GetUint32Value(env, taskId);
 }
 
@@ -112,14 +118,23 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    // Check whether clone list has been set
+    if (NapiHelper::HasNameProperty(env, thisVar, CLONE_LIST_STR)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_IN_BOTH_CLONE_AND_TRANSFER);
+        return nullptr;
+    }
     if (argc > 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
                                 "taskpool:: the number of setTransferList parma must be less than 2");
         return nullptr;
     }
+
     if (argc == 0) {
         HILOG_DEBUG("taskpool:: set task params not transfer");
         napi_set_named_property(env, thisVar, TRANSFERLIST_STR, undefined);
+        // set task.defaultTransfer false
+        napi_value falseVal = NapiHelper::CreateBooleanValue(env, false);
+        napi_set_named_property(env, thisVar, DEFAULT_TRANSFER_STR, falseVal);
         return nullptr;
     }
 
@@ -128,16 +143,20 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setTransferList first param must be array");
         return nullptr;
     }
+    // set task.defaultTransfer false
+    napi_value falseVal = NapiHelper::CreateBooleanValue(env, false);
+    napi_set_named_property(env, thisVar, DEFAULT_TRANSFER_STR, falseVal);
     uint32_t arrayLength = NapiHelper::GetArrayLength(env, args[0]);
     if (arrayLength == 0) {
         HILOG_DEBUG("taskpool:: set task params not transfer");
         napi_set_named_property(env, thisVar, TRANSFERLIST_STR, undefined);
         return nullptr;
     }
+
     for (size_t i = 0; i < arrayLength; i++) {
-        napi_value elementVal;
-        napi_get_element(env, args[0], i, &elementVal);
-        if (!NapiHelper::IsArrayBuffer(env, elementVal)) {
+        napi_value transferVal;
+        napi_get_element(env, args[0], i, &transferVal);
+        if (!NapiHelper::IsArrayBuffer(env, transferVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
                                     "taskpool:: the element in array must be arraybuffer");
             return nullptr;
@@ -146,6 +165,49 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     HILOG_DEBUG("taskpool:: check setTransferList param success");
 
     napi_set_named_property(env, thisVar, TRANSFERLIST_STR, args[0]);
+    return nullptr;
+}
+
+napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = 1;
+    napi_value args[1];
+    napi_value thisVar;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    // Check whether transfer list has been set
+    if (NapiHelper::HasNameProperty(env, thisVar, TRANSFERLIST_STR)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_IN_BOTH_CLONE_AND_TRANSFER);
+        return nullptr;
+    }
+    if (argc != 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                                "taskpool:: the number of setCloneList parma must be 1");
+        return nullptr;
+    }
+
+    if (!NapiHelper::IsArray(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setCloneList first param must be array");
+        return nullptr;
+    }
+    uint32_t arrayLength = NapiHelper::GetArrayLength(env, args[0]);
+    if (arrayLength == 0) {
+        HILOG_DEBUG("taskpool:: clone list is empty");
+        napi_set_named_property(env, thisVar, CLONE_LIST_STR, undefined);
+        return nullptr;
+    }
+
+    for (size_t i = 0; i < arrayLength; i++) {
+        napi_value cloneVal;
+        napi_get_element(env, args[0], i, &cloneVal);
+        if (!NapiHelper::IsArrayBuffer(env, cloneVal) && !NapiHelper::IsSendablObject(env, cloneVal)) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "taskpool:: setCloneList elements in array must be ArrayBuffer or Sendable Class instance");
+            return nullptr;
+        }
+    }
+
+    napi_set_named_property(env, thisVar, CLONE_LIST_STR, args[0]);
     return nullptr;
 }
 
@@ -241,7 +303,10 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
 
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationArgs;
-    napi_status status = napi_serialize(env, argsArray, undefined, &serializationArgs);
+    bool defaultClone = true;
+    bool defaultTransfer = true;
+    napi_status status = napi_serialize(env, argsArray, undefined, argsArray,
+                                        defaultTransfer, defaultClone, &serializationArgs);
     if (status != napi_ok || serializationArgs == nullptr) {
         std::string errMessage = "taskpool:: failed to serialize function";
         HILOG_ERROR("taskpool:: failed to serialize function in SendData");

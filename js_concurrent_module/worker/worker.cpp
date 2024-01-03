@@ -46,6 +46,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("postMessage", PostMessage),
+        DECLARE_NAPI_FUNCTION("postSendableMessage", PostSendableMessage),
         DECLARE_NAPI_FUNCTION("terminate", Terminate),
         DECLARE_NAPI_FUNCTION("on", On),
         DECLARE_NAPI_FUNCTION("registerGlobalCallObject", RegisterGlobalCallObject),
@@ -110,6 +111,7 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("postSendableMessage", PostSendableMessageToHost, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("callGlobalCallObjectMethod", GlobalCall, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
@@ -360,6 +362,18 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
 napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    return CommonPostMessage(env, cbinfo, true);
+}
+
+napi_value Worker::PostSendableMessage(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    return CommonPostMessage(env, cbinfo, false);
+}
+
+napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bool cloneSendable)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
@@ -381,14 +395,16 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
 
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
+    bool defaultClone = cloneSendable ? true : false;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     if (argc >= NUM_WORKER_ARGS) {
         if (!NapiHelper::IsArray(env, argv[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "transfer list must be an Array");
             return nullptr;
         }
-        serializeStatus = napi_serialize(env, argv[0], argv[1], &data);
+        serializeStatus = napi_serialize(env, argv[0], argv[1], undefined, false, defaultClone, &data);
     } else {
-        serializeStatus = napi_serialize(env, argv[0], NapiHelper::GetUndefinedValue(env), &data);
+        serializeStatus = napi_serialize(env, argv[0], undefined, undefined, false, defaultClone, &data);
     }
     if (serializeStatus != napi_ok || data == nullptr) {
         worker->HostOnMessageErrorInner();
@@ -714,6 +730,18 @@ napi_value Worker::CancelTask(napi_env env, napi_callback_info cbinfo)
 napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    return CommonPostMessageToHost(env, cbinfo, true);
+}
+
+napi_value Worker::PostSendableMessageToHost(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    return CommonPostMessageToHost(env, cbinfo, false);
+}
+
+napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbinfo, bool cloneSendable)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker param count must be more than 1 with new");
@@ -738,14 +766,17 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
 
     napi_value data = nullptr;
     napi_status serializeStatus = napi_ok;
+    bool defaultClone = cloneSendable ? true : false;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
     if (argc >= NUM_WORKER_ARGS) {
         if (!NapiHelper::IsArray(env, argv[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Transfer list must be an Array");
             return nullptr;
         }
-        serializeStatus = napi_serialize(env, argv[0], argv[1], &data);
+        serializeStatus = napi_serialize(env, argv[0], argv[1], undefined, false, defaultClone, &data);
     } else {
-        serializeStatus = napi_serialize(env, argv[0], NapiHelper::GetUndefinedValue(env), &data);
+        napi_value undefined = NapiHelper::GetUndefinedValue(env);
+        serializeStatus = napi_serialize(env, argv[0], undefined, undefined, false, defaultClone, &data);
     }
 
     if (serializeStatus != napi_ok || data == nullptr) {
@@ -818,7 +849,11 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     }
 
     // defautly not transfer
-    serializeStatus = napi_serialize(env, argsArray, NapiHelper::GetUndefinedValue(env), &data);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    // meaningless to copy sendable object when call globalObject
+    bool defaultClone = true;
+    bool defaultTransfer = false;
+    serializeStatus = napi_serialize(env, argsArray, undefined, undefined, defaultTransfer, defaultClone, &data);
     if (serializeStatus != napi_ok || data == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
         return nullptr;
@@ -1457,7 +1492,11 @@ void Worker::HostOnGlobalCallInner()
         return;
     }
     // defautly not transfer
-    status = napi_serialize(hostEnv_, res, NapiHelper::GetUndefinedValue(hostEnv_), &data);
+    napi_value undefined = NapiHelper::GetUndefinedValue(hostEnv_);
+    // meaningless to copy sendable object when call globalObject
+    bool defaultClone = true;
+    bool defaultTransfer = false;
+    status = napi_serialize(hostEnv_, res, undefined, undefined, defaultTransfer, defaultClone, &data);
     if (status != napi_ok || data == nullptr) {
         AddGlobalCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
         globalCallSuccess_ = false;
@@ -1822,7 +1861,8 @@ void Worker::HandleUncaughtException(napi_value exception)
 
     if (hostEnv_ != nullptr) {
         napi_value data = nullptr;
-        napi_serialize(workerEnv_, obj, NapiHelper::GetUndefinedValue(workerEnv_), &data);
+        napi_value undefined = NapiHelper::GetUndefinedValue(workerEnv_);
+        napi_serialize(workerEnv_, obj, undefined, undefined, false, true, &data);
         {
             std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
             if (!HostIsStop()) {

@@ -139,12 +139,44 @@ public:
     static napi_value PostMessage(napi_env env, napi_callback_info cbinfo);
 
     /**
+    * Post a message, if has sendable objects in it pass sendable objects' reference.
+    *
+    * @param env NAPI environment parameters.
+    * @param thisVar The callback information of the js layer.
+    */
+    static napi_value PostSendableMessage(napi_env env, napi_callback_info cbinfo);
+
+    /**
+    * postMessage implementation
+    *
+    * @param env NAPI environment parameters.
+    * @param thisVar The callback information of the js layer.
+    */
+    static napi_value CommonPostMessage(napi_env env, napi_callback_info cbinfo, bool cloneSendable);
+
+    /**
      * Add event listeners to host.
      *
      * @param env NAPI environment parameters.
      * @param cbinfo The callback information of the js layer.
      */
     static napi_value PostMessageToHost(napi_env env, napi_callback_info cbinfo);
+
+    /**
+    * Post a message, if has sendable objects in it pass sendable objects' reference.
+    *
+    * @param env NAPI environment parameters.
+    * @param thisVar The callback information of the js layer.
+    */
+    static napi_value PostSendableMessageToHost(napi_env env, napi_callback_info cbinfo);
+
+    /**
+    * postMessage implementation
+    *
+    * @param env NAPI environment parameters.
+    * @param thisVar The callback information of the js layer.
+    */
+    static napi_value CommonPostMessageToHost(napi_env env, napi_callback_info cbinfo, bool cloneSendable);
 
     /**
      * Terminates the worker thread to stop the worker from receiving messages.
