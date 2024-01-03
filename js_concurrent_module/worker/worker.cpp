@@ -19,6 +19,7 @@
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
+#include "helper/path_helper.h"
 #if defined(OHOS_PLATFORM)
 #include "parameters.h"
 #endif
@@ -1130,11 +1131,12 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     script_ = std::string(script);
     CloseHelp::DeletePointer(script, true);
     // if worker file is packed in har, need find moduleName in hostVM, and concat new recordName.
-    if (script_.find_first_of('@') == 0 && script_.find("@bundle:") == std::string::npos) {
-        std::string moduleName;
-        reinterpret_cast<NativeEngine*>(env)->GetCurrentModuleName(moduleName);
-        script_ = moduleName + script_;
-        HILOG_INFO("Worker filePath is %{public}s )", script_.c_str());
+    if ((script_.find_first_of(PathHelper::NAME_SPACE_TAG) == 0 &&
+         script_.find(PathHelper::PREFIX_BUNDLE) == std::string::npos) ||
+         script_.find_first_of(PathHelper::POINT_TAG) == 0) {
+        PathHelper::ConcatFileNameForWorker(env, script_, fileName_, isRelativePath_);
+        HILOG_INFO("Concated worker filePath --- recordName: %{public}s,  fileName: %{public}s",
+            script_.c_str(), fileName_.c_str());
     }
 
     // 3. create WorkerRunner to Execute
@@ -1219,6 +1221,7 @@ void Worker::ExecuteInThread(const void* data)
 
 bool Worker::PrepareForWorkerInstance()
 {
+    std::string rawFileName = script_;
     std::vector<uint8_t> scriptContent;
     std::string workerAmi;
     {
@@ -1240,7 +1243,10 @@ bool Worker::PrepareForWorkerInstance()
             return false;
         }
         // 3. get uril content
-        if (!hostEngine->CallGetAssetFunc(script_, scriptContent, workerAmi)) {
+        if (isRelativePath_) {
+            rawFileName = fileName_;
+        }
+        if (!hostEngine->CallGetAssetFunc(rawFileName, scriptContent, workerAmi)) {
             HILOG_ERROR("worker:: CallGetAssetFunc error");
             return false;
         }
@@ -1249,7 +1255,7 @@ bool Worker::PrepareForWorkerInstance()
     Timer::RegisterTime(workerEnv_);
     HILOG_DEBUG("worker:: stringContent size is %{public}zu", scriptContent.size());
     napi_value execScriptResult = nullptr;
-    napi_run_actor(workerEnv_, scriptContent, workerAmi.c_str(), &execScriptResult);
+    napi_run_actor(workerEnv_, scriptContent, workerAmi.c_str(), &execScriptResult, const_cast<char*>(script_.c_str()));
     if (execScriptResult == nullptr) {
         // An exception occurred when running the script.
         HILOG_ERROR("worker:: run script exception occurs, will handle exception");
