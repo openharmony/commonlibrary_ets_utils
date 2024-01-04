@@ -24,12 +24,12 @@
 #include "utils/log.h"
 
 namespace OHOS::JsSysModule::Process {
-    static napi_value DealType(napi_env env, napi_value args[], size_t argsSize)
+    static napi_value DealType(napi_env env, napi_value args[], size_t argc)
     {
-        if (args[0] != nullptr) {
+        if (argc > 0) {
             napi_valuetype valueType = napi_undefined;
             napi_typeof(env, args[0], &valueType);
-            NAPI_ASSERT(env, valueType == napi_string, "Wrong argument typr. String expected");
+            NAPI_ASSERT(env, valueType == napi_string, "Wrong argument type: string expected.");
         } else {
             HILOG_ERROR("command is null");
             napi_throw_error(env, "", "command is empty");
@@ -38,7 +38,7 @@ namespace OHOS::JsSysModule::Process {
 
         std::vector<std::string> keyStr = {"timeout", "killSignal", "maxBuffer"};
 
-        if (args[1] == nullptr) {
+        if (argc < 2) {
             return nullptr;
         }
         size_t size = keyStr.size();
@@ -51,7 +51,7 @@ namespace OHOS::JsSysModule::Process {
                     {
                         napi_typeof(env, property, &propertyType);
                         NAPI_ASSERT(env, propertyType == napi_number || propertyType == napi_undefined ||
-                                    propertyType == napi_null, "Wrong timeout argument typr. Number expected");
+                                    propertyType == napi_null, "Wrong timeout argument type: number expected.");
                         int timeout = 0;
                         napi_get_value_int32(env, property, &timeout);
                         if (timeout < 0) {
@@ -64,12 +64,12 @@ namespace OHOS::JsSysModule::Process {
                     napi_typeof(env, property, &propertyType);
                     NAPI_ASSERT(env, propertyType == napi_string || propertyType == napi_number
                                 || propertyType == napi_undefined || propertyType == napi_null,
-                                "Wrong KillSignal argument typr. String or number expected");
+                                "Wrong KillSignal argument type: string or number expected.");
                     break;
                 case 2: // 2:The parameter value
                     napi_typeof(env, property, &propertyType);
                     NAPI_ASSERT(env, propertyType == napi_number || propertyType == napi_undefined ||
-                                propertyType == napi_null, "Wrong maxBuffer argument typr. Number expected");
+                                propertyType == napi_null, "Wrong maxBuffer argument type: number expected.");
                     break;
                 default:
                     break;
@@ -428,7 +428,7 @@ namespace OHOS::JsSysModule::Process {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type.String error");
+        NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type: number expected.");
         Process object;
         return object.IsAppUid(env, args);
     }
@@ -447,7 +447,7 @@ namespace OHOS::JsSysModule::Process {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type.String error");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         Process object;
         return object.GetUidForName(env, args);
     }
@@ -460,7 +460,7 @@ namespace OHOS::JsSysModule::Process {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type.String error");
+        NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type: number expected.");
         Process object;
         return object.GetThreadPriority(env, args);
     }
@@ -485,7 +485,7 @@ namespace OHOS::JsSysModule::Process {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type.String error");
+        NAPI_ASSERT(env, valuetype == napi_number, "Wrong argument type: number expected.");
         Process object;
         return object.GetSystemConfig(env, args);
     }
@@ -498,7 +498,7 @@ namespace OHOS::JsSysModule::Process {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type.String error");
+        NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         Process object;
         return object.GetEnvironmentVar(env, args);
     }
