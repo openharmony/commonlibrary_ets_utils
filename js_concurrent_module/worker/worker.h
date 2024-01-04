@@ -495,9 +495,11 @@ private:
 #endif
 
     std::string script_ {};
+    std::string fileName_ {};
     std::string name_ {};
     ScriptMode scriptMode_ {CLASSIC};
     bool isLimitedWorker_ {false};
+    bool isRelativePath_ {false};
     int32_t scopeId_ {-1};
 
     MessageQueue workerMessageQueue_ {};
