@@ -90,9 +90,11 @@ TaskManager::~TaskManager()
 
 void TaskManager::CountTraceForWorker()
 {
-    int64_t threadNum = static_cast<int64_t>(GetThreadNum());
-    int64_t idleWorkers = static_cast<int64_t>(GetIdleWorkers());
-    HITRACE_HELPER_COUNT_TRACE("timeoutThreadNum", static_cast<int64_t>(GetTimeoutWorkers()));
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    int64_t threadNum = workers_.size();
+    int64_t idleWorkers = idleWorkers_.size();
+    int64_t timeoutWorkers = timeoutWorkers_.size();
+    HITRACE_HELPER_COUNT_TRACE("timeoutThreadNum", timeoutWorkers);
     HITRACE_HELPER_COUNT_TRACE("threadNum", threadNum);
     HITRACE_HELPER_COUNT_TRACE("runningThreadNum", threadNum - idleWorkers);
     HITRACE_HELPER_COUNT_TRACE("idleThreadNum", idleWorkers);
@@ -779,6 +781,7 @@ void TaskManager::NotifyWorkerRunning(Worker* worker)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     idleWorkers_.erase(worker);
+    CountTraceForWorker();
 }
 
 uint32_t TaskManager::GetRunningWorkers()
@@ -860,7 +863,6 @@ void TaskManager::NotifyExecuteTask()
     for (auto& worker : idleWorkers_) {
         worker->NotifyExecuteTask();
     }
-    TaskManager::GetInstance().CountTraceForWorker();
 }
 
 void TaskManager::InitTaskManager(napi_env env)
