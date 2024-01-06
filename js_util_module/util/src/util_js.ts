@@ -1812,7 +1812,7 @@ class Aspect {
     } else {
       let newFunc = async function (...args : AnyType[]): Promise<AnyType> {
         before(this, ...args);
-        let ret = await oldFunc.bind(this)(...args);
+        let ret = oldFunc.bind(this)(...args);
         return ret;
       };
       obj[methodName] = newFunc;
@@ -1839,7 +1839,7 @@ class Aspect {
       obj[methodName] = newFunc;
     } else {
       let newFunc = async function (...args : AnyType[]): Promise<AnyType> {
-        let ret1 = await oldFunc.bind(this)(...args);
+        let ret1 = oldFunc.bind(this)(...args);
         let ret2 = after(this, ret1, ...args);
         return ret2;
       };
@@ -1866,7 +1866,7 @@ class Aspect {
       obj[methodName] = func;
     } else {
       let func = async function (...args : AnyType[]): Promise<AnyType> {
-        let ret = await instead(this, ...args);
+        let ret = instead(this, ...args);
         return ret;
       };
       obj[methodName] = func;
