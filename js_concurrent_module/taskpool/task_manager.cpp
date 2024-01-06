@@ -1422,7 +1422,7 @@ SeqRunnerInfo* TaskGroupManager::GetSeqRunnerInfoById(uint32_t seqRunnerId)
 
 void TaskGroupManager::AddTaskToSeqRunner(uint32_t seqRunnerId, TaskInfo* task)
 {
-    std::shared_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
     auto iter = seqRunnerMap_.find(seqRunnerId);
     if (iter == seqRunnerMap_.end()) {
         HILOG_ERROR("seqRunner:: seqRunnerInfo not found.");
@@ -1434,7 +1434,6 @@ void TaskGroupManager::AddTaskToSeqRunner(uint32_t seqRunnerId, TaskInfo* task)
 
 bool TaskGroupManager::TriggerSeqRunner(napi_env env, TaskInfo* lastTask)
 {
-    std::shared_lock<std::shared_mutex> lock(seqRunnerMutex_);
     uint32_t seqRunnerId = lastTask->seqRunnerId;
     SeqRunnerInfo* seqRunnerInfo = GetSeqRunnerInfoById(seqRunnerId);
     if (seqRunnerInfo == nullptr) {
@@ -1445,6 +1444,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, TaskInfo* lastTask)
         HILOG_ERROR("seqRunner:: only front task can trigger seqRunner.");
         return false;
     }
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
     if (seqRunnerInfo->seqRunnerTasks.empty()) {
         HILOG_DEBUG("seqRunner:: seqRunner %{public}d empty.", seqRunnerId);
         seqRunnerInfo->currentExeId = 0;
@@ -1466,14 +1466,13 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, TaskInfo* lastTask)
 
 void TaskGroupManager::ClearSeqRunner(uint32_t seqRunnerId)
 {
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    auto iter = seqRunnerMap_.find(seqRunnerId);
-    if (iter == seqRunnerMap_.end()) {
+    SeqRunnerInfo* info = GetSeqRunnerInfoById(seqRunnerId);
+    if (info == nullptr) {
         HILOG_ERROR("seqRunner:: seqRunner already free.");
         return;
     }
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
     // free seqRunner
-    SeqRunnerInfo* info = iter->second;
     if (info->seqRunnerTasks.empty() && info->currentExeId == 0) {
         RemoveSeqRunnerInfoById(seqRunnerId);
         return;
