@@ -816,9 +816,9 @@ class LruBuffer {
       this.cache.delete(key);
       this.afterRemoval(false, key, former, value);
     } else if (this.cache.size >= this.maxSize) {
+      this.afterRemoval(true, this.cache.keys().next().value, this.cache.values().next().value, null);
       this.cache.delete(this.cache.keys().next().value);
       this.evictionCount++;
-      this.afterRemoval(true, key, value, null);
     }
     this.cache.set(key, value);
     this.length = this.cache.size;
@@ -1062,9 +1062,9 @@ class LRUCache {
       this.cache.delete(key);
       this.afterRemoval(false, key, former, value);
     } else if (this.cache.size >= this.maxSize) {
+      this.afterRemoval(true, this.cache.keys().next().value, this.cache.values().next().value, null);
       this.cache.delete(this.cache.keys().next().value);
       this.evictionCount++;
-      this.afterRemoval(true, key, value, null);
     }
     this.cache.set(key, value);
     this.length = this.cache.size;
