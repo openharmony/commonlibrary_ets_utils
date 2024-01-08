@@ -1,6 +1,6 @@
 {
 "compilerOptions": {
-    "target": "es6",
+    "target": "ES2017",
     "module": "es6",
     "rootDir": "./src",
     //"outFile": "./",                                  /* Specify a file that bundles all outputs into one JavaScript file. If `declaration` is true, also designates a file that bundles all .d.ts output. */
