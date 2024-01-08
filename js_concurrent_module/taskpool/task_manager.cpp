@@ -645,12 +645,14 @@ void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
 }
 
 TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_value args, napi_value taskName,
-                                        uint32_t taskId, uint32_t executeId, napi_value transferList)
+                                        uint32_t taskId, uint32_t executeId, napi_value cloneList,
+                                        napi_value transferList, bool defaultTransfer, bool defaultCloneSendable)
 {
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationFunction;
     std::string errMessage = "";
-    napi_status status = napi_serialize(env, func, undefined, &serializationFunction);
+    napi_status status = napi_serialize(env, func, undefined, undefined, defaultTransfer,
+                                        defaultCloneSendable, &serializationFunction);
     if (status != napi_ok || serializationFunction == nullptr) {
         errMessage = "taskpool: failed to serialize function.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
@@ -658,13 +660,8 @@ TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_valu
         return nullptr;
     }
     napi_value serializationArguments;
-    if (transferList == nullptr) {
-        HILOG_DEBUG("taskpool:: task params default transfer");
-        status = napi_serialize(env, args, args, &serializationArguments);
-    } else {
-        HILOG_DEBUG("taskpool:: call setTransferList to set task params transfer or not transfer");
-        status = napi_serialize(env, args, transferList, &serializationArguments);
-    }
+    status = napi_serialize(env, args, transferList, cloneList, defaultTransfer,
+                            defaultCloneSendable, &serializationArguments);
     if (status != napi_ok || serializationArguments == nullptr) {
         errMessage = "taskpool: failed to serialize arguments.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
@@ -700,16 +697,27 @@ TaskInfo* TaskManager::GenerateTaskInfoFromTask(napi_env env, napi_value task, u
     napi_value arguments = NapiHelper::GetNameProperty(env, task, ARGUMENTS_STR);
     napi_value taskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
     napi_value taskName = NapiHelper::GetNameProperty(env, task, NAME);
-    if (function == nullptr || arguments == nullptr || taskId == nullptr) {
+    napi_value defaultTransferVal = NapiHelper::GetNameProperty(env, task, DEFAULT_TRANSFER_STR);
+    napi_value defaultCloneVal = NapiHelper::GetNameProperty(env, task, DEFAULT_CLONE_SENDABLE_STR);
+    if (function == nullptr || arguments == nullptr || taskId == nullptr || defaultTransferVal == nullptr
+        || defaultCloneVal == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task value is error");
         return nullptr;
     }
-    napi_value transferList = nullptr;
+
+    bool defaultTransfer = NapiHelper::GetBooleanValue(env, defaultTransferVal);
+    bool defaultCloneSendable = NapiHelper::GetBooleanValue(env, defaultCloneVal);
+    napi_value transferList = NapiHelper::GetUndefinedValue(env);
     if (NapiHelper::HasNameProperty(env, task, TRANSFERLIST_STR)) {
         transferList = NapiHelper::GetNameProperty(env, task, TRANSFERLIST_STR);
     }
+    napi_value cloneList = NapiHelper::GetUndefinedValue(env);
+    if (NapiHelper::HasNameProperty(env, task, CLONE_LIST_STR)) {
+        cloneList = NapiHelper::GetNameProperty(env, task, CLONE_LIST_STR);
+    }
     uint32_t id = NapiHelper::GetUint32Value(env, taskId);
-    TaskInfo* taskInfo = GenerateTaskInfo(env, function, arguments, taskName, id, executeId, transferList);
+    TaskInfo* taskInfo = GenerateTaskInfo(env, function, arguments, taskName, id, executeId, cloneList, transferList,
+                                          defaultTransfer, defaultCloneSendable);
     return taskInfo;
 }
 

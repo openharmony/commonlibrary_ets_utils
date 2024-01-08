@@ -278,9 +278,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest021, testing::ext::TestSize.Level0)
     napi_value taskName = NapiHelper::CreateEmptyString(env);
     napi_value function = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
     napi_value function1 = TestFunction(env);
-    TaskInfo* taskInfo = taskManger.GenerateTaskInfo(env, function, args, taskName, taskId, executeId);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    TaskInfo* taskInfo = taskManger.GenerateTaskInfo(env, function, args, taskName, taskId, executeId, undefined,
+        undefined);
     ASSERT_TRUE(taskInfo == nullptr);
-    taskInfo = taskManger.GenerateTaskInfo(env, function1, args, taskName, taskId, executeId);
+    taskInfo = taskManger.GenerateTaskInfo(env, function1, args, taskName, taskId, executeId, undefined, undefined);
     ASSERT_TRUE(taskInfo == nullptr);
     TaskInfo* taskInfo1 = taskManger.GetTaskInfo(executeId);
     ASSERT_TRUE(taskInfo1 == nullptr);

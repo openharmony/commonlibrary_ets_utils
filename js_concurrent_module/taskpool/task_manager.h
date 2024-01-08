@@ -42,11 +42,14 @@ static constexpr char GROUP_ID_STR[] = "groupId";
 static constexpr char TASKID_STR[] = "taskId";
 static constexpr char TASKINFO_STR[] = "taskInfo";
 static constexpr char TRANSFERLIST_STR[] = "transferList";
+static constexpr char CLONE_LIST_STR[] = "cloneList";
 static constexpr char ADD_DEPENDENCY_STR[] = "addDependency";
 static constexpr char REMOVE_DEPENDENCY_STR[] = "removeDependency";
 static constexpr char TASK_CPU_TIME[] = "cpuDuration";
 static constexpr char TASK_IO_TIME[] = "ioDuration";
 static constexpr char TASK_TOTAL_TIME[] = "totalDuration";
+static constexpr char DEFAULT_TRANSFER_STR[] = "defaultTransfer";
+static constexpr char DEFAULT_CLONE_SENDABLE_STR[] = "defaultCloneSendable";
 
 class TaskManager {
 public:
@@ -69,7 +72,8 @@ public:
     std::pair<uint32_t, Priority> DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
     TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, napi_value taskName, uint32_t taskId,
-                               uint32_t executeId, napi_value transferList = nullptr);
+                               uint32_t executeId, napi_value cloneList, napi_value transferList,
+                               bool defaultTransfer = true, bool defaultCloneSendable = false);
     TaskInfo* GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId);
     void StoreReleaseTaskContentState(uint32_t executeId);
     bool CanReleaseTaskContent(uint32_t executeId);

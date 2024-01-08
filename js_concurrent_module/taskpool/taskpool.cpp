@@ -189,7 +189,9 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
     // Set task id to 0 when execute from func directly
     napi_value taskName = NapiHelper::CreateEmptyString(env);
-    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, args[0], argsArray, taskName, 0, executeId);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfo(env, args[0], argsArray, taskName, 0, executeId,
+                                                                     undefined, undefined);
     if (taskInfo == nullptr) {
         HILOG_ERROR("taskpool::ExecuteFunction taskInfo is nullptr");
         return nullptr;
