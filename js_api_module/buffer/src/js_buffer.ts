@@ -2081,9 +2081,8 @@ function isEncoding(encoding: string): boolean {
 }
 
 function byteLength(string: string | BackingType, encoding: string = 'utf8'): number {
-  if (typeof string === 'string' || isTypedArray(string) ||
-    string instanceof DataView || string instanceof ArrayBuffer ||
-    string instanceof SharedArrayBuffer) {
+  if (typeof string === 'string' || isTypedArray(string) || string instanceof DataView ||
+      string instanceof ArrayBuffer || string instanceof SharedArrayBuffer || string instanceof Buffer) {
     if (string instanceof Buffer) {
       return string.length;
     } else if (typeof string === 'string') {

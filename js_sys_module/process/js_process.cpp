@@ -210,7 +210,7 @@ namespace OHOS::JsSysModule::Process {
 
     void Process::Abort() const
     {
-        ProcessExit(0);
+        std::abort();
     }
 
     void Process::On(napi_env env, napi_value str, napi_value function)
