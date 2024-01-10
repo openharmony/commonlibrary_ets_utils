@@ -1165,13 +1165,15 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     // 2. copy the script
     script_ = std::string(script);
     CloseHelp::DeletePointer(script, true);
+    // isBundle : FA mode and BundlePack.
+    bool isBundle = reinterpret_cast<NativeEngine*>(env)->GetIsBundle();
     // if worker file is packed in har, need find moduleName in hostVM, and concat new recordName.
     if ((script_.find_first_of(PathHelper::NAME_SPACE_TAG) == 0 &&
-         script_.find(PathHelper::PREFIX_BUNDLE) == std::string::npos) ||
-         script_.find_first_of(PathHelper::POINT_TAG) == 0) {
+        script_.find(PathHelper::PREFIX_BUNDLE) == std::string::npos) ||
+        (!isBundle && script_.find_first_of(PathHelper::POINT_TAG) == 0)) {
         PathHelper::ConcatFileNameForWorker(env, script_, fileName_, isRelativePath_);
-        HILOG_INFO("Concated worker filePath --- recordName: %{public}s,  fileName: %{public}s",
-            script_.c_str(), fileName_.c_str());
+        HILOG_INFO("worker:: Concated worker recordName: %{public}s, fileName: %{public}s",
+                   script_.c_str(), fileName_.c_str());
     }
 
     // 3. create WorkerRunner to Execute
