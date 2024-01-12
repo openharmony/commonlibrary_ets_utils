@@ -280,18 +280,16 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
             napi_value id = NapiHelper::GetNameProperty(env, args[i], TASKID_STR);
             uint32_t idVal = NapiHelper::GetUint32Value(env, id);
             if (idVal == taskIdVal) {
-                std::string errMessage = "taskpool:: there is a circular dependency";
-                HILOG_ERROR("%{public}s", errMessage.c_str());
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                HILOG_ERROR("taskpool:: there is a circular dependency");
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_CIRCULAR_DEPENDENCY);
                 return nullptr;
             }
             idSet.emplace(idVal);
         }
     }
     if (!TaskManager::GetInstance().StoreTaskDependency(taskIdVal, idSet)) {
-        std::string errMessage = "taskpool:: there is a circular dependency";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        HILOG_ERROR("taskpool:: there is a circular dependency");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CIRCULAR_DEPENDENCY);
     }
     return nullptr;
 }
@@ -323,9 +321,8 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         napi_value dependentId = NapiHelper::GetNameProperty(env, args[i], TASKID_STR);
         uint32_t dependentIdVal = NapiHelper::GetUint32Value(env, dependentId);
         if (!TaskManager::GetInstance().RemoveTaskDependency(taskIdVal, dependentIdVal)) {
-            std::string errMessage = "taskpool:: the dependency does not exist";
-            HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            HILOG_ERROR("taskpool:: the dependency does not exist");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_INEXISTENT_DEPENDENCY);
             return nullptr;
         }
     }
