@@ -165,6 +165,21 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         if (NapiHelper::HasNameProperty(env, args[0], GROUP_ID_STR)) {
             return ExecuteGroup(env, args[0], Priority(priority));
         }
+        napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
+        uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
+        std::string errMessage = "";
+        if (TaskManager::GetInstance().IsGroupTask(taskId)) {
+            errMessage = "taskpool:: groupTask cannot execute outside";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        if (TaskManager::GetInstance().IsSeqRunnerTask(taskId)) {
+            errMessage = "taskpool:: seqRunnerTask cannot execute outside";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
         uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
         TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, args[0], executeId);
         if (taskInfo == nullptr) {
@@ -205,10 +220,11 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 void TaskPool::DelayTask(uv_timer_t* handle)
 {
     TaskMessage *taskMessage = reinterpret_cast<TaskMessage *>(handle->data);
-    TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
-    TaskManager::GetInstance().AddExecuteState(taskMessage->executeId);
-    TaskManager::GetInstance().EnqueueExecuteId(taskMessage->executeId, Priority(taskMessage->priority));
-    TaskManager::GetInstance().TryTriggerExpand();
+    if (!TaskManager::GetInstance().IsCanceledByExecuteId(taskMessage->executeId)) {
+        TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
+        TaskManager::GetInstance().EnqueueExecuteId(taskMessage->executeId, Priority(taskMessage->priority));
+        TaskManager::GetInstance().TryTriggerExpand();
+    }
     uv_timer_stop(handle);
     uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
         if (handle != nullptr) {
@@ -271,6 +287,8 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
         HILOG_ERROR("taskpool::ExecuteTask taskInfo is nullptr");
         return nullptr;
     }
+    TaskManager::GetInstance().StoreRunningInfo(taskInfo->taskId, executeId);
+    TaskManager::GetInstance().AddExecuteState(executeId);
     uv_loop_t* loop = uv_default_loop();
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
@@ -355,7 +373,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         UpdateGroupInfoByResult(taskInfo->env, taskInfo, taskData, success);
     }
     NAPI_CALL_RETURN_VOID(taskInfo->env, napi_close_handle_scope(taskInfo->env, scope));
-    // seqRunner task will trigger the next
+    // seqRunnerTask will trigger the next
     if (taskInfo->seqRunnerId) {
         if (!TaskGroupManager::GetInstance().TriggerSeqRunner(taskInfo->env, taskInfo)) {
             HILOG_ERROR("seqRunner:: task %{public}d trigger in seqRunner %{public}d failed",

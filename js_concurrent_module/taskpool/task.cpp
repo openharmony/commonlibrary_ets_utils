@@ -332,27 +332,52 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
     napi_value args[argc];
     napi_value task;
     napi_get_cb_info(env, cbinfo, &argc, args, &task, nullptr);
-    napi_value taskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
-    uint32_t taskIdVal = NapiHelper::GetUint32Value(env, taskId);
+    napi_value napiTaskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
+    uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
+    std::string errMessage = "";
+    if (TaskManager::GetInstance().IsExecutedByTaskId(taskId)) {
+        errMessage = "taskpool:: seqRunnerTask or executedTask cannot addDependency";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
+    if (TaskManager::GetInstance().IsGroupTask(taskId)) {
+        errMessage = "taskpool:: groupTask cannot addDependency";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
     std::set<uint32_t> idSet;
     for (size_t i = 0; i < argc; i++) {
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
-            std::string errMessage = "taskpool:: addDependency param is not task";
+            errMessage = "taskpool:: addDependency param is not task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
             return nullptr;
         } else {
-            napi_value id = NapiHelper::GetNameProperty(env, args[i], TASKID_STR);
-            uint32_t idVal = NapiHelper::GetUint32Value(env, id);
-            if (idVal == taskIdVal) {
+            napi_value napiDependentId = NapiHelper::GetNameProperty(env, args[i], TASKID_STR);
+            uint32_t dependentId = NapiHelper::GetUint32Value(env, napiDependentId);
+            if (dependentId == taskId) {
                 HILOG_ERROR("taskpool:: there is a circular dependency");
                 ErrorHelper::ThrowError(env, ErrorHelper::ERR_CIRCULAR_DEPENDENCY);
                 return nullptr;
             }
-            idSet.emplace(idVal);
+            if (TaskManager::GetInstance().IsExecutedByTaskId(dependentId)) {
+                errMessage = "taskpool:: seqRunnerTask or executedTask cannot be relied on";
+                HILOG_ERROR("%{public}s", errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                return nullptr;
+            }
+            if (TaskManager::GetInstance().IsGroupTask(dependentId)) {
+                errMessage = "taskpool:: groupTask cannot be relied on";
+                HILOG_ERROR("%{public}s", errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                return nullptr;
+            }
+            idSet.emplace(dependentId);
         }
     }
-    if (!TaskManager::GetInstance().StoreTaskDependency(taskIdVal, idSet)) {
+    if (!TaskManager::GetInstance().StoreTaskDependency(taskId, idSet)) {
         HILOG_ERROR("taskpool:: there is a circular dependency");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CIRCULAR_DEPENDENCY);
     }

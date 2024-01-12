@@ -97,11 +97,26 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     // task with dependence is not allowed
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
     uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
+    std::string errMessage = "";
     if (TaskManager::GetInstance().IsDependentByTaskId(taskId)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER,
-                                "seqRunner:: dependent task not allowed.");
+        errMessage = "seqRunner:: dependent task not allowed.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER, errMessage.c_str());
         return nullptr;
     }
+    if (TaskManager::GetInstance().IsExecutedByTaskId(taskId)) {
+        errMessage = "taskpool:: SequenceRunner cannot execute seqRunnerTask or executedTask";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
+    if (TaskManager::GetInstance().IsGroupTask(taskId)) {
+        errMessage = "taskpool:: SequenceRunner cannot execute groupTask";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
+    TaskManager::GetInstance().StoreTaskType(taskId, false);
     // generate TaskInfo with seqRunnerId
     uint32_t executeId = TaskManager::GetInstance().GenerateExecuteId();
     TaskInfo* taskInfo = TaskManager::GetInstance().GenerateTaskInfoFromTask(env, args[0], executeId);

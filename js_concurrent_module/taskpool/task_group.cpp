@@ -90,6 +90,28 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type;
     napi_typeof(env, args[0], &type);
     if (type == napi_object) {
+        napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
+        uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
+        std::string errMessage = "";
+        if (TaskManager::GetInstance().IsDependentByTaskId(taskId)) {
+            errMessage = "taskpool:: dependent task not allowed.";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        if (TaskManager::GetInstance().IsExecutedByTaskId(taskId)) {
+            errMessage = "taskpool:: taskGroup cannot add seqRunnerTask or executedTask";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        if (TaskManager::GetInstance().IsGroupTask(taskId)) {
+            errMessage = "taskpool:: taskGroup cannot add groupTask";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        TaskManager::GetInstance().StoreTaskType(taskId, true);
         napi_ref taskRef = NapiHelper::CreateReference(env, args[0], 1);
         TaskGroupManager::GetInstance().AddTask(groupId, taskRef);
         return nullptr;

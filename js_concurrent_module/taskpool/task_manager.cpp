@@ -1271,7 +1271,8 @@ bool TaskManager::IsDependentByTaskId(uint32_t taskId)
 {
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
-    if (iter == dependTaskInfos_.end() || iter->second.size() == 0) {
+    auto dependentIter = dependentTaskInfos_.find(taskId);
+    if (iter == dependTaskInfos_.end() && dependentIter == dependentTaskInfos_.end()) {
         return false;
     }
     return true;
@@ -1559,6 +1560,7 @@ void TaskManager::ReleaseTaskData(napi_env env, uint32_t taskId)
 {
     DecreaseRefCount(env, taskId);
     RemoveRunningInfo(taskId);
+    RemoveTaskType(taskId);
     RemoveTaskDuration(taskId);
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     for (auto dependentTaskIter = dependentTaskInfos_.begin(); dependentTaskIter != dependentTaskInfos_.end();) {
@@ -1576,5 +1578,60 @@ void TaskManager::ReleaseTaskData(napi_env env, uint32_t taskId)
     if (executeIter != addDependExecuteStateInfos_.end()) {
         addDependExecuteStateInfos_.erase(executeIter);
     }
+}
+
+bool TaskManager::IsExecutedByTaskId(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
+    auto iter = runningInfos_.find(taskId);
+    if (iter == runningInfos_.end()) {
+        return false;
+    }
+    return true;
+}
+
+bool TaskManager::IsCanceledByExecuteId(uint32_t executeId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+    auto iter = taskInfos_.find(executeId);
+    if (iter == taskInfos_.end() || iter->second == nullptr) {
+        return true;
+    }
+    return false;
+}
+
+void TaskManager::StoreTaskType(uint32_t taskId, bool isGroupTask)
+{
+    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
+    auto iter = taskTypeInfos_.find(taskId);
+    if (iter == taskTypeInfos_.end()) {
+        taskTypeInfos_.emplace(taskId, std::make_pair(isGroupTask, !isGroupTask));
+    }
+}
+
+void TaskManager::RemoveTaskType(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
+    taskTypeInfos_.erase(taskId);
+}
+
+bool TaskManager::IsGroupTask(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
+    auto iter = taskTypeInfos_.find(taskId);
+    if (iter == taskTypeInfos_.end()) {
+        return false;
+    }
+    return iter->second.first;
+}
+
+bool TaskManager::IsSeqRunnerTask(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
+    auto iter = taskTypeInfos_.find(taskId);
+    if (iter == taskTypeInfos_.end()) {
+        return false;
+    }
+    return iter->second.second;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
