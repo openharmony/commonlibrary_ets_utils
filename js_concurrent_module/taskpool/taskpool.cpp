@@ -239,10 +239,10 @@ void TaskPool::DelayTask(uv_timer_t* handle)
 napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    size_t argc = 4;
-    napi_value args[4];
+    size_t argc = 3; // 3: delayTime, task and priority
+    napi_value args[3]; // 3: delayTime, task and priority
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
-    if (argc < 2 || argc > 3) { // 2: delayTime and task 3: delayTime、 task and priority
+    if (argc < 2 || argc > 3) { // 2: delayTime and task 3: delayTime, task and priority
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be two or three");
         return nullptr;
     }
@@ -264,6 +264,21 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     napi_typeof(env, args[1], &type);
     if (type != napi_object) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task type is error");
+        return nullptr;
+    }
+    napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[1], TASKID_STR);
+    uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
+    std::string errMessage = "";
+    if (TaskManager::GetInstance().IsGroupTask(taskId)) {
+        errMessage = "taskpool:: groupTask cannot executeDelayed outside";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
+    if (TaskManager::GetInstance().IsSeqRunnerTask(taskId)) {
+        errMessage = "taskpool:: seqRunnerTask cannot executeDelayed outside";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
 
