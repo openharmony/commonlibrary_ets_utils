@@ -68,6 +68,7 @@ public:
     void RemoveExecuteState(uint32_t executeId);
     void PopRunningInfo(uint32_t taskId, uint32_t executeId);
     void RemoveRunningInfo(uint32_t taskId);
+    bool IsExecutedByTaskId(uint32_t taskId);
     void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
     std::pair<uint32_t, Priority> DequeueExecuteId();
     void CancelTask(napi_env env, uint32_t taskId);
@@ -143,6 +144,13 @@ public:
     uint64_t GetTaskDuration(uint32_t taskId, std::string durationType);
     void RemoveTaskDuration(uint32_t taskId);
 
+    bool IsCanceledByExecuteId(uint32_t executeId);
+
+    void StoreTaskType(uint32_t taskId, bool isGroupTask);
+    void RemoveTaskType(uint32_t taskId);
+    bool IsGroupTask(uint32_t taskId);
+    bool IsSeqRunnerTask(uint32_t taskId);
+
 private:
     TaskManager(const TaskManager &) = delete;
     TaskManager& operator=(const TaskManager &) = delete;
@@ -204,6 +212,10 @@ private:
     // <<executeId1, taskInfoState>, <executeId2, taskInfoState>, ...>
     std::unordered_map<uint32_t, bool> taskInfosForRelease_ {};
     std::shared_mutex taskInfosForReleaseMutex_;
+
+    // <taskId, <isGroupTask, isSeqRunnerTask>>
+    std::unordered_map<uint32_t, std::pair<bool, bool>> taskTypeInfos_ {};
+    std::shared_mutex taskTypeInfosMutex_;
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};
