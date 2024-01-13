@@ -878,7 +878,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         })) {
             worker->IncreaseGlobalCallId();
             HILOG_ERROR("worker:: callGlobalCallObjectMethod has exceeded the waiting time limitation, skip this turn");
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_GLOBAL_CALL_TIMEOUT, std::to_string(timeout).c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_GLOBAL_CALL_TIMEOUT);
             return nullptr;
         }
     }

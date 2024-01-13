@@ -76,11 +76,10 @@ public:
                 errTitle = "The globalCallObject is not registered";
                 break;
             case ERR_CALL_METHOD_ON_BINDING_OBJ:
-                errTitle = "The method called on globalCallObject does not exist or is not callable or is"
-                    " async/generator function";
+                errTitle = "The method to be called is not callable or is an async method or a generator.";
                 break;
             case ERR_GLOBAL_CALL_TIMEOUT:
-                errTitle = "Call globalCallObject method waiting time has exceeded the timeout: ";
+                errTitle = "The global call exceeds the timeout.";
                 break;
             case ERR_NOT_IN_TASKPOOL_THREAD:
                 errTitle = "The function is not called in the taskpool thread";
