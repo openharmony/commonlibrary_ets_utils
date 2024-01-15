@@ -308,6 +308,10 @@ namespace OHOS::Url {
                 return;
             }
         }
+        if (input.size() >= 6) { //6:Maximum port number size
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
+        }
         int it = stoi(input);
         const int maxPort = 65535; // 65535:Maximum port number
         if (it > maxPort) {
@@ -525,9 +529,17 @@ namespace OHOS::Url {
         size_t len = num.size();
         if (len > 2 && num[0] == '0' && (num[1] == 'x' || num[1] == 'X')) { // 2:hex head length
             radix = 16; // 16:hex
-            return IsRadix(num.substr(2), "0123456789abcdefABCDEF"); // 2:jump 0x
+            std::string subStr = num.substr(2); // 2:jump 0x
+            if (subStr.empty()) {
+                return true;
+            }
+            return IsRadix(subStr, "0123456789abcdefABCDEF");
         } else if (len > 1 && num[0] == '0') {
             radix = 8; // 8:octal
+            std::string subStr = num.substr(1);
+            if (subStr.empty()) {
+                return true;
+            }
             return IsRadix(num.substr(1), "01234567");
         } else if (IsRadix(num, "0123456789")) {
             radix = 10; // 10:decimal
@@ -540,12 +552,18 @@ namespace OHOS::Url {
     {
         int val = 0;
         if (radix == 16) { // 16:hex
+            if (num.substr(2).empty()) { // 2:jump 0x
+                return "0";
+            }
             if (sscanf_s(num.c_str(), "%x", &val) == -1) {
                 HILOG_ERROR("sscanf_s is falie");
                 return num;
             }
             return std::to_string(val);
         } else if (radix == 8) { // 8:octal
+            if (num.substr(1).empty()) {
+                return "0";
+            }
             if (sscanf_s(num.c_str(), "%o", &val) == -1) {
                 HILOG_ERROR("sscanf_s is falie");
                 return num;
@@ -556,7 +574,8 @@ namespace OHOS::Url {
         }
     }
 
-    bool RemovalIpv4(std::vector<std::string> &temp, std::string str)
+    bool RemovalIpv4(std::vector<std::string> &temp, std::string str,
+                     std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags)
     {
         size_t pos = 0;
         size_t left = 0;
@@ -580,13 +599,27 @@ namespace OHOS::Url {
             }
         }
         temp = res;
-        return true;
+        bool isIpv4 = true;
+        for (size_t i = 0; i < tmpLen; ++i) {
+            if (temp[i] == "") {
+                isIpv4 = false;
+                flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+                if (i == tmpLen - 1) {
+                    temp.push_back("");
+                    flags.reset(static_cast<size_t>(BitsetStatusFlag::BIT0));
+                }
+            }
+        }
+        return isIpv4;
     }
 
     int IsFormatIpv4(std::vector<std::string> nums)
     {
         size_t len = nums.size();
         for (size_t i = 0; i < len; ++i) {
+            if (nums[i].size() > 8) { // 8:ipv4 max value size
+                return i;
+            }
             if (!nums[i].empty() && stoi(nums[i]) > 255) { // 255:ipv4 max value  
                 return i;
             }
@@ -596,6 +629,10 @@ namespace OHOS::Url {
 
     std::string SplitNum(std::string num, size_t& number)
     {
+        if (num.size() > 8) { // 8:ipv4 max value size
+            number = num.size();
+            return num;
+        }
         int val = stoi(num);
         std::vector<std::string> nums;
         std::string res = "";
@@ -653,8 +690,13 @@ namespace OHOS::Url {
     {
         bool isipv4 = false;
         std::vector<std::string> temp;
-        isipv4 = RemovalIpv4(temp, input);
+        isipv4 = RemovalIpv4(temp, input, flags);
         size_t tempLen = temp.size();
+        int lastSize = temp[tempLen - 1].size();
+        if (isipv4 == true && lastSize >= 8) { // 8: ipv4 last number size
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
+        }
         std::string res = "";
         for (size_t i = 0; i < tempLen; ++i) {
             res += temp[i];
