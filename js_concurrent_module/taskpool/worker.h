@@ -151,7 +151,7 @@ private:
     uv_async_t* clearWorkerSignal_ {nullptr};
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t* debuggerOnPostTaskSignal_ {nullptr};
-    std::function<void()> debuggerTask_;
+    std::function<void()> debuggerTask_ {nullptr};
 #endif
     std::unique_ptr<TaskRunner> runner_ {nullptr};
 

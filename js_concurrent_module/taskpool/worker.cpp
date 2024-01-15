@@ -120,7 +120,9 @@ void Worker::HandleDebuggerTask(const uv_async_t* req)
 void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 {
     if (uv_is_active(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
-        debuggerTask_ = std::move(task);
+        if (debuggerTask_ == nullptr) {
+            debuggerTask_ = std::move(task);
+        }
         uv_async_send(debuggerOnPostTaskSignal_);
     }
 }

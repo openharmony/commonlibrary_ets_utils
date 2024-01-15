@@ -546,8 +546,8 @@ private:
     uv_async_t* hostOnErrorSignal_ = nullptr;
     uv_async_t* hostOnGlobalCallSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_async_t ddebuggerOnPostTaskSignal_ {};
-    std::function<void()> debuggerTask_;
+    uv_async_t debuggerOnPostTaskSignal_ {};
+    std::function<void()> debuggerTask_ = nullptr;
 #endif
 
     std::atomic<RunnerState> runnerState_ {STARTING};
