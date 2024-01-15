@@ -1233,7 +1233,7 @@ void Worker::ExecuteInThread(const void* data)
         uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::WorkerOnMessage));
         worker->workerOnMessageSignal_->data = worker;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-        uv_async_init(loop, &worker->ddebuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
+        uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             Worker::HandleDebuggerTask));
 #endif
         worker->UpdateWorkerState(RUNNING);
@@ -1733,7 +1733,7 @@ void Worker::TerminateWorker()
         });
     }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_close(reinterpret_cast<uv_handle_t*>(&ddebuggerOnPostTaskSignal_), nullptr);
+    uv_close(reinterpret_cast<uv_handle_t*>(&debuggerOnPostTaskSignal_), nullptr);
 #endif
     CloseWorkerCallback();
     uv_loop_t* loop = GetWorkerLoop();
@@ -2193,7 +2193,7 @@ bool Worker::CanCreateWorker(napi_env env, WorkerVersion target)
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void Worker::HandleDebuggerTask(const uv_async_t* req)
 {
-    Worker* worker = DereferenceHelp::DereferenceOf(&Worker::ddebuggerOnPostTaskSignal_, req);
+    Worker* worker = DereferenceHelp::DereferenceOf(&Worker::debuggerOnPostTaskSignal_, req);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
         return;
@@ -2208,9 +2208,11 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
         HILOG_ERROR("worker:: worker has been terminated.");
         return;
     }
-    if (uv_is_active((uv_handle_t*)&ddebuggerOnPostTaskSignal_)) {
-        debuggerTask_ = std::move(task);
-        uv_async_send(&ddebuggerOnPostTaskSignal_);
+    if (uv_is_active((uv_handle_t*)&debuggerOnPostTaskSignal_)) {
+        if (debuggerTask_ == nullptr) {
+            debuggerTask_ = std::move(task);
+        }
+        uv_async_send(&debuggerOnPostTaskSignal_);
     }
 }
 #endif
