@@ -353,6 +353,10 @@ bool Buffer::WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest)
     if (src == nullptr || dest == nullptr) {
         return false;
     }
+    if (size == 0) {
+        HILOG_ERROR("Buffer::WriteBytes size is 0");
+        return false;
+    }
     if (memcpy_s(dest, size, src, size) != EOK) {
         HILOG_FATAL("Buffer WriteBytes memcpy_s failed");
         return false;
