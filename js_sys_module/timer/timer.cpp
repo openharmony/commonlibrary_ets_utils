@@ -94,11 +94,14 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         std::lock_guard<std::mutex> lock(timeLock);
         auto iter = timerTable.find(tId);
         if (iter == timerTable.end()) {
-            HILOG_ERROR("timerId is inexistent");
+            // timer already cleared
             return nullptr;
         }
         TimerCallbackInfo* callbackInfo = iter->second;
         timerTable.erase(tId);
+        if (callbackInfo->env_ != env) {
+            HILOG_ERROR("Timer is deleting by another thread, please check js code. TimerID:%{public}d", tId);
+        }
         Helper::CloseHelp::DeletePointer(callbackInfo, false);
     }
     return Helper::NapiHelper::GetUndefinedValue(env);
@@ -153,7 +156,6 @@ void Timer::TimerCallback(uv_timer_t* handle)
     // callback maybe contain ClearTimer, so we need check to avoid use-after-free and double-free of callbackInfo
     std::lock_guard<std::mutex> lock(timeLock);
     if (timerTable.find(tId) == timerTable.end()) {
-        HILOG_WARN("not found timerCallbackInfo");
         napi_close_handle_scope(env, scope);
         return;
     }
