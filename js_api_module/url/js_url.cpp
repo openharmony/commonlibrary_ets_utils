@@ -527,14 +527,14 @@ namespace OHOS::Url {
     bool IsNumber(std::string num, int &radix)
     {
         size_t len = num.size();
-        if (len > 2 && num[0] == '0' && (num[1] == 'x' || num[1] == 'X')) { // 2:hex head length
+        if (len >= 2 && num[0] == '0' && (num[1] == 'x' || num[1] == 'X')) { // 2:hex head length
             radix = 16; // 16:hex
             std::string subStr = num.substr(2); // 2:jump 0x
             if (subStr.empty()) {
                 return true;
             }
             return IsRadix(subStr, "0123456789abcdefABCDEF");
-        } else if (len > 1 && num[0] == '0') {
+        } else if (len >= 1 && num[0] == '0') {
             radix = 8; // 8:octal
             std::string subStr = num.substr(1);
             if (subStr.empty()) {
@@ -693,7 +693,7 @@ namespace OHOS::Url {
         isipv4 = RemovalIpv4(temp, input, flags);
         size_t tempLen = temp.size();
         int lastSize = temp[tempLen - 1].size();
-        if (isipv4 == true && lastSize >= 8) { // 8: ipv4 last number size
+        if (isipv4 == true && lastSize > 8) { // 8: ipv4 last number size
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
             return;
         }
@@ -1921,7 +1921,7 @@ namespace OHOS::Url {
         }
         std::string cppValue = temp;
         bool flag = false;
-        for (auto it = searchParams.begin(); it < (searchParams.end() - 1);) {
+        for (auto it = searchParams.begin(); it < (searchParams.end() - 1) && !searchParams.empty();) {
             if (*it == cppName) {
                 if (!flag) {
                     *(it + 1) = cppValue;
