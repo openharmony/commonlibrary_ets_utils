@@ -164,7 +164,7 @@ class URLParams {
     setName = customEncodeURIComponent(setName);
     setValues = customEncodeURIComponent(setValues);
     this.urlClass.set(setName, setValues);
-    if (this.urlClass.initialValue.hasOwnProperty(setName)) { 
+    if (this.urlClass.initialValue.hasOwnProperty(setName)) {
       delete this.urlClass.initialValue[setName];
     }
     if (this.parentUrl !== null) {

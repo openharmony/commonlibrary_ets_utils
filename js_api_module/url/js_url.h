@@ -393,7 +393,7 @@ namespace OHOS::Url {
     private:
         std::string ToUSVString(std::string inputStr);
         void HandleIllegalChar(std::wstring& inputStr, std::wstring::const_iterator it);
-        std::vector<std::string> searchParams;
+        std::vector<std::string> searchParams {};
     };
 } // namespace OHOS::Url
 #endif // URL_JS_URL_H
