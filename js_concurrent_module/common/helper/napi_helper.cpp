@@ -342,4 +342,25 @@ std::string NapiHelper::GetPrintString(napi_env env, napi_value value)
     napi_get_print_string(env, value, str);
     return str;
 }
+
+napi_value NapiHelper::CreateUint64(napi_env env, uint64_t value)
+{
+    napi_value result;
+    napi_create_bigint_uint64(env, value, &result);
+    return result;
+}
+
+uint64_t NapiHelper::GetUint64Value(napi_env env, napi_value value, bool lossless)
+{
+    uint64_t result = 0;
+    napi_get_value_bigint_uint64(env, value, &result, &lossless);
+    return result;
+}
+
+napi_value NapiHelper::GetElement(napi_env env, napi_value value, uint32_t index)
+{
+    napi_value result;
+    napi_get_element(env, value, index, &result);
+    return result;
+}
 } // namespace Commonlibrary::Concurrent::Common::Helper

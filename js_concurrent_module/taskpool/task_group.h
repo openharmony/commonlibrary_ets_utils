@@ -22,30 +22,43 @@
 #include "task_manager.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+struct GroupInfo {
+    uint32_t finishedTask {};
+    napi_ref resArr = nullptr;
+    Priority priority {Priority::DEFAULT};
+    napi_deferred deferred = nullptr;
+};
+
 class TaskGroup {
 public:
+    TaskGroup() = default;
+    ~TaskGroup() = default;
+
     static napi_value TaskGroupConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value AddTask(napi_env env, napi_callback_info cbinfo);
 
+    uint32_t GetTaskIndex(uint32_t taskId);
+    void NotifyGroupTask(napi_env env);
+    void CancelPendingGroup(napi_env env);
+
 private:
-    TaskGroup() = delete;
-    ~TaskGroup() = delete;
     TaskGroup(const TaskGroup &) = delete;
     TaskGroup& operator=(const TaskGroup &) = delete;
     TaskGroup(TaskGroup &&) = delete;
     TaskGroup& operator=(TaskGroup &&) = delete;
 
-    static void Destructor(napi_env env, void* nativeObject, void* finalize);
-};
+    static void TaskGroupDestructor(napi_env env, void* data, void* hint);
 
-struct GroupInfo {
-    napi_deferred deferred = nullptr;
-    uint32_t groupId {};
-    uint32_t taskNum {};
-    uint32_t finishedTask {};
-    std::list<uint32_t> executeIds {};
-    napi_ref resArr = nullptr;
+public:
+    uint64_t groupId_ {};
+    GroupInfo* currentGroupInfo_ {};
+    std::list<GroupInfo*> pendingGroupInfos_ {};
+    std::list<napi_ref> taskRefs_ {};
+    std::list<uint64_t> taskIds_ {};
+    uint32_t taskNum_ {};
+    std::atomic<ExecuteState> groupState_ {ExecuteState::NOT_FOUND};
+    napi_ref groupRef_ {};
+    std::shared_mutex taskGroupMutex_ {};
 };
-
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
