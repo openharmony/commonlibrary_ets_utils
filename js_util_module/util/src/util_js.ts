@@ -710,17 +710,18 @@ class TextDecoder {
   public decodeWithStream(input: Uint8Array, options?: { stream?: boolean }): string {
     const space: number = 32; // space
     const endString: number = 0; // null
+    let uint8: Uint8Array = new Uint8Array(input);
     if (TextDecoder.encodeStr === 'utf-8' || TextDecoder.encodeStr === undefined) {
-      input.forEach((element, index, array) => {
+      uint8.forEach((element, index, array) => {
         if (element === endString) {
           array[index] = space;
         }
       });
     }
     if (arguments.length === 1) {
-      return this.textDecoder.decodeWithStream(input);
+      return this.textDecoder.decodeWithStream(uint8);
     }
-    return this.textDecoder.decodeWithStream(input, options);
+    return this.textDecoder.decodeWithStream(uint8, options);
   }
 
   public decode(input: Uint8Array, options?: { stream?: boolean }): string {
