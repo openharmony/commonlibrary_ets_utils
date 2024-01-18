@@ -47,6 +47,12 @@ public:
     TaskResultInfo* Dequeue();
     bool IsQueueEmpty();
 
+    // the function will only be called when the task is finished or
+    // exits abnormally, so we can not put it in the scope directly
+    void NotifyTaskFinished();
+    static void NotifyTaskResult(napi_env env, Task* task, napi_value result);
+    static void NotifyHandleTaskResult(Task* task);
+
 private:
     explicit Worker(napi_env env) : hostEnv_(env) {};
 
@@ -65,10 +71,6 @@ private:
         startTime_ = ConcurrentHelper::GetMilliseconds();
         runningCount_++;
     }
-
-    // the function will only be called when the task is finished or
-    // exits abnormally, so we can not put it in the scope directly
-    void NotifyTaskFinished();
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -98,9 +100,9 @@ private:
     // including the HandleScope and NotifyRunning/NotifyIdle
     class RunningScope {
     public:
-        RunningScope(Worker* worker, napi_status& status) : worker_(worker)
+        explicit RunningScope(Worker* worker) : worker_(worker)
         {
-            status = napi_open_handle_scope(worker_->workerEnv_, &scope_);
+            napi_open_handle_scope(worker_->workerEnv_, &scope_);
             worker_->idleState_ = false;
             worker_->NotifyTaskRunning();
         }
@@ -140,9 +142,12 @@ private:
     void ResetWorkerPriority();
     bool CheckFreeConditions();
     bool UpdateWorkerState(WorkerState expect, WorkerState desired);
+    void StoreTaskId(uint64_t taskId);
+    bool InitTaskPoolFunc(napi_env env, napi_value func, Task* task);
+    void UpdateExecutedInfo();
+    static void HandleFunctionException(napi_env env, Task* task);
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(napi_env env, napi_value result, bool success, void* data);
-    static void NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result);
     static void ReleaseWorkerHandles(const uv_async_t* req);
 
     napi_env hostEnv_ {nullptr};
@@ -162,7 +167,7 @@ private:
     std::atomic<WorkerState> state_ {WorkerState::IDLE};
     Priority priority_ {Priority::DEFAULT};
     pid_t tid_ = 0;
-    std::vector<uint32_t> currentTaskId_ {};
+    std::vector<uint64_t> currentTaskId_ {};
     std::mutex currentTaskIdMutex_;
     MessageQueue<TaskResultInfo*> hostMessageQueue_ {};
     uint64_t lastCpuTime_ = 0;
