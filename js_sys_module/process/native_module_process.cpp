@@ -38,7 +38,7 @@ namespace OHOS::JsSysModule::Process {
 
         std::vector<std::string> keyStr = {"timeout", "killSignal", "maxBuffer"};
 
-        if (argc < 2) {
+        if (argc < 2) { // 2:The number of parameters is 2
             return nullptr;
         }
         size_t size = keyStr.size();
