@@ -229,6 +229,13 @@ namespace OHOS::JsSysModule::Process {
         napi_value SetRejectionCallback(napi_env env) const;
 
         /**
+         * Init ProcessStartRealtime.
+         *
+         * @param env The parameter is NAPI environment variables.
+         */
+        void InitProcessStartRealtime(napi_env env);
+
+        /**
          * Clear references to callbacks.
          *
          * @param env The parameter is NAPI environment variables.
