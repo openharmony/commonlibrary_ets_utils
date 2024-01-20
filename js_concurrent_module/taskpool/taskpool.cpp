@@ -29,7 +29,7 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
-    HILOG_DEBUG("taskpool:: Import taskpool");
+    HILOG_INFO("taskpool:: Import taskpool");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value taskClass = nullptr;
     napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor, nullptr, 0, nullptr, &taskClass);

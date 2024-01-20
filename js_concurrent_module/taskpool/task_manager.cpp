@@ -435,9 +435,9 @@ void TaskManager::TryExpand()
     const uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
-        HILOG_DEBUG("taskpool:: the maxThreads is %{public}u and %{public}u additional threads will be created",
-            maxThreads, step);
         CreateWorkers(hostEnv_, step);
+        HILOG_INFO("taskpool:: maxThreads: %{public}u, created num: %{public}u, total num: %{public}u",
+            maxThreads, step, GetThreadNum());
     }
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
