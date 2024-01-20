@@ -280,7 +280,7 @@ void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
         return;
     }
     if (memcpy_s(data, length, raw_ + byteOffset_ + offset, length) != EOK) {
-        HILOG_FATAL("Buffer ReadBytes memcpy_s failed");
+        HILOG_DEBUG("Buffer ReadBytes memcpy_s failed");
     }
 }
 
@@ -354,7 +354,7 @@ bool Buffer::WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest)
         return false;
     }
     if (size == 0) {
-        HILOG_ERROR("Buffer::WriteBytes size is 0");
+        HILOG_DEBUG("Buffer::WriteBytes size is 0");
         return false;
     }
     if (memcpy_s(dest, size, src, size) != EOK) {

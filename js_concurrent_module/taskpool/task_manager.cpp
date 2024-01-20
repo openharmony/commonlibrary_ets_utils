@@ -435,7 +435,7 @@ void TaskManager::TryExpand()
     const uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
-        HILOG_INFO("taskpool:: the maxThreads is %{public}u and %{public}u additional threads will be created",
+        HILOG_DEBUG("taskpool:: the maxThreads is %{public}u and %{public}u additional threads will be created",
             maxThreads, step);
         CreateWorkers(hostEnv_, step);
     }
@@ -782,7 +782,7 @@ void TaskManager::NotifyWorkerAdded(Worker* worker)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     workers_.insert(worker);
-    HILOG_INFO("taskpool:: a new worker has been added and the current num is %{public}zu", workers_.size());
+    HILOG_DEBUG("taskpool:: a new worker has been added and the current num is %{public}zu", workers_.size());
 }
 
 void TaskManager::NotifyWorkerRunning(Worker* worker)
