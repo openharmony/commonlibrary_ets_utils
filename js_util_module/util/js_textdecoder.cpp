@@ -90,7 +90,7 @@ namespace OHOS::Util {
                 return nullptr;
             }
         } else {
-            HILOG_ERROR("limit is error");
+            HILOG_DEBUG("limit is error");
             return nullptr;
         }
         UChar *target = arr;

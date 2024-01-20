@@ -86,7 +86,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
     uint32_t tId;
     napi_status status = napi_get_value_uint32(env, argv[0], &tId);
     if (status != napi_ok) {
-        HILOG_ERROR("first param should be number");
+        HILOG_DEBUG("first param should be number");
         return nullptr;
     }
 
@@ -194,7 +194,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
         }
     }
     if (timeout < 0) {
-        HILOG_WARN("timeout < 0 is unreasonable");
+        HILOG_DEBUG("timeout < 0 is unreasonable");
     }
     // 2. get callback args
     size_t callbackArgc = argc >= 2 ? argc - 2 : 0; // 2 include callback and timeout
