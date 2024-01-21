@@ -679,6 +679,7 @@ namespace OHOS::JsSysModule::Process {
     {
         Process object;
         object.SetRejectionCallback(env);
+        object.InitProcessStartRealtime(env);
         napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("runCmd", RunCommand),
             DECLARE_NAPI_GETTER("uid", GetUid),

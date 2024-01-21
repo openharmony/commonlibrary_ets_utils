@@ -45,6 +45,7 @@ namespace OHOS::JsSysModule::Process {
     thread_local std::map<napi_ref, napi_ref> pendingUnHandledRejections;
     // support events
     thread_local std::string events = "UnHandleRejection";
+    thread_local int g_processStartRealtime = 0;
 
     napi_value Process::GetUid(napi_env env) const
     {
@@ -410,23 +411,29 @@ namespace OHOS::JsSysModule::Process {
         return result;
     }
 
-    napi_value Process::GetStartRealtime(napi_env env) const
+    void Process::InitProcessStartRealtime(napi_env env)
     {
         struct timespec timespro = {0, 0};
         struct timespec timessys = {0, 0};
-        napi_value result = nullptr;
         auto res = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &timespro);
         if (res) {
-            return 0;
+            g_processStartRealtime = 0;
+            return;
         }
         auto res1 = clock_gettime(CLOCK_MONOTONIC, &timessys);
         if (res1) {
-            return 0;
+            g_processStartRealtime = 0;
+            return;
         }
         int whenpro = ConvertTime(timespro.tv_sec, timespro.tv_nsec);
         int whensys = ConvertTime(timessys.tv_sec, timessys.tv_nsec);
-        auto timedif = (whensys - whenpro);
-        napi_create_int32(env, timedif, &result);
+        g_processStartRealtime = (whensys - whenpro);
+    }
+
+    napi_value Process::GetStartRealtime(napi_env env) const
+    {
+        napi_value result = nullptr;
+        napi_create_int32(env, g_processStartRealtime, &result);
         return result;
     }
 
@@ -573,6 +580,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_undefined(env, &res));
         return res;
     }
+
     void Process::ClearReference(napi_env env)
     {
         auto iter = eventMap.begin();
