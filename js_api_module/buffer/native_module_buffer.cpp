@@ -483,7 +483,7 @@ static napi_value FillString(napi_env env, napi_callback_info info)
     size_t argc = 4;
     napi_value args[4] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, argc > 3, "Wrong number of arguments.");
+    NAPI_ASSERT(env, argc > 3, "Wrong number of arguments."); // 3:The number of parameters is 3
 
     string encoding = GetStringASCII(env, args[3]);
     EncodingType encodingType = Buffer::GetEncodingType(encoding);

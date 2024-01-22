@@ -509,7 +509,6 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
         return nullptr;
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);
-
     if (!worker->RemoveGlobalCallObject(instanceName)) {
         HILOG_ERROR("worker:: unregister unexist globalCallObject");
     }
