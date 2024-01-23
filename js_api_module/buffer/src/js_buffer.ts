@@ -2184,12 +2184,12 @@ function getEncodingByType(type: string): {
         toString: toUtf16LE
       };
     case 'ascii':
-    case 'latin1':
       return {
         byteLength: (str: string) => str.length,
         toString: toAscii
       };
     case 'binary':
+    case 'latin1':
       return {
         byteLength: (str: string) => str.length,
         toString: toBinary
