@@ -522,7 +522,7 @@ function decodeURISafely(input: string): string {
     }
     return encodedMatch;
   });
-  return decodeURI(fixedUri);
+  return decodeURI(fixedUri).replace(/%3A/g, ':');
 }
 
 function initToStringSeachParams(input: string): Array<string> {
