@@ -26,15 +26,15 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
 struct TaskMessage {
-    uint32_t executeId {};
     uint32_t priority {};
-    uint32_t taskId {};
+    uint64_t taskId {};
 };
 
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
     static void ExecuteCallback(uv_async_t* req);
+    static void HandleTaskResult(const uv_async_t* req);
 
 private:
     TaskPool() = delete;
@@ -50,17 +50,18 @@ private:
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
     static napi_value GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo);
 
-    static void ExecuteFunction(napi_env env, TaskInfo* taskInfo, Priority priority = Priority::DEFAULT);
+    static void UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success);
+    static void ExecuteTask(napi_env env, Task* task, Priority priority = Priority::DEFAULT);
     static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority);
-    static void HandleTaskResult(const uv_async_t* req);
-    static void UpdateGroupInfoByResult(napi_env env, TaskInfo* taskInfo, napi_value res, bool success);
+
+    static void TriggerTask(Task* task);
 
     friend class TaskManager;
 };
 
 class CallbackScope {
 public:
-    CallbackScope(napi_env env, uint32_t taskId, napi_status& status): env_(env), taskId_(taskId)
+    CallbackScope(napi_env env, uint64_t taskId, napi_status& status): env_(env), taskId_(taskId)
     {
         status = napi_open_handle_scope(env_, &scope_);
     }
@@ -73,7 +74,7 @@ public:
     }
 private:
     napi_env env_;
-    uint32_t taskId_;
+    uint64_t taskId_;
     napi_handle_scope scope_ = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

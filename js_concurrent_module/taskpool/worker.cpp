@@ -271,153 +271,83 @@ void Worker::PerformTask(const uv_async_t* req)
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     auto worker = static_cast<Worker*>(req->data);
     napi_env env = worker->workerEnv_;
-    napi_status status = napi_ok;
     TaskManager::GetInstance().NotifyWorkerRunning(worker);
-    auto executeInfo = TaskManager::GetInstance().DequeueExecuteId();
-    if (executeInfo.first == 0) {
+    auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
+    if (taskInfo.first == 0) {
         worker->NotifyIdle();
         return;
     }
-
-    RunningScope runningScope(worker, status);
-    if (UNLIKELY(status != napi_ok)) {
-        GET_AND_THROW_LAST_ERROR((env));
-        TaskManager::GetInstance().EnqueueExecuteId(executeInfo.first, executeInfo.second);
-        worker->NotifyTaskFinished();
+    RunningScope runningScope(worker);
+    PriorityScope priorityScope(worker, taskInfo.second);
+    Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
+    if (!task->UpdateTask(startTime, worker)) {
         return;
     }
-
-    TaskManager::GetInstance().UpdateExecuteState(executeInfo.first, ExecuteState::RUNNING);
-    PriorityScope priorityScope(worker, executeInfo.second);
-    TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeInfo.first);
-    if (taskInfo == nullptr) { // task may have been canceled
-        worker->NotifyTaskFinished();
-        HILOG_DEBUG("taskpool::PerformTask taskInfo is null");
-        return;
+    if (task->IsGroupTask()) {
+        TaskGroupManager::GetInstance().UpdateGroupState(task->groupId_);
     }
-    taskInfo->startTime = startTime;
-    {
-        std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
-        worker->currentTaskId_.emplace_back(taskInfo->taskId);
-    }
+    worker->StoreTaskId(task->taskId_);
     // tag for trace parse: Task Perform
-    std::string strTrace = "Task Perform: name : " + taskInfo->name + ", taskId : " +
-                           std::to_string(taskInfo->taskId) + ", executeId : " + std::to_string(taskInfo->executeId);
+    std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_);
     HITRACE_HELPER_METER_NAME(strTrace);
-
-    taskInfo->worker = worker;
-    napi_value func;
-    status = napi_deserialize(env, taskInfo->serializationFunction, &func);
-    napi_delete_serialization_data(env, taskInfo->serializationFunction);
-    if (status != napi_ok || func == nullptr) {
-        HILOG_ERROR("taskpool:: PerformTask deserialize function fail");
-        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-                                               "taskpool:: failed to deserialize function.");
-        taskInfo->success = false;
-        NotifyTaskResult(env, taskInfo, err);
+    napi_value func = task->DeserializeValue(env, true, false);
+    if (func == nullptr) {
         return;
     }
-    napi_value args;
-    status = napi_deserialize(env, taskInfo->serializationArguments, &args);
-    napi_delete_serialization_data(env, taskInfo->serializationArguments);
-    if (status != napi_ok || args == nullptr) {
-        HILOG_ERROR("taskpool:: PerformTask deserialize arguments fail");
-        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
-                                               "taskpool:: failed to deserialize arguments.");
-        taskInfo->success = false;
-        NotifyTaskResult(env, taskInfo, err);
+    napi_value args = task->DeserializeValue(env, false, true);
+    if (args == nullptr) {
         return;
     }
-
-    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
-    // Store taskinfo in function
-    bool success = workerEngine->InitTaskPoolFunc(env, func, taskInfo);
-    napi_value exception;
-    napi_get_and_clear_last_exception(env, &exception);
-    if (exception != nullptr) {
-        HILOG_ERROR("taskpool:: InitTaskPoolFunc occur exception");
-        taskInfo->success = false;
-        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
-        NotifyTaskResult(env, taskInfo, errorEvent);
+    if (!worker->InitTaskPoolFunc(env, func, task)) {
         return;
     }
-    if (!success) {
-        HILOG_ERROR("taskpool:: InitTaskPoolFunc fail");
-        napi_value err = ErrorHelper::NewError(env, ErrorHelper::TYPE_ERROR,
-                                               "taskpool:: function may not be concurrent.");
-        taskInfo->success = false;
-        NotifyTaskResult(env, taskInfo, err);
-        return;
-    }
-
     uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
     napi_value argsArray[argsNum];
-    napi_value val;
     for (size_t i = 0; i < argsNum; i++) {
-        napi_get_element(env, args, i, &val);
-        argsArray[i] = val;
+        argsArray[i] = NapiHelper::GetElement(env, args, i);
     }
-
-    TaskManager::GetInstance().StoreReleaseTaskContentState(taskInfo->executeId);
-    napi_value result;
-    napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
-    TaskManager::GetInstance().NotifyPendingExecuteInfo(taskInfo->taskId, taskInfo->executeId);
-    taskInfo->cpuTime = ConcurrentHelper::GetMilliseconds();
-    uint64_t cpuDuration = taskInfo->cpuTime - taskInfo->startTime;
-    if (taskInfo->ioTime != 0) {
-        uint64_t ioDuration = taskInfo->ioTime - taskInfo->startTime;
-        TaskManager::GetInstance().StoreTaskDuration(taskInfo->taskId, std::max(cpuDuration, ioDuration), cpuDuration);
-    } else {
-        TaskManager::GetInstance().StoreTaskDuration(taskInfo->taskId, 0, cpuDuration);
-    }
-    // if the worker is blocked, just skip
-    if (LIKELY(worker->state_ != WorkerState::BLOCKED)) {
-        uint64_t duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
-        TaskManager::GetInstance().UpdateExecutedInfo(duration);
-    }
-    napi_get_and_clear_last_exception(env, &exception);
-    if (exception != nullptr) {
-        HILOG_ERROR("taskpool::PerformTask occur exception");
-        taskInfo->success = false;
-        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
-        NotifyTaskResult(env, taskInfo, errorEvent);
-    }
-    if (TaskManager::GetInstance().CanReleaseTaskContent(taskInfo->executeId)) {
-        TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
-    }
+    napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, nullptr);
+    task->DecreaseRefCount();
+    task->StoreTaskDuration();
+    worker->UpdateExecutedInfo();
+    HandleFunctionException(env, task);
 }
 
-void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value result)
+void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value resultData;
-    bool defaultCloneSendable = true;
-    bool defaultTransfer = true;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    napi_status status = napi_serialize(env, result, undefined, undefined, defaultTransfer, defaultCloneSendable,
-                                        &resultData);
-    if ((status != napi_ok || resultData == nullptr) && taskInfo->success) {
-        taskInfo->success = false;
+    bool defaultTransfer = true;
+    bool defaultCloneSendable = true;
+    napi_status status = napi_serialize(env, result, undefined, undefined,
+                                        defaultTransfer, defaultCloneSendable, &resultData);
+    if ((status != napi_ok || resultData == nullptr) && task->success_) {
+        task->success_ = false;
         std::string errMessage = "taskpool: failed to serialize result.";
-        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        NotifyTaskResult(env, taskInfo, err);
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        NotifyTaskResult(env, task, err);
         return;
     }
-    taskInfo->result = resultData;
+    task->result_ = resultData;
+    NotifyHandleTaskResult(task);
+}
 
-    TaskManager::GetInstance().RemoveExecuteState(taskInfo->executeId);
-    if (taskInfo->groupExecuteId == 0) {
-        TaskManager::GetInstance().PopRunningInfo(taskInfo->taskId, taskInfo->executeId);
+void Worker::NotifyHandleTaskResult(Task* task)
+{
+    if (!task->IsReadyToHandle()) {
+        return;
     }
-    TaskManager::GetInstance().PopTaskInfo(taskInfo->executeId);
-    Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
-    {
+    Worker* worker = reinterpret_cast<Worker*>(task->worker_);
+    if (worker != nullptr) {
         std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
-        worker->currentTaskId_.erase(std::find(worker->currentTaskId_.begin(),
-                                     worker->currentTaskId_.end(), taskInfo->taskId));
+        auto iter = std::find(worker->currentTaskId_.begin(), worker->currentTaskId_.end(), task->taskId_);
+        if (iter != worker->currentTaskId_.end()) {
+            worker->currentTaskId_.erase(iter);
+        }
     }
-    uv_async_send(taskInfo->onResultSignal);
+    uv_async_send(task->onResultSignal_);
     worker->NotifyTaskFinished();
 }
 
@@ -425,23 +355,23 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     if (env == nullptr) {
-        HILOG_FATAL("taskpool::TaskResultCallback engine is null");
+        HILOG_FATAL("taskpool:: TaskResultCallback engine is null");
         return;
     }
     if (data == nullptr) {
-        HILOG_FATAL("taskpool:: taskInfo is nullptr");
+        HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
-    TaskInfo* taskInfo = static_cast<TaskInfo*>(data);
-    taskInfo->ioTime = ConcurrentHelper::GetMilliseconds();
-    if (taskInfo->cpuTime != 0) {
-        uint64_t ioDuration = taskInfo->ioTime - taskInfo->startTime;
-        uint64_t cpuDuration = taskInfo->cpuTime - taskInfo->startTime;
-        TaskManager::GetInstance().StoreTaskDuration(taskInfo->taskId, std::max(ioDuration, cpuDuration), cpuDuration);
+    Task* task = static_cast<Task*>(data);
+    task->DecreaseRefCount();
+    task->ioTime_ = ConcurrentHelper::GetMilliseconds();
+    if (task->cpuTime_ != 0) {
+        uint64_t ioDuration = task->ioTime_ - task->startTime_;
+        uint64_t cpuDuration = task->cpuTime_ - task->startTime_;
+        TaskManager::GetInstance().StoreTaskDuration(task->taskId_, std::max(ioDuration, cpuDuration), cpuDuration);
     }
-    TaskManager::GetInstance().NotifyPendingExecuteInfo(taskInfo->taskId, taskInfo->executeId);
-    taskInfo->success = success;
-    NotifyTaskResult(env, taskInfo, result);
+    task->success_ = success;
+    NotifyTaskResult(env, task, result);
 }
 
 // reset qos_user_initiated after perform task
@@ -466,5 +396,58 @@ TaskResultInfo* Worker::Dequeue()
 bool Worker::IsQueueEmpty()
 {
     return hostMessageQueue_.IsEmpty();
+}
+
+void Worker::StoreTaskId(uint64_t taskId)
+{
+    std::lock_guard<std::mutex> lock(currentTaskIdMutex_);
+    currentTaskId_.emplace_back(taskId);
+}
+
+bool Worker::InitTaskPoolFunc(napi_env env, napi_value func, Task* task)
+{
+    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
+    bool success = workerEngine->InitTaskPoolFunc(env, func, task);
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+    if (exception != nullptr) {
+        HILOG_ERROR("taskpool:: InitTaskPoolFunc occur exception");
+        task->success_ = false;
+        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
+        NotifyTaskResult(env, task, errorEvent);
+        return false;
+    }
+    if (!success) {
+        HILOG_ERROR("taskpool:: InitTaskPoolFunc fail");
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::TYPE_ERROR,
+                                               "taskpool:: function may not be concurrent.");
+        task->success_ = false;
+        NotifyTaskResult(env, task, err);
+        return false;
+    }
+    return true;
+}
+
+void Worker::UpdateExecutedInfo()
+{
+    // if the worker is blocked, just skip
+    if (LIKELY(state_ != WorkerState::BLOCKED)) {
+        uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime_;
+        TaskManager::GetInstance().UpdateExecutedInfo(duration);
+    }
+}
+
+void Worker::HandleFunctionException(napi_env env, Task* task)
+{
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+    if (exception != nullptr) {
+        HILOG_ERROR("taskpool::PerformTask occur exception");
+        task->success_ = false;
+        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
+        NotifyTaskResult(env, task, errorEvent);
+        return;
+    }
+    NotifyHandleTaskResult(task);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

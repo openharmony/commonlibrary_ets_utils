@@ -26,11 +26,13 @@
 #include <unordered_set>
 #include <vector>
 
+#include "napi/native_api.h"
+#include "sequence_runner.h"
 #include "task.h"
 #include "task_queue.h"
-#include "napi/native_api.h"
+#include "task_group.h"
 #include "worker.h"
-#include "sequence_runner.h"
+
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
@@ -51,6 +53,8 @@ static constexpr char TASK_TOTAL_TIME[] = "totalDuration";
 static constexpr char DEFAULT_TRANSFER_STR[] = "defaultTransfer";
 static constexpr char DEFAULT_CLONE_SENDABLE_STR[] = "defaultCloneSendable";
 
+class TaskGroup;
+
 class TaskManager {
 public:
     TaskManager();
@@ -58,28 +62,13 @@ public:
 
     static TaskManager& GetInstance();
 
-    uint32_t GenerateTaskId();
-    uint32_t GenerateExecuteId();
-    TaskInfo* GetTaskInfo(uint32_t executeId);
-    TaskInfo* PopTaskInfo(uint32_t executeId);
-    void StoreRunningInfo(uint32_t taskId, uint32_t executeId);
-    void AddExecuteState(uint32_t executeId);
-    bool UpdateExecuteState(uint32_t executeId, ExecuteState state);
-    void RemoveExecuteState(uint32_t executeId);
-    void PopRunningInfo(uint32_t taskId, uint32_t executeId);
-    void RemoveRunningInfo(uint32_t taskId);
-    bool IsExecutedByTaskId(uint32_t taskId);
-    void EnqueueExecuteId(uint32_t executeId, Priority priority = Priority::DEFAULT);
-    std::pair<uint32_t, Priority> DequeueExecuteId();
-    void CancelTask(napi_env env, uint32_t taskId);
-    TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args, napi_value taskName, uint32_t taskId,
-                               uint32_t executeId, napi_value cloneList, napi_value transferList,
-                               bool defaultTransfer = true, bool defaultCloneSendable = false);
-    TaskInfo* GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId);
-    void StoreReleaseTaskContentState(uint32_t executeId);
-    bool CanReleaseTaskContent(uint32_t executeId);
-    void ReleaseTaskContent(TaskInfo* taskInfo);
-    void ReleaseTaskData(napi_env env, uint32_t taskId);
+    void StoreTask(uint64_t taskId, Task* task);
+    void RemoveTask(uint64_t taskId);
+    Task* GetTask(uint64_t taskId);
+    void EnqueueTaskId(uint64_t taskId, Priority priority = Priority::DEFAULT);
+    std::pair<uint64_t, Priority> DequeueTaskId();
+    void CancelTask(napi_env env, uint64_t taskId);
+    void ReleaseTaskData(napi_env env, Task* task);
 
     // for worker state
     void NotifyWorkerIdle(Worker* worker);
@@ -111,45 +100,28 @@ public:
     // for countTrace for worker
     void CountTraceForWorker();
 
-    std::shared_ptr<CallbackInfo> GetCallbackInfo(uint32_t taskId);
-    void RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo);
-    void IncreaseRefCount(uint32_t taskId);
-    void DecreaseRefCount(napi_env env, uint32_t taskId);
-    napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, TaskInfo* taskInfo);
+    std::shared_ptr<CallbackInfo> GetCallbackInfo(uint64_t taskId);
+    void RegisterCallback(napi_env env, uint64_t taskId, std::shared_ptr<CallbackInfo> callbackInfo);
+    void IncreaseRefCount(uint64_t taskId);
+    void DecreaseRefCount(napi_env env, uint64_t taskId);
+    napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task);
 
     // for task dependency
-    bool CheckDependencyByExecuteId(uint32_t executeId);
-    bool IsDependentByTaskId(uint32_t taskId);
-    void NotifyPendingExecuteInfo(uint32_t taskId, uint32_t executeId);
-    bool StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet);
-    bool RemoveTaskDependency(uint32_t taskId, uint32_t dependentId);
-    bool CheckCircularDependency(std::set<uint32_t> dependentIdSet, std::set<uint32_t> idSet, uint32_t taskId);
-    void EnqueuePendingExecuteInfo(uint32_t executeId, Priority priority);
-    std::pair<uint32_t, Priority> DequeuePendingExecuteInfo(uint32_t executeId);
-    void StoreDependentTaskInfo(std::set<uint32_t> dependTaskIdSet, uint32_t taskId);
-    void RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t taskId);
-    void StoreAddDependendExecuteInfo(uint32_t taskId);
-    void RemoveAddDependExecuteInfo(uint32_t taskId, uint32_t executeId);
-
-    uint32_t GetCurrentExecuteId()
-    {
-        return currentExecuteId_;
-    }
-
-    // for SequnceRunner
-    uint32_t GenerateSeqRunnerId();
+    bool IsDependendByTaskId(uint64_t taskId);
+    void NotifyDependencyTaskInfo(uint64_t taskId);
+    bool StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskIdSet);
+    bool RemoveTaskDependency(uint64_t taskId, uint64_t dependentId);
+    bool CheckCircularDependency(std::set<uint64_t> dependentIdSet, std::set<uint64_t> idSet, uint64_t taskId);
+    void EnqueuePendingTaskInfo(uint64_t taskId, Priority priority);
+    std::pair<uint64_t, Priority> DequeuePendingTaskInfo(uint64_t taskId);
+    void RemovePendingTaskInfo(uint64_t taskId);
+    void StoreDependentTaskInfo(std::set<uint64_t> dependTaskIdSet, uint64_t taskId);
+    void RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId);
 
     // for duration
-    void StoreTaskDuration(uint32_t taskId, uint64_t totalDuration, uint64_t cpuDuration);
-    uint64_t GetTaskDuration(uint32_t taskId, std::string durationType);
-    void RemoveTaskDuration(uint32_t taskId);
-
-    bool IsCanceledByExecuteId(uint32_t executeId);
-
-    void StoreTaskType(uint32_t taskId, bool isGroupTask);
-    void RemoveTaskType(uint32_t taskId);
-    bool IsGroupTask(uint32_t taskId);
-    bool IsSeqRunnerTask(uint32_t taskId);
+    void StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration);
+    uint64_t GetTaskDuration(uint64_t taskId, std::string durationType);
+    void RemoveTaskDuration(uint64_t taskId);
 
 private:
     TaskManager(const TaskManager &) = delete;
@@ -157,13 +129,9 @@ private:
     TaskManager(TaskManager &&) = delete;
     TaskManager& operator=(TaskManager &&) = delete;
 
-    ExecuteState QueryExecuteState(uint32_t executeId);
     void CreateWorkers(napi_env env, uint32_t num = 1);
     void NotifyExecuteTask();
     void NotifyWorkerAdded(Worker* worker);
-    void StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo);
-    bool MarkCanceledState(uint32_t executeId);
-    void CancelExecution(napi_env env, uint32_t executeId);
 
     // for load balance
     void RunTaskManager();
@@ -175,47 +143,24 @@ private:
     static void NotifyExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
-    std::atomic<int32_t> currentExecuteId_ = 1; // 1: executeId begin from 1, 0 for exception
-    std::atomic<int32_t> currentTaskId_ = 1; // 1: task will begin from 1, 0 for func
-    std::atomic<uint32_t> seqRunnerId_ = 1; // 1: 0 reserved for task without runner
-
-    // <executeId, TaskInfo>
-    std::unordered_map<uint32_t, TaskInfo*> taskInfos_ {};
-    std::shared_mutex taskInfosMutex_;
-
-    // <executeId, executeState>
-    std::unordered_map<uint32_t, ExecuteState> executeStates_ {};
-    std::shared_mutex executeStatesMutex_;
-
-    // <taskId, <executeId1, executeId2, ...>>
-    std::unordered_map<uint32_t, std::list<uint32_t>> runningInfos_ {};
-    std::shared_mutex runningInfosMutex_;
+    // <taskId, Task>
+    std::unordered_map<uint64_t, Task*> tasks_ {};
+    std::shared_mutex tasksMutex_;
 
     // <taskId, <dependent taskId1, dependent taskId2, ...>>, update when removeDependency or executeTask
-    std::unordered_map<uint32_t, std::set<uint32_t>> dependTaskInfos_ {};
+    std::unordered_map<uint64_t, std::set<uint64_t>> dependTaskInfos_ {};
     std::shared_mutex dependTaskInfosMutex_;
 
     // <dependent taskId, <taskId1, taskId2, ...>>, update when removeDependency or executeTask
-    std::unordered_map<uint32_t, std::set<uint32_t>> dependentTaskInfos_ {};
+    std::unordered_map<uint64_t, std::set<uint64_t>> dependentTaskInfos_ {};
 
-    // <<taskId, executeId when add deppendency>, ...>
-    std::unordered_map<uint32_t, uint32_t> addDependExecuteStateInfos_ {};
-
-    // <<pendingExecuteId1, priority>, <pendingExecuteId2, priority>, ...>
-    std::unordered_map<uint32_t, Priority> pendingExecuteInfos_ {};
-    std::shared_mutex pendingExecuteInfosMutex_;
+    // <<pendingTaskId1, priority>, <pendingTaskId2, priority>, ...>
+    std::unordered_map<uint64_t, Priority> pendingTaskInfos_ {};
+    std::shared_mutex pendingTaskInfosMutex_;
 
     // <<taskId1, <totalDuration1, cpuDuration1>>, <taskId2, <totalDuration2, cpuDuration2>>, ...>
-    std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> taskDurationInfos_ {};
+    std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> taskDurationInfos_ {};
     std::shared_mutex taskDurationInfosMutex_;
-
-    // <<executeId1, taskInfoState>, <executeId2, taskInfoState>, ...>
-    std::unordered_map<uint32_t, bool> taskInfosForRelease_ {};
-    std::shared_mutex taskInfosForReleaseMutex_;
-
-    // <taskId, <isGroupTask, isSeqRunnerTask>>
-    std::unordered_map<uint32_t, std::pair<bool, bool>> taskTypeInfos_ {};
-    std::shared_mutex taskTypeInfosMutex_;
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};
@@ -255,24 +200,20 @@ public:
 
     static TaskGroupManager &GetInstance();
 
-    uint32_t GenerateGroupId();
-    uint32_t GenerateGroupExecuteId();
-    void AddTask(uint32_t groupId, napi_ref task);
-    const std::list<napi_ref>& GetTasksByGroup(uint32_t groupId);
-    void ClearTasks(napi_env env, uint32_t groupId);
+    void AddTask(uint64_t groupId, napi_ref taskRef, uint64_t taskId);
+    void StoreTaskGroup(uint64_t groupId, TaskGroup* taskGroup);
+    void RemoveTaskGroup(uint64_t groupId);
+    TaskGroup* GetTaskGroup(uint64_t groupId);
+    void CancelGroup(napi_env env, uint64_t groupId);
+    void CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup* group);
+    void ReleaseTaskGroupData(napi_env env, TaskGroup* group);
+    void UpdateGroupState(uint64_t groupId);
 
-    GroupInfo* GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId, uint32_t groupExecuteId);
-    void ClearGroupInfo(napi_env env, uint32_t groupExecuteId, GroupInfo* groupInfo);
-    void CancelGroup(napi_env env, uint32_t groupId);
-    void RemoveExecuteId(uint32_t groupId, uint32_t groupExecuteId);
-    void ClearExecuteId(uint32_t groupId);
-    bool IsRunning(uint32_t groupExecuteId);
-    GroupInfo* GetGroupInfoByExecutionId(uint32_t groupExecuteId);
-    void AddSeqRunnerInfoById(uint32_t seqRunnerId, SeqRunnerInfo* info);
-    SeqRunnerInfo* GetSeqRunnerInfoById(uint32_t seqRunnerId);
-    void AddTaskToSeqRunner(uint32_t seqRunnerId, TaskInfo* task);
-    bool TriggerSeqRunner(napi_env env, TaskInfo* lastTask);
-    void ClearSeqRunner(uint32_t seqRunnerId);
+    void AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task);
+    bool TriggerSeqRunner(napi_env env, Task* lastTask);
+    void StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner);
+    void RemoveSequenceRunner(uint64_t seqRunnerId);
+    SequenceRunner* GetSeqRunner(uint64_t seqRunnerId);
 
 private:
     TaskGroupManager(const TaskGroupManager &) = delete;
@@ -280,39 +221,13 @@ private:
     TaskGroupManager(TaskGroupManager &&) = delete;
     TaskGroupManager& operator=(TaskGroupManager &&) = delete;
 
-    void StoreExecuteId(uint32_t groupId, uint32_t groupExecuteId);
+    // <groupId, TaskGroup>
+    std::unordered_map<uint64_t, TaskGroup*> taskGroups_ {};
+    std::mutex taskGroupsMutex_;
 
-    void StoreRunningExecuteId(uint32_t groupExecuteId);
-    void RemoveRunningExecuteId(uint32_t groupExecuteId);
-
-    void AddGroupInfoById(uint32_t groupExecuteId, GroupInfo* info);
-    void RemoveGroupInfoById(uint32_t groupExecuteId);
-
-    void CancelGroupExecution(uint32_t executeId);
-    void RemoveSeqRunnerInfoById(uint32_t seqRunnerId);
-
-    std::atomic<uint32_t> groupId_ = 0;
-    std::atomic<uint32_t> groupExecuteId_ = 1; // 1: 0 reserved for those tasks not in any group
-
-    // <groupId, <groupExecuteId1, groupExecuteId2, ...>>
-    std::unordered_map<uint32_t, std::list<uint32_t>> groupExecuteIds_ {};
-    std::mutex groupExecuteIdsMutex_;
-
-    // <groupId, <task1, task2, ...>>
-    std::unordered_map<uint32_t, std::list<napi_ref>> tasks_ {};
-    std::shared_mutex tasksMutex_;
-
-    // <groupExecuteId1, groupExecuteId2, ...>
-    std::unordered_set<uint32_t> runningGroupExecutions_ {};
-    std::shared_mutex groupExecutionsMutex_;
-
-    // <<groupExecuteId1, GroupInfo1>, <groupExecuteId2, GroupInfo2>, ...>
-    std::unordered_map<uint32_t, GroupInfo*> groupInfoMap_ {};
-    std::shared_mutex groupInfoMapMutex_;
-
-    // <seqRunnerId, <SeqRunnerInfo*>>
-    std::unordered_map<uint32_t, SeqRunnerInfo*> seqRunnerMap_ {};
-    std::shared_mutex seqRunnerMutex_;
+    // <seqRunnerId, SequenceRunner>
+    std::unordered_map<uint64_t, SequenceRunner*> seqRunners_ {};
+    std::mutex seqRunnersMutex_;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H

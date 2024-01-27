@@ -16,17 +16,17 @@
 #include "task_queue.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-void ExecuteQueue::EnqueueExecuteId(uint32_t executeId)
+void ExecuteQueue::EnqueueTaskId(uint64_t taskId)
 {
-    tasks_.push(executeId);
+    tasks_.push(taskId);
 }
 
-uint32_t ExecuteQueue::DequeueExecuteId()
+uint64_t ExecuteQueue::DequeueTaskId()
 {
     if (!tasks_.empty()) {
-        uint32_t executeId = tasks_.front();
+        uint64_t taskId = tasks_.front();
         tasks_.pop();
-        return executeId;
+        return taskId;
     }
     return 0;
 }

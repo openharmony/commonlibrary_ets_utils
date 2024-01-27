@@ -23,27 +23,28 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 
 class SequenceRunner {
 public:
+    SequenceRunner() = default;
+    ~SequenceRunner() = default;
+
     static napi_value SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
 
 private:
-    SequenceRunner() = delete;
-    ~SequenceRunner() = delete;
     SequenceRunner(const SequenceRunner &) = delete;
     SequenceRunner& operator=(const SequenceRunner &) = delete;
     SequenceRunner(SequenceRunner &&) = delete;
     SequenceRunner& operator=(SequenceRunner &&) = delete;
-    static void RegisterSeqRunner(napi_env env, uint32_t seqRunnerId, Priority pri);
-    static void Destructor(napi_env env, void* nativeObject, void* finalize);
-    static void ExecuteTaskImmediately(uint32_t executeId, Priority priority);
-};
 
-struct SeqRunnerInfo {
-    bool releasable {false};
-    uint32_t currentExeId {};
-    napi_ref ref = nullptr;
-    Priority priority {Priority::DEFAULT};
-    std::queue<TaskInfo*> seqRunnerTasks {};
+    static void ExecuteTaskImmediately(uint64_t taskId, Priority priority);
+    static void SequnceRunnerDestructor(napi_env env, void* data, void* hint);
+
+public:
+    uint64_t seqRunnerId_ {};
+    std::atomic<uint64_t> currentTaskId_ {};
+    napi_ref seqRunnerRef_ = nullptr;
+    Priority priority_ {Priority::DEFAULT};
+    std::queue<Task*> seqRunnerTasks_ {};
+    std::shared_mutex seqRunnerMutex_;
 };
 }
 
