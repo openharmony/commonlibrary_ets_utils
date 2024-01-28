@@ -15,6 +15,8 @@
 
 #include "taskpool.h"
 
+#include <cinttypes>
+
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
 #include "helper/napi_helper.h"
@@ -359,7 +361,7 @@ void TaskPool::TriggerTask(Task* task)
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
         if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
-            HILOG_ERROR("seqRunner:: task %{public}llu trigger in seqRunner %{public}llu failed",
+            HILOG_ERROR("seqRunner:: task %" PRIu64 " trigger in seqRunner %" PRIu64 " failed",
                         task->taskId_, task->seqRunnerId_);
         }
     } else if (task->IsCommonTask()) {

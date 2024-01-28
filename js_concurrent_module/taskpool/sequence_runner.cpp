@@ -14,6 +14,8 @@
  */
 #include "sequence_runner.h"
 
+#include <cinttypes>
+
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
@@ -58,7 +60,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
     };
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    HILOG_DEBUG("seqRunner:: construct seqRunner %{public}llu.", seqRunnerId);
+    HILOG_DEBUG("seqRunner:: construct seqRunner %" PRIu64 ".", seqRunnerId);
 
     seqRunner->priority_ = Priority(priority);
     seqRunner->seqRunnerId_ = seqRunnerId;
@@ -106,12 +108,12 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     task->seqRunnerId_ = seqRunnerId;
     napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::SEQRUNNER_TASK, seqRunner->priority_);
     if (seqRunner->currentTaskId_ == 0) {
-        HILOG_DEBUG("seqRunner:: task %{public}llu in seqRunner %{public}llu immediately.", task->taskId_, seqRunnerId);
+        HILOG_DEBUG("seqRunner:: task %" PRIu64 " in seqRunner %" PRIu64 " immediately.", task->taskId_, seqRunnerId);
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
-        HILOG_DEBUG("seqRunner:: add %{public}llu to seqRunner %{public}llu.", task->taskId_, seqRunnerId);
+        HILOG_DEBUG("seqRunner:: add %" PRIu64 " to seqRunner %" PRIu64 ".", task->taskId_, seqRunnerId);
         TaskGroupManager::GetInstance().AddTaskToSeqRunner(seqRunnerId, task);
     }
     return promise;
