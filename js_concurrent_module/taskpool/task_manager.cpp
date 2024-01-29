@@ -15,6 +15,7 @@
 
 #include "task_manager.h"
 
+#include <cinttypes>
 #include <securec.h>
 #include <thread>
 
@@ -78,12 +79,12 @@ TaskManager::~TaskManager()
     }
 
     {
-        std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-        for (auto& [_, taskInfo] : taskInfos_) {
-            delete taskInfo;
-            taskInfo = nullptr;
+        std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+        for (auto& [_, task] : tasks_) {
+            delete task;
+            task = nullptr;
         }
-        taskInfos_.clear();
+        tasks_.clear();
     }
     CountTraceForWorker();
 }
@@ -122,8 +123,7 @@ napi_value TaskManager::GetThreadInfos(napi_env env)
             {
                 std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
                 for (auto& currentId : worker->currentTaskId_) {
-                    napi_value id = nullptr;
-                    napi_create_uint32(env, currentId, &id);
+                    napi_value id = NapiHelper::CreateUint64(env, currentId);
                     napi_set_element(env, taskId, j, id);
                     j++;
                 }
@@ -133,7 +133,6 @@ napi_value TaskManager::GetThreadInfos(napi_env env)
             napi_set_named_property(env, threadInfo, "tid", tid);
             napi_set_named_property(env, threadInfo, "priority", priority);
             napi_set_named_property(env, threadInfo, "taskIds", taskId);
-
             napi_set_element(env, threadInfos, i, threadInfo);
             i++;
         }
@@ -146,33 +145,32 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
     napi_value taskInfos = nullptr;
     napi_create_array(env, &taskInfos);
     {
-        std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
+        std::unique_lock<std::shared_mutex> lock(tasksMutex_);
         int32_t i = 0;
-        for (auto& [_, taskInfo] : taskInfos_) {
+        for (const auto& [_, task] : tasks_) {
+            if (task->taskState_ == ExecuteState::NOT_FOUND) {
+                continue;
+            }
             napi_value taskInfoValue = nullptr;
             napi_create_object(env, &taskInfoValue);
-            napi_value taskId = nullptr;
-            napi_create_uint32(env, taskInfo->taskId, &taskId);
+            std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
+            napi_value taskId = NapiHelper::CreateUint64(env, task->taskId_);
             napi_value name = nullptr;
-            napi_create_string_utf8(env, taskInfo->name.c_str(), taskInfo->name.size(), &name);
+            napi_create_string_utf8(env, task->name_.c_str(), task->name_.size(), &name);
             napi_set_named_property(env, taskInfoValue, "name", name);
             ExecuteState state;
             uint64_t duration = 0;
-            if (taskInfo->isCanceled) {
-                state = ExecuteState::CANCELED;
-            } else if (taskInfo->worker != nullptr) {
-                Worker* worker = reinterpret_cast<Worker*>(taskInfo->worker);
-                duration = ConcurrentHelper::GetMilliseconds() - worker->startTime_;
-                state = ExecuteState::RUNNING;
-            } else {
+            if (task->taskState_ == ExecuteState::WAITING) {
                 state = ExecuteState::WAITING;
+            } else {
+                duration = ConcurrentHelper::GetMilliseconds() - task->startTime_;
+                state = ExecuteState::RUNNING;
             }
             napi_value stateValue = nullptr;
             napi_create_int32(env, state, &stateValue);
             napi_set_named_property(env, taskInfoValue, "taskId", taskId);
             napi_set_named_property(env, taskInfoValue, "state", stateValue);
-            napi_value durationValue = nullptr;
-            napi_create_uint32(env, static_cast<uint32_t>(duration), &durationValue);
+            napi_value durationValue = NapiHelper::CreateUint32(env, duration);
             napi_set_named_property(env, taskInfoValue, "duration", durationValue);
             napi_set_element(env, taskInfos, i, taskInfoValue);
             i++;
@@ -472,285 +470,39 @@ void TaskManager::RunTaskManager()
     uv_loop_close(loop_);
 }
 
-uint32_t TaskManager::GenerateTaskId()
-{
-    return currentTaskId_++;
-}
-
-uint32_t TaskManager::GenerateExecuteId()
-{
-    return currentExecuteId_++;
-}
-
-void TaskManager::StoreTaskInfo(uint32_t executeId, TaskInfo* taskInfo)
-{
-    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-    taskInfos_.emplace(executeId, taskInfo);
-}
-
-void TaskManager::StoreRunningInfo(uint32_t taskId, uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
-    auto iter = runningInfos_.find(taskId);
-    if (iter == runningInfos_.end()) {
-        std::list<uint32_t> list {executeId};
-        runningInfos_.emplace(taskId, list);
-    } else {
-        iter->second.push_front(executeId);
-    }
-}
-
-TaskInfo* TaskManager::PopTaskInfo(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-    auto iter = taskInfos_.find(executeId);
-    if (iter == taskInfos_.end() || iter->second == nullptr) {
-        return nullptr;
-    }
-
-    TaskInfo* taskInfo = iter->second;
-    // remove the the taskInfo after call function
-    taskInfos_.erase(iter);
-    return taskInfo;
-}
-
-TaskInfo* TaskManager::GetTaskInfo(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-    auto iter = taskInfos_.find(executeId);
-    if (iter == taskInfos_.end() || iter->second == nullptr) {
-        return nullptr;
-    }
-    return iter->second;
-}
-
-bool TaskManager::MarkCanceledState(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-    auto iter = taskInfos_.find(executeId);
-    if (iter == taskInfos_.end() || iter->second == nullptr) {
-        return false;
-    }
-    if (!UpdateExecuteState(executeId, ExecuteState::CANCELED)) {
-        return false;
-    }
-    iter->second->isCanceled = true;
-    return true;
-}
-
-void TaskManager::PopRunningInfo(uint32_t taskId, uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
-    auto iter = runningInfos_.find(taskId);
-    if (iter == runningInfos_.end()) {
-        return;
-    }
-    iter->second.remove(executeId);
-}
-
-void TaskManager::RemoveRunningInfo(uint32_t taskId)
-{
-    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
-    auto iter = runningInfos_.find(taskId);
-    if (iter != runningInfos_.end()) {
-        runningInfos_.erase(iter);
-    }
-}
-
-void TaskManager::AddExecuteState(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(executeStatesMutex_);
-    executeStates_.emplace(executeId, ExecuteState::WAITING);
-}
-
-bool TaskManager::UpdateExecuteState(uint32_t executeId, ExecuteState state)
-{
-    std::unique_lock<std::shared_mutex> lock(executeStatesMutex_);
-    auto iter = executeStates_.find(executeId);
-    if (iter == executeStates_.end()) {
-        return false;
-    }
-    std::string traceInfo = "UpdateExecuteState: executeId : " + std::to_string(executeId) +
-                            ", executeState : " + std::to_string(state);
-    HITRACE_HELPER_METER_NAME(traceInfo);
-    iter->second = state;
-    return true;
-}
-
-void TaskManager::RemoveExecuteState(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(executeStatesMutex_);
-    executeStates_.erase(executeId);
-}
-
-ExecuteState TaskManager::QueryExecuteState(uint32_t executeId)
-{
-    std::shared_lock<std::shared_mutex> lock(executeStatesMutex_);
-    auto iter = executeStates_.find(executeId);
-    if (iter == executeStates_.end()) {
-        HILOG_DEBUG("taskpool:: Can not find the target task");
-        return ExecuteState::NOT_FOUND;
-    }
-    return iter->second;
-}
-
-void TaskManager::CancelTask(napi_env env, uint32_t taskId)
-{
-    // Cannot find task by taskId, throw error
-    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
-    auto iter = runningInfos_.find(taskId);
-    if (iter == runningInfos_.end() || iter->second.empty()) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
-        HILOG_ERROR("taskpool:: query non-existent task");
-        return;
-    }
-    for (uint32_t executeId : iter->second) {
-        CancelExecution(env, executeId);
-    }
-}
-
-void TaskManager::CancelExecution(napi_env env, uint32_t executeId)
+void TaskManager::CancelTask(napi_env env, uint64_t taskId)
 {
     // 1. Cannot find taskInfo by executeId, throw error
     // 2. Find executing taskInfo, skip it
     // 3. Find waiting taskInfo, cancel it
     // 4. Find canceled taskInfo, skip it
-    ExecuteState state = QueryExecuteState(executeId);
-    TaskInfo* taskInfo = nullptr;
+    Task* task = GetTask(taskId);
+    if (task == nullptr) {
+        return;
+    }
+    std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
+    if (task->currentTaskInfo_ == nullptr) {
+        HILOG_ERROR("taskpool:: cancel non-existent task");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
+        return;
+    }
+    ExecuteState state = task->taskState_;
     switch (state) {
         case ExecuteState::NOT_FOUND:
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
             HILOG_ERROR("taskpool:: cancel non-existent task");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
             return;
         case ExecuteState::RUNNING:
-            if (!MarkCanceledState(executeId)) {
-                ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK,
-                                        "taskpool:: fail to mark cancel state");
-                return;
-            }
+            task->taskState_ = ExecuteState::CANCELED;
+            task->CancelPendingTask(env, ExecuteState::RUNNING);
             break;
         case ExecuteState::WAITING:
-            HILOG_DEBUG("taskpool:: Cancel waiting task");
-            taskInfo = PopTaskInfo(executeId);
-            if (taskInfo != nullptr) {
-                napi_value undefined = NapiHelper::GetUndefinedValue(taskInfo->env);
-                napi_reject_deferred(taskInfo->env, taskInfo->deferred, undefined);
-                ReleaseTaskContent(taskInfo);
-            }
-            RemoveExecuteState(executeId);
+            task->taskState_ = ExecuteState::CANCELED;
+            task->CancelPendingTask(env, ExecuteState::WAITING);
             break;
         default: // Default is CANCELED, means task isCanceled, do not need to mark again.
             break;
     }
-}
-
-TaskInfo* TaskManager::GenerateTaskInfo(napi_env env, napi_value func, napi_value args, napi_value taskName,
-                                        uint32_t taskId, uint32_t executeId, napi_value cloneList,
-                                        napi_value transferList, bool defaultTransfer, bool defaultCloneSendable)
-{
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    napi_value serializationFunction;
-    std::string errMessage = "";
-    napi_status status = napi_serialize(env, func, undefined, undefined, defaultTransfer,
-                                        defaultCloneSendable, &serializationFunction);
-    if (status != napi_ok || serializationFunction == nullptr) {
-        errMessage = "taskpool: failed to serialize function.";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
-        return nullptr;
-    }
-    napi_value serializationArguments;
-    status = napi_serialize(env, args, transferList, cloneList, defaultTransfer,
-                            defaultCloneSendable, &serializationArguments);
-    if (status != napi_ok || serializationArguments == nullptr) {
-        errMessage = "taskpool: failed to serialize arguments.";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
-        return nullptr;
-    }
-    napi_value funcName = NapiHelper::GetNameProperty(env, func, NAME);
-    TaskInfo* taskInfo = new TaskInfo();
-    taskInfo->env = env;
-    taskInfo->executeId = executeId;
-    taskInfo->serializationFunction = serializationFunction;
-    taskInfo->serializationArguments = serializationArguments;
-    taskInfo->taskId = taskId;
-    char* name = NapiHelper::GetString(env, taskName);
-    if (strlen(name) == 0) {
-        name = NapiHelper::GetString(env, funcName);
-    }
-    taskInfo->name = std::string(name);
-    delete[] name;
-    taskInfo->onResultSignal = new uv_async_t;
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    uv_async_init(loop, taskInfo->onResultSignal, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
-    taskInfo->onResultSignal->data = taskInfo;
-
-    StoreTaskInfo(executeId, taskInfo);
-    reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
-    return taskInfo;
-}
-
-TaskInfo* TaskManager::GenerateTaskInfoFromTask(napi_env env, napi_value task, uint32_t executeId)
-{
-    napi_value function = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
-    napi_value arguments = NapiHelper::GetNameProperty(env, task, ARGUMENTS_STR);
-    napi_value taskId = NapiHelper::GetNameProperty(env, task, TASKID_STR);
-    napi_value taskName = NapiHelper::GetNameProperty(env, task, NAME);
-    napi_value defaultTransferVal = NapiHelper::GetNameProperty(env, task, DEFAULT_TRANSFER_STR);
-    napi_value defaultCloneVal = NapiHelper::GetNameProperty(env, task, DEFAULT_CLONE_SENDABLE_STR);
-    if (function == nullptr || arguments == nullptr || taskId == nullptr || defaultTransferVal == nullptr
-        || defaultCloneVal == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task value is error");
-        return nullptr;
-    }
-
-    bool defaultTransfer = NapiHelper::GetBooleanValue(env, defaultTransferVal);
-    bool defaultCloneSendable = NapiHelper::GetBooleanValue(env, defaultCloneVal);
-    napi_value transferList = NapiHelper::GetUndefinedValue(env);
-    if (NapiHelper::HasNameProperty(env, task, TRANSFERLIST_STR)) {
-        transferList = NapiHelper::GetNameProperty(env, task, TRANSFERLIST_STR);
-    }
-    napi_value cloneList = NapiHelper::GetUndefinedValue(env);
-    if (NapiHelper::HasNameProperty(env, task, CLONE_LIST_STR)) {
-        cloneList = NapiHelper::GetNameProperty(env, task, CLONE_LIST_STR);
-    }
-    uint32_t id = NapiHelper::GetUint32Value(env, taskId);
-    TaskInfo* taskInfo = GenerateTaskInfo(env, function, arguments, taskName, id, executeId, cloneList, transferList,
-                                          defaultTransfer, defaultCloneSendable);
-    return taskInfo;
-}
-
-void TaskManager::ReleaseTaskContent(TaskInfo* taskInfo)
-{
-    reinterpret_cast<NativeEngine*>(taskInfo->env)->DecreaseSubEnvCounter();
-    if (taskInfo->onResultSignal != nullptr &&
-        !uv_is_closing(reinterpret_cast<uv_handle_t*>(taskInfo->onResultSignal))) {
-        ConcurrentHelper::UvHandleClose(taskInfo->onResultSignal);
-    }
-    delete taskInfo;
-    taskInfo = nullptr;
-}
-
-void TaskManager::StoreReleaseTaskContentState(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(taskInfosForReleaseMutex_);
-    taskInfosForRelease_.emplace(executeId, false);
-}
-
-bool TaskManager::CanReleaseTaskContent(uint32_t executeId)
-{
-    std::unique_lock<std::shared_mutex> lock(taskInfosForReleaseMutex_);
-    auto iter = taskInfosForRelease_.find(executeId);
-    if (iter == taskInfosForRelease_.end()) {
-        return false;
-    }
-    if (!iter->second) {
-        iter->second = true;
-        return false;
-    }
-    taskInfosForRelease_.erase(iter);
-    return true;
 }
 
 void TaskManager::NotifyWorkerIdle(Worker* worker)
@@ -819,50 +571,50 @@ uint32_t TaskManager::GetThreadNum()
     return workers_.size();
 }
 
-void TaskManager::EnqueueExecuteId(uint32_t executeId, Priority priority)
+void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
 {
     {
         std::lock_guard<std::mutex> lock(taskQueuesMutex_);
-        taskQueues_[priority]->EnqueueExecuteId(executeId);
+        taskQueues_[priority]->EnqueueTaskId(taskId);
     }
     NotifyExecuteTask();
 }
 
-std::pair<uint32_t, Priority> TaskManager::DequeueExecuteId()
+std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
 {
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
     auto& highTaskQueue = taskQueues_[Priority::HIGH];
     if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
         auto& highTaskQueue = taskQueues_[Priority::HIGH];
         highPrioExecuteCount_++;
-        uint32_t executeId = highTaskQueue->DequeueExecuteId();
-        if (!CheckDependencyByExecuteId(executeId)) {
-            EnqueuePendingExecuteInfo(executeId, Priority::HIGH);
+        uint64_t taskId = highTaskQueue->DequeueTaskId();
+        if (IsDependendByTaskId(taskId)) {
+            EnqueuePendingTaskInfo(taskId, Priority::HIGH);
             return std::make_pair(0, Priority::HIGH);
         }
-        return std::make_pair(executeId, Priority::HIGH);
+        return std::make_pair(taskId, Priority::HIGH);
     }
     highPrioExecuteCount_ = 0;
 
     auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
     if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
         mediumPrioExecuteCount_++;
-        uint32_t executeId = mediumTaskQueue->DequeueExecuteId();
-        if (!CheckDependencyByExecuteId(executeId)) {
-            EnqueuePendingExecuteInfo(executeId, Priority::MEDIUM);
+        uint64_t taskId = mediumTaskQueue->DequeueTaskId();
+        if (IsDependendByTaskId(taskId)) {
+            EnqueuePendingTaskInfo(taskId, Priority::MEDIUM);
             return std::make_pair(0, Priority::MEDIUM);
         }
-        return std::make_pair(executeId, Priority::MEDIUM);
+        return std::make_pair(taskId, Priority::MEDIUM);
     }
     mediumPrioExecuteCount_ = 0;
 
     auto& lowTaskQueue = taskQueues_[Priority::LOW];
-    uint32_t executeId = lowTaskQueue->DequeueExecuteId();
-    if (!CheckDependencyByExecuteId(executeId)) {
-        EnqueuePendingExecuteInfo(executeId, Priority::LOW);
+    uint64_t taskId = lowTaskQueue->DequeueTaskId();
+    if (IsDependendByTaskId(taskId)) {
+        EnqueuePendingTaskInfo(taskId, Priority::LOW);
         return std::make_pair(0, Priority::LOW);
     }
-    return std::make_pair(executeId, Priority::LOW);
+    return std::make_pair(taskId, Priority::LOW);
 }
 
 void TaskManager::NotifyExecuteTask()
@@ -928,13 +680,13 @@ void TaskManager::RestoreWorker(Worker* worker)
     }
 }
 
-void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo)
+void TaskManager::RegisterCallback(napi_env env, uint64_t taskId, std::shared_ptr<CallbackInfo> callbackInfo)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     callbackTable_[taskId] = callbackInfo;
 }
 
-std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint32_t taskId)
+std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint64_t taskId)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     auto iter = callbackTable_.find(taskId);
@@ -945,7 +697,7 @@ std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint32_t taskId)
     return iter->second;
 }
 
-void TaskManager::IncreaseRefCount(uint32_t taskId)
+void TaskManager::IncreaseRefCount(uint64_t taskId)
 {
     if (taskId == 0) { // do not support func
         return;
@@ -958,7 +710,7 @@ void TaskManager::IncreaseRefCount(uint32_t taskId)
     iter->second->refCount++;
 }
 
-void TaskManager::DecreaseRefCount(napi_env env, uint32_t taskId)
+void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
 {
     if (taskId == 0) { // do not support func
         return;
@@ -974,17 +726,17 @@ void TaskManager::DecreaseRefCount(napi_env env, uint32_t taskId)
     }
 }
 
-napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, TaskInfo* taskInfo)
+napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
-    auto iter = callbackTable_.find(taskInfo->taskId);
+    auto iter = callbackTable_.find(task->taskId_);
     if (iter == callbackTable_.end() || iter->second == nullptr) {
         HILOG_ERROR("taskpool:: the callback in SendData is not registered on the host side");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_REGISTERED);
         delete resultInfo;
         return nullptr;
     }
-    Worker* worker = static_cast<Worker*>(taskInfo->worker);
+    Worker* worker = static_cast<Worker*>(task->worker_);
     worker->Enqueue(resultInfo);
     auto callbackInfo = iter->second;
     callbackInfo->refCount++;
@@ -993,248 +745,28 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
     return nullptr;
 }
 
-uint32_t TaskManager::GenerateSeqRunnerId()
-{
-    if (seqRunnerId_ == 0) {
-        seqRunnerId_ += 1;
-    }
-    return seqRunnerId_++;
-}
-
-// ----------------------------------- TaskGroupManager ----------------------------------------
-TaskGroupManager& TaskGroupManager::GetInstance()
-{
-    static TaskGroupManager groupManager;
-    return groupManager;
-}
-
-uint32_t TaskGroupManager::GenerateGroupId()
-{
-    return groupId_++;
-}
-
-GroupInfo* TaskGroupManager::GenerateGroupInfo(napi_env env, uint32_t taskNum, uint32_t groupId,
-                                               uint32_t groupExecuteId)
-{
-    GroupInfo* groupInfo = new GroupInfo();
-    groupInfo->taskNum = taskNum;
-    groupInfo->groupId = groupId;
-    napi_value resArr;
-    napi_create_array_with_length(env, taskNum, &resArr);
-    napi_ref arrRef = NapiHelper::CreateReference(env, resArr, 1);
-    groupInfo->resArr = arrRef;
-    StoreExecuteId(groupId, groupExecuteId);
-    StoreRunningExecuteId(groupExecuteId);
-    AddGroupInfoById(groupExecuteId, groupInfo);
-    return groupInfo;
-}
-
-void TaskGroupManager::ClearGroupInfo(napi_env env, uint32_t groupExecuteId, GroupInfo* groupInfo)
-{
-    RemoveRunningExecuteId(groupExecuteId);
-    RemoveGroupInfoById(groupExecuteId);
-    napi_delete_reference(env, groupInfo->resArr);
-    delete groupInfo;
-    groupInfo = nullptr;
-}
-
-void TaskGroupManager::AddTask(uint32_t groupId, napi_ref task)
-{
-    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
-    auto iter = tasks_.find(groupId);
-    if (iter == tasks_.end()) {
-        std::list<napi_ref> list {task};
-        tasks_.emplace(groupId, list);
-    } else {
-        iter->second.push_back(task);
-    }
-}
-
-const std::list<napi_ref>& TaskGroupManager::GetTasksByGroup(uint32_t groupId)
-{
-    std::shared_lock<std::shared_mutex> lock(tasksMutex_);
-    auto iter = tasks_.find(groupId);
-    if (iter == tasks_.end()) {
-        static const std::list<napi_ref> EMPTY_TASK_LIST {};
-        return EMPTY_TASK_LIST;
-    }
-    return iter->second;
-}
-
-void TaskGroupManager::ClearTasks(napi_env env, uint32_t groupId)
-{
-    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
-    auto iter = tasks_.find(groupId);
-    if (iter == tasks_.end()) {
-        return;
-    }
-    for (napi_ref task : iter->second) {
-        napi_delete_reference(env, task);
-    }
-    tasks_.erase(iter);
-}
-
-void TaskGroupManager::StoreExecuteId(uint32_t groupId, uint32_t groupExecuteId)
-{
-    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
-    auto iter = groupExecuteIds_.find(groupId);
-    if (iter == groupExecuteIds_.end()) {
-        std::list<uint32_t> list {groupExecuteId};
-        groupExecuteIds_.emplace(groupId, std::move(list));
-    } else {
-        iter->second.push_back(groupExecuteId);
-    }
-}
-
-void TaskGroupManager::RemoveExecuteId(uint32_t groupId, uint32_t groupExecuteId)
-{
-    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
-    auto iter = groupExecuteIds_.find(groupId);
-    if (iter != groupExecuteIds_.end()) {
-        iter->second.remove(groupExecuteId);
-    }
-    if (iter->second.empty()) {
-        groupExecuteIds_.erase(iter);
-    }
-}
-
-void TaskGroupManager::ClearExecuteId(uint32_t groupId)
-{
-    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
-    groupExecuteIds_.erase(groupId);
-}
-
-void TaskGroupManager::CancelGroup(napi_env env, uint32_t groupId)
-{
-    std::lock_guard<std::mutex> lock(groupExecuteIdsMutex_);
-    auto iter = groupExecuteIds_.find(groupId);
-    if (iter == groupExecuteIds_.end() || iter->second.empty()) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
-        HILOG_ERROR("taskpool:: cancel non-existent task group");
-        return;
-    }
-    for (uint32_t groupExecuteId : iter->second) {
-        bool isRunning = IsRunning(groupExecuteId);
-        if (!isRunning) {
-            continue;
-        }
-        GroupInfo* info = GetGroupInfoByExecutionId(groupExecuteId);
-        if (info == nullptr) {
-            continue;
-        }
-        const std::list<uint32_t>& executeList = info->executeIds;
-        for (uint32_t executeId : executeList) {
-            CancelGroupExecution(executeId);
-        }
-        napi_value undefined = NapiHelper::GetUndefinedValue(env);
-        napi_reject_deferred(env, info->deferred, undefined);
-        TaskGroupManager::GetInstance().ClearGroupInfo(env, groupExecuteId, info);
-    }
-}
-
-uint32_t TaskGroupManager::GenerateGroupExecuteId()
-{
-    return groupExecuteId_++;
-}
-
-void TaskGroupManager::StoreRunningExecuteId(uint32_t groupExecuteId)
-{
-    std::unique_lock<std::shared_mutex> lock(groupExecutionsMutex_);
-    runningGroupExecutions_.insert(groupExecuteId);
-}
-
-void TaskGroupManager::RemoveRunningExecuteId(uint32_t groupExecuteId)
-{
-    std::unique_lock<std::shared_mutex> lock(groupExecutionsMutex_);
-    runningGroupExecutions_.erase(groupExecuteId);
-}
-
-bool TaskGroupManager::IsRunning(uint32_t groupExecuteId)
-{
-    std::shared_lock<std::shared_mutex> lock(groupExecutionsMutex_);
-    bool isRunning = runningGroupExecutions_.find(groupExecuteId) != runningGroupExecutions_.end();
-    return isRunning;
-}
-
-void TaskGroupManager::AddGroupInfoById(uint32_t groupExecuteId, GroupInfo* info)
-{
-    std::unique_lock<std::shared_mutex> lock(groupInfoMapMutex_);
-    groupInfoMap_.emplace(groupExecuteId, info);
-}
-
-void TaskGroupManager::RemoveGroupInfoById(uint32_t groupExecuteId)
-{
-    std::unique_lock<std::shared_mutex> lock(groupInfoMapMutex_);
-    groupInfoMap_.erase(groupExecuteId);
-}
-
-GroupInfo* TaskGroupManager::GetGroupInfoByExecutionId(uint32_t groupExecuteId)
-{
-    std::shared_lock<std::shared_mutex> lock(groupInfoMapMutex_);
-    auto iter = groupInfoMap_.find(groupExecuteId);
-    if (iter != groupInfoMap_.end()) {
-        return iter->second;
-    }
-    return nullptr;
-}
-
-void TaskGroupManager::CancelGroupExecution(uint32_t executeId)
-{
-    ExecuteState state = TaskManager::GetInstance().QueryExecuteState(executeId);
-    TaskInfo* taskInfo = nullptr;
-    switch (state) {
-        case ExecuteState::NOT_FOUND:
-            break;
-        case ExecuteState::RUNNING:
-            TaskManager::GetInstance().MarkCanceledState(executeId);
-            break;
-        case ExecuteState::WAITING:
-            HILOG_DEBUG("taskpool:: Cancel waiting task in group");
-            taskInfo = TaskManager::GetInstance().PopTaskInfo(executeId);
-            if (taskInfo == nullptr) {
-                HILOG_ERROR("taskpool:: taskInfo is nullptr when cancel waiting group execution");
-                return;
-            }
-            TaskManager::GetInstance().RemoveExecuteState(executeId);
-            TaskManager::GetInstance().ReleaseTaskContent(taskInfo);
-            break;
-        default: // Default is CANCELED, means task isCanceled, do not need to mark again.
-            break;
-    }
-}
-
-void TaskManager::NotifyPendingExecuteInfo(uint32_t taskId, uint32_t executeId)
+void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
 {
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(taskId);
-    if (iter == dependentTaskInfos_.end() || iter->second.size() == 0) {
+    if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
-        auto addDependIter = addDependExecuteStateInfos_.find(*taskIdIter);
-        if (addDependIter == addDependExecuteStateInfos_.end()) {
-            taskIdIter = iter->second.erase(taskIdIter);
-            continue;
-        }
-        if (executeId < addDependIter->second) {
-            ++taskIdIter;
-            continue;
-        }
         {
-            std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
-            auto runningIter = runningInfos_.find(*taskIdIter);
-            if (runningIter == runningInfos_.end()) {
+            std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+            auto taskIter = tasks_.find(*taskIdIter);
+            if (taskIter == tasks_.end()) {
                 taskIdIter = iter->second.erase(taskIdIter);
                 continue;
             }
-            for (const auto& eId : runningIter->second) {
-                auto executeIdInfo = TaskManager::GetInstance().DequeuePendingExecuteInfo(eId);
-                if (executeIdInfo.first == 0) {
-                    continue;
-                }
-                TaskManager::GetInstance().EnqueueExecuteId(executeIdInfo.first, executeIdInfo.second);
-            }
         }
+        auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
+        if (taskInfo.first == 0) {
+            taskIdIter = iter->second.erase(taskIdIter);
+            continue;
+        }
+        EnqueueTaskId(taskInfo.first, taskInfo.second);
         auto dependTaskIter = dependTaskInfos_.find(*taskIdIter);
         if (dependTaskIter != dependTaskInfos_.end()) {
             auto dependTaskInnerIter = dependTaskIter->second.find(taskId);
@@ -1246,42 +778,30 @@ void TaskManager::NotifyPendingExecuteInfo(uint32_t taskId, uint32_t executeId)
     }
 }
 
-bool TaskManager::CheckDependencyByExecuteId(uint32_t executeId)
+bool TaskManager::IsDependendByTaskId(uint64_t taskId)
 {
-    TaskInfo* taskInfo = TaskManager::GetInstance().GetTaskInfo(executeId);
-    if (taskInfo == nullptr) {
-        return false;
+    {
+        std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+        auto taskIter = tasks_.find(taskId);
+        if (taskIter == tasks_.end()) {
+            return false;
+        }
+        auto task = reinterpret_cast<Task*>(taskIter->second);
+        if (!task->IsCommonTask()) {
+            return false;
+        }
     }
-    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
-    auto iter = dependTaskInfos_.find(taskInfo->taskId);
-    if (iter == dependTaskInfos_.end() || iter->second.size() == 0) {
-        return true;
-    }
-    auto addDependIter = addDependExecuteStateInfos_.find(taskInfo->taskId);
-    if (addDependIter == addDependExecuteStateInfos_.end()) {
-        return true;
-    }
-    if (executeId < addDependIter->second) {
-        return true;
-    }
-    return false;
-}
-
-bool TaskManager::IsDependentByTaskId(uint32_t taskId)
-{
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
-    auto dependentIter = dependentTaskInfos_.find(taskId);
-    if (iter == dependTaskInfos_.end() && dependentIter == dependentTaskInfos_.end()) {
+    if (iter == dependTaskInfos_.end() || iter->second.empty()) {
         return false;
     }
     return true;
 }
 
-bool TaskManager::StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet)
+bool TaskManager::StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskIdSet)
 {
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
-    StoreAddDependendExecuteInfo(taskId);
     StoreDependentTaskInfo(taskIdSet, taskId);
     auto iter = dependTaskInfos_.find(taskId);
     if (iter == dependTaskInfos_.end()) {
@@ -1311,7 +831,7 @@ bool TaskManager::StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskId
     return true;
 }
 
-bool TaskManager::CheckCircularDependency(std::set<uint32_t> dependentIdSet, std::set<uint32_t> idSet, uint32_t taskId)
+bool TaskManager::CheckCircularDependency(std::set<uint64_t> dependentIdSet, std::set<uint64_t> idSet, uint64_t taskId)
 {
     for (const auto& id : idSet) {
         if (id == taskId) {
@@ -1332,10 +852,9 @@ bool TaskManager::CheckCircularDependency(std::set<uint32_t> dependentIdSet, std
     return true;
 }
 
-bool TaskManager::RemoveTaskDependency(uint32_t taskId, uint32_t dependentId)
+bool TaskManager::RemoveTaskDependency(uint64_t taskId, uint64_t dependentId)
 {
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
-    RemoveAddDependExecuteInfo(taskId, 0);
     RemoveDependentTaskInfo(dependentId, taskId);
     auto iter = dependTaskInfos_.find(taskId);
     if (iter == dependTaskInfos_.end()) {
@@ -1349,38 +868,44 @@ bool TaskManager::RemoveTaskDependency(uint32_t taskId, uint32_t dependentId)
     return true;
 }
 
-void TaskManager::EnqueuePendingExecuteInfo(uint32_t executeId, Priority priority)
+void TaskManager::EnqueuePendingTaskInfo(uint64_t taskId, Priority priority)
 {
-    if (executeId == 0) {
+    if (taskId == 0) {
         return;
     }
-    std::unique_lock<std::shared_mutex> lock(pendingExecuteInfosMutex_);
-    pendingExecuteInfos_.emplace(executeId, priority);
+    std::unique_lock<std::shared_mutex> lock(pendingTaskInfosMutex_);
+    pendingTaskInfos_.emplace(taskId, priority);
 }
 
-std::pair<uint32_t, Priority> TaskManager::DequeuePendingExecuteInfo(uint32_t executeId)
+std::pair<uint64_t, Priority> TaskManager::DequeuePendingTaskInfo(uint64_t taskId)
 {
-    std::unique_lock<std::shared_mutex> lock(pendingExecuteInfosMutex_);
-    if (pendingExecuteInfos_.empty()) {
+    std::unique_lock<std::shared_mutex> lock(pendingTaskInfosMutex_);
+    if (pendingTaskInfos_.empty()) {
         return std::make_pair(0, Priority::DEFAULT);
     }
-    std::pair<uint32_t, Priority> result;
-    for (auto it = pendingExecuteInfos_.begin(); it != pendingExecuteInfos_.end(); ++it) {
-        if (it->first == executeId) {
+    std::pair<uint64_t, Priority> result;
+    for (auto it = pendingTaskInfos_.begin(); it != pendingTaskInfos_.end(); ++it) {
+        if (it->first == taskId) {
             result = std::make_pair(it->first, it->second);
-            it = pendingExecuteInfos_.erase(it);
+            it = pendingTaskInfos_.erase(it);
             break;
         }
     }
     return result;
 }
 
-void TaskManager::StoreDependentTaskInfo(std::set<uint32_t> dependentTaskIdSet, uint32_t taskId)
+void TaskManager::RemovePendingTaskInfo(uint64_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(pendingTaskInfosMutex_);
+    pendingTaskInfos_.erase(taskId);
+}
+
+void TaskManager::StoreDependentTaskInfo(std::set<uint64_t> dependentTaskIdSet, uint64_t taskId)
 {
     for (const auto& id : dependentTaskIdSet) {
         auto iter = dependentTaskInfos_.find(id);
         if (iter == dependentTaskInfos_.end()) {
-            std::set<uint32_t> set{taskId};
+            std::set<uint64_t> set{taskId};
             dependentTaskInfos_.emplace(id, std::move(set));
         } else {
             iter->second.emplace(taskId);
@@ -1388,7 +913,7 @@ void TaskManager::StoreDependentTaskInfo(std::set<uint32_t> dependentTaskIdSet, 
     }
 }
 
-void TaskManager::RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t taskId)
+void TaskManager::RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId)
 {
     auto iter = dependentTaskInfos_.find(dependentTaskId);
     if (iter == dependentTaskInfos_.end()) {
@@ -1401,119 +926,7 @@ void TaskManager::RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t tas
     iter->second.erase(taskIter);
 }
 
-void TaskGroupManager::AddSeqRunnerInfoById(uint32_t seqRunnerId, SeqRunnerInfo* info)
-{
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    seqRunnerMap_.emplace(seqRunnerId, info);
-}
-
-void TaskGroupManager::RemoveSeqRunnerInfoById(uint32_t seqRunnerId)
-{
-    auto iter = seqRunnerMap_.find(seqRunnerId);
-    if (iter == seqRunnerMap_.end()) {
-        HILOG_ERROR("seqRunner:: seqRunner already free.");
-        return;
-    }
-    // free seqRunner
-    delete iter->second;
-    iter->second = nullptr;
-    seqRunnerMap_.erase(iter);
-    HILOG_INFO("seqRunner:: free seqRunner %{public}d.", seqRunnerId);
-}
-
-SeqRunnerInfo* TaskGroupManager::GetSeqRunnerInfoById(uint32_t seqRunnerId)
-{
-    std::shared_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    auto iter = seqRunnerMap_.find(seqRunnerId);
-    if (iter != seqRunnerMap_.end()) {
-        return iter->second;
-    }
-    return nullptr;
-}
-
-void TaskGroupManager::AddTaskToSeqRunner(uint32_t seqRunnerId, TaskInfo* task)
-{
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    auto iter = seqRunnerMap_.find(seqRunnerId);
-    if (iter == seqRunnerMap_.end()) {
-        HILOG_ERROR("seqRunner:: seqRunnerInfo not found.");
-        return;
-    } else {
-        iter->second->seqRunnerTasks.push(task);
-    }
-}
-
-bool TaskGroupManager::TriggerSeqRunner(napi_env env, TaskInfo* lastTask)
-{
-    uint32_t seqRunnerId = lastTask->seqRunnerId;
-    SeqRunnerInfo* seqRunnerInfo = GetSeqRunnerInfoById(seqRunnerId);
-    if (seqRunnerInfo == nullptr) {
-        HILOG_ERROR("seqRunner:: trigger seqRunner not exist.");
-        return false;
-    }
-    if (seqRunnerInfo->currentExeId != lastTask->executeId) {
-        HILOG_ERROR("seqRunner:: only front task can trigger seqRunner.");
-        return false;
-    }
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    if (seqRunnerInfo->seqRunnerTasks.empty()) {
-        HILOG_DEBUG("seqRunner:: seqRunner %{public}d empty.", seqRunnerId);
-        seqRunnerInfo->currentExeId = 0;
-        // seqRunner to be free
-        if (seqRunnerInfo->releasable) {
-            RemoveSeqRunnerInfoById(seqRunnerId);
-        }
-        return true;
-    }
-    TaskInfo* taskInfo = seqRunnerInfo->seqRunnerTasks.front();
-    HILOG_DEBUG("seqRunner:: Trig %{public}d in seqRunner %{public}d.", taskInfo->executeId, seqRunnerId);
-    TaskManager::GetInstance().AddExecuteState(taskInfo->executeId);
-    TaskManager::GetInstance().EnqueueExecuteId(taskInfo->executeId, seqRunnerInfo->priority);
-    TaskManager::GetInstance().TryTriggerExpand();
-    seqRunnerInfo->currentExeId = taskInfo->executeId;
-    seqRunnerInfo->seqRunnerTasks.pop();
-    return true;
-}
-
-void TaskGroupManager::ClearSeqRunner(uint32_t seqRunnerId)
-{
-    SeqRunnerInfo* info = GetSeqRunnerInfoById(seqRunnerId);
-    if (info == nullptr) {
-        HILOG_ERROR("seqRunner:: seqRunner already free.");
-        return;
-    }
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    // free seqRunner
-    if (info->seqRunnerTasks.empty() && info->currentExeId == 0) {
-        RemoveSeqRunnerInfoById(seqRunnerId);
-        return;
-    }
-    // seqRunner is busy now, free later
-    info->releasable = true;
-    HILOG_INFO("seqRunner:: seqRunner %{public}d to be free.", seqRunnerId);
-}
-
-void TaskManager::StoreAddDependendExecuteInfo(uint32_t taskId)
-{
-    auto executeIter = addDependExecuteStateInfos_.find(taskId);
-    if (executeIter == addDependExecuteStateInfos_.end()) {
-        uint32_t executeId = GetCurrentExecuteId();
-        addDependExecuteStateInfos_.emplace(taskId, executeId);
-    }
-}
-
-void TaskManager::RemoveAddDependExecuteInfo(uint32_t taskId, uint32_t executeId)
-{
-    auto executeIter = addDependExecuteStateInfos_.find(taskId);
-    if (executeIter == addDependExecuteStateInfos_.end()) {
-        return;
-    }
-    if (executeId >= executeIter->second || executeId == 0) { // 0 : update when removeDependency
-        addDependExecuteStateInfos_.erase(executeIter);
-    }
-}
-
-void TaskManager::StoreTaskDuration(uint32_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
+void TaskManager::StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
 {
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
     auto iter = taskDurationInfos_.find(taskId);
@@ -1530,7 +943,7 @@ void TaskManager::StoreTaskDuration(uint32_t taskId, uint64_t totalDuration, uin
     }
 }
 
-uint64_t TaskManager::GetTaskDuration(uint32_t taskId, std::string durationType)
+uint64_t TaskManager::GetTaskDuration(uint64_t taskId, std::string durationType)
 {
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
     auto iter = taskDurationInfos_.find(taskId);
@@ -1547,7 +960,7 @@ uint64_t TaskManager::GetTaskDuration(uint32_t taskId, std::string durationType)
     return iter->second.first - iter->second.second;
 }
 
-void TaskManager::RemoveTaskDuration(uint32_t taskId)
+void TaskManager::RemoveTaskDuration(uint64_t taskId)
 {
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
     auto iter = taskDurationInfos_.find(taskId);
@@ -1556,12 +969,19 @@ void TaskManager::RemoveTaskDuration(uint32_t taskId)
     }
 }
 
-void TaskManager::ReleaseTaskData(napi_env env, uint32_t taskId)
+void TaskManager::ReleaseTaskData(napi_env env, Task* task)
 {
+    uint64_t taskId = task->taskId_;
+    RemoveTask(taskId);
+    if (task->IsFunctionTask() || task->IsGroupFunctionTask()) {
+        return;
+    }
     DecreaseRefCount(env, taskId);
-    RemoveRunningInfo(taskId);
-    RemoveTaskType(taskId);
     RemoveTaskDuration(taskId);
+    if (!task->IsCommonTask()) {
+        return;
+    }
+    RemovePendingTaskInfo(taskId);
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     for (auto dependentTaskIter = dependentTaskInfos_.begin(); dependentTaskIter != dependentTaskInfos_.end();) {
         if (dependentTaskIter->second.find(taskId) != dependentTaskIter->second.end()) {
@@ -1574,64 +994,221 @@ void TaskManager::ReleaseTaskData(napi_env env, uint32_t taskId)
     if (dependTaskIter != dependTaskInfos_.end()) {
         dependTaskInfos_.erase(dependTaskIter);
     }
-    auto executeIter = addDependExecuteStateInfos_.find(taskId);
-    if (executeIter != addDependExecuteStateInfos_.end()) {
-        addDependExecuteStateInfos_.erase(executeIter);
+}
+
+void TaskManager::StoreTask(uint64_t taskId, Task* task)
+{
+    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+    tasks_.emplace(taskId, task);
+}
+
+void TaskManager::RemoveTask(uint64_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+    tasks_.erase(taskId);
+}
+
+Task* TaskManager::GetTask(uint64_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+    auto iter = tasks_.find(taskId);
+    if (iter == tasks_.end()) {
+        return nullptr;
+    }
+    return iter->second;
+}
+
+// ----------------------------------- TaskGroupManager ----------------------------------------
+TaskGroupManager& TaskGroupManager::GetInstance()
+{
+    static TaskGroupManager groupManager;
+    return groupManager;
+}
+
+void TaskGroupManager::AddTask(uint64_t groupId, napi_ref taskRef, uint64_t taskId)
+{
+    auto groupIter = taskGroups_.find(groupId);
+    if (groupIter == taskGroups_.end()) {
+        return;
+    }
+    auto taskGroup = reinterpret_cast<TaskGroup*>(groupIter->second);
+    taskGroup->taskRefs_.push_back(taskRef);
+    taskGroup->taskNum_++;
+    taskGroup->taskIds_.push_back(taskId);
+}
+
+void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
+{
+    TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
+    for (uint64_t taskId : group->taskIds_) {
+        Task* task = TaskManager::GetInstance().GetTask(taskId);
+        if (task == nullptr) {
+            continue;
+        }
+        napi_reference_unref(task->env_, task->taskRef_, nullptr);
     }
 }
 
-bool TaskManager::IsExecutedByTaskId(uint32_t taskId)
+void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
 {
-    std::unique_lock<std::shared_mutex> lock(runningInfosMutex_);
-    auto iter = runningInfos_.find(taskId);
-    if (iter == runningInfos_.end()) {
+    TaskGroup* taskGroup = GetTaskGroup(groupId);
+    if (taskGroup == nullptr) {
+        HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
+        return;
+    }
+    {
+        std::unique_lock<std::shared_mutex> lock(taskGroup->taskGroupMutex_);
+        if (taskGroup->currentGroupInfo_ == nullptr) {
+            HILOG_ERROR("taskpool:: cancel non-existent task group");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
+            return;
+        }
+        taskGroup->CancelPendingGroup(env);
+    }
+    if (taskGroup->groupState_ == ExecuteState::NOT_FOUND) {
+        HILOG_ERROR("taskpool:: cancel non-existent task group");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
+        return;
+    }
+    if (taskGroup->groupState_ == ExecuteState::CANCELED) {
+        return;
+    }
+    if (taskGroup->currentGroupInfo_->finishedTask != taskGroup->taskNum_) {
+        for (uint64_t taskId : taskGroup->taskIds_) {
+            CancelGroupTask(env, taskId, taskGroup);
+        }
+    }
+    taskGroup->groupState_ = ExecuteState::CANCELED;
+}
+
+void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup* group)
+{
+    auto task = TaskManager::GetInstance().GetTask(taskId);
+    if (task == nullptr) {
+        HILOG_INFO("taskpool:: CancelGroupTask task is nullptr");
+        return;
+    }
+    std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
+    ExecuteState state = task->taskState_;
+    switch (state) {
+        case ExecuteState::NOT_FOUND:
+            return;
+        case ExecuteState::RUNNING:
+            task->taskState_ = ExecuteState::CANCELED;
+            break;
+        case ExecuteState::WAITING:
+            task->taskState_ = ExecuteState::CANCELED;
+            if (group->groupState_ == ExecuteState::WAITING) {
+                group->groupState_ = ExecuteState::CANCELED;
+                break;
+            }
+            if (task->currentTaskInfo_ != nullptr) {
+                delete task->currentTaskInfo_;
+                task->currentTaskInfo_ = nullptr;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void TaskGroupManager::StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner)
+{
+    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+    seqRunners_.emplace(seqRunnerId, seqRunner);
+}
+
+void TaskGroupManager::RemoveSequenceRunner(uint64_t seqRunnerId)
+{
+    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+    seqRunners_.erase(seqRunnerId);
+}
+
+SequenceRunner* TaskGroupManager::GetSeqRunner(uint64_t seqRunnerId)
+{
+    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+    auto iter = seqRunners_.find(seqRunnerId);
+    if (iter != seqRunners_.end()) {
+        return iter->second;
+    }
+    HILOG_ERROR("taskpool:: seqRunner not exist.");
+    return nullptr;
+}
+
+void TaskGroupManager::AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task)
+{
+    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+    auto iter = seqRunners_.find(seqRunnerId);
+    if (iter == seqRunners_.end()) {
+        HILOG_ERROR("seqRunner:: seqRunner not found.");
+        return;
+    } else {
+        std::unique_lock<std::shared_mutex> seqRunnerLock(iter->second->seqRunnerMutex_);
+        iter->second->seqRunnerTasks_.push(task);
+    }
+}
+
+bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
+{
+    uint64_t seqRunnerId = lastTask->seqRunnerId_;
+    SequenceRunner* seqRunner = GetSeqRunner(seqRunnerId);
+    if (seqRunner == nullptr) {
+        HILOG_ERROR("seqRunner:: trigger seqRunner not exist.");
         return false;
+    }
+    napi_reference_unref(env, seqRunner->seqRunnerRef_, nullptr);
+    if (seqRunner->currentTaskId_ != lastTask->taskId_) {
+        HILOG_ERROR("seqRunner:: only front task can trigger seqRunner.");
+        return false;
+    }
+    {
+        std::unique_lock<std::shared_mutex> lock(seqRunner->seqRunnerMutex_);
+        if (seqRunner->seqRunnerTasks_.empty()) {
+            HILOG_DEBUG("seqRunner:: seqRunner %" PRIu64 " empty.", seqRunnerId);
+            seqRunner->currentTaskId_ = 0;
+            return true;
+        }
+        Task* task = seqRunner->seqRunnerTasks_.front();
+        seqRunner->seqRunnerTasks_.pop();
+        seqRunner->currentTaskId_ = task->taskId_;
+        task->taskState_ = ExecuteState::WAITING;
+        task->IncreaseRefCount();
+        HILOG_DEBUG("seqRunner:: Trig task %" PRIu64 " in seqRunner %" PRIu64 ".", task->taskId_, seqRunnerId);
+        TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
+        TaskManager::GetInstance().TryTriggerExpand();
     }
     return true;
 }
 
-bool TaskManager::IsCanceledByExecuteId(uint32_t executeId)
+void TaskGroupManager::StoreTaskGroup(uint64_t groupId, TaskGroup* taskGroup)
 {
-    std::unique_lock<std::shared_mutex> lock(taskInfosMutex_);
-    auto iter = taskInfos_.find(executeId);
-    if (iter == taskInfos_.end() || iter->second == nullptr) {
-        return true;
-    }
-    return false;
+    std::lock_guard<std::mutex> lock(taskGroupsMutex_);
+    taskGroups_.emplace(groupId, taskGroup);
 }
 
-void TaskManager::StoreTaskType(uint32_t taskId, bool isGroupTask)
+void TaskGroupManager::RemoveTaskGroup(uint64_t groupId)
 {
-    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
-    auto iter = taskTypeInfos_.find(taskId);
-    if (iter == taskTypeInfos_.end()) {
-        taskTypeInfos_.emplace(taskId, std::make_pair(isGroupTask, !isGroupTask));
-    }
+    std::lock_guard<std::mutex> lock(taskGroupsMutex_);
+    taskGroups_.erase(groupId);
 }
 
-void TaskManager::RemoveTaskType(uint32_t taskId)
+TaskGroup* TaskGroupManager::GetTaskGroup(uint64_t groupId)
 {
-    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
-    taskTypeInfos_.erase(taskId);
+    std::lock_guard<std::mutex> lock(taskGroupsMutex_);
+    auto groupIter = taskGroups_.find(groupId);
+    if (groupIter == taskGroups_.end()) {
+        return nullptr;
+    }
+    return reinterpret_cast<TaskGroup*>(groupIter->second);
 }
 
-bool TaskManager::IsGroupTask(uint32_t taskId)
+void TaskGroupManager::UpdateGroupState(uint64_t groupId)
 {
-    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
-    auto iter = taskTypeInfos_.find(taskId);
-    if (iter == taskTypeInfos_.end()) {
-        return false;
+    TaskGroup* group = GetTaskGroup(groupId);
+    if (group == nullptr) {
+        HILOG_ERROR("taskpool:: UpdateGroupState group is nullptr");
+        return;
     }
-    return iter->second.first;
-}
-
-bool TaskManager::IsSeqRunnerTask(uint32_t taskId)
-{
-    std::unique_lock<std::shared_mutex> lock(taskTypeInfosMutex_);
-    auto iter = taskTypeInfos_.find(taskId);
-    if (iter == taskTypeInfos_.end()) {
-        return false;
-    }
-    return iter->second.second;
+    group->groupState_ = ExecuteState::RUNNING;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

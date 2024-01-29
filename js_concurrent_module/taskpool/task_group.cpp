@@ -26,105 +26,152 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbinfo)
 {
-    size_t argc = 2;
-    napi_value args[2];
+    size_t argc = 1;
+    napi_value args[1];
     napi_value thisVar;
-    napi_value name = NapiHelper::CreateEmptyString(env);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     if (argc > 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the number of params must be zero or one");
         return nullptr;
     }
-
+    napi_value name;
     if (argc == 1) {
         // check 1st param is taskGroupName
         if (!NapiHelper::IsString(env, args[0])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the first param of task must be string");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the first param must be string");
             return nullptr;
         }
         name = args[0];
+    } else {
+        name = NapiHelper::CreateEmptyString(env);
     }
-
-    napi_value groupId;
-    uint32_t id = TaskGroupManager::GetInstance().GenerateGroupId();
-    napi_create_uint32(env, id, &groupId);
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    TaskGroupManager::GetInstance().StoreTaskGroup(groupId, group);
+    napi_value napiGroupId = NapiHelper::CreateUint64(env, groupId);
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY(GROUP_ID_STR, groupId),
+        DECLARE_NAPI_PROPERTY(GROUP_ID_STR, napiGroupId),
         DECLARE_NAPI_FUNCTION_WITH_DATA("addTask", AddTask, thisVar),
     };
     napi_set_named_property(env, thisVar, NAME, name);
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    uint32_t* data = new uint32_t();
-    *data = id;
-    napi_wrap(env, thisVar, data, Destructor, nullptr, nullptr);
-
+    napi_wrap(env, thisVar, group, TaskGroupDestructor, nullptr, nullptr);
+    napi_create_reference(env, thisVar, 0, &group->groupRef_);
     return thisVar;
 }
 
-void TaskGroup::Destructor(napi_env env, void* data, [[maybe_unused]] void* hint)
+void TaskGroup::TaskGroupDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
-    uint32_t* groupId = reinterpret_cast<uint32_t*>(data);
-    TaskGroupManager::GetInstance().ClearTasks(env, *groupId);
-    delete groupId;
+    TaskGroup* group = static_cast<TaskGroup*>(data);
+    TaskGroupManager::GetInstance().ReleaseTaskGroupData(env, group);
+    delete group;
 }
 
 napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
 {
-    // Check the argc
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    std::string errMessage = "";
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the number of params must be at least one");
+        errMessage = "taskGroup:: the number of params must be at least one";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
-
-    // Check the first param is task or func
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
-
-    // Get groupId from this
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
-    napi_value groupIdVal = NapiHelper::GetNameProperty(env, thisVar, GROUP_ID_STR);
-    uint32_t groupId = NapiHelper::GetUint32Value(env, groupIdVal);
-
+    napi_value napiGroupId = NapiHelper::GetNameProperty(env, thisVar, GROUP_ID_STR);
+    uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
+    TaskGroup* group = TaskGroupManager::GetInstance().GetTaskGroup(groupId);
+    if (group->groupState_ != ExecuteState::NOT_FOUND) {
+        errMessage = "taskpool:: executed taskGroup cannot addTask";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
     napi_valuetype type;
     napi_typeof(env, args[0], &type);
     if (type == napi_object) {
-        napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
-        uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
-        std::string errMessage = "";
-        if (TaskManager::GetInstance().IsDependentByTaskId(taskId)) {
-            errMessage = "taskpool:: dependent task not allowed.";
-            HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        Task* task = nullptr;
+        napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
+        if (!task->CanForTaskGroup(env)) {
             return nullptr;
         }
-        if (TaskManager::GetInstance().IsExecutedByTaskId(taskId)) {
-            errMessage = "taskpool:: taskGroup cannot add seqRunnerTask or executedTask";
-            HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
-            return nullptr;
-        }
-        if (TaskManager::GetInstance().IsGroupTask(taskId)) {
-            errMessage = "taskpool:: taskGroup cannot add groupTask";
-            HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
-            return nullptr;
-        }
-        TaskManager::GetInstance().StoreTaskType(taskId, true);
-        napi_ref taskRef = NapiHelper::CreateReference(env, args[0], 1);
-        TaskGroupManager::GetInstance().AddTask(groupId, taskRef);
+        TaskGroupManager::GetInstance().AddTask(groupId, task->taskRef_, task->taskId_);
         return nullptr;
     } else if (type == napi_function) {
-        napi_value task = nullptr;
-        napi_value name = NapiHelper::CreateEmptyString(env);
-        napi_create_object(env, &task);
-        Task::CreateTaskByFunc(env, task, args[0], name, args + 1, argc - 1);
-        napi_ref taskRef = NapiHelper::CreateReference(env, task, 1);
-        TaskGroupManager::GetInstance().AddTask(groupId, taskRef);
+        napi_value napiTask = NapiHelper::CreateObject(env);
+        Task* task = Task::GenerateFunctionTask(env, args[0], args + 1, argc - 1, TaskType::GROUP_FUNCTION_TASK);
+        if (task == nullptr) {
+            return nullptr;
+        }
+        task->groupId_ = groupId;
+        TaskManager::GetInstance().StoreTask(task->taskId_, task);
+        napi_wrap(env, napiTask, task, Task::TaskDestructor, nullptr, &task->taskRef_);
+        TaskGroupManager::GetInstance().AddTask(groupId, task->taskRef_, task->taskId_);
         return nullptr;
     }
     ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: first param must be object or function");
     return nullptr;
+}
+
+uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)
+{
+    uint32_t index = 0;
+    for (uint32_t id : taskIds_) {
+        if (taskId == id) {
+            break;
+        }
+        index++;
+    }
+    return index;
+}
+
+void TaskGroup::NotifyGroupTask(napi_env env)
+{
+    std::unique_lock<std::shared_mutex> lock(taskGroupMutex_);
+    if (pendingGroupInfos_.size() == 0) {
+        return;
+    }
+    currentGroupInfo_ = pendingGroupInfos_.front();
+    pendingGroupInfos_.pop_front();
+    for (auto iter = taskRefs_.begin(); iter != taskRefs_.end(); iter++) {
+        napi_value napiTask = NapiHelper::GetReferenceValue(env, *iter);
+        Task* task = nullptr;
+        napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+        if (task == nullptr) {
+            HILOG_ERROR("taskpool::ExecuteGroup task is nullptr");
+            return;
+        }
+        napi_reference_ref(env, task->taskRef_, nullptr);
+        Priority priority = currentGroupInfo_->priority;
+        if (task->IsGroupCommonTask()) {
+            task->GetTaskInfo(env, napiTask, TaskType::GROUP_COMMON_TASK, priority);
+        }
+        task->IncreaseRefCount();
+        TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+        task->taskState_ = ExecuteState::WAITING;
+        TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
+        TaskManager::GetInstance().TryTriggerExpand();
+    }
+}
+
+void TaskGroup::CancelPendingGroup(napi_env env)
+{
+    if (pendingGroupInfos_.size() == 0) {
+        return;
+    }
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    auto pendingIter = pendingGroupInfos_.begin();
+    for (; pendingIter != pendingGroupInfos_.end(); ++pendingIter) {
+        GroupInfo* info = *pendingIter;
+        napi_reject_deferred(env, info->deferred, undefined);
+        napi_reference_unref(env, groupRef_, nullptr);
+        delete info;
+    }
+    pendingIter = pendingGroupInfos_.begin();
+    pendingGroupInfos_.erase(pendingIter, pendingGroupInfos_.end());
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
