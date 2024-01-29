@@ -144,6 +144,7 @@ void Timer::TimerCallback(uv_timer_t* handle)
         HILOG_ERROR("Pending exception in TimerCallback. Triggering HandleUncaughtException");
         engine->HandleUncaughtException();
         napi_close_handle_scope(env, scope);
+        Helper::CloseHelp::DeletePointer(callbackInfo, false);
         return;
     }
     if (callbackResult == nullptr) {
