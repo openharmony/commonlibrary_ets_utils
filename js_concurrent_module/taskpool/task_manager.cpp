@@ -15,6 +15,7 @@
 
 #include "task_manager.h"
 
+#include <cinttypes>
 #include <securec.h>
 #include <thread>
 
@@ -1163,7 +1164,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
     {
         std::unique_lock<std::shared_mutex> lock(seqRunner->seqRunnerMutex_);
         if (seqRunner->seqRunnerTasks_.empty()) {
-            HILOG_DEBUG("seqRunner:: seqRunner %{public}llu empty.", seqRunnerId);
+            HILOG_DEBUG("seqRunner:: seqRunner %" PRIu64 " empty.", seqRunnerId);
             seqRunner->currentTaskId_ = 0;
             return true;
         }
@@ -1172,7 +1173,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         seqRunner->currentTaskId_ = task->taskId_;
         task->taskState_ = ExecuteState::WAITING;
         task->IncreaseRefCount();
-        HILOG_DEBUG("seqRunner:: Trig task %{public}llu in seqRunner %{public}llu.", task->taskId_, seqRunnerId);
+        HILOG_DEBUG("seqRunner:: Trig task %" PRIu64 " in seqRunner %" PRIu64 ".", task->taskId_, seqRunnerId);
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
         TaskManager::GetInstance().TryTriggerExpand();
     }
