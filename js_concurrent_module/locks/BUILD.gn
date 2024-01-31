@@ -1,0 +1,112 @@
+# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
+
+locks_sources = [
+  "async_lock.cpp",
+  "async_lock_manager.cpp",
+  "lock_request.cpp",
+  "native_module_locks.cpp",
+]
+
+concurrent_helper_sources = [ "../common/helper/napi_helper.cpp" ]
+
+ohos_shared_library("locks") {
+  include_dirs = [ js_concurrent_module_common ]
+
+  sources = locks_sources
+  sources += concurrent_helper_sources
+
+  defines = []
+  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
+  external_deps = [ "napi:ace_napi" ]
+
+  if (is_ohos) {
+    defines += [ "OHOS_PLATFORM" ]
+  } else if (is_mingw) {
+    defines += [ "WINDOWS_PLATFORM" ]
+  } else if (target_os == "android") {
+    defines += [ "ANDROID_PLATFORM" ]
+  } else if (target_os == "ios") {
+    defines += [ "IOS_PLATFORM" ]
+  } else if (is_mac) {
+    defines += [ "MAC_PLATFORM" ]
+  }
+
+  if (is_linux && current_toolchain == host_toolchain) {
+    defines = [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+    ]
+    external_deps += [ "innerkits:libhilog_linux" ]
+  } else {
+    external_deps += [ "hilog:libhilog" ]
+  }
+
+  external_deps += [ "hitrace:hitrace_meter" ]
+
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+  relative_install_dir = "module/util"
+}
+
+ohos_source_set("locks_static") {
+  include_dirs = [ js_concurrent_module_common ]
+
+  sources = locks_sources
+  sources += concurrent_helper_sources
+
+  defines = []
+  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
+  external_deps = [ "napi:ace_napi" ]
+
+  if (is_arkui_x) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+    ]
+
+    sources -= concurrent_helper_sources
+
+    defines += [ "__ARKUI_CROSS__" ]
+    if (target_os == "android") {
+      defines += [ "ANDROID_PLATFORM" ]
+    }
+    if (target_os == "ios") {
+      defines += [ "IOS_PLATFORM" ]
+    }
+
+    deps -= [ "${ets_util_path}/js_sys_module/timer:timer" ]
+    deps += [
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/uv:uv_${target_os}",
+      "$sys_module/timer:timer_static",
+    ]
+
+    external_deps -= [ "napi:ace_napi" ]
+  } else {
+    external_deps += [
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+    ]
+  }
+
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+}
+
+group("locks_packages") {
+  deps = [ ":locks" ]
+}
