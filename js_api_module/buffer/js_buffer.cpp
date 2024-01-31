@@ -280,7 +280,7 @@ void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
         return;
     }
     if (memcpy_s(data, length, raw_ + byteOffset_ + offset, length) != EOK) {
-        HILOG_DEBUG("Buffer ReadBytes memcpy_s failed");
+        HILOG_FATAL("Buffer ReadBytes memcpy_s failed");
     }
 }
 
