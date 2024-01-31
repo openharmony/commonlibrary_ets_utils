@@ -279,6 +279,11 @@ void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
     if (data == nullptr) {
         return;
     }
+
+    if (length == 0) {
+        HILOG_DEBUG("Buffer::ReadBytes size is 0");
+        return;
+    }
     if (memcpy_s(data, length, raw_ + byteOffset_ + offset, length) != EOK) {
         HILOG_FATAL("Buffer ReadBytes memcpy_s failed");
     }
