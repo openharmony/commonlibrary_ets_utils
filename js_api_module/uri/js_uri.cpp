@@ -73,6 +73,14 @@ namespace OHOS::Uri {
         AnalysisUri();
     }
 
+    void Uri::AssignSchemeSpecificPart()
+    {
+        uriData_.SchemeSpecificPart.reserve(data_.length() + uriData_.query.length() +1);
+        uriData_.SchemeSpecificPart.append(data_);
+        uriData_.SchemeSpecificPart.append("?");
+        uriData_.SchemeSpecificPart.append(uriData_.query);
+    }
+
     void Uri::AnalysisUri()
     {
         data_ = inputUri_;
@@ -101,12 +109,12 @@ namespace OHOS::Uri {
             if (!errStr_.empty()) {
                 return;
             }
-            uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
+            AssignSchemeSpecificPart();
             return;
         }
         pos = data_.find("//"); // userInfo path host port ipv4 or ipv6
         if (pos != std::string::npos && pos == 0) {
-            uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
+            AssignSchemeSpecificPart();
             data_ = data_.substr(2); // 2:Intercept the string from the second subscript
             AnalysisHostAndPath();
             if (!errStr_.empty()) {
@@ -114,10 +122,10 @@ namespace OHOS::Uri {
             }
         } else if (data_[0] == '/') {
             uriData_.path = data_;
-            uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
+            AssignSchemeSpecificPart();
             data_ = "";
         } else {
-            uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
+            AssignSchemeSpecificPart();
             uriData_.query = "";
             data_ = "";
         }
@@ -180,7 +188,10 @@ namespace OHOS::Uri {
         size_t slashPos = data_.find('/');
         if (slashPos != std::string::npos && slashPos < pos) {
             SpecialPath();
-            uriData_.SchemeSpecificPart = uriData_.path + "?" + uriData_.query;
+            uriData_.SchemeSpecificPart.reserve(uriData_.path.length() + uriData_.query.length() +1);
+            uriData_.SchemeSpecificPart.append(uriData_.path);
+            uriData_.SchemeSpecificPart.append("?");
+            uriData_.SchemeSpecificPart.append(uriData_.query);
             data_ = "";
         } else {
             if (!g_ruleAlpha.test(data_[0])) {
