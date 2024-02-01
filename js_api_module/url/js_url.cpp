@@ -692,7 +692,7 @@ namespace OHOS::Url {
         std::vector<std::string> temp;
         isipv4 = RemovalIpv4(temp, input, flags);
         size_t tempLen = temp.size();
-        int lastSize = temp[tempLen - 1].size();
+        size_t lastSize = temp[tempLen - 1].size();
         if (isipv4 == true && lastSize > 8) { // 8: ipv4 last number size
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
             return;
