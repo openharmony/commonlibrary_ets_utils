@@ -107,6 +107,9 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     }
     task->seqRunnerId_ = seqRunnerId;
     napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::SEQRUNNER_TASK, seqRunner->priority_);
+    if (promise == nullptr) {
+        return nullptr;
+    }
     if (seqRunner->currentTaskId_ == 0) {
         HILOG_DEBUG("seqRunner:: task %" PRIu64 " in seqRunner %" PRIu64 " immediately.", task->taskId_, seqRunnerId);
         seqRunner->currentTaskId_ = task->taskId_;
