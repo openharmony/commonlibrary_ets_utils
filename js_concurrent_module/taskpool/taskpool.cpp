@@ -174,6 +174,9 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
         napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::COMMON_TASK, Priority(priority));
+        if (promise == nullptr) {
+            return nullptr;
+        }
         ExecuteTask(env, task, Priority(priority));
         return promise;
     }
@@ -256,6 +259,9 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
         }
     }
     napi_value promise = task->GetTaskInfoPromise(env, args[1], TaskType::COMMON_TASK, Priority(priority));
+    if (promise == nullptr) {
+        return nullptr;
+    }
     uv_loop_t* loop = uv_default_loop();
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;

@@ -157,6 +157,9 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
 napi_value Task::GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType, Priority priority)
 {
     TaskInfo* taskInfo = GetTaskInfo(env, task, taskType, priority);
+    if (taskInfo == nullptr) {
+        return nullptr;
+    }
     return NapiHelper::CreatePromise(env, &taskInfo->deferred);
 }
 
@@ -601,7 +604,7 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
     if (status != napi_ok || serializationFunction == nullptr) {
         errMessage = "taskpool: failed to serialize function.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_CONCURRENT_FUNCTION, errMessage.c_str());
         return nullptr;
     }
     napi_value serializationArguments;

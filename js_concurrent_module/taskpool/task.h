@@ -65,7 +65,7 @@ public:
     static Task* GenerateFunctionTask(napi_env env, napi_value func, napi_value* args, size_t argc, TaskType type);
     static TaskInfo* GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
                                       napi_value transferList, napi_value cloneList, Priority priority,
-                                      bool defaultTransfer = true, bool defaultCloneSendable = true);
+                                      bool defaultTransfer = true, bool defaultCloneSendable = false);
     static void TaskDestructor(napi_env env, void* data, void* hint);
 
     static void IncreaseTaskRef(const uv_async_t* req);
