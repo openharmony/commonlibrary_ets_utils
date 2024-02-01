@@ -105,6 +105,8 @@ ohos_source_set("convertxml_static") {
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
     ]
+    deps -= [ "//third_party/libxml2:static_libxml2" ]
+    deps += [ "//third_party/libxml2:libxml2" ]
     deps += [ "$plugins_root/interfaces/native:plugin_log" ]
     if (target_os == "android") {
       deps += [ "$plugins_root/interfaces/native:ace_plugin_util_android" ]
