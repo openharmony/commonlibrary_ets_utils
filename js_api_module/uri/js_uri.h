@@ -136,6 +136,7 @@ namespace OHOS::Uri {
         void AnalysisPath(size_t pos);
         void AnalysisUserInfo(size_t pos);
         void AnalysisIPV6();
+        void AssignSchemeSpecificPart();
 
         bool CheckCharacter(std::string data, std::bitset<MAX_BIT_SIZE> rule, bool flag) const;
         bool AnalysisPort(size_t pos);
