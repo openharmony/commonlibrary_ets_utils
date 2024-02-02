@@ -73,10 +73,13 @@ class Base64Helper {
   }
 
   private addBreaks(resultString: string): string {
-    const chunkSize = 76;
+    const chunkSize = 76; // 76 : MIME format encoding data limitations
     let i = 0;
     let newString: string = '';
     let stringLength = resultString.length;
+    if (stringLength < chunkSize) {
+      throw new Error('The parameter length does not meet the MIME encoding format');
+    }
     while (i < stringLength && stringLength > chunkSize) {
       let index = i + chunkSize;
       if (i + chunkSize > stringLength) {
