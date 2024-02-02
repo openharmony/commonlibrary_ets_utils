@@ -75,7 +75,7 @@ namespace OHOS::Uri {
 
     void Uri::AssignSchemeSpecificPart()
     {
-        uriData_.SchemeSpecificPart.reserve(data_.length() + uriData_.query.length() +1);
+        uriData_.SchemeSpecificPart.reserve(data_.length() + uriData_.query.length() + 1);
         uriData_.SchemeSpecificPart.append(data_);
         uriData_.SchemeSpecificPart.append("?");
         uriData_.SchemeSpecificPart.append(uriData_.query);
@@ -188,13 +188,14 @@ namespace OHOS::Uri {
         size_t slashPos = data_.find('/');
         if (slashPos != std::string::npos && slashPos < pos) {
             SpecialPath();
-            uriData_.SchemeSpecificPart.reserve(uriData_.path.length() + uriData_.query.length() +1);
+            uriData_.SchemeSpecificPart.reserve(uriData_.path.length() + uriData_.query.length() + 1);
             uriData_.SchemeSpecificPart.append(uriData_.path);
             uriData_.SchemeSpecificPart.append("?");
             uriData_.SchemeSpecificPart.append(uriData_.query);
             data_ = "";
         } else {
-            if (!g_ruleAlpha.test(data_[0])) {
+            if ((static_cast<int>(data_[0]) >= 0 && static_cast<int>(data_[0]) < MAX_BIT_SIZE) &&
+                !g_ruleAlpha.test(data_[0])) {
                 errStr_ = "Scheme the first character must be a letter";
                 return;
             }
