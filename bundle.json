@@ -73,7 +73,8 @@
                 "//commonlibrary/ets_utils/js_sys_module/dfx:dfx_packages",
                 "//commonlibrary/ets_utils/js_sys_module/timer:timer_packages",
                 "//commonlibrary/ets_utils/js_util_module/util:util_packages",
-                "//commonlibrary/ets_utils/js_util_module/container:container_packages"
+                "//commonlibrary/ets_utils/js_util_module/container:container_packages",
+                "//commonlibrary/ets_utils/js_util_module/json:json_packages"
             ],
             "inner_kits": [
                 {
