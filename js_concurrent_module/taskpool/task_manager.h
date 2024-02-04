@@ -57,9 +57,6 @@ class TaskGroup;
 
 class TaskManager {
 public:
-    TaskManager();
-    ~TaskManager();
-
     static TaskManager& GetInstance();
 
     void StoreTask(uint64_t taskId, Task* task);
@@ -124,6 +121,8 @@ public:
     void RemoveTaskDuration(uint64_t taskId);
 
 private:
+    TaskManager();
+    ~TaskManager();
     TaskManager(const TaskManager &) = delete;
     TaskManager& operator=(const TaskManager &) = delete;
     TaskManager(TaskManager &&) = delete;
