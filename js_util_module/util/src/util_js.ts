@@ -42,12 +42,23 @@ let textEncoder = helpUtil.TextEncoder;
 let base64 = helpUtil.Base64;
 let types = helpUtil.Types;
 
+const typeErrorCode = 401;
+const syntaxErrorCode = 10200002;
+class BusinessError extends Error {
+  code: number;
+  constructor(msg: string) {
+    super(msg);
+    this.name = 'BusinessError';
+    this.code = typeErrorCode;
+  }
+}
+
 interface NativeBase64 {
   new(): NativeBase64;
-  encodeSync(src: Uint8Array): Uint8Array;
+  encodeSync(src: Uint8Array, options?: Type): Uint8Array;
   encodeToStringSync(src: Uint8Array, options?: Type): string;
   decodeSync(src: Uint8Array | string, options?: Type): Uint8Array;
-  encode(src: Uint8Array): Promise<Uint8Array>;
+  encode(src: Uint8Array, options?: Type): Promise<Uint8Array>;
   encodeToString(src: Uint8Array, options?: Type): Promise<string>;
   decode(src: Uint8Array | string, options?: Type): Promise<Uint8Array>;
 }
@@ -58,7 +69,9 @@ interface Base64Helper {
 
 enum Type {
   BASIC,
-  MIME
+  MIME,
+  BASIC_URL_SAFE,
+  MIME_URL_SAFE
 }
 
 class Base64Helper {
@@ -67,9 +80,13 @@ class Base64Helper {
     this.base64 = new helpUtil.Base64Helper();
   }
 
-  encodeSync(src: Uint8Array): Uint8Array {
-    let result: Uint8Array = this.base64.encodeSync(src);
-    return result;
+  encodeSync(src: Uint8Array, options: Type = Type.BASIC): Uint8Array {
+    if (!Object.values(Type).includes(options) || options === Type.MIME || options === Type.MIME_URL_SAFE) {
+      let error = new BusinessError('Parameter error.' +
+        'The target encoding type option nust be BASIC or BASIC_URL_SAFE.');
+      throw error;
+    }
+    return this.base64.encodeSync(src, options);
   }
 
   private addBreaks(resultString: string): string {
@@ -78,7 +95,7 @@ class Base64Helper {
     let newString: string = '';
     let stringLength = resultString.length;
     if (stringLength < chunkSize) {
-      throw new Error('The parameter length does not meet the MIME encoding format');
+      throw new Error('The parameter length does not meet this encoding format.');
     }
     while (i < stringLength && stringLength > chunkSize) {
       let index = i + chunkSize;
@@ -92,61 +109,65 @@ class Base64Helper {
     return newString;
   }
 
-  encodeToStringSync(src: Uint8Array, options?: Type): string {
-    let resultString: string = this.base64.encodeToStringSync(src);
-    if (options === Type.MIME) {
-      let breakString: string = this.addBreaks(resultString);
-      return breakString;
+  encodeToStringSync(src: Uint8Array, options: Type = Type.BASIC): string {
+    if (!Object.values(Type).includes(options)) {
+      let error = new BusinessError('Parameter error.' +
+        'The target encoding type option nust be one of the Type enumerations.');
+      throw error;
+    }
+    let resultString: string = this.base64.encodeToStringSync(src, options);
+    if (options === Type.MIME || options === Type.MIME_URL_SAFE) {
+      return this.addBreaks(resultString);
     }
     return resultString;
   }
 
-  decodeSync(src: Uint8Array | string, options?: Type): Uint8Array {
-    if (typeof src === 'string' && options === Type.MIME) {
+  decodeSync(src: Uint8Array | string, options: Type = Type.BASIC): Uint8Array {
+    if (!Object.values(Type).includes(options)) {
+      let error = new BusinessError('Parameter error.' +
+        'The target encoding type option nust be one of the Type enumerations.');
+      throw error;
+    }
+    if (typeof src === 'string') {
       src = src.replace(/[\r\n]/g, '');
     }
-    let result: Uint8Array = this.base64.decodeSync(src);
-    return result;
+    return this.base64.decodeSync(src, options);
   }
 
-  encode(src: Uint8Array): Promise<Uint8Array> {
-    let result: Promise<Uint8Array> = this.base64.encode(src);
-    return result;
-  }
-
-  async processData(src: Uint8Array): Promise<string> {
-    return this.base64.encodeToString(src).then((result: string) => {
-      let breakString: string = this.addBreaks(result);
-      return breakString;
-    });
-  }
-
-  encodeToString(src: Uint8Array, options?: Type): Promise<string> {
-    if (options === Type.MIME) {
-      let result: Promise<string> = this.processData(src);
-      return result;
+  encode(src: Uint8Array, options: Type = Type.BASIC): Promise<Uint8Array> {
+    if (!Object.values(Type).includes(options) || options === Type.MIME || options === Type.MIME_URL_SAFE) {
+      let error = new BusinessError('Parameter error.' +
+        'The target encoding type option nust be BASIC or BASIC_URL_SAFE.');
+      throw error;
     }
-    let base64Result: Promise<string> = this.base64.encodeToString(src);
+    return this.base64.encode(src, options);
+  }
+
+  encodeToString(src: Uint8Array, options: Type = Type.BASIC): Promise<string> {
+    if (!Object.values(Type).includes(options)) {
+      let error = new BusinessError('Parameter error.' +
+        'The target encoding type option nust be one of the Type enumerations.');
+      throw error;
+    }
+    let base64Result: Promise<string> = this.base64.encodeToString(src, options);
+    if (options === Type.MIME || Type.MIME_URL_SAFE) {
+      return base64Result.then((result) => {
+        return this.addBreaks(result);
+      });
+    }
     return base64Result;
   }
 
-  decode(src: Uint8Array | string, options?: Type): Promise<Uint8Array> {
-    if (typeof src === 'string' && options === Type.MIME) {
+  decode(src: Uint8Array | string, options: Type = Type.BASIC): Promise<Uint8Array> {
+    if (!Object.values(Type).includes(options)) {
+      let error = new BusinessError('Parameter error.' +
+      'The target encoding type option nust be one of the Type enumerations.');
+      throw error;
+    }
+    if (typeof src === 'string') {
       src = src.replace(/[\r\n]/g, '');
     }
-    let result: Promise<Uint8Array> = this.base64.decode(src);
-    return result;
-  }
-}
-
-const typeErrorCode = 401;
-const syntaxErrorCode = 10200002;
-class BusinessError extends Error {
-  code: number;
-  constructor(msg: string) {
-    super(msg);
-    this.name = 'BusinessError';
-    this.code = typeErrorCode;
+    return this.base64.decode(src, options);
   }
 }
 

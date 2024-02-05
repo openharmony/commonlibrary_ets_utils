@@ -29,6 +29,14 @@
 #define UTIL_JS_BASE64_H
 
 namespace OHOS::Util {
+
+    enum Type {
+        BASIC,
+        MIME,
+        BASIC_URL_SAFE,
+        MIME_URL_SAFE
+    };
+
     struct EncodeInfo {
         napi_async_work worker = nullptr;
         napi_deferred deferred = nullptr;
@@ -38,6 +46,7 @@ namespace OHOS::Util {
         size_t slength = 0;
         size_t soutputLen = 0;
         napi_env env;
+        Type valueType = BASIC;
     };
 
     struct DecodeInfo {
@@ -50,6 +59,7 @@ namespace OHOS::Util {
         size_t decodeOutLen = 0;
         size_t retLen = 0;
         napi_env env;
+        Type valueType = BASIC;
     };
 
     enum ConverterFlags {
@@ -81,7 +91,7 @@ namespace OHOS::Util {
          * @param env NAPI environment parameters.
          * @param src Encode the input uint8 array.
          */
-        napi_value EncodeSync(napi_env env, napi_value src);
+        napi_value EncodeSync(napi_env env, napi_value src, Type valueType);
 
         /**
          * Output the corresponding text after encoding the input parameters.
@@ -89,7 +99,7 @@ namespace OHOS::Util {
          * @param env NAPI environment parameters.
          * @param src Encode the input uint8 array.
          */
-        napi_value EncodeToStringSync(napi_env env, napi_value src);
+        napi_value EncodeToStringSync(napi_env env, napi_value src, Type valueType);
 
         /**
          * Output the corresponding text after encoding the input parameters.
@@ -97,7 +107,7 @@ namespace OHOS::Util {
          * @param env NAPI environment parameters.
          * @param src Decode the input uint8 array or string.
          */
-        napi_value DecodeSync(napi_env env, napi_value src);
+        napi_value DecodeSync(napi_env env, napi_value src, Type valueType);
 
         /**
          * Output the corresponding text after asynchronously encoding the input parameters.
@@ -105,7 +115,7 @@ namespace OHOS::Util {
          * @param env NAPI environment parameters.
          * @param src Asynchronously encoded input uint8 array.
          */
-        napi_value Encode(napi_env env, napi_value src);
+        napi_value Encode(napi_env env, napi_value src, Type valueType);
 
         /**
          * Output the corresponding text after asynchronously encoding the input parameters.
@@ -113,7 +123,7 @@ namespace OHOS::Util {
          * @param env NAPI environment parameters.
          * @param src Asynchronously encoded input uint8 array.
          */
-        napi_value EncodeToString(napi_env env, napi_value src);
+        napi_value EncodeToString(napi_env env, napi_value src, Type valueType);
 
         /**
          * Output the corresponding text after asynchronously encoding the input parameters.
@@ -121,12 +131,12 @@ namespace OHOS::Util {
          * @param env NAPI environment parameters.
          * @param src Asynchronously decode the input uint8 array or string.
          */
-        napi_value Decode(napi_env env, napi_value src);
+        napi_value Decode(napi_env env, napi_value src, Type valueType);
 
     private:
-        unsigned char *DecodeAchieve(napi_env env, const char *input, size_t inputLen);
-        unsigned char *EncodeAchieve(const unsigned char *input, size_t inputLen);
-        int Finds(napi_env env, char ch);
+        unsigned char *DecodeAchieve(napi_env env, const char *input, size_t inputLen, Type valueType);
+        unsigned char *EncodeAchieve(const unsigned char *input, size_t inputLen, Type valueType);
+        int Finds(napi_env env, char ch, Type valueType);
         size_t DecodeOut(size_t equalCount, size_t retLen);
         size_t retLen = 0;
         size_t decodeOutLen = 0;
@@ -135,9 +145,9 @@ namespace OHOS::Util {
         const unsigned char *inputEncode_ = nullptr;
         const char *inputDecode_ = nullptr;
         unsigned char *retDecode = nullptr;
-        void CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length);
-        void CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length);
-        void CreateDecodePromise(napi_env env, char *inputDecode, size_t length);
+        void CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType);
+        void CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType);
+        void CreateDecodePromise(napi_env env, char *inputDecode, size_t length, Type valueType);
         EncodeInfo *stdEncodeInfo_ = nullptr;
         DecodeInfo *stdDecodeInfo_ = nullptr;
         static void ReadStdEncode(napi_env env, void *data);
