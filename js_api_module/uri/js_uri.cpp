@@ -488,9 +488,6 @@ namespace OHOS::Uri {
 
     std::string Uri::GetSsp() const
     {
-        if (uriData_.SchemeSpecificPart.empty()) {
-            return "null";
-        }
         return uriData_.SchemeSpecificPart;
     }
 
