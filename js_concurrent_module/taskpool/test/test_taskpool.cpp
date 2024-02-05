@@ -183,7 +183,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest015, testing::ext::TestSize.Level0)
     taskManger.InitTaskManager(env);
     std::pair<uint64_t, Priority> result = taskManger.DequeueTaskId();
     ASSERT_TRUE(result.first == 0);
-    ASSERT_TRUE(result.second == Priority::MEDIUM);
+    ASSERT_TRUE(result.second == Priority::LOW);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest016, testing::ext::TestSize.Level0)
