@@ -111,6 +111,7 @@ function customEncodeForToString(str: string | number): string {
   })
     .replace(/(%20)+/g, '+')
     .replace(/%3D/g, '=')
+    .replace(/%25/g, '%')
     .replace(/%2B/g, '+');
 }
 
