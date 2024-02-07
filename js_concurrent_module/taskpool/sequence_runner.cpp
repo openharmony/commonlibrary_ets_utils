@@ -106,6 +106,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     task->seqRunnerId_ = seqRunnerId;
+    task->taskState_ = ExecuteState::WAITING;
     napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::SEQRUNNER_TASK, seqRunner->priority_);
     if (promise == nullptr) {
         return nullptr;
