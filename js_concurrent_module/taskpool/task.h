@@ -70,6 +70,8 @@ public:
 
     static void IncreaseTaskRef(const uv_async_t* req);
 
+    static void ThrowNoDependencyError(napi_env env);
+
     void StoreTaskId(uint64_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
                                   Priority priority = Priority::DEFAULT);
@@ -94,6 +96,9 @@ public:
     bool CanForTaskGroup(napi_env env);
     bool CanExecute(napi_env env);
     bool CanExecuteDelayed(napi_env env);
+    void SetHasDependency(bool hasDependency);
+    bool HasDependency() const;
+    void TryClearHasDependency();
 
 private:
     Task(const Task &) = delete;
@@ -122,6 +127,7 @@ public:
     napi_ref taskRef_ {};
     std::atomic<uint32_t> taskRefCount_ {};
     std::shared_mutex taskMutex_ {};
+    bool hasDependency_ {false};
 };
 
 struct CallbackInfo {

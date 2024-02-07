@@ -780,20 +780,19 @@ void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
 
 bool TaskManager::IsDependendByTaskId(uint64_t taskId)
 {
-    {
-        std::unique_lock<std::shared_mutex> lock(tasksMutex_);
-        auto taskIter = tasks_.find(taskId);
-        if (taskIter == tasks_.end()) {
-            return false;
-        }
-        auto task = reinterpret_cast<Task*>(taskIter->second);
-        if (!task->IsCommonTask()) {
-            return false;
-        }
-    }
-    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    std::shared_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
     if (iter == dependTaskInfos_.end() || iter->second.empty()) {
+        return false;
+    }
+    return true;
+}
+
+bool TaskManager::IsDependentByTaskId(uint64_t dependentTaskId)
+{
+    std::shared_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    auto iter = dependentTaskInfos_.find(dependentTaskId);
+    if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
         return false;
     }
     return true;

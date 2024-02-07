@@ -455,6 +455,7 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
+    task->SetHasDependency(true);
     std::set<uint64_t> idSet;
     for (size_t i = 0; i < argc; i++) {
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
@@ -483,6 +484,7 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
                 return nullptr;
             }
             idSet.emplace(dependentTask->taskId_);
+            dependentTask->SetHasDependency(true);
         }
     }
     if (!TaskManager::GetInstance().StoreTaskDependency(task->taskId_, idSet)) {
@@ -501,7 +503,6 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
-
     napi_status status = napi_ok;
     HandleScope scope(env, status);
     napi_value args[argc];
@@ -509,6 +510,10 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, &napiTask, nullptr);
     Task* task = nullptr;
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    if (!task->HasDependency()) {
+        ThrowNoDependencyError(env);
+        return nullptr;
+    }
     for (size_t i = 0; i < argc; i++) {
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             std::string errMessage = "taskpool:: removeDependency param is not task";
@@ -518,12 +523,18 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         }
         Task* dependentTask = nullptr;
         napi_unwrap(env, args[i], reinterpret_cast<void**>(&dependentTask));
+        if (!dependentTask->HasDependency()) {
+            ThrowNoDependencyError(env);
+            return nullptr;
+        }
         if (!TaskManager::GetInstance().RemoveTaskDependency(task->taskId_, dependentTask->taskId_)) {
             HILOG_ERROR("taskpool:: the dependency does not exist");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_INEXISTENT_DEPENDENCY);
             return nullptr;
         }
+        dependentTask->TryClearHasDependency();
     }
+    task->TryClearHasDependency();
     return nullptr;
 }
 
@@ -743,7 +754,7 @@ bool Task::CanForSequenceRunner(napi_env env)
 {
     std::string errMessage = "";
     // task with dependence is not allowed
-    if (TaskManager::GetInstance().IsDependendByTaskId(taskId_)) {
+    if (HasDependency()) {
         errMessage = "seqRunner:: dependent task not allowed.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER, errMessage.c_str());
@@ -767,7 +778,7 @@ bool Task::CanForSequenceRunner(napi_env env)
 bool Task::CanForTaskGroup(napi_env env)
 {
     std::string errMessage = "";
-    if (TaskManager::GetInstance().IsDependendByTaskId(taskId_)) {
+    if (HasDependency()) {
         errMessage = "taskpool:: dependent task not allowed.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
@@ -804,6 +815,12 @@ bool Task::CanExecute(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
+    if (IsCommonTask() && HasDependency()) {
+        errMessage = "taskpool:: executedTask with dependency cannot execute again";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -822,6 +839,12 @@ bool Task::CanExecuteDelayed(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
+    if (IsCommonTask() && HasDependency()) {
+        errMessage = "taskpool:: executedTask with dependency cannot executeDelayed again";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -833,5 +856,33 @@ void Task::IncreaseTaskRef(const uv_async_t* req)
         return;
     }
     napi_reference_ref(task->env_, task->taskRef_, nullptr);
+}
+
+void Task::SetHasDependency(bool hasDependency)
+{
+    hasDependency_ = hasDependency;
+}
+
+bool Task::HasDependency() const
+{
+    return hasDependency_;
+}
+
+void Task::TryClearHasDependency()
+{
+    if (taskType_ != TaskType::TASK) {
+        return;
+    }
+    if ((!TaskManager::GetInstance().IsDependentByTaskId(taskId_))
+        && (!TaskManager::GetInstance().IsDependendByTaskId(taskId_))) {
+        SetHasDependency(false);
+    }
+}
+
+void Task::ThrowNoDependencyError(napi_env env)
+{
+    std::string errMessage = "taskpool:: task has no dependency";
+    HILOG_ERROR("%{public}s", errMessage.c_str());
+    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
