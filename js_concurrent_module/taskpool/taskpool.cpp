@@ -262,6 +262,9 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     if (promise == nullptr) {
         return nullptr;
     }
+    if (task->taskState_ == ExecuteState::NOT_FOUND) {
+        task->taskState_ = ExecuteState::WAITING;
+    }
     uv_loop_t* loop = uv_default_loop();
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
