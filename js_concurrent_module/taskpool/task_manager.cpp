@@ -1170,8 +1170,16 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         }
         Task* task = seqRunner->seqRunnerTasks_.front();
         seqRunner->seqRunnerTasks_.pop();
+        while (task->taskState_ == ExecuteState::CANCELED) {
+            if (seqRunner->seqRunnerTasks_.empty()) {
+                HILOG_DEBUG("seqRunner:: seqRunner %" PRIu64 " empty in cancel loop.", seqRunnerId);
+                seqRunner->currentTaskId_ = 0;
+                return true;
+            }
+            task = seqRunner->seqRunnerTasks_.front();
+            seqRunner->seqRunnerTasks_.pop();
+        }
         seqRunner->currentTaskId_ = task->taskId_;
-        task->taskState_ = ExecuteState::WAITING;
         task->IncreaseRefCount();
         HILOG_DEBUG("seqRunner:: Trig task %" PRIu64 " in seqRunner %" PRIu64 ".", task->taskId_, seqRunnerId);
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
