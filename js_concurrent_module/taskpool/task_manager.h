@@ -105,6 +105,7 @@ public:
 
     // for task dependency
     bool IsDependendByTaskId(uint64_t taskId);
+    bool IsDependentByTaskId(uint64_t dependentTaskId);
     void NotifyDependencyTaskInfo(uint64_t taskId);
     bool StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskIdSet);
     bool RemoveTaskDependency(uint64_t taskId, uint64_t dependentId);
