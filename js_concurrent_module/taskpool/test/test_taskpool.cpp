@@ -299,3 +299,397 @@ HWTEST_F(NativeEngineTest, TaskpoolTest023, testing::ext::TestSize.Level0)
     TaskGroup* taskGroup = taskGroupManager.GetTaskGroup(groupId);
     ASSERT_TRUE(taskGroup == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest024, testing::ext::TestSize.Level0)
+{
+    MessageQueue<int*> mesQueue;
+    int testData = 42;
+    mesQueue.EnQueue(&testData);
+
+    auto result = mesQueue.DeQueue();
+    ASSERT_EQ(testData, *result);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest025, testing::ext::TestSize.Level0)
+{
+    MessageQueue<std::string> mesQueue;
+    ASSERT_EQ(mesQueue.IsEmpty(), true);
+
+    std::string testStr = "hello";
+    mesQueue.EnQueue(testStr);
+    ASSERT_EQ(mesQueue.IsEmpty(), false);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest026, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr};
+    std::string funcName = "SeqRunnerConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest027, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr};
+    std::string func = "SeqRunnerConstructor";
+    napi_value callback = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &callback);
+    napi_call_function(env, nullptr, callback, 0, argv, &result);
+    ASSERT_EQ(result, nullptr);
+
+    size_t argc1 = 0;
+    napi_value argv1[] = {nullptr};
+    func = "Execute";
+    callback = nullptr;
+    napi_value result1 = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), SequenceRunner::Execute, nullptr, &callback);
+    napi_call_function(env, nullptr, callback, argc1, argv1, &result1);
+    ASSERT_TRUE(result1 == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest028, testing::ext::TestSize.Level0)
+{
+    TaskGroup taskGroup;
+    uint32_t taskId = 10;
+    uint32_t index = taskGroup.GetTaskIndex(taskId);
+    ASSERT_EQ(index, 0);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest029, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup taskGroup;
+    taskGroup.NotifyGroupTask(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    taskManager.InitTaskManager(env);
+    uint32_t taskId = 11;
+    ASSERT_EQ(taskId, 11);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest030, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup taskGroup;
+    taskGroup.CancelPendingGroup(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    taskManager.InitTaskManager(env);
+    uint32_t taskId = 12;
+    ASSERT_EQ(taskId, 12);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest031, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 13;
+    Task* task = taskManger.GetTask(taskId);
+    taskManger.StoreTask(taskId, task);
+    ASSERT_EQ(taskId, 13);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest032, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 14;
+    taskManger.RemoveTask(taskId);
+    ASSERT_EQ(taskId, 14);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest033, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 15;
+    taskManger.EnqueueTaskId(taskId, Priority::HIGH);
+    ASSERT_EQ(taskId, 15);
+    std::pair<uint64_t, Priority> result = taskManger.DequeueTaskId();
+    ASSERT_TRUE(result.first == 15);
+    ASSERT_TRUE(result.second == Priority::HIGH);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest034, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    Worker* worker = Worker::WorkerConstructor(env);
+    usleep(50000);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    taskManger.NotifyWorkerIdle(worker);
+    ASSERT_NE(worker, nullptr);
+    taskManger.NotifyWorkerCreated(worker);
+    ASSERT_NE(worker, nullptr);
+    taskManger.NotifyWorkerRunning(worker);
+    ASSERT_NE(worker, nullptr);
+    taskManger.RestoreWorker(worker);
+    ASSERT_NE(worker, nullptr);
+    taskManger.RemoveWorker(worker);
+    ASSERT_NE(worker, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest035, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint32_t step = 8;
+    taskManger.GetIdleWorkersList(step);
+    ASSERT_EQ(step, 8);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest036, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    napi_value res = taskManger.GetThreadInfos(env);
+    ASSERT_NE(res, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest037, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 16;
+    std::shared_ptr<CallbackInfo> res = taskManger.GetCallbackInfo(taskId);
+    ASSERT_EQ(res, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest038, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 16;
+    taskManger.RegisterCallback(env, taskId, nullptr);
+    ASSERT_EQ(taskId, 16);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest039, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 17;
+    taskManger.IncreaseRefCount(taskId);
+    ASSERT_EQ(taskId, 17);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest040, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 18;
+    taskManger.DecreaseRefCount(env, taskId);
+    ASSERT_EQ(taskId, 18);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest041, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 19;
+    bool res = taskManger.IsDependendByTaskId(taskId);
+    ASSERT_EQ(res, false);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest042, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 20;
+    taskManger.NotifyDependencyTaskInfo(taskId);
+    ASSERT_EQ(taskId, 20);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest043, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 21;
+    std::set<uint64_t> taskSet;
+    taskSet.emplace(1);
+    taskSet.emplace(2);
+    bool res = taskManger.StoreTaskDependency(taskId, taskSet);
+    ASSERT_EQ(res, true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest044, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 22;
+    uint64_t dependentId = 0;
+    bool res = taskManger.RemoveTaskDependency(taskId, dependentId);
+    ASSERT_EQ(res, false);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest045, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 23;
+    std::set<uint64_t> dependentIdSet;
+    dependentIdSet.emplace(1);
+    std::set<uint64_t> idSet;
+    idSet.emplace(2);
+    bool res = taskManger.CheckCircularDependency(dependentIdSet, idSet, taskId);
+    ASSERT_EQ(res, true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest046, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 24;
+    taskManger.EnqueuePendingTaskInfo(taskId, Priority::NUMBER);
+    std::pair<uint64_t, Priority> res = taskManger.DequeuePendingTaskInfo(taskId);
+    ASSERT_EQ(res.first, 24);
+    ASSERT_EQ(res.second, Priority::NUMBER);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest047, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 24;
+    taskManger.RemovePendingTaskInfo(taskId);
+    ASSERT_EQ(taskId, 24);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest048, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 25;
+    std::set<uint64_t> dependTaskIdSet;
+    taskManger.StoreDependentTaskInfo(dependTaskIdSet, taskId);
+    ASSERT_EQ(taskId, 25);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest049, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 26;
+    uint64_t dependentTaskId = 26;
+    taskManger.RemoveDependentTaskInfo(dependentTaskId, taskId);
+    ASSERT_EQ(taskId, 26);
+    ASSERT_EQ(dependentTaskId, 26);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest050, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 27;
+    uint64_t totalDuration = 25;
+    uint64_t cpuDuration = 8;
+    taskManger.StoreTaskDuration(taskId, totalDuration, cpuDuration);
+    ASSERT_EQ(taskId, 27);
+    ASSERT_EQ(totalDuration, 25);
+    ASSERT_EQ(cpuDuration, 8);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest051, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 28;
+    std::string str = "testTaskpool";
+    taskManger.GetTaskDuration(taskId, str);
+    ASSERT_EQ(taskId, 28);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest052, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManger = TaskManager::GetInstance();
+    taskManger.InitTaskManager(env);
+    uint64_t taskId = 29;
+    taskManger.RemoveTaskDuration(taskId);
+    ASSERT_EQ(taskId, 29);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest053, testing::ext::TestSize.Level0)
+{
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    uint64_t groupId = 30;
+    TaskGroup* group = taskGroupManager.GetTaskGroup(groupId);
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    ASSERT_EQ(groupId, 30);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest054, testing::ext::TestSize.Level0)
+{
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    uint64_t groupId = 31;
+    taskGroupManager.RemoveTaskGroup(groupId);
+    ASSERT_EQ(groupId, 31);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest055, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    uint64_t groupId = 32;
+    taskGroupManager.CancelGroup(env, groupId);
+    ASSERT_EQ(groupId, 32);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest056, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    uint64_t taskId = 33;
+    TaskGroup* group = taskGroupManager.GetTaskGroup(taskId);
+    taskGroupManager.CancelGroupTask(env, taskId, group);
+    ASSERT_EQ(taskId, 33);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest057, testing::ext::TestSize.Level0)
+{
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    uint64_t groupId = 34;
+    taskGroupManager.UpdateGroupState(groupId);
+    ASSERT_EQ(groupId, 34);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest058, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    uint64_t seqRunnerId = 35;
+    Task *task = new Task();
+    ASSERT_NE(task, nullptr);
+    taskGroupManager.AddTaskToSeqRunner(seqRunnerId, task);
+    taskGroupManager.TriggerSeqRunner(env, task);
+    SequenceRunner sequenceRunner;
+    taskGroupManager.StoreSequenceRunner(seqRunnerId, &sequenceRunner);
+    taskGroupManager.RemoveSequenceRunner(seqRunnerId);
+    ASSERT_EQ(seqRunnerId, 35);
+    SequenceRunner *res = taskGroupManager.GetSeqRunner(seqRunnerId);
+    ASSERT_EQ(res, nullptr);
+}
