@@ -873,8 +873,8 @@ void Task::TryClearHasDependency()
     if (taskType_ != TaskType::TASK) {
         return;
     }
-    if ((!TaskManager::GetInstance().IsDependentByTaskId(taskId_))
-        && (!TaskManager::GetInstance().IsDependendByTaskId(taskId_))) {
+    if ((!TaskManager::GetInstance().IsDependentByTaskId(taskId_)) &&
+        (!TaskManager::GetInstance().IsDependendByTaskId(taskId_))) {
         SetHasDependency(false);
     }
 }

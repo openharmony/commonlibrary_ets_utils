@@ -101,8 +101,8 @@ void TaskPool::ExecuteCallback(uv_async_t* req)
         status = napi_deserialize(env, resultInfo->serializationArgs, &args);
         napi_delete_serialization_data(env, resultInfo->serializationArgs);
         if (status != napi_ok || args == nullptr) {
-            HILOG_ERROR("taskpool:: failed to serialize function in SendData");
             std::string errMessage = "taskpool:: failed to serialize function";
+            HILOG_ERROR("%{public}s in SendData", errMessage.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
             continue;
         }
@@ -120,6 +120,10 @@ void TaskPool::ExecuteCallback(uv_async_t* req)
             HILOG_ERROR("taskpool:: an exception has occurred napi_call_function");
         }
         auto task = TaskManager::GetInstance().GetTask(resultInfo->taskId);
+        if (task == nullptr) {
+            HILOG_ERROR("taskpool:: task is null");
+            continue;
+        }
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
     }
 }
