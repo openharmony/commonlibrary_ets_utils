@@ -144,13 +144,14 @@ void Timer::TimerCallback(uv_timer_t* handle)
         HILOG_ERROR("Pending exception in TimerCallback. Triggering HandleUncaughtException");
         engine->HandleUncaughtException();
         napi_close_handle_scope(env, scope);
-        Helper::CloseHelp::DeletePointer(callbackInfo, false);
+        DeleteTimer(tId, callbackInfo);
         return;
     }
+
     if (callbackResult == nullptr) {
         HILOG_ERROR("call timerCallback error");
         napi_close_handle_scope(env, scope);
-        Helper::CloseHelp::DeletePointer(callbackInfo, false);
+        DeleteTimer(tId, callbackInfo);
         return;
     }
 
@@ -263,5 +264,15 @@ bool Timer::HasTimer(napi_env env)
         return item.second->env_ == env;
     });
     return iter != timerTable.end();
+}
+
+void Timer::DeleteTimer(uint32_t tId, TimerCallbackInfo* callbackInfo)
+{
+    std::lock_guard<std::mutex> lock(timeLock);
+    // callback maybe contain ClearTimer, so we need check to avoid use-after-free and double-free of callbackInfo
+    if (timerTable.find(tId) != timerTable.end()) {
+        timerTable.erase(tId);
+        Helper::CloseHelp::DeletePointer(callbackInfo, false);
+    }
 }
 } // namespace Commonlibrary::JsSysModule

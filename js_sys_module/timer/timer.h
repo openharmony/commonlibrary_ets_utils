@@ -71,6 +71,7 @@ private:
     static napi_value ClearTimer(napi_env env, napi_callback_info cbinfo);
     static napi_value SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool repeat);
     static void TimerCallback(uv_timer_t* handle);
+    static void DeleteTimer(uint32_t tId, TimerCallbackInfo* callbackInfo);
 
     static uint32_t timeCallbackId;
     static std::map<uint32_t, TimerCallbackInfo*> timerTable;
