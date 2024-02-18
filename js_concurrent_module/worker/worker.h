@@ -38,8 +38,9 @@ public:
     enum RunnerState { STARTING, RUNNING, TERMINATEING, TERMINATED };
     enum HostState { ACTIVE, INACTIVE };
     enum ListenerMode { ONCE, PERMANENT };
-
     enum ScriptMode { CLASSIC, MODULE };
+
+    using DebuggerPostTask = std::function<void()>;
 
     struct WorkerListener {
         WorkerListener(napi_env env, napi_ref callback, ListenerMode mode)
@@ -547,7 +548,8 @@ private:
     uv_async_t* hostOnGlobalCallSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t debuggerOnPostTaskSignal_ {};
-    std::function<void()> debuggerTask_ = nullptr;
+    std::mutex debuggerMutex_;
+    std::queue<DebuggerPostTask> debuggerQueue_ {};
 #endif
 
     std::atomic<RunnerState> runnerState_ {STARTING};
