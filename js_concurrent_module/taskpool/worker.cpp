@@ -280,6 +280,10 @@ void Worker::PerformTask(const uv_async_t* req)
     RunningScope runningScope(worker);
     PriorityScope priorityScope(worker, taskInfo.second);
     Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: task is null");
+        return;
+    }
     if (!task->UpdateTask(startTime, worker)) {
         return;
     }
