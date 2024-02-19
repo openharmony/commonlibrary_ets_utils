@@ -420,7 +420,7 @@ function toHleString(arg: string | symbol | number): string {
 }
 
 function parameterProcess(input: object | string | Iterable<[]>) {
-  if (input === null || typeof input === 'undefined') {
+  if (input === null || typeof input === 'undefined' || input === '') {
     seachParamsArr = [];
     return seachParamsArr;
   } else if (typeof input === 'object' || typeof input === 'function') {
@@ -431,7 +431,7 @@ function parameterProcess(input: object | string | Iterable<[]>) {
 }
 
 function parameterProcessing(input: object | string | Iterable<[]>) {
-  if (input === null || typeof input === 'undefined') {
+  if (input === null || typeof input === 'undefined' || input === '') {
     seachParamsArr = [];
     return seachParamsArr;
   } else if (typeof input === 'object' || typeof input === 'function') {
@@ -514,16 +514,17 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
 }
 
 function decodeURISafely(input: string): string {
-  const hexAdecimal = 16; // 16:Hexadecimal number system
-  const invalidEncodingRegex = /(%[^0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f])/g;
-  const fixedUri = input.replace(invalidEncodingRegex, (match) => {
-    let encodedMatch: string = '';
-    for (let i = 0; i < match.length; i++) {
-      encodedMatch += '%' + match.charCodeAt(i).toString(hexAdecimal).toUpperCase();
+  const regex = /(%[0-9A-Fa-f]{2})+|[^%]+/g;
+  return input.match(regex).map(part => {
+    if (part.startsWith('%')) {
+      try {
+        return decodeURI(part).replace(/%3A/g, ':');
+      } catch (e) {
+        return part;
+      }
     }
-    return encodedMatch;
-  });
-  return decodeURI(fixedUri).replace(/%3A/g, ':');
+    return part;
+  }).join('');
 }
 
 function initToStringSeachParams(input: string): Array<string> {
