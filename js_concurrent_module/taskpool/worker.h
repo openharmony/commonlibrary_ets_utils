@@ -40,6 +40,7 @@ enum class WorkerState { IDLE, RUNNING, BLOCKED };
 
 class Worker {
 public:
+    using DebuggerPostTask = std::function<void()>;
     static Worker* WorkerConstructor(napi_env env);
 
     void NotifyExecuteTask();
@@ -156,7 +157,8 @@ private:
     uv_async_t* clearWorkerSignal_ {nullptr};
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t* debuggerOnPostTaskSignal_ {nullptr};
-    std::function<void()> debuggerTask_ {nullptr};
+    std::mutex debuggerMutex_;
+    std::queue<DebuggerPostTask> debuggerQueue_ {};
 #endif
     std::unique_ptr<TaskRunner> runner_ {nullptr};
 
