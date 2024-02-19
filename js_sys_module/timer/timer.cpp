@@ -140,16 +140,12 @@ void Timer::TimerCallback(uv_timer_t* handle)
     bool isExceptionPending = false;
     napi_is_exception_pending(env, &isExceptionPending);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
-    if (isExceptionPending && engine->IsMainThread()) {
+    if (isExceptionPending) {
         HILOG_ERROR("Pending exception in TimerCallback. Triggering HandleUncaughtException");
-        engine->HandleUncaughtException();
-        napi_close_handle_scope(env, scope);
-        DeleteTimer(tId, callbackInfo);
-        return;
-    }
-
-    if (callbackResult == nullptr) {
-        HILOG_ERROR("call timerCallback error");
+        // worker will handle exception itself
+        if (engine->IsMainThread()) {
+            engine->HandleUncaughtException();
+        }
         napi_close_handle_scope(env, scope);
         DeleteTimer(tId, callbackInfo);
         return;
