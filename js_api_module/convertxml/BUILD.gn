@@ -97,7 +97,6 @@ ohos_source_set("convertxml_static") {
   deps = [
     ":gen_obj_src_convertxml_abc",
     ":gen_obj_src_js_convertxml",
-    "//third_party/libxml2:static_libxml2",
   ]
 
   if (defined(is_arkui_x) && is_arkui_x) {
@@ -105,7 +104,10 @@ ohos_source_set("convertxml_static") {
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
     ]
-    deps += [ "$plugins_root/interfaces/native:plugin_log" ]
+    deps += [
+      "$plugins_root/interfaces/native:plugin_log",
+      "//third_party/libxml2:libxml2",
+    ]
     if (target_os == "android") {
       deps += [ "$plugins_root/interfaces/native:ace_plugin_util_android" ]
       defines = [ "ANDROID_PLATFORM" ]
@@ -125,7 +127,10 @@ ohos_source_set("convertxml_static") {
         "hilog:libhilog",
       ]
     }
-    deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
+    deps += [
+      "//third_party/icu/icu4c:shared_icuuc",
+      "//third_party/libxml2:static_libxml2",
+    ]
   }
 
   subsystem_name = "commonlibrary"
