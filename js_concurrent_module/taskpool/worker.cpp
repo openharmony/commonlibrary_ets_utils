@@ -114,15 +114,18 @@ void Worker::HandleDebuggerTask(const uv_async_t* req)
         HILOG_ERROR("taskpool:: worker is null");
         return;
     }
-    worker->debuggerTask_();
+    worker->debuggerMutex_.lock();
+    auto task = std::move(worker->debuggerQueue_.front());
+    worker->debuggerQueue_.pop();
+    worker->debuggerMutex_.unlock();
+    task();
 }
 
 void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 {
     if (uv_is_active(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
-        if (debuggerTask_ == nullptr) {
-            debuggerTask_ = std::move(task);
-        }
+        std::lock_guard<std::mutex> lock(debuggerMutex_);
+        debuggerQueue_.push(std::move(task));
         uv_async_send(debuggerOnPostTaskSignal_);
     }
 }
