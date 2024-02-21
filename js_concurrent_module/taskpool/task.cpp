@@ -514,6 +514,12 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         ThrowNoDependencyError(env);
         return nullptr;
     }
+    if (task->IsCommonTask()) {
+        std::string errMessage = "taskpool:: executedTask cannot removeDependency";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
     for (size_t i = 0; i < argc; i++) {
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             std::string errMessage = "taskpool:: removeDependency param is not task";
@@ -525,6 +531,12 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         napi_unwrap(env, args[i], reinterpret_cast<void**>(&dependentTask));
         if (!dependentTask->HasDependency()) {
             ThrowNoDependencyError(env);
+            return nullptr;
+        }
+        if (dependentTask->IsCommonTask()) {
+            std::string errMessage = "taskpool:: cannot removeDependency on a dependent and executed task";
+            HILOG_ERROR("%{public}s", errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
             return nullptr;
         }
         if (!TaskManager::GetInstance().RemoveTaskDependency(task->taskId_, dependentTask->taskId_)) {
