@@ -138,7 +138,7 @@ void Worker::ExecuteInThread(const void* data)
     {
         napi_create_runtime(worker->hostEnv_, &worker->workerEnv_);
         if (worker->workerEnv_ == nullptr) {
-            HILOG_ERROR("taskpool:: workerEnv is nullptr");
+            HILOG_ERROR("taskpool:: worker create runtime failed");
             return;
         }
         auto workerEngine = reinterpret_cast<NativeEngine*>(worker->workerEnv_);
@@ -284,7 +284,7 @@ void Worker::PerformTask(const uv_async_t* req)
     PriorityScope priorityScope(worker, taskInfo.second);
     Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
     if (task == nullptr) {
-        HILOG_ERROR("taskpool:: task is null");
+        HILOG_DEBUG("taskpool:: task has been released");
         return;
     }
     if (!task->UpdateTask(startTime, worker)) {

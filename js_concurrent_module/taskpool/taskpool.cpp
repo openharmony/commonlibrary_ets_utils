@@ -121,7 +121,7 @@ void TaskPool::ExecuteCallback(uv_async_t* req)
         }
         auto task = TaskManager::GetInstance().GetTask(resultInfo->taskId);
         if (task == nullptr) {
-            HILOG_ERROR("taskpool:: task is null");
+            HILOG_DEBUG("taskpool:: task has been released or cancelled");
             continue;
         }
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
@@ -190,7 +190,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     }
     Task* task = Task::GenerateFunctionTask(env, args[0], args + 1, argc - 1, TaskType::FUNCTION_TASK);
     if (task == nullptr) {
-        HILOG_ERROR("taskpool:: ExecuteFunction task is nullptr");
+        HILOG_ERROR("taskpool:: GenerateFunctionTask failed");
         return nullptr;
     }
     TaskManager::GetInstance().StoreTask(task->taskId_, task);
@@ -204,7 +204,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
     TaskMessage *taskMessage = static_cast<TaskMessage *>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
     if (task == nullptr) {
-        HILOG_ERROR("taskpool:: DelayTask task is nullptr");
+        HILOG_DEBUG("taskpool:: DelayTask task has been cancelled");
     } else if (task->taskState_ != ExecuteState::CANCELED) {
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
@@ -391,8 +391,12 @@ void TaskPool::TriggerTask(Task* task)
 void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success)
 {
     TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(task->groupId_);
-    if (taskGroup == nullptr || taskGroup->currentGroupInfo_ == nullptr) {
-        HILOG_ERROR("taskpool:: taskGroup is nullptr");
+    if (taskGroup == nullptr) {
+        HILOG_DEBUG("taskpool:: taskGroup has been released");
+        return;
+    }
+    if (taskGroup->currentGroupInfo_ == nullptr) {
+        HILOG_DEBUG("taskpool:: taskGroup has been executed or cancelled");
         return;
     }
     if (task->IsGroupCommonTask()) {
