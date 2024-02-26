@@ -666,10 +666,9 @@ void Task::NotifyPendingTask()
 {
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
     std::unique_lock<std::shared_mutex> lock(taskMutex_);
-    auto finishedTaskInfo = currentTaskInfo_;
+    delete currentTaskInfo_;
     currentTaskInfo_ = nullptr;
-    delete finishedTaskInfo;
-    if (pendingTaskInfos_.size() == 0) {
+    if (pendingTaskInfos_.empty()) {
         return;
     }
     currentTaskInfo_ = pendingTaskInfos_.front();
@@ -718,6 +717,11 @@ napi_value Task::DeserializeValue(napi_env env, bool isFunc, bool isArgs)
     napi_value result = nullptr;
     napi_status status = napi_ok;
     std::string errMessage = "";
+    std::shared_lock<std::shared_mutex> lock(taskMutex_);
+    if (UNLIKELY(currentTaskInfo_ == nullptr)) {
+        HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
+        return nullptr;
+    }
     if (isFunc) {
         status = napi_deserialize(env, currentTaskInfo_->serializationFunction, &result);
         if (!IsGroupFunctionTask()) {
