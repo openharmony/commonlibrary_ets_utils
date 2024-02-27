@@ -1028,9 +1028,14 @@ void TaskGroupManager::AddTask(uint64_t groupId, napi_ref taskRef, uint64_t task
 {
     auto groupIter = taskGroups_.find(groupId);
     if (groupIter == taskGroups_.end()) {
+        HILOG_DEBUG("taskpool:: taskGroup has been released");
         return;
     }
     auto taskGroup = reinterpret_cast<TaskGroup*>(groupIter->second);
+    if (taskGroup == nullptr) {
+        HILOG_ERROR("taskpool:: taskGroup is null");
+        return;
+    }
     taskGroup->taskRefs_.push_back(taskRef);
     taskGroup->taskNum_++;
     taskGroup->taskIds_.push_back(taskId);
@@ -1130,7 +1135,7 @@ SequenceRunner* TaskGroupManager::GetSeqRunner(uint64_t seqRunnerId)
     if (iter != seqRunners_.end()) {
         return iter->second;
     }
-    HILOG_ERROR("taskpool:: seqRunner not exist.");
+    HILOG_DEBUG("taskpool:: sequenceRunner has been released.");
     return nullptr;
 }
 
@@ -1213,7 +1218,7 @@ void TaskGroupManager::UpdateGroupState(uint64_t groupId)
 {
     TaskGroup* group = GetTaskGroup(groupId);
     if (group == nullptr) {
-        HILOG_ERROR("taskpool:: UpdateGroupState group is nullptr");
+        HILOG_DEBUG("taskpool:: UpdateGroupState taskGroup has been released");
         return;
     }
     group->groupState_ = ExecuteState::RUNNING;
