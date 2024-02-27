@@ -1250,7 +1250,7 @@ HWTEST_F(NativeEngineTest, encodeTest001, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeSync(env, src);
+    napi_value result = base64.EncodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[4] = {0x63, 0x7A, 0x45, 0x7A};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1285,7 +1285,7 @@ HWTEST_F(NativeEngineTest, encodeTest002, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeSync(env, src);
+    napi_value result = base64.EncodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[20] = {81, 109, 70, 122, 90, 84, 89, 48, 73, 69, 53, 118, 90, 71, 85, 117, 97, 110, 77, 61};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1320,7 +1320,7 @@ HWTEST_F(NativeEngineTest, encodeTest003, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeSync(env, src);
+    napi_value result = base64.EncodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[36] = {81, 109, 70, 122, 90, 84, 89, 48, 73, 69, 86, 117, 89, 50, 57, 107, 97, 87, 53,
                         110, 73, 71, 108, 117, 73, 69, 53, 118, 90, 71, 85, 117, 97, 110, 77, 61};
     napi_typedarray_type type;
@@ -1355,7 +1355,7 @@ HWTEST_F(NativeEngineTest, encodeTest004, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeSync(env, src);
+    napi_value result = base64.EncodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[8] = {113, 75, 54, 98, 47, 119, 61, 61};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1389,7 +1389,7 @@ HWTEST_F(NativeEngineTest, encodeTest005, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeSync(env, src);
+    napi_value result = base64.EncodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[8] = {81, 109, 70, 122, 90, 84, 89, 48};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1422,7 +1422,7 @@ HWTEST_F(NativeEngineTest, encodeToStringTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.EncodeToStringSync(env, src);
+    napi_value result = base64.EncodeToStringSync(env, src, OHOS::Util::Type::BASIC);
     size_t prolen = 0;
     char* inputString = nullptr;
     napi_get_value_string_utf8(env, result, nullptr, 0, &prolen);
@@ -1461,7 +1461,7 @@ HWTEST_F(NativeEngineTest, encodeToStringTest002, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.EncodeToStringSync(env, src);
+    napi_value result = base64.EncodeToStringSync(env, src, OHOS::Util::Type::BASIC);
     size_t prolen = 0;
     char* inputString = nullptr;
     napi_get_value_string_utf8(env, result, nullptr, 0, &prolen);
@@ -1501,7 +1501,7 @@ HWTEST_F(NativeEngineTest, encodeToStringTest003, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.EncodeToStringSync(env, src);
+    napi_value result = base64.EncodeToStringSync(env, src, OHOS::Util::Type::BASIC);
     size_t prolen = 0;
     char* inputString = nullptr;
     napi_get_value_string_utf8(env, result, nullptr, 0, &prolen);
@@ -1540,7 +1540,7 @@ HWTEST_F(NativeEngineTest, encodeToStringTest004, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.EncodeToStringSync(env, src);
+    napi_value result = base64.EncodeToStringSync(env, src, OHOS::Util::Type::BASIC);
     size_t prolen = 0;
     char* inputString = nullptr;
     napi_get_value_string_utf8(env, result, nullptr, 0, &prolen);
@@ -1579,7 +1579,7 @@ HWTEST_F(NativeEngineTest, encodeToStringTest005, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.EncodeToStringSync(env, src);
+    napi_value result = base64.EncodeToStringSync(env, src, OHOS::Util::Type::BASIC);
     size_t prolen = 0;
     char* inputString = nullptr;
     napi_get_value_string_utf8(env, result, nullptr, 0, &prolen);
@@ -1619,7 +1619,7 @@ HWTEST_F(NativeEngineTest, decodeTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.DecodeSync(env, src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[3] = {115, 49, 51};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1654,7 +1654,7 @@ HWTEST_F(NativeEngineTest, decodeTest002, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.DecodeSync(env, src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[14] = {66, 97, 115, 101, 54, 52, 32, 78, 111, 100, 101, 46, 106, 115};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1683,7 +1683,7 @@ HWTEST_F(NativeEngineTest, decodeTest003, testing::ext::TestSize.Level0)
     std::string input = "czEz";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
-    napi_value result = base64.DecodeSync(env, src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[3] = {115, 49, 51};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1712,7 +1712,7 @@ HWTEST_F(NativeEngineTest, decodeTest004, testing::ext::TestSize.Level0)
     std::string input = "qK6b/w==";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
-    napi_value result = base64.DecodeSync(env, src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[4] = {168, 174, 155, 255};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1740,7 +1740,7 @@ HWTEST_F(NativeEngineTest, decodeTest005, testing::ext::TestSize.Level0)
     std::string input = "QmFzZTY0";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
-    napi_value result = base64.DecodeSync(env, src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
     char excepted[6] = {66, 97, 115, 101, 54, 52};
     napi_typedarray_type type;
     size_t srcLength = 0;
@@ -1774,7 +1774,7 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest001, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.Encode(env, src);
+    napi_value result = base64.Encode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1800,7 +1800,7 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest002, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.Encode(env, src);
+    napi_value result = base64.Encode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1827,7 +1827,7 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest003, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.Encode(env, src);
+    napi_value result = base64.Encode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1853,7 +1853,7 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest004, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.Encode(env, src);
+    napi_value result = base64.Encode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1879,7 +1879,7 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest005, testing::ext::TestSize.Level0)
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.Encode(env, src);
+    napi_value result = base64.Encode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1904,7 +1904,7 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001, testing::ext::TestSize.Le
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.EncodeToString(env, src);
+    napi_value result = base64.EncodeToString(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1929,7 +1929,7 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest002, testing::ext::TestSize.Le
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeToString(env, src);
+    napi_value result = base64.EncodeToString(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1955,7 +1955,7 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest003, testing::ext::TestSize.Le
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeToString(env, src);
+    napi_value result = base64.EncodeToString(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -1980,7 +1980,7 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest004, testing::ext::TestSize.Le
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeToString(env, src);
+    napi_value result = base64.EncodeToString(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -2005,7 +2005,7 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest005, testing::ext::TestSize.Le
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
 
-    napi_value result = base64.EncodeToString(env, src);
+    napi_value result = base64.EncodeToString(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -2031,7 +2031,7 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.Decode(env, src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -2057,7 +2057,7 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest002, testing::ext::TestSize.Level0)
     ASSERT_EQ(0, ret);
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
-    napi_value result = base64.Decode(env, src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -2077,7 +2077,7 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest003, testing::ext::TestSize.Level0)
     std::string input = "czEz";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
-    napi_value result = base64.Decode(env, src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -2097,7 +2097,7 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest004, testing::ext::TestSize.Level0)
     std::string input = "QmFzZTY0IEVuY29kaW5nIGluIE5vZGUuanM=";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
-    napi_value result = base64.Decode(env, src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
@@ -2117,7 +2117,7 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest005, testing::ext::TestSize.Level0)
     std::string input = "qK6b/w==";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
-    napi_value result = base64.Decode(env, src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
