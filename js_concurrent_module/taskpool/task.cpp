@@ -108,7 +108,6 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
     napi_value napiTrue = NapiHelper::CreateBooleanValue(env, true);
     napi_value napiFalse = NapiHelper::CreateBooleanValue(env, false);
     // add task name to task
-    napi_set_named_property(env, napiTask, NAME, name);
     napi_set_named_property(env, napiTask, FUNCTION_STR, func);
     napi_set_named_property(env, napiTask, TASKID_STR, taskId);
     napi_set_named_property(env, napiTask, ARGUMENTS_STR, argsArray);
@@ -122,7 +121,8 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
         DECLARE_NAPI_FUNCTION(REMOVE_DEPENDENCY_STR, RemoveDependency),
         DECLARE_NAPI_GETTER(TASK_TOTAL_TIME, GetTotalDuration),
         DECLARE_NAPI_GETTER(TASK_CPU_TIME, GetCPUDuration),
-        DECLARE_NAPI_GETTER(TASK_IO_TIME, GetIODuration)
+        DECLARE_NAPI_GETTER(TASK_IO_TIME, GetIODuration),
+        DECLARE_NAPI_GETTER(NAME, GetName)
     };
     napi_define_properties(env, napiTask, sizeof(properties) / sizeof(properties[0]), properties);
 
@@ -573,6 +573,18 @@ napi_value Task::GetCPUDuration(napi_env env, napi_callback_info cbinfo)
 napi_value Task::GetIODuration(napi_env env, napi_callback_info cbinfo)
 {
     return GetTaskDuration(env, cbinfo, TASK_IO_TIME);
+}
+
+napi_value Task::GetName(napi_env env, [[maybe_unused]] napi_callback_info cbinfo)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    napi_value napiTaskId = NapiHelper::GetNameProperty(env, thisVar, TASKID_STR);
+    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+    napi_value name = nullptr;
+    std::string taskName = TaskManager::GetInstance().GetTaskName(taskId);
+    napi_create_string_utf8(env, taskName.c_str(), NAPI_AUTO_LENGTH, &name);
+    return name;
 }
 
 bool Task::IsRepeatableTask()

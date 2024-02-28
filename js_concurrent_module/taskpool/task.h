@@ -59,6 +59,7 @@ public:
     static napi_value GetCPUDuration(napi_env env, napi_callback_info info);
     static napi_value GetIODuration(napi_env env, napi_callback_info info);
     static napi_value GetTaskDuration(napi_env env, napi_callback_info& info, std::string durationType);
+    static napi_value GetName(napi_env env, [[maybe_unused]] napi_callback_info info);
 
     static Task* GenerateTask(napi_env env, napi_value task, napi_value func,
                               napi_value name, napi_value* args, size_t argc);

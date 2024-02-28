@@ -959,6 +959,15 @@ uint64_t TaskManager::GetTaskDuration(uint64_t taskId, std::string durationType)
     return iter->second.first - iter->second.second;
 }
 
+std::string TaskManager::GetTaskName(uint64_t taskId)
+{
+    auto iter = tasks_.find(taskId);
+    if (iter == tasks_.end()) {
+        return "";
+    }
+    return iter->second->name_;
+}
+
 void TaskManager::RemoveTaskDuration(uint64_t taskId)
 {
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
