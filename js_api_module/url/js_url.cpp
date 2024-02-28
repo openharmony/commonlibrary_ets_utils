@@ -1111,9 +1111,13 @@ namespace OHOS::Url {
             baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT10)));
     }
 
-    void ShorteningPath(UrlData& baseData, bool isFile)
+    void ShorteningPath(UrlData& urlData, UrlData& baseData, bool isFile)
     {
         if (baseData.path.empty()) {
+            return;
+        }
+        if (urlData.path.size() == 1 && urlData.path[0].empty()) {
+            urlData.path.pop_back();
             return;
         }
         if ((baseData.path.size() == 1) && isFile &&
@@ -1227,7 +1231,7 @@ namespace OHOS::Url {
                 }
                 if (!input.empty() && input[0] != '/' && !urlData_.path.empty()) {
                     bool isFile = ((urlData_.scheme == "file:") ? true : false);
-                    ShorteningPath(baseInfo, isFile);
+                    ShorteningPath(urlData_, baseInfo, isFile);
                     baseInfo.path.insert(baseInfo.path.end(), urlData_.path.begin(), urlData_.path.end());
                     urlData_.path = baseInfo.path;
                     flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6));
@@ -1272,7 +1276,7 @@ namespace OHOS::Url {
                         baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT6)));
                 } else {
                     bool isFile = ((urlData_.scheme == "file:") ? true : false);
-                    ShorteningPath(baseInfo, isFile);
+                    ShorteningPath(urlData_, baseInfo, isFile);
                     baseInfo.path.insert(baseInfo.path.end(), urlData_.path.begin(), urlData_.path.end());
                     urlData_.path = baseInfo.path;
                     flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6));

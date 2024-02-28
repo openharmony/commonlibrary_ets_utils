@@ -2002,16 +2002,17 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
 function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
   offsetOrEncoding?: number | string, length?: number): Buffer {
   offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
+  const maxLength: number = value.byteLength - offsetOrEncoding;
   if (offsetOrEncoding < 0) {
     throw typeError(offsetOrEncoding, 'offset', ['number']);
   }
-  if (!length) {
-    length = value.byteLength - offsetOrEncoding;
+  if (length === undefined) {
+    length = maxLength;
   } else {
     length = isNaN(Number(length)) ? 0 : Number(length);
   }
   rangeErrorCheck(offsetOrEncoding, 'byteOffset', 0, value.byteLength);
-  rangeErrorCheck(length, 'length', 0, value.byteLength - offsetOrEncoding);
+  rangeErrorCheck(length, 'length', 0, maxLength);
   return new Buffer(value, offsetOrEncoding, length);
 }
 
