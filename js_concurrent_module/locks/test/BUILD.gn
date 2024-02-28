@@ -1,0 +1,59 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
+
+if (is_standard_system) {
+  module_output_path = "js_concurrent_module/locks"
+}
+
+ohos_unittest("test_locks_unittest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    js_concurrent_module_common,
+    "${ets_util_path}/js_concurrent_module/locks",
+    "//third_party/bounds_checking_function/include",
+    "//third_party/googletest/include",
+    "//third_party/node/src",
+    platform_root,
+  ]
+
+  cflags = [ "-g3" ]
+
+  sources = [
+    "test_ark.cpp",
+    "test_locks.cpp",
+  ]
+
+  deps = [
+    "${ets_util_path}/js_concurrent_module/locks:locks_static",
+    "//third_party/bounds_checking_function:libsec_static",
+    "//third_party/googletest:gtest",
+    "//third_party/googletest:gtest_main",
+    "//third_party/libuv:uv",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "ets_runtime:libark_jsruntime",
+    "hilog:libhilog",
+    "napi:ace_napi",
+  ]
+}
+
+group("unittest") {
+  testonly = true
+  deps = [ ":test_locks_unittest" ]
+}
