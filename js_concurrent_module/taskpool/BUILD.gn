@@ -74,7 +74,8 @@ ohos_shared_library("taskpool") {
   external_deps = [ "napi:ace_napi" ]
 
   if (is_ohos && is_standard_system && !is_arkui_x &&
-      defined(global_parts_info) && defined(global_parts_info.qos_manager)) {
+      defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_qos_manager)) {
     defines += [ "ENABLE_QOS" ]
     external_deps += [ "qos_manager:qos" ]
   }
@@ -139,7 +140,7 @@ ohos_source_set("taskpool_static") {
       "napi:ace_napi",
     ]
     if (is_ohos && is_standard_system && defined(global_parts_info) &&
-        defined(global_parts_info.qos_manager)) {
+        defined(global_parts_info.resourceschedule_qos_manager)) {
       defines += [ "ENABLE_QOS" ]
       external_deps += [ "qos_manager:qos" ]
     }
