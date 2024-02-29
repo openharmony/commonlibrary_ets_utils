@@ -132,7 +132,7 @@ std::string XmlTest::XmlPullParserError()
 {
     std::string strXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><todo>Work</todo>";
     OHOS::xml::XmlPullParser xmlPullParser("strXml", "utf-8");
-    xmlPullParser.xmlPullParserError_= "IndexOutOfBoundsException";
+    xmlPullParser.xmlPullParserError_ = "IndexOutOfBoundsException";
     return xmlPullParser.XmlPullParserError();
 }
 

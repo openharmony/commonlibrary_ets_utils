@@ -38,8 +38,10 @@ namespace OHOS::Url {
         napi_valuetype valuetype2 = napi_null;
         napi_typeof(env, argv[0], &valuetype1);
         if (valuetype1 == napi_string) {
-            std::string temp, tempType = "";
-            size_t tempSize, tempTypeSize = 0;
+            std::string temp = "";
+            std::string tempType = "";
+            size_t tempSize = 0;
+            size_t tempTypeSize = 0;
             if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempSize) != napi_ok) {
                 HILOG_ERROR("can not get argv[0] size");
                 return;
