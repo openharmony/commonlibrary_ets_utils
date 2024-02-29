@@ -620,7 +620,7 @@ namespace OHOS::Url {
             if (nums[i].size() > 8) { // 8:ipv4 max value size
                 return i;
             }
-            if (!nums[i].empty() && stoi(nums[i]) > 255) { // 255:ipv4 max value  
+            if (!nums[i].empty() && stoi(nums[i]) > 255) { // 255:ipv4 max value
                 return i;
             }
         }

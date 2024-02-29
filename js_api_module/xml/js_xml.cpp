@@ -887,8 +887,8 @@ namespace OHOS::xml {
                 return 1;
             }
         if (c != '\r' && (c != '\n' || textEnum != TextEnum::ATTRI) &&
-            c != '&' && c != '<' && (c != ']' || textEnum != TextEnum::TEXT)
-            && (c != '%' || textEnum != TextEnum::ENTITY_DECL)) {
+            c != '&' && c != '<' && (c != ']' || textEnum != TextEnum::TEXT) &&
+            (c != '%' || textEnum != TextEnum::ENTITY_DECL)) {
                 DealWhiteSpace(c);
                 position_++;
                 return 2; // 2: break flag
