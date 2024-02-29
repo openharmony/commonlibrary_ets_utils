@@ -24,6 +24,8 @@
 
 namespace Commonlibrary::Platform {
 
+using OHOS::QOS::QosLevel;
+
 #ifdef ENABLE_QOS
 static const std::map<Priority, QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
     {Priority::LOW, OHOS::QOS::QosLevel::QOS_UTILITY},
