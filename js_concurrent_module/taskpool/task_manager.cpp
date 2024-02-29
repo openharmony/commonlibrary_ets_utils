@@ -267,7 +267,11 @@ bool TaskManager::ReadThreadInfo(Worker* worker, char* buf, uint32_t size)
     pid_t pid = getpid();
     pid_t tid = worker->tid_;
     ssize_t bytesLen = -1;
-    snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/stat", pid, tid);
+    int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/stat", pid, tid);
+    if (ret < 0) {
+        HILOG_ERROR("snprintf_s failed");
+        return false;
+    }
     int fd = open(path, O_RDONLY | O_NONBLOCK);
     if (UNLIKELY(fd == -1)) {
         return false;

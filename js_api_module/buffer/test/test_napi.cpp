@@ -674,7 +674,6 @@ HWTEST_F(NativeEngineTest, CopyTest001, testing::ext::TestSize.Level0)
     uint8_t data[20] = {0};
     buffer->ReadBytes(data, tOffset, tEnd);
     ASSERT_STREQ(reinterpret_cast<char*>(data), "this is a string");
-
 }
 
 /**
