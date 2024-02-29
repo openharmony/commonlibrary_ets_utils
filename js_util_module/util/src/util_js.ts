@@ -150,7 +150,7 @@ class Base64Helper {
       throw error;
     }
     let base64Result: Promise<string> = this.base64.encodeToString(src, options);
-    if (options === Type.MIME || Type.MIME_URL_SAFE) {
+    if (options === Type.MIME || options === Type.MIME_URL_SAFE) {
       return base64Result.then((result) => {
         return this.addBreaks(result);
       });
