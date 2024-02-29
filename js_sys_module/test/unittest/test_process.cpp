@@ -524,7 +524,7 @@ HWTEST_F(NativeEngineTest, ProcessIs64Bit001, testing::ext::TestSize.Level0)
         ASSERT_TRUE(res);
     } else {
         ASSERT_FALSE(res);
-    } 
+    }
 }
 
 /**

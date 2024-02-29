@@ -608,7 +608,8 @@ HWTEST_F(NativeEngineTest, IsAbsoluteTest003, testing::ext::TestSize.Level0)
     ASSERT_FALSE(res);
 }
 
-std::string GetStringUtf8(napi_env env, napi_value str) {
+std::string GetStringUtf8(napi_env env, napi_value str)
+{
     std::string buffer = "";
     size_t bufferSize = 0;
     if (napi_get_value_string_utf8(env, str, nullptr, 0, &bufferSize) != napi_ok) {
