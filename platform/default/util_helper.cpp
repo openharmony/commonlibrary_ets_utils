@@ -61,7 +61,7 @@ UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag) {
 std::string ConvertToString(UChar * uchar, size_t length)
 {
     std::string tepStr;
-    if(isChineseEncoding) {
+    if (isChineseEncoding) {
         std::string input = "";
         for (size_t i = 0; i < length; ++i) {
             input += static_cast<char>(uchar[i] & 0xFF);
