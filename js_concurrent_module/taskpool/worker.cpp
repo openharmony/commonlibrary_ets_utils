@@ -369,7 +369,8 @@ void Worker::NotifyTaskResult(napi_env env, TaskInfo* taskInfo, napi_value resul
     {
         std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
         worker->currentTaskId_.erase(std::find(worker->currentTaskId_.begin(),
-                                     worker->currentTaskId_.end(), taskInfo->taskId));
+                                               worker->currentTaskId_.end(),
+                                               taskInfo->taskId));
     }
     uv_async_send(taskInfo->onResultSignal);
     worker->NotifyTaskFinished();
