@@ -15,15 +15,15 @@ import("//build/test.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 if (is_standard_system) {
-  module_output_path = "js_concurrent_module/locks"
+  module_output_path = "js_concurrent_module/sync"
 }
 
-ohos_unittest("test_locks_unittest") {
+ohos_unittest("test_sync_unittest") {
   module_out_path = module_output_path
 
   include_dirs = [
     js_concurrent_module_common,
-    "${ets_util_path}/js_concurrent_module/locks",
+    "${ets_util_path}/js_concurrent_module/sync",
     "//third_party/bounds_checking_function/include",
     "//third_party/googletest/include",
     "//third_party/node/src",
@@ -38,7 +38,7 @@ ohos_unittest("test_locks_unittest") {
   ]
 
   deps = [
-    "${ets_util_path}/js_concurrent_module/locks:locks_static",
+    "${ets_util_path}/js_concurrent_module/sync:sync_static",
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
@@ -55,5 +55,5 @@ ohos_unittest("test_locks_unittest") {
 
 group("unittest") {
   testonly = true
-  deps = [ ":test_locks_unittest" ]
+  deps = [ ":test_sync_unittest" ]
 }

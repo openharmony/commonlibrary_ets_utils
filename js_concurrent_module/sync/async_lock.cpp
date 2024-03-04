@@ -44,7 +44,7 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     napi_create_promise(env, &deferred, &promise);
     LockRequest* lockRequest = new LockRequest(this, GetCurrentTid(), env, cb, mode, options, deferred);
     std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
-    if (!CanAcquireLock(lockRequest) && options.ifAvailable) {
+    if (!CanAcquireLock(lockRequest) && options.isAvailable) {
         napi_value err;
         NAPI_CALL(env, napi_create_string_utf8(env, "The lock is acquired", NAPI_AUTO_LENGTH, &err));
         napi_reject_deferred(env, deferred, err);
