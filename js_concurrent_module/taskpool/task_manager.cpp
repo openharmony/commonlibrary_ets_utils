@@ -148,7 +148,7 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
         std::unique_lock<std::shared_mutex> lock(tasksMutex_);
         int32_t i = 0;
         for (const auto& [_, task] : tasks_) {
-            if (task->taskState_ == ExecuteState::NOT_FOUND) {
+            if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::DELAYED) {
                 continue;
             }
             napi_value taskInfoValue = nullptr;
@@ -485,12 +485,17 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         return;
     }
     std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
+    ExecuteState state = task->taskState_;
+    if (task->taskState_ == ExecuteState::DELAYED) {
+        task->taskState_ = ExecuteState::CANCELED;
+        task->CancelPendingTask(env, ExecuteState::DELAYED);
+        return;
+    }
     if (task->currentTaskInfo_ == nullptr) {
         HILOG_ERROR("taskpool:: cancel non-existent task");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
         return;
     }
-    ExecuteState state = task->taskState_;
     switch (state) {
         case ExecuteState::NOT_FOUND:
             HILOG_ERROR("taskpool:: cancel non-existent task");
