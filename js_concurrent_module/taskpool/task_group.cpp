@@ -148,7 +148,8 @@ void TaskGroup::NotifyGroupTask(napi_env env)
         napi_reference_ref(env, task->taskRef_, nullptr);
         Priority priority = currentGroupInfo_->priority;
         if (task->IsGroupCommonTask()) {
-            task->GetTaskInfo(env, napiTask, TaskType::GROUP_COMMON_TASK, priority);
+            task->UpdateTaskType(TaskType::GROUP_COMMON_TASK);
+            task->GetTaskInfo(env, napiTask, priority);
         }
         task->IncreaseRefCount();
         TaskManager::GetInstance().IncreaseRefCount(task->taskId_);

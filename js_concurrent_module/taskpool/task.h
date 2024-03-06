@@ -17,6 +17,7 @@
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
 
 #include <list>
+#include <map>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
@@ -76,7 +77,8 @@ public:
     void StoreTaskId(uint64_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
                                   Priority priority = Priority::DEFAULT);
-    TaskInfo* GetTaskInfo(napi_env env, napi_value task, TaskType taskType, Priority priority);
+    TaskInfo* GetTaskInfo(napi_env env, napi_value task, Priority priority);
+    bool UpdateTaskType(TaskType taskType);
     bool IsRepeatableTask();
     bool IsGroupTask();
     bool IsGroupCommonTask();
