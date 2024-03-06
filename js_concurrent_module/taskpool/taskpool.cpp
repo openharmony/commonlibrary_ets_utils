@@ -205,13 +205,13 @@ void TaskPool::DelayTask(uv_timer_t* handle)
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: DelayTask task has been cancelled");
-    } else {
+    } else if (task->taskState_ != ExecuteState::CANCELED) {
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
         TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, taskMessage->priority);
         taskInfo->deferred = taskMessage->deferred;
-        if (task->taskState_ == ExecuteState::NOT_FOUND) {
+        if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::DELAYED) {
             task->taskState_ = ExecuteState::WAITING;
             TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
         }
@@ -267,6 +267,9 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority value is error");
             return nullptr;
         }
+    }
+    if (task->IsInitialized()) {
+        task->taskState_ = ExecuteState::DELAYED;
     }
     if (!task->UpdateTaskType(TaskType::COMMON_TASK)) {
         return nullptr;
@@ -442,7 +445,8 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     HITRACE_HELPER_METER_NAME(strTrace);
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
-    if (task->IsFunctionTask() || task->taskState_ == ExecuteState::NOT_FOUND) {
+    if (task->IsFunctionTask() || task->taskState_ == ExecuteState::NOT_FOUND ||
+        task->taskState_ == ExecuteState::DELAYED) {
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
