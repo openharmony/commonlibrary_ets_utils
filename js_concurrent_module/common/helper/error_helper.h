@@ -102,6 +102,9 @@ public:
             case ERR_IN_BOTH_CLONE_AND_TRANSFER:
                 errTitle = "Can not set an arraybuffer to both transferList and cloneList";
                 break;
+            case TYPE_ERROR:
+                errTitle = "The input parameters are invalid, ";
+                break;
             default:
                 break;
         }
