@@ -205,10 +205,16 @@ void TaskPool::DelayTask(uv_timer_t* handle)
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: DelayTask task has been cancelled");
-    } else if (task->taskState_ != ExecuteState::CANCELED) {
+    } else {
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
-        TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
+        napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
+        TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, taskMessage->priority);
+        taskInfo->deferred = taskMessage->deferred;
+        if (task->taskState_ == ExecuteState::NOT_FOUND) {
+            task->taskState_ = ExecuteState::WAITING;
+            TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
+        }
         TaskManager::GetInstance().TryTriggerExpand();
     }
     uv_timer_stop(handle);
@@ -262,20 +268,17 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
     }
-    napi_value promise = task->GetTaskInfoPromise(env, args[1], TaskType::COMMON_TASK, Priority(priority));
-    if (promise == nullptr) {
+    if (!task->UpdateTaskType(TaskType::COMMON_TASK)) {
         return nullptr;
     }
-    if (task->taskState_ == ExecuteState::NOT_FOUND) {
-        task->taskState_ = ExecuteState::WAITING;
-    }
-    uv_loop_t* loop = uv_default_loop();
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
     uv_timer_init(loop, timer);
     TaskMessage *taskMessage = new TaskMessage();
-    taskMessage->priority = priority;
+    taskMessage->priority = Priority(priority);
     taskMessage->taskId = task->taskId_;
+    napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
     timer->data = taskMessage;
     uv_timer_start(timer, reinterpret_cast<uv_timer_cb>(DelayTask), delayTime, 0);
     uv_work_t *work = new uv_work_t;
@@ -312,7 +315,8 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
                 }
                 napi_reference_ref(env, task->taskRef_, nullptr);
                 if (task->IsGroupCommonTask()) {
-                    task->GetTaskInfo(env, napiTask, TaskType::GROUP_COMMON_TASK, Priority(priority));
+                    task->UpdateTaskType(TaskType::GROUP_COMMON_TASK);
+                    task->GetTaskInfo(env, napiTask, Priority(priority));
                 }
                 task->groupId_ = groupId;
                 ExecuteTask(env, task, Priority(priority));

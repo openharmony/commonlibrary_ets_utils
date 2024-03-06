@@ -156,23 +156,19 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
 
 napi_value Task::GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType, Priority priority)
 {
-    TaskInfo* taskInfo = GetTaskInfo(env, task, taskType, priority);
+    if (!UpdateTaskType(taskType)) {
+        return nullptr;
+    }
+    TaskInfo* taskInfo = GetTaskInfo(env, task, priority);
     if (taskInfo == nullptr) {
         return nullptr;
     }
     return NapiHelper::CreatePromise(env, &taskInfo->deferred);
 }
 
-TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, TaskType taskType, Priority priority)
+TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
 {
     std::string errMessage = "";
-    if (!IsInitialized() && taskType_ != taskType) {
-        errMessage = "taskpool:: task type is error";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
-        return nullptr;
-    }
-    taskType_ = taskType;
     napi_value func = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
     napi_value args = NapiHelper::GetNameProperty(env, task, ARGUMENTS_STR);
     napi_value taskName = NapiHelper::GetNameProperty(env, task, NAME);
@@ -206,7 +202,6 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, TaskType taskType, Pr
         } else {
             pendingTaskInfos_.push_back(pendingInfo);
         }
-        napi_reference_ref(env, taskRef_, nullptr);
     }
     char* name = NapiHelper::GetString(env, taskName);
     if (strlen(name) == 0) {
@@ -585,6 +580,19 @@ napi_value Task::GetName(napi_env env, [[maybe_unused]] napi_callback_info cbinf
     std::string taskName = TaskManager::GetInstance().GetTaskName(taskId);
     napi_create_string_utf8(env, taskName.c_str(), NAPI_AUTO_LENGTH, &name);
     return name;
+}
+
+bool Task::UpdateTaskType(TaskType taskType)
+{
+    if (!IsInitialized() && taskType_ != taskType) {
+        std::string errMessage = "taskpool:: task type is error";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env_, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
+    taskType_ = taskType;
+    napi_reference_ref(env_, taskRef_, nullptr);
+    return true;
 }
 
 bool Task::IsRepeatableTask()

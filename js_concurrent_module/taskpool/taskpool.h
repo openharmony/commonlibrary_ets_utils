@@ -26,7 +26,8 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
 struct TaskMessage {
-    uint32_t priority {};
+    napi_deferred deferred = nullptr;
+    Priority priority {Priority::DEFAULT};
     uint64_t taskId {};
 };
 
