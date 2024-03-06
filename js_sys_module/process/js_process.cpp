@@ -41,6 +41,8 @@ namespace OHOS::JsSysModule::Process {
         constexpr int32_t NAPI_RETURN_ZERO = 0;
         constexpr int32_t NAPI_RETURN_ONE = 1;
     }
+    constexpr int FIRST_APPLICATION_UID = 10000; // 10000 : bundleId lower limit
+    constexpr int LAST_APPLICATION_UID = 65535; // 65535 : bundleId upper limit
     thread_local std::multimap<std::string, napi_ref> eventMap;
     thread_local std::map<napi_ref, napi_ref> pendingUnHandledRejections;
     // support events
@@ -313,14 +315,10 @@ namespace OHOS::JsSysModule::Process {
                 napi_get_boolean(env, flag, &result);
                 return result;
             }
-            flag = false;
-            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
-            return result;
-        } else {
-            flag = false;
-            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
-            return result;
         }
+        flag = false;
+        NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+        return result;
     }
 
     napi_value Process::Is64Bit(napi_env env) const
@@ -607,14 +605,10 @@ namespace OHOS::JsSysModule::Process {
                 napi_get_boolean(env, flag, &result);
                 return result;
             }
-            flag = false;
-            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
-            return result;
-        } else {
-            flag = false;
-            NAPI_CALL(env, napi_get_boolean(env, flag, &result));
-            return result;
         }
+        flag = false;
+        NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+        return result;
     }
 
     napi_value ProcessManager::GetUidForName(napi_env env, napi_value name) const

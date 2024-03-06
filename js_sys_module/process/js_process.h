@@ -244,10 +244,6 @@ namespace OHOS::JsSysModule::Process {
 
     private:
         int ConvertTime(time_t tvsec, int64_t tvnsec) const;
-
-    private:
-        int FIRST_APPLICATION_UID = 10000;
-        int LAST_APPLICATION_UID = 19999;
     };
     class ProcessManager {
     public:
@@ -317,9 +313,6 @@ namespace OHOS::JsSysModule::Process {
          * @param proid The parameter is the id of the process.
          */
         napi_value Kill(napi_env env, napi_value signal, napi_value proid);
-    private:
-        int FIRST_APPLICATION_UID = 10000;
-        int LAST_APPLICATION_UID = 19999;
     };
 } // namespace OHOS::JsSysModule::Process
 #endif // PROCESS_JS_PROCESS_H
