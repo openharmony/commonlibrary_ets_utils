@@ -18,10 +18,10 @@
 
 #include <queue>
 #include <string>
+#include "common.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
-#include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
 enum LockMode {
@@ -34,18 +34,25 @@ enum LockMode {
 struct LockOptions {
     bool isAvailable = false;
     napi_ref signal = nullptr;
+    uint32_t timeoutMillis = 0;
 };
 
 class AsyncLock;
 
 class LockRequest {
 public:
-    LockRequest(AsyncLock* lock, int tid, napi_env env, napi_ref cb, LockMode mode, const LockOptions &options,
+    LockRequest(AsyncLock* lock, tid_t tid, napi_env env, napi_ref cb, LockMode mode, const LockOptions &options,
         napi_deferred deferred);
+    ~LockRequest();
 
-    int GetTid() const
+    tid_t GetTid() const
     {
         return tid_;
+    }
+
+    std::string GetCreationStacktrace()
+    {
+        return creationStacktrace_;
     }
 
     LockMode GetMode() const
@@ -61,19 +68,35 @@ public:
     void CallCallbackAsync();
     void CallCallback();
 
+    void OnQueued(uint32_t timeoutMillis);
+    void OnSatisfied();
 private:
     bool AbortIfNeeded();
+    void ArmTimeoutTimer(uint32_t timeoutMillis);
+    void DisarmTimeoutTimer();
+    void HandleRequestTimeout(std::string &&errorMessage);
     static void AsyncAfterWorkCallback(napi_env env, napi_status status, void *data);
     static napi_value FinallyCallback(napi_env env, napi_callback_info info);
+    static void TimeoutCallback(uv_timer_t *handle);
 
     AsyncLock* lock_;
-    int tid_;
+    tid_t tid_;
+    std::string creationStacktrace_;
     napi_env env_;
     napi_ref callback_;
     LockMode mode_;
     LockOptions options_;
     napi_deferred deferred_;
     napi_async_work work_;
+    uv_timer_t timeoutTimer_;
+    bool timeoutActive_;
 };
+
+struct RequestTimeoutData {
+    RequestTimeoutData(AsyncLock* l, LockRequest* r): lock(l), request(r) {}
+    AsyncLock* lock;
+    LockRequest* request;
+};
+
 }  // namespace Commonlibrary::Concurrent::LocksModule
 #endif  // JS_CONCURRENT_MODULE_LOCKS_LOCK_REQUEST_H

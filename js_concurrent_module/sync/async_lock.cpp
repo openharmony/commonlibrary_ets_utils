@@ -14,9 +14,8 @@
  */
 
 #include <uv.h>
-#include <unistd.h>
-#include <sys/syscall.h>
 #include "async_lock.h"
+#include "async_lock_manager.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
@@ -42,20 +41,22 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     napi_value promise;
     napi_deferred deferred;
     napi_create_promise(env, &deferred, &promise);
-    LockRequest* lockRequest = new LockRequest(this, GetCurrentTid(), env, cb, mode, options, deferred);
+    LockRequest *lockRequest =
+        new LockRequest(this, AsyncLockManager::GetCurrentTid(), env, cb, mode, options, deferred);
     std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
     if (!CanAcquireLock(lockRequest) && options.isAvailable) {
         napi_value err;
         NAPI_CALL(env, napi_create_string_utf8(env, "The lock is acquired", NAPI_AUTO_LENGTH, &err));
         napi_reject_deferred(env, deferred, err);
     } else {
+        lockRequest->OnQueued(options.timeoutMillis);
         pendingList_.push_back(lockRequest);
         ProcessPendingLockRequest();
     }
     return promise;
 }
 
-void AsyncLock::CleanUpLockRequest(LockRequest* lockRequest)
+void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
 {
     std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
     auto it = std::find(heldList_.begin(), heldList_.end(), lockRequest);
@@ -69,18 +70,33 @@ void AsyncLock::CleanUpLockRequest(LockRequest* lockRequest)
     ProcessPendingLockRequest();
 }
 
+bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
+{
+    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    auto it = std::find(pendingList_.begin(), pendingList_.end(), lockRequest);
+    if (it == pendingList_.end()) {
+        // the lock got held while we were waiting on the mutex, no-op
+        return false;
+    }
+    // we won the race, need to remove the request from the queue and handle the time out event
+    pendingList_.erase(it);
+    return true;
+}
+
 void AsyncLock::ProcessPendingLockRequest()
 {
     if (pendingList_.empty()) {
         return;
     }
-    LockRequest* lockRequest = pendingList_.front();
+    LockRequest *lockRequest = pendingList_.front();
     if (!CanAcquireLock(lockRequest)) {
         return;
     }
-    if (lockRequest->GetTid() == GetCurrentTid() && lockRequest->GetMode() == LOCK_MODE_SHARED) {
+    if (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid() && lockRequest->GetMode() == LOCK_MODE_SHARED) {
         lockStatus_ = LOCK_MODE_SHARED;
-        while (lockRequest->GetTid() == GetCurrentTid() && lockRequest->GetMode() == LOCK_MODE_SHARED) {
+        while (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid() &&
+               lockRequest->GetMode() == LOCK_MODE_SHARED) {
+            lockRequest->OnSatisfied();
             heldList_.push_back(lockRequest);
             pendingList_.pop_front();
             asyncLockMutex_.unlock();
@@ -93,6 +109,7 @@ void AsyncLock::ProcessPendingLockRequest()
         }
     } else {
         lockStatus_ = LOCK_MODE_EXCLUSIVE;
+        lockRequest->OnSatisfied();
         heldList_.push_back(lockRequest);
         pendingList_.pop_front();
         lockRequest->CallCallbackAsync();
@@ -180,8 +197,24 @@ napi_value AsyncLock::CreateLockInfo(napi_env env, const LockRequest *rq)
     return info;
 }
 
-int AsyncLock::GetCurrentTid()
+std::vector<RequestCreationInfo> AsyncLock::GetSatisfiedRequestInfos()
 {
-    return static_cast<int>(syscall(SYS_gettid));
+    std::vector<RequestCreationInfo> result;
+    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    for (auto *request : heldList_) {
+        result.push_back(RequestCreationInfo { request->GetTid(), request->GetCreationStacktrace() });
+    }
+    return result;
 }
+
+std::vector<RequestCreationInfo> AsyncLock::GetPendingRequestInfos()
+{
+    std::vector<RequestCreationInfo> result;
+    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    for (auto *request : pendingList_) {
+        result.push_back(RequestCreationInfo { request->GetTid(), request->GetCreationStacktrace() });
+    }
+    return result;
+}
+
 } // namespace Commonlibrary::Concurrent::LocksModule
