@@ -2017,12 +2017,10 @@ function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
 }
 
 function createBufferFromArray(value: Array<number>): Buffer {
-  if (!pool) {
-    createPool();
+  if (value.length <= 0) {
+    return new Buffer(0);
   }
-  const buffer = new Buffer(pool, poolOffset, value.length);
-  poolOffset += value.length;
-  alignPool();
+  const buffer = allocUninitializedFromPool(value.length);
   buffer[bufferSymbol].setArray(value);
   return buffer;
 }
