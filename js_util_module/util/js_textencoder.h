@@ -20,6 +20,8 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "unicode/ucnv.h"
+
 namespace OHOS::Util {
     class TextEncoder {
     public:
@@ -61,6 +63,8 @@ namespace OHOS::Util {
 
     private:
         std::string encoding_ {};
+        void FreedMemory(char *data) const;
+        std::string UnicodeConversion(char16_t* originalBuffer, size_t inputSize) const;
     };
 }
 #endif // UTIL_JS_TEXTENCODER_H
