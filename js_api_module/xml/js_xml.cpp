@@ -641,7 +641,7 @@ namespace OHOS::xml {
         }
         switch (strXml_[position_]) {
             case '&':
-                return TagEnum::ENTITY_REFERENCE;
+                return inDeclaration ? TagEnum::ENTITY_REFERENCE : TagEnum::TEXT;
             case '<':
                 return DealLtGroup();
             case '%':
@@ -770,9 +770,9 @@ namespace OHOS::xml {
             return;
         }
         if (DEFAULT_ENTITIES.count(strEntity) != 0) {
-            out = "";
+            out = out.substr(0, start);
             bUnresolved_ = false;
-            out.append(strEntity);
+            out.append(DEFAULT_ENTITIES[strEntity]);
             return;
         }
         std::string resolved = " ";
@@ -1526,7 +1526,7 @@ namespace OHOS::xml {
 
     void XmlPullParser::ParseText()
     {
-        text_ = ParseTagValue('<', false, false, TextEnum::TEXT);
+        text_ = ParseTagValue('<', true, false, TextEnum::TEXT);
         std::string strTemp = text_;
         Replace(strTemp, "\r", "");
         Replace(strTemp, "\n", "");
