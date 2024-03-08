@@ -32,7 +32,7 @@ enum LockMode {
 };
 
 struct LockOptions {
-    bool ifAvailable = false;
+    bool isAvailable = false;
     napi_ref signal = nullptr;
 };
 

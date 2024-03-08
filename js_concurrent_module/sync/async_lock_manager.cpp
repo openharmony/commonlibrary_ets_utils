@@ -43,9 +43,20 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
     napi_value queryFunc = nullptr;
     napi_create_function(env, "query", NAPI_AUTO_LENGTH, Query, nullptr, &queryFunc);
     napi_set_named_property(env, asyncLockManagerClass, "query", queryFunc);
+    
+    // AsyncLockMode enum
+    napi_value asyncLockMode = NapiHelper::CreateObject(env);
+    napi_value sharedMode = NapiHelper::CreateUint32(env, LOCK_MODE_SHARED);
+    napi_value exclusiveMode = NapiHelper::CreateUint32(env, LOCK_MODE_EXCLUSIVE);
+    napi_property_descriptor exportMode[] = {
+        DECLARE_NAPI_PROPERTY("SHARED", sharedMode),
+        DECLARE_NAPI_PROPERTY("EXCLUSIVE", exclusiveMode),
+    };
+    napi_define_properties(env, asyncLockMode, sizeof(exportMode) / sizeof(exportMode[0]), exportMode);
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("AsyncLock", asyncLockManagerClass),
+        DECLARE_NAPI_PROPERTY("AsyncLockMode", asyncLockMode),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
     NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
@@ -342,10 +353,10 @@ bool AsyncLockManager::GetLockMode(napi_env env, napi_value val, LockMode &mode)
 
 bool AsyncLockManager::GetLockOptions(napi_env env, napi_value val, LockOptions &options)
 {
-    napi_value ifAvailable = NapiHelper::GetNameProperty(env, val, "ifAvailable");
+    napi_value isAvailable = NapiHelper::GetNameProperty(env, val, "isAvailable");
     napi_value signal = NapiHelper::GetNameProperty(env, val, "signal");
-    if (ifAvailable != nullptr) {
-        options.ifAvailable = NapiHelper::GetBooleanValue(env, ifAvailable);
+    if (isAvailable != nullptr) {
+        options.isAvailable = NapiHelper::GetBooleanValue(env, isAvailable);
     }
     if (signal != nullptr) {
         napi_create_reference(env, signal, 1, &options.signal);

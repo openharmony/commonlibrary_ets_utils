@@ -287,7 +287,7 @@ TEST_F(LocksTest, IfAvailable)
         napi_ref callback_ref;
         napi_create_reference(env, callback, 1, &callback_ref);
         LockOptions options;
-        options.ifAvailable = true;
+        options.isAvailable = true;
         lockPtr->LockAsync(env, callback_ref, LOCK_MODE_EXCLUSIVE, options);
         data.end.arrive_and_wait();
         LocksTest::DestroyEngine();
