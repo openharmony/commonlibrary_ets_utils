@@ -14,7 +14,7 @@
  */
 
 interface HelpUtil {
-  TextEncoder: Object;
+  TextEncoder: TextEncoder;
   TextDecoder: TextDecoder;
   Base64: Object;
   Base64Helper: NativeBase64;
@@ -38,7 +38,6 @@ type AnyType = Object | null | undefined;
 
 declare function requireInternal(s: string): HelpUtil;
 const helpUtil = requireInternal('util');
-let textEncoder = helpUtil.TextEncoder;
 let base64 = helpUtil.Base64;
 let types = helpUtil.Types;
 
@@ -694,6 +693,60 @@ function promisify(func: Function): Function {
 
 interface TextDecoder {
   new(encoding?: string, options?: { fatal?: boolean; ignoreBOM?: boolean }): TextDecoder;
+}
+
+interface TextEncoder {
+  new(encoding?: string): TextEncoder;
+}
+
+interface EncodeIntoUint8ArrayInfo {
+  read: number;
+  written: number;
+}
+
+class TextEncoder {
+  textEncoder: TextEncoder;
+  constructor(encoding?: string) {
+    if (arguments.length === 0) {
+      this.textEncoder = new helpUtil.TextEncoder();
+    } else {
+      this.textEncoder = new helpUtil.TextEncoder(encoding);
+    }
+  }
+
+  static create(encoding?: string): TextEncoder {
+    if (arguments.length === 0) {
+      return new TextEncoder();
+    } else {
+      return new TextEncoder(encoding);
+    }
+  }
+
+  public encode(input?: string): Uint8Array {
+    if (arguments.length === 0) {
+      return this.textEncoder.encode();
+    } else {
+      return this.textEncoder.encode(input);
+    }
+  }
+
+  public encodeInto(input?: string, dest?: Uint8Array): Uint8Array | EncodeIntoUint8ArrayInfo {
+    if (arguments.length === 0) {
+      return this.textEncoder.encodeInto();
+    } else if (arguments.length === 1) {
+      return this.textEncoder.encodeInto(input);
+    } else {
+      return this.textEncoder.encodeInto(input, dest);
+    }
+  }
+
+  public encodeIntoUint8Array(input: string, dest: Uint8Array): EncodeIntoUint8ArrayInfo {
+    return this.textEncoder.encodeIntoUint8Array(input, dest);
+  }
+
+  get encoding(): string {
+    return this.textEncoder.encoding;
+  }
 }
 
 class TextDecoder {
@@ -1913,7 +1966,7 @@ export default {
   generateRandomUUID: randomUUID,
   generateRandomBinaryUUID: randomBinaryUUID,
   parseUUID: parseUUID,
-  TextEncoder: textEncoder,
+  TextEncoder: TextEncoder,
   TextDecoder: TextDecoder,
   Base64: base64,
   Base64Helper: Base64Helper,
