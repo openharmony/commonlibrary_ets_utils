@@ -34,7 +34,7 @@ ohos_unittest("test_process_unittest") {
   ]
 
   deps = [
-    "${ets_util_path}/js_sys_module/process:process_packages",
+    "${ets_util_path}/js_sys_module/process:process_static",
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",

@@ -629,7 +629,7 @@ HWTEST_F(NativeEngineTest, ProcesGetGetStartRealtime001, testing::ext::TestSize.
     int32_t num = 0;
     napi_get_value_int32(env, result, &num);
     bool res = false;
-    if (num != 0) {
+    if (num == 0) {
         res = true;
     }
     napi_get_value_bool(env, result, &res);
