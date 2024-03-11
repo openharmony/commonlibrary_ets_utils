@@ -28,12 +28,12 @@ type ReplacerType = (number | string)[] | null | TransformsFunc;
 
 function parse(text: string, reviver?: TransformsFunc): Object | null {
   if (typeof text !== 'string') {
-    let error = new BusinessError(`Parameter error.The type of ${text} must be string`);
+    let error = new BusinessError(`Parameter error. The type of ${text} must be string`);
     throw error;
   }
   if (reviver) {
     if (typeof reviver !== 'function') {
-      let error = new BusinessError(`Parameter error.${reviver} must be a method, but it is ${reviver}`);
+      let error = new BusinessError(`Parameter error. The type of ${reviver} must be a method`);
       throw error;
     }
   }
@@ -41,7 +41,7 @@ function parse(text: string, reviver?: TransformsFunc): Object | null {
   try {
     return JSON.parse(text, reviver);
   } catch (e) {
-    let error = new BusinessError(`e.message: `+ (e as Error).message + `e.name: ` + (e as Error).name);
+    let error = new BusinessError(`e.message: `+ (e as Error).message + `, e.name: ` + (e as Error).name);
     throw error;
   }
 }
@@ -69,11 +69,11 @@ function isParameterType(self: unknown): boolean {
 }
 
 function isSpaceType(self: unknown): boolean {
-  return (typeof self == 'string' || typeof self == 'number');
+  return (typeof self === 'string' || typeof self === 'number');
 }
 
 function isCirculateReference(value: Object, seenObjects: Set<Object> = new Set()): boolean {
-  if (value == null || !(value instanceof Object)) {
+  if (value === null || !(value instanceof Object)) {
     return false;
   }
   if (seenObjects.has(value)) {
@@ -108,14 +108,17 @@ function stringify(value: Object, replacer?: ReplacerType, space?: string | numb
   }
   if (replacer) {
     if (!isParameterType(replacer)) {
-      let error = new BusinessError(`Parameter error. ${replacer} must be a method or array, but it is ${replacer}`);
+      let error = new BusinessError(`Parameter error. The type of ${replacer} must be a method or array`);
       throw error;
     }
     if (space) {
       if (!isSpaceType(space)) {
-        let error = new BusinessError(`Parameter error. ${space} must be a string or number, but it is ${space}`);
+        let error = new BusinessError(`Parameter error. The type of ${space} must be a string or number`);
         throw error;
       }
+    } else if (space === null) {
+      let error = new BusinessError(`Parameter error. The type of ${space} must be a string or number`);
+      throw error;
     }
   }
 
@@ -130,14 +133,18 @@ function stringify(value: Object, replacer?: ReplacerType, space?: string | numb
       }
     }
   } catch (e) {
-    let error = new BusinessError((e as Error).message + `e.name: ` + (e as Error).name);
+    let error = new BusinessError((e as Error).message + `, e.name: ` + (e as Error).name);
     throw error;
   }
 }
 
 function has(value: object, key: string): boolean {
-  if (typeof value !== 'object') {
+  if (typeof value !== 'object' || typeof value === 'undefined' || value === null) {
     let error = new BusinessError(`Parameter error. The type of ${value} must be object`);
+    throw error;
+  }
+  if (value instanceof Array) {
+    let error = new BusinessError(`Parameter error. The type of ${value} must be json object`);
     throw error;
   }
   if (!(typeof key === 'string' && key.length)) {
@@ -148,8 +155,12 @@ function has(value: object, key: string): boolean {
 }
 
 function remove(value: object, key: string): void {
-  if (typeof value !== 'object') {
+  if (typeof value !== 'object' || typeof value === 'undefined' || value === null) {
     let error = new BusinessError(`Parameter error. The type of ${value} must be object`);
+    throw error;
+  }
+  if (value instanceof Array) {
+    let error = new BusinessError(`Parameter error. The type of ${value} must be json object`);
     throw error;
   }
   if (!(typeof key === 'string' && key.length)) {
