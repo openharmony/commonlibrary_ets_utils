@@ -132,7 +132,7 @@ uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)
 void TaskGroup::NotifyGroupTask(napi_env env)
 {
     std::unique_lock<std::shared_mutex> lock(taskGroupMutex_);
-    if (pendingGroupInfos_.size() == 0) {
+    if (pendingGroupInfos_.empty()) {
         return;
     }
     currentGroupInfo_ = pendingGroupInfos_.front();
@@ -161,14 +161,14 @@ void TaskGroup::NotifyGroupTask(napi_env env)
 
 void TaskGroup::CancelPendingGroup(napi_env env)
 {
-    if (pendingGroupInfos_.size() == 0) {
+    if (pendingGroupInfos_.empty()) {
         return;
     }
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
     auto pendingIter = pendingGroupInfos_.begin();
     for (; pendingIter != pendingGroupInfos_.end(); ++pendingIter) {
         GroupInfo* info = *pendingIter;
-        napi_reject_deferred(env, info->deferred, undefined);
+        napi_reject_deferred(env, info->deferred, error);
         napi_reference_unref(env, groupRef_, nullptr);
         delete info;
     }

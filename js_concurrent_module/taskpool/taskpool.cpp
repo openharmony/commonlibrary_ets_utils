@@ -344,14 +344,12 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     napi_value napiTaskResult = nullptr;
     napi_status status = napi_deserialize(task->env_, task->result_, &napiTaskResult);
     napi_delete_serialization_data(task->env_, task->result_);
-    if (napiTaskResult == nullptr) {
-        napi_get_undefined(task->env_, &napiTaskResult);
-    }
 
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
+        napiTaskResult = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
     } else if (status != napi_ok) {
         HILOG_ERROR("taskpool: failed to deserialize result");
         strTrace += ", performResult : DeserializeFailed";
@@ -361,6 +359,10 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         strTrace += ", performResult : Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
+
+    if (napiTaskResult == nullptr) {
+        napi_get_undefined(task->env_, &napiTaskResult);
+    }
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
     if (!task->IsGroupTask()) {
         if (success) {
@@ -424,9 +426,8 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         }
         napi_resolve_deferred(env, groupInfo->deferred, resArr);
     } else {
-        napi_value undefined = nullptr;
-        napi_get_undefined(env, &undefined);
-        napi_reject_deferred(env, groupInfo->deferred, undefined);
+        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
+        napi_reject_deferred(env, groupInfo->deferred, error);
     }
     taskGroup->groupState_ = ExecuteState::WAITING;
     napi_delete_reference(env, groupInfo->resArr);

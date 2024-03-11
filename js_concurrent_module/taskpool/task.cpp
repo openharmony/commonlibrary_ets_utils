@@ -698,20 +698,20 @@ void Task::NotifyPendingTask()
 
 void Task::CancelPendingTask(napi_env env, ExecuteState state)
 {
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
     if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr) {
-        napi_reject_deferred(env, currentTaskInfo_->deferred, undefined);
+        napi_reject_deferred(env, currentTaskInfo_->deferred, error);
         napi_reference_unref(env, taskRef_, nullptr);
         delete currentTaskInfo_;
         currentTaskInfo_ = nullptr;
     }
-    if (pendingTaskInfos_.size() == 0) {
+    if (pendingTaskInfos_.empty()) {
         return;
     }
     auto pendingIter = pendingTaskInfos_.begin();
     for (; pendingIter != pendingTaskInfos_.end(); ++pendingIter) {
         TaskInfo* info = *pendingIter;
-        napi_reject_deferred(env, info->deferred, undefined);
+        napi_reject_deferred(env, info->deferred, error);
         napi_reference_unref(env, taskRef_, nullptr);
         delete info;
     }

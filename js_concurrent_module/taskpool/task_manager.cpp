@@ -482,35 +482,23 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     // 4. Find canceled taskInfo, skip it
     Task* task = GetTask(taskId);
     if (task == nullptr) {
+        std::string errMsg = "taskpool:: the task may not exist";
+        HILOG_ERROR("%{public}s", errMsg.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
         return;
     }
     std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
-    ExecuteState state = task->taskState_;
-    if (task->taskState_ == ExecuteState::DELAYED) {
+    if (task->taskState_ == ExecuteState::DELAYED || task->taskState_ == ExecuteState::RUNNING ||
+        task->taskState_ == ExecuteState::WAITING) {
+        task->CancelPendingTask(env, task->taskState_);
         task->taskState_ = ExecuteState::CANCELED;
-        task->CancelPendingTask(env, ExecuteState::DELAYED);
         return;
     }
-    if (task->currentTaskInfo_ == nullptr) {
-        HILOG_ERROR("taskpool:: cancel non-existent task");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
+    if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND) {
+        std::string errMsg = "taskpool:: task is not executed or has been executed";
+        HILOG_ERROR("%{public}s", errMsg.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
         return;
-    }
-    switch (state) {
-        case ExecuteState::NOT_FOUND:
-            HILOG_ERROR("taskpool:: cancel non-existent task");
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK);
-            return;
-        case ExecuteState::RUNNING:
-            task->taskState_ = ExecuteState::CANCELED;
-            task->CancelPendingTask(env, ExecuteState::RUNNING);
-            break;
-        case ExecuteState::WAITING:
-            task->taskState_ = ExecuteState::CANCELED;
-            task->CancelPendingTask(env, ExecuteState::WAITING);
-            break;
-        default: // Default is CANCELED, means task isCanceled, do not need to mark again.
-            break;
     }
 }
 
@@ -1081,15 +1069,17 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     {
         std::unique_lock<std::shared_mutex> lock(taskGroup->taskGroupMutex_);
         if (taskGroup->currentGroupInfo_ == nullptr) {
-            HILOG_ERROR("taskpool:: cancel non-existent task group");
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
+            std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
+            HILOG_ERROR("%{public}s", errMsg.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
             return;
         }
         taskGroup->CancelPendingGroup(env);
     }
     if (taskGroup->groupState_ == ExecuteState::NOT_FOUND) {
-        HILOG_ERROR("taskpool:: cancel non-existent task group");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP);
+        std::string errMsg = "taskpool:: taskGroup is not executed";
+        HILOG_ERROR("%{public}s", errMsg.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
         return;
     }
     if (taskGroup->groupState_ == ExecuteState::CANCELED) {

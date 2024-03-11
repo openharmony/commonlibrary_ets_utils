@@ -64,10 +64,10 @@ public:
                 errTitle = "The function is not mark as concurrent, ";
                 break;
             case ERR_CANCEL_NONEXIST_TASK:
-                errTitle = "The task does not exist when it is canceled";
+                errTitle = "The task does not exist when it is canceled, ";
                 break;
             case ERR_CANCEL_NONEXIST_TASK_GROUP:
-                errTitle = "The task group does not exist when it is canceled";
+                errTitle = "The task group does not exist when it is canceled, ";
                 break;
             case ERR_CANCEL_RUNNING_TASK:
                 errTitle = "The task is executing when it is canceled";
