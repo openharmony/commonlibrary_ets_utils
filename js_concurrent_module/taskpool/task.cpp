@@ -304,7 +304,7 @@ napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
     }
     for (size_t i = 0; i < arrayLength; i++) {
         napi_value cloneVal = NapiHelper::GetElement(env, args[0], i);
-        if (!NapiHelper::IsArrayBuffer(env, cloneVal) && !NapiHelper::IsSendablObject(env, cloneVal)) {
+        if (!NapiHelper::IsArrayBuffer(env, cloneVal) && !NapiHelper::IsSendable(env, cloneVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
                 "taskpool:: setCloneList elements in array must be ArrayBuffer or Sendable Class instance");
             return nullptr;
