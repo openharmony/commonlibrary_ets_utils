@@ -17,6 +17,12 @@ import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 ohos_shared_library("worker") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "include",
     js_concurrent_module_common,
@@ -75,6 +81,12 @@ ohos_shared_library("worker") {
 }
 
 ohos_source_set("worker_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     js_concurrent_module_common,
     "$concurrent_module/worker",

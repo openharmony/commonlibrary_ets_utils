@@ -94,6 +94,12 @@ if (is_arkui_x) {
 }
 
 ohos_shared_library("util") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   deps = [ ":util_static" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
@@ -101,6 +107,12 @@ ohos_shared_library("util") {
 }
 
 ohos_source_set("util_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source",

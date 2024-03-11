@@ -78,6 +78,12 @@ uri_sources = [
 ]
 
 ohos_shared_library("uri") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   deps = [ ":uri_static" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
@@ -85,6 +91,12 @@ ohos_shared_library("uri") {
 }
 
 ohos_source_set("uri_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "include",
     "//third_party/node/src",

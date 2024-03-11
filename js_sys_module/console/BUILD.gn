@@ -15,6 +15,12 @@ import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 ohos_shared_library("console") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "../../js_concurrent_module/common",
     "../console",
@@ -62,6 +68,12 @@ ohos_shared_library("console") {
 }
 
 ohos_source_set("console_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     js_concurrent_module_common,
     "../console",
