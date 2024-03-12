@@ -214,6 +214,11 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::DELAYED) {
             task->taskState_ = ExecuteState::WAITING;
             TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
+        } else if (task->taskState_ == ExecuteState::WAITING) {
+            std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
+            if (task->currentTaskInfo_ != nullptr) {
+                TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
+            }
         }
         TaskManager::GetInstance().TryTriggerExpand();
     }

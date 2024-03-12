@@ -688,6 +688,7 @@ void Task::NotifyPendingTask()
     std::unique_lock<std::shared_mutex> lock(taskMutex_);
     delete currentTaskInfo_;
     currentTaskInfo_ = nullptr;
+    taskState_ = ExecuteState::WAITING;
     if (pendingTaskInfos_.empty()) {
         return;
     }
