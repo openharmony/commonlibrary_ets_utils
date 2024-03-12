@@ -70,7 +70,6 @@ class ConvertXML {
     } else {
       converted = this.convertxmlclass.convert(strXml, options);
     }
-    let strEnd: string = '';
     if (converted.hasOwnProperty('spaces')) {
       let space: string | number | undefined = converted.spaces;
       delete converted.spaces;
@@ -80,53 +79,25 @@ class ConvertXML {
 }
 
 function dealXml(strXml: string): string {
-  let idx: number = 0;
-  let idxSec: number = 0;
-  let idxThir: number = 0;
-  let idxCData: number = 0;
-  let idxCDataSec: number = 0;
-  while ((idx = strXml.indexOf(']]><![CDATA')) !== -1) {
-    strXml = strXml.substring(0, idx + LESS_SIGN_INDEX) + ' ' + strXml.substring(idx + LESS_SIGN_INDEX);
-  }
-  while ((idx = strXml.indexOf('>', idxSec)) !== -1) {
-    idxThir = strXml.indexOf('<', idx);
-    strXml = dealPriorReplace(strXml, idx, idxThir);
-    idxSec = strXml.indexOf('<', idx);
-    if (idxSec !== -1) {
-      idxCData = strXml.indexOf('<![CDATA', idxCDataSec);
-      if (idxSec === idxCData) {
-        idxSec = strXml.indexOf(']]>', idxCData);
-        strXml = dealLaterReplace(strXml, idxCData, idxSec);
-        idxCDataSec = idxSec;
-      }
+  strXml = strXml.replace(/(<!\[CDATA\[[\s\S]*?\]\]>)|(>\s+<)/g,  function(match, group) {
+    if (group) {
+      return group;
     } else {
-      break;
+      return '><';
     }
-  }
-  return strXml;
-}
-
-function dealPriorReplace(strXml: string, idx: number, idxThir: number): string {
-  let i: number = idx + 1;
-  for (; i < idxThir; i++) {
-    let cXml: string = strXml.charAt(i);
-    if (cXml !== '\r' && cXml !== '\n' && cXml !== '\v' && cXml !== '\t' && cXml !== ' ') {
-      break;
-    }
-  }
-  if (i === idxThir) {
-    strXml = strXml.substring(0, idx + 1) + strXml.substring(idxThir);
-  }
-  return strXml;
-}
-
-function dealLaterReplace(strXml: string, idx: number, idxThir: number): string {
-  let i: number = idx + 1;
-  let res = strXml.substring(i, idxThir);
-  res = res.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t').replace(/\v/g, '\\v');
-  strXml = strXml.substring(0, i) + res + strXml.substring(idxThir);
-  return strXml;
+  }).trim();
+  strXml = strXml.replace(/\]\]><!\[CDATA/g, ']]> <![CDATA');
+  return strXml.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, function(match) {
+   return match.replace(/\\/g, '\\\\').replace(/[\r\n\t\v]/g, function(suit) {
+     switch(suit) {
+       case '\n': return '\\n';
+       case '\r': return '\\r';
+       case '\t': return '\\t';
+       case '\v': return '\\v';
+       default: return suit;
+     }
+   })
+  });
 }
 
 export default {
