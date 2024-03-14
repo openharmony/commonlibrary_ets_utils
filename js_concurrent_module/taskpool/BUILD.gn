@@ -44,6 +44,12 @@ if (target_os == "ios" || (!is_arkui_x && is_mac)) {
 }
 
 ohos_shared_library("taskpool") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "include",
     js_concurrent_module_common,
@@ -99,6 +105,12 @@ ohos_shared_library("taskpool") {
 }
 
 ohos_source_set("taskpool_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "include",
     js_concurrent_module_common,

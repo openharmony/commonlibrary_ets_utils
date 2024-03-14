@@ -78,6 +78,12 @@ xml_sources = [
 ]
 
 ohos_shared_library("xml") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   deps = [ ":xml_static" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
@@ -85,6 +91,12 @@ ohos_shared_library("xml") {
 }
 
 ohos_source_set("xml_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "include",
     "//third_party/icu/icu4c/source/common",

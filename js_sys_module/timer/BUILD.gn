@@ -15,6 +15,12 @@ import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 ohos_shared_library("timer") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     "../../js_concurrent_module/common",
     "../timer",
@@ -64,6 +70,12 @@ ohos_shared_library("timer") {
 }
 
 ohos_source_set("timer_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [
     js_concurrent_module_common,
     "../timer",

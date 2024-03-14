@@ -104,6 +104,12 @@ template("container_lib") {
   }
 
   ohos_source_set(name + "_static") {
+    branch_protector_ret = "pac_ret"
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
     include_dirs = [
       "//third_party/node/src",
       "//commonlibrary/ets_utils/js_util_module/container/" + name,
@@ -146,6 +152,12 @@ template("container_lib") {
     part_name = "ets_utils"
   }
   ohos_shared_library(name) {
+    branch_protector_ret = "pac_ret"
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
     deps = [ ":${name}_static" ]
     subsystem_name = "commonlibrary"
     part_name = "ets_utils"
