@@ -75,6 +75,36 @@ namespace OHOS::Uri {
         std::string ToString() const;
 
         /**
+         * Indicates whether this URI is an relative URI.
+         */
+        bool IsRelative() const;
+
+        /**
+         * Indicates whether this URI is an opaque URI.
+         */
+        bool IsOpaque() const;
+
+        /**
+         * Indicates whether this URI is an hierarchical URI.
+         */
+        bool IsHierarchical() const;
+
+        /**
+         * Add key and value to Uri's query
+         */
+        std::string AddQueryValue(const std::string key, const std::string value) const;
+
+        /**
+         * Add pathSegment to Uri's segment
+         */
+        std::string AddSegment(const std::string pathSegment) const;
+
+        /**
+         * Gets the all Segment of the URI.
+         */
+        std::vector<std::string> GetSegment() const;
+
+        /**
          * Normalize the path of this URI.
          */
         std::string Normalize() const;
@@ -124,6 +154,11 @@ namespace OHOS::Uri {
          */
         std::string GetFragment() const;
 
+        /**
+         * Clear Uri's query
+         */
+        std::string ClearQuery() const;
+
     private:
         void PreliminaryWork() const;
         void AnalysisUri();
@@ -143,6 +178,7 @@ namespace OHOS::Uri {
         bool AnalysisIPV4();
 
         std::string Split(const std::string &path) const;
+        std::string BuildUriString(const std::string str, const std::string param) const;
 
     private:
         UriData uriData_;

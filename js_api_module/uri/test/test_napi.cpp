@@ -608,6 +608,105 @@ HWTEST_F(NativeEngineTest, IsAbsoluteTest003, testing::ext::TestSize.Level0)
     ASSERT_FALSE(res);
 }
 
+HWTEST_F(NativeEngineTest, IsRelativeTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("https://www.example.com/aaa");
+    bool res = uri.IsRelative();
+    ASSERT_FALSE(res);
+}
+
+HWTEST_F(NativeEngineTest, IsRelativeTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("/bbb");
+    bool res = uri.IsRelative();
+    ASSERT_TRUE(res);
+}
+
+HWTEST_F(NativeEngineTest, IsOpaqueTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("aaa:user@example.com");
+    bool res = uri.IsOpaque();
+    ASSERT_TRUE(res);
+}
+
+HWTEST_F(NativeEngineTest, IsOpaqueTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("content://com.example/bbb");
+    bool res = uri.IsOpaque();
+    ASSERT_FALSE(res);
+}
+
+HWTEST_F(NativeEngineTest, IsHierarchicalTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("https://www.example.com/path/to/resource");
+    bool res = uri.IsHierarchical();
+    ASSERT_TRUE(res);
+}
+
+HWTEST_F(NativeEngineTest, IsHierarchicalTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("/path/to/resource");
+    bool res = uri.IsHierarchical();
+    ASSERT_TRUE(res);
+}
+
+HWTEST_F(NativeEngineTest, IsHierarchicalTest003, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("tel:123456789");
+    bool res = uri.IsHierarchical();
+    ASSERT_FALSE(res);
+}
+
+HWTEST_F(NativeEngineTest, AddQueryValueTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("https://username:password@host:8080/file?aaa=1#myfragment");
+    std::string temp = uri.AddQueryValue("bbb", "2");
+    ASSERT_STREQ(temp.c_str(), "https://username:password@host:8080/file?aaa=1&bbb=2#myfragment");
+}
+
+HWTEST_F(NativeEngineTest, AddQueryValueTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("mao:user@example.com");
+    std::string temp = uri.AddQueryValue("bb", "cc");
+    ASSERT_STREQ(temp.c_str(), "mao:?bb=cc");
+}
+
+HWTEST_F(NativeEngineTest, ClearQueryTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("https://username:password@host:8080/file?aaa=1#myfragment");
+    std::string temp = uri.ClearQuery();
+    ASSERT_STREQ(temp.c_str(), "https://username:password@host:8080/file#myfragment");
+}
+
+HWTEST_F(NativeEngineTest, GetSegmentTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("https://username:password@host:8080/file?aaa=1#myfragment");
+    std::vector<std::string> temp = uri.GetSegment();
+    ASSERT_EQ(temp.size(), 1);
+}
+
+HWTEST_F(NativeEngineTest, AddSegmentTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("https://username:password@host:8080/file?aaa=1#myfragment");
+    std::string temp = uri.AddSegment("segment");
+    ASSERT_STREQ(temp.c_str(), "https://username:password@host:8080/file/segment?aaa=1#myfragment");
+}
+
+HWTEST_F(NativeEngineTest, AddSegmentTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("mao:user@example.com");
+    std::string temp = uri.AddSegment("aaa");
+    ASSERT_STREQ(temp.c_str(), "mao:/aaa");
+}
+
+HWTEST_F(NativeEngineTest, GetTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("https://username:password@host:8080");
+    ASSERT_STREQ(uri.GetPath().c_str(), "");
+    ASSERT_STREQ(uri.GetQuery().c_str(), "");
+    ASSERT_STREQ(uri.GetFragment().c_str(), "");
+}
+
 std::string GetStringUtf8(napi_env env, napi_value str)
 {
     std::string buffer = "";
@@ -622,6 +721,41 @@ std::string GetStringUtf8(napi_env env, napi_value str)
         return buffer;
     }
     return buffer;
+}
+
+napi_value StrToNapiValue(napi_env env, const std::string &result)
+{
+    napi_value output = nullptr;
+    napi_create_string_utf8(env, result.c_str(), result.size(), &output);
+    return output;
+}
+
+std::vector<std::string> GetArray(napi_env env, const napi_value tempStr)
+{
+    std::vector<std::string> strVec;
+    napi_value napiStr = nullptr;
+    uint32_t length = 0;
+    size_t strLength = 0;
+    napi_get_array_length(env, tempStr, &length);
+    for (size_t i = 0; i < length; i++) {
+        napi_get_element(env, tempStr, i, &napiStr);
+        if (napi_get_value_string_utf8(env, napiStr, nullptr, 0, &strLength) != napi_ok) {
+            HILOG_ERROR("can not get napiStr size");
+            return strVec;
+        }
+        if (strLength > 0) {
+            std::string itemStr = "";
+            itemStr.resize(strLength);
+            if (napi_get_value_string_utf8(env, napiStr, itemStr.data(), strLength + 1, &strLength) != napi_ok) {
+                HILOG_ERROR("can not get napiStr size");
+                return strVec;
+            }
+            strVec.push_back(itemStr);
+        } else {
+            strVec.push_back("");
+        }
+    }
+    return strVec;
 }
 
 HWTEST_F(NativeEngineTest, ModuleTest001, testing::ext::TestSize.Level0)
@@ -721,4 +855,63 @@ HWTEST_F(NativeEngineTest, ModuleTest002, testing::ext::TestSize.Level0)
     bool res1 = true;
     napi_get_value_bool(env, result1, &res1);
     ASSERT_FALSE(res1);
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://name:word@www.uritest.com:99/path/abc?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+    napi_value tempFn = nullptr;
+
+    napi_get_named_property(env, instance, "checkIsRelative", &tempFn);
+    napi_value result = nullptr;
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    bool flag = true;
+    napi_get_value_bool(env, result, &flag);
+    ASSERT_FALSE(flag);
+
+    napi_get_named_property(env, instance, "checkIsOpaque", &tempFn);
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    napi_get_value_bool(env, result, &flag);
+    ASSERT_FALSE(flag);
+
+    napi_get_named_property(env, instance, "checkIsHierarchical", &tempFn);
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    napi_get_value_bool(env, result, &flag);
+    ASSERT_TRUE(flag);
+
+    napi_value key = StrToNapiValue(env, "aaa");
+    napi_value value = StrToNapiValue(env, "bbb");
+    napi_value keyArgs[] = { key, value };
+    napi_get_named_property(env, instance, "addQueryValue", &tempFn);
+    napi_call_function(env, instance, tempFn, 2, keyArgs, &result);
+    std::string res = GetStringUtf8(env, result);
+    ASSERT_STREQ(res.c_str(), "http://name:word@www.uritest.com:99/path/abc?query&aaa=bbb#fagment");
+
+    napi_get_named_property(env, instance, "getSegment", &tempFn);
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    std::vector<std::string> temp = GetArray(env, result);
+    ASSERT_STREQ(temp[0].c_str(), "path");
+    ASSERT_STREQ(temp[1].c_str(), "abc");
+
+    napi_value segment = StrToNapiValue(env, "aaa");
+    napi_value segargs[] = { segment };
+    napi_get_named_property(env, instance, "addSegment", &tempFn);
+    napi_call_function(env, instance, tempFn, 1, segargs, &result);
+    res = GetStringUtf8(env, result);
+    ASSERT_STREQ(res.c_str(), "http://name:word@www.uritest.com:99/path/abc/aaa?query#fagment");
+
+    napi_get_named_property(env, instance, "clearQuery", &tempFn);
+    napi_call_function(env, instance, tempFn, 0, nullptr, &result);
+    res = GetStringUtf8(env, result);
+    ASSERT_STREQ(res.c_str(), "http://name:word@www.uritest.com:99/path/abc#fagment");
 }
