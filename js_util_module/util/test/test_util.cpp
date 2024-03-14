@@ -377,6 +377,176 @@ HWTEST_F(NativeEngineTest, textEncodeTest005, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: textEncodeTest006
+ * @tc.desc: Test encode src.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeTest006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeTest006 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("big5");
+
+    std::string input = "abc哈熠";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = textEncoder.Encode(env, src);
+
+    char excepted[8] = {0x61, 0x62, 0x63, 0xAB, 0xA2, 0xE6, 0x66, 0}; // 8:nums of args
+
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void *srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    napi_get_typedarray_info(
+        env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+
+    ASSERT_EQ(srcLength, 7); // 7:string length
+    char *res = reinterpret_cast<char*>(srcData);
+
+    res[srcLength] = 0;
+    ASSERT_STREQ(res, excepted);
+}
+
+/**
+ * @tc.name: textEncodeTest007
+ * @tc.desc: Test encode src.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeTest007, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeTest007 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("shift_jis");
+
+    std::string input = "abc哈熠";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = textEncoder.Encode(env, src);
+
+    char excepted[8] = {0x61, 0x62, 0x63, 0x99, 0xFB, 0xFC, 0xFC, 0}; // 8:nums of args
+
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void *srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    napi_get_typedarray_info(
+        env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+
+    ASSERT_EQ(srcLength, 7); // 7:string length
+    char *res = reinterpret_cast<char*>(srcData);
+
+    res[srcLength] = 0;
+    ASSERT_STREQ(res, excepted);
+}
+
+/**
+ * @tc.name: textEncodeTest008
+ * @tc.desc: Test encode src.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeTest008, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeTest008 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("iso-2022-jp");
+
+    std::string input = "abc哈熠";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = textEncoder.Encode(env, src);
+
+    char excepted[13] = {0x61, 0x62, 0x63, 0x1B, 0x24, 0x42, 0x52, 0x7D, 0x1B, 0x28, 0x42, 0x1A, 0}; // 13:nums of args
+
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void *srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    napi_get_typedarray_info(
+        env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+
+    ASSERT_EQ(srcLength, 12); // 12:string length
+    char *res = reinterpret_cast<char*>(srcData);
+
+    res[srcLength] = 0;
+    ASSERT_STREQ(res, excepted);
+}
+
+/**
+ * @tc.name: textEncodeTest009
+ * @tc.desc: Test encode src.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeTest009, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeTest009 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("ibm866");
+
+    std::string input = "abc哈熠";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = textEncoder.Encode(env, src);
+
+    char excepted[6] = {0x61, 0x62, 0x63, 0x7F, 0x7F, 0}; // 6:nums of args
+
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void *srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    napi_get_typedarray_info(
+        env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+
+    ASSERT_EQ(srcLength, 5); // 5:string length
+    char *res = reinterpret_cast<char*>(srcData);
+
+    res[srcLength] = 0;
+    ASSERT_STREQ(res, excepted);
+}
+
+/**
+ * @tc.name: textEncodeTest010
+ * @tc.desc: Test encode src.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeTest010, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeTest010 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("macintosh");
+
+    std::string input = "abc哈熠";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = textEncoder.Encode(env, src);
+
+    char excepted[6] = {0x61, 0x62, 0x63, 0x3F, 0x3F, 0}; // 6:nums of args
+
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void *srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    napi_get_typedarray_info(
+        env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+
+    ASSERT_EQ(srcLength, 5); // 5:string length
+    char *res = reinterpret_cast<char*>(srcData);
+
+    res[srcLength] = 0;
+    ASSERT_STREQ(res, excepted);
+}
+
+/**
  * @tc.name: textEncodeIntoTest001
  * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
  * @tc.type: FUNC
@@ -500,6 +670,174 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest003, testing::ext::TestSize.Level0)
 
     ASSERT_EQ(resRead, (uint32_t)5);
     ASSERT_EQ(resWritten, (uint32_t)5);
+}
+
+/**
+ * @tc.name: textEncodeIntoTest004
+ * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeIntoTest004, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeIntoTest004 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("big5");
+
+    std::string input = "abc123";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 20;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    napi_value dest = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+
+    napi_value result = textEncoder.EncodeInto(env, src, dest);
+
+    napi_value read = nullptr;
+    napi_get_named_property(env, result, "read", &read);
+
+    uint32_t resRead = 0;
+
+    napi_get_value_uint32(env, read, &resRead);
+
+    napi_value written = nullptr;
+    napi_get_named_property(env, result, "written", &written);
+
+    uint32_t resWritten = 0;
+    napi_get_value_uint32(env, read, &resWritten);
+
+    ASSERT_EQ(resRead, (uint32_t)6);
+    ASSERT_EQ(resWritten, (uint32_t)6);
+}
+
+/**
+ * @tc.name: textEncodeIntoTest005
+ * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeIntoTest005, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeIntoTest005 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("shift_jis");
+
+    std::string input = "abc123哈";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 20;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    napi_value dest = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+
+    napi_value result = textEncoder.EncodeInto(env, src, dest);
+
+    napi_value read = nullptr;
+    napi_get_named_property(env, result, "read", &read);
+
+    uint32_t resRead = 0;
+
+    napi_get_value_uint32(env, read, &resRead);
+
+    napi_value written = nullptr;
+    napi_get_named_property(env, result, "written", &written);
+
+    uint32_t resWritten = 0;
+    napi_get_value_uint32(env, read, &resWritten);
+
+    ASSERT_EQ(resRead, (uint32_t)7);
+    ASSERT_EQ(resWritten, (uint32_t)7);
+}
+
+/**
+ * @tc.name: textEncodeIntoTest006
+ * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeIntoTest006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeIntoTest006 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("iso-2022-jp");
+
+    std::string input = "abc123哈";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 20;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    napi_value dest = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+
+    napi_value result = textEncoder.EncodeInto(env, src, dest);
+
+    napi_value read = nullptr;
+    napi_get_named_property(env, result, "read", &read);
+
+    uint32_t resRead = 0;
+
+    napi_get_value_uint32(env, read, &resRead);
+
+    napi_value written = nullptr;
+    napi_get_named_property(env, result, "written", &written);
+
+    uint32_t resWritten = 0;
+    napi_get_value_uint32(env, read, &resWritten);
+
+    ASSERT_EQ(resRead, (uint32_t)7);
+    ASSERT_EQ(resWritten, (uint32_t)7);
+}
+
+/**
+ * @tc.name: textEncodeIntoTest007
+ * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textEncodeIntoTest007, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textEncodeIntoTest007 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::TextEncoder textEncoder("ibm866");
+
+    std::string input = "abc123哈";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 20;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    napi_value dest = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+
+    napi_value result = textEncoder.EncodeInto(env, src, dest);
+
+    napi_value read = nullptr;
+    napi_get_named_property(env, result, "read", &read);
+
+    uint32_t resRead = 0;
+
+    napi_get_value_uint32(env, read, &resRead);
+
+    napi_value written = nullptr;
+    napi_get_named_property(env, result, "written", &written);
+
+    uint32_t resWritten = 0;
+    napi_get_value_uint32(env, read, &resWritten);
+
+    ASSERT_EQ(resRead, (uint32_t)7);
+    ASSERT_EQ(resWritten, (uint32_t)7);
 }
 
 /**

@@ -89,9 +89,8 @@ namespace OHOS::Util {
         }
 
         size_t writeLength = bufferResult.length();
-        char* writeData = const_cast<char*>(bufferResult.c_str());
         for (size_t j = 0; j < writeLength; j++) {
-            *writeResult = writeData[j];
+            *writeResult = bufferResult[j];
             writeResult++;
         }
         nchars = static_cast<int32_t>(i);
