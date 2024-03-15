@@ -405,7 +405,7 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
 
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationArgs;
-    bool defaultClone = true;
+    bool defaultClone = false;
     bool defaultTransfer = true;
     napi_status status = napi_serialize(env, argsArray, undefined, argsArray,
                                         defaultTransfer, defaultClone, &serializationArgs);
