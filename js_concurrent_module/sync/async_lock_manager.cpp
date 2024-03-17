@@ -33,17 +33,20 @@ std::atomic<uint32_t> AsyncLockManager::nextId = 1;
 napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 {
     // AsyncLock class
-    napi_value asyncLockManagerClass = nullptr;
-    napi_define_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr, 0, nullptr, &asyncLockManagerClass);
-
     napi_value requestFunc = nullptr;
     napi_create_function(env, "request", NAPI_AUTO_LENGTH, Request, nullptr, &requestFunc);
-    napi_set_named_property(env, asyncLockManagerClass, "request", requestFunc);
 
     napi_value queryFunc = nullptr;
     napi_create_function(env, "query", NAPI_AUTO_LENGTH, Query, nullptr, &queryFunc);
-    napi_set_named_property(env, asyncLockManagerClass, "query", queryFunc);
-    
+
+    napi_property_descriptor props[] = {
+        DECLARE_NAPI_PROPERTY("request", requestFunc),
+        DECLARE_NAPI_PROPERTY("query", queryFunc),
+    };
+    napi_value asyncLockManagerClass = nullptr;
+    napi_define_sendable_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
+                               sizeof(props) / sizeof(props[0]), props, nullptr, &asyncLockManagerClass);
+
     // AsyncLockMode enum
     napi_value asyncLockMode = NapiHelper::CreateObject(env);
     napi_value sharedMode = NapiHelper::CreateUint32(env, LOCK_MODE_SHARED);
