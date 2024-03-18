@@ -403,9 +403,9 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "transfer list must be an Array");
             return nullptr;
         }
-        serializeStatus = napi_serialize(env, argv[0], argv[1], undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner(env, argv[0], argv[1], undefined, false, defaultClone, &data);
     } else {
-        serializeStatus = napi_serialize(env, argv[0], undefined, undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner(env, argv[0], undefined, undefined, false, defaultClone, &data);
     }
     if (serializeStatus != napi_ok || data == nullptr) {
         worker->HostOnMessageErrorInner();
@@ -773,10 +773,10 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Transfer list must be an Array");
             return nullptr;
         }
-        serializeStatus = napi_serialize(env, argv[0], argv[1], undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner(env, argv[0], argv[1], undefined, false, defaultClone, &data);
     } else {
         napi_value undefined = NapiHelper::GetUndefinedValue(env);
-        serializeStatus = napi_serialize(env, argv[0], undefined, undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner(env, argv[0], undefined, undefined, false, defaultClone, &data);
     }
 
     if (serializeStatus != napi_ok || data == nullptr) {
@@ -853,7 +853,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     // meaningless to copy sendable object when call globalObject
     bool defaultClone = true;
     bool defaultTransfer = false;
-    serializeStatus = napi_serialize(env, argsArray, undefined, undefined, defaultTransfer, defaultClone, &data);
+    serializeStatus = napi_serialize_inner(env, argsArray, undefined, undefined, defaultTransfer, defaultClone, &data);
     if (serializeStatus != napi_ok || data == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
         return nullptr;
@@ -1506,7 +1506,7 @@ void Worker::HostOnGlobalCallInner()
     // meaningless to copy sendable object when call globalObject
     bool defaultClone = true;
     bool defaultTransfer = false;
-    status = napi_serialize(hostEnv_, res, undefined, undefined, defaultTransfer, defaultClone, &data);
+    status = napi_serialize_inner(hostEnv_, res, undefined, undefined, defaultTransfer, defaultClone, &data);
     if (status != napi_ok || data == nullptr) {
         AddGlobalCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
         globalCallSuccess_ = false;
@@ -1872,7 +1872,7 @@ void Worker::HandleUncaughtException(napi_value exception)
     if (hostEnv_ != nullptr) {
         napi_value data = nullptr;
         napi_value undefined = NapiHelper::GetUndefinedValue(workerEnv_);
-        napi_serialize(workerEnv_, obj, undefined, undefined, false, true, &data);
+        napi_serialize_inner(workerEnv_, obj, undefined, undefined, false, true, &data);
         {
             std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
             if (!HostIsStop()) {
