@@ -118,6 +118,7 @@ public:
     void RemovePendingTaskInfo(uint64_t taskId);
     void StoreDependentTaskInfo(std::set<uint64_t> dependTaskIdSet, uint64_t taskId);
     void RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId);
+    std::string GetTaskDependInfoToString(uint64_t taskId);
 
     // for duration
     void StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration);

@@ -744,6 +744,7 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
 
 void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
 {
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(taskId);
     if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
@@ -920,6 +921,19 @@ void TaskManager::RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t tas
         return;
     }
     iter->second.erase(taskIter);
+}
+
+std::string TaskManager::GetTaskDependInfoToString(uint64_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    std::string str = "TaskInfos: taskId: " + std::to_string(taskId) + ", dependTaskId:";
+    auto iter = dependTaskInfos_.find(taskId);
+    if (iter != dependTaskInfos_.end()) {
+        for (const auto& id : iter->second) {
+            str += " " + std::to_string(id);
+        }
+    }
+    return str;
 }
 
 void TaskManager::StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
