@@ -18,6 +18,7 @@
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
+#include "helper/hitrace_helper.h"
 #include "task_manager.h"
 #include "taskpool.h"
 #include "utils/log.h"
@@ -422,6 +423,7 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
 
 napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc == 0) {
         std::string errMessage = "taskpool:: addDependency has no params";
@@ -486,11 +488,13 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         HILOG_ERROR("taskpool:: there is a circular dependency");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CIRCULAR_DEPENDENCY);
     }
+    HITRACE_HELPER_METER_NAME(TaskManager::GetInstance().GetTaskDependInfoToString(task->taskId_));
     return nullptr;
 }
 
 napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc == 0) {
         std::string errMessage = "taskpool:: removeDependency has no params";
@@ -542,6 +546,7 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         dependentTask->TryClearHasDependency();
     }
     task->TryClearHasDependency();
+    HITRACE_HELPER_METER_NAME(TaskManager::GetInstance().GetTaskDependInfoToString(task->taskId_));
     return nullptr;
 }
 
