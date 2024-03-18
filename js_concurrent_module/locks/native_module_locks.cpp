@@ -20,7 +20,7 @@ static napi_module g_locksModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Commonlibrary::Concurrent::LocksModule::AsyncLockManager::Init,
-    .nm_modname = "sync",
+    .nm_modname = "locks",
     .nm_priv = reinterpret_cast<void *>(0),
     .reserved = {0},
 };

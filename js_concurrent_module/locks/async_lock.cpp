@@ -173,25 +173,17 @@ napi_value AsyncLock::CreateLockInfo(napi_env env, const LockRequest *rq)
 {
     napi_value info;
     NAPI_CALL(env, napi_create_object(env, &info));
-    napi_value id;
     napi_value name;
-    if (lockName_.empty()) {
-        NAPI_CALL(env, napi_create_int32(env, anonymousLockId_, &id));
-        NAPI_CALL(env, napi_get_undefined(env, &name));
-    } else {
-        NAPI_CALL(env, napi_get_undefined(env, &id));
-        NAPI_CALL(env, napi_create_string_utf8(env, lockName_.c_str(), NAPI_AUTO_LENGTH, &name));
-    }
+    NAPI_CALL(env, napi_create_string_utf8(env, lockName_.c_str(), NAPI_AUTO_LENGTH, &name));
     napi_value mode;
     NAPI_CALL(env, napi_create_int32(env, rq->GetMode(), &mode));
     napi_value tid;
     NAPI_CALL(env, napi_create_int32(env, rq->GetTid(), &tid));
 
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("id", id),
         DECLARE_NAPI_PROPERTY("name", name),
         DECLARE_NAPI_PROPERTY("mode", mode),
-        DECLARE_NAPI_PROPERTY("threadId", tid),
+        DECLARE_NAPI_PROPERTY("id", tid),
     };
     NAPI_CALL(env, napi_define_properties(env, info, sizeof(properties) / sizeof(properties[0]), properties));
     return info;

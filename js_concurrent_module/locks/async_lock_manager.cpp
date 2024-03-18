@@ -128,13 +128,13 @@ napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo
     uint32_t lockId = nextId++;
     Request(lockId);
 
-    napi_value id;
-    NAPI_CALL(env, napi_create_uint32(env, lockId, &id));
     napi_value name;
-    NAPI_CALL(env, napi_get_undefined(env, &name));
+    std::ostringstream out;
+    out << "anonymousLock" << lockId;
+    std::string lockName = out.str();
+    NAPI_CALL(env, napi_create_string_utf8(env, lockName.c_str(), NAPI_AUTO_LENGTH, &name));
 
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("id", id),
         DECLARE_NAPI_PROPERTY("name", name),
         DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, thisVar),
     };
@@ -156,7 +156,7 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     napi_value asyncLockClass;
     NAPI_CALL(env, napi_get_reference_value(env, asyncLockClassRef, &asyncLockClass));
     napi_value instance;
-    NAPI_CALL(env, napi_new_instance(env, asyncLockClass, 0, nullptr, &instance));
+    NAPI_CALL(env, napi_create_object(env, &instance));
 
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
@@ -168,11 +168,7 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     std::string name = NapiHelper::GetString(env, args[0]);
     Request(name);
 
-    napi_value id;
-    NAPI_CALL(env, napi_create_uint32(env, 0, &id));
-
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("id", id),
         DECLARE_NAPI_PROPERTY("name", args[0]),
         DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, instance),
     };
@@ -262,12 +258,6 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
     if (type == napi_undefined || type == napi_null) {
         return CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
             return true;
-        });
-    } else if (type == napi_number) {
-        uint32_t id;
-        napi_get_value_uint32(env, arg, &id);
-        return CreateLockStates(env, [id] (const AsyncLockIdentity &identity) {
-            return identity.isAnonymous && identity.id == id;
         });
     } else if (type == napi_string) {
         std::string name = NapiHelper::GetString(env, arg);

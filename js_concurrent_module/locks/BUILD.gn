@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
-sync_sources = [
+locks_sources = [
   "async_lock.cpp",
   "async_lock_manager.cpp",
   "deadlock_helpers.cpp",
@@ -25,7 +25,7 @@ sync_sources = [
 
 concurrent_helper_sources = [ "../common/helper/napi_helper.cpp" ]
 
-ohos_shared_library("sync") {
+ohos_shared_library("locks") {
   branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
@@ -34,7 +34,7 @@ ohos_shared_library("sync") {
   }
   include_dirs = [ js_concurrent_module_common ]
 
-  sources = sync_sources
+  sources = locks_sources
   sources += concurrent_helper_sources
 
   defines = []
@@ -70,7 +70,7 @@ ohos_shared_library("sync") {
   relative_install_dir = "module/util"
 }
 
-ohos_source_set("sync_static") {
+ohos_source_set("locks_static") {
   branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
@@ -79,7 +79,7 @@ ohos_source_set("sync_static") {
   }
   include_dirs = [ js_concurrent_module_common ]
 
-  sources = sync_sources
+  sources = locks_sources
   sources += concurrent_helper_sources
 
   defines = []
@@ -121,6 +121,6 @@ ohos_source_set("sync_static") {
   part_name = "ets_utils"
 }
 
-group("sync_packages") {
-  deps = [ ":sync" ]
+group("locks_packages") {
+  deps = [ ":locks" ]
 }
