@@ -18,29 +18,38 @@
 
 #include <list>
 #include <string>
+#include "common.h"
 #include "lock_request.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
-#include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
+
+struct RequestCreationInfo {
+    tid_t tid;
+    std::string creationStacktrace;
+};
+
 class AsyncLock {
 public:
     explicit AsyncLock(const std::string &lockName);
     explicit AsyncLock(uint32_t lockId);
     ~AsyncLock() = default;
-    
+
     napi_value LockAsync(napi_env env, napi_ref cb, LockMode mode, const LockOptions &options);
-    void CleanUpLockRequest(LockRequest* lockRequest);
+    void CleanUpLockRequestOnCompletion(LockRequest* lockRequest);
+    bool CleanUpLockRequestOnTimeout(LockRequest* lockRequest);
     napi_status FillLockState(napi_env env, napi_value held, napi_value pending);
+
+    std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
+    std::vector<RequestCreationInfo> GetPendingRequestInfos();
 
 private:
     void ProcessPendingLockRequest();
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
     static void Destructor(napi_env env, void *data, [[maybe_unused]] void *hint);
-    static int GetCurrentTid();
 
     std::list<LockRequest *> pendingList_ {};
     std::list<LockRequest *> heldList_ {};

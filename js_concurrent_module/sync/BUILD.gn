@@ -17,6 +17,8 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 sync_sources = [
   "async_lock.cpp",
   "async_lock_manager.cpp",
+  "deadlock_helpers.cpp",
+  "graph.cpp",
   "lock_request.cpp",
   "native_module_locks.cpp",
 ]

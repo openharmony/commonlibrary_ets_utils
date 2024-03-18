@@ -20,8 +20,8 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "common.h"
 #include "async_lock.h"
-#include "lock_request.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
 
@@ -29,6 +29,13 @@ struct AsyncLockIdentity {
     bool isAnonymous;
     uint32_t id;
     std::string name;
+};
+
+struct AsyncLockDependency {
+    tid_t waiterTid;
+    tid_t holderTid;
+    std::string name;
+    std::string creationStacktrace;
 };
 
 class AsyncLockManager {
@@ -40,6 +47,9 @@ public:
 
     static napi_value LockAsync(napi_env env, napi_callback_info cbinfo);
     static napi_value Query(napi_env env, napi_callback_info cbinfo);
+
+    static tid_t GetCurrentTid();
+    static void DumpLocksInfoForThread(tid_t targetTid, std::string &result);
 
     AsyncLockManager() = delete;
     AsyncLockManager(const AsyncLockManager &) = delete;
@@ -56,6 +66,9 @@ private:
     static AsyncLock *FindAsyncLock(AsyncLockIdentity *id);
     static bool GetLockMode(napi_env env, napi_value val, LockMode &mode);
     static bool GetLockOptions(napi_env env, napi_value val, LockOptions &options);
+
+    static void CollectLockDependencies(std::vector<AsyncLockDependency> &dependencies);
+    static void CheckDeadlocksAndLogWarning();
 
     static std::mutex lockMutex;
     static std::unordered_map<std::string, AsyncLock *> lockMap;

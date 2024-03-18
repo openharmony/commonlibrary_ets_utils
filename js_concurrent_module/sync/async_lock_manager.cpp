@@ -13,12 +13,16 @@
  * limitations under the License.
  */
 
-#include "async_lock_manager.h"
+#include <unistd.h>
+#include <sys/types.h>
 
+#include "async_lock_manager.h"
+#include "deadlock_helpers.h"
 #include "async_lock.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
+#include "utils/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -29,6 +33,51 @@ std::mutex AsyncLockManager::lockMutex;
 std::unordered_map<std::string, AsyncLock *> AsyncLockManager::lockMap = {};
 std::unordered_map<uint32_t, AsyncLock *> AsyncLockManager::anonymousLockMap = {};
 std::atomic<uint32_t> AsyncLockManager::nextId = 1;
+
+void AsyncLockManager::CollectLockDependencies(std::vector<AsyncLockDependency> &dependencies)
+{
+    auto lockProcessor = [&dependencies](std::string lockName, AsyncLock *lock) {
+        auto holderInfos = lock->GetSatisfiedRequestInfos();
+        if (holderInfos.empty()) {
+            // lock should have holders to be waited, skip
+            return;
+        }
+        auto holderTid = holderInfos[0].tid;
+        dependencies.push_back(
+            AsyncLockDependency {INVALID_TID, holderTid, lockName, holderInfos[0].creationStacktrace});
+        for (auto &waiterInfo : lock->GetPendingRequestInfos()) {
+            dependencies.push_back(
+                AsyncLockDependency {waiterInfo.tid, holderTid, lockName, waiterInfo.creationStacktrace});
+        }
+    };
+    std::unique_lock<std::mutex> guard(lockMutex);
+    for (auto [name, lock] : lockMap) {
+        lockProcessor(name, lock);
+    }
+    for (auto [id, lock] : anonymousLockMap) {
+        std::string lockName = "anonymous #" + std::to_string(id);
+        lockProcessor(lockName, lock);
+    }
+}
+
+void AsyncLockManager::DumpLocksInfoForThread(tid_t targetTid, std::string &result)
+{
+    std::vector<AsyncLockDependency> deps;
+    CollectLockDependencies(deps);
+    auto deadlock = CheckDeadlocks(deps);
+    result = CreateFullLockInfosMessage(targetTid, std::move(deps), std::move(deadlock));
+}
+
+void AsyncLockManager::CheckDeadlocksAndLogWarning()
+{
+    std::vector<AsyncLockDependency> deps;
+    CollectLockDependencies(deps);
+    auto deadlock = CheckDeadlocks(deps);
+    if (!deadlock.IsEmpty()) {
+        std::string warning = CreateDeadlockWarningMessage(std::move(deadlock));
+        HILOG_WARN("DeadlockDetector: %{public}s", warning.c_str());
+    }
+}
 
 napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 {
@@ -134,6 +183,8 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
 
 void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] void *hint)
 {
+    // NOTE: need to count references to AsyncLock, because it might be deleted even if
+    // there are pending LockRequests
     AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
     std::unique_lock<std::mutex> guard(lockMutex);
     if (identity->isAnonymous) {
@@ -193,6 +244,9 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
+    // later on we can decide to cache the check result if needed
+    CheckDeadlocksAndLogWarning();
+
     napi_value arg;
     napi_value undefined;
     napi_get_undefined(env, &undefined);
@@ -212,7 +266,7 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
         return CreateLockStates(env, [id] (const AsyncLockIdentity &identity) {
             return identity.isAnonymous && identity.id == id;
         });
-    } else if (type ==napi_string) {
+    } else if (type == napi_string) {
         std::string name = NapiHelper::GetString(env, arg);
         return CreateLockStates(env, [&name] (const AsyncLockIdentity &identity) {
             return !identity.isAnonymous && identity.name == name;
@@ -355,12 +409,21 @@ bool AsyncLockManager::GetLockOptions(napi_env env, napi_value val, LockOptions 
 {
     napi_value isAvailable = NapiHelper::GetNameProperty(env, val, "isAvailable");
     napi_value signal = NapiHelper::GetNameProperty(env, val, "signal");
+    napi_value timeout = NapiHelper::GetNameProperty(env, val, "timeout");
     if (isAvailable != nullptr) {
         options.isAvailable = NapiHelper::GetBooleanValue(env, isAvailable);
     }
     if (signal != nullptr) {
         napi_create_reference(env, signal, 1, &options.signal);
     }
+    if (timeout != nullptr) {
+        options.timeoutMillis = NapiHelper::GetUint32Value(env, timeout);
+    }
     return true;
+}
+
+tid_t AsyncLockManager::GetCurrentTid()
+{
+    return static_cast<tid_t>(gettid());
 }
 }  // namespace Commonlibrary::Concurrent::LocksModule
