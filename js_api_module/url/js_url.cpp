@@ -1073,7 +1073,8 @@ namespace OHOS::Url {
             input = input.substr(0, pos);
         }
         bool special = (flags.test(static_cast<size_t>(BitsetStatusFlag::BIT1)) ? true : false);
-        AnalysisPath(input, urlData.path, flags, special);
+        std::string pathStr = input;
+        AnalysisPath(pathStr, urlData.path, flags, special);
     }
 
     void BaseInfoToUrl(const UrlData& baseInfo,
@@ -1176,6 +1177,20 @@ namespace OHOS::Url {
         }
     }
 
+    std::string BasePathToStr(UrlData &urlData)
+    {
+        std::string temp = "";
+        size_t length = urlData.path.size();
+        for (size_t i = 0; i < length; i++) {
+            if (i < length - 1) {
+                temp += urlData.path[i] + "/";
+            } else {
+                temp += urlData.path[i];
+            }
+        }
+        return temp;
+    }
+
     URL::URL(const std::string& input)
     {
         std::string str = input;
@@ -1232,8 +1247,10 @@ namespace OHOS::Url {
                 if (!input.empty() && input[0] != '/' && !urlData_.path.empty()) {
                     bool isFile = ((urlData_.scheme == "file:") ? true : false);
                     ShorteningPath(urlData_, baseInfo, isFile);
-                    baseInfo.path.insert(baseInfo.path.end(), urlData_.path.begin(), urlData_.path.end());
-                    urlData_.path = baseInfo.path;
+                    std::string basePathStr = BasePathToStr(baseInfo);
+                    basePathStr == "" ? basePathStr = strInput : basePathStr += "/" + strInput;
+                    urlData_.path.clear();
+                    AnalysisInput(basePathStr, urlData_, flags_);
                     flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6));
                 }
             } else if (baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
@@ -1264,23 +1281,20 @@ namespace OHOS::Url {
         if (!baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT0), 0);
             BaseInfoToUrl(baseInfo, baseflags, urlData_, flags_, input.empty());
-            if (!input.empty() && input[0] == '/') {
-                strInput = input.substr(1);
-                AnalysisInput(strInput, urlData_, flags_);
+            ToolHasBase(input, strInput, urlData_, flags_);
+            if (!input.empty() && input[0] != '/' && urlData_.path.empty()) {
+                urlData_.path = baseInfo.path;
+                flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6),
+                    baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT6)));
             }
-            if (!input.empty() && input[0] != '/') {
-                AnalysisInput(strInput, urlData_, flags_);
-                if (urlData_.path.empty()) {
-                    urlData_.path = baseInfo.path;
-                    flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6),
-                        baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT6)));
-                } else {
-                    bool isFile = ((urlData_.scheme == "file:") ? true : false);
-                    ShorteningPath(urlData_, baseInfo, isFile);
-                    baseInfo.path.insert(baseInfo.path.end(), urlData_.path.begin(), urlData_.path.end());
-                    urlData_.path = baseInfo.path;
-                    flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6));
-                }
+            if (!input.empty() && input[0] != '/' && !urlData_.path.empty()) {
+                bool isFile = ((urlData_.scheme == "file:") ? true : false);
+                ShorteningPath(urlData_, baseInfo, isFile);
+                std::string basePathStr = BasePathToStr(baseInfo);
+                basePathStr == "" ? basePathStr = strInput : basePathStr += "/" + strInput;
+                urlData_.path.clear();
+                AnalysisInput(basePathStr, urlData_, flags_);
+                flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6));
             }
         } else if (baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
