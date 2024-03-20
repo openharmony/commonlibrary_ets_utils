@@ -34,6 +34,28 @@ std::unordered_map<std::string, std::shared_ptr<AsyncLock>> AsyncLockManager::lo
 std::unordered_map<uint32_t, std::shared_ptr<AsyncLock>> AsyncLockManager::anonymousLockMap = {};
 std::atomic<uint32_t> AsyncLockManager::nextId = 1;
 
+static napi_value AsyncLockOptionsCtor(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar;
+    NAPI_CALL(env, napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr));
+
+    napi_value isAvailable;
+    napi_get_boolean(env, false, &isAvailable);
+    napi_value signal;
+    napi_get_null(env, &signal);
+    napi_value timeout;
+    napi_create_uint32(env, 0, &timeout);
+
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("isAvailable", isAvailable),
+        DECLARE_NAPI_DEFAULT_PROPERTY("signal", signal),
+        DECLARE_NAPI_DEFAULT_PROPERTY("timeout", timeout),
+    };
+    NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
+
+    return thisVar;
+}
+
 void AsyncLockManager::CollectLockDependencies(std::vector<AsyncLockDependency> &dependencies)
 {
     auto lockProcessor = [&dependencies](std::string lockName, AsyncLock *lock) {
@@ -109,9 +131,15 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
     };
     napi_define_properties(env, asyncLockMode, sizeof(exportMode) / sizeof(exportMode[0]), exportMode);
 
+    // AsyncLockOptions
+    napi_value asyncLockOptionsClass = nullptr;
+    napi_define_class(env, "AsyncLockOptions", NAPI_AUTO_LENGTH, AsyncLockOptionsCtor, nullptr, 0, nullptr,
+                      &asyncLockOptionsClass);
+
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("AsyncLock", asyncLockManagerClass),
         DECLARE_NAPI_PROPERTY("AsyncLockMode", asyncLockMode),
+        DECLARE_NAPI_PROPERTY("AsyncLockOptions", asyncLockOptionsClass),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
     NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
@@ -122,7 +150,7 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    NAPI_ASSERT(env, argc == 0, "Constructor:: the number of params must be zero");
+    NAPI_ASSERT(env, argc == 0, "AsyncLock::Constructor: the number of params must be zero");
 
     auto args = std::make_unique<napi_value[]>(argc);
     napi_value thisVar;
