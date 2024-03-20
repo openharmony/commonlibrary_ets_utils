@@ -183,7 +183,7 @@ napi_value AsyncLock::CreateLockInfo(napi_env env, const LockRequest *rq)
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("name", name),
         DECLARE_NAPI_PROPERTY("mode", mode),
-        DECLARE_NAPI_PROPERTY("id", tid),
+        DECLARE_NAPI_PROPERTY("contextId", tid),
     };
     NAPI_CALL(env, napi_define_properties(env, info, sizeof(properties) / sizeof(properties[0]), properties));
     return info;
