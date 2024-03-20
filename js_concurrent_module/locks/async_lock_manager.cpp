@@ -30,8 +30,8 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 static thread_local napi_ref asyncLockClassRef = nullptr;
 
 std::mutex AsyncLockManager::lockMutex;
-std::unordered_map<std::string, AsyncLock *> AsyncLockManager::lockMap = {};
-std::unordered_map<uint32_t, AsyncLock *> AsyncLockManager::anonymousLockMap = {};
+std::unordered_map<std::string, std::shared_ptr<AsyncLock>> AsyncLockManager::lockMap = {};
+std::unordered_map<uint32_t, std::shared_ptr<AsyncLock>> AsyncLockManager::anonymousLockMap = {};
 std::atomic<uint32_t> AsyncLockManager::nextId = 1;
 
 void AsyncLockManager::CollectLockDependencies(std::vector<AsyncLockDependency> &dependencies)
@@ -52,11 +52,11 @@ void AsyncLockManager::CollectLockDependencies(std::vector<AsyncLockDependency> 
     };
     std::unique_lock<std::mutex> guard(lockMutex);
     for (auto [name, lock] : lockMap) {
-        lockProcessor(name, lock);
+        lockProcessor(name, lock.get());
     }
     for (auto [id, lock] : anonymousLockMap) {
         std::string lockName = "anonymous #" + std::to_string(id);
-        lockProcessor(lockName, lock);
+        lockProcessor(lockName, lock.get());
     }
 }
 
@@ -190,10 +190,8 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
     AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
     std::unique_lock<std::mutex> guard(lockMutex);
     if (identity->isAnonymous) {
-        delete anonymousLockMap.at(identity->id);
         anonymousLockMap.erase(identity->id);
     } else {
-        delete lockMap.at(identity->name);
         lockMap.erase(identity->name);
     }
     delete identity;
@@ -217,8 +215,7 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
         asyncLock = FindAsyncLock(id);
     }
     if (asyncLock == nullptr) {
-        // UDAV: Fix error type
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Internal error: no such lock");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK, "No such lock");
         napi_value undefined;
         napi_get_undefined(env, &undefined);
         return undefined;
@@ -333,7 +330,7 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     for (auto &entry : anonymousLockMap) {
         AsyncLockIdentity identity = {true, entry.first, ""};
         if (pred(identity)) {
-            napi_value v = CreateLockState(env, entry.second);
+            napi_value v = CreateLockState(env, entry.second.get());
             napi_is_exception_pending(env, &pendingException);
             if (pendingException) {
                 return undefined;
@@ -347,7 +344,7 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     for (auto &entry : lockMap) {
         AsyncLockIdentity identity = {false, 0, entry.first};
         if (pred(identity)) {
-            napi_value v = CreateLockState(env, entry.second);
+            napi_value v = CreateLockState(env, entry.second.get());
             napi_is_exception_pending(env, &pendingException);
             if (pendingException) {
                 return undefined;
@@ -361,30 +358,24 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     return array;
 }
 
-AsyncLock *AsyncLockManager::Request(uint32_t id)
+void AsyncLockManager::Request(uint32_t id)
 {
     std::unique_lock<std::mutex> guard(lockMutex);
     AsyncLockIdentity identity{true, id, ""};
     AsyncLock *lock = FindAsyncLock(&identity);
     if (lock == nullptr) {
-        lock = new AsyncLock(id);
-        anonymousLockMap.emplace(id, lock);
+        anonymousLockMap.emplace(id, std::make_shared<AsyncLock>(id));
     }
-
-    return lock;
 }
 
-AsyncLock *AsyncLockManager::Request(const std::string &name)
+void AsyncLockManager::Request(const std::string &name)
 {
     std::unique_lock<std::mutex> guard(lockMutex);
     AsyncLockIdentity identity{false, 0, name};
     AsyncLock *lock = FindAsyncLock(&identity);
     if (lock == nullptr) {
-        lock = new AsyncLock(name);
-        lockMap.emplace(name, lock);
+        lockMap.emplace(name, std::make_shared<AsyncLock>(name));
     }
-
-    return lock;
 }
 
 AsyncLock* AsyncLockManager::FindAsyncLock(AsyncLockIdentity *id)
@@ -394,13 +385,13 @@ AsyncLock* AsyncLockManager::FindAsyncLock(AsyncLockIdentity *id)
         if (it == anonymousLockMap.end()) {
             return nullptr;
         }
-        return it->second;
+        return it->second.get();
     } else {
         auto it = lockMap.find(id->name);
         if (it == lockMap.end()) {
             return nullptr;
         }
-        return it->second;
+        return it->second.get();
     }
 }
 
