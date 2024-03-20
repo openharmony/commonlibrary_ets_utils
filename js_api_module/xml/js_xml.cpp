@@ -1601,7 +1601,11 @@ namespace OHOS::xml {
                 return typeTem;
             }
             if (depth == 0 && (type == TagEnum::ENTITY_REFERENCE || type == TagEnum::TEXT || type == TagEnum::CDSECT)) {
-                xmlPullParserError_ = "Unexpected token";
+                std::string errMsg = "";
+                if (!text_.empty()) {
+                    errMsg = ": " + text_;
+                }
+                xmlPullParserError_ = "Unexpected token" + errMsg;
             }
             if (type == TagEnum::DOCDECL && (!bDoctype_)) {
                 ParseOneTag();
