@@ -32,26 +32,44 @@ namespace OHOS::Util {
 
     napi_value TextEncoder::Encode(napi_env env, napi_value src) const
     {
-        size_t inputSize = 0;
-        napi_get_value_string_utf16(env, src, nullptr, 0, &inputSize);
-        char16_t originalBuffer[inputSize + 1];
-        napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
-
-        std::string buffer = UnicodeConversion(originalBuffer, inputSize);
-        if (buffer == "") {
-            HILOG_ERROR("buffer is null.");
-            return nullptr;
-        }
-        size_t outLen = buffer.length();
+        std::string buffer = "";
+        size_t  outLen = 0;
+        size_t outLens = 0;
         void *data = nullptr;
         napi_value arrayBuffer = nullptr;
-        napi_create_arraybuffer(env, outLen, &data, &arrayBuffer);
-        if (memcpy_s(data, outLen, reinterpret_cast<void*>(buffer.data()), outLen) != EOK) {
-            HILOG_ERROR("copy buffer to arraybuffer error");
-            return nullptr;
+        if (encoding_ == "utf-8" || encoding_ == "UTF-8") {
+            size_t bufferSize = 0;
+            if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
+                HILOG_ERROR("textencoder::can not get src size");
+                return nullptr;
+            }
+            buffer.resize(bufferSize);
+            if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+                HILOG_ERROR("textencoder::can not get src value");
+                return nullptr;
+            }
+            outLen = buffer.length();
+            outLens = outLen;
+            napi_create_arraybuffer(env, outLen, &data, &arrayBuffer);
+            if (memcpy_s(data, outLen, reinterpret_cast<void*>(buffer.data()), outLen) != EOK) {
+                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                return nullptr;
+            }
+        } else {
+            size_t inputSize = 0;
+            napi_get_value_string_utf16(env, src, nullptr, 0, &inputSize);
+            char16_t originalBuffer[inputSize + 1];
+            napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
+
+            int maxByteSize = GetMaxByteSize(encoding_);
+            outLen = maxByteSize * inputSize;
+            napi_create_arraybuffer(env, outLen, &data, &arrayBuffer);
+            char *writeResult = static_cast<char*>(data);
+            EncodeConversion(originalBuffer, writeResult, inputSize, outLens);
         }
+
         napi_value result = nullptr;
-        napi_create_typedarray(env, napi_uint8_array, outLen, arrayBuffer, 0, &result);
+        napi_create_typedarray(env, napi_uint8_array, outLens, arrayBuffer, 0, &result);
         return result;
     }
 
@@ -73,18 +91,18 @@ namespace OHOS::Util {
         char16_t originalBuffer[inputSize + 1];
         napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
 
-        char16_t targetBuffer;
+        char16_t targetBuffer[inputSize + 1];
         size_t writableSize = length;
         std::string bufferResult = "";
         size_t i = 0;
-        for (; i < length; i++) {
-            targetBuffer = originalBuffer[i];
-            std::string buffer = UnicodeConversion(&targetBuffer, inputSize);
-            size_t bufferLength = buffer.length() - 1;
+        for (; i < inputSize; i++) {
+            targetBuffer[i] = originalBuffer[i];
+            std::string buffer = UnicodeConversion(encoding_, &targetBuffer[i], inputSize);
+            size_t bufferLength = buffer.length();
             if (bufferLength > writableSize) {
                 break;
             }
-            bufferResult += buffer.substr(0, bufferLength);
+            bufferResult += buffer;
             writableSize -= bufferLength;
         }
 
@@ -112,58 +130,44 @@ namespace OHOS::Util {
         return result;
     }
 
-    std::string TextEncoder::UnicodeConversion(char16_t* originalBuffer, size_t inputSize) const
+    void TextEncoder::EncodeConversion(char16_t* originalBuffer, char* writeResult,
+                                       size_t inputSize, size_t &outLens) const
     {
         std::string buffer = "";
-        UErrorCode codeflag = U_ZERO_ERROR;
-        UConverter* converter = ucnv_open(encoding_.c_str(), &codeflag);
-        if (U_FAILURE(codeflag)) {
-            HILOG_ERROR("ucnv_open failed !");
-            return "";
-        }
-
-        size_t maxByteSize = static_cast<size_t>(ucnv_getMaxCharSize(converter));
-        const UChar *source = static_cast<UChar*>(originalBuffer);
-
-        size_t limit = maxByteSize * inputSize;
-        size_t len = limit * sizeof(char);
-        char *targetArray = nullptr;
-        if (limit > 0) {
-            targetArray = new char[limit + 1];
-            if (memset_s(targetArray, len + sizeof(char), 0, len + sizeof(char)) != EOK) {
-                HILOG_ERROR("encode targetArray memset_s failed");
-                ucnv_close(converter);
-                FreedMemory(targetArray);
-                return "";
+        std::u16string originalStr(originalBuffer, inputSize);
+        int shifting = 0;
+        int resultShifting = 0;
+        int findIndex = originalStr.find('\0');
+        if (findIndex == -1) {
+            buffer = UnicodeConversion(encoding_, originalBuffer, inputSize);
+            outLens = buffer.length();
+            if (memcpy_s(writeResult, outLens, reinterpret_cast<char*>(buffer.data()), outLens) != EOK) {
+                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                return;
             }
         } else {
-            HILOG_ERROR("limit is error");
-            ucnv_close(converter);
-            return "";
-        }
-
-        char *target = targetArray;
-        const char *targetLimit = targetArray + limit;
-        const UChar *sourceLimit = source + u_strlen(source);
-
-        ucnv_fromUnicode(converter, &target, targetLimit, &source, sourceLimit, nullptr, true, &codeflag);
-        if (U_FAILURE(codeflag)) {
-            HILOG_ERROR("ucnv_fromUnicode conversion failed.");
-            ucnv_close(converter);
-            FreedMemory(targetArray);
-            return "";
-        }
-        buffer = targetArray;
-        ucnv_close(converter);
-        FreedMemory(targetArray);
-        return buffer;
-    }
-
-    void TextEncoder::FreedMemory(char *data) const
-    {
-        if (data != nullptr) {
-            delete[] data;
-            data = nullptr;
+            while (findIndex != -1) {
+                buffer = UnicodeConversion(encoding_, originalBuffer + shifting, inputSize);
+                if (memcpy_s(writeResult + resultShifting, buffer.length(),
+                             reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
+                    HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                    return;
+                }
+                resultShifting +=  buffer.length();
+                *(writeResult + resultShifting) = '\0';
+                resultShifting += 1;
+                outLens += buffer.length() + 1;
+                shifting += findIndex + 1;
+                originalStr = originalStr.substr(findIndex + 1, inputSize);
+                findIndex = originalStr.find('\0');
+            }
+            buffer = UnicodeConversion(encoding_, originalBuffer + shifting, inputSize);
+            outLens += buffer.length();
+            if (memcpy_s(writeResult + resultShifting, buffer.length(),
+                         reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
+                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                return;
+            }
         }
     }
 }
