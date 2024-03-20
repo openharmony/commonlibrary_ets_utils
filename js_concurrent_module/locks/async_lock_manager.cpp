@@ -87,10 +87,13 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 
     napi_value queryFunc = nullptr;
     napi_create_function(env, "query", NAPI_AUTO_LENGTH, Query, nullptr, &queryFunc);
+    napi_value queryAllFunc = nullptr;
+    napi_create_function(env, "queryAll", NAPI_AUTO_LENGTH, QueryAll, nullptr, &queryAllFunc);
 
     napi_property_descriptor props[] = {
         DECLARE_NAPI_PROPERTY("request", requestFunc),
         DECLARE_NAPI_PROPERTY("query", queryFunc),
+        DECLARE_NAPI_PROPERTY("queryAll", queryAllFunc),
     };
     napi_value asyncLockManagerClass = nullptr;
     napi_define_sendable_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
@@ -238,7 +241,7 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
 napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc > 1) {
+    if (argc != 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid number of arguments");
         return nullptr;
     }
@@ -246,28 +249,41 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
     // later on we can decide to cache the check result if needed
     CheckDeadlocksAndLogWarning();
 
-    napi_value arg;
     napi_value undefined;
     napi_get_undefined(env, &undefined);
-    napi_get_undefined(env, &arg);
-    if (argc == 1) {
-        NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, &arg, nullptr, nullptr));
-    }
+    napi_value arg;
+    NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, &arg, nullptr, nullptr));
     napi_valuetype type;
     napi_typeof(env, arg, &type);
-    if (type == napi_undefined || type == napi_null) {
-        return CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
-            return true;
-        });
-    } else if (type == napi_string) {
-        std::string name = NapiHelper::GetString(env, arg);
-        return CreateLockStates(env, [&name] (const AsyncLockIdentity &identity) {
-            return !identity.isAnonymous && identity.name == name;
-        });
-    } else {
+    if (type != napi_string) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid argument type");
         return undefined;
     }
+
+    std::string name = NapiHelper::GetString(env, arg);
+    AsyncLockIdentity identity{false, 0, name};
+    AsyncLock *lock = FindAsyncLock(&identity);
+    if (lock == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK, "No such lock");
+        return undefined;
+    }
+
+    return CreateLockState(env, lock);
+}
+
+napi_value AsyncLockManager::QueryAll(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc != 0) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid number of arguments");
+        return nullptr;
+    }
+
+    // later on we can decide to cache the check result if needed
+    CheckDeadlocksAndLogWarning();
+    return CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
+        return true;
+    });
 }
 
 napi_value AsyncLockManager::CreateLockState(napi_env env, AsyncLock *asyncLock)
