@@ -196,20 +196,17 @@ public:
             napi_create_string_utf8(env, result[0].c_str(), NAPI_AUTO_LENGTH, &filenameValue); // 0 : filename
             napi_set_named_property(env, obj, "filename", filenameValue);
 
-            if (!result[1].empty()) {
-                auto line = std::stoi(result[1]);
-                napi_value lineno = nullptr;
-                napi_create_int32(env, static_cast<int32_t>(line), &lineno);
-                // add lineno
-                napi_set_named_property(env, obj, "lineno", lineno);
-            }
-            if (!result[2].empty()) { // 2 : index of colno
-                auto col = std::stoi(result[2]); // 2 : index of colno
-                napi_value colno = nullptr;
-                napi_create_int32(env, static_cast<int32_t>(col), &colno);
-                // add colno
-                napi_set_named_property(env, obj, "colno", colno);
-            }
+            // add lineno
+            double line = result[1].empty() ? 0 : std::strtod(result[1].c_str(), nullptr); // 1 : index of lineno
+            napi_value lineno = nullptr;
+            napi_create_double(env, line, &lineno);
+            napi_set_named_property(env, obj, "lineno", lineno);
+
+            // add colno
+            double col = result[2].empty() ? 0 : std::strtod(result[2].c_str(), nullptr); // 2 : index of colno
+            napi_value colno = nullptr;
+            napi_create_double(env, col, &colno);
+            napi_set_named_property(env, obj, "colno", colno);
         }
 
         // add type

@@ -142,7 +142,6 @@ std::string Console::MakeLogContent(napi_env env, napi_callback_info info, size_
         }
         std::string stringValue = Helper::NapiHelper::GetPrintString(env, argv[i]);
         if (stringValue.empty()) {
-            HILOG_ERROR("Console log content must not be null.");
             continue;
         }
         content.emplace_back(stringValue);
