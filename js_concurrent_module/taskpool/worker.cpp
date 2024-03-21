@@ -326,7 +326,7 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
     napi_value resultData;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     bool defaultTransfer = true;
-    bool defaultCloneSendable = true;
+    bool defaultCloneSendable = false;
     napi_status status = napi_serialize(env, result, undefined, undefined,
                                         defaultTransfer, defaultCloneSendable, &resultData);
     if ((status != napi_ok || resultData == nullptr) && task->success_) {
