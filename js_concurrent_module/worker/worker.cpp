@@ -1258,8 +1258,7 @@ void Worker::ExecuteInThread(const void* data)
 bool Worker::PrepareForWorkerInstance()
 {
     std::string rawFileName = script_;
-    uint8_t* scriptContent = nullptr;
-    size_t scriptContentSize = 0;
+    std::vector<uint8_t> scriptContent;
     std::string workerAmi;
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
@@ -1283,18 +1282,16 @@ bool Worker::PrepareForWorkerInstance()
         if (isRelativePath_) {
             rawFileName = fileName_;
         }
-        if (!hostEngine->GetAbcBuffer(rawFileName.c_str(), &scriptContent, &scriptContentSize, workerAmi)) {
-            HILOG_ERROR("worker:: GetAbcBuffer error");
-            HandleException();
+        if (!hostEngine->CallGetAssetFunc(rawFileName, scriptContent, workerAmi)) {
+            HILOG_ERROR("worker:: CallGetAssetFunc error");
             return false;
         }
     }
     // add timer interface
     Timer::RegisterTime(workerEnv_);
-    HILOG_DEBUG("worker:: stringContent size is %{public}zu", scriptContentSize);
+    HILOG_DEBUG("worker:: stringContent size is %{public}zu", scriptContent.size());
     napi_value execScriptResult = nullptr;
-    napi_run_actor(workerEnv_, scriptContent, scriptContentSize,
-        workerAmi.c_str(), &execScriptResult, const_cast<char*>(script_.c_str()));
+    napi_run_actor(workerEnv_, scriptContent, workerAmi.c_str(), &execScriptResult, const_cast<char*>(script_.c_str()));
     if (execScriptResult == nullptr) {
         // An exception occurred when running the script.
         HILOG_ERROR("worker:: run script exception occurs, will handle exception");
