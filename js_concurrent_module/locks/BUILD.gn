@@ -67,7 +67,7 @@ ohos_shared_library("locks") {
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
-  relative_install_dir = "module/util"
+  relative_install_dir = "module/arkts/utils"
 }
 
 ohos_source_set("locks_static") {
