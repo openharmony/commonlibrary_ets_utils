@@ -27,8 +27,11 @@
 #include "utils/log.h"
 
 namespace Commonlibrary::Platform {
-UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag);
-std::string ConvertToString(UChar* uchar, size_t length);
-void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer);
+    UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag);
+    std::string ConvertToString(UChar* uchar, size_t length);
+    void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer);
+    std::string UnicodeConversion(std::string encoding, char16_t* originalBuffer, size_t inputSize);
+    void FreedMemory(char *data);
+    int GetMaxByteSize(std::string encoding);
 } // namespace Commonlibrary::Platform
 #endif // PLATFORM_UTIL_HELPER_H
