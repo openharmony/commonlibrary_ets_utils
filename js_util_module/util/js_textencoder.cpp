@@ -114,6 +114,7 @@ namespace OHOS::Util {
 
     std::string TextEncoder::UnicodeConversion(char16_t* originalBuffer, size_t inputSize) const
     {
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
         std::string buffer = "";
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter* converter = ucnv_open(encoding_.c_str(), &codeflag);
@@ -157,6 +158,9 @@ namespace OHOS::Util {
         ucnv_close(converter);
         FreedMemory(targetArray);
         return buffer;
+#else
+        return "";
+#endif
     }
 
     void TextEncoder::FreedMemory(char *data) const
