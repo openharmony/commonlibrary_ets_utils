@@ -106,20 +106,25 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
     // AsyncLock class
     napi_value requestFunc = nullptr;
     napi_create_function(env, "request", NAPI_AUTO_LENGTH, Request, nullptr, &requestFunc);
-
     napi_value queryFunc = nullptr;
     napi_create_function(env, "query", NAPI_AUTO_LENGTH, Query, nullptr, &queryFunc);
     napi_value queryAllFunc = nullptr;
     napi_create_function(env, "queryAll", NAPI_AUTO_LENGTH, QueryAll, nullptr, &queryAllFunc);
+    napi_value name;
+    NAPI_CALL(env, napi_create_string_utf8(env, "", strlen(""), &name));
+    napi_value lockAsync;
+    NAPI_CALL(env, napi_get_null(env, &lockAsync));
 
     napi_property_descriptor props[] = {
-        DECLARE_NAPI_PROPERTY("request", requestFunc),
-        DECLARE_NAPI_PROPERTY("query", queryFunc),
-        DECLARE_NAPI_PROPERTY("queryAll", queryAllFunc),
-    };
+        DECLARE_NAPI_STATIC_PROPERTY("request", requestFunc),
+        DECLARE_NAPI_STATIC_PROPERTY("query", queryFunc),
+        DECLARE_NAPI_STATIC_PROPERTY("queryAll", queryAllFunc),
+        DECLARE_NAPI_INSTANCE_PROPERTY("name", name),
+        DECLARE_NAPI_INSTANCE_PROPERTY("lockAsync", lockAsync),    };
     napi_value asyncLockManagerClass = nullptr;
     napi_define_sendable_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
-                               sizeof(props) / sizeof(props[0]), props, nullptr, &asyncLockManagerClass);
+        sizeof(props) / sizeof(props[0]), props, nullptr, &asyncLockManagerClass);
+    NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
 
     // AsyncLockMode enum
     napi_value asyncLockMode = NapiHelper::CreateObject(env);
@@ -136,13 +141,16 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
     napi_define_class(env, "AsyncLockOptions", NAPI_AUTO_LENGTH, AsyncLockOptionsCtor, nullptr, 0, nullptr,
                       &asyncLockOptionsClass);
 
-    napi_property_descriptor properties[] = {
+    napi_value locks;
+    NAPI_CALL(env, napi_create_object(env, &locks));
+    napi_property_descriptor locksProperties[] = {
         DECLARE_NAPI_PROPERTY("AsyncLock", asyncLockManagerClass),
         DECLARE_NAPI_PROPERTY("AsyncLockMode", asyncLockMode),
         DECLARE_NAPI_PROPERTY("AsyncLockOptions", asyncLockOptionsClass),
     };
-    napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
-    NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
+    napi_define_properties(env, locks, sizeof(locksProperties) / sizeof(locksProperties[0]), locksProperties);
+
+    napi_set_named_property(env, exports, "locks", locks);
 
     return exports;
 }
@@ -306,9 +314,10 @@ napi_value AsyncLockManager::QueryAll(napi_env env, napi_callback_info cbinfo)
 
     // later on we can decide to cache the check result if needed
     CheckDeadlocksAndLogWarning();
-    return CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
+    napi_value res = CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
         return true;
     });
+    return res;
 }
 
 napi_value AsyncLockManager::CreateLockState(napi_env env, AsyncLock *asyncLock)

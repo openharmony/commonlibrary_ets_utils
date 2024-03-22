@@ -20,7 +20,7 @@ static napi_module g_utilsModule = {
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Commonlibrary::Concurrent::LocksModule::AsyncLockManager::Init,
-    .nm_modname = "utils",
+    .nm_modname = "arkts.utils",
     .nm_priv = reinterpret_cast<void *>(0),
     .reserved = {0},
 };
