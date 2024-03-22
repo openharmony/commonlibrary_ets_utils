@@ -25,7 +25,7 @@ locks_sources = [
 
 concurrent_helper_sources = [ "../common/helper/napi_helper.cpp" ]
 
-ohos_shared_library("locks") {
+ohos_shared_library("utils") {
   branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
@@ -67,10 +67,10 @@ ohos_shared_library("locks") {
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
-  relative_install_dir = "module/arkts/utils"
+  relative_install_dir = "module/arkts"
 }
 
-ohos_source_set("locks_static") {
+ohos_source_set("utils_static") {
   branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
@@ -121,6 +121,6 @@ ohos_source_set("locks_static") {
   part_name = "ets_utils"
 }
 
-group("locks_packages") {
-  deps = [ ":locks" ]
+group("utils_packages") {
+  deps = [ ":utils" ]
 }
