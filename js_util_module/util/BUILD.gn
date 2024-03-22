@@ -101,6 +101,7 @@ ohos_shared_library("util") {
     debug = false
   }
   deps = [ ":util_static" ]
+  external_deps = [ "hilog:libhilog" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module"
@@ -120,6 +121,7 @@ ohos_source_set("util_static") {
     "//third_party/openssl",
     "//third_party/openssl/include",
     platform_root,
+    ets_util_path,
   ]
   configs = [
     "$icu_root:icu_config",

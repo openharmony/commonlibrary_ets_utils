@@ -15,7 +15,7 @@
 
 #include "js_convertxml.h"
 #include "securec.h"
-#include "utils/log.h"
+#include "tools/log.h"
 namespace OHOS::Xml {
     ConvertXml::ConvertXml()
     {

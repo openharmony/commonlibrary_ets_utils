@@ -27,6 +27,7 @@ ohos_unittest("test_util_unittest") {
     "//third_party/icu/icu4c/source/common",
     "//third_party/icu/icu4c/source",
     platform_root,
+    ets_util_path,
   ]
 
   cflags = [ "-g3" ]

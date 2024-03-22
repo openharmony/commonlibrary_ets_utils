@@ -19,10 +19,11 @@
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
+#include "tools/log.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "securec.h"
-#include "utils/log.h"
+
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \

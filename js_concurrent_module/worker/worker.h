@@ -27,7 +27,6 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
-#include "utils/log.h"
 #include "worker_runner.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
@@ -452,7 +451,6 @@ public:
         if (loop != nullptr) {
             uv_run(loop, UV_RUN_DEFAULT);
         } else {
-            HILOG_ERROR("worker:: Worker loop is nullptr when start worker loop");
             return;
         }
     }

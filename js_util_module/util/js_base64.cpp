@@ -16,10 +16,10 @@
 #include "js_base64.h"
 #include <cstring>
 #include <sys/types.h>
-#include "utils/log.h"
 #include "securec.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "tools/log.h"
 
 namespace OHOS::Util {
     namespace {

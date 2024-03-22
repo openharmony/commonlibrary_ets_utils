@@ -21,7 +21,7 @@
 #include "converter.h"
 #include "js_blob.h"
 #include "js_buffer.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 
 #define ASSERT_CHECK_CALL(call)   \

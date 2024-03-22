@@ -31,7 +31,7 @@
 
 #include "securec.h"
 #include "process_helper.h"
-#include "utils/log.h"
+#include "tools/log.h"
 namespace OHOS::JsSysModule::Process {
 
     using namespace Commonlibrary::Platform;

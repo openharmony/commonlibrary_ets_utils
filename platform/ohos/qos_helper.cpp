@@ -20,7 +20,7 @@
 #ifdef ENABLE_QOS
 #include "qos.h"
 #endif
-#include "utils/log.h"
+#include "tools/log.h"
 
 namespace Commonlibrary::Platform {
 

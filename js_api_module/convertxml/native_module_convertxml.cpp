@@ -14,7 +14,7 @@
  */
 
 #include "native_module_convertxml.h"
-#include "utils/log.h"
+#include "tools/log.h"
 #include "js_convertxml.h"
 
 extern const char _binary_js_convertxml_js_start[];

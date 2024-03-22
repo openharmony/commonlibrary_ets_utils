@@ -85,6 +85,7 @@ ohos_shared_library("xml") {
     debug = false
   }
   deps = [ ":xml_static" ]
+  external_deps = [ "hilog:libhilog" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module"
@@ -101,6 +102,7 @@ ohos_source_set("xml_static") {
     "include",
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
+    ets_util_path,
   ]
 
   sources = xml_sources

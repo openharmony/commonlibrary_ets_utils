@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
+#include "commonlibrary/ets_utils/tools/log.h"
 #include "napi/native_api.h"
 #include "native_engine.h"
 #include "napi/native_node_api.h"
 #include "securec.h"
-#include "utils/log.h"
 
 namespace OHOS::JsSysModule::Dfx {
     constexpr int NUMBER_OF_PARAMETER_TWO = 2;

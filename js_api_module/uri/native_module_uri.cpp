@@ -16,7 +16,7 @@
 
 #include "js_uri.h"
 #include "securec.h"
-#include "utils/log.h"
+#include "tools/log.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 

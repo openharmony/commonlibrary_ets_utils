@@ -25,8 +25,8 @@
 #include "ohos/init_data.h"
 #include "securec.h"
 #include "unicode/unistr.h"
-#include "utils/log.h"
 #include "util_helper.h"
+#include "tools/log.h"
 
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;

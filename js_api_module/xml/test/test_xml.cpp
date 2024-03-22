@@ -22,7 +22,7 @@
 #include "js_xml.h"
 #include "native_module_xml.h"
 #include "securec.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 using namespace OHOS::xml;
 

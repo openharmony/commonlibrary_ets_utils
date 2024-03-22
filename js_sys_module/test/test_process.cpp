@@ -20,9 +20,9 @@
 #include "napi/native_node_api.h"
 
 #include "securec.h"
-#include "utils/log.h"
 #include "js_childprocess.h"
 #include "js_process.h"
+#include "tools/log.h"
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
