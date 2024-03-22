@@ -145,7 +145,7 @@ public:
     * @param env NAPI environment parameters.
     * @param thisVar The callback information of the js layer.
     */
-    static napi_value PostSendableMessage(napi_env env, napi_callback_info cbinfo);
+    static napi_value PostMessageWithSharedSendable(napi_env env, napi_callback_info cbinfo);
 
     /**
     * postMessage implementation
@@ -169,7 +169,7 @@ public:
     * @param env NAPI environment parameters.
     * @param thisVar The callback information of the js layer.
     */
-    static napi_value PostSendableMessageToHost(napi_env env, napi_callback_info cbinfo);
+    static napi_value PostMessageWithSharedSendableToHost(napi_env env, napi_callback_info cbinfo);
 
     /**
     * postMessage implementation

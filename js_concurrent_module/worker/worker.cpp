@@ -47,7 +47,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("postMessage", PostMessage),
-        DECLARE_NAPI_FUNCTION("postSendableMessage", PostSendableMessage),
+        DECLARE_NAPI_FUNCTION("postMessageWithSharedSendable", PostMessageWithSharedSendable),
         DECLARE_NAPI_FUNCTION("terminate", Terminate),
         DECLARE_NAPI_FUNCTION("on", On),
         DECLARE_NAPI_FUNCTION("registerGlobalCallObject", RegisterGlobalCallObject),
@@ -112,7 +112,7 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
-        DECLARE_NAPI_FUNCTION_WITH_DATA("postSendableMessage", PostSendableMessageToHost, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("postMessageWithSharedSendable", PostMessageWithSharedSendableToHost, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("callGlobalCallObjectMethod", GlobalCall, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
@@ -366,7 +366,7 @@ napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
     return CommonPostMessage(env, cbinfo, true);
 }
 
-napi_value Worker::PostSendableMessage(napi_env env, napi_callback_info cbinfo)
+napi_value Worker::PostMessageWithSharedSendable(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     return CommonPostMessage(env, cbinfo, false);
@@ -733,7 +733,7 @@ napi_value Worker::PostMessageToHost(napi_env env, napi_callback_info cbinfo)
     return CommonPostMessageToHost(env, cbinfo, true);
 }
 
-napi_value Worker::PostSendableMessageToHost(napi_env env, napi_callback_info cbinfo)
+napi_value Worker::PostMessageWithSharedSendableToHost(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     return CommonPostMessageToHost(env, cbinfo, false);
