@@ -23,6 +23,8 @@ platform_root = "//commonlibrary/ets_utils/platform/"
 napi_root = "//foundation/arkui/napi"
 openssl_root = "//third_party/openssl"
 icu_root = "//third_party/icu/icu4c"
+node_root = "//third_party/node"
+third_party_root = "//third_party"
 hilog_windows =
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog_windows"
 hilog_linux =

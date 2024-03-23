@@ -46,6 +46,7 @@
         "ram": "~4096KB",
         "deps": {
             "components": [
+                "bounds_checking_function",
                 "napi",
                 "hilog",
                 "hitrace",
@@ -75,7 +76,8 @@
                 "//commonlibrary/ets_utils/js_sys_module/timer:timer_packages",
                 "//commonlibrary/ets_utils/js_util_module/util:util_packages",
                 "//commonlibrary/ets_utils/js_util_module/container:container_packages",
-                "//commonlibrary/ets_utils/js_util_module/json:json_packages"
+                "//commonlibrary/ets_utils/js_util_module/json:json_packages",
+                "//commonlibrary/ets_utils/js_util_module/collections:collections_packages"
             ],
             "inner_kits": [
                 {
