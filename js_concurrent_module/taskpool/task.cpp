@@ -405,9 +405,9 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
 
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationArgs;
-    bool defaultClone = true;
+    bool defaultClone = false;
     bool defaultTransfer = true;
-    napi_status status = napi_serialize_inner(env, argsArray, undefined, argsArray,
+    napi_status status = napi_serialize_inner(env, argsArray, undefined, undefined,
                                               defaultTransfer, defaultClone, &serializationArgs);
     if (status != napi_ok || serializationArgs == nullptr) {
         std::string errMessage = "taskpool:: failed to serialize function";

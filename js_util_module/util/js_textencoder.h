@@ -63,8 +63,7 @@ namespace OHOS::Util {
 
     private:
         std::string encoding_ {};
-        void FreedMemory(char *data) const;
-        std::string UnicodeConversion(char16_t* originalBuffer, size_t inputSize) const;
+        void EncodeConversion(char16_t* originalBuffer, char* writeResult, size_t inputSize, size_t &outLens) const;
     };
 }
 #endif // UTIL_JS_TEXTENCODER_H
