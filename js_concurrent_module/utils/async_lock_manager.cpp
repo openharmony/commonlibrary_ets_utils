@@ -30,9 +30,31 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 static thread_local napi_ref asyncLockClassRef = nullptr;
 
 std::mutex AsyncLockManager::lockMutex;
-std::unordered_map<std::string, AsyncLock *> AsyncLockManager::lockMap = {};
-std::unordered_map<uint32_t, AsyncLock *> AsyncLockManager::anonymousLockMap = {};
+std::unordered_map<std::string, std::shared_ptr<AsyncLock>> AsyncLockManager::lockMap = {};
+std::unordered_map<uint32_t, std::shared_ptr<AsyncLock>> AsyncLockManager::anonymousLockMap = {};
 std::atomic<uint32_t> AsyncLockManager::nextId = 1;
+
+static napi_value AsyncLockOptionsCtor(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar;
+    NAPI_CALL(env, napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr));
+
+    napi_value isAvailable;
+    napi_get_boolean(env, false, &isAvailable);
+    napi_value signal;
+    napi_get_null(env, &signal);
+    napi_value timeout;
+    napi_create_uint32(env, 0, &timeout);
+
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("isAvailable", isAvailable),
+        DECLARE_NAPI_DEFAULT_PROPERTY("signal", signal),
+        DECLARE_NAPI_DEFAULT_PROPERTY("timeout", timeout),
+    };
+    NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
+
+    return thisVar;
+}
 
 void AsyncLockManager::CollectLockDependencies(std::vector<AsyncLockDependency> &dependencies)
 {
@@ -52,11 +74,11 @@ void AsyncLockManager::CollectLockDependencies(std::vector<AsyncLockDependency> 
     };
     std::unique_lock<std::mutex> guard(lockMutex);
     for (auto [name, lock] : lockMap) {
-        lockProcessor(name, lock);
+        lockProcessor(name, lock.get());
     }
     for (auto [id, lock] : anonymousLockMap) {
         std::string lockName = "anonymous #" + std::to_string(id);
-        lockProcessor(lockName, lock);
+        lockProcessor(lockName, lock.get());
     }
 }
 
@@ -84,17 +106,18 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
     // AsyncLock class
     napi_value requestFunc = nullptr;
     napi_create_function(env, "request", NAPI_AUTO_LENGTH, Request, nullptr, &requestFunc);
-
     napi_value queryFunc = nullptr;
     napi_create_function(env, "query", NAPI_AUTO_LENGTH, Query, nullptr, &queryFunc);
+    napi_value queryAllFunc = nullptr;
+    napi_create_function(env, "queryAll", NAPI_AUTO_LENGTH, QueryAll, nullptr, &queryAllFunc);
 
-    napi_property_descriptor props[] = {
-        DECLARE_NAPI_PROPERTY("request", requestFunc),
-        DECLARE_NAPI_PROPERTY("query", queryFunc),
-    };
     napi_value asyncLockManagerClass = nullptr;
-    napi_define_sendable_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
-                               sizeof(props) / sizeof(props[0]), props, nullptr, &asyncLockManagerClass);
+    napi_define_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
+        0, nullptr, &asyncLockManagerClass);
+    napi_set_named_property(env, asyncLockManagerClass, "request", requestFunc);
+    napi_set_named_property(env, asyncLockManagerClass, "query", queryFunc);
+    napi_set_named_property(env, asyncLockManagerClass, "queryAll", queryAllFunc);
+    NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
 
     // AsyncLockMode enum
     napi_value asyncLockMode = NapiHelper::CreateObject(env);
@@ -106,12 +129,21 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
     };
     napi_define_properties(env, asyncLockMode, sizeof(exportMode) / sizeof(exportMode[0]), exportMode);
 
-    napi_property_descriptor properties[] = {
+    // AsyncLockOptions
+    napi_value asyncLockOptionsClass = nullptr;
+    napi_define_class(env, "AsyncLockOptions", NAPI_AUTO_LENGTH, AsyncLockOptionsCtor, nullptr, 0, nullptr,
+                      &asyncLockOptionsClass);
+
+    napi_value locks;
+    NAPI_CALL(env, napi_create_object(env, &locks));
+    napi_property_descriptor locksProperties[] = {
         DECLARE_NAPI_PROPERTY("AsyncLock", asyncLockManagerClass),
         DECLARE_NAPI_PROPERTY("AsyncLockMode", asyncLockMode),
+        DECLARE_NAPI_PROPERTY("AsyncLockOptions", asyncLockOptionsClass),
     };
-    napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
-    NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
+    napi_define_properties(env, locks, sizeof(locksProperties) / sizeof(locksProperties[0]), locksProperties);
+
+    napi_set_named_property(env, exports, "locks", locks);
 
     return exports;
 }
@@ -119,7 +151,7 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    NAPI_ASSERT(env, argc == 0, "Constructor:: the number of params must be zero");
+    NAPI_ASSERT(env, argc == 0, "AsyncLock::Constructor: the number of params must be zero");
 
     auto args = std::make_unique<napi_value[]>(argc);
     napi_value thisVar;
@@ -128,13 +160,13 @@ napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo
     uint32_t lockId = nextId++;
     Request(lockId);
 
-    napi_value id;
-    NAPI_CALL(env, napi_create_uint32(env, lockId, &id));
     napi_value name;
-    NAPI_CALL(env, napi_get_undefined(env, &name));
+    std::ostringstream out;
+    out << "anonymousLock" << lockId;
+    std::string lockName = out.str();
+    NAPI_CALL(env, napi_create_string_utf8(env, lockName.c_str(), NAPI_AUTO_LENGTH, &name));
 
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("id", id),
         DECLARE_NAPI_PROPERTY("name", name),
         DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, thisVar),
     };
@@ -156,7 +188,7 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     napi_value asyncLockClass;
     NAPI_CALL(env, napi_get_reference_value(env, asyncLockClassRef, &asyncLockClass));
     napi_value instance;
-    NAPI_CALL(env, napi_new_instance(env, asyncLockClass, 0, nullptr, &instance));
+    NAPI_CALL(env, napi_create_object(env, &instance));
 
     napi_valuetype type;
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
@@ -168,11 +200,7 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     std::string name = NapiHelper::GetString(env, args[0]);
     Request(name);
 
-    napi_value id;
-    NAPI_CALL(env, napi_create_uint32(env, 0, &id));
-
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("id", id),
         DECLARE_NAPI_PROPERTY("name", args[0]),
         DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, instance),
     };
@@ -191,10 +219,8 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
     AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
     std::unique_lock<std::mutex> guard(lockMutex);
     if (identity->isAnonymous) {
-        delete anonymousLockMap.at(identity->id);
         anonymousLockMap.erase(identity->id);
     } else {
-        delete lockMap.at(identity->name);
         lockMap.erase(identity->name);
     }
     delete identity;
@@ -218,8 +244,7 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
         asyncLock = FindAsyncLock(id);
     }
     if (asyncLock == nullptr) {
-        // UDAV: Fix error type
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Internal error: no such lock");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK, "No such lock");
         napi_value undefined;
         napi_get_undefined(env, &undefined);
         return undefined;
@@ -242,7 +267,7 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
 napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc > 1) {
+    if (argc != 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid number of arguments");
         return nullptr;
     }
@@ -250,34 +275,41 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
     // later on we can decide to cache the check result if needed
     CheckDeadlocksAndLogWarning();
 
-    napi_value arg;
     napi_value undefined;
     napi_get_undefined(env, &undefined);
-    napi_get_undefined(env, &arg);
-    if (argc == 1) {
-        NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, &arg, nullptr, nullptr));
-    }
+    napi_value arg;
+    NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, &arg, nullptr, nullptr));
     napi_valuetype type;
     napi_typeof(env, arg, &type);
-    if (type == napi_undefined || type == napi_null) {
-        return CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
-            return true;
-        });
-    } else if (type == napi_number) {
-        uint32_t id;
-        napi_get_value_uint32(env, arg, &id);
-        return CreateLockStates(env, [id] (const AsyncLockIdentity &identity) {
-            return identity.isAnonymous && identity.id == id;
-        });
-    } else if (type == napi_string) {
-        std::string name = NapiHelper::GetString(env, arg);
-        return CreateLockStates(env, [&name] (const AsyncLockIdentity &identity) {
-            return !identity.isAnonymous && identity.name == name;
-        });
-    } else {
+    if (type != napi_string) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid argument type");
         return undefined;
     }
+
+    std::string name = NapiHelper::GetString(env, arg);
+    AsyncLockIdentity identity{false, 0, name};
+    AsyncLock *lock = FindAsyncLock(&identity);
+    if (lock == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK, "No such lock");
+        return undefined;
+    }
+
+    return CreateLockState(env, lock);
+}
+
+napi_value AsyncLockManager::QueryAll(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc != 0) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid number of arguments");
+        return nullptr;
+    }
+
+    // later on we can decide to cache the check result if needed
+    CheckDeadlocksAndLogWarning();
+    return CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
+        return true;
+    });
 }
 
 napi_value AsyncLockManager::CreateLockState(napi_env env, AsyncLock *asyncLock)
@@ -327,7 +359,7 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     for (auto &entry : anonymousLockMap) {
         AsyncLockIdentity identity = {true, entry.first, ""};
         if (pred(identity)) {
-            napi_value v = CreateLockState(env, entry.second);
+            napi_value v = CreateLockState(env, entry.second.get());
             napi_is_exception_pending(env, &pendingException);
             if (pendingException) {
                 return undefined;
@@ -341,7 +373,7 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     for (auto &entry : lockMap) {
         AsyncLockIdentity identity = {false, 0, entry.first};
         if (pred(identity)) {
-            napi_value v = CreateLockState(env, entry.second);
+            napi_value v = CreateLockState(env, entry.second.get());
             napi_is_exception_pending(env, &pendingException);
             if (pendingException) {
                 return undefined;
@@ -355,30 +387,24 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     return array;
 }
 
-AsyncLock *AsyncLockManager::Request(uint32_t id)
+void AsyncLockManager::Request(uint32_t id)
 {
     std::unique_lock<std::mutex> guard(lockMutex);
     AsyncLockIdentity identity{true, id, ""};
     AsyncLock *lock = FindAsyncLock(&identity);
     if (lock == nullptr) {
-        lock = new AsyncLock(id);
-        anonymousLockMap.emplace(id, lock);
+        anonymousLockMap.emplace(id, std::make_shared<AsyncLock>(id));
     }
-
-    return lock;
 }
 
-AsyncLock *AsyncLockManager::Request(const std::string &name)
+void AsyncLockManager::Request(const std::string &name)
 {
     std::unique_lock<std::mutex> guard(lockMutex);
     AsyncLockIdentity identity{false, 0, name};
     AsyncLock *lock = FindAsyncLock(&identity);
     if (lock == nullptr) {
-        lock = new AsyncLock(name);
-        lockMap.emplace(name, lock);
+        lockMap.emplace(name, std::make_shared<AsyncLock>(name));
     }
-
-    return lock;
 }
 
 AsyncLock* AsyncLockManager::FindAsyncLock(AsyncLockIdentity *id)
@@ -388,13 +414,13 @@ AsyncLock* AsyncLockManager::FindAsyncLock(AsyncLockIdentity *id)
         if (it == anonymousLockMap.end()) {
             return nullptr;
         }
-        return it->second;
+        return it->second.get();
     } else {
         auto it = lockMap.find(id->name);
         if (it == lockMap.end()) {
             return nullptr;
         }
-        return it->second;
+        return it->second.get();
     }
 }
 

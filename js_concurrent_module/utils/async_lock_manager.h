@@ -47,6 +47,7 @@ public:
 
     static napi_value LockAsync(napi_env env, napi_callback_info cbinfo);
     static napi_value Query(napi_env env, napi_callback_info cbinfo);
+    static napi_value QueryAll(napi_env env, napi_callback_info cbinfo);
 
     static tid_t GetCurrentTid();
     static void DumpLocksInfoForThread(tid_t targetTid, std::string &result);
@@ -61,8 +62,8 @@ public:
 private:
     static napi_value CreateLockStates(napi_env env, const std::function<bool(const AsyncLockIdentity& ident)> &pred);
     static napi_value CreateLockState(napi_env env, AsyncLock *asyncLock);
-    static AsyncLock *Request(uint32_t id);
-    static AsyncLock *Request(const std::string &name);
+    static void Request(uint32_t id);
+    static void Request(const std::string &name);
     static AsyncLock *FindAsyncLock(AsyncLockIdentity *id);
     static bool GetLockMode(napi_env env, napi_value val, LockMode &mode);
     static bool GetLockOptions(napi_env env, napi_value val, LockOptions &options);
@@ -71,8 +72,8 @@ private:
     static void CheckDeadlocksAndLogWarning();
 
     static std::mutex lockMutex;
-    static std::unordered_map<std::string, AsyncLock *> lockMap;
-    static std::unordered_map<uint32_t, AsyncLock *> anonymousLockMap;
+    static std::unordered_map<std::string, std::shared_ptr<AsyncLock>> lockMap;
+    static std::unordered_map<uint32_t, std::shared_ptr<AsyncLock>> anonymousLockMap;
     static std::atomic<uint32_t> nextId;
 };
 

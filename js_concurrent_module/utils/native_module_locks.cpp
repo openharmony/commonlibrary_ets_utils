@@ -15,17 +15,17 @@
 
 #include "async_lock_manager.h"
 
-static napi_module g_locksModule = {
+static napi_module g_utilsModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Commonlibrary::Concurrent::LocksModule::AsyncLockManager::Init,
-    .nm_modname = "sync",
+    .nm_modname = "arkts.utils",
     .nm_priv = reinterpret_cast<void *>(0),
     .reserved = {0},
 };
 
 extern "C" __attribute__((constructor)) void LocksRegister()
 {
-    napi_module_register(&g_locksModule);
+    napi_module_register(&g_utilsModule);
 }

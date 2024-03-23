@@ -250,8 +250,8 @@ TEST_F(LocksTest, SharedLockMulti)
     ASSERT_EQ(callbackData.callCount, 2U);
 }
 
-struct IfAvailableCallbackData {
-    IfAvailableCallbackData(std::latch &b, std::latch &e): begin(b), end(e)
+struct IsAvailableCallbackData {
+    IsAvailableCallbackData(std::latch &b, std::latch &e): begin(b), end(e)
     {
     }
 
@@ -260,9 +260,9 @@ struct IfAvailableCallbackData {
     std::latch &end;
 };
 
-static napi_value IfAvailableCb(napi_env env, napi_callback_info info)
+static napi_value IsAvailableCb(napi_env env, napi_callback_info info)
 {
-    IfAvailableCallbackData *data = nullptr;
+    IsAvailableCallbackData *data = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, nullptr, reinterpret_cast<void **>(&data));
     data->callCount += 1;
     data->begin.arrive_and_wait();
@@ -272,18 +272,18 @@ static napi_value IfAvailableCb(napi_env env, napi_callback_info info)
     return undefined;
 }
 
-TEST_F(LocksTest, IfAvailable)
+TEST_F(LocksTest, IsAvailable)
 {
     std::unique_ptr<AsyncLock> lock = std::make_unique<AsyncLock>(1);
     AsyncLock *lockPtr = lock.get();
     std::latch begin(2U);
     std::latch end(2U);
-    IfAvailableCallbackData data(begin, end);
+    IsAvailableCallbackData data(begin, end);
     std::thread t([lockPtr, &data] () {
         LocksTest::InitializeEngine();
         data.begin.arrive_and_wait();
         napi_env env = GetEnv();
-        napi_value callback = CreateFunction("ifavailable", IfAvailableCb, &data);
+        napi_value callback = CreateFunction("isavailable", IsAvailableCb, &data);
         napi_ref callback_ref;
         napi_create_reference(env, callback, 1, &callback_ref);
         LockOptions options;
@@ -293,7 +293,7 @@ TEST_F(LocksTest, IfAvailable)
         LocksTest::DestroyEngine();
     });
     napi_env env = GetEnv();
-    napi_value callback = CreateFunction("ifavailable", IfAvailableCb, &data);
+    napi_value callback = CreateFunction("isavailable", IsAvailableCb, &data);
     napi_ref callback_ref;
     napi_create_reference(env, callback, 1, &callback_ref);
 

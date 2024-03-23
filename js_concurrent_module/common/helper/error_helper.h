@@ -102,6 +102,9 @@ public:
             case ERR_IN_BOTH_CLONE_AND_TRANSFER:
                 errTitle = "Can not set an arraybuffer to both transferList and cloneList";
                 break;
+            case ERR_NO_SUCH_ASYNCLOCK:
+                errTitle = "No such lock";
+                break;
             case TYPE_ERROR:
                 errTitle = "The input parameters are invalid, ";
                 break;
@@ -260,6 +263,7 @@ public:
     static const int32_t ERR_DELAY_TIME_ERROR = 10200028; // 10200028 : The delayTime is less than zero
     // 10200029 : Obj in both clone array and transfer array
     static const int32_t ERR_IN_BOTH_CLONE_AND_TRANSFER = 10200029;
+    static const int32_t ERR_NO_SUCH_ASYNCLOCK = 10200030;
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H
