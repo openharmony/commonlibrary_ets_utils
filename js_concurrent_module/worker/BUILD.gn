@@ -34,6 +34,7 @@ ohos_shared_library("worker") {
     "native_module_worker.cpp",
     "thread.cpp",
     "worker.cpp",
+    "worker_handler.cpp",
     "worker_runner.cpp",
   ]
 
@@ -53,7 +54,10 @@ ohos_shared_library("worker") {
     defines += [ "MAC_PLATFORM" ]
   }
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "eventhandler:libeventhandler",
+    "napi:ace_napi",
+  ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     external_deps += [ "innerkits:libhilog_linux" ]
@@ -100,6 +104,7 @@ ohos_source_set("worker_static") {
     "native_module_worker.cpp",
     "thread.cpp",
     "worker.cpp",
+    "worker_handler.cpp",
     "worker_runner.cpp",
   ]
   deps = []
@@ -118,6 +123,7 @@ ohos_source_set("worker_static") {
       "hilog:libhilog",
     ]
   }
+  external_deps += [ "eventhandler:libeventhandler" ]
 
   if (is_arkui_x) {
     include_dirs += [

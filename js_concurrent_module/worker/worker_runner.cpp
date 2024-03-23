@@ -18,7 +18,7 @@
 #include "helper/object_helper.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
-WorkerRunner::WorkerRunner(WorkerStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}
+WorkerRunner::WorkerRunner(WorkerStartCallback callback) : callback_(callback), selfThreadId_(pthread_self()) {}
 
 WorkerRunner::~WorkerRunner()
 {

@@ -15,20 +15,29 @@
 
 #include "thread.h"
 
+#include "utils/log.h"
+
 namespace Commonlibrary::Concurrent::WorkerModule {
 Thread::Thread() : tId_() {}
 
+void* Thread::ThreadFunction(void* arg)
+{
+    Thread* thread = reinterpret_cast<Thread*>(arg);
+    pthread_setname_np(thread->GetThreadId(), "WorkerThread");
+#if defined IOS_PLATFORM || defined MAC_PLATFORM
+    pthread_setname_np("WorkerThread");
+#else
+    pthread_setname_np(thread->tId_, "WorkerThread");
+#endif
+    pthread_detach(thread->tId_);
+    thread->Run();
+    return nullptr;
+}
+
 bool Thread::Start()
 {
-    int ret = uv_thread_create(&tId_, [](void* arg) {
-#if defined IOS_PLATFORM || defined MAC_PLATFORM
-        pthread_setname_np("WorkerThread");
-#else
-        pthread_setname_np(pthread_self(), "WorkerThread");
-#endif
-        Thread* thread = reinterpret_cast<Thread*>(arg);
-        thread->Run();
-    }, this);
+    int ret = pthread_create(&tId_, nullptr, ThreadFunction, this);
+
     return ret != 0;
 }
 }  // namespace Commonlibrary::Concurrent::WorkerModule
