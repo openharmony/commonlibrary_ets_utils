@@ -110,20 +110,13 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
     napi_create_function(env, "query", NAPI_AUTO_LENGTH, Query, nullptr, &queryFunc);
     napi_value queryAllFunc = nullptr;
     napi_create_function(env, "queryAll", NAPI_AUTO_LENGTH, QueryAll, nullptr, &queryAllFunc);
-    napi_value name;
-    NAPI_CALL(env, napi_create_string_utf8(env, "", strlen(""), &name));
-    napi_value lockAsync;
-    NAPI_CALL(env, napi_get_null(env, &lockAsync));
 
-    napi_property_descriptor props[] = {
-        DECLARE_NAPI_STATIC_PROPERTY("request", requestFunc),
-        DECLARE_NAPI_STATIC_PROPERTY("query", queryFunc),
-        DECLARE_NAPI_STATIC_PROPERTY("queryAll", queryAllFunc),
-        DECLARE_NAPI_INSTANCE_PROPERTY("name", name),
-        DECLARE_NAPI_INSTANCE_PROPERTY("lockAsync", lockAsync),    };
     napi_value asyncLockManagerClass = nullptr;
-    napi_define_sendable_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
-        sizeof(props) / sizeof(props[0]), props, nullptr, &asyncLockManagerClass);
+    napi_define_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
+        0, nullptr, &asyncLockManagerClass);
+    napi_set_named_property(env, asyncLockManagerClass, "request", requestFunc);
+    napi_set_named_property(env, asyncLockManagerClass, "query", queryFunc);
+    napi_set_named_property(env, asyncLockManagerClass, "queryAll", queryAllFunc);
     NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
 
     // AsyncLockMode enum
@@ -314,10 +307,9 @@ napi_value AsyncLockManager::QueryAll(napi_env env, napi_callback_info cbinfo)
 
     // later on we can decide to cache the check result if needed
     CheckDeadlocksAndLogWarning();
-    napi_value res = CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
+    return CreateLockStates(env, [] ([[maybe_unused]] const AsyncLockIdentity &identity) {
         return true;
     });
-    return res;
 }
 
 napi_value AsyncLockManager::CreateLockState(napi_env env, AsyncLock *asyncLock)
