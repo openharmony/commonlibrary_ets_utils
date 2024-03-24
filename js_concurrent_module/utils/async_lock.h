@@ -42,6 +42,9 @@ public:
     bool CleanUpLockRequestOnTimeout(LockRequest* lockRequest);
     napi_status FillLockState(napi_env env, napi_value held, napi_value pending);
 
+    uint32_t IncRefCount();
+    uint32_t DecRefCount();
+
     std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
     std::vector<RequestCreationInfo> GetPendingRequestInfos();
 
@@ -58,6 +61,7 @@ private:
     uint32_t anonymousLockId_ {};  // 0 for Non-anonymous lock
     uv_work_t work_ = {};
     std::shared_mutex asyncLockMutex_;
+    uint32_t refCount_ = 1;
 };
 
 }  // namespace Commonlibrary::Concurrent::LocksModule

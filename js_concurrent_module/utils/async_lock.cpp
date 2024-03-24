@@ -189,6 +189,18 @@ napi_value AsyncLock::CreateLockInfo(napi_env env, const LockRequest *rq)
     return info;
 }
 
+uint32_t AsyncLock::IncRefCount()
+{
+    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    return ++refCount_;
+}
+
+uint32_t AsyncLock::DecRefCount()
+{
+    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    return --refCount_;
+}
+
 std::vector<RequestCreationInfo> AsyncLock::GetSatisfiedRequestInfos()
 {
     std::vector<RequestCreationInfo> result;
