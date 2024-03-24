@@ -37,9 +37,10 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
       timeoutActive_(false)
 {
     // timeout timer initialization: just fill the data fields, do not arm it
-    uv_timer_init(NapiHelper::GetLibUV(env), &timeoutTimer_);
+    timeoutTimer_ = new uv_timer_t();
+    uv_timer_init(NapiHelper::GetLibUV(env), timeoutTimer_);
     RequestTimeoutData *data = new RequestTimeoutData(lock, this);
-    timeoutTimer_.data = data;
+    timeoutTimer_->data = data;
 
     // saving the creation point (file, function and line) for future use
     NativeEngine *engine = reinterpret_cast<NativeEngine *>(env);
@@ -54,10 +55,16 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
     }
 }
 
+void LockRequest::DeallocateTimeoutTimerCallback(uv_handle_t* handle)
+{
+    delete handle;
+}
+
 LockRequest::~LockRequest()
 {
-    RequestTimeoutData *data = static_cast<RequestTimeoutData*>(timeoutTimer_.data);
+    RequestTimeoutData *data = static_cast<RequestTimeoutData*>(timeoutTimer_->data);
     delete data;
+    uv_close(reinterpret_cast<uv_handle_t*>(timeoutTimer_), DeallocateTimeoutTimerCallback);
 }
 
 void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_status status, void *data)
@@ -156,14 +163,14 @@ bool LockRequest::AbortIfNeeded()
 void LockRequest::ArmTimeoutTimer(uint32_t timeoutMillis)
 {
     timeoutActive_ = true;
-    uv_timer_start(&timeoutTimer_, TimeoutCallback, timeoutMillis, 0);
+    uv_timer_start(timeoutTimer_, TimeoutCallback, timeoutMillis, 0);
     // NOTE: handle the abortsignal functionality in the future
     // NOTE: need to check call results for 0
 }
 
 void LockRequest::DisarmTimeoutTimer()
 {
-    uv_timer_stop(&timeoutTimer_);
+    uv_timer_stop(timeoutTimer_);
     timeoutActive_ = false;
 }
 
