@@ -750,20 +750,9 @@ void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
-        {
-            std::unique_lock<std::shared_mutex> lock(tasksMutex_);
-            auto taskIter = tasks_.find(*taskIdIter);
-            if (taskIter == tasks_.end()) {
-                taskIdIter = iter->second.erase(taskIdIter);
-                continue;
-            }
-        }
         auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
-        if (taskInfo.first == 0) {
-            taskIdIter = iter->second.erase(taskIdIter);
-            continue;
-        }
-        EnqueueTaskId(taskInfo.first, taskInfo.second);
+
+        // remove dependency after task execute
         auto dependTaskIter = dependTaskInfos_.find(*taskIdIter);
         if (dependTaskIter != dependTaskInfos_.end()) {
             auto dependTaskInnerIter = dependTaskIter->second.find(taskId);
@@ -772,6 +761,10 @@ void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
             }
         }
         taskIdIter = iter->second.erase(taskIdIter);
+
+        if (taskInfo.first != 0) {
+            EnqueueTaskId(taskInfo.first, taskInfo.second);
+        }
     }
 }
 
