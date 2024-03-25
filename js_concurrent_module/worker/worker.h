@@ -276,7 +276,8 @@ public:
     static napi_value LimitedWorkerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value ThreadWorkerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value WorkerConstructor(napi_env env, napi_callback_info cbinfo);
-    static napi_value Constructor(napi_env env, napi_callback_info cbinfo, bool limitSign = false);
+    static napi_value Constructor(napi_env env, napi_callback_info cbinfo, bool limitSign = false,
+                                  WorkerVersion version = WorkerVersion::NONE);
 
     /**
      * Initialize the worker and port.

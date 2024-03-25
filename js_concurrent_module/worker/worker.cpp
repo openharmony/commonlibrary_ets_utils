@@ -30,6 +30,7 @@ static constexpr int8_t NUM_WORKER_ARGS = 2;
 static constexpr uint8_t NUM_GLOBAL_CALL_ARGS = 3;
 static std::list<Worker *> g_workers;
 static constexpr int MAX_WORKERS = 8;
+static constexpr int MAX_THREAD_WORKERS = 64;
 static std::mutex g_workersMutex;
 static std::list<Worker *> g_limitedworkers;
 static constexpr int MAX_LIMITEDWORKERS = 16;
@@ -162,7 +163,7 @@ napi_value Worker::ThreadWorkerConstructor(napi_env env, napi_callback_info cbin
 {
     HITRACE_HELPER_METER_NAME("ThreadWorkerConstructor: [Add Thread]");
     if (CanCreateWorker(env, WorkerVersion::NEW)) {
-        return Constructor(env, cbinfo);
+        return Constructor(env, cbinfo, false, WorkerVersion::NEW);
     }
     ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
         "Using both Worker and ThreadWorker is not supported.");
@@ -173,14 +174,14 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME("WorkerConstructor: [Add Thread]");
     if (CanCreateWorker(env, WorkerVersion::OLD)) {
-        return Constructor(env, cbinfo);
+        return Constructor(env, cbinfo, false, WorkerVersion::OLD);
     }
     ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
         "Using both Worker and other Workers is not supported.");
     return nullptr;
 }
 
-napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool limitSign)
+napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool limitSign, WorkerVersion version)
 {
     napi_value thisVar = nullptr;
     void* data = nullptr;
@@ -224,9 +225,9 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         }
         g_limitedworkers.push_back(worker);
     } else {
-        int maxWorkers = MAX_WORKERS;
+        int maxWorkers = (version == WorkerVersion::NEW) ? MAX_THREAD_WORKERS : MAX_WORKERS;
     #if defined(OHOS_PLATFORM)
-        maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", MAX_WORKERS);
+        maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", maxWorkers);
     #endif
         std::lock_guard<std::mutex> lock(g_workersMutex);
         if (static_cast<int>(g_workers.size()) >= maxWorkers) {
