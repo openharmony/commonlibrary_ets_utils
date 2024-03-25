@@ -70,8 +70,8 @@ LockRequest::~LockRequest()
 void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_status status, void *data)
 {
     LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
-    lockRequest->CallCallback();
     napi_delete_async_work(env, lockRequest->work_);
+    lockRequest->CallCallback();
 }
 
 napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
@@ -206,7 +206,7 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
 
 void LockRequest::HandleRequestTimeout(std::string &&errorMessage)
 {
-    HILOG_ERROR("AsyncLock lockAsync() timed out!");
+    HILOG_ERROR("AsyncLock lockAsync() timed out! Information: %s", errorMessage.c_str());
     // here we imply that there are no races already and the timeout function should do its job
     // by rejecting the associated promise with an BusinessError instance.
     napi_delete_reference(env_, callback_);
@@ -216,12 +216,11 @@ void LockRequest::HandleRequestTimeout(std::string &&errorMessage)
     if (scope == nullptr) {
         return;
     }
-    // NOTE: interim solution: a string instead of a BusinessError instance
-    napi_value exceptionText;
-    napi_create_string_utf8(env_, errorMessage.c_str(), NAPI_AUTO_LENGTH, &exceptionText);
-    napi_reject_deferred(env_, deferred_, exceptionText);
-    // currently JSVM does not crash on unhandled rejection for some reason, so for now let's do a force exit
-    napi_fatal_error("AsyncLock.lockAsync() timed out!", NAPI_AUTO_LENGTH, errorMessage.c_str(), NAPI_AUTO_LENGTH);
+
+    HILOG_ERROR("AsyncLock lockAsync() timed out! Rejecting the promise.");
+    napi_value error = ErrorHelper::NewError(env_, ErrorHelper::ERR_ASYNCLOCK_TIMEOUT, errorMessage.c_str());
+    napi_reject_deferred(env_, deferred_, error);
+
     napi_close_handle_scope(env_, scope);
 }
 
