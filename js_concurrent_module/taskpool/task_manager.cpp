@@ -938,7 +938,7 @@ std::string TaskManager::GetTaskDependInfoToString(uint64_t taskId)
 
 void TaskManager::StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
 {
-    std::shared_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
+    std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
     auto iter = taskDurationInfos_.find(taskId);
     if (iter == taskDurationInfos_.end()) {
         std::pair<uint64_t, uint64_t> durationData = std::make_pair(totalDuration, cpuDuration);
