@@ -55,4 +55,51 @@ void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::
     engine->EncodeToChinese(src, buffer, encoding);
 }
 
+std::string TextEncoder::UnicodeConversion(char16_t* originalBuffer, size_t inputSize) const
+{
+    std::string buffer = "";
+    UErrorCode codeflag = U_ZERO_ERROR;
+    UConverter* converter = ucnv_open(encoding_.c_str(), &codeflag);
+    if (U_FAILURE(codeflag)) {
+        HILOG_ERROR("ucnv_open failed !");
+        return "";
+    }
+
+    size_t maxByteSize = static_cast<size_t>(ucnv_getMaxCharSize(converter));
+    const UChar *source = static_cast<UChar*>(originalBuffer);
+
+    size_t limit = maxByteSize * inputSize;
+    size_t len = limit * sizeof(char);
+    char *targetArray = nullptr;
+    if (limit > 0) {
+        targetArray = new char[limit + 1];
+        if (memset_s(targetArray, len + sizeof(char), 0, len + sizeof(char)) != EOK) {
+            HILOG_ERROR("encode targetArray memset_s failed");
+            ucnv_close(converter);
+            FreedMemory(targetArray);
+            return "";
+        }
+    } else {
+        HILOG_ERROR("limit is error");
+        ucnv_close(converter);
+        return "";
+    }
+
+    char *target = targetArray;
+    const char *targetLimit = targetArray + limit;
+    const UChar *sourceLimit = source + u_strlen(source);
+
+    ucnv_fromUnicode(converter, &target, targetLimit, &source, sourceLimit, nullptr, true, &codeflag);
+    if (U_FAILURE(codeflag)) {
+        HILOG_ERROR("ucnv_fromUnicode conversion failed.");
+        ucnv_close(converter);
+        FreedMemory(targetArray);
+        return "";
+    }
+    buffer = targetArray;
+    ucnv_close(converter);
+    FreedMemory(targetArray);
+    return buffer;
+}
+
 } // namespace Commonlibrary::Platform
