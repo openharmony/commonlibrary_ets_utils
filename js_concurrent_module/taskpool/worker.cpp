@@ -450,6 +450,7 @@ void Worker::HandleFunctionException(napi_env env, Task* task)
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");
+        task->DecreaseRefCount();
         task->success_ = false;
         napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
         NotifyTaskResult(env, task, errorEvent);
