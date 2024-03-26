@@ -69,6 +69,17 @@ public:
         engine_->Loop(mode);
     }
 
+    template <typename P>
+    static void LoopUntil(const P &pred)
+    {
+        static constexpr size_t timeoutNs = 10000000UL;
+        timespec timeout = {0, timeoutNs};
+        while (!pred()) {
+            Loop(LOOP_NOWAIT);
+            nanosleep(&timeout, nullptr);
+        }
+    }
+
     static napi_value CreateFunction(const char *name, napi_value (*callback)(napi_env, napi_callback_info),
         void *data = nullptr)
     {
@@ -298,8 +309,9 @@ TEST_F(LocksTest, IsAvailable)
     napi_create_reference(env, callback, 1, &callback_ref);
 
     LockOptions options;
+
     lock->LockAsync(env, callback_ref, LOCK_MODE_EXCLUSIVE, options);
-    Loop(LOOP_ONCE);
+    LoopUntil([&data] () { return data.callCount > 0; });
     t.join();
     ASSERT_EQ(data.callCount, 1U);
 }
