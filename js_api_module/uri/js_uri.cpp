@@ -14,7 +14,7 @@
  */
 
 #include "js_uri.h"
-#include "utils/log.h"
+#include "tools/log.h"
 namespace OHOS::Uri {
     std::bitset<MAX_BIT_SIZE> g_ruleAlpha;
     std::bitset<MAX_BIT_SIZE> g_ruleScheme;

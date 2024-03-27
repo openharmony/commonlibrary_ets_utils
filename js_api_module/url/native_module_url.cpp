@@ -19,7 +19,7 @@
 #include "napi/native_node_api.h"
 #include "js_url.h"
 #include "securec.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 extern const char _binary_js_url_js_start[];
 extern const char _binary_js_url_js_end[];

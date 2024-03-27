@@ -23,7 +23,7 @@
 #include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 namespace OHOS::xml {
     class XmlSerializer {

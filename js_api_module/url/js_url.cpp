@@ -19,7 +19,7 @@
 #include "securec.h"
 #include "unicode/stringpiece.h"
 #include "unicode/unistr.h"
-#include "utils/log.h"
+#include "tools/log.h"
 namespace OHOS::Url {
     std::map<std::string, int> g_head = {
         {"ftp:", 21}, {"file:", -1}, {"gopher:", 70}, {"http:", 80},

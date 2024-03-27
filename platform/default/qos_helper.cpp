@@ -15,7 +15,7 @@
 
 #include "qos_helper.h"
 
-#include "utils/log.h"
+#include "tools/log.h"
 
 namespace Commonlibrary::Platform {
 int SetWorkerPriority([[maybe_unused]] Priority priority)

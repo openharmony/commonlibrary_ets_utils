@@ -19,7 +19,7 @@
 #include "test.h"
 #include "test_timer.h"
 #include "../timer.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 using namespace Commonlibrary::Concurrent::Common;
 using namespace OHOS::JsSysModule;

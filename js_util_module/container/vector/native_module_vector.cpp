@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "utils/log.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "tools/log.h"
 
 extern const char _binary_js_vector_js_start[];
 extern const char _binary_js_vector_js_end[];

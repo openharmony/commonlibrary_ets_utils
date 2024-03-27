@@ -54,6 +54,7 @@ ohos_shared_library("taskpool") {
     "include",
     js_concurrent_module_common,
     platform_root,
+    ets_util_path,
   ]
   sources = taskpool_sources
   sources += concurrent_helper_sources
@@ -115,6 +116,7 @@ ohos_source_set("taskpool_static") {
     "include",
     js_concurrent_module_common,
     platform_root,
+    ets_util_path,
   ]
 
   sources = taskpool_sources

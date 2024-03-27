@@ -16,7 +16,7 @@
 #include "timer.h"
 
 #include "native_engine/native_engine.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
 using OHOS::Ace::ContainerScope;

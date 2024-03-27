@@ -22,7 +22,7 @@
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;

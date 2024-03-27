@@ -28,6 +28,7 @@ ohos_unittest("test_utils_unittest") {
     "//third_party/googletest/include",
     "//third_party/node/src",
     platform_root,
+    ets_util_path,
   ]
 
   cflags = [ "-g3" ]

@@ -26,6 +26,7 @@ ohos_shared_library("worker") {
   include_dirs = [
     "include",
     js_concurrent_module_common,
+    ets_util_path,
   ]
 
   sources = [
@@ -91,6 +92,7 @@ ohos_source_set("worker_static") {
     js_concurrent_module_common,
     "$concurrent_module/worker",
     "$sys_module/timer",
+    ets_util_path,
   ]
 
   sources = [

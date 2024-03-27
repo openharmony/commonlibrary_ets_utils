@@ -35,6 +35,7 @@ ohos_shared_library("process") {
     debug = false
   }
   deps = [ ":process_static" ]
+  external_deps = [ "hilog:libhilog" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module"
@@ -50,6 +51,7 @@ ohos_source_set("process_static") {
   include_dirs = [
     "$process_root",
     platform_root,
+    ets_util_path,
   ]
 
   sources = process_sources

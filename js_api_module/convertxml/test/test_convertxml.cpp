@@ -22,7 +22,7 @@
 #include "js_convertxml.h"
 #include "js_xml.h"
 #include "native_module_convertxml.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 using namespace OHOS::Xml;
 

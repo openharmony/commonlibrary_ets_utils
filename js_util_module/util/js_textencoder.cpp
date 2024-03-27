@@ -17,8 +17,8 @@
 
 #include "native_engine.h"
 #include "securec.h"
-#include "utils/log.h"
 #include "util_helper.h"
+#include "tools/log.h"
 
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;

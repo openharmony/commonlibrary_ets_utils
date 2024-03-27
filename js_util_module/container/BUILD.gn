@@ -113,6 +113,7 @@ template("container_lib") {
     include_dirs = [
       "//third_party/node/src",
       "//commonlibrary/ets_utils/js_util_module/container/" + name,
+      ets_util_path,
     ]
 
     sources = [ name + "/native_module_" + name + ".cpp" ]
@@ -159,6 +160,7 @@ template("container_lib") {
       debug = false
     }
     deps = [ ":${name}_static" ]
+    external_deps = [ "hilog:libhilog" ]
     subsystem_name = "commonlibrary"
     part_name = "ets_utils"
     relative_install_dir = "module/util"

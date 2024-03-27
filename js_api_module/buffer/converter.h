@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "utils/log.h"
+#include "tools/log.h"
 
 namespace OHOS::buffer {
 enum EncodingType {

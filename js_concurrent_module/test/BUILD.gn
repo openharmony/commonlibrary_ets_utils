@@ -26,6 +26,7 @@ ohos_unittest("test_concurrent_unittest") {
     "//third_party/bounds_checking_function/include",
     "//third_party/googletest/include",
     "//third_party/node/src",
+    ets_util_path,
   ]
 
   cflags = [ "-g3" ]

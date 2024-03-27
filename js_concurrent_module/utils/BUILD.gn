@@ -32,7 +32,10 @@ ohos_shared_library("utils") {
     cfi_cross_dso = true
     debug = false
   }
-  include_dirs = [ js_concurrent_module_common ]
+  include_dirs = [
+    js_concurrent_module_common,
+    ets_util_path,
+  ]
 
   sources = locks_sources
   sources += concurrent_helper_sources
@@ -77,7 +80,10 @@ ohos_source_set("utils_static") {
     cfi_cross_dso = true
     debug = false
   }
-  include_dirs = [ js_concurrent_module_common ]
+  include_dirs = [
+    js_concurrent_module_common,
+    ets_util_path,
+  ]
 
   sources = locks_sources
   sources += concurrent_helper_sources

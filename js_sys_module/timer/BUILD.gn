@@ -24,6 +24,7 @@ ohos_shared_library("timer") {
   include_dirs = [
     "../../js_concurrent_module/common",
     "../timer",
+    ets_util_path,
   ]
 
   sources = [
@@ -79,6 +80,7 @@ ohos_source_set("timer_static") {
   include_dirs = [
     js_concurrent_module_common,
     "../timer",
+    ets_util_path,
   ]
 
   sources = [

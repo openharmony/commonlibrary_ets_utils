@@ -25,7 +25,7 @@
 #include <sys/wait.h>
 
 #include "securec.h"
-#include "utils/log.h"
+#include "tools/log.h"
 
 namespace OHOS::JsSysModule::Process {
     constexpr int MAXSIZE = 1024;
