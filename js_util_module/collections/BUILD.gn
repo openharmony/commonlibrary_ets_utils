@@ -24,6 +24,7 @@ ohos_shared_library("collections") {
     debug = false
   }
   deps = [ ":collections_static" ]
+  external_deps = [ "hilog:libhilog" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module/arkts"
