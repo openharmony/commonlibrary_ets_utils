@@ -408,8 +408,8 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     napi_value serializationArgs;
     bool defaultClone = false;
     bool defaultTransfer = true;
-    napi_status status = napi_serialize(env, argsArray, undefined, undefined,
-                                        defaultTransfer, defaultClone, &serializationArgs);
+    napi_status status = napi_serialize_inner(env, argsArray, undefined, undefined,
+                                              defaultTransfer, defaultClone, &serializationArgs);
     if (status != napi_ok || serializationArgs == nullptr) {
         std::string errMessage = "taskpool:: failed to serialize function";
         HILOG_ERROR("%{public}s in SendData", errMessage.c_str());
@@ -646,8 +646,8 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
 {
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value serializationFunction;
-    napi_status status = napi_serialize(env, func, undefined, undefined,
-                                        defaultTransfer, defaultCloneSendable, &serializationFunction);
+    napi_status status = napi_serialize_inner(env, func, undefined, undefined,
+                                              defaultTransfer, defaultCloneSendable, &serializationFunction);
     std::string errMessage = "";
     if (status != napi_ok || serializationFunction == nullptr) {
         errMessage = "taskpool: failed to serialize function.";
@@ -656,8 +656,8 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
         return nullptr;
     }
     napi_value serializationArguments;
-    status = napi_serialize(env, args, transferList, cloneList,
-                            defaultTransfer, defaultCloneSendable, &serializationArguments);
+    status = napi_serialize_inner(env, args, transferList, cloneList,
+                                  defaultTransfer, defaultCloneSendable, &serializationArguments);
     if (status != napi_ok || serializationArguments == nullptr) {
         errMessage = "taskpool: failed to serialize arguments.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
