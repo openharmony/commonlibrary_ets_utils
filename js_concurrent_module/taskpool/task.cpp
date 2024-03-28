@@ -516,7 +516,7 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     if (task->IsCommonTask()) {
         std::string errMessage = "taskpool:: executedTask cannot removeDependency";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_INEXISTENT_DEPENDENCY, errMessage.c_str());
         return nullptr;
     }
     for (size_t i = 0; i < argc; i++) {
@@ -925,6 +925,6 @@ void Task::ThrowNoDependencyError(napi_env env)
 {
     std::string errMessage = "taskpool:: task has no dependency";
     HILOG_ERROR("%{public}s", errMessage.c_str());
-    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+    ErrorHelper::ThrowError(env, ErrorHelper::ERR_INEXISTENT_DEPENDENCY, errMessage.c_str());
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
