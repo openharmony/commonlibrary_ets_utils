@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "commonlibrary/ets_utils/tools/log.h"
 #include "js_native_api.h"
 #include "napi/native_node_api.h"
+#include "tools/log.h"
 
 namespace {
 const std::string SHARED_ARRAY_NAME = "SharedArray";

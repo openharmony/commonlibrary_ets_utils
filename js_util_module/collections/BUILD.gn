@@ -37,7 +37,10 @@ ohos_source_set("collections_static") {
     cfi_cross_dso = true
     debug = false
   }
-  include_dirs = [ "include" ]
+  include_dirs = [
+    "include",
+    ets_util_path,
+  ]
   configs = []
   sources = collections_sources
 
