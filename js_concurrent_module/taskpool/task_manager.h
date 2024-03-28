@@ -124,6 +124,10 @@ public:
     void StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration);
     uint64_t GetTaskDuration(uint64_t taskId, std::string durationType);
     void RemoveTaskDuration(uint64_t taskId);
+    void StoreLongTaskInfo(uint64_t taskId, Worker* worker);
+    void RemoveLongTaskInfo(uint64_t taskId);
+    void TerminateTask(uint64_t taskId);
+    Worker* GetLongTaskInfo(uint64_t taskId);
 
 private:
     TaskManager();
@@ -165,6 +169,10 @@ private:
     // <<taskId1, <totalDuration1, cpuDuration1>>, <taskId2, <totalDuration2, cpuDuration2>>, ...>
     std::unordered_map<uint64_t, std::pair<uint64_t, uint64_t>> taskDurationInfos_ {};
     std::shared_mutex taskDurationInfosMutex_;
+
+    // record the longTasks and workers for efficiency
+    std::unordered_map<uint64_t, Worker*> longTasksMap_ {};
+    std::shared_mutex longTasksMutex_{};
 
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};

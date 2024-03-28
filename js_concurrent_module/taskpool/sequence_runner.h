@@ -36,7 +36,7 @@ private:
     SequenceRunner& operator=(SequenceRunner &&) = delete;
 
     static void ExecuteTaskImmediately(uint64_t taskId, Priority priority);
-    static void SequnceRunnerDestructor(napi_env env, void* data, void* hint);
+    static void SequenceRunnerDestructor(napi_env env, void* data, void* hint);
 
 public:
     uint64_t seqRunnerId_ {};

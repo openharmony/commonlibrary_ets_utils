@@ -35,6 +35,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value taskClass = nullptr;
     napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor, nullptr, 0, nullptr, &taskClass);
+    napi_value longTaskClass = nullptr;
+    napi_define_class(env, "LongTask", NAPI_AUTO_LENGTH, Task::LongTaskConstructor,
+                      nullptr, 0, nullptr, &longTaskClass);
     napi_value isCanceledFunc = nullptr;
     napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, Task::IsCanceled, NULL, &isCanceledFunc);
     napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
@@ -62,6 +65,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("Task", taskClass),
+        DECLARE_NAPI_PROPERTY("LongTask", longTaskClass),
         DECLARE_NAPI_PROPERTY("TaskGroup", taskGroupClass),
         DECLARE_NAPI_PROPERTY("SequenceRunner", seqRunnerClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
@@ -69,6 +73,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("executeDelayed", ExecuteDelayed),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
         DECLARE_NAPI_FUNCTION("getTaskPoolInfo", GetTaskPoolInfo),
+        DECLARE_NAPI_FUNCTION("terminateTask", TerminateTask),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
@@ -76,7 +81,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     return exports;
 }
 
-void TaskPool::ExecuteCallback(uv_async_t* req)
+void TaskPool::ExecuteCallback(const uv_async_t* req)
 {
     auto worker = static_cast<Worker*>(req->data);
     while (!worker->IsQueueEmpty()) {
@@ -139,6 +144,30 @@ napi_value TaskPool::GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callbac
     return result;
 }
 
+napi_value TaskPool::TerminateTask(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    size_t argc = 1; // 1: long task
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
+    if (argc < 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
+        return nullptr;
+    }
+    if (!NapiHelper::IsObject(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be object");
+        return nullptr;
+    }
+    napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
+    if (napiTaskId == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be task");
+        return nullptr;
+    }
+    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+    TaskManager::GetInstance().TerminateTask(taskId);
+    return nullptr;
+}
+
 napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
@@ -166,7 +195,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
             }
         }
         if (NapiHelper::HasNameProperty(env, args[0], GROUP_ID_STR)) {
-            return ExecuteGroup(env, args[0], Priority(priority));
+            return ExecuteGroup(env, args[0], static_cast<Priority>(priority));
         }
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
@@ -177,11 +206,12 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         if (!task->CanExecute(env)) {
             return nullptr;
         }
-        napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::COMMON_TASK, Priority(priority));
+        napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::COMMON_TASK,
+                                                      static_cast<Priority>(priority));
         if (promise == nullptr) {
             return nullptr;
         }
-        ExecuteTask(env, task, Priority(priority));
+        ExecuteTask(env, task, static_cast<Priority>(priority));
         return promise;
     }
     if (type != napi_function) {
@@ -261,6 +291,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     if (!task->CanExecuteDelayed(env)) {
         return nullptr;
     }
+
     uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
     if (argc > 2) { // 2: the params might have priority
         if (!NapiHelper::IsNumber(env, args[2])) {
@@ -273,18 +304,16 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
     }
-    if (task->IsInitialized()) {
+    if (!task->IsInitialized()) {
         task->taskState_ = ExecuteState::DELAYED;
     }
-    if (!task->UpdateTaskType(TaskType::COMMON_TASK)) {
-        return nullptr;
-    }
+    task->UpdateTaskType(TaskType::COMMON_TASK);
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
     uv_timer_init(loop, timer);
     TaskMessage *taskMessage = new TaskMessage();
-    taskMessage->priority = Priority(priority);
+    taskMessage->priority = static_cast<Priority>(priority);
     taskMessage->taskId = task->taskId_;
     napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
     timer->data = taskMessage;
@@ -324,10 +353,10 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
                 napi_reference_ref(env, task->taskRef_, nullptr);
                 if (task->IsGroupCommonTask()) {
                     task->UpdateTaskType(TaskType::GROUP_COMMON_TASK);
-                    task->GetTaskInfo(env, napiTask, Priority(priority));
+                    task->GetTaskInfo(env, napiTask, static_cast<Priority>(priority));
                 }
                 task->groupId_ = groupId;
-                ExecuteTask(env, task, Priority(priority));
+                ExecuteTask(env, task, static_cast<Priority>(priority));
             }
         } else {
             taskGroup->pendingGroupInfos_.push_back(groupInfo);
@@ -388,7 +417,7 @@ void TaskPool::TriggerTask(Task* task)
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
         if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
-            HILOG_ERROR("seqRunner:: task %" PRIu64 " trigger in seqRunner %" PRIu64 " failed",
+            HILOG_ERROR("seqRunner:: task %{public}" PRIu64 " trigger in seqRunner %{public}" PRIu64 " failed",
                         task->taskId_, task->seqRunnerId_);
         }
     } else if (task->IsCommonTask()) {
@@ -431,7 +460,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         }
         napi_resolve_deferred(env, groupInfo->deferred, resArr);
     } else {
-        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
+        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has exception or has been canceled");
         napi_reject_deferred(env, groupInfo->deferred, error);
     }
     taskGroup->groupState_ = ExecuteState::WAITING;

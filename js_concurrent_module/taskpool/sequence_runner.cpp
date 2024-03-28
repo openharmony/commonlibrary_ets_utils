@@ -53,19 +53,17 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
     napi_value napiSeqRunnerId = NapiHelper::CreateUint64(env, seqRunnerId);
     TaskGroupManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
-    napi_value seqRunnerExecuteFunc;
-    napi_create_function(env, EXECUTE_STR, NAPI_AUTO_LENGTH, Execute, NULL, &seqRunnerExecuteFunc);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY(SEQ_RUNNER_ID_STR, napiSeqRunnerId),
         DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
     };
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    HILOG_DEBUG("seqRunner:: construct seqRunner %" PRIu64 ".", seqRunnerId);
+    HILOG_DEBUG("seqRunner:: construct seqRunner %{public}" PRIu64 ".", seqRunnerId);
 
-    seqRunner->priority_ = Priority(priority);
+    seqRunner->priority_ = static_cast<Priority>(priority);
     seqRunner->seqRunnerId_ = seqRunnerId;
     TaskGroupManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
-    napi_wrap(env, thisVar, seqRunner, SequnceRunnerDestructor, nullptr, nullptr);
+    napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
     napi_create_reference(env, thisVar, 0, &seqRunner->seqRunnerRef_);
     return thisVar;
 }
@@ -112,12 +110,14 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (seqRunner->currentTaskId_ == 0) {
-        HILOG_DEBUG("seqRunner:: task %" PRIu64 " in seqRunner %" PRIu64 " immediately.", task->taskId_, seqRunnerId);
+        HILOG_DEBUG("seqRunner:: task %{public}" PRIu64 " in seqRunner %{public}" PRIu64 " immediately.",
+                    task->taskId_, seqRunnerId);
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
-        HILOG_DEBUG("seqRunner:: add %" PRIu64 " to seqRunner %" PRIu64 ".", task->taskId_, seqRunnerId);
+        HILOG_DEBUG("seqRunner:: add %{public}" PRIu64 " to seqRunner %{public}" PRIu64 ".",
+                    task->taskId_, seqRunnerId);
         TaskGroupManager::GetInstance().AddTaskToSeqRunner(seqRunnerId, task);
     }
     return promise;
@@ -129,10 +129,10 @@ void SequenceRunner::ExecuteTaskImmediately(uint64_t taskId, Priority priority)
     TaskManager::GetInstance().TryTriggerExpand();
 }
 
-void SequenceRunner::SequnceRunnerDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
+void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     SequenceRunner* seqRunner = static_cast<SequenceRunner*>(data);
     TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
     delete seqRunner;
 }
-}
+} // namespace Commonlibrary::Concurrent::TaskPoolModule

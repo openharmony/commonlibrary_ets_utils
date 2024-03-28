@@ -49,6 +49,7 @@ public:
     ~Task() = default;
 
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
+    static napi_value LongTaskConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value SetTransferList(napi_env env, napi_callback_info cbinfo);
     static napi_value SetCloneList(napi_env env, napi_callback_info cbinfo);
     static napi_value IsCanceled(napi_env env, napi_callback_info cbinfo);
@@ -78,18 +79,19 @@ public:
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
                                   Priority priority = Priority::DEFAULT);
     TaskInfo* GetTaskInfo(napi_env env, napi_value task, Priority priority);
-    bool UpdateTaskType(TaskType taskType);
-    bool IsRepeatableTask();
-    bool IsGroupTask();
-    bool IsGroupCommonTask();
-    bool IsGroupFunctionTask();
-    bool IsCommonTask();
-    bool IsSeqRunnerTask();
-    bool IsFunctionTask();
-    bool IsInitialized();
+    void UpdateTaskType(TaskType taskType);
+    bool IsRepeatableTask() const;
+    bool IsGroupTask() const;
+    bool IsGroupCommonTask() const;
+    bool IsGroupFunctionTask() const;
+    bool IsCommonTask() const;
+    bool IsSeqRunnerTask() const;
+    bool IsFunctionTask() const;
+    bool IsLongTask() const;
+    bool IsInitialized() const;
     void IncreaseRefCount();
     void DecreaseRefCount();
-    bool IsReadyToHandle();
+    bool IsReadyToHandle() const;
     void NotifyPendingTask();
     void CancelPendingTask(napi_env env, ExecuteState state);
     bool UpdateTask(uint64_t startTime, void* worker);
@@ -123,14 +125,15 @@ public:
     uv_async_t* onResultSignal_ = nullptr;
     uv_async_t* increaseRefSignal_ = nullptr;
     std::atomic<bool> success_ {true};
-    uint64_t startTime_ {};
-    uint64_t cpuTime_ {};
-    uint64_t ioTime_ {};
+    std::atomic<uint64_t> startTime_ {};
+    std::atomic<uint64_t> cpuTime_ {};
+    std::atomic<uint64_t> ioTime_ {};
     void* worker_ {nullptr};
     napi_ref taskRef_ {};
     std::atomic<uint32_t> taskRefCount_ {};
     std::shared_mutex taskMutex_ {};
     bool hasDependency_ {false};
+    bool isLongTask_ = {false};
 };
 
 struct CallbackInfo {

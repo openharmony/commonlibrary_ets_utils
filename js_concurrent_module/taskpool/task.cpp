@@ -76,6 +76,15 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     return thisVar;
 }
 
+napi_value Task::LongTaskConstructor(napi_env env, napi_callback_info cbinfo)
+{
+    auto thisVar = TaskConstructor(env, cbinfo);
+    Task* task;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    task->isLongTask_ = true;
+    return thisVar;
+}
+
 void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     Task* task = static_cast<Task*>(data);
@@ -99,12 +108,8 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
     delete[] nameStr;
     task->taskId_ = reinterpret_cast<uint64_t>(task);
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    task->onResultSignal_ = new uv_async_t;
-    uv_async_init(loop, task->onResultSignal_, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
-    task->onResultSignal_->data = task;
-    task->increaseRefSignal_ = new uv_async_t;
-    uv_async_init(loop, task->increaseRefSignal_, reinterpret_cast<uv_async_cb>(Task::IncreaseTaskRef));
-    task->increaseRefSignal_->data = task;
+    ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, TaskPool::HandleTaskResult, task);
+    ConcurrentHelper::UvHandleInit(loop, task->increaseRefSignal_, IncreaseTaskRef, task);
     napi_value taskId = NapiHelper::CreateUint64(env, task->taskId_);
     napi_value napiTrue = NapiHelper::CreateBooleanValue(env, true);
     napi_value napiFalse = NapiHelper::CreateBooleanValue(env, false);
@@ -126,7 +131,6 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
         DECLARE_NAPI_GETTER(NAME, GetName)
     };
     napi_define_properties(env, napiTask, sizeof(properties) / sizeof(properties[0]), properties);
-
     return task;
 }
 
@@ -148,35 +152,30 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
     delete[] nameStr;
     task->taskId_ = reinterpret_cast<uint64_t>(task);
     task->currentTaskInfo_ = taskInfo;
-    task->onResultSignal_ = new uv_async_t;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    uv_async_init(loop, task->onResultSignal_, reinterpret_cast<uv_async_cb>(TaskPool::HandleTaskResult));
-    task->onResultSignal_->data = task;
+    ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, TaskPool::HandleTaskResult, task);
     return task;
 }
 
 napi_value Task::GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType, Priority priority)
 {
-    if (!UpdateTaskType(taskType)) {
-        return nullptr;
-    }
     TaskInfo* taskInfo = GetTaskInfo(env, task, priority);
     if (taskInfo == nullptr) {
         return nullptr;
     }
+    UpdateTaskType(taskType);
     return NapiHelper::CreatePromise(env, &taskInfo->deferred);
 }
 
 TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
 {
-    std::string errMessage = "";
     napi_value func = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
     napi_value args = NapiHelper::GetNameProperty(env, task, ARGUMENTS_STR);
     napi_value taskName = NapiHelper::GetNameProperty(env, task, NAME);
     napi_value napiDefaultTransfer = NapiHelper::GetNameProperty(env, task, DEFAULT_TRANSFER_STR);
     napi_value napiDefaultClone = NapiHelper::GetNameProperty(env, task, DEFAULT_CLONE_SENDABLE_STR);
     if (func == nullptr || args == nullptr || napiDefaultTransfer == nullptr || napiDefaultClone == nullptr) {
-        errMessage = "taskpool:: task value is error";
+        std::string errMessage = "taskpool:: task value is error";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
@@ -369,9 +368,8 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
-    callbackInfo->onCallbackSignal = new uv_async_t;
     auto loop = NapiHelper::GetLibUV(env);
-    uv_async_init(loop, callbackInfo->onCallbackSignal, TaskPool::ExecuteCallback);
+    ConcurrentHelper::UvHandleInit(loop, callbackInfo->onCallbackSignal, TaskPool::ExecuteCallback);
     TaskManager::GetInstance().RegisterCallback(env, taskId, callbackInfo);
     return nullptr;
 }
@@ -587,57 +585,56 @@ napi_value Task::GetName(napi_env env, [[maybe_unused]] napi_callback_info cbinf
     return name;
 }
 
-bool Task::UpdateTaskType(TaskType taskType)
+void Task::UpdateTaskType(TaskType taskType)
 {
-    if (!IsInitialized() && taskType_ != taskType) {
-        std::string errMessage = "taskpool:: task type is error";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env_, ErrorHelper::TYPE_ERROR, errMessage.c_str());
-        return false;
-    }
     taskType_ = taskType;
     napi_reference_ref(env_, taskRef_, nullptr);
-    return true;
 }
 
-bool Task::IsRepeatableTask()
+bool Task::IsRepeatableTask() const
 {
     return IsCommonTask() || IsGroupCommonTask() || IsGroupFunctionTask();
 }
 
-bool Task::IsGroupTask()
+bool Task::IsGroupTask() const
 {
     return IsGroupCommonTask() || IsGroupFunctionTask();
 }
 
-bool Task::IsGroupCommonTask()
+bool Task::IsGroupCommonTask() const
 {
     return taskType_ == TaskType::GROUP_COMMON_TASK;
 }
 
-bool Task::IsGroupFunctionTask()
+bool Task::IsGroupFunctionTask() const
 {
     return taskType_ == TaskType::GROUP_FUNCTION_TASK;
 }
 
-bool Task::IsCommonTask()
+bool Task::IsCommonTask() const
 {
     return taskType_ == TaskType::COMMON_TASK;
 }
 
-bool Task::IsSeqRunnerTask()
+bool Task::IsSeqRunnerTask() const
 {
     return taskType_ == TaskType::SEQRUNNER_TASK;
 }
 
-bool Task::IsFunctionTask()
+bool Task::IsFunctionTask() const
 {
     return taskType_ == TaskType::FUNCTION_TASK;
 }
 
-bool Task::IsInitialized()
+bool Task::IsLongTask() const
 {
-    return taskType_ == TaskType::TASK;
+    return isLongTask_;
+}
+
+// The uninitialized state is Task, and then taskType_ will be updated based on the task type.
+bool Task::IsInitialized() const
+{
+    return taskType_ != TaskType::TASK;
 }
 
 TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
@@ -682,7 +679,7 @@ void Task::DecreaseRefCount()
     taskRefCount_.fetch_sub(1);
 }
 
-bool Task::IsReadyToHandle()
+bool Task::IsReadyToHandle() const
 {
     return (taskRefCount_ & 1) == 0;
 }
@@ -692,9 +689,9 @@ void Task::NotifyPendingTask()
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
     std::unique_lock<std::shared_mutex> lock(taskMutex_);
     delete currentTaskInfo_;
-    currentTaskInfo_ = nullptr;
     taskState_ = ExecuteState::WAITING;
     if (pendingTaskInfos_.empty()) {
+        currentTaskInfo_ = nullptr;
         return;
     }
     currentTaskInfo_ = pendingTaskInfos_.front();
@@ -714,15 +711,12 @@ void Task::CancelPendingTask(napi_env env, ExecuteState state)
     if (pendingTaskInfos_.empty()) {
         return;
     }
-    auto pendingIter = pendingTaskInfos_.begin();
-    for (; pendingIter != pendingTaskInfos_.end(); ++pendingIter) {
-        TaskInfo* info = *pendingIter;
+    for (const auto& info : pendingTaskInfos_) {
         napi_reject_deferred(env, info->deferred, error);
         napi_reference_unref(env, taskRef_, nullptr);
         delete info;
     }
-    pendingIter = pendingTaskInfos_.begin();
-    pendingTaskInfos_.erase(pendingIter, pendingTaskInfos_.end());
+    pendingTaskInfos_.clear();
 }
 
 bool Task::UpdateTask(uint64_t startTime, void* worker)
@@ -838,6 +832,12 @@ bool Task::CanForTaskGroup(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
+    if (IsLongTask()) {
+        errMessage = "taskpool:: The interface does not support the long task";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
     taskType_ = TaskType::GROUP_COMMON_TASK;
     return true;
 }
@@ -859,6 +859,12 @@ bool Task::CanExecute(napi_env env)
     }
     if (IsCommonTask() && HasDependency()) {
         errMessage = "taskpool:: executedTask with dependency cannot execute again";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
+    if (IsInitialized() && IsLongTask()) {
+        errMessage = "taskpool:: The long task can only be executed once";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
@@ -885,6 +891,12 @@ bool Task::CanExecuteDelayed(napi_env env)
         errMessage = "taskpool:: executedTask with dependency cannot executeDelayed again";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
+    if (IsInitialized() && IsLongTask()) {
+        errMessage = "taskpool:: Multiple executions of longTask are not supported in the executeDelayed";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR);
         return false;
     }
     return true;

@@ -39,6 +39,8 @@
 namespace Commonlibrary::Concurrent::Common::Helper {
 class ConcurrentHelper {
 public:
+    using UvCallback = void(*)(const uv_async_t*);
+
     ConcurrentHelper() = delete;
     ~ConcurrentHelper() = delete;
 
@@ -67,6 +69,13 @@ public:
         auto now = std::chrono::system_clock::now();
         auto millisecs = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
         return millisecs.count();
+    }
+
+    static void UvHandleInit(uv_loop_t* loop, uv_async_t*& handle, UvCallback func, void* data = nullptr)
+    {
+        handle = new uv_async_t;
+        handle->data = data;
+        uv_async_init(loop, handle, reinterpret_cast<uv_async_cb>(func));
     }
 
     template<typename T>

@@ -34,7 +34,7 @@ struct TaskMessage {
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
-    static void ExecuteCallback(uv_async_t* req);
+    static void ExecuteCallback(const uv_async_t* req);
     static void HandleTaskResult(const uv_async_t* req);
 
 private:
@@ -50,6 +50,7 @@ private:
     static napi_value ExecuteDelayed(napi_env env, napi_callback_info cbinfo);
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
     static napi_value GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo);
+    static napi_value TerminateTask(napi_env env, napi_callback_info cbinfo);
 
     static void UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success);
     static void ExecuteTask(napi_env env, Task* task, Priority priority = Priority::DEFAULT);
