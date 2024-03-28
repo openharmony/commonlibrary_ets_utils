@@ -54,7 +54,6 @@
                 "qos_manager"
             ],
             "third_party": [
-                "bounds_checking_function",
                 "icu",
                 "libxml2",
                 "openssl"

@@ -40,13 +40,13 @@ ohos_unittest("test_utils_unittest") {
 
   deps = [
     "${ets_util_path}/js_concurrent_module/utils:utils_static",
-    "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
     "//third_party/libuv:uv",
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ets_runtime:libark_jsruntime",
     "hilog:libhilog",

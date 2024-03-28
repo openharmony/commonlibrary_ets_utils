@@ -140,12 +140,10 @@ ohos_source_set("buffer_static") {
       "$plugins_root/libs/securec:sec_${target_os}",
     ]
   } else {
-    deps += [
-      "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/icu/icu4c:shared_icuuc",
-    ]
+    deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "hilog:libhilog",
       "napi:ace_napi",
     ]
