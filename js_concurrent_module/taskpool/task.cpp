@@ -405,7 +405,7 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    napi_value serializationArgs;
+    void* serializationArgs = nullptr;
     bool defaultClone = false;
     bool defaultTransfer = true;
     napi_status status = napi_serialize_inner(env, argsArray, undefined, undefined,
@@ -645,7 +645,7 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
                                  bool defaultTransfer, bool defaultCloneSendable)
 {
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    napi_value serializationFunction;
+    void* serializationFunction = nullptr;
     napi_status status = napi_serialize_inner(env, func, undefined, undefined,
                                               defaultTransfer, defaultCloneSendable, &serializationFunction);
     std::string errMessage = "";
@@ -655,7 +655,7 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_CONCURRENT_FUNCTION, errMessage.c_str());
         return nullptr;
     }
-    napi_value serializationArguments;
+    void* serializationArguments = nullptr;
     status = napi_serialize_inner(env, args, transferList, cloneList,
                                   defaultTransfer, defaultCloneSendable, &serializationArguments);
     if (status != napi_ok || serializationArguments == nullptr) {

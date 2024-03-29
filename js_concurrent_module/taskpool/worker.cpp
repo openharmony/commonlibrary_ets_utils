@@ -323,7 +323,7 @@ void Worker::PerformTask(const uv_async_t* req)
 void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    napi_value resultData;
+    void* resultData = nullptr;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     bool defaultTransfer = true;
     bool defaultCloneSendable = false;
