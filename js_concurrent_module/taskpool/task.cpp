@@ -47,7 +47,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
 
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
-    napi_value thisVar;
+    napi_value thisVar = nullptr;
     napi_value func = nullptr;
     napi_value name = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
@@ -688,14 +688,15 @@ void Task::NotifyPendingTask()
 {
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
     std::unique_lock<std::shared_mutex> lock(taskMutex_);
+    napi_reference_unref(env_, taskRef_, nullptr);
     delete currentTaskInfo_;
-    taskState_ = ExecuteState::WAITING;
     if (pendingTaskInfos_.empty()) {
         currentTaskInfo_ = nullptr;
         return;
     }
     currentTaskInfo_ = pendingTaskInfos_.front();
     pendingTaskInfos_.pop_front();
+    taskState_ = ExecuteState::WAITING;
     TaskManager::GetInstance().EnqueueTaskId(taskId_, currentTaskInfo_->priority);
 }
 

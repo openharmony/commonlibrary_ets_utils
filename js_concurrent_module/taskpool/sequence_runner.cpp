@@ -62,7 +62,6 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
 
     seqRunner->priority_ = static_cast<Priority>(priority);
     seqRunner->seqRunnerId_ = seqRunnerId;
-    TaskGroupManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
     napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
     napi_create_reference(env, thisVar, 0, &seqRunner->seqRunnerRef_);
     return thisVar;
@@ -97,14 +96,13 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     Task* task = nullptr;
     napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        HILOG_ERROR("taskpool:: SeqRunner execute task is nullptr");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the type of the params must be task");
         return nullptr;
     }
     if (!task->CanForSequenceRunner(env)) {
         return nullptr;
     }
     task->seqRunnerId_ = seqRunnerId;
-    task->taskState_ = ExecuteState::WAITING;
     napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::SEQRUNNER_TASK, seqRunner->priority_);
     if (promise == nullptr) {
         return nullptr;
@@ -114,6 +112,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
                     task->taskId_, seqRunnerId);
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
+        task->taskState_ = ExecuteState::WAITING;
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
         HILOG_DEBUG("seqRunner:: add %{public}" PRIu64 " to seqRunner %{public}" PRIu64 ".",

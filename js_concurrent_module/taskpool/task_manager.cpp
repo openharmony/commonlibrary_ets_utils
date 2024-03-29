@@ -498,7 +498,8 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         task->taskState_ = ExecuteState::CANCELED;
         return;
     }
-    if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND) {
+    if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND ||
+        task->taskState_ == ExecuteState::FINISHED) {
         std::string errMsg = "taskpool:: task is not executed or has been executed";
         HILOG_ERROR("%{public}s", errMsg.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
@@ -1026,7 +1027,7 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
     }
     DecreaseRefCount(env, taskId);
     RemoveTaskDuration(taskId);
-    if (!task->IsCommonTask()) {
+    if (task->IsFunctionTask()) {
         return;
     }
     RemovePendingTaskInfo(taskId);
@@ -1109,18 +1110,10 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
         HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
         return;
     }
-    {
-        std::unique_lock<std::shared_mutex> lock(taskGroup->taskGroupMutex_);
-        if (taskGroup->currentGroupInfo_ == nullptr) {
-            std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
-            HILOG_ERROR("%{public}s", errMsg.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
-            return;
-        }
-        taskGroup->CancelPendingGroup(env);
-    }
-    if (taskGroup->groupState_ == ExecuteState::NOT_FOUND) {
-        std::string errMsg = "taskpool:: taskGroup is not executed";
+    std::unique_lock<std::shared_mutex> lock(taskGroup->taskGroupMutex_);
+    if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::NOT_FOUND ||
+        taskGroup->groupState_ == ExecuteState::FINISHED) {
+        std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
         HILOG_ERROR("%{public}s", errMsg.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
         return;
@@ -1128,12 +1121,13 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     if (taskGroup->groupState_ == ExecuteState::CANCELED) {
         return;
     }
+    taskGroup->groupState_ = ExecuteState::CANCELED;
+    taskGroup->CancelPendingGroup(env);
     if (taskGroup->currentGroupInfo_->finishedTask != taskGroup->taskNum_) {
         for (uint64_t taskId : taskGroup->taskIds_) {
             CancelGroupTask(env, taskId, taskGroup);
         }
     }
-    taskGroup->groupState_ = ExecuteState::CANCELED;
 }
 
 void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup* group)
@@ -1144,27 +1138,11 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
         return;
     }
     std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
-    ExecuteState state = task->taskState_;
-    switch (state) {
-        case ExecuteState::NOT_FOUND:
-            return;
-        case ExecuteState::RUNNING:
-            task->taskState_ = ExecuteState::CANCELED;
-            break;
-        case ExecuteState::WAITING:
-            task->taskState_ = ExecuteState::CANCELED;
-            if (group->groupState_ == ExecuteState::WAITING) {
-                group->groupState_ = ExecuteState::CANCELED;
-                break;
-            }
-            if (task->currentTaskInfo_ != nullptr) {
-                delete task->currentTaskInfo_;
-                task->currentTaskInfo_ = nullptr;
-            }
-            break;
-        default:
-            break;
+    if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+        delete task->currentTaskInfo_;
+        task->currentTaskInfo_ = nullptr;
     }
+    task->taskState_ = ExecuteState::CANCELED;
 }
 
 void TaskGroupManager::StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner)
@@ -1236,6 +1214,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         }
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
+        task->taskState_ = ExecuteState::WAITING;
         HILOG_DEBUG("seqRunner:: Trigger task %{public}" PRIu64 " in seqRunner %{public}" PRIu64 ".",
                     task->taskId_, seqRunnerId);
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
