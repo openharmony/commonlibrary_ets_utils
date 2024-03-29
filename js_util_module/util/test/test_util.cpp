@@ -16,6 +16,7 @@
 #include "test.h"
 #include <codecvt>
 #include "commonlibrary/ets_utils/js_util_module/util/js_uuid.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_stringdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
@@ -2460,4 +2461,150 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest005, testing::ext::TestSize.Level0)
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: stringDecoderWrite001
+ * @tc.desc: Test the write function with complete data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWrite001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    const int arrCount = 6;
+    size_t byteLength = arrCount;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    unsigned char arr[arrCount] = {0xE4, 0xBD, 0xA0, 0xE5, 0xA5, 0xBD};
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testRes = stringDecoder.Write(env, result);
+    size_t bufferSize = 0;
+    if (napi_get_value_string_utf8(env, testRes, nullptr, 0, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg size");
+    }
+    std::string buffer = "";
+    buffer.reserve(bufferSize);
+    buffer.resize(bufferSize);
+    if (napi_get_value_string_utf8(env, testRes, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg value");
+    }
+    ASSERT_STREQ("你好", buffer.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWrite002
+ * @tc.desc: Test the write function by splitting the complete data into two parts.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWrite002, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    const int arrCount = 2;
+    size_t byteLength = arrCount;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    unsigned char arr[arrCount] = {0xE4, 0xBD};
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testRes = stringDecoder.Write(env, result);
+    size_t bufferSize = 0;
+    if (napi_get_value_string_utf8(env, testRes, nullptr, 0, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg size");
+    }
+    std::string buffer = "";
+    buffer.reserve(bufferSize);
+    buffer.resize(bufferSize);
+    if (napi_get_value_string_utf8(env, testRes, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg value");
+    }
+    ASSERT_STREQ("", buffer.c_str());
+
+    const int count = 4;
+    byteLength = count;
+    data = nullptr;
+    resultBuff = nullptr;
+    unsigned char uint8[count] = {0xA0, 0xE5, 0xA5, 0xBD};
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    ret = memcpy_s(data, sizeof(uint8), reinterpret_cast<void*>(uint8), sizeof(uint8));
+    ASSERT_EQ(0, ret);
+    result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    testRes = stringDecoder.Write(env, result);
+    bufferSize = 0;
+    if (napi_get_value_string_utf8(env, testRes, nullptr, 0, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg size");
+    }
+    buffer = "";
+    buffer.reserve(bufferSize);
+    buffer.resize(bufferSize);
+    if (napi_get_value_string_utf8(env, testRes, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg value");
+    }
+    ASSERT_STREQ("你好", buffer.c_str());
+}
+
+
+/**
+ * @tc.name: stringDecoderEnd001
+ * @tc.desc: Test the end function by splitting the complete data into two parts.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderEnd001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    const int arrCount = 2;
+    size_t byteLength = arrCount;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    unsigned char arr[arrCount] = {0xE4, 0xBD};
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testRes = stringDecoder.Write(env, result);
+    size_t bufferSize = 0;
+    if (napi_get_value_string_utf8(env, testRes, nullptr, 0, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg size");
+    }
+    std::string buffer = "";
+    buffer.reserve(bufferSize);
+    buffer.resize(bufferSize);
+    if (napi_get_value_string_utf8(env, testRes, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg value");
+    }
+    ASSERT_STREQ("", buffer.c_str());
+
+    const int count = 4;
+    byteLength = count;
+    data = nullptr;
+    resultBuff = nullptr;
+    unsigned char uint8[count] = {0xA0, 0xE5, 0xA5, 0xBD};
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    ret = memcpy_s(data, sizeof(uint8), reinterpret_cast<void*>(uint8), sizeof(uint8));
+    ASSERT_EQ(0, ret);
+    result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    testRes = stringDecoder.End(env, result);
+    bufferSize = 0;
+    if (napi_get_value_string_utf8(env, testRes, nullptr, 0, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg size");
+    }
+    buffer = "";
+    buffer.reserve(bufferSize);
+    buffer.resize(bufferSize);
+    if (napi_get_value_string_utf8(env, testRes, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+        HILOG_ERROR("can not get arg value");
+    }
+    ASSERT_STREQ("你好", buffer.c_str());
 }

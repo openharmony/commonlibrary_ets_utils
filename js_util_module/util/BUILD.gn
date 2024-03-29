@@ -74,6 +74,7 @@ gen_obj("util_abc") {
 
 util_sources = [
   "js_base64.cpp",
+  "js_stringdecoder.cpp",
   "js_textdecoder.cpp",
   "js_textencoder.cpp",
   "js_types.cpp",
