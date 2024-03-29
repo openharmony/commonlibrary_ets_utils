@@ -94,7 +94,7 @@ public:
                 errTitle = "There is a circular dependency";
                 break;
             case ERR_INEXISTENT_DEPENDENCY:
-                errTitle = "The dependency does not exist";
+                errTitle = "The dependency does not exist, ";
                 break;
             case ERR_DELAY_TIME_ERROR:
                 errTitle = "The delayTime is less than zero";
