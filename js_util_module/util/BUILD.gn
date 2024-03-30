@@ -170,7 +170,7 @@ ohos_source_set("util_static") {
         "hilog:libhilog",
       ]
     }
-    deps += [ "//third_party/bounds_checking_function:libsec_shared" ]
+    external_deps += [ "bounds_checking_function:libsec_shared" ]
   }
 
   subsystem_name = "commonlibrary"

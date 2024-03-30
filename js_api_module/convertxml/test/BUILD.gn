@@ -42,7 +42,6 @@ ohos_unittest("test_convertxml_unittest") {
   deps = [
     "${ets_util_path}/js_api_module/convertxml:convertxml_static",
     "${ets_util_path}/js_api_module/xml:xml_static",
-    "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
     "//third_party/icu/icu4c:static_icuuc",
@@ -50,6 +49,7 @@ ohos_unittest("test_convertxml_unittest") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ets_runtime:libark_jsruntime",
     "napi:ace_napi",
   ]

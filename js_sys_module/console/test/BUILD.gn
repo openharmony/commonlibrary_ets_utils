@@ -44,20 +44,21 @@ ohos_unittest("test_console_unittest") {
     "$ets_runtime:libark_jsruntime",
     "$napi_root:ace_napi",
     "$sys_module/console:console",
-    "//third_party/bounds_checking_function:libsec_static",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
     "//third_party/icu/icu4c:static_icuuc",
     "//third_party/libuv:uv",
   ]
 
+  external_deps = [ "bounds_checking_function:libsec_shared" ]
+
   if (is_standard_system) {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
     ]
   } else {
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "hilog:libhilog",
     ]
