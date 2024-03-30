@@ -718,6 +718,23 @@ napi_value Console::Trace(napi_env env, napi_callback_info info)
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
 
+napi_value Console::TraceHybridStack(napi_env env, napi_callback_info info)
+{
+    std::string stack;
+    napi_get_hybrid_stack_trace(env, stack);
+    HILOG_INFO("%{public}sTraceHybridStack: ", groupIndent.c_str());
+    std::string tempStr = "";
+    for (size_t i = 0; i < stack.length(); i++) {
+        if (stack[i] == '\n') {
+            HILOG_INFO("%{public}s%{public}s", groupIndent.c_str(), tempStr.c_str());
+            tempStr = "";
+        } else {
+            tempStr += stack[i];
+        }
+    }
+    return Helper::NapiHelper::GetUndefinedValue(env);
+}
+
 napi_value Console::Assert(napi_env env, napi_callback_info info)
 {
     // 1. check args
@@ -759,6 +776,7 @@ void Console::InitConsoleModule(napi_env env)
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("timeLog", TimeLog),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("timeEnd", TimeEnd),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("trace", Trace),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("traceHybridStack", TraceHybridStack),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("assert", Assert),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("count", Count),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("countReset", CountReset),

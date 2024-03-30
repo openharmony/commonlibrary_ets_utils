@@ -80,6 +80,10 @@ napi_value ConsoleTest::Trace(napi_env env, napi_callback_info info)
 {
     return Console::Trace(env, info);
 }
+napi_value ConsoleTest::TraceHybridStack(napi_env env, napi_callback_info info)
+{
+    return Console::TraceHybridStack(env, info);
+}
 napi_value ConsoleTest::Assert(napi_env env, napi_callback_info info)
 {
     return Console::Assert(env, info);
