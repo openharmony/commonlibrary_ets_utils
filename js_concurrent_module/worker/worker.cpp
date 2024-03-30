@@ -1283,9 +1283,9 @@ bool Worker::PrepareForWorkerInstance()
         if (isRelativePath_) {
             rawFileName = fileName_;
         }
-        if (!hostEngine->GetAbcBuffer(rawFileName.c_str(), &scriptContent, &scriptContentSize, workerAmi)) {
+        if (!hostEngine->GetAbcBuffer(
+            rawFileName.c_str(), &scriptContent, &scriptContentSize, workerAmi, false, isRelativePath_)) {
             HILOG_ERROR("worker:: GetAbcBuffer error");
-            HandleException();
             return false;
         }
     }
