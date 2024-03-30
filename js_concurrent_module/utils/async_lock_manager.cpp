@@ -103,20 +103,21 @@ void AsyncLockManager::CheckDeadlocksAndLogWarning()
 
 napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 {
-    // AsyncLock class
-    napi_value requestFunc = nullptr;
-    napi_create_function(env, "request", NAPI_AUTO_LENGTH, Request, nullptr, &requestFunc);
-    napi_value queryFunc = nullptr;
-    napi_create_function(env, "query", NAPI_AUTO_LENGTH, Query, nullptr, &queryFunc);
-    napi_value queryAllFunc = nullptr;
-    napi_create_function(env, "queryAll", NAPI_AUTO_LENGTH, QueryAll, nullptr, &queryAllFunc);
+    // instance properties
+    napi_value name;
+    NAPI_CALL(env, napi_create_string_utf8(env, "", 0, &name));
+
+    napi_property_descriptor props[] = {
+        DECLARE_NAPI_STATIC_FUNCTION("request", Request),
+        DECLARE_NAPI_STATIC_FUNCTION("query", Query),
+        DECLARE_NAPI_STATIC_FUNCTION("queryAll", QueryAll),
+        DECLARE_NAPI_INSTANCE_PROPERTY("name", name),
+        DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("lockAsync"),
+    };
 
     napi_value asyncLockManagerClass = nullptr;
-    napi_define_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
-        0, nullptr, &asyncLockManagerClass);
-    napi_set_named_property(env, asyncLockManagerClass, "request", requestFunc);
-    napi_set_named_property(env, asyncLockManagerClass, "query", queryFunc);
-    napi_set_named_property(env, asyncLockManagerClass, "queryAll", queryAllFunc);
+    napi_define_sendable_class(env, "AsyncLock", NAPI_AUTO_LENGTH, Constructor, nullptr,
+                               sizeof(props) / sizeof(props[0]), props, nullptr, &asyncLockManagerClass);
     NAPI_CALL(env, napi_create_reference(env, asyncLockManagerClass, 1, &asyncLockClassRef));
 
     // AsyncLockMode enum
@@ -173,7 +174,8 @@ napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo
     NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
 
     AsyncLockIdentity *data = new AsyncLockIdentity {true, lockId};
-    NAPI_CALL(env, napi_wrap(env, thisVar, data, Destructor, nullptr, nullptr));
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    engine->WrapSendableObj(env, thisVar, data, Destructor);
 
     return thisVar;
 }
@@ -207,12 +209,13 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     NAPI_CALL(env, napi_define_properties(env, instance, sizeof(properties) / sizeof(properties[0]), properties));
 
     AsyncLockIdentity *data = new AsyncLockIdentity {false, 0, name};
-    NAPI_CALL(env, napi_wrap(env, instance, data, Destructor, nullptr, nullptr));
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    engine->WrapSendableObj(env, instance, data, Destructor);
 
     return instance;
 }
 
-void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] void *hint)
+void AsyncLockManager::Destructor(void *data, [[maybe_unused]] void *hint)
 {
     AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
     std::unique_lock<std::mutex> guard(lockMutex);
@@ -238,7 +241,8 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
     NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, argv.get(), &thisVar, nullptr));
 
     AsyncLockIdentity *id;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&id)));
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    engine->UnwrapSendableObj(env, thisVar, reinterpret_cast<void **>(&id));
 
     AsyncLock *asyncLock = nullptr;
     {
