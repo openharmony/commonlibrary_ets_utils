@@ -22,7 +22,7 @@
 #include "napi/native_node_api.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
-using MessageDataType = napi_value;
+using MessageDataType = void*;
 class MessageQueue final {
 public:
     void EnQueue(MessageDataType data);

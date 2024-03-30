@@ -396,7 +396,7 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
         return nullptr;
     }
 
-    napi_value data = nullptr;
+    MessageDataType data = nullptr;
     napi_status serializeStatus = napi_ok;
     bool defaultClone = cloneSendable ? true : false;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
@@ -766,7 +766,7 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
         return nullptr;
     }
 
-    napi_value data = nullptr;
+    MessageDataType data = nullptr;
     napi_status serializeStatus = napi_ok;
     bool defaultClone = cloneSendable ? true : false;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
@@ -833,7 +833,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_status serializeStatus = napi_ok;
-    napi_value data = nullptr;
+    MessageDataType data = nullptr;
     napi_value argsArray;
     napi_create_array_with_length(env, argc - 1, &argsArray);
     size_t index = 0;
@@ -1872,7 +1872,7 @@ void Worker::HandleUncaughtException(napi_value exception)
     WorkerOnErrorInner(obj);
 
     if (hostEnv_ != nullptr) {
-        napi_value data = nullptr;
+        MessageDataType data = nullptr;
         napi_value undefined = NapiHelper::GetUndefinedValue(workerEnv_);
         napi_serialize_inner(workerEnv_, obj, undefined, undefined, false, true, &data);
         {

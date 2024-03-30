@@ -38,8 +38,8 @@ struct GroupInfo;
 struct TaskInfo {
     napi_deferred deferred = nullptr;
     Priority priority {Priority::DEFAULT};
-    napi_value serializationFunction = nullptr;
-    napi_value serializationArguments = nullptr;
+    void* serializationFunction = nullptr;
+    void* serializationArguments = nullptr;
 };
 
 class Task {
@@ -121,7 +121,7 @@ public:
     uint64_t seqRunnerId_ {}; // 0 for task without seqRunner
     TaskInfo* currentTaskInfo_ {};
     std::list<TaskInfo*> pendingTaskInfos_ {}; // for a common task executes multiple times
-    napi_value result_ = nullptr;
+    void* result_ = nullptr;
     uv_async_t* onResultSignal_ = nullptr;
     uv_async_t* increaseRefSignal_ = nullptr;
     std::atomic<bool> success_ {true};
@@ -154,13 +154,13 @@ struct CallbackInfo {
 };
 
 struct TaskResultInfo {
-    TaskResultInfo(napi_env env, uint64_t id, napi_value args) : hostEnv(env),
+    TaskResultInfo(napi_env env, uint64_t id, void* args) : hostEnv(env),
         taskId(id), serializationArgs(args) {}
     ~TaskResultInfo() = default;
 
     napi_env hostEnv;
     uint64_t taskId;
-    napi_value serializationArgs;
+    void* serializationArgs;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
