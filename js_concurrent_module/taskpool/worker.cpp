@@ -73,15 +73,15 @@ bool Worker::CheckFreeConditions()
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     // only when all conditions are met can the worker be freed
     if (workerEngine->HasListeningCounter()) {
-        HILOG_DEBUG("taskpool:: listening operation exits, the worker thread will not exit");
+        HILOG_DEBUG("taskpool:: listening operation exists, the worker thread will not exit");
     } else if (Timer::HasTimer(workerEnv_)) {
-        HILOG_DEBUG("taskpool:: timer exits, the worker thread will not exit");
+        HILOG_DEBUG("taskpool:: timer exists, the worker thread will not exit");
     } else if (workerEngine->HasWaitingRequest()) {
-        HILOG_DEBUG("taskpool:: waiting request exits, the worker thread will not exit");
+        HILOG_DEBUG("taskpool:: waiting request exists, the worker thread will not exit");
     } else if (workerEngine->HasSubEnv()) {
-        HILOG_DEBUG("taskpool:: sub env exits, the worker thread will not exit");
+        HILOG_DEBUG("taskpool:: sub env exists, the worker thread will not exit");
     } else if (workerEngine->HasPendingJob()) {
-        HILOG_DEBUG("taskpool:: pending job exits, the worker thread will not exit");
+        HILOG_DEBUG("taskpool:: pending job exists, the worker thread will not exit");
     } else if (workerEngine->IsProfiling()) {
         HILOG_DEBUG("taskpool:: the worker thread will not exit during profiling");
     } else {
@@ -155,20 +155,13 @@ void Worker::ExecuteInThread(const void* data)
     worker->tid_ = GetThreadId();
 
     // Init worker task execute signal
-    worker->performTaskSignal_ = new uv_async_t;
-    worker->performTaskSignal_->data = worker;
-    uv_async_init(loop, worker->performTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::PerformTask));
-
-    worker->clearWorkerSignal_ = new uv_async_t;
-    worker->clearWorkerSignal_->data = worker;
-    uv_async_init(loop, worker->clearWorkerSignal_, reinterpret_cast<uv_async_cb>(Worker::ReleaseWorkerHandles));
+    ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, Worker::PerformTask, worker);
+    ConcurrentHelper::UvHandleInit(loop, worker->clearWorkerSignal_, Worker::ReleaseWorkerHandles, worker);
 
     HITRACE_HELPER_FINISH_TRACE;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     // Init debugger task post signal
-    worker->debuggerOnPostTaskSignal_ = new uv_async_t;
-    worker->debuggerOnPostTaskSignal_->data = worker;
-    uv_async_init(loop, worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(Worker::HandleDebuggerTask));
+    ConcurrentHelper::UvHandleInit(loop, worker->debuggerOnPostTaskSignal_, Worker::HandleDebuggerTask, worker);
 #endif
     if (worker->PrepareForWorkerInstance()) {
         // Call after uv_async_init
@@ -293,6 +286,9 @@ void Worker::PerformTask(const uv_async_t* req)
     if (task->IsGroupTask()) {
         TaskGroupManager::GetInstance().UpdateGroupState(task->groupId_);
     }
+    if (task->IsLongTask()) {
+        worker->UpdateLongTaskInfo(task);
+    }
     worker->StoreTaskId(task->taskId_);
     // tag for trace parse: Task Perform
     std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_);
@@ -370,6 +366,8 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         return;
     }
     Task* task = static_cast<Task*>(data);
+    auto worker = static_cast<Worker*>(task->worker_);
+    worker->isExecutingLongTask_ = task->IsLongTask();
     task->DecreaseRefCount();
     task->ioTime_ = ConcurrentHelper::GetMilliseconds();
     if (task->cpuTime_ != 0) {
@@ -442,6 +440,36 @@ void Worker::UpdateExecutedInfo()
         uint64_t duration = ConcurrentHelper::GetMilliseconds() - startTime_;
         TaskManager::GetInstance().UpdateExecutedInfo(duration);
     }
+}
+
+// Only when the worker has no longTask can it be released.
+void Worker::TerminateTask(uint64_t taskId)
+{
+    std::lock_guard<std::mutex> lock(longMutex_);
+    longTasksSet_.erase(taskId);
+    if (longTasksSet_.empty()) {
+        hasLongTask_ = false;
+    }
+}
+
+// to store longTasks' state
+void Worker::UpdateLongTaskInfo(Task* task)
+{
+    TaskManager::GetInstance().StoreLongTaskInfo(task->taskId_, this);
+    std::lock_guard<std::mutex> lock(longMutex_);
+    hasLongTask_ = true;
+    isExecutingLongTask_ = true;
+    longTasksSet_.emplace(task->taskId_);
+}
+
+bool Worker::IsExecutingLongTask()
+{
+    return isExecutingLongTask_;
+}
+
+bool Worker::HasLongTask()
+{
+    return hasLongTask_;
 }
 
 void Worker::HandleFunctionException(napi_env env, Task* task)

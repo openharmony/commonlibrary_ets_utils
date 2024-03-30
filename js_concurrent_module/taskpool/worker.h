@@ -105,6 +105,7 @@ private:
         {
             napi_open_handle_scope(worker_->workerEnv_, &scope_);
             worker_->idleState_ = false;
+            worker->isExecutingLongTask_ = false;
             worker_->NotifyTaskRunning();
         }
 
@@ -146,6 +147,11 @@ private:
     void StoreTaskId(uint64_t taskId);
     bool InitTaskPoolFunc(napi_env env, napi_value func, Task* task);
     void UpdateExecutedInfo();
+    void UpdateLongTaskInfo(Task* task);
+    bool IsExecutingLongTask();
+    bool HasLongTask();
+    void TerminateTask(uint64_t taskId);
+
     static void HandleFunctionException(napi_env env, Task* task);
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(napi_env env, napi_value result, bool success, void* data);
@@ -174,6 +180,10 @@ private:
     MessageQueue<TaskResultInfo*> hostMessageQueue_ {};
     uint64_t lastCpuTime_ = 0;
     uint32_t idleCount_ = 0;
+    std::atomic<bool> hasLongTask_ = false;
+    std::atomic<bool> isExecutingLongTask_ = false;
+    std::mutex longMutex_;
+    std::unordered_set<uint64_t> longTasksSet_ {};
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -215,7 +215,8 @@ void TaskManager::CheckForBlockedWorkers()
     for (auto iter = workers_.begin(); iter != workers_.end(); iter++) {
         auto worker = *iter;
         // if the worker thread is idle, just skip it, and only the worker in running state can be marked as timeout
-        if ((worker->state_ == WorkerState::IDLE) ||
+        // if the worker is executing the longTask, we will not do the check
+        if ((worker->state_ == WorkerState::IDLE) || (worker->IsExecutingLongTask()) ||
             (ConcurrentHelper::GetMilliseconds() - worker->startTime_ < threshold) ||
             !worker->UpdateWorkerState(WorkerState::RUNNING, WorkerState::BLOCKED)) {
             continue;
@@ -236,9 +237,12 @@ void TaskManager::CheckForBlockedWorkers()
         }
 
         HILOG_INFO("taskpool:: The worker has been marked as timeout.");
-        needChecking = true;
         workerEngine->TerminateExecution();
-
+        // If the current worker has a longTask and is not executing, we will only interrupt it.
+        if (worker->HasLongTask()) {
+            continue;
+        }
+        needChecking = true;
         idleWorkers_.erase(worker);
         timeoutWorkers_.insert(worker);
     }
@@ -339,7 +343,7 @@ void TaskManager::TriggerShrink(uint32_t step)
     uint32_t count = 0;
     for (size_t i = 0; i < freeList_.size(); i++) {
         auto worker = freeList_[i];
-        if (worker->state_ != WorkerState::IDLE) { // may in I/O
+        if (worker->state_ != WorkerState::IDLE || worker->HasLongTask()) {
             continue;
         }
         auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
@@ -368,7 +372,7 @@ void TaskManager::TriggerShrink(uint32_t step)
         // try to free the worker that idle time meets the requirement
         auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [](Worker *worker) {
             auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-            return idleTime > MAX_IDLE_TIME && worker->runningCount_ == 0;
+            return idleTime > MAX_IDLE_TIME && worker->runningCount_ == 0 && !worker->HasLongTask();
         });
         // remove it from all sets
         if (iter != idleWorkers_.end()) {
@@ -460,7 +464,7 @@ void TaskManager::RunTaskManager()
     uv_timer_init(loop_, timer_);
     expandHandle_ = new uv_async_t;
     uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, 60000); // 60000: 1min
-    uv_async_init(loop_, expandHandle_, reinterpret_cast<uv_async_cb>(TaskManager::NotifyExpand));
+    ConcurrentHelper::UvHandleInit(loop_, expandHandle_, TaskManager::NotifyExpand);
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
     pthread_setname_np("OS_TaskManager");
 #else
@@ -558,8 +562,11 @@ uint32_t TaskManager::GetTimeoutWorkers()
 uint32_t TaskManager::GetTaskNum()
 {
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
-    return taskQueues_[Priority::HIGH]->GetTaskNum() + taskQueues_[Priority::MEDIUM]->GetTaskNum() +
-        taskQueues_[Priority::LOW]->GetTaskNum();
+    uint32_t sum = 0;
+    for (const auto& elements : taskQueues_) {
+        sum += elements->GetTaskNum();
+    }
+    return sum;
 }
 
 uint32_t TaskManager::GetThreadNum()
@@ -981,6 +988,35 @@ void TaskManager::RemoveTaskDuration(uint64_t taskId)
     }
 }
 
+void TaskManager::StoreLongTaskInfo(uint64_t taskId, Worker* worker)
+{
+    std::unique_lock<std::shared_mutex> lock(longTasksMutex_);
+    longTasksMap_.emplace(taskId, worker);
+}
+
+void TaskManager::RemoveLongTaskInfo(uint64_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(longTasksMutex_);
+    longTasksMap_.erase(taskId);
+}
+
+Worker* TaskManager::GetLongTaskInfo(uint64_t taskId)
+{
+    std::shared_lock<std::shared_mutex> lock(longTasksMutex_);
+    auto iter = longTasksMap_.find(taskId);
+    return iter != longTasksMap_.end() ? iter->second : nullptr;
+}
+
+void TaskManager::TerminateTask(uint64_t taskId)
+{
+    auto worker = GetLongTaskInfo(taskId);
+    if (UNLIKELY(worker == nullptr)) {
+        return;
+    }
+    worker->TerminateTask(taskId);
+    RemoveLongTaskInfo(taskId);
+}
+
 void TaskManager::ReleaseTaskData(napi_env env, Task* task)
 {
     uint64_t taskId = task->taskId_;
@@ -1022,7 +1058,7 @@ void TaskManager::RemoveTask(uint64_t taskId)
 
 Task* TaskManager::GetTask(uint64_t taskId)
 {
-    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+    std::shared_lock<std::shared_mutex> lock(tasksMutex_);
     auto iter = tasks_.find(taskId);
     if (iter == tasks_.end()) {
         return nullptr;
@@ -1183,7 +1219,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
     {
         std::unique_lock<std::shared_mutex> lock(seqRunner->seqRunnerMutex_);
         if (seqRunner->seqRunnerTasks_.empty()) {
-            HILOG_DEBUG("seqRunner:: seqRunner %" PRIu64 " empty.", seqRunnerId);
+            HILOG_DEBUG("seqRunner:: seqRunner %{public}" PRIu64 " empty.", seqRunnerId);
             seqRunner->currentTaskId_ = 0;
             return true;
         }
@@ -1191,7 +1227,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         seqRunner->seqRunnerTasks_.pop();
         while (task->taskState_ == ExecuteState::CANCELED) {
             if (seqRunner->seqRunnerTasks_.empty()) {
-                HILOG_DEBUG("seqRunner:: seqRunner %" PRIu64 " empty in cancel loop.", seqRunnerId);
+                HILOG_DEBUG("seqRunner:: seqRunner %{public}" PRIu64 " empty in cancel loop.", seqRunnerId);
                 seqRunner->currentTaskId_ = 0;
                 return true;
             }
@@ -1200,7 +1236,8 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         }
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
-        HILOG_DEBUG("seqRunner:: Trig task %" PRIu64 " in seqRunner %" PRIu64 ".", task->taskId_, seqRunnerId);
+        HILOG_DEBUG("seqRunner:: Trigger task %{public}" PRIu64 " in seqRunner %{public}" PRIu64 ".",
+                    task->taskId_, seqRunnerId);
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
         TaskManager::GetInstance().TryTriggerExpand();
     }
