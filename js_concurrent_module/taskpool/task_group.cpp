@@ -91,14 +91,21 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
-    napi_valuetype type;
+    napi_valuetype type = napi_undefined;
     napi_typeof(env, args[0], &type);
     if (type == napi_object) {
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
+        if (task == nullptr) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the type of the params must be task");
+            return nullptr;
+        }
         if (!task->CanForTaskGroup(env)) {
             return nullptr;
         }
+        task->taskType_ = TaskType::GROUP_COMMON_TASK;
+        task->groupId_ = groupId;
+        napi_reference_ref(env, task->taskRef_, nullptr);
         TaskGroupManager::GetInstance().AddTask(groupId, task->taskRef_, task->taskId_);
         return nullptr;
     } else if (type == napi_function) {
@@ -109,7 +116,8 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         }
         task->groupId_ = groupId;
         TaskManager::GetInstance().StoreTask(task->taskId_, task);
-        napi_wrap(env, napiTask, task, Task::TaskDestructor, nullptr, &task->taskRef_);
+        napi_wrap(env, napiTask, task, Task::TaskDestructor, nullptr, nullptr);
+        napi_create_reference(env, napiTask, 1, &task->taskRef_);
         TaskGroupManager::GetInstance().AddTask(groupId, task->taskRef_, task->taskId_);
         return nullptr;
     }
@@ -135,6 +143,7 @@ void TaskGroup::NotifyGroupTask(napi_env env)
     if (pendingGroupInfos_.empty()) {
         return;
     }
+    groupState_ = ExecuteState::WAITING;
     currentGroupInfo_ = pendingGroupInfos_.front();
     pendingGroupInfos_.pop_front();
     for (auto iter = taskRefs_.begin(); iter != taskRefs_.end(); iter++) {
@@ -148,7 +157,6 @@ void TaskGroup::NotifyGroupTask(napi_env env)
         napi_reference_ref(env, task->taskRef_, nullptr);
         Priority priority = currentGroupInfo_->priority;
         if (task->IsGroupCommonTask()) {
-            task->UpdateTaskType(TaskType::GROUP_COMMON_TASK);
             task->GetTaskInfo(env, napiTask, priority);
         }
         task->IncreaseRefCount();

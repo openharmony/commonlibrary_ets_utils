@@ -31,7 +31,7 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
 
-enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, DELAYED };
+enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED };
 enum TaskType { TASK, FUNCTION_TASK, SEQRUNNER_TASK, COMMON_TASK, GROUP_COMMON_TASK, GROUP_FUNCTION_TASK };
 
 struct GroupInfo;

@@ -179,7 +179,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
-    napi_valuetype type;
+    napi_valuetype type = napi_undefined;
     napi_typeof(env, args[0], &type);
     if (type == napi_object) {
         uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
@@ -200,7 +200,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
         if (task == nullptr) {
-            HILOG_ERROR("taskpool:: execute task is nullptr");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param must be task");
             return nullptr;
         }
         if (!task->CanExecute(env)) {
@@ -233,22 +233,17 @@ void TaskPool::DelayTask(uv_timer_t* handle)
 {
     TaskMessage *taskMessage = static_cast<TaskMessage *>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
-    if (task == nullptr) {
+    if (task == nullptr || task->taskState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: DelayTask task has been cancelled");
-    } else if (task->taskState_ != ExecuteState::CANCELED) {
+    } else {
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
         TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, taskMessage->priority);
         taskInfo->deferred = taskMessage->deferred;
-        if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::DELAYED) {
+        if (task->taskState_ == ExecuteState::DELAYED || task->taskState_ == ExecuteState::FINISHED) {
             task->taskState_ = ExecuteState::WAITING;
             TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
-        } else if (task->taskState_ == ExecuteState::WAITING) {
-            std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
-            if (task->currentTaskInfo_ != nullptr) {
-                TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
-            }
         }
         TaskManager::GetInstance().TryTriggerExpand();
     }
@@ -288,6 +283,10 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     }
     Task* task = nullptr;
     napi_unwrap(env, args[1], reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of second param must be task");
+        return nullptr;
+    }
     if (!task->CanExecuteDelayed(env)) {
         return nullptr;
     }
@@ -304,7 +303,8 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
     }
-    if (!task->IsInitialized()) {
+    if (!task->IsInitialized() || task->taskState_ == ExecuteState::CANCELED ||
+        task->taskState_ == ExecuteState::FINISHED) {
         task->taskState_ = ExecuteState::DELAYED;
     }
     task->UpdateTaskType(TaskType::COMMON_TASK);
@@ -335,7 +335,10 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
     auto taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(groupId);
     napi_reference_ref(env, taskGroup->groupRef_, nullptr);
-    taskGroup->groupState_ = ExecuteState::WAITING;
+    if (taskGroup->groupState_ == ExecuteState::NOT_FOUND || taskGroup->groupState_ == ExecuteState::FINISHED ||
+        taskGroup->groupState_ == ExecuteState::CANCELED) {
+        taskGroup->groupState_ = ExecuteState::WAITING;
+    }
     GroupInfo* groupInfo = new GroupInfo();
     groupInfo->priority = priority;
     napi_value resArr;
@@ -357,10 +360,8 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
                 }
                 napi_reference_ref(env, task->taskRef_, nullptr);
                 if (task->IsGroupCommonTask()) {
-                    task->UpdateTaskType(TaskType::GROUP_COMMON_TASK);
                     task->GetTaskInfo(env, napiTask, static_cast<Priority>(priority));
                 }
-                task->groupId_ = groupId;
                 ExecuteTask(env, task, static_cast<Priority>(priority));
             }
         } else {
@@ -413,12 +414,15 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
-    TriggerTask(task);
+    if (!task->IsGroupTask()) {
+        TriggerTask(task);
+    }
 }
 
 void TaskPool::TriggerTask(Task* task)
 {
     TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
+    task->taskState_ = ExecuteState::FINISHED;
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
         if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
@@ -438,13 +442,17 @@ void TaskPool::TriggerTask(Task* task)
 
 void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success)
 {
+    TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
+    task->taskState_ = ExecuteState::FINISHED;
+    napi_reference_unref(env, task->taskRef_, nullptr);
     TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(task->groupId_);
     if (taskGroup == nullptr) {
         HILOG_DEBUG("taskpool:: taskGroup has been released");
         return;
     }
-    if (taskGroup->currentGroupInfo_ == nullptr) {
-        HILOG_DEBUG("taskpool:: taskGroup has been executed or cancelled");
+    if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::CANCELED ||
+        taskGroup->groupState_ == ExecuteState::FINISHED) {
+        HILOG_DEBUG("taskpool:: taskGroup has been executed or canceled");
         return;
     }
     if (task->IsGroupCommonTask()) {
@@ -468,7 +476,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has exception or has been canceled");
         napi_reject_deferred(env, groupInfo->deferred, error);
     }
-    taskGroup->groupState_ = ExecuteState::WAITING;
+    taskGroup->groupState_ = ExecuteState::FINISHED;
     napi_delete_reference(env, groupInfo->resArr);
     napi_reference_unref(env, taskGroup->groupRef_, nullptr);
     delete groupInfo;
@@ -485,8 +493,8 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     HITRACE_HELPER_METER_NAME(strTrace);
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
-    if (task->IsFunctionTask() || task->taskState_ == ExecuteState::NOT_FOUND ||
-        task->taskState_ == ExecuteState::DELAYED) {
+    if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
+        task->taskState_ != ExecuteState::RUNNING)) {
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
