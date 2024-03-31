@@ -32,6 +32,7 @@ public:
     static constexpr char EXT_NAME_ETS[] = ".ets";
     static constexpr char EXT_NAME_TS[] = ".ts";
     static constexpr char EXT_NAME_JS[] = ".js";
+    static constexpr char ESMODULEPATH_TAG[] = "ets/";
 
     static void ConcatFileNameForWorker(napi_env env, std::string &script, std::string &fileName, bool &isRelativePath)
     {
@@ -92,6 +93,36 @@ public:
             }
         }
         return res;
+    }
+
+    static bool VerifyPath(napi_env env, std::string script)
+    {
+        std::string moduleName;
+        [[maybe_unused]] std::string fileName;
+        [[maybe_unused]] bool isRelativePath = false;
+
+        reinterpret_cast<NativeEngine*>(env)->GetCurrentModuleInfo(moduleName, fileName, isRelativePath);
+        size_t moduleNamPos = script.find_first_of(SLASH_TAG);
+        if (moduleNamPos == std::string::npos) {
+            return false;
+        }
+        // if {modulename} not equal, return false.
+        if (script.find_first_of(moduleName + "/") != 0) {
+            return false;
+        }
+        // if not {modulename}/ets/*, retun false.
+        if (script.substr(moduleNamPos + 1).find(ESMODULEPATH_TAG) != 0) {
+            return false;
+        }
+        // if not {modulename}/ets/*.ets/ts/js, return false.
+        size_t pointPos = script.rfind(POINT_TAG);
+        if (pointPos != std::string::npos) {
+            std::string suffix = script.substr(pointPos);
+            if (suffix != EXT_NAME_ETS && suffix != EXT_NAME_TS && suffix != EXT_NAME_JS) {
+                return false;
+            }
+        }
+        return true;
     }
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper

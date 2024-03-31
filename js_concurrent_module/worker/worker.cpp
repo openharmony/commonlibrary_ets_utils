@@ -1173,8 +1173,14 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
         script_.find(PathHelper::PREFIX_BUNDLE) == std::string::npos) ||
         (!isBundle && script_.find_first_of(PathHelper::POINT_TAG) == 0)) {
         PathHelper::ConcatFileNameForWorker(env, script_, fileName_, isRelativePath_);
-        HILOG_INFO("worker:: Concated worker recordName: %{public}s, fileName: %{public}s",
-                   script_.c_str(), fileName_.c_str());
+        HILOG_DEBUG("worker:: Concated worker recordName: %{public}s, fileName: %{public}s",
+                    script_.c_str(), fileName_.c_str());
+    }
+    if (!isBundle) {
+        if (!PathHelper::VerifyPath(env, script)) {
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH, "the file path is invaild.");
+            return;
+        }
     }
 
     // 3. create WorkerRunner to Execute
