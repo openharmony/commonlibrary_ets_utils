@@ -112,7 +112,6 @@ function customEncodeForToString(str: string | number): string {
     .replace(/(%20)+/g, '+')
     .replace(/%3D/g, '=')
     .replace(/%25/g, '%')
-    .replace(/%2B/g, '+');
 }
 
 function convertArrayToObj(arr: string[]): Record<string, string[]> {
@@ -516,9 +515,9 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
 function decodeURISafely(input: string): string {
   const regex = /(%[0-9A-Fa-f]{2})+|[^%]+/g;
   return input.match(regex).map(part => {
-    if (part.startsWith('%')) {
+    if (part.startsWith('%') && part != '%26') {
       try {
-        return decodeURI(part).replace(/%3A/g, ':');
+        return decodeURIComponent(part);
       } catch (e) {
         return part;
       }
