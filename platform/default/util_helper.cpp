@@ -85,4 +85,22 @@ void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::
     buffer = UtilPlugin::EncodeIntoChinese(input, encoding);
 }
 
+std::string UnicodeConversion(std::string encoding, char16_t* originalBuffer, size_t inputSize)
+{
+    std::string buffer = "";
+    std::u16string tempStr16(originalBuffer, inputSize);
+    buffer = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(tempStr16);
+    std::string resultBuffer = "";
+    resultBuffer = UtilPlugin::EncodeIntoChinese(buffer, encoding);
+    return resultBuffer;
+}
+
+int GetMaxByteSize(std::string encoding)
+{
+    int byteSize = 4; // 4:byte size
+    if (!encoding.empty()) {
+        return byteSize;
+    }
+    return 0;
+}
 } // namespace Commonlibrary::Platform
