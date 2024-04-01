@@ -250,7 +250,7 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
         asyncLock = FindAsyncLock(id);
     }
     if (asyncLock == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK, "No such lock");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK);
         napi_value undefined;
         napi_get_undefined(env, &undefined);
         return undefined;
@@ -296,7 +296,7 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
     AsyncLockIdentity identity{false, 0, name};
     AsyncLock *lock = FindAsyncLock(&identity);
     if (lock == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK, "No such lock");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK);
         return undefined;
     }
 
