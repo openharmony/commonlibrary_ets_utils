@@ -1176,12 +1176,6 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
         HILOG_DEBUG("worker:: Concated worker recordName: %{public}s, fileName: %{public}s",
                     script_.c_str(), fileName_.c_str());
     }
-    if (!isBundle) {
-        if (!PathHelper::VerifyPath(env, script)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH, "the file path is invaild.");
-            return;
-        }
-    }
 
     // 3. create WorkerRunner to Execute
     if (!runner_) {
