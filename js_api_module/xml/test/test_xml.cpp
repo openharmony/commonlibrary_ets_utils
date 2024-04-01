@@ -1099,7 +1099,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
-    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle";
+    std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle";
     std::string res3 = " todoWorktodo todoPlaytodo go thereabba table trtdApplestd tdBananastd trtablenote";
     std::string result = res1 + res2 + res3;
     ASSERT_STREQ(testStr.c_str(), result.c_str());
@@ -1182,7 +1182,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn amp;amp;";
+    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn &";
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
     std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
@@ -1267,7 +1267,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
-    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle todoWorktodo";
+    std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
     ASSERT_STREQ(testStr.c_str(), result.c_str());
@@ -1310,7 +1310,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest006, testing::ext::TestSize.Level0)
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
-    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle todoWorktodo";
+    std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
     ASSERT_STREQ(testStr.c_str(), result.c_str());
@@ -1393,7 +1393,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn amp;amp;";
+    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn &";
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table ";
     std::string res3 = "h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
@@ -1436,7 +1436,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest009, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn amp;amp;";
+    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn &";
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
     std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
@@ -1481,7 +1481,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0010, testing::ext::TestSize.Level0)
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
-    std::string res2 = "Hello, World! companyJohn amp;amp; Hanscompany titleHappytitletitleHappytitle todoWorktodo";
+    std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba table trtdApplestd tdBananastd trtablenote";
     std::string result = res1 + res2 + res3;
     ASSERT_STREQ(testStr.c_str(), result.c_str());
