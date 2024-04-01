@@ -113,10 +113,8 @@ void TaskPool::ExecuteCallback(const uv_async_t* req)
         }
         uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
         napi_value argsArray[argsNum];
-        napi_value val;
         for (size_t i = 0; i < argsNum; i++) {
-            napi_get_element(env, args, i, &val);
-            argsArray[i] = val;
+            argsArray[i] = NapiHelper::GetElement(env, args, i);
         }
         napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
         if (NapiHelper::IsExceptionPending(env)) {
