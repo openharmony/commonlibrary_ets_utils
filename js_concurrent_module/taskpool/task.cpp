@@ -897,7 +897,7 @@ bool Task::CanExecuteDelayed(napi_env env)
     if (IsInitialized() && IsLongTask()) {
         errMessage = "taskpool:: Multiple executions of longTask are not supported in the executeDelayed";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR);
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
     return true;
