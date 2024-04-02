@@ -74,6 +74,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
         DECLARE_NAPI_FUNCTION("getTaskPoolInfo", GetTaskPoolInfo),
         DECLARE_NAPI_FUNCTION("terminateTask", TerminateTask),
+        DECLARE_NAPI_FUNCTION("isConcurrent", IsConcurrent),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
@@ -536,5 +537,25 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         TaskGroupManager::GetInstance().CancelGroup(env, groupId);
     }
     return nullptr;
+}
+
+napi_value TaskPool::IsConcurrent(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = 1;
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
+    if (argc != 1) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
+        return nullptr;
+    }
+
+    if (!NapiHelper::IsFunction(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be function");
+        return nullptr;
+    }
+
+    bool isConcurrent = false;
+    isConcurrent = NapiHelper::IsConcurrentFunction(env, args[0]);
+    return NapiHelper::CreateBooleanValue(env, isConcurrent);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
