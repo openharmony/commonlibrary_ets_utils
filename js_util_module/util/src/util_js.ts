@@ -19,6 +19,7 @@ interface HelpUtil {
   Base64: Object;
   Base64Helper: NativeBase64;
   Types: Object;
+  StringDecoder: Object;
   dealwithformatstring(formatString: string | Array<string | number | Fn>): string;
   printf(formatString: string | Array<string | number | Fn>,
     ...valueString: Array<Object>): string;
@@ -40,6 +41,7 @@ declare function requireInternal(s: string): HelpUtil;
 const helpUtil = requireInternal('util');
 let base64 = helpUtil.Base64;
 let types = helpUtil.Types;
+let stringdecoder = helpUtil.StringDecoder;
 
 const typeErrorCode = 401;
 const syntaxErrorCode = 10200002;
@@ -1978,4 +1980,5 @@ export default {
   ScopeHelper: ScopeHelper,
   Type: Type,
   Aspect: Aspect,
+  StringDecoder: stringdecoder,
 };

@@ -36,6 +36,7 @@ ohos_unittest("test_util_unittest") {
     "$platform_root/default/jni_helper.cpp",
     "$platform_root/ohos/util_helper.cpp",
     "../../util/js_base64.cpp",
+    "../../util/js_stringdecoder.cpp",
     "../../util/js_textdecoder.cpp",
     "../../util/js_textencoder.cpp",
     "../../util/js_uuid.cpp",

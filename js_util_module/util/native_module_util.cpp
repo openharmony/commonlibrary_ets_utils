@@ -21,6 +21,7 @@
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_types.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_uuid.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_stringdecoder.h"
 
 #include "securec.h"
 #include "tools/log.h"
@@ -1554,6 +1555,86 @@ namespace OHOS::Util {
         return result;
     }
 
+    // StringDecoder
+    static napi_value StringDecoderConstructor(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value thisVar = nullptr;
+        napi_value argv = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &argv, &thisVar, nullptr));
+        std::string enconding = "utf-8";
+        if (argc == 1) {
+            napi_valuetype valuetype;
+            NAPI_CALL(env, napi_typeof(env, argv, &valuetype));
+            if (valuetype == napi_string) {
+                size_t bufferSize = 0;
+                if (napi_get_value_string_utf8(env, argv, nullptr, 0, &bufferSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv size");
+                    return nullptr;
+                }
+                std::string buffer = "";
+                buffer.reserve(bufferSize);
+                buffer.resize(bufferSize);
+                if (napi_get_value_string_utf8(env, argv, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+                    HILOG_ERROR("can not get argv value");
+                    return nullptr;
+                }
+                NAPI_ASSERT(env, CheckEncodingFormat(buffer),
+                            "Wrong encoding format, the current encoding format is not support");
+                enconding = buffer;
+            }
+        }
+        auto objectInfo = new StringDecoder(enconding);
+        napi_wrap(
+            env, thisVar, objectInfo,
+            [](napi_env environment, void* data, void* hint) {
+                auto obj = reinterpret_cast<StringDecoder*>(data);
+                if (obj != nullptr) {
+                    delete obj;
+                }
+            },
+            nullptr, nullptr);
+        return thisVar;
+    }
+
+    static napi_value Write(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = 1;
+        napi_value argv = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &argv, &thisVar, nullptr));
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, argv, &valuetype));
+        if (valuetype == napi_string) {
+            return argv;
+        }
+        StringDecoder *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        return object->Write(env, argv);
+    }
+
+    static napi_value End(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = 1;
+        napi_value argv = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &argv, &thisVar, nullptr));
+        StringDecoder *object = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        if (argc == 0) {
+            return object->End(env);
+        }
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, argv, &valuetype));
+        if (valuetype == napi_string) {
+            return argv;
+        }
+        if (valuetype == napi_undefined) {
+            return object->End(env);
+        }
+        return object->End(env, argv);
+    }
+
     static napi_value TypeofInit(napi_env env, napi_value exports)
     {
         const char* typeofClassName = "Types";
@@ -1651,6 +1732,25 @@ namespace OHOS::Util {
         return exports;
     }
 
+    static napi_value StringDecoderInit(napi_env env, napi_value exports)
+    {
+        const char *stringDecoderClassName = "StringDecoder";
+        napi_value StringDecoderClass = nullptr;
+        napi_property_descriptor StringDecoderDesc[] = {
+            DECLARE_NAPI_FUNCTION("write", Write),
+            DECLARE_NAPI_FUNCTION("end", End),
+        };
+        NAPI_CALL(env, napi_define_class(env, stringDecoderClassName, strlen(stringDecoderClassName),
+                                         StringDecoderConstructor, nullptr,
+                                         sizeof(StringDecoderDesc) / sizeof(StringDecoderDesc[0]),
+                                         StringDecoderDesc, &StringDecoderClass));
+        napi_property_descriptor desc[] = {
+            DECLARE_NAPI_PROPERTY("StringDecoder", StringDecoderClass)
+        };
+        NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
+        return exports;
+    }
+
     static napi_value UtilInit(napi_env env, napi_value exports)
     {
         napi_property_descriptor desc[] = {
@@ -1668,6 +1768,7 @@ namespace OHOS::Util {
         Base64Init(env, exports);
         Base64HelperInit(env, exports);
         TypeofInit(env, exports);
+        StringDecoderInit(env, exports);
         return exports;
     }
 
