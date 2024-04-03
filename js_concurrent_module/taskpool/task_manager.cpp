@@ -453,7 +453,7 @@ void TaskManager::NotifyExpand(const uv_async_t* req)
 
 void TaskManager::RunTaskManager()
 {
-    loop_ = uv_default_loop();
+    loop_ = uv_loop_new();
     timer_ = new uv_timer_t;
     uv_timer_init(loop_, timer_);
     expandHandle_ = new uv_async_t;
