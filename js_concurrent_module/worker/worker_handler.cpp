@@ -16,7 +16,7 @@
 #include "worker_handler.h"
 #include "worker.h"
 
-#include "utils/log.h"
+#include "tools/log.h"
 
 using Worker = Commonlibrary::Concurrent::WorkerModule::Worker;
 namespace OHOS::AppExecFwk {
