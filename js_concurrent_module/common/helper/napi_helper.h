@@ -33,6 +33,7 @@ public:
     static bool IsCallable(napi_env env, napi_value value);
     static bool IsCallable(napi_env env, napi_ref value);
     static bool IsAsyncFunction(napi_env env, napi_value value);
+    static bool IsConcurrentFunction(napi_env env, napi_value value);
     static bool IsGeneratorFunction(napi_env env, napi_value value);
     static bool IsStrictEqual(napi_env env, napi_value lhs, napi_value rhs);
     static bool IsSendableObject(napi_env env, napi_value value);

@@ -136,6 +136,13 @@ bool NapiHelper::IsAsyncFunction(napi_env env, napi_value value)
     return res;
 }
 
+bool NapiHelper::IsConcurrentFunction(napi_env env, napi_value value)
+{
+    bool res = false;
+    napi_is_concurrent_function(env, value, &res);
+    return res;
+}
+
 bool NapiHelper::IsGeneratorFunction(napi_env env, napi_value value)
 {
     bool res = false;
