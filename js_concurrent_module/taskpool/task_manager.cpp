@@ -454,6 +454,10 @@ void TaskManager::NotifyExpand(const uv_async_t* req)
 void TaskManager::RunTaskManager()
 {
     loop_ = uv_loop_new();
+    if (loop_ == nullptr) {
+        HILOG_FATAL("taskpool:: new loop failed.");
+        return;
+    }
     timer_ = new uv_timer_t;
     uv_timer_init(loop_, timer_);
     expandHandle_ = new uv_async_t;
@@ -469,7 +473,9 @@ void TaskManager::RunTaskManager()
         uv_async_send(expandHandle_);
     }
     uv_run(loop_, UV_RUN_DEFAULT);
-    uv_loop_close(loop_);
+    if (loop_ != nullptr) {
+        uv_loop_delete(loop_);
+    }
 }
 
 void TaskManager::CancelTask(napi_env env, uint64_t taskId)
