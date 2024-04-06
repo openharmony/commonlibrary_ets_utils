@@ -35,6 +35,7 @@ public:
     static napi_value TimeLog(napi_env env, napi_callback_info info);
     static napi_value TimeEnd(napi_env env, napi_callback_info info);
     static napi_value Trace(napi_env env, napi_callback_info info);
+    static napi_value TraceHybridStack(napi_env env, napi_callback_info info);
     static napi_value Assert(napi_env env, napi_callback_info info);
     static void PrintTime(std::string timerName, double time, std::string& log);
 };
