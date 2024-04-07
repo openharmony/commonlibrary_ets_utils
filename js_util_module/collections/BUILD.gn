@@ -50,6 +50,7 @@ ohos_source_set("collections_static") {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
 
     if (target_os == "android") {
