@@ -21,6 +21,13 @@ namespace {
 const std::string SHARED_ARRAY_NAME = "SharedArray";
 const std::string SHARED_SET_NAME = "SharedSet";
 const std::string SHARED_MAP_NAME = "SharedMap";
+const std::string SHARED_INT8_ARRAY = "SharedInt8Array";
+const std::string SHARED_UINT8_ARRAY = "SharedUint8Array";
+const std::string SHARED_INT16_ARRAY = "SharedInt16Array";
+const std::string SHARED_UINT16_ARRAY = "SharedUint16Array";
+const std::string SHARED_INT32_ARRAY = "SharedInt32Array";
+const std::string SHARED_UINT32_ARRAY = "SharedUint32Array";
+const std::string SHARED_ARRAY_BUFFER = "SendableArrayBuffer";
 }  // namespace
 
 static bool GetCollectionFunction(napi_env env, napi_value global, std::string collectionName,
@@ -43,6 +50,14 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
     napi_value sharedArrayValue;
     napi_value sharedSetValue;
     napi_value sharedMapValue;
+    napi_value sharedInt8Array;
+    napi_value sharedUint8Array;
+    napi_value sharedInt16Array;
+    napi_value sharedUint16Array;
+    napi_value sharedInt32Array;
+    napi_value sharedUint32Array;
+    napi_value sharedArrayBuffer;
+
     napi_get_global(env, &global);
     if (!GetCollectionFunction(env, global, SHARED_ARRAY_NAME, sharedArrayValue)) {
         return exports;
@@ -53,11 +68,39 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
     if (!GetCollectionFunction(env, global, SHARED_MAP_NAME, sharedMapValue)) {
         return exports;
     }
+    if (!GetCollectionFunction(env, global, SHARED_ARRAY_BUFFER, sharedArrayBuffer)) {
+        return exports;
+    }
+    if (!GetCollectionFunction(env, global, SHARED_INT8_ARRAY, sharedInt8Array)) {
+        return exports;
+    }
+    if (!GetCollectionFunction(env, global, SHARED_UINT8_ARRAY, sharedUint8Array)) {
+        return exports;
+    }
+    if (!GetCollectionFunction(env, global, SHARED_INT16_ARRAY, sharedInt16Array)) {
+        return exports;
+    }
+    if (!GetCollectionFunction(env, global, SHARED_UINT16_ARRAY, sharedUint16Array)) {
+        return exports;
+    }
+    if (!GetCollectionFunction(env, global, SHARED_INT32_ARRAY, sharedInt32Array)) {
+        return exports;
+    }
+    if (!GetCollectionFunction(env, global, SHARED_UINT32_ARRAY, sharedUint32Array)) {
+        return exports;
+    }
 
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_PROPERTY("Array", sharedArrayValue),
         DECLARE_NAPI_PROPERTY("Set", sharedSetValue),
         DECLARE_NAPI_PROPERTY("Map", sharedMapValue),
+        DECLARE_NAPI_PROPERTY("ArrayBuffer", sharedArrayBuffer),
+        DECLARE_NAPI_PROPERTY("Int8Array", sharedInt8Array),
+        DECLARE_NAPI_PROPERTY("Uint8Array", sharedUint8Array),
+        DECLARE_NAPI_PROPERTY("Int16Array", sharedInt16Array),
+        DECLARE_NAPI_PROPERTY("Uint16Array", sharedUint16Array),
+        DECLARE_NAPI_PROPERTY("Int32Array", sharedInt32Array),
+        DECLARE_NAPI_PROPERTY("Uint32Array", sharedUint32Array),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;
