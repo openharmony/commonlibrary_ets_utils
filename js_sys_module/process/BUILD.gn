@@ -64,6 +64,7 @@ ohos_source_set("process_static") {
       "$napi_root/interfaces/kits",
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
 
     if (target_os == "android") {

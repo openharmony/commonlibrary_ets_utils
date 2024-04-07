@@ -98,6 +98,7 @@ ohos_source_set("timer_static") {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     deps += [
       "$plugins_root/libs/napi:napi_${target_os}",
