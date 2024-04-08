@@ -249,7 +249,7 @@ void TaskManager::CheckForBlockedWorkers()
 void TaskManager::TryTriggerExpand()
 {
     // post the signal to notify the monitor thread to expand
-    if (UNLIKELY(expandHandle_ == nullptr)) {
+    if (UNLIKELY(!isHandleInited_)) {
         needChecking_ = true;
         HILOG_DEBUG("taskpool:: the expandHandle_ is nullptr");
         return;
@@ -458,11 +458,11 @@ void TaskManager::RunTaskManager()
         HILOG_FATAL("taskpool:: new loop failed.");
         return;
     }
+    ConcurrentHelper::UvHandleInit(loop_, expandHandle_, TaskManager::NotifyExpand);
     timer_ = new uv_timer_t;
     uv_timer_init(loop_, timer_);
-    expandHandle_ = new uv_async_t;
     uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, 60000); // 60000: 1min
-    ConcurrentHelper::UvHandleInit(loop_, expandHandle_, TaskManager::NotifyExpand);
+    isHandleInited_ = true;
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
     pthread_setname_np("OS_TaskManager");
 #else
