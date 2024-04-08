@@ -102,6 +102,89 @@ namespace Commonlibrary::Platform {
         return buffer;
     }
 
+    void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
+    {
+        size_t inputSize = 0;
+        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
+        char16_t originalBuffer[inputSize + 1];
+        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
+
+        char16_t targetBuffer[inputSize + 1];
+        size_t writableSize = length;
+        std::string bufferResult = "";
+        size_t i = 0;
+        for (; i < inputSize; i++) {
+            targetBuffer[i] = originalBuffer[i];
+            std::string buffer = UnicodeConversion(encodeInfo.encoding, &targetBuffer[i], inputSize);
+            size_t bufferLength = buffer.length();
+            if (bufferLength > writableSize) {
+                break;
+            }
+            bufferResult += buffer;
+            writableSize -= bufferLength;
+        }
+
+        size_t writeLength = bufferResult.length();
+        for (size_t j = 0; j < writeLength; j++) {
+            *writeResult = bufferResult[j];
+            writeResult++;
+        }
+        *nchars = static_cast<int32_t>(i);
+        *written = static_cast<int32_t>(writeLength);
+    }
+
+    void EncodeConversion(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens, std::string encoding)
+    {
+        size_t  outLen = 0;
+        void *data = nullptr;
+        size_t inputSize = 0;
+        napi_get_value_string_utf16(env, src, nullptr, 0, &inputSize);
+        char16_t originalBuffer[inputSize + 1];
+        napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
+
+        int maxByteSize = GetMaxByteSize(encoding);
+        outLen = maxByteSize * inputSize;
+        napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
+        char *writeResult = static_cast<char*>(data);
+
+        std::string buffer = "";
+        std::u16string originalStr(originalBuffer, inputSize);
+        int shifting = 0;
+        int resultShifting = 0;
+        int findIndex = originalStr.find('\0');
+        if (findIndex == -1) {
+            buffer = UnicodeConversion(encoding, originalBuffer, inputSize);
+            outLens = buffer.length();
+            if (memcpy_s(writeResult, outLens, reinterpret_cast<char*>(buffer.data()), outLens) != EOK) {
+                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                return;
+            }
+        } else {
+            while (findIndex != -1) {
+                buffer = UnicodeConversion(encoding, originalBuffer + shifting, inputSize);
+                if (memcpy_s(writeResult + resultShifting, buffer.length(),
+                             reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
+                    HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                    return;
+                }
+                resultShifting +=  buffer.length();
+                *(writeResult + resultShifting) = '\0';
+                resultShifting += 1;
+                outLens += buffer.length() + 1;
+                shifting += findIndex + 1;
+                originalStr = originalStr.substr(findIndex + 1, inputSize);
+                findIndex = originalStr.find('\0');
+            }
+            buffer = UnicodeConversion(encoding, originalBuffer + shifting, inputSize);
+            outLens += buffer.length();
+            if (memcpy_s(writeResult + resultShifting, buffer.length(),
+                         reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
+                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                return;
+            }
+        }
+    }
+
     int GetMaxByteSize(std::string encoding)
     {
         UErrorCode codeflag = U_ZERO_ERROR;
