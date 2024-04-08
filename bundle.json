@@ -51,7 +51,8 @@
                 "hilog",
                 "hitrace",
                 "init",
-                "qos_manager"
+                "qos_manager",
+                "eventhandler"
             ],
             "third_party": [
                 "icu",
