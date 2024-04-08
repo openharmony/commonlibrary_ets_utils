@@ -27,10 +27,22 @@
 #include "utils/log.h"
 
 namespace Commonlibrary::Platform {
+    struct TextEcodeInfo {
+        TextEcodeInfo(napi_env napiEnv, napi_value srcValue, std::string encodingStr): env(napiEnv),
+                                                                                       src(srcValue),
+                                                                                       encoding(encodingStr)
+        {}
+        napi_env env;
+        napi_value src;
+        std::string encoding;
+    };
     UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag);
     std::string ConvertToString(UChar* uchar, size_t length);
     void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer);
     std::string UnicodeConversion(std::string encoding, char16_t* originalBuffer, size_t inputSize);
+    void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars);
+    void EncodeConversion(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens,
+                          std::string encoding);
     void FreedMemory(char *data);
     int GetMaxByteSize(std::string encoding);
 } // namespace Commonlibrary::Platform

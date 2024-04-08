@@ -18,6 +18,8 @@
 #include "util_plugin.h"
 #include <cstdio>
 #include <unicode/ustring.h>
+#include "native_engine.h"
+#include "securec.h"
 
 namespace Commonlibrary::Platform {
 using namespace OHOS::Util;
@@ -85,22 +87,23 @@ void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::
     buffer = UtilPlugin::EncodeIntoChinese(input, encoding);
 }
 
-std::string UnicodeConversion(std::string encoding, char16_t* originalBuffer, size_t inputSize)
+void EncodeConversion(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens, std::string encoding)
 {
     std::string buffer = "";
-    std::u16string tempStr16(originalBuffer, inputSize);
-    buffer = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(tempStr16);
-    std::string resultBuffer = "";
-    resultBuffer = UtilPlugin::EncodeIntoChinese(buffer, encoding);
-    return resultBuffer;
+    EncodeIntoChinese(env, src, encoding, buffer);
+    size_t outLen = buffer.length();
+    outLens = outLen;
+    void *data = nullptr;
+    napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
+    if (memcpy_s(data, outLen, reinterpret_cast<void*>(buffer.data()), outLen) != EOK) {
+        HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+        return;
+    }
 }
 
-int GetMaxByteSize(std::string encoding)
+void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
 {
-    int byteSize = 4; // 4:byte size
-    if (!encoding.empty()) {
-        return byteSize;
-    }
-    return 0;
+    NativeEngine *engine = reinterpret_cast<NativeEngine*>(encodeInfo.env);
+    engine->EncodeToUtf8(encodeInfo.src, writeResult, written, length, nchars);
 }
 } // namespace Commonlibrary::Platform
