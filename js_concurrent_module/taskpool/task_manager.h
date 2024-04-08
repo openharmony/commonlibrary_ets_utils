@@ -190,6 +190,7 @@ private:
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
     std::atomic<bool> needChecking_ = false;
+    std::atomic<bool> isHandleInited_ = false;
 
     // for task priority
     uint32_t highPrioExecuteCount_ = 0;
