@@ -196,7 +196,7 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
         return nullptr;
     }
     {
-        std::unique_lock<std::shared_mutex> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (currentTaskInfo_ == nullptr) {
             currentTaskInfo_ = pendingInfo;
         } else {
@@ -687,7 +687,7 @@ bool Task::IsReadyToHandle() const
 void Task::NotifyPendingTask()
 {
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
-    std::unique_lock<std::shared_mutex> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     napi_reference_unref(env_, taskRef_, nullptr);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
@@ -700,18 +700,12 @@ void Task::NotifyPendingTask()
     TaskManager::GetInstance().EnqueueTaskId(taskId_, currentTaskInfo_->priority);
 }
 
-void Task::CancelPendingTask(napi_env env, ExecuteState state)
+void Task::CancelPendingTask(napi_env env)
 {
-    napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
-    if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr) {
-        napi_reject_deferred(env, currentTaskInfo_->deferred, error);
-        napi_reference_unref(env, taskRef_, nullptr);
-        delete currentTaskInfo_;
-        currentTaskInfo_ = nullptr;
-    }
     if (pendingTaskInfos_.empty()) {
         return;
     }
+    napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
     for (const auto& info : pendingTaskInfos_) {
         napi_reject_deferred(env, info->deferred, error);
         napi_reference_unref(env, taskRef_, nullptr);
@@ -724,7 +718,7 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
 {
     if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
         static_cast<Worker*>(worker)->NotifyTaskFinished();
-        HILOG_DEBUG("taskpool::PerformTask task is null");
+        HILOG_DEBUG("taskpool:: task has been canceled");
         return false;
     }
     taskState_ = ExecuteState::RUNNING;
@@ -738,7 +732,7 @@ napi_value Task::DeserializeValue(napi_env env, bool isFunc, bool isArgs)
     napi_value result = nullptr;
     napi_status status = napi_ok;
     std::string errMessage = "";
-    std::shared_lock<std::shared_mutex> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (UNLIKELY(currentTaskInfo_ == nullptr)) {
         HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
         return nullptr;

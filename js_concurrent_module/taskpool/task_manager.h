@@ -153,7 +153,7 @@ private:
 
     // <taskId, Task>
     std::unordered_map<uint64_t, Task*> tasks_ {};
-    std::shared_mutex tasksMutex_;
+    std::recursive_mutex tasksMutex_;
 
     // <taskId, <dependent taskId1, dependent taskId2, ...>>, update when removeDependency or executeTask
     std::unordered_map<uint64_t, std::set<uint64_t>> dependTaskInfos_ {};
@@ -220,7 +220,7 @@ public:
     void CancelGroup(napi_env env, uint64_t groupId);
     void CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup* group);
     void ReleaseTaskGroupData(napi_env env, TaskGroup* group);
-    void UpdateGroupState(uint64_t groupId);
+    bool UpdateGroupState(uint64_t groupId);
 
     void AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task);
     bool TriggerSeqRunner(napi_env env, Task* lastTask);
