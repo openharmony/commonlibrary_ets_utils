@@ -17,8 +17,27 @@
 #define JS_CONCURRENT_MODULE_WORKER_WORKERHANDLER_H
 
 #include <event_handler.h>
+#include <uv.h>
 
 namespace OHOS::AppExecFwk {
+constexpr char TIMER_TASK[] = "uv_timer_task";
+
+class WorkerLoopHandler : public FileDescriptorListener,
+    public std::enable_shared_from_this<WorkerLoopHandler> {
+public:
+    explicit WorkerLoopHandler(uv_loop_t* uvLoop) : uvLoop_(uvLoop) {}
+    void OnReadable(int32_t) override;
+    void OnWritable(int32_t) override;
+
+private:
+    void OnTriggered();
+
+private:
+    uv_loop_t* uvLoop_ = nullptr;
+    int64_t lastTimeStamp_ = 0;
+    bool haveTimerTask_ = false;
+};
+
 class WorkerEventHandler : public EventHandler {
 public:
     explicit WorkerEventHandler(const std::shared_ptr<EventRunner> &runner);
