@@ -39,10 +39,28 @@ namespace OHOS::AppExecFwk {
             Worker* workerInstance = reinterpret_cast<Worker*>(worker);
             workerInstance->SetEventRunner(runner);
             workerInstance->SetWorkerHandle(instance.get());
+            auto uvLoop = workerInstance->GetWorkerLoop();
+            if (uvLoop == nullptr) {
+                HILOG_ERROR("worker:: Failed to get uv loop");
+                return nullptr;
+            }
+            auto fd = uvLoop != nullptr ? uv_backend_fd(uvLoop) : -1;
+            if (fd < 0) {
+                HILOG_ERROR("worker:: Failed to get backend fd from uv loop");
+                return nullptr;
+            }
+
+            uv_run(uvLoop, UV_RUN_NOWAIT);
+
+            if (instance != nullptr) {
+                uint32_t events = FILE_DESCRIPTOR_INPUT_EVENT | FILE_DESCRIPTOR_OUTPUT_EVENT;
+                instance->AddFileDescriptorListener(fd, events,
+                                                    std::make_shared<WorkerLoopHandler>(uvLoop), "workerLoopTask");
+            }
         }
 
-        if (!isMainThread) {
-            HILOG_INFO("worker:: WorkerEventHandler::GetInstance runner run");
+        if (!isMainThread && worker != nullptr) {
+            HILOG_DEBUG("worker:: worker start run.");
             runner->Run();
         }
         return instance;
@@ -50,4 +68,59 @@ namespace OHOS::AppExecFwk {
 
     void WorkerEventHandler::ProcessEvent([[maybe_unused]] const InnerEvent::Pointer &event)
     {}
+
+    void WorkerLoopHandler::OnReadable(int32_t)
+    {
+        HILOG_DEBUG("worker:: OnReadable is triggered");
+        OnTriggered();
+    }
+
+    void WorkerLoopHandler::OnWritable(int32_t)
+    {
+        HILOG_DEBUG("worker:: OnWritable is triggered");
+        OnTriggered();
+    }
+
+    void WorkerLoopHandler::OnTriggered()
+    {
+        HILOG_DEBUG("worker:: OnTriggered is triggered");
+        uv_run(uvLoop_, UV_RUN_NOWAIT);
+
+        auto eventHandler = GetOwner();
+        if (!eventHandler) {
+            return;
+        }
+
+        int32_t timeout = uv_backend_timeout(uvLoop_);
+        if (timeout < 0) {
+            if (haveTimerTask_) {
+                eventHandler->RemoveTask(TIMER_TASK);
+            }
+            return;
+        }
+
+        int64_t timeStamp = static_cast<int64_t>(uv_now(uvLoop_)) + timeout;
+        // we don't check timestamp in emulator for computer clock is inaccurate
+    #ifndef RUNTIME_EMULATOR
+        if (timeStamp == lastTimeStamp_) {
+            return;
+        }
+    #endif
+
+        if (haveTimerTask_) {
+            eventHandler->RemoveTask(TIMER_TASK);
+        }
+
+        auto callback = [wp = weak_from_this()] {
+            auto sp = wp.lock();
+            if (sp) {
+                // Timer task is triggered, so there is no timer task now.
+                sp->haveTimerTask_ = false;
+                sp->OnTriggered();
+            }
+        };
+        eventHandler->PostTask(callback, TIMER_TASK, timeout);
+        lastTimeStamp_ = timeStamp;
+        haveTimerTask_ = true;
+    }
 }

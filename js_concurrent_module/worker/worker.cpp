@@ -2112,14 +2112,14 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
     {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
-        auto task = [this]() {
+        auto handledebuggerTask = [this]() {
             debuggerMutex_.lock();
-            auto task = std::move(debuggerQueue_.front());
+            auto debuggerTask = std::move(debuggerQueue_.front());
             debuggerQueue_.pop();
             debuggerMutex_.unlock();
-            task();
+            debuggerTask();
         };
-        if (!hostHandler_->PostTask(task, "HandleDebuggerTask")) {
+        if (!hostHandler_->PostTask(handledebuggerTask, "HandleDebuggerTask")) {
             HILOG_ERROR("worker:: PostTask failed when HandleDebuggerTask.");
         }
     }
