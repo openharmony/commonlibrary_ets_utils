@@ -1216,6 +1216,7 @@ bool Worker::PrepareForWorkerInstance()
     std::string rawFileName = script_;
     uint8_t* scriptContent = nullptr;
     size_t scriptContentSize = 0;
+    std::vector<uint8_t> content;
     std::string workerAmi;
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
@@ -1240,7 +1241,7 @@ bool Worker::PrepareForWorkerInstance()
             rawFileName = fileName_;
         }
         if (!hostEngine->GetAbcBuffer(
-            rawFileName.c_str(), &scriptContent, &scriptContentSize, workerAmi, false, isRelativePath_)) {
+            rawFileName.c_str(), &scriptContent, &scriptContentSize, content, workerAmi, false, isRelativePath_)) {
             HILOG_ERROR("worker:: GetAbcBuffer error");
             return false;
         }
