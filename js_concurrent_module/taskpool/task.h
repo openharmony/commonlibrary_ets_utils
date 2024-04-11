@@ -93,7 +93,7 @@ public:
     void DecreaseRefCount();
     bool IsReadyToHandle() const;
     void NotifyPendingTask();
-    void CancelPendingTask(napi_env env, ExecuteState state);
+    void CancelPendingTask(napi_env env);
     bool UpdateTask(uint64_t startTime, void* worker);
     napi_value DeserializeValue(napi_env env, bool isFunc, bool isArgs);
     void StoreTaskDuration();
@@ -131,7 +131,7 @@ public:
     void* worker_ {nullptr};
     napi_ref taskRef_ {};
     std::atomic<uint32_t> taskRefCount_ {};
-    std::shared_mutex taskMutex_ {};
+    std::recursive_mutex taskMutex_ {};
     bool hasDependency_ {false};
     bool isLongTask_ = {false};
 };

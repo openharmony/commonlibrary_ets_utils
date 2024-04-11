@@ -79,7 +79,7 @@ TaskManager::~TaskManager()
     }
 
     {
-        std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
         for (auto& [_, task] : tasks_) {
             delete task;
             task = nullptr;
@@ -143,7 +143,7 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
     napi_value taskInfos = nullptr;
     napi_create_array(env, &taskInfos);
     {
-        std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
         int32_t i = 0;
         for (const auto& [_, task] : tasks_) {
             if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::DELAYED ||
@@ -151,7 +151,7 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
                 continue;
             }
             napi_value taskInfoValue = NapiHelper::CreateObject(env);
-            std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
+            std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
             napi_value taskId = NapiHelper::CreateUint32(env, task->taskId_);
             napi_value name = nullptr;
             napi_create_string_utf8(env, task->name_.c_str(), task->name_.size(), &name);
@@ -491,19 +491,27 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
         return;
     }
-    std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
-    if (task->taskState_ == ExecuteState::DELAYED || task->taskState_ == ExecuteState::RUNNING ||
-        task->taskState_ == ExecuteState::WAITING) {
-        task->CancelPendingTask(env, task->taskState_);
-        task->taskState_ = ExecuteState::CANCELED;
+    if (task->taskState_ == ExecuteState::CANCELED) {
+        HILOG_DEBUG("taskpool:: task has been canceled");
         return;
     }
+    std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
     if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND ||
         task->taskState_ == ExecuteState::FINISHED) {
         std::string errMsg = "taskpool:: task is not executed or has been executed";
         HILOG_ERROR("%{public}s", errMsg.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
         return;
+    }
+    ExecuteState state = task->taskState_;
+    task->taskState_ = ExecuteState::CANCELED;
+    task->CancelPendingTask(env);
+    if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
+        napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
+        napi_reference_unref(env, task->taskRef_, nullptr);
+        delete task->currentTaskInfo_;
+        task->currentTaskInfo_ = nullptr;
     }
 }
 
@@ -1047,19 +1055,19 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
 
 void TaskManager::StoreTask(uint64_t taskId, Task* task)
 {
-    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
     tasks_.emplace(taskId, task);
 }
 
 void TaskManager::RemoveTask(uint64_t taskId)
 {
-    std::unique_lock<std::shared_mutex> lock(tasksMutex_);
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
     tasks_.erase(taskId);
 }
 
 Task* TaskManager::GetTask(uint64_t taskId)
 {
-    std::shared_lock<std::shared_mutex> lock(tasksMutex_);
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
     auto iter = tasks_.find(taskId);
     if (iter == tasks_.end()) {
         return nullptr;
@@ -1110,7 +1118,10 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
         HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
         return;
     }
-    std::unique_lock<std::shared_mutex> lock(taskGroup->taskGroupMutex_);
+    if (taskGroup->groupState_ == ExecuteState::CANCELED) {
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
     if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::NOT_FOUND ||
         taskGroup->groupState_ == ExecuteState::FINISHED) {
         std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
@@ -1118,15 +1129,21 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
         return;
     }
-    if (taskGroup->groupState_ == ExecuteState::CANCELED) {
-        return;
-    }
+    ExecuteState groupState = taskGroup->groupState_;
     taskGroup->groupState_ = ExecuteState::CANCELED;
     taskGroup->CancelPendingGroup(env);
     if (taskGroup->currentGroupInfo_->finishedTask != taskGroup->taskNum_) {
         for (uint64_t taskId : taskGroup->taskIds_) {
             CancelGroupTask(env, taskId, taskGroup);
         }
+    }
+    if (groupState == ExecuteState::WAITING && taskGroup->currentGroupInfo_ != nullptr) {
+        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
+        napi_reject_deferred(env, taskGroup->currentGroupInfo_->deferred, error);
+        napi_delete_reference(env, taskGroup->currentGroupInfo_->resArr);
+        napi_reference_unref(env, taskGroup->groupRef_, nullptr);
+        delete taskGroup->currentGroupInfo_;
+        taskGroup->currentGroupInfo_ = nullptr;
     }
 }
 
@@ -1137,7 +1154,7 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
         HILOG_INFO("taskpool:: CancelGroupTask task is nullptr");
         return;
     }
-    std::unique_lock<std::shared_mutex> lock(task->taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
@@ -1245,13 +1262,14 @@ TaskGroup* TaskGroupManager::GetTaskGroup(uint64_t groupId)
     return reinterpret_cast<TaskGroup*>(groupIter->second);
 }
 
-void TaskGroupManager::UpdateGroupState(uint64_t groupId)
+bool TaskGroupManager::UpdateGroupState(uint64_t groupId)
 {
     TaskGroup* group = GetTaskGroup(groupId);
-    if (group == nullptr) {
-        HILOG_DEBUG("taskpool:: UpdateGroupState taskGroup has been released");
-        return;
+    if (group == nullptr || group->groupState_ == ExecuteState::CANCELED) {
+        HILOG_DEBUG("taskpool:: UpdateGroupState taskGroup has been released or canceled");
+        return false;
     }
     group->groupState_ = ExecuteState::RUNNING;
+    return true;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

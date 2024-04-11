@@ -346,7 +346,7 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     groupInfo->resArr = arrRef;
     napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
     {
-        std::unique_lock<std::shared_mutex> lock(taskGroup->taskGroupMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
         if (taskGroup->currentGroupInfo_ == nullptr) {
             taskGroup->currentGroupInfo_ = groupInfo;
             for (auto iter = taskGroup->taskRefs_.begin(); iter != taskGroup->taskRefs_.end(); iter++) {
@@ -447,11 +447,6 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
     TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(task->groupId_);
     if (taskGroup == nullptr) {
         HILOG_DEBUG("taskpool:: taskGroup has been released");
-        return;
-    }
-    if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::CANCELED ||
-        taskGroup->groupState_ == ExecuteState::FINISHED) {
-        HILOG_DEBUG("taskpool:: taskGroup has been executed or canceled");
         return;
     }
     if (task->IsGroupCommonTask()) {
