@@ -125,6 +125,7 @@ ohos_source_set("worker_static") {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     sources -= [
       "$js_concurrent_module_common/helper/napi_helper.cpp",

@@ -117,6 +117,7 @@ ohos_source_set("convertxml_static") {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     deps += [
       "$plugins_root/interfaces/native:plugin_log",

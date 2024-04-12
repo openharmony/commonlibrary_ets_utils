@@ -140,6 +140,7 @@ ohos_source_set("util_static") {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
 
     configs += [ "$plugins_root/util:util_plugin_config" ]
