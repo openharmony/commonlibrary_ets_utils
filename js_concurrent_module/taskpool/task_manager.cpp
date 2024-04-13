@@ -496,8 +496,8 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         return;
     }
     std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-    if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND ||
-        task->taskState_ == ExecuteState::FINISHED) {
+    if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
+        task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED) {
         std::string errMsg = "taskpool:: task is not executed or has been executed";
         HILOG_ERROR("%{public}s", errMsg.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
