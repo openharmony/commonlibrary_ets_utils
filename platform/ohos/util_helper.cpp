@@ -104,36 +104,142 @@ namespace Commonlibrary::Platform {
 
     void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
     {
-        size_t inputSize = 0;
-        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
-        char16_t originalBuffer[inputSize + 1];
-        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
-
-        char16_t targetBuffer[inputSize + 1];
-        size_t writableSize = length;
-        std::string bufferResult = "";
-        size_t i = 0;
-        for (; i < inputSize; i++) {
-            targetBuffer[i] = originalBuffer[i];
-            std::string buffer = UnicodeConversion(encodeInfo.encoding, &targetBuffer[i], inputSize);
-            size_t bufferLength = buffer.length();
-            if (bufferLength > writableSize) {
-                break;
-            }
-            bufferResult += buffer;
-            writableSize -= bufferLength;
+        if (encodeInfo.encoding == "utf-16be" || encodeInfo.encoding == "utf-16le") {
+            EncodeTo16BE(encodeInfo, writeResult, written, length, nchars);
+        } else {
+            OtherEncodeUtf8(encodeInfo, writeResult, written, length, nchars);
         }
-
-        size_t writeLength = bufferResult.length();
-        for (size_t j = 0; j < writeLength; j++) {
-            *writeResult = bufferResult[j];
-            writeResult++;
-        }
-        *nchars = static_cast<int32_t>(i);
-        *written = static_cast<int32_t>(writeLength);
     }
 
     void EncodeConversion(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens, std::string encoding)
+    {
+        if (encoding == "utf-16be") {
+            size_t  outLen = 0;
+            void *data = nullptr;
+            std::u16string u16Str = EncodeUtf16BE(env, src);
+            outLen = u16Str.length() * 2; // 2:multiple
+            outLens = outLen;
+            napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
+            if (memcpy_s(data, outLen, reinterpret_cast<void*>(u16Str.data()), outLen) != EOK) {
+                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                return;
+            }
+        } else if (encoding == "utf-16le") {
+            size_t  outLen = 0;
+            void *data = nullptr;
+            std::u16string u16BEStr = EncodeUtf16BE(env, src);
+            std::u16string u16LEStr = Utf16BEToLE(u16BEStr);
+            outLen = u16LEStr.length() * 2; // 2:multiple
+            outLens = outLen;
+            napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
+            if (memcpy_s(data, outLen, reinterpret_cast<void*>(u16LEStr.data()), outLen) != EOK) {
+                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                return;
+            }
+        } else {
+            OtherEncode(env, src, arrayBuffer, outLens, encoding);
+        }
+    }
+
+    int GetMaxByteSize(std::string encoding)
+    {
+        UErrorCode codeflag = U_ZERO_ERROR;
+        UConverter* converter = ucnv_open(encoding.c_str(), &codeflag);
+        if (U_FAILURE(codeflag)) {
+            HILOG_ERROR("textencoder::ucnv_open failed !");
+            return 0;
+        }
+
+        int maxByteSize = static_cast<int>(ucnv_getMaxCharSize(converter));
+        ucnv_close(converter);
+        return maxByteSize;
+    }
+
+    void FreedMemory(char *data)
+    {
+        if (data != nullptr) {
+            delete[] data;
+            data = nullptr;
+        }
+    }
+
+    bool IsOneByte(uint8_t u8Char)
+    {
+        return (u8Char & 0x80) == 0;
+    }
+
+    std::u16string Utf8ToUtf16BE(const std::string &u8Str, bool *ok)
+    {
+        std::u16string u16Str = u"";
+        u16Str.reserve(u8Str.size());
+        std::string::size_type len = u8Str.length();
+        const unsigned char *data = reinterpret_cast<const unsigned char *>(u8Str.data());
+        bool isOk = true;
+        for (std::string::size_type i = 0; i < len; ++i) {
+            uint8_t c1 = data[i];
+            if (IsOneByte(c1)) {
+                u16Str.push_back(static_cast<char16_t>(c1));
+                continue;
+            }
+            switch (c1 & HIGER_4_BITS_MASK) {
+                case FOUR_BYTES_STYLE: {
+                    uint8_t c2 = data[++i];
+                    uint8_t c3 = data[++i];
+                    uint8_t c4 = data[++i];
+                    uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS)) | // 3:multiple
+                        ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS)) | // 2:multiple
+                        ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) | (c4 & LOWER_6_BITS_MASK);
+                    if (codePoint >= UTF16_SPECIAL_VALUE) {
+                        codePoint -= UTF16_SPECIAL_VALUE;
+                        u16Str.push_back(static_cast<char16_t>((codePoint >> 10) | HIGH_AGENT_MASK)); // 10:offset value
+                        u16Str.push_back(static_cast<char16_t>((codePoint & LOWER_10_BITS_MASK) | LOW_AGENT_MASK));
+                    } else {
+                        u16Str.push_back(static_cast<char16_t>(codePoint));
+                    }
+                    break;
+                }
+                case THREE_BYTES_STYLE: {
+                    uint8_t c2 = data[++i];
+                    uint8_t c3 = data[++i];
+                    uint32_t codePoint = ((c1 & LOWER_4_BITS_MASK) << (2 * UTF8_VALID_BITS)) | // 2:multiple
+                        ((c2 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) | (c3 & LOWER_6_BITS_MASK);
+                    u16Str.push_back(static_cast<char16_t>(codePoint));
+                    break;
+                }
+                case TWO_BYTES_STYLE1:
+                case TWO_BYTES_STYLE2: {
+                    uint8_t c2 = data[++i];
+                    uint32_t codePoint = ((c1 & LOWER_5_BITS_MASK) << UTF8_VALID_BITS) | (c2 & LOWER_6_BITS_MASK);
+                    u16Str.push_back(static_cast<char16_t>(codePoint));
+                    break;
+                }
+                default: {
+                    isOk = false;
+                    break;
+                }
+            }
+        }
+        if (ok != nullptr) {
+            *ok = isOk;
+        }
+        return u16Str;
+    }
+
+    std::u16string Utf16BEToLE(const std::u16string &wstr)
+    {
+        std::u16string str16 = u"";
+        const char16_t *data = wstr.data();
+        for (unsigned int i = 0; i < wstr.length(); i++) {
+            char16_t wc = data[i];
+            char16_t high = (wc >> 8) & 0x00FF; // 8:offset value
+            char16_t low = wc & 0x00FF;
+            char16_t c16 = (low << 8) | high; // 8:offset value
+            str16.push_back(c16);
+        }
+        return str16;
+    }
+
+    void OtherEncode(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens, std::string encoding)
     {
         size_t  outLen = 0;
         void *data = nullptr;
@@ -185,25 +291,89 @@ namespace Commonlibrary::Platform {
         }
     }
 
-    int GetMaxByteSize(std::string encoding)
+    std::u16string EncodeUtf16BE(napi_env env, napi_value src)
     {
-        UErrorCode codeflag = U_ZERO_ERROR;
-        UConverter* converter = ucnv_open(encoding.c_str(), &codeflag);
-        if (U_FAILURE(codeflag)) {
-            HILOG_ERROR("textencoder::ucnv_open failed !");
-            return 0;
-        }
+        std::string buffer = "";
+        size_t bufferSize = 0;
 
-        int maxByteSize = static_cast<int>(ucnv_getMaxCharSize(converter));
-        ucnv_close(converter);
-        return maxByteSize;
+        if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
+            HILOG_ERROR("textencoder::can not get src size");
+            return u"";
+        }
+        buffer.resize(bufferSize);
+        if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
+            HILOG_ERROR("textencoder::can not get src value");
+            return u"";
+        }
+        std::u16string u16Str = Utf8ToUtf16BE(buffer);
+        return u16Str;
     }
 
-    void FreedMemory(char *data)
+    void OtherEncodeUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchar)
     {
-        if (data != nullptr) {
-            delete[] data;
-            data = nullptr;
+        size_t inputSize = 0;
+        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
+        char16_t originalBuffer[inputSize + 1];
+        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
+
+        char16_t targetBuffer[inputSize + 1];
+        size_t writableSize = length;
+        std::string bufferResult = "";
+        size_t i = 0;
+        for (; i < inputSize; i++) {
+            targetBuffer[i] = originalBuffer[i];
+            std::string buffer = UnicodeConversion(encodeInfo.encoding, &targetBuffer[i], inputSize);
+            size_t bufferLength = buffer.length();
+            if (bufferLength > writableSize) {
+                break;
+            }
+            bufferResult += buffer;
+            writableSize -= bufferLength;
         }
+
+        size_t writeLength = bufferResult.length();
+        for (size_t j = 0; j < writeLength; j++) {
+            *writeResult = bufferResult[j];
+            writeResult++;
+        }
+        *nchar = static_cast<int32_t>(i);
+        *written = static_cast<int32_t>(writeLength);
+    }
+
+    void EncodeTo16BE(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
+    {
+        size_t inputSize = 0;
+        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
+        char16_t originalBuffer[inputSize + 1];
+        napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
+
+        size_t writableSize = length;
+        std::u16string bufferResult = u"";
+        size_t i = 0;
+        for (; i < inputSize; i++) {
+            std::string strBuff = "";
+            std::u16string buffer = u"";
+            strBuff = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(originalBuffer[i]);
+            if (encodeInfo.encoding == "utf-16be") {
+                buffer = Utf8ToUtf16BE(strBuff);
+            } else {
+                std::u16string u16Str = Utf8ToUtf16BE(strBuff);
+                buffer = Utf16BEToLE(u16Str);
+            }
+            size_t bufferLength = buffer.length() * 2; // 2:multiple
+            if (bufferLength > writableSize) {
+                break;
+            }
+            bufferResult += buffer;
+            writableSize -= bufferLength;
+        }
+
+        size_t writeLength = bufferResult.length() * 2; // 2:multiple
+        if (memcpy_s(writeResult, writeLength, reinterpret_cast<char*>(bufferResult.data()), writeLength) != EOK) {
+            HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+            return;
+        }
+        *nchars = static_cast<int32_t>(i);
+        *written = static_cast<int32_t>(writeLength);
     }
 } // namespace Commonlibrary::Platform
