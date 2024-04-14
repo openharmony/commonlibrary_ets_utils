@@ -232,8 +232,12 @@ void TaskPool::DelayTask(uv_timer_t* handle)
 {
     TaskMessage *taskMessage = static_cast<TaskMessage *>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
-    if (task == nullptr || task->taskState_ == ExecuteState::CANCELED) {
-        HILOG_DEBUG("taskpool:: DelayTask task has been cancelled");
+    if (task == nullptr) {
+        HILOG_DEBUG("taskpool:: task is nullptr");
+    } else if (task->taskState_ == ExecuteState::CANCELED) {
+        HILOG_DEBUG("taskpool:: DelayTask task has been canceled");
+        napi_value error = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
+        napi_reject_deferred(task->env_, taskMessage->deferred, error);
     } else {
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
