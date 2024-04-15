@@ -224,28 +224,43 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    NAPI_ASSERT(env, argc == 0, "AsyncLock::Constructor: the number of params must be zero");
+    NAPI_ASSERT(env, argc == 0 || argc == 1, "AsyncLock::Constructor: the number of params must be zero or one");
 
     auto args = std::make_unique<napi_value[]>(argc);
     napi_value thisVar;
     NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, args.get(), &thisVar, nullptr));
 
-    uint32_t lockId = nextId++;
-    Request(lockId);
-
+    AsyncLockIdentity *data;
     napi_value name;
-    std::ostringstream out;
-    out << "anonymousLock" << lockId;
-    std::string lockName = out.str();
-    NAPI_CALL(env, napi_create_string_utf8(env, lockName.c_str(), NAPI_AUTO_LENGTH, &name));
+    if (argc == 1) {
+        napi_valuetype type;
+        NAPI_CALL(env, napi_typeof(env, args[0], &type));
+        if (type != napi_string) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Request:: param must be string");
+            return nullptr;
+        }
+
+        std::string lockName = NapiHelper::GetString(env, args[0]);
+        Request(lockName);
+        name = args[0];
+
+        data = new AsyncLockIdentity{false, 0, lockName};
+    } else {
+        uint32_t lockId = nextId++;
+        std::ostringstream out;
+        out << "anonymousLock" << lockId;
+        std::string lockName = out.str();
+        Request(lockId);
+        NAPI_CALL(env, napi_create_string_utf8(env, lockName.c_str(), NAPI_AUTO_LENGTH, &name));
+
+        data = new AsyncLockIdentity{true, lockId};
+    }
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("name", name),
         DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, thisVar),
     };
     NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
-
-    AsyncLockIdentity *data = new AsyncLockIdentity {true, lockId};
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->WrapSendableObj(env, thisVar, data, Destructor);
 
@@ -262,27 +277,7 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     napi_value asyncLockClass;
     NAPI_CALL(env, napi_get_reference_value(env, asyncLockClassRef, &asyncLockClass));
     napi_value instance;
-    NAPI_CALL(env, napi_create_object(env, &instance));
-
-    napi_valuetype type;
-    NAPI_CALL(env, napi_typeof(env, args[0], &type));
-    if (type != napi_string) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Request:: param must be string");
-        return nullptr;
-    }
-
-    std::string name = NapiHelper::GetString(env, args[0]);
-    Request(name);
-
-    napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("name", args[0]),
-        DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, instance),
-    };
-    NAPI_CALL(env, napi_define_properties(env, instance, sizeof(properties) / sizeof(properties[0]), properties));
-
-    AsyncLockIdentity *data = new AsyncLockIdentity {false, 0, name};
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    engine->WrapSendableObj(env, instance, data, Destructor);
+    NAPI_CALL(env, napi_new_instance(env, asyncLockClass, argc, args.get(), &instance));
 
     return instance;
 }
