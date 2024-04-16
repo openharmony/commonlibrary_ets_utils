@@ -310,6 +310,8 @@ void Worker::PerformTask(const uv_async_t* req)
         argsArray[i] = NapiHelper::GetElement(env, args, i);
     }
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, nullptr);
+    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
+    workerEngine->ClearCurrentTaskInfo();
     task->DecreaseRefCount();
     task->StoreTaskDuration();
     worker->UpdateExecutedInfo();
