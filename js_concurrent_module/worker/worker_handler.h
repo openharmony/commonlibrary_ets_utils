@@ -43,7 +43,7 @@ public:
     explicit WorkerEventHandler(const std::shared_ptr<EventRunner> &runner);
     ~WorkerEventHandler() = default;
 
-    static std::shared_ptr<WorkerEventHandler> GetInstance(void* worker, bool isMainThread);
+    static std::shared_ptr<WorkerEventHandler> GetInstance();
 
     /**
      * Process the event. Developers should override this method.

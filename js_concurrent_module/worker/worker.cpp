@@ -39,6 +39,8 @@ static std::mutex g_limitedworkersMutex;
 static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
+static std::mutex g_handlerMutex;
+static std::map<napi_env, std::shared_ptr<OHOS::AppExecFwk::EventRunner>> g_handler;
 
 Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
@@ -1122,10 +1124,19 @@ void Worker::ClearGlobalCallObject()
 
 void Worker::StartExecuteInThread(napi_env env, const char* script)
 {
-    // 1. get host EventHandler
-    hostHandler_ = OHOS::AppExecFwk::WorkerEventHandler::GetInstance(nullptr, true);
+    {
+        std::lock_guard<std::mutex> lock(g_handlerMutex);
+        auto findHandler = g_handler.find(env);
+        if (findHandler != g_handler.end()) {
+            hostHandler_ = std::make_shared<OHOS::AppExecFwk::WorkerEventHandler>(g_handler[env]);
+        }
+    }
+
     if (hostHandler_ == nullptr) {
-        HILOG_ERROR("worker:: get host EventHandler failed!");
+        hostHandler_ = OHOS::AppExecFwk::WorkerEventHandler::GetInstance();
+    }
+    if (hostHandler_ == nullptr) {
+        HILOG_ERROR("worker:: Get host EventHandler failed!");
         return;
     }
     GetContainerScopeId(env);
@@ -1190,12 +1201,25 @@ void Worker::ExecuteInThread(const void* data)
         worker->SetWorkerEnv(workerEnv);
     }
 
+    // create worker runner and associate env.
+    auto runner = OHOS::AppExecFwk::EventRunner::Create(false);
+    if (runner.get() == nullptr) {
+        HILOG_ERROR("worker:: failed to create EventRunner");
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(g_handlerMutex);
+        g_handler[workerEnv] = runner;
+    }
+    worker->SetWorkerHandle(std::make_shared<OHOS::AppExecFwk::WorkerEventHandler>(runner));
+    worker->SetEventRunner(runner);
+
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
         worker->UpdateWorkerState(RUNNING);
-        // start loop.
-        if (!OHOS::AppExecFwk::WorkerEventHandler::GetInstance(worker, false)) {
-            HILOG_ERROR("worker:: get worker EventHandler fail");
+        if (worker->InitWorkerLoop()) {
+            // start run.
+            worker->GetEventRunner()->Run();
         }
     } else {
         HILOG_ERROR("worker:: worker PrepareForWorkerInstance fail");
@@ -1264,6 +1288,29 @@ bool Worker::PrepareForWorkerInstance()
         napi_value nameValue = nullptr;
         napi_create_string_utf8(workerEnv_, name_.c_str(), name_.length(), &nameValue);
         NapiHelper::SetNamePropertyInGlobal(workerEnv_, "name", nameValue);
+    }
+    return true;
+}
+
+bool Worker::InitWorkerLoop()
+{
+    auto uvLoop = GetWorkerLoop();
+    if (uvLoop == nullptr) {
+        HILOG_ERROR("worker:: Failed to get uv loop");
+        return false;
+    }
+    auto fd = uvLoop != nullptr ? uv_backend_fd(uvLoop) : -1;
+    if (fd < 0) {
+        HILOG_ERROR("worker:: Failed to get backend fd from uv loop");
+        return false;
+    }
+
+    uv_run(uvLoop, UV_RUN_NOWAIT);
+    if (workerHandler_ != nullptr) {
+        auto events = OHOS::AppExecFwk::FILE_DESCRIPTOR_INPUT_EVENT | OHOS::AppExecFwk::FILE_DESCRIPTOR_OUTPUT_EVENT;
+        workerHandler_->AddFileDescriptorListener(fd, events,
+                                                  std::make_shared<OHOS::AppExecFwk::WorkerLoopHandler>(uvLoop),
+                                                  "workerLoopTask");
     }
     return true;
 }
@@ -1568,16 +1615,16 @@ void Worker::PostMessageInner(MessageDataType data)
         return;
     }
     workerMessageQueue_.EnQueue(data);
-    auto workerOnMessageTask = [this]() {
+    auto task = [this]() {
         WorkerOnMessageInner();
     };
 
     if (workerHandler_ == nullptr) {
-        RegisterCallbackForHandler([workerOnMessageTask](OHOS::AppExecFwk::WorkerEventHandler* handle) {
-            handle->PostTask(workerOnMessageTask, "HostToWorker");
+        RegisterCallbackForHandler([task](std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler> handle) {
+            handle->PostTask(task, "HostToWorker");
         });
     } else {
-        if (!workerHandler_->PostTask(workerOnMessageTask, "HostToWorker")) {
+        if (!workerHandler_->PostTask(task, "HostToWorker")) {
             HILOG_ERROR("worker:: PostTask failed when HostToWorker.");
         }
     }
@@ -1645,8 +1692,18 @@ void Worker::TerminateWorker()
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     CloseWorkerCallback();
-    if (eventRunner_.get() != nullptr) {
+    uv_loop_t* loop = GetWorkerLoop();
+
+    auto fd = loop != nullptr ? uv_backend_fd(loop) : -1;
+    if (fd >= 0 && workerHandler_ != nullptr) {
+        workerHandler_->RemoveFileDescriptorListener(fd);
+    }
+
+    if (loop != nullptr) {
         Timer::ClearEnvironmentTimer(workerEnv_);
+        uv_stop(loop);
+    }
+    if (eventRunner_.get() != nullptr) {
         eventRunner_->Stop();
     }
     UpdateWorkerState(TERMINATED);
@@ -1980,7 +2037,12 @@ void Worker::ReleaseWorkerThreadContent()
             g_limitedworkers.erase(it);
         }
     }
-
+    {
+        std::lock_guard<std::mutex> lock(g_handlerMutex);
+        if (g_handler.find(workerEnv_) != g_handler.end()) {
+            g_handler.erase(workerEnv_);
+        }
+    }
     ParentPortRemoveAllListenerInner();
 
     // 2. delete worker's parentPort
