@@ -23,10 +23,11 @@ namespace OHOS::AppExecFwk {
     WorkerEventHandler::WorkerEventHandler(const std::shared_ptr<EventRunner> &runner) : EventHandler(runner)
     {}
 
-    std::shared_ptr<WorkerEventHandler> WorkerEventHandler::GetInstance(void* worker, bool isMainThread)
+    std::shared_ptr<WorkerEventHandler> WorkerEventHandler::GetInstance()
     {
         std::shared_ptr<EventRunner> runner = EventRunner::Current();
         if (runner.get() == nullptr) {
+            HILOG_ERROR("HYQ:: failed to create EventRunner");
             runner = EventRunner::Create(false);
         }
         if (runner.get() == nullptr) {
@@ -34,35 +35,6 @@ namespace OHOS::AppExecFwk {
             return nullptr;
         }
         auto instance = std::make_shared<WorkerEventHandler>(runner);
-
-        if (worker != nullptr) {
-            Worker* workerInstance = reinterpret_cast<Worker*>(worker);
-            workerInstance->SetEventRunner(runner);
-            workerInstance->SetWorkerHandle(instance.get());
-            auto uvLoop = workerInstance->GetWorkerLoop();
-            if (uvLoop == nullptr) {
-                HILOG_ERROR("worker:: Failed to get uv loop");
-                return nullptr;
-            }
-            auto fd = uvLoop != nullptr ? uv_backend_fd(uvLoop) : -1;
-            if (fd < 0) {
-                HILOG_ERROR("worker:: Failed to get backend fd from uv loop");
-                return nullptr;
-            }
-
-            uv_run(uvLoop, UV_RUN_NOWAIT);
-
-            if (instance != nullptr) {
-                uint32_t events = FILE_DESCRIPTOR_INPUT_EVENT | FILE_DESCRIPTOR_OUTPUT_EVENT;
-                instance->AddFileDescriptorListener(fd, events,
-                                                    std::make_shared<WorkerLoopHandler>(uvLoop), "workerLoopTask");
-            }
-        }
-
-        if (!isMainThread && worker != nullptr) {
-            HILOG_DEBUG("worker:: worker start run.");
-            runner->Run();
-        }
         return instance;
     }
 

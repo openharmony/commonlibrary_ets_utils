@@ -347,6 +347,8 @@ public:
 
     void StartExecuteInThread(napi_env env, const char* script);
 
+    bool InitWorkerLoop();
+
     bool UpdateWorkerState(RunnerState state);
     bool UpdateHostState(HostState state);
 
@@ -442,12 +444,11 @@ public:
         }
     }
 
-    // host call
-    void RegisterCallbackForHandler(std::function<void (OHOS::AppExecFwk::WorkerEventHandler*)> callback)
+    // host thread call
+    void RegisterCallbackForHandler(std::function<void (std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler>)> cb)
     {
-        // just into once.
         if (workerHandleCallback_ == nullptr) {
-            workerHandleCallback_ = callback;
+            workerHandleCallback_ = cb;
             if (workerHandler_ != nullptr) {
                 workerHandleCallback_(workerHandler_);
             }
@@ -455,7 +456,7 @@ public:
     }
 
     // worker thread call
-    void SetWorkerHandle(OHOS::AppExecFwk::WorkerEventHandler* handle)
+    void SetWorkerHandle(std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler> handle)
     {
         workerHandler_ = handle;
         if (workerHandleCallback_ != nullptr && hostHandler_ != nullptr) {
@@ -485,9 +486,6 @@ public:
     {
         return eventRunner_;
     }
-
-    OHOS::AppExecFwk::WorkerEventHandler* workerHandler_ {};
-    std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler> hostHandler_ {};
 
 private:
     void WorkerOnMessageInner();
@@ -585,7 +583,10 @@ private:
     std::condition_variable cv_;
     std::atomic<bool> globalCallSuccess_ = true;
     std::function<void(napi_env)> workerEnvCallback_;
-    std::function<void(OHOS::AppExecFwk::WorkerEventHandler*)> workerHandleCallback_;
+    std::function<void(std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler>)> workerHandleCallback_;
+
+    std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler> workerHandler_ {};
+    std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler> hostHandler_ {};
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H
