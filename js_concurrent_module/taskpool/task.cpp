@@ -414,6 +414,12 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         return nullptr;
     }
+    if (task->increaseRefSignal_ == nullptr) {
+        std::string errMessage = "taskpool:: only task can support SendData";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
     uv_async_send(task->increaseRefSignal_);
     TaskResultInfo* resultInfo = new TaskResultInfo(task->env_, task->taskId_, serializationArgs);
     return TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, task);
