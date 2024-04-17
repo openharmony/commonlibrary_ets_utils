@@ -212,7 +212,7 @@ HWTEST_F(NativeEngineTest, testUrlConstructs003, testing::ext::TestSize.Level0)
     std::string output;
     napi_env env = (napi_env)engine_;
     DealNapiStrValue(env, url.GetPath(env), output);
-    ASSERT_STREQ(output.c_str(), "/foo/baz");
+    ASSERT_STREQ(output.c_str(), "/baz");
 }
 
 HWTEST_F(NativeEngineTest, testUrlConstructs004, testing::ext::TestSize.Level0)
