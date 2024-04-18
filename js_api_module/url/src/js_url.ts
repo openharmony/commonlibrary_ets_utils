@@ -115,18 +115,17 @@ function customEncodeForToString(str: string | number): string {
 }
 
 function convertArrayToObj(arr: string[]): Record<string, string[]> {
-  return arr.reduce((obj, val, index) => {
-    if (index % 2 === 0) { // 2:Even subscripts exist as key values
-      obj[val] = [arr[index + 1]];
-    } else {
-      if (obj[arr[index - 1]]) {
-        obj[arr[index - 1]].push(val);
+    return arr.reduce((obj, val, index) => {
+      if (index % 2 === 0) { // 2:Even subscripts exist as key values
+        if (!obj[val]) {
+          obj[val] = [];
+        }
+        obj[val].push(arr[index + 1]);
       }
-    }
-    return obj;
-  }, {});
-}
-
+      return obj;
+    }, {});
+  }
+  
 class URLParams {
   urlClass: NativeURLParams;
   parentUrl: URL | null = null;
@@ -199,7 +198,7 @@ class URLParams {
       let shouldEncode: boolean = Object.entries(this.urlClass.initialValue).some(([k, v]) => k === key && v.includes(value));
       if (shouldEncode) {
         key = customEncodeForToString(key);
-        value = customEncodeForToString(value);
+        value = customEncodeForToString(value).replace(/=/g, '%3D');
       }
       outPut += `${pos > 0 ? '&' : ''}${key}=${value}`;
     }
@@ -214,18 +213,28 @@ class URLParams {
     return this.urlClass.values();
   }
 
-  getAll(getname: string): string[] {
-    if ((arguments.length !== 1) || (typeof getname !== 'string')) {
-      throw new BusinessError(`Parameter error.The type of ${getname} must be string`);
+  getAll(getAllname: string): string[] {
+    if ((arguments.length !== 1) || (typeof getAllname !== 'string')) {
+      throw new BusinessError(`Parameter error.The type of ${getAllname} must be string`);
     }
-    return this.urlClass.getAll(getname);
+    let outPut: string[] = this.urlClass.getAll(getAllname);
+    outPut = outPut.map(function(encodedString) {
+        if (encodedString === undefined) {
+            return encodedString;
+        }
+        return decodeURIComponent(encodedString);
+    });
+    return outPut;
   }
 
   get(getname: string): string {
     if (arguments.length === 0 || typeof getname !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${getname} must be string`);
     }
-    return this.urlClass.get(getname);
+    if (this.urlClass.get(getname) === undefined) {
+        return this.urlClass.get(getname);
+    }
+    return decodeURIComponent(this.urlClass.get(getname));
   }
 
   entries(): Object {
@@ -348,7 +357,7 @@ class URLSearchParams {
       let shouldEncode: boolean = Object.entries(this.urlClass.initialValue).some(([k, v]) => k === key && v.includes(value));
       if (shouldEncode) {
         key = customEncodeForToString(key);
-        value = customEncodeForToString(value);
+        value = customEncodeForToString(value).replace(/=/g, '%3D');
       }
       outPut += `${pos > 0 ? '&' : ''}${key}=${value}`;
     }
@@ -364,11 +373,21 @@ class URLSearchParams {
   }
 
   getAll(getAllname: string): string[] {
-    return this.urlClass.getAll(getAllname);
+    let outPut: string[] = this.urlClass.getAll(getAllname);
+    outPut = outPut.map(function(encodedString) {
+        if (encodedString === undefined) {
+            return encodedString;
+        }
+        return decodeURIComponent(encodedString);
+    });
+    return outPut;
   }
 
   get(getname: string): string {
-    return this.urlClass.get(getname);
+    if (this.urlClass.get(getname) === undefined) {
+        return this.urlClass.get(getname);
+    }
+    return decodeURIComponent(this.urlClass.get(getname));
   }
 
   entries(): Object {
@@ -515,7 +534,7 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
 function decodeURISafely(input: string): string {
   const regex = /(%[0-9A-Fa-f]{2})+|[^%]+/g;
   return input.match(regex).map(part => {
-    if (part.startsWith('%') && part != '%26') {
+    if (part.startsWith('%') && part != '%26' && part != '%3D' && part != '%25') {
       try {
         return decodeURIComponent(part);
       } catch (e) {
