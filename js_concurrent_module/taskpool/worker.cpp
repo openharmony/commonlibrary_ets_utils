@@ -291,7 +291,8 @@ void Worker::PerformTask(const uv_async_t* req)
     }
     worker->StoreTaskId(task->taskId_);
     // tag for trace parse: Task Perform
-    std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_);
+    std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_)
+                            + ", priority : " + std::to_string(taskInfo.second);
     HITRACE_HELPER_METER_NAME(strTrace);
     napi_value func = task->DeserializeValue(env, true, false);
     if (func == nullptr) {
