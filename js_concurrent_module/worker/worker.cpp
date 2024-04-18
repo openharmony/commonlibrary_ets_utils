@@ -2182,7 +2182,7 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
             debuggerMutex_.unlock();
             debuggerTask();
         };
-        if (!hostHandler_->PostTask(handledebuggerTask, "HandleDebuggerTask")) {
+        if (!workerHandler_->PostTask(handledebuggerTask, "HandleDebuggerTask")) {
             HILOG_ERROR("worker:: PostTask failed when HandleDebuggerTask.");
         }
     }
