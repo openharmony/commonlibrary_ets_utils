@@ -320,6 +320,12 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     taskMessage->taskId = task->taskId_;
     napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
     timer->data = taskMessage;
+
+    std::string strTrace = "ExecuteDelayed: taskId: " + std::to_string(task->taskId_);
+    strTrace += ", priority: " + std::to_string(priority);
+    strTrace += ", delayTime " + std::to_string(delayTime);
+    HITRACE_HELPER_METER_NAME(strTrace);
+
     uv_timer_start(timer, reinterpret_cast<uv_timer_cb>(DelayTask), delayTime, 0);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {

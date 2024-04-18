@@ -484,6 +484,8 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     // 2. Find executing taskInfo, skip it
     // 3. Find waiting taskInfo, cancel it
     // 4. Find canceled taskInfo, skip it
+    std::string strTrace = "CancelTask: taskId: " + std::to_string(taskId);
+    HITRACE_HELPER_METER_NAME(strTrace);
     Task* task = GetTask(taskId);
     if (task == nullptr) {
         std::string errMsg = "taskpool:: the task may not exist";
@@ -1113,6 +1115,8 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
 
 void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
 {
+    std::string strTrace = "CancelGroup: groupId: " + std::to_string(groupId);
+    HITRACE_HELPER_METER_NAME(strTrace);
     TaskGroup* taskGroup = GetTaskGroup(groupId);
     if (taskGroup == nullptr) {
         HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
