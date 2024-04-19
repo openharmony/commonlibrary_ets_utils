@@ -63,12 +63,25 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     };
     napi_define_properties(env, priorityObj, sizeof(exportPriority) / sizeof(exportPriority[0]), exportPriority);
 
+    // define State
+    napi_value stateObj = NapiHelper::CreateObject(env);
+    napi_value waitingState = NapiHelper::CreateUint32(env, ExecuteState::WAITING);
+    napi_value runningState = NapiHelper::CreateUint32(env, ExecuteState::RUNNING);
+    napi_value canceledState = NapiHelper::CreateUint32(env, ExecuteState::CANCELED);
+    napi_property_descriptor exportState[] = {
+        DECLARE_NAPI_PROPERTY("WAITING", waitingState),
+        DECLARE_NAPI_PROPERTY("RUNNING", runningState),
+        DECLARE_NAPI_PROPERTY("CANCELED", canceledState),
+    };
+    napi_define_properties(env, stateObj, sizeof(exportState) / sizeof(exportState[0]), exportState);
+
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("Task", taskClass),
         DECLARE_NAPI_PROPERTY("LongTask", longTaskClass),
         DECLARE_NAPI_PROPERTY("TaskGroup", taskGroupClass),
         DECLARE_NAPI_PROPERTY("SequenceRunner", seqRunnerClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
+        DECLARE_NAPI_PROPERTY("State", stateObj),
         DECLARE_NAPI_FUNCTION("execute", Execute),
         DECLARE_NAPI_FUNCTION("executeDelayed", ExecuteDelayed),
         DECLARE_NAPI_FUNCTION("cancel", Cancel),
