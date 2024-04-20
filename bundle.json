@@ -77,7 +77,8 @@
                 "//commonlibrary/ets_utils/js_util_module/util:util_packages",
                 "//commonlibrary/ets_utils/js_util_module/container:container_packages",
                 "//commonlibrary/ets_utils/js_util_module/json:json_packages",
-                "//commonlibrary/ets_utils/js_util_module/collections:collections_packages"
+                "//commonlibrary/ets_utils/js_util_module/collections:collections_packages",
+                "//commonlibrary/ets_utils/js_util_module/stream:stream_packages"
             ],
             "inner_kits": [
                 {
