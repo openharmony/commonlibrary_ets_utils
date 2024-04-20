@@ -111,6 +111,9 @@ public:
             case TYPE_ERROR:
                 errTitle = "The input parameters are invalid, ";
                 break;
+            case ERR_REGISTRATION_OF_LISTENERS:
+                errTitle = "The executed task does not support the registration of listeners.";
+                break;
             default:
                 break;
         }
@@ -266,6 +269,8 @@ public:
     static const int32_t ERR_NO_SUCH_ASYNCLOCK = 10200030;
     // 10200031 : lockAsync funtion timeout exceeded
     static const int32_t ERR_ASYNCLOCK_TIMEOUT = 10200031;
+    // 10200034 : The executed task does not support the registration of listeners
+    static const int32_t ERR_REGISTRATION_OF_LISTENERS = 10200034;
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H

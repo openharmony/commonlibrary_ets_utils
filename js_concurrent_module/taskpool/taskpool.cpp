@@ -416,8 +416,15 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     if (!task->IsGroupTask()) {
         if (success) {
             napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
+            if (task->onExecutionSucceededCallBackInfo != nullptr) {
+                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo);
+            }
         } else {
             napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
+            if ((task->onExecutionFailedCallBackInfo != nullptr) && (napiTaskResult != nullptr)) {
+                task->onExecutionFailedCallBackInfo->taskError_ = napiTaskResult;
+                task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo);
+            }
         }
     } else {
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);

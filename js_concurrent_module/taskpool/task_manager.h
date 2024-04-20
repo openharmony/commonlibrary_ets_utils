@@ -129,6 +129,9 @@ public:
     void TerminateTask(uint64_t taskId);
     Worker* GetLongTaskInfo(uint64_t taskId);
 
+    // for callback
+    void ReleaseCallBackInfo(Task* task);
+
 private:
     TaskManager();
     ~TaskManager();

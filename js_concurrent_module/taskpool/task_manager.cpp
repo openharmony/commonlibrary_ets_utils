@@ -591,6 +591,10 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
     {
         std::lock_guard<std::mutex> lock(taskQueuesMutex_);
         taskQueues_[priority]->EnqueueTaskId(taskId);
+        Task* task = GetTask(taskId);
+        if (task->onEnqueuedCallBackInfo != nullptr) {
+            task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo);
+        }
     }
     NotifyExecuteTask();
 }
@@ -1041,6 +1045,7 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
         return;
     }
     RemovePendingTaskInfo(taskId);
+    ReleaseCallBackInfo(task);
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     for (auto dependentTaskIter = dependentTaskInfos_.begin(); dependentTaskIter != dependentTaskInfos_.end();) {
         if (dependentTaskIter->second.find(taskId) != dependentTaskIter->second.end()) {
@@ -1052,6 +1057,29 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
     auto dependTaskIter = dependTaskInfos_.find(taskId);
     if (dependTaskIter != dependTaskInfos_.end()) {
         dependTaskInfos_.erase(dependTaskIter);
+    }
+}
+
+void TaskManager::ReleaseCallBackInfo(Task* task)
+{
+    if (task->onEnqueuedCallBackInfo != nullptr) {
+        delete task->onEnqueuedCallBackInfo;
+    }
+
+    if (task->onStartExecutionCallBackInfo != nullptr) {
+        delete task->onStartExecutionCallBackInfo;
+    }
+
+    if (task->onExecutionFailedCallBackInfo != nullptr) {
+        delete task->onExecutionFailedCallBackInfo;
+    }
+
+    if (task->onExecutionSucceededCallBackInfo != nullptr) {
+        delete task->onExecutionSucceededCallBackInfo;
+    }
+
+    if (task->onStartExecutionSignal_ != nullptr) {
+        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
     }
 }
 
