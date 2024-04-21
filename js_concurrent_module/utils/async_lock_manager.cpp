@@ -282,7 +282,7 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     return instance;
 }
 
-void AsyncLockManager::Destructor(void *data, [[maybe_unused]] void *hint)
+void AsyncLockManager::Destructor([[maybe_unused]] void *env, void *data, [[maybe_unused]] void *hint)
 {
     AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
     std::unique_lock<std::mutex> guard(lockMutex);

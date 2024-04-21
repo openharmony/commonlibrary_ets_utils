@@ -43,7 +43,7 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value Constructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Request(napi_env env, napi_callback_info cbinfo);
-    static void Destructor(void *nativeObject, void *finalize);
+    static void Destructor(void *env, void *data, void *hint);
 
     static napi_value LockAsync(napi_env env, napi_callback_info cbinfo);
     static napi_value Query(napi_env env, napi_callback_info cbinfo);
