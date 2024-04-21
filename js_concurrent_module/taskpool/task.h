@@ -35,6 +35,7 @@ enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED };
 enum TaskType { TASK, FUNCTION_TASK, SEQRUNNER_TASK, COMMON_TASK, GROUP_COMMON_TASK, GROUP_FUNCTION_TASK };
 
 struct GroupInfo;
+class Worker;
 struct TaskInfo {
     napi_deferred deferred = nullptr;
     Priority priority {Priority::DEFAULT};
@@ -151,6 +152,7 @@ struct CallbackInfo {
     uint32_t refCount;
     napi_ref callbackRef;
     uv_async_t* onCallbackSignal;
+    Worker* worker;
 };
 
 struct TaskResultInfo {
