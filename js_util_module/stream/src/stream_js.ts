@@ -14,28 +14,39 @@
  */
 
 declare function requireNapi(napiModuleName: string): any;
+const emitter = requireNapi('events.emitter');
 // @ts-ignore
 const { TextEncoder, TextDecoder } = requireNapi('util');
 
 const DEFAULT_HIGH_WATER_MARK = 16 * 1024;
-const DEFAULT_ENCODING = 'utf8';
+const DEFAULT_ENCODING = 'utf-8';
 const TypeErrorCodeId = 401;
 class BusinessError extends Error {
   code: number | string;
 
-  constructor(msg: string) {
+  constructor(msg: string, code?: number) {
     super(msg);
     this.name = 'BusinessError';
-    this.code = TypeErrorCodeId;
+    this.code = code ? code : TypeErrorCodeId;
   }
 }
-
-const ERR_DOWRITE_NOT_IMPLEMENTED = new BusinessError('The doWrite() method is not implemented');
-const ERR_DOWRITEV_NOT_IMPLEMENTED = new BusinessError('The doWritev() method is not implemented');
-const ERR_MULTIPLE_CALLBACK = new BusinessError('Callback called multiple times');
-
+const ERR_DOWRITE_NOT_IMPLEMENTED:BusinessError = new BusinessError('The doWrite() method is not implemented', 10200035);
+const ERR_DOWRITEV_NOT_IMPLEMENTED:BusinessError = new BusinessError('The doWritev() method is not implemented', 10200035);
+const ERR_MULTIPLE_CALLBACK:BusinessError = new BusinessError('Callback called multiple times', 10200037);
+const ERR_STREAM_ALREADY_FINISHED:BusinessError = new BusinessError('stream already finished', 10200036);
+const ERR_WRITE_AFTER_END:BusinessError = new BusinessError('write after end', 10200036);
+const ENCODING_SET: Array<string> = ['ascii', 'utf-8', 'UTF-8', 'gbk', 'GBK', 'GB2312', 'gb2312',
+  'GB18030', 'gb18030', 'ibm866', 'iso-8859-2', 'iso-8859-3',
+  'iso-8859-4', 'iso-8859-5', 'iso-8859-6', 'iso-8859-7',
+  'iso-8859-8', 'iso-8859-8-i', 'iso-8859-10', 'iso-8859-13',
+  'iso-8859-14', 'iso-8859-15', 'koi8-r', 'koi8-u', 'macintosh',
+  'windows-874', 'windows-1250', 'windows-1251', 'windows-1252',
+  'windows-1253', 'windows-1254', 'windows-1255', 'windows-1256',
+  'windows-1257', 'windows-1258', 'big5', 'euc-jp', 'iso-2022-jp',
+  'shift_jis', 'euc-kr', 'x-mac-cyrillic', 'utf-16be',
+  'utf-16le'];
 class EventEmitter {
-  handlers: any;
+  handlers: { [key: string]: Function[] };
 
   constructor() {
     this.handlers = {};
@@ -48,9 +59,9 @@ class EventEmitter {
     this.handlers[event].push(callback);
   }
 
-  off(event: string, callback: (...args: any[]) => void): void {
+  off(event: string, callback: Function): void {
     if (this.handlers[event]) {
-      let idx = this.handlers[event].findIndex((value: any): boolean => value === callback);
+      const idx = this.handlers[event].findIndex((value: Function): boolean => value === callback);
       if (idx !== -1) {
         this.handlers[event].splice(idx, 1);
       }
@@ -61,8 +72,8 @@ class EventEmitter {
     if (this.handlers[event]) {
       this.handlers[event].forEach((item: any) => {
         if (args.length > 0) {
-          item({data:args[0]});
-        }else{
+          item({ data: args[0] });
+        } else {
           item({});
         }
       });
@@ -70,20 +81,23 @@ class EventEmitter {
   }
 
   isOn(event: string): boolean {
-    let handler = this.handlers[event];
+    const handler:Function[] = this.handlers[event];
     return handler && handler.length > 0;
   }
-}
 
+  listenerCount(event: string): number {
+    return this.handlers[event]?.length || 0;
+  }
+}
 function runOnce(runFn: Function, callback?: (multipleTimes: boolean, error: Error) => void): Function {
   let executed = false;
-  return function (...args: any[]) {
+  return function (...args: Function[]) {
     if (!executed) {
       executed = true;
       return runFn(...args);
     } else {
       if (callback) {
-        Promise.resolve().then(() => {
+        Promise.resolve().then(():void => {
           // @ts-ignore
           callback();
         });
@@ -91,13 +105,11 @@ function runOnce(runFn: Function, callback?: (multipleTimes: boolean, error: Err
     }
   };
 }
-
 function asyncFn(asyncFn: Function) {
-  return function (...args: any[]): void {
+  return function (...args: Function[]): void {
     setTimeout(() => asyncFn(...args));
   };
 }
-
 enum ReadableEvent {
   CLOSE = 'close',
   DATA = 'data',
@@ -107,7 +119,6 @@ enum ReadableEvent {
   PAUSE = 'pause',
   RESUME = 'resume',
 }
-
 enum WritableEvent {
   CLOSE = 'close',
   DRAIN = 'drain',
@@ -117,24 +128,30 @@ enum WritableEvent {
   UNPIPE = 'unpipe',
 }
 
+interface ReadablePipeStream {
+  write: Writable;
+  dataCallback: Function;
+  drainCallback: Function;
+  endCallback: Function;
+}
 class Readable {
   private buf: Array<number>;
   private listener: EventEmitter | undefined;
-  private callbacks: any = {};
-  private encoder = new TextEncoder();
-  private decoder = new TextDecoder();
+  private callbacks: { [key: string]: Function[] } = {};
+  protected encoder = new TextEncoder();
+  protected decoder = new TextDecoder();
   private isInitialized: boolean = false;
-  private _pause: boolean;
-  private _pipeWritableArray: any[] = [];
-  private _readableObjectMode: boolean | undefined;
-  private _readable: boolean;
-  private _readableHighWatermark: number;
-  private _readableFlowing: boolean;
-  private _readableLength: number;
-  private _readableEncoding: string;
-  private _readableEnded: boolean;
-  private _errored: Error | undefined;
-  private _closed: boolean | undefined;
+  private pauseInner: boolean;
+  private pipeWritableArrayInner: ReadablePipeStream[] = [];
+  private readableObjectModeInner: boolean | undefined;
+  private readableInner: boolean;
+  private readableHighWatermarkInner: number;
+  private readableFlowingInner: boolean;
+  private readableLengthInner: number;
+  private readableEncodingInner: string;
+  private readableEndedInner: boolean;
+  private erroredInner: Error | undefined;
+  private closedInner: boolean | undefined;
 
   /**
    * The Readable constructor.
@@ -143,15 +160,15 @@ class Readable {
    * @crossplatform
    * @since 12
    */
-  constructor(options?: { encoding?: string | null; highWaterMark?: number; doRead?: (size: number) => void }) {
-    this._readableEncoding = options?.encoding || DEFAULT_ENCODING;
-    this._readableHighWatermark = options?.highWaterMark || DEFAULT_HIGH_WATER_MARK;
-    this._readableObjectMode = false;
-    this._readableLength = 0;
-    this._pause = false;
-    this._readableFlowing = true;
-    this._readable = true;
-    this._readableEnded = false;
+  constructor(options?: { encoding?: string | null; highWatermark?: number; doRead?: (size: number) => void }) {
+    this.readableEncodingInner = options?.encoding || DEFAULT_ENCODING;
+    this.readableHighWatermarkInner = options?.highWatermark || DEFAULT_HIGH_WATER_MARK;
+    this.readableObjectModeInner = false;
+    this.readableLengthInner = 0;
+    this.pauseInner = false;
+    this.readableFlowingInner = true;
+    this.readableInner = true;
+    this.readableEndedInner = false;
     this.listener = new EventEmitter();
     this.buf = [];
     if (typeof options?.doRead === 'function') {
@@ -167,7 +184,7 @@ class Readable {
    * @since 12
    */
   get readableObjectMode(): boolean | undefined {
-    return this._readableObjectMode;
+    return this.readableObjectModeInner;
   }
 
   /**
@@ -179,23 +196,23 @@ class Readable {
    * @since 12
    */
   get readable(): boolean {
-    if (this._readable) {
+    if (this.readableInner) {
       return true;
-    } else if (!this._readable && this._readableEnded) {
+    } else if (!this.readableInner && this.readableEndedInner) {
       return false;
     }
     return true;
   }
 
   /**
-   * Returns the value of highWaterMark passed when creating this Readable.
+   * Returns the value of highWatermark passed when creating this Readable.
    *
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
    */
   get readableHighWatermark(): number {
-    return this._readableHighWatermark;
+    return this.readableHighWatermarkInner;
   }
 
   /**
@@ -206,7 +223,7 @@ class Readable {
    * @since 12
    */
   get readableFlowing(): boolean {
-    return this._readableFlowing;
+    return this.readableFlowingInner;
   }
 
   /**
@@ -217,7 +234,7 @@ class Readable {
    * @since 12
    */
   get readableLength(): number {
-    return this._readableLength;
+    return this.readableLengthInner;
   }
 
   /**
@@ -229,7 +246,7 @@ class Readable {
    * @since 12
    */
   get readableEncoding(): string | null {
-    return this._readableEncoding;
+    return this.readableEncodingInner;
   }
 
   /**
@@ -240,7 +257,7 @@ class Readable {
    * @since 12
    */
   get readableEnded(): boolean {
-    return this._readableEnded;
+    return this.readableEndedInner;
   }
 
   /**
@@ -251,7 +268,7 @@ class Readable {
    * @since 12
    */
   get errored(): Error | undefined {
-    return this._errored;
+    return this.erroredInner;
   }
 
   /**
@@ -262,10 +279,10 @@ class Readable {
    * @since 12
    */
   get closed(): boolean {
-    return this._closed || false;
+    return this.closedInner || false;
   }
 
-  private computeNewReadableHighWaterMark(readSize: number): number {
+  private computeNewReadableHighWatermark(readSize: number): number {
     readSize--;
     readSize |= readSize >>> 1;
     readSize |= readSize >>> 2;
@@ -276,64 +293,65 @@ class Readable {
     return readSize;
   }
 
-  setEndType() {
-    this._readable = false;
-    this._readableEnded = false;
+  setEndType(): void {
+    this.readableInner = false;
+    this.readableEndedInner = true;
     Promise.resolve().then((): void => this.listener?.emit(ReadableEvent.END));
   }
-
 
   /**
    * Reads a buffer of a specified size from the buffer. If the available buffer is sufficient, the result
    * of the specified size is returned. Otherwise, if Readable has ended, all remaining buffers are returned.
    *
    * @param { number } size - Expected length of the data to be read.
-   * @returns { string | null } Read data from internal buffer and return. If there is no available data to
-   * read, return null.
+   * @returns { string | null } If no data is available to read, null is returned.
    * @throws { BusinessError } 401 - if the input parameters are invalid.
+   * @throws { BusinessError } 10200038 - if the doRead method has not been implemented, an error will be thrown.
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
    */
   read(size?: number): string | null {
-    if (this.doRead === null && this._readable) {
-      this._readable = false;
+    if (size && typeof size !== 'number') {
+      this.throwError(new BusinessError('The size parameter is invalid', 401));
+      return null;
+    }
+    if (this.doRead === null && this.readableInner) {
+      this.readableInner = false;
       Promise.resolve().then(() => {
-        this._errored = new BusinessError('The doRead() method is not implemented');
-        this.listener?.emit(ReadableEvent.ERROR, this._errored);
+        this.closedInner = true;
+        this.erroredInner = new BusinessError('The doRead() method is not implemented', 10200038);
+        this.listener?.emit(ReadableEvent.ERROR, this.erroredInner);
         this.listener?.emit(ReadableEvent.CLOSE);
       });
       return null;
     }
-    size = size ?? this._readableLength;
-    if (size > this._readableHighWatermark) {
-      this._readableHighWatermark = this.computeNewReadableHighWaterMark(size);
+    size = size ?? this.readableLengthInner;
+    if (size > this.readableHighWatermarkInner) {
+      this.readableHighWatermarkInner = this.computeNewReadableHighWatermark(size);
     }
-    if (size > this._readableLength) {
-      if (!this._readableFlowing) {
+    if (size > this.readableLengthInner) {
+      if (!this.readableFlowingInner) {
         return null;
       } else {
-        size = this._readableLength;
+        size = this.readableLengthInner;
       }
     }
     let buffer = null;
-    if (size > 0 && size <= this._readableLength) {
-      let current = this.buf.slice(0, size);
-      buffer = new Uint8Array(current);
-      this.buf = this.buf.slice(size, this._readableLength);
-      this._readableLength -= size;
-      buffer = this.decoder.decode(buffer);
+    if (size > 0 && size <= this.readableLengthInner) {
+      this.readableLengthInner -= size;
+      buffer = this.decoder.decodeWithStream(new Uint8Array(this.buf.splice(0, size)));
       this.doRead !== null && this.listener?.emit(ReadableEvent.DATA, buffer);
     }
-    if ((!this._readable || size <= -1) && this._readableFlowing) {
+    if ((!this.readableInner || size <= -1) && this.readableFlowingInner) {
       return null;
     }
-    if (this._readableFlowing) {
+    if (this.readableFlowingInner) {
       try {
-        this.doRead(this._readableHighWatermark);
+        this.doRead(this.readableHighWatermarkInner);
       } catch (error) {
-        this._readable = false;
-        this._readableEnded = true;
+        this.readableInner = false;
+        this.readableEndedInner = true;
         this.listener?.emit(ReadableEvent.ERROR, error);
       }
     }
@@ -348,13 +366,13 @@ class Readable {
    * @since 12
    */
   resume(): Readable {
-    if (this._readableLength === 0) {
-      Promise.resolve().then(() => {
-        this.read(this._readableHighWatermark < this._readableLength ? -1 : this._readableLength);
+    if (this.readableLengthInner === 0) {
+      Promise.resolve().then((): void => {
+        this.read(this.readableHighWatermarkInner < this.readableLengthInner ? -1 : this.readableLengthInner);
       });
     }
-    this._pause = false;
-    this._readableFlowing = true;
+    this.pauseInner = false;
+    this.readableFlowingInner = true;
     this.listener?.emit(ReadableEvent.RESUME);
     return this;
   }
@@ -367,9 +385,9 @@ class Readable {
    * @since 12
    */
   pause(): Readable {
-    this._pause = true;
-    Promise.resolve().then(() => {
-      this._readableFlowing = false;
+    this.pauseInner = true;
+    Promise.resolve().then((): void => {
+      this.readableFlowingInner = false;
     });
     this.listener?.emit(ReadableEvent.PAUSE);
     return this;
@@ -386,16 +404,26 @@ class Readable {
    * @since 12
    */
   setEncoding(encoding?: string): boolean {
-    if (encoding && encoding.toUpperCase() !== 'UTF8' && encoding.toUpperCase() !== 'UTF-8') {
-      this._readable = false;
-      let err = new BusinessError(`Unknown encoding: ${ encoding }`);
-      this._errored = err;
-      throw err;
-    } else if (encoding && (encoding.toUpperCase() === 'UTF8' || encoding.toUpperCase() === 'UTF-8')) {
-      this._readableEncoding = encoding;
+    if (!encoding) {
+      this.readableEncodingInner = 'utf8';
+      return false;
+    }
+    if (encoding.toLowerCase() === 'utf8') {
+      encoding = 'utf-8';
+    }
+    if (ENCODING_SET.indexOf(encoding.toLowerCase()) !== -1) {
+      try {
+        this.encoder = new TextEncoder(encoding);
+        this.decoder = new TextDecoder(encoding);
+        this.readableEncodingInner = encoding.toLowerCase();
+      } catch (e) {
+        this.throwError(e as Error);
+        return false;
+      }
       return true;
     } else {
-      this._readableEncoding = 'utf8';
+      const err: BusinessError = new BusinessError(`Unknown encoding: ${encoding}`);
+      this.throwError(err);
       return false;
     }
   }
@@ -409,7 +437,7 @@ class Readable {
    * @since 12
    */
   isPaused(): boolean {
-    return this._pause;
+    return this.pauseInner;
   }
 
   /**
@@ -424,10 +452,11 @@ class Readable {
    * @since 12
    */
   pipe(destination: Writable, option?: Object): Writable {
-    let obj = {
+    this.pauseInner = false;
+    const obj: ReadablePipeStream = {
       write: destination,
-      dataCallback: (data: any): void => {
-        let flg = destination.write(data);
+      dataCallback: (data: { data: string | Uint8Array }): void => {
+        const flg = destination.write(data.data);
         if (!flg) {
           this.pause();
         }
@@ -438,17 +467,14 @@ class Readable {
         destination.end();
       }
     };
-    this._pipeWritableArray.push(obj);
-    this.on(ReadableEvent.DATA, (data:any)=>{
+    this.pipeWritableArrayInner.push(obj);
+    this.on(ReadableEvent.DATA, (data: { data: Function }) => {
       obj.dataCallback(data);
     });
-    destination.on('drain', ()=>{
+    destination.on('drain', (): void => {
       obj.drainCallback();
     });
-    destination.doWrite = (chunk:any, encoding, callback:any)=>{
-      callback();
-    }
-    this.on(ReadableEvent.END, ()=>{
+    this.on(ReadableEvent.END, (): void => {
       obj.endCallback();
     });
     destination?.listener?.emit('pipe', this);
@@ -466,11 +492,11 @@ class Readable {
    * @since 12
    */
   unpipe(destination?: Writable): Readable {
-    let objIdx = this._pipeWritableArray.findIndex(value => value.write === destination);
+    const objIdx: number = this.pipeWritableArrayInner.findIndex((value: ReadablePipeStream) => value.write === destination);
     if (objIdx !== -1) {
-      this._readable = false;
-      let obj = this._pipeWritableArray[objIdx];
-      this.listener?.off(ReadableEvent.DATA, obj.dataCallback!);
+      this.readableInner = false;
+      const obj: ReadablePipeStream = this.pipeWritableArrayInner[objIdx];
+      this.listener?.off(ReadableEvent.DATA, obj.dataCallback);
       destination?.listener?.off('drain', obj.drainCallback);
       this.listener?.off(ReadableEvent.END, obj.endCallback);
       destination?.listener?.emit('unpipe', this);
@@ -489,26 +515,26 @@ class Readable {
    * @since 12
    */
   on(event: string, callback: Function): void {
-    let that = this;
+    const that = this;
     if (!this.isInitialized) {
       this.isInitialized = true;
       this.doInitialize?.(() => {
       });
     }
     this.callbacks[event] = this.callbacks[event] ?? [];
-    let callbackFn = callback;
+    const callbackFn = callback;
     this.callbacks[event].push(callbackFn);
     this.listener?.on(event, callbackFn);
-    Promise.resolve().then(() => {
+    Promise.resolve().then((): void => {
       if (event === ReadableEvent.READABLE) {
-        that._readableFlowing = false;
-        if (this._readable) {
-          that.doRead?.(this._readableHighWatermark);
+        this.readableFlowingInner = false;
+        if (this.readableInner) {
+          this.doRead?.(this.readableHighWatermarkInner);
         }
       } else if (event === ReadableEvent.DATA) {
-        that._readableFlowing = true;
-        if (!this._pause) {
-          that.read();
+        this.readableFlowingInner = true;
+        if (!this.pauseInner) {
+          this.read();
         }
       }
     });
@@ -518,21 +544,29 @@ class Readable {
    * Cancel event message.
    *
    * @param { string } event - Registering Events.
+   * @param { Callback<emitter.EventData> } callback - Event callback.
    * @throws { BusinessError } 401 - if the input parameters are invalid.
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
    */
-  off(event: string, callback?:Function): void {
-    if(callback){
-      this.callbacks[event]?.forEach((it: any) => {
-        console.log(callback,it,callback == it);
-        if(callback == it){
+  off(event: string, callback?: Function): void {
+    if (!event) {
+      this.throwError(new BusinessError('event is null', 401));
+      return;
+    }
+    if (event && typeof event !== 'string') {
+      this.throwError(new BusinessError('event is not string', 401));
+      return;
+    }
+    if (callback) {
+      this.callbacks[event]?.forEach((it: Function): void => {
+        if (callback === it) {
           this.listener?.off(event, it);
         }
       });
-    }else{
-      this.callbacks[event]?.forEach((it: any) => this.listener?.off(event, it));
+    } else {
+      this.callbacks[event]?.forEach((it : Function) => this.listener?.off(event, it));
     }
   }
 
@@ -583,71 +617,92 @@ class Readable {
     }
     if (typeof chunk === 'string' || chunk instanceof Uint8Array) {
       if (typeof chunk === 'string') {
-        bufferArr = this.encoder.encode(chunk);
+        bufferArr = this.encoder.encodeInto(chunk);
         this.buf.push(...bufferArr);
-        this._readableLength += bufferArr.length;
+        this.readableLengthInner += bufferArr.length;
       } else if (chunk instanceof Uint8Array) {
         this.buf.push(...chunk);
-        this._readableLength += chunk.length;
+        this.readableLengthInner += chunk.length;
       }
-      let highWaterMark = this._readableLength < this._readableHighWatermark;
-      Promise.resolve().then(() => {
+      const highWaterMark = this.readableLengthInner <= this.readableHighWatermarkInner;
+      Promise.resolve().then((): void => {
         try {
-          if (this._readableFlowing) {
-            !this._pause && this.read(highWaterMark ? this._readableLength : -1);
+          if (this.readableFlowingInner) {
+            !this.pauseInner && this.read(highWaterMark ? this.readableLengthInner : -1);
           } else {
-            this.doRead?.(this._readableHighWatermark);
+            if (highWaterMark) {
+              this.doRead?.(this.readableHighWatermarkInner);
+            }
           }
-        } catch (error: any) {
+        } catch (error) {
           this.listener?.emit(ReadableEvent.ERROR, error);
         }
         this.listener?.emit(ReadableEvent.READABLE);
       });
-      return highWaterMark;
+      return this.readableLengthInner < this.readableHighWatermarkInner;
     } else if (chunk === null) {
-      if (!this._readableEnded && this._readable) {
-        !this._readableFlowing && this.listener?.emit(ReadableEvent.READABLE);
-        this._readable = false;
-        Promise.resolve().then(() => {
-          this._readableEnded = true;
-          this._pause = true;
+      if (!this.readableEndedInner && this.readableInner) {
+        !this.readableFlowingInner && this.listener?.emit(ReadableEvent.READABLE);
+        this.readableInner = false;
+        Promise.resolve().then((): void => {
+          this.readableEndedInner = true;
+          this.pauseInner = true;
+          this.closedInner = true;
           this.listener?.emit(ReadableEvent.END);
           this.listener?.emit(ReadableEvent.CLOSE);
         });
       }
       return false;
     } else {
-      this._readable = false;
-      this._errored = new BusinessError("ERR_INVALID_ARG_TYPE");
-      this.listener?.emit(ReadableEvent.ERROR, this._errored);
+      this.readableInner = false;
+      this.erroredInner = new BusinessError('ERR_INVALID_ARG_TYPE');
+      this.listener?.emit(ReadableEvent.ERROR, this.erroredInner);
       return false;
     }
   };
+
+  throwError(error: Error): void {
+    this.erroredInner = error;
+    if (this.listener && this.listener.listenerCount(WritableEvent.ERROR) > 0) {
+      setTimeout((): void => {
+        this.listener?.emit(WritableEvent.ERROR, error);
+      });
+    } else {
+      throw error;
+    }
+  }
 }
 
 // @ts-ignore
 Readable.prototype.doRead = null;
 
-
 class Writable {
+
   public listener: EventEmitter | undefined;
-  private callbacks: any = {};
-  private buffer: any[] = [];
+  private callbacks: { [key: string]: Function[] } = {};
+  private buffer: ({ encoding?: string, chunk: string | Uint8Array, callback: Function })[] = [];
   private writing: boolean = false;
   private encoding: string | undefined;
-  private encoder = new TextEncoder();
+  protected encoder = new TextEncoder();
   private ending: boolean = false;
-  private _writableObjectMode: boolean | undefined;
-  private _writableHighWatermark: number;
-  private _writable: boolean | undefined;
-  private _writableLength: number | undefined;
-  private _writableNeedDrain: boolean | undefined;
-  private _writableCorked: number = 0;
-  private _writableEnded: boolean | undefined;
-  private _writableFinished: boolean | undefined;
-  private _errored: Error | undefined | null;
-  private _closed: boolean | undefined;
+  private writableObjectModeInner: boolean | undefined;
+  private writableHighWatermarkInner: number;
+  private writableInner: boolean | undefined;
+  private writableLengthInner: number | undefined;
+  private writableNeedDrainInner: boolean | undefined;
+  private writableCorkedInner: number = 0;
+  private writableEndedInner: boolean | undefined;
+  private writableFinishedInner: boolean | undefined;
+  private erroredInner: Error | undefined | null;
+  private closedInner: boolean | undefined;
 
+  /**
+   * The Writable constructor.
+   *
+   * @syscap SystemCapability.Utils.Lang
+   * @crossplatform
+   * @since 12
+   */
   constructor(options?: {
     highWaterMark?: number | undefined;
     objectMode?: boolean | undefined;
@@ -659,18 +714,20 @@ class Writable {
         objectMode: false,
       };
     }
-    this._writableHighWatermark = options.highWaterMark ?? DEFAULT_HIGH_WATER_MARK;
-    this._writableObjectMode = options.objectMode || false;
-    this._writableLength = 0;
-    this._writableEnded = false;
-    this._writableNeedDrain = false;
-    this._writable = true;
-    this._writableCorked = 0;
-    this._writableFinished = false;
-    this._errored = null;
+    this.writableHighWatermarkInner = options.highWaterMark ?? DEFAULT_HIGH_WATER_MARK;
+    this.writableObjectModeInner = options.objectMode || false;
+    this.writableLengthInner = 0;
+    this.writableEndedInner = false;
+    this.writableNeedDrainInner = false;
+    this.writableInner = true;
+    this.writableCorkedInner = 0;
+    this.writableFinishedInner = false;
+    this.erroredInner = null;
     this.encoding = 'utf8';
-    this._closed = false;
-    this.doInitialize((error: any) => {
+    this.closedInner = false;
+    // @ts-ignore
+    this.doWritev = null;
+    this.doInitialize((error: Error): void => {
       if (error) {
         this.listener?.emit(WritableEvent.ERROR, error);
       }
@@ -685,7 +742,7 @@ class Writable {
    * @since 12
    */
   get writableObjectMode(): boolean | undefined {
-    return this._writableObjectMode;
+    return this.writableObjectModeInner;
   }
 
   /**
@@ -696,7 +753,7 @@ class Writable {
    * @since 12
    */
   get writableHighWatermark(): number | undefined {
-    return this._writableHighWatermark;
+    return this.writableHighWatermarkInner;
   }
 
   /**
@@ -707,18 +764,18 @@ class Writable {
    * @since 12
    */
   get writable(): boolean | undefined {
-    return this._writable;
+    return this.writableInner;
   }
 
   /**
-   * Size of data that can be flushed, in bytes or objects.
+   * Size of data this can be flushed, in bytes or objects.
    *
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
    */
   get writableLength(): number | undefined {
-    return this._writableLength;
+    return this.writableLengthInner;
   }
 
   /**
@@ -729,7 +786,7 @@ class Writable {
    * @since 12
    */
   get writableNeedDrain(): boolean | undefined {
-    return this._writableNeedDrain;
+    return this.writableNeedDrainInner;
   }
 
   /**
@@ -740,7 +797,7 @@ class Writable {
    * @since 12
    */
   get writableCorked(): number | undefined {
-    return this._writableCorked;
+    return this.writableCorkedInner;
   };
 
   /**
@@ -751,7 +808,7 @@ class Writable {
    * @since 12
    */
   get writableEnded(): boolean | undefined {
-    return this._writableEnded;
+    return this.writableEndedInner;
   }
 
   /**
@@ -762,7 +819,7 @@ class Writable {
    * @since 12
    */
   get writableFinished(): boolean | undefined {
-    return this._writableFinished;
+    return this.writableFinishedInner;
   }
 
   /**
@@ -773,7 +830,7 @@ class Writable {
    * @since 12
    */
   get errored(): Error | undefined | null {
-    return this._errored;
+    return this.erroredInner;
   }
 
   /**
@@ -784,7 +841,7 @@ class Writable {
    * @since 12
    */
   get closed(): boolean | undefined {
-    return this._closed;
+    return this.closedInner;
   }
 
   /**
@@ -799,6 +856,9 @@ class Writable {
    * @param { Function } [callback] - Callback after writing.
    * @returns { boolean } Write success returns true, write failure returns false.
    * @throws { BusinessError } 401 - if the input parameters are invalid.
+   * @throws { BusinessError } 10200035 - if doWrite not implemented, an exception will be thrown.
+   * @throws { BusinessError } 10200036 - if stream has been ended, writing data to it will throw an error.
+   * @throws { BusinessError } 10200037 - if the callback is called multiple times consecutively, an error will be thrown.
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
@@ -808,20 +868,20 @@ class Writable {
       this.setDefaultEncoding(encoding);
     }
     if (chunk === null) {
-      throw new BusinessError(`The "chunk" argument must be of type string or UintArray`);
+      throw new BusinessError('The "chunk" argument must be of type string or UintArray', 401);
     }
     if (typeof chunk !== 'string' && !(chunk instanceof Uint8Array)) {
-      throw new BusinessError(`The "chunk" argument must be of type string or UintArray`);
+      throw new BusinessError('The "chunk" argument must be of type string or UintArray', 401);
     }
     if (this.ending && !this.writing) {
-      setTimeout(() => {
-        let error = new Error('write after end');
-        callback?.(error);
-        this.throwError(error);
+      setTimeout((): void => {
+        this.erroredInner = new BusinessError('write after end', 10200036);
+        callback?.(this.erroredInner);
+        this.throwError(this.erroredInner);
       });
       return false;
     }
-    if (this._errored) {
+    if (this.erroredInner) {
       return false;
     }
     let flag = false;
@@ -831,7 +891,7 @@ class Writable {
       flag = this.writeString(chunk!, encoding ?? this.encoding, callback);
     }
     if (!flag) {
-      this._writableNeedDrain = true;
+      this.writableNeedDrainInner = true;
     }
     return flag;
   }
@@ -840,25 +900,25 @@ class Writable {
     if (chunk instanceof Uint8Array) {
       return chunk.byteLength;
     } else {
-      return this.encoder.encode(chunk).byteLength;
+      return this.encoder.encodeInto(chunk).byteLength;
     }
   }
 
   private writeUint8Array(chunk: Uint8Array, encoding?: string, callback?: Function): boolean {
-    this._writableLength! += this.getChunkLength(chunk);
-    let hasRemaining = this._writableLength! < this.writableHighWatermark!;
-    const fnBack = runOnce((error: any) => {
+    this.writableLengthInner! += this.getChunkLength(chunk);
+    const hasRemaining = this.writableLengthInner! < this.writableHighWatermark!;
+    const fnBack = runOnce((error?: Error): void => {
       if (error && error instanceof Error) {
-        this._writable = false;
+        this.writableInner = false;
         this.throwError(error);
         return;
       }
       callback?.(error ?? null);
       this.freshCache();
-    }, (multipleTimes: boolean, err: Error) => {
+    }, (multipleTimes: boolean, err: Error): void => {
       this.listener?.emit(WritableEvent.ERROR, ERR_MULTIPLE_CALLBACK);
     });
-    if (this._writableCorked === 0) {
+    if (this.writableCorkedInner === 0) {
       if (!this.writing) {
         this.writing = true;
         this.doWrite(chunk, encoding ?? 'utf8', fnBack);
@@ -872,19 +932,18 @@ class Writable {
   }
 
   private writeString(chunk: string, encoding?: string, callback?: Function): boolean {
-    let that = this;
-    this._writableLength! += this.getChunkLength(chunk);
-    let hasRemaining = this._writableLength! < this.writableHighWatermark!;
-    const fb = runOnce((error: any) => {
+    this.writableLengthInner! += this.getChunkLength(chunk);
+    const hasRemaining = this.writableLengthInner! < this.writableHighWatermark!;
+    const fb = runOnce((error?: Error): void => {
       if (error) {
-        this._errored = error;
+        this.erroredInner = error;
       }
       callback?.(error ?? null);
-      that.freshCache();
+      this.freshCache();
       if (error && error instanceof Error) {
-        this._writable = false;
-        this._errored = error;
-        Promise.resolve().then(() => {
+        this.writableInner = false;
+        this.erroredInner = error;
+        Promise.resolve().then((): void => {
           if (this.isOnError()) {
             this.emitErrorOnce(error);
           } else {
@@ -898,13 +957,13 @@ class Writable {
       this.emitErrorOnce(ERR_MULTIPLE_CALLBACK, true);
     });
 
-    if (this._writableCorked === 0) {
+    if (this.writableCorkedInner === 0) {
       if (!this.writing) {
         this.writing = true;
         this.doWrite?.(chunk, encoding ?? 'utf8', fb);
         if (!this.doWrite && !hasRemaining) {
           Promise.resolve().then(() => {
-            this._writableLength = 0;
+            this.writableLengthInner = 0;
             this.listener?.emit(WritableEvent.DRAIN);
           });
         }
@@ -914,19 +973,19 @@ class Writable {
     } else {
       this.buffer.push({ chunk: chunk, encoding: encoding, callback: fb });
     }
-    return this._errored ? false : hasRemaining;
+    return this.erroredInner ? false : hasRemaining;
   }
 
   private freshCache(): void {
-    let current = this.buffer.shift();
+    const current = this.buffer.shift();
     if (current) {
       this.doWrite?.(current.chunk, current.encoding ?? 'utf8', current.callback);
-      this._writableLength! -= this.getChunkLength(current.chunk);
+      this.writableLengthInner! -= this.getChunkLength(current.chunk);
     } else {
       this.writing = false;
-      this._writableLength = 0;
+      this.writableLengthInner = 0;
       if (!this.finishMayBe()) {
-        this._writableNeedDrain = false;
+        this.writableNeedDrainInner = false;
         this.listener?.emit(WritableEvent.DRAIN);
       }
     }
@@ -935,22 +994,22 @@ class Writable {
   private freshCacheV(): void {
     if (this.buffer.length > 0) {
       if (this.doWritev) {
-        const that = this;
-        const funCallback = runOnce((error: any) => {
+        const funCallback = runOnce((error?: Error): void => {
           if (error && error instanceof Error) {
-            that._errored = error;
-            that.listener?.emit(WritableEvent.ERROR, error);
+            this.erroredInner = error;
+            this.listener?.emit(WritableEvent.ERROR, error);
             return;
           }
           this.buffer = [];
         }, () => {
           this.listener?.emit(WritableEvent.ERROR, ERR_MULTIPLE_CALLBACK);
         });
-        this.doWritev(this.buffer.map((item) => {
+        // @ts-ignore
+        this.doWritev(this.buffer.map((item: { encoding?: string; chunk: string | Uint8Array; callback: Function }) => {
           return item.chunk;
         }), funCallback);
         if (!this.finishMayBe()) {
-          this._writableNeedDrain = true;
+          this.writableNeedDrainInner = true;
           this.listener?.emit(WritableEvent.DRAIN);
         }
       } else {
@@ -967,89 +1026,89 @@ class Writable {
    * @param { Function } [callback] - Callback after writing.
    * @returns { Writable } Returns the Writable object.
    * @throws { BusinessError } 401 - if the input parameters are invalid.
+   * @throws { BusinessError } 10200035 - if doWrite not implemented, an exception will be thrown.
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
    */
   end(chunk?: string | Uint8Array, encoding?: string, callback?: Function): Writable {
-    if (this._writableFinished) {
-      this._errored = new BusinessError("stream already finished");
-      setTimeout(() => callback?.(this._errored))
-      this.emitErrorOnce(this._errored);
+    if (this.writableFinishedInner) {
+      this.erroredInner = ERR_STREAM_ALREADY_FINISHED;
+      setTimeout(() => callback?.(this.erroredInner));
+      this.emitErrorOnce(this.erroredInner);
       return this;
-    } else if (this._writableEnded) {
-      this._errored = new BusinessError("write after end");
-      setTimeout(() => callback?.(this._errored));
-      this.emitErrorOnce(this._errored);
-      return this;
-    }
-    let that = this;
-    if (that._errored) {
-      setTimeout(() => callback?.(that._errored));
+    } else if (this.writableEndedInner) {
+      this.erroredInner = ERR_WRITE_AFTER_END;
+      setTimeout(() => callback?.(this.erroredInner));
+      this.emitErrorOnce(this.erroredInner);
       return this;
     }
-    this._writableNeedDrain = false;
-    this._closed = true;
-    that.ending = true;
-    this._writable = false;
-    if (!that._writableEnded) {
-      if (that._writableCorked === 0) {
+    if (this.erroredInner) {
+      setTimeout(() => callback?.(this.erroredInner));
+      return this;
+    }
+    this.writableNeedDrainInner = false;
+    this.closedInner = true;
+    this.ending = true;
+    this.writableInner = false;
+    if (!this.writableEndedInner) {
+      if (this.writableCorkedInner === 0) {
         if (chunk) {
-          if (that.writing) {
-            that.write(chunk, encoding, callback);
+          if (this.writing) {
+            this.write(chunk, encoding, callback);
           } else {
-            that.doWrite?.(chunk!, encoding ?? 'utf8', (error: any) => {
+            this.doWrite?.(chunk!, encoding ?? 'utf8', (error?: Error): void => {
               if (error && error instanceof Error) {
-                this._errored = error;
+                this.erroredInner = error;
                 this.listener?.emit(WritableEvent.ERROR, error);
               } else {
-                that._writableLength! -= this.getChunkLength(chunk);
-                that.writing = false;
-                that.finishMayBe();
+                this.writableLengthInner! -= this.getChunkLength(chunk);
+                this.writing = false;
+                this.finishMayBe();
               }
-              that._writableEnded = true;
-              that._writable = false;
-              asyncFn(() => {
-                callback?.(that._errored ?? error ?? null);
+              this.writableEndedInner = true;
+              this.writableInner = false;
+              asyncFn((): void => {
+                callback?.(this.erroredInner ?? error ?? null);
               })();
-              if (!that._writableFinished) {
-                that._writableFinished = true;
-                asyncFn(() => {
-                  if ((!that._errored || that._errored.message === 'write after end') && !this.isOnError()) {
-                    that.listener?.emit(WritableEvent.FINISH);
+              if (!this.writableFinishedInner) {
+                this.writableFinishedInner = true;
+                asyncFn((): void => {
+                  if ((!this.erroredInner || this.erroredInner.message === 'write after end') && !this.isOnError()) {
+                    this.listener?.emit(WritableEvent.FINISH);
                   }
                 })();
               }
             });
           }
         } else {
-          if (that._writableEnded) {
-            that._errored = new BusinessError('write after end');
-            callback?.(that._errored);
+          if (this.writableEndedInner) {
+            this.erroredInner = new BusinessError('write after end', 10200036);
+            callback?.(this.erroredInner);
           } else {
-            setTimeout(() => callback?.(this._errored));
+            setTimeout(() => callback?.(this.erroredInner));
           }
-          if (!that._writableFinished && !that._writableEnded) {
-            that._writableFinished = true;
-            asyncFn(() => {
-              if (!that._errored || that._errored.message === 'write after end') {
-                that.listener?.emit(WritableEvent.FINISH);
+          if (!this.writableFinishedInner && !this.writableEndedInner) {
+            this.writableFinishedInner = true;
+            asyncFn((): void => {
+              if (!this.erroredInner || this.erroredInner.message === 'write after end') {
+                this.listener?.emit(WritableEvent.FINISH);
               }
             })();
           }
         }
       } else {
-        that._writableCorked = 1;
-        that.uncork();
+        this.writableCorkedInner = 1;
+        this.uncork();
       }
     }
-    this._writableEnded = true;
-    that.listener?.emit(WritableEvent.CLOSE);
-    return that;
+    this.writableEndedInner = true;
+    this.listener?.emit(WritableEvent.CLOSE);
+    return this;
   }
 
   private finishMayBe(): boolean {
-    return !this.writing && this._writableCorked === 0 && this.ending;
+    return !this.writing && this.writableCorkedInner === 0 && this.ending;
   }
 
   /**
@@ -1062,16 +1121,27 @@ class Writable {
    * @crossplatform
    * @since 12
    */
+
   setDefaultEncoding(encoding?: string): boolean {
-    if (encoding && encoding.toUpperCase() === 'UTF8') {
+    if (!encoding) {
+      return false;
+    }
+    if (encoding.toLowerCase() === 'utf8') {
+      encoding = 'utf-8';
+    }
+    if (ENCODING_SET.indexOf(encoding.toLowerCase()) !== -1) {
       this.encoding = encoding.toLowerCase();
-      return true;
-    } else if (encoding && encoding.toUpperCase() === 'ASCII') {
-      this.encoding = encoding.toLowerCase();
+      try {
+        if (encoding.toLowerCase() !== 'ascii') {
+          this.encoder = new TextEncoder(encoding);
+        }
+      } catch (e) {
+        this.throwError(e as Error);
+        return false;
+      }
       return true;
     } else {
-      let err = new BusinessError(`Unknown encoding: ${ encoding }`);
-      this.listener?.emit(WritableEvent.ERROR, err);
+      const err: BusinessError = new BusinessError(`Unknown encoding: ${encoding}`);
       this.throwError(err);
       return false;
     }
@@ -1086,7 +1156,7 @@ class Writable {
    * @since 12
    */
   cork(): boolean {
-    this._writableCorked += 1;
+    this.writableCorkedInner += 1;
     return true;
   }
 
@@ -1099,10 +1169,10 @@ class Writable {
    * @since 12
    */
   uncork(): boolean {
-    if (this._writableCorked > 0) {
-      this._writableCorked -= 1;
+    if (this.writableCorkedInner > 0) {
+      this.writableCorkedInner -= 1;
     }
-    if (this._writableCorked === 0) {
+    if (this.writableCorkedInner === 0) {
       this.freshCacheV();
     }
     return true;
@@ -1112,7 +1182,7 @@ class Writable {
    * Registering Event Messages.
    *
    * @param { string } event - Register Event.
-   * @param { Callback } callback - event callbacks.
+   * @param { Callback<emitter.EventData> } callback - event callbacks.
    * @throws { BusinessError } 401 - if the input parameters are invalid.
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
@@ -1120,7 +1190,7 @@ class Writable {
    */
   on(event: string, callback: Function): void {
     this.callbacks[event] = this.callbacks[event] ?? [];
-    let callbackFn = callback.bind(this);
+    const callbackFn = callback.bind(this);
     this.callbacks[event].push(callbackFn);
     this.listener?.on(event, callbackFn);
   }
@@ -1129,20 +1199,25 @@ class Writable {
    * Cancel event message.
    *
    * @param { string } event - Register Event.
+   * @param { Callback<emitter.EventData> } callback - event callbacks.
    * @throws { BusinessError } 401 - if the input parameters are invalid.
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
    */
-  off(event: string, callback?:Function): void {
-    if(callback){
-      this.callbacks[event]?.forEach((it: any) => {
-        if(callback && callback === it){
+  off(event: string, callback?: Function): void {
+    if (!event) {
+      this.throwError(new BusinessError('event is null', 401));
+      return;
+    }
+    if (callback) {
+      this.callbacks[event]?.forEach((it: Function): void => {
+        if (callback && callback === it) {
           this.listener?.off(event, it);
         }
       });
-    }else{
-      this.callbacks[event]?.forEach((it: any) => this.listener?.off(event, it));
+    } else {
+      this.callbacks[event]?.forEach((it: Function) => this.listener?.off(event, it));
     }
   }
 
@@ -1150,7 +1225,8 @@ class Writable {
     if (this.doWritev === null) {
       this.throwError(ERR_DOWRITE_NOT_IMPLEMENTED);
     } else {
-      this.doWritev([chunk] as any, callback);
+      // @ts-ignore
+      this.doWritev([chunk], callback);
     }
   }
 
@@ -1200,8 +1276,8 @@ class Writable {
   }
 
   throwError(error: Error): void {
-    this._errored = error;
-    if (this.listener?.isOn(WritableEvent.ERROR)) {
+    this.erroredInner = error;
+    if (this.listener && this.listener.listenerCount(WritableEvent.ERROR) > 0) {
       setTimeout(() => {
         this.listener?.emit(WritableEvent.ERROR, error);
       });
@@ -1214,27 +1290,26 @@ class Writable {
     return this.listener?.isOn(WritableEvent.ERROR) || false;
   }
 
-  private _emitErrorExecuted = false;
-  private _emitErrorId: any;
+  private emitErrorExecutedInner = false;
+  // @ts-ignore
+  private emitErrorIdInner: number;
 
   private emitErrorOnce(error: Error, reset?: boolean): void {
     if (reset) {
-      this._emitErrorExecuted = false;
-      clearTimeout(this._emitErrorId);
+      this.emitErrorExecutedInner = false;
+      clearTimeout(this.emitErrorIdInner);
     }
-    if (!this._emitErrorExecuted) {
-      this._emitErrorExecuted = true;
-      this._emitErrorId = setTimeout(() => {
-        this.listener?.emit(WritableEvent.ERROR, this._errored ?? error);
+    if (!this.emitErrorExecutedInner) {
+      this.emitErrorExecutedInner = true;
+      // @ts-ignore
+      this.emitErrorIdInner = setTimeout((): void => {
+        this.listener?.emit(WritableEvent.ERROR, this.erroredInner ?? error);
       });
     }
   }
 }
 
 Writable.prototype.doWrite = Writable.prototype.noWriteOpes;
-// @ts-ignore
-Writable.prototype.doWritev = null;
-
 
 class Duplex extends Readable {
   private _writable: Writable;
@@ -1242,33 +1317,67 @@ class Duplex extends Readable {
   constructor() {
     super();
     this._writable = new Writable();
-    let that = this;
+    const that = this;
     this._writable.doWrite = this.doWrite;
     this._writable.doWritev = this.doWritev;
     Object.defineProperties(that, {
       doWrite: {
-        get(): any {
+        get(): Function {
           return that._writable.doWrite;
         },
-        set(value: any) {
+        set(value: Function):void {
+          // @ts-ignore
           that._writable.doWrite = value;
         }
       },
       doWritev: {
-        get(): any {
+        get(): Function {
           return that._writable.doWritev;
         },
-        set(value: any) {
+        set(value: Function):void {
+          // @ts-ignore
           that._writable.doWritev = value;
         }
       }
     });
   }
 
+  /**
+   * writes a chunk to Writable and invokes callback when the chunk is flushed. The return value indicates
+   * whether the internal buffer of the Writable reaches the hightWaterMark. If true is returned, the buffer
+   * does not reach the hightWaterMark. If false is returned, the buffer has been reached. The write function
+   * should be called after the drain event is triggered. If the write function is called continuously,
+   * the chunk is still added to the buffer until the memory overflows
+   *
+   * @param { string | Uint8Array } [chunk] - Data to be written.
+   * @param { string } [encoding] - Encoding type.
+   * @param { Function } [callback] - Callback after writing.
+   * @returns { boolean } Write success returns true, write failure returns false.
+   * @throws { BusinessError } 401 - if the input parameters are invalid.
+   * @throws { BusinessError } 10200036 - if stream has been ended, writing data to it will throw an error.
+   * @throws { BusinessError } 10200037 - if the callback is called multiple times consecutively, an error will be thrown.
+   * @throws { BusinessError } 10200039 - if a class inherits from Transform, it must implement doTransform; otherwise, an error will be raised.
+   * @syscap SystemCapability.Utils.Lang
+   * @crossplatform
+   * @since 12
+   */
   write(chunk?: string | Uint8Array, encoding?: string, callback?: Function): boolean {
     return this._writable.write(chunk, encoding, callback);
   }
 
+  /**
+   * Write the last chunk to Writable.
+   *
+   * @param { string | Uint8Array } [chunk] - Data to be written.
+   * @param { string } [encoding] - Encoding type.
+   * @param { Function } [callback] - Callback after writing.
+   * @returns { Writable } Returns the Writable object.
+   * @throws { BusinessError } 401 - if the input parameters are invalid.
+   * @throws { BusinessError } 10200039 - if a class inherits from Transform, it must implement doTransform; otherwise, an error will be raised.
+   * @syscap SystemCapability.Utils.Lang
+   * @crossplatform
+   * @since 12
+   */
   end(chunk?: string | Uint8Array, encoding?: string, callback?: Function): Writable {
     super.setEndType();
     return this._writable.end(chunk, encoding, callback);
@@ -1279,9 +1388,9 @@ class Duplex extends Readable {
     this._writable.on(event, callback);
   }
 
-  off(event: string, callback?:Function): void {
+  off(event: string, callback?: Function): void {
     super.off(event);
-    this._writable.off(event,callback);
+    this._writable.off(event, callback);
   }
 
   getListener(): EventEmitter | undefined {
@@ -1350,7 +1459,6 @@ Duplex.prototype.doWrite = null;
 // @ts-ignore
 Duplex.prototype.doWritev = null;
 
-
 class Transform extends Duplex {
   /**
    * The Transform constructor.
@@ -1367,22 +1475,39 @@ class Transform extends Duplex {
     super.on(event, callback);
   }
 
+  /**
+   * Write the last chunk to Writable.
+   *
+   * @param { string | Uint8Array } [chunk] - Data to be written.
+   * @param { string } [encoding] - Encoding type.
+   * @param { Function } [callback] - Callback after writing.
+   * @returns { Writable } Returns the Writable object.
+   * @throws { BusinessError } 401 - if the input parameters are invalid.
+   * @throws { BusinessError } 10200039 - if a class inherits from Transform, it must implement doTransform; otherwise, an error will be raised.
+   * @syscap SystemCapability.Utils.Lang
+   * @crossplatform
+   * @since 12
+   */
   end(chunk?: string | Uint8Array, encoding?: string, callback?: Function): Writable {
     if (!this.doTransform) {
-      throw new BusinessError('The doTransform() method is not implemented');
+      throw new BusinessError('The doTransform() method is not implemented', 10200039);
     }
     if (chunk instanceof Uint8Array) {
-      let chunkString = new TextDecoder().decode(chunk);
+      const chunkString = this.decoder.decodeWithStream(chunk);
       this.doTransform(chunkString, encoding || 'utf8', callback || ((): void => {
       }));
     } else if (typeof chunk === 'string') {
       this.doTransform(chunk, encoding || 'utf8', callback || ((): void => {
       }));
     }
-    let write = super.end(chunk, encoding, callback);
-    this.doFlush?.((arg1: any, arg2: any) => {
-      this.push(arg2 ?? '', encoding);
+    this.doFlush?.((...args: (string | Uint8Array)[]) => {
+      args.forEach((it: string | Uint8Array) => {
+        if (it) {
+          this.push(it ?? '', encoding);
+        }
+      });
     });
+    const write:Writable = super.end(chunk, encoding, callback);
     return write;
   }
 
@@ -1404,7 +1529,7 @@ class Transform extends Duplex {
    * @since 12
    */
   doTransform(chunk: string, encoding: string, callback: Function): void {
-    throw new BusinessError("The doTransform() method is not implemented");
+    throw new BusinessError('The doTransform() method is not implemented');
   }
 
   /**
@@ -1420,22 +1545,45 @@ class Transform extends Duplex {
   doFlush(callback: Function): void {
   }
 
+  /**
+   * writes a chunk to Writable and invokes callback when the chunk is flushed. The return value indicates
+   * whether the internal buffer of the Writable reaches the hightWaterMark. If true is returned, the buffer
+   * does not reach the hightWaterMark. If false is returned, the buffer has been reached. The write function
+   * should be called after the drain event is triggered. If the write function is called continuously,
+   * the chunk is still added to the buffer until the memory overflows
+   *
+   * @param { string | Uint8Array } [chunk] - Data to be written.
+   * @param { string } [encoding] - Encoding type.
+   * @param { Function } [callback] - Callback after writing.
+   * @returns { boolean } Write success returns true, write failure returns false.
+   * @throws { BusinessError } 401 - if the input parameters are invalid.
+   * @throws { BusinessError } 10200036 - if stream has been ended, writing data to it will throw an error.
+   * @throws { BusinessError } 10200037 - if the callback is called multiple times consecutively, an error will be thrown.
+   * @throws { BusinessError } 10200039 - if a class inherits from Transform, it must implement doTransform; otherwise, an error will be raised.
+   * @syscap SystemCapability.Utils.Lang
+   * @crossplatform
+   * @since 12
+   */
   write(chunk?: string | Uint8Array, encoding?: string, callback?: Function): boolean {
     if (typeof chunk === 'string') {
-      let callBackFunction = runOnce((error:Error) => {
-        if(error){
+      const callBackFunction = runOnce((error: Error) => {
+        if (error) {
           this.getListener()?.emit(WritableEvent.ERROR, error);
         }
       }, () => {
-        let err = new BusinessError('Callback called multiple times');
+        const err:BusinessError = new BusinessError('Callback called multiple times', 10200037);
         this.getListener()?.emit(WritableEvent.ERROR, err);
       });
-      this.doTransform(chunk ?? '', encoding ?? 'utf8', callBackFunction);
+      this.doTransform?.(chunk ?? '', encoding ?? 'utf8', callBackFunction);
     }
     return super.write(chunk, encoding, callback);
   }
 
   doRead(size: number): void {
+  }
+
+  doWrite(chunk: string | Uint8Array, encoding: string, callback: Function):void {
+    super.doWrite?.(chunk, encoding, callback);
   }
 }
 
