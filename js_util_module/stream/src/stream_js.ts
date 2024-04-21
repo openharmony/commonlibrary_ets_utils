@@ -13,14 +13,13 @@
  * limitations under the License.
  */
 
-declare function requireNapi(requireNapi: string): any;
+declare function requireNapi(napiModuleName: string): any;
 // @ts-ignore
-const {TextEncoder,TextDecoder} = requireNapi('util');
+const { TextEncoder, TextDecoder } = requireNapi('util');
 
 const DEFAULT_HIGH_WATER_MARK = 16 * 1024;
 const DEFAULT_ENCODING = 'utf8';
 const TypeErrorCodeId = 401;
-
 class BusinessError extends Error {
   code: number | string;
 
@@ -32,7 +31,7 @@ class BusinessError extends Error {
 }
 
 const ERR_DOWRITE_NOT_IMPLEMENTED = new BusinessError('The doWrite() method is not implemented');
-const ERR_DOWRITEV_NOT_IMPLEMENTED = new BusinessError( 'The doWritev() method is not implemented');
+const ERR_DOWRITEV_NOT_IMPLEMENTED = new BusinessError('The doWritev() method is not implemented');
 const ERR_MULTIPLE_CALLBACK = new BusinessError('Callback called multiple times');
 
 class EventEmitter {
@@ -42,7 +41,7 @@ class EventEmitter {
     this.handlers = {};
   }
 
-  on(event: string, callback: (...args: any[]) => void): void {
+  on(event: string, callback: Function): void {
     if (!this.handlers[event]) {
       this.handlers[event] = [];
     }
@@ -61,7 +60,11 @@ class EventEmitter {
   emit(event: string, ...args: any[]): void {
     if (this.handlers[event]) {
       this.handlers[event].forEach((item: any) => {
-        item(...args);
+        if (args.length > 0) {
+          item({data:args[0]});
+        }else{
+          item({});
+        }
       });
     }
   }
@@ -344,7 +347,7 @@ class Readable {
    * @crossplatform
    * @since 12
    */
-  resume(): boolean {
+  resume(): Readable {
     if (this._readableLength === 0) {
       Promise.resolve().then(() => {
         this.read(this._readableHighWatermark < this._readableLength ? -1 : this._readableLength);
@@ -353,7 +356,7 @@ class Readable {
     this._pause = false;
     this._readableFlowing = true;
     this.listener?.emit(ReadableEvent.RESUME);
-    return this._pause;
+    return this;
   }
 
   /**
@@ -363,13 +366,13 @@ class Readable {
    * @crossplatform
    * @since 12
    */
-  pause(): boolean {
+  pause(): Readable {
     this._pause = true;
     Promise.resolve().then(() => {
       this._readableFlowing = false;
     });
     this.listener?.emit(ReadableEvent.PAUSE);
-    return this._pause;
+    return this;
   }
 
   /**
@@ -493,7 +496,7 @@ class Readable {
       });
     }
     this.callbacks[event] = this.callbacks[event] ?? [];
-    let callbackFn = callback.bind(this);
+    let callbackFn = callback;
     this.callbacks[event].push(callbackFn);
     this.listener?.on(event, callbackFn);
     Promise.resolve().then(() => {
@@ -520,10 +523,17 @@ class Readable {
    * @crossplatform
    * @since 12
    */
-  off(event: string): void {
-    this.callbacks[event]?.forEach((it: any) => {
-      this.listener?.off(event, it);
-    });
+  off(event: string, callback?:Function): void {
+    if(callback){
+      this.callbacks[event]?.forEach((it: any) => {
+        console.log(callback,it,callback == it);
+        if(callback == it){
+          this.listener?.off(event, it);
+        }
+      });
+    }else{
+      this.callbacks[event]?.forEach((it: any) => this.listener?.off(event, it));
+    }
   }
 
   /**
@@ -618,6 +628,7 @@ class Readable {
 // @ts-ignore
 Readable.prototype.doRead = null;
 
+
 class Writable {
   public listener: EventEmitter | undefined;
   private callbacks: any = {};
@@ -627,7 +638,7 @@ class Writable {
   private encoder = new TextEncoder();
   private ending: boolean = false;
   private _writableObjectMode: boolean | undefined;
-  private _writableHighWaterMark: number;
+  private _writableHighWatermark: number;
   private _writable: boolean | undefined;
   private _writableLength: number | undefined;
   private _writableNeedDrain: boolean | undefined;
@@ -648,7 +659,7 @@ class Writable {
         objectMode: false,
       };
     }
-    this._writableHighWaterMark = options.highWaterMark ?? DEFAULT_HIGH_WATER_MARK;
+    this._writableHighWatermark = options.highWaterMark ?? DEFAULT_HIGH_WATER_MARK;
     this._writableObjectMode = options.objectMode || false;
     this._writableLength = 0;
     this._writableEnded = false;
@@ -684,8 +695,8 @@ class Writable {
    * @crossplatform
    * @since 12
    */
-  get writableHighWaterMark(): number | undefined {
-    return this._writableHighWaterMark;
+  get writableHighWatermark(): number | undefined {
+    return this._writableHighWatermark;
   }
 
   /**
@@ -835,7 +846,7 @@ class Writable {
 
   private writeUint8Array(chunk: Uint8Array, encoding?: string, callback?: Function): boolean {
     this._writableLength! += this.getChunkLength(chunk);
-    let hasRemaining = this._writableLength! < this.writableHighWaterMark!;
+    let hasRemaining = this._writableLength! < this.writableHighWatermark!;
     const fnBack = runOnce((error: any) => {
       if (error && error instanceof Error) {
         this._writable = false;
@@ -863,7 +874,7 @@ class Writable {
   private writeString(chunk: string, encoding?: string, callback?: Function): boolean {
     let that = this;
     this._writableLength! += this.getChunkLength(chunk);
-    let hasRemaining = this._writableLength! < this.writableHighWaterMark!;
+    let hasRemaining = this._writableLength! < this.writableHighWatermark!;
     const fb = runOnce((error: any) => {
       if (error) {
         this._errored = error;
@@ -1123,10 +1134,16 @@ class Writable {
    * @crossplatform
    * @since 12
    */
-  off(event: string): void {
-    this.callbacks[event]?.forEach((it: any) => {
-      this.listener?.off(event, it);
-    });
+  off(event: string, callback?:Function): void {
+    if(callback){
+      this.callbacks[event]?.forEach((it: any) => {
+        if(callback && callback === it){
+          this.listener?.off(event, it);
+        }
+      });
+    }else{
+      this.callbacks[event]?.forEach((it: any) => this.listener?.off(event, it));
+    }
   }
 
   noWriteOpes(chunk: string | Uint8Array, encoding: string, callback: Function): void {
@@ -1262,9 +1279,9 @@ class Duplex extends Readable {
     this._writable.on(event, callback);
   }
 
-  off(event: string): void {
+  off(event: string, callback?:Function): void {
     super.off(event);
-    this._writable.off(event);
+    this._writable.off(event,callback);
   }
 
   getListener(): EventEmitter | undefined {
@@ -1299,8 +1316,8 @@ class Duplex extends Readable {
     return this._writable.writableObjectMode || false;
   }
 
-  get writableHighWaterMark(): number {
-    return this._writable.writableHighWaterMark || 0;
+  get writableHighWatermark(): number {
+    return this._writable.writableHighWatermark || 0;
   }
 
   get writable(): boolean {
