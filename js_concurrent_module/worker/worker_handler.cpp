@@ -27,7 +27,6 @@ namespace OHOS::AppExecFwk {
     {
         std::shared_ptr<EventRunner> runner = EventRunner::Current();
         if (runner.get() == nullptr) {
-            HILOG_ERROR("HYQ:: failed to create EventRunner");
             runner = EventRunner::Create(false);
         }
         if (runner.get() == nullptr) {
