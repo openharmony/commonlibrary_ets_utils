@@ -22,7 +22,8 @@ enum Priority {
     HIGH = 0,
     MEDIUM,
     LOW,
-    NUMBER = 3,
+    IDLE,
+    NUMBER = 4,
     DEFAULT = MEDIUM,
 };
 } // namespace Commonlibrary::Platform

@@ -56,10 +56,12 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value highPriority = NapiHelper::CreateUint32(env, Priority::HIGH);
     napi_value mediumPriority = NapiHelper::CreateUint32(env, Priority::MEDIUM);
     napi_value lowPriority = NapiHelper::CreateUint32(env, Priority::LOW);
+    napi_value idlePriority = NapiHelper::CreateUint32(env, Priority::IDLE);
     napi_property_descriptor exportPriority[] = {
         DECLARE_NAPI_PROPERTY("HIGH", highPriority),
         DECLARE_NAPI_PROPERTY("MEDIUM", mediumPriority),
         DECLARE_NAPI_PROPERTY("LOW", lowPriority),
+        DECLARE_NAPI_PROPERTY("IDLE", idlePriority),
     };
     napi_define_properties(env, priorityObj, sizeof(exportPriority) / sizeof(exportPriority[0]), exportPriority);
 

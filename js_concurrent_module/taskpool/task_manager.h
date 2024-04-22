@@ -166,6 +166,12 @@ private:
     static void NotifyExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
+    bool IsChooseIdle();
+    uint32_t GetNonIdleTaskNum();
+    std::pair<uint64_t, Priority> GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue, Priority priority);
+    void IncreaseNumIfNoIdle(Priority priority);
+    void DecreaseNumIfNoIdle(Priority priority);
+
     // <taskId, Task>
     std::unordered_map<uint64_t, Task*> tasks_ {};
     std::recursive_mutex tasksMutex_;
@@ -202,6 +208,7 @@ private:
     uv_async_t* expandHandle_ = nullptr;
     std::atomic<bool> suspend_ = false;
     std::atomic<uint32_t> retryCount_ = 0;
+    std::atomic<uint32_t> nonIdleTaskNum_ = 0;
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
     std::atomic<bool> needChecking_ = false;
