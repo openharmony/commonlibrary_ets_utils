@@ -157,6 +157,7 @@ napi_value Worker::LimitedWorkerConstructor(napi_env env, napi_callback_info cbi
     if (CanCreateWorker(env, WorkerVersion::NEW)) {
         return Constructor(env, cbinfo, true);
     }
+    HILOG_ERROR("worker:: using both Worker and LimitedWorker is not supported");
     ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
         "Using both Worker and LimitedWorker is not supported.");
     return nullptr;
@@ -168,6 +169,7 @@ napi_value Worker::ThreadWorkerConstructor(napi_env env, napi_callback_info cbin
     if (CanCreateWorker(env, WorkerVersion::NEW)) {
         return Constructor(env, cbinfo, false, WorkerVersion::NEW);
     }
+    HILOG_ERROR("worker:: ThreadWorker construct failed");
     ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
         "Using both Worker and ThreadWorker is not supported.");
     return nullptr;
@@ -179,6 +181,7 @@ napi_value Worker::WorkerConstructor(napi_env env, napi_callback_info cbinfo)
     if (CanCreateWorker(env, WorkerVersion::OLD)) {
         return Constructor(env, cbinfo, false, WorkerVersion::OLD);
     }
+    HILOG_ERROR("worker:: using both Worker and other Workers is not supported");
     ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
         "Using both Worker and other Workers is not supported.");
     return nullptr;
@@ -193,12 +196,14 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     // check argv count
     if (argc < 1) {
+        HILOG_ERROR("worker:: the number of create worker param must be more than 1 with new");
         ErrorHelper::ThrowError(env,
             ErrorHelper::TYPE_ERROR, "the number of create worker param must be more than 1 with new");
         return nullptr;
     }
     // check 1st param is string
     if (!NapiHelper::IsString(env, args[0])) {
+        HILOG_ERROR("worker:: the type of Worker 1st param must be string");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of Worker 1st param must be string.");
         return nullptr;
     }
@@ -215,6 +220,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     if (limitSign) {
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
         if (static_cast<int>(g_limitedworkers.size()) >= MAX_LIMITEDWORKERS) {
+            HILOG_ERROR("worker:: the number of limiteworkers exceeds the maximum");
             ErrorHelper::ThrowError(env,
                 ErrorHelper::ERR_WORKER_INITIALIZATION, "the number of limiteworkers exceeds the maximum.");
             return nullptr;
@@ -223,10 +229,12 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
+            HILOG_ERROR("worker:: creat worker error");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "creat worker error");
             return nullptr;
         }
         g_limitedworkers.push_back(worker);
+        HILOG_INFO("worker:: limited workers num %{public}d", g_limitedworkers.size());
     } else {
         int maxWorkers = (version == WorkerVersion::NEW) ? MAX_THREAD_WORKERS : MAX_WORKERS;
     #if defined(OHOS_PLATFORM)
@@ -234,6 +242,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     #endif
         std::lock_guard<std::mutex> lock(g_workersMutex);
         if (static_cast<int>(g_workers.size()) >= maxWorkers) {
+            HILOG_ERROR("worker:: the number of workers exceeds the maximum");
             ErrorHelper::ThrowError(env,
                 ErrorHelper::ERR_WORKER_INITIALIZATION, "the number of workers exceeds the maximum.");
             return nullptr;
@@ -242,10 +251,12 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
+            HILOG_ERROR("worker:: creat worker error");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "creat worker error");
             return nullptr;
         }
         g_workers.push_back(worker);
+        HILOG_INFO("worker:: workers num %{public}d", g_workers.size());
     }
 
     if (workerParams != nullptr) {
@@ -262,6 +273,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     // 3. execute in thread
     char* script = NapiHelper::GetString(env, args[0]);
     if (script == nullptr) {
+        HILOG_ERROR("worker:: the file path is invaild, maybe path is null");
         ErrorHelper::ThrowError(env,
             ErrorHelper::ERR_WORKER_INVALID_FILEPATH, "the file path is invaild, maybe path is null.");
         return nullptr;
@@ -1176,6 +1188,7 @@ void Worker::ExecuteInThread(const void* data)
     {
         std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
         if (worker->HostIsStop()) {
+            HILOG_ERROR("worker:: host thread is stop");
             CloseHelp::DeletePointer(worker, false);
             return;
         }
@@ -1186,6 +1199,7 @@ void Worker::ExecuteInThread(const void* data)
             napi_create_runtime(env, &workerEnv);
         }
         if (workerEnv == nullptr) {
+            HILOG_ERROR("worker:: Worker create runtime error");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
             return;
         }
@@ -1229,6 +1243,7 @@ void Worker::ExecuteInThread(const void* data)
     worker->ReleaseWorkerThreadContent();
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->HostIsStop()) {
+        HILOG_INFO("worker:: host is stopped");
         CloseHelp::DeletePointer(worker, false);
     } else {
         worker->PublishWorkerOverSignal();
@@ -1245,6 +1260,7 @@ bool Worker::PrepareForWorkerInstance()
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop()) {
+            HILOG_INFO("worker:: host is stopped");
             return false;
         }
         // 1. init worker async func
@@ -1274,9 +1290,9 @@ bool Worker::PrepareForWorkerInstance()
     Timer::RegisterTime(workerEnv_);
     HILOG_DEBUG("worker:: stringContent size is %{public}zu", scriptContentSize);
     napi_value execScriptResult = nullptr;
-    napi_run_actor(workerEnv_, scriptContent, scriptContentSize,
+    napi_status status = napi_run_actor(workerEnv_, scriptContent, scriptContentSize,
         workerAmi.c_str(), &execScriptResult, const_cast<char*>(script_.c_str()));
-    if (execScriptResult == nullptr) {
+    if (status != napi_ok || execScriptResult == nullptr) {
         // An exception occurred when running the script.
         HILOG_ERROR("worker:: run script exception occurs, will handle exception");
         HandleException();
