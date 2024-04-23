@@ -15,7 +15,6 @@
 
 #include <unistd.h>
 #include <sys/types.h>
-#include <string>
 
 #include "async_lock_manager.h"
 #include "deadlock_helpers.h"
@@ -26,76 +25,6 @@
 #include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
-namespace {
-const std::string SHARED_JSON_OBJECT_NAME = "SharedJSONObject";
-const std::string SHARED_JSON_ARRAY_NAME = "SharedJSONArray";
-const std::string SHARED_JSON_NULL_NAME = "SharedJSONNull";
-const std::string SHARED_JSON_NUMBER_NAME = "SharedJSONNumber";
-const std::string SHARED_JSON_TRUE_NAME = "SharedJSONTrue";
-const std::string SHARED_JSON_FALSE_NAME = "SharedJSONFalse";
-const std::string SHARED_JSON_STRING_NAME = "SharedJSONString";
-const std::string SENDABLE_JSON_NAME = "SENDABLE_JSON";
-const std::string SHARED_JSON_PARSE_NAME = "parse";
-const std::string SHARED_JSON_STRINGIFY_NAME = "stringify";
-
-bool GeJSONFunction(napi_env env, napi_value global, std::string jsonName, napi_value &jsonFunction)
-{
-    napi_value jsonKey;
-    napi_create_string_utf8(env, jsonName.c_str(), jsonName.size(), &jsonKey);
-    napi_get_property(env, global, jsonKey, &jsonFunction);
-    bool validFunction = false;
-    napi_is_callable(env, jsonFunction, &validFunction);
-    if (!validFunction) {
-        HILOG_ERROR("Get JSON function for %{public}s failed.", jsonName.c_str());
-    }
-    return validFunction;
-}
-
-napi_value InitJSON(napi_env env, napi_value exports)
-{
-    napi_value global;
-    napi_value sharedJSONObject;
-    napi_value sharedJSONArray;
-    napi_value sharedJSONNull;
-    napi_value sharedJSONNumber;
-    napi_value sharedJSONTrue;
-    napi_value sharedJSONFalse;
-    napi_value sharedJSONString;
-    napi_value sharedJSONParse;
-    napi_value sharedJSONStringify;
-
-    napi_get_global(env, &global);
-    if (!(GeJSONFunction(env, global, SHARED_JSON_OBJECT_NAME, sharedJSONObject) &&
-          GeJSONFunction(env, global, SHARED_JSON_ARRAY_NAME, sharedJSONArray) &&
-          GeJSONFunction(env, global, SHARED_JSON_NULL_NAME, sharedJSONNull) &&
-          GeJSONFunction(env, global, SHARED_JSON_NUMBER_NAME, sharedJSONNumber) &&
-          GeJSONFunction(env, global, SHARED_JSON_TRUE_NAME, sharedJSONTrue) &&
-          GeJSONFunction(env, global, SHARED_JSON_FALSE_NAME, sharedJSONFalse) &&
-          GeJSONFunction(env, global, SHARED_JSON_STRING_NAME, sharedJSONString))) {
-        return exports;
-    }
-    napi_value sendableJSONKey;
-    napi_value jsonValue;
-    napi_create_string_utf8(env, SENDABLE_JSON_NAME.c_str(), SENDABLE_JSON_NAME.size(), &sendableJSONKey);
-    napi_get_property(env, global, sendableJSONKey, &jsonValue);
-    if (!(GeJSONFunction(env, jsonValue, SHARED_JSON_PARSE_NAME, sharedJSONParse) &&
-          GeJSONFunction(env, jsonValue, SHARED_JSON_STRINGIFY_NAME, sharedJSONStringify))) {
-        return exports;
-    }
-    napi_value json;
-    NAPI_CALL(env, napi_create_object(env, &json));
-    napi_property_descriptor desc[] = {
-        DECLARE_NAPI_PROPERTY("JSONObject", sharedJSONObject),   DECLARE_NAPI_PROPERTY("JSONArray", sharedJSONArray),
-        DECLARE_NAPI_PROPERTY("JSONNull", sharedJSONNull),       DECLARE_NAPI_PROPERTY("JSONNumber", sharedJSONNumber),
-        DECLARE_NAPI_PROPERTY("JSONTrue", sharedJSONTrue),       DECLARE_NAPI_PROPERTY("JSONFalse", sharedJSONFalse),
-        DECLARE_NAPI_PROPERTY("JSONString", sharedJSONString),   DECLARE_NAPI_PROPERTY("parse", sharedJSONParse),
-        DECLARE_NAPI_PROPERTY("stringify", sharedJSONStringify),
-    };
-    napi_define_properties(env, json, sizeof(desc) / sizeof(desc[0]), desc);
-    napi_set_named_property(env, exports, "json", json);
-    return exports;
-}
-}  // namespace
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
 static thread_local napi_ref asyncLockClassRef = nullptr;
@@ -217,7 +146,6 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
 
     napi_set_named_property(env, exports, "locks", locks);
 
-    InitJSON(env, exports);
     return exports;
 }
 
