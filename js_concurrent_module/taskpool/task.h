@@ -42,6 +42,18 @@ struct TaskInfo {
     void* serializationArguments = nullptr;
 };
 
+struct ListenerCallBackInfo {
+    ListenerCallBackInfo(napi_env env, napi_ref callbackRef, napi_value taskError) : env_(env),
+        callbackRef_(callbackRef), taskError_(taskError) {}
+    ~ListenerCallBackInfo()
+    {
+        napi_delete_reference(env_, callbackRef_);
+    }
+    napi_env env_;
+    napi_ref callbackRef_;
+    napi_value taskError_;
+};
+
 class Task {
 public:
     Task(napi_env env, TaskType taskType, std::string name);
@@ -57,6 +69,10 @@ public:
     static napi_value SendData(napi_env env, napi_callback_info cbinfo);
     static napi_value AddDependency(napi_env env, napi_callback_info cbinfo);
     static napi_value RemoveDependency(napi_env env, napi_callback_info cbinfo);
+    static napi_value OnEnqueued(napi_env env, napi_callback_info cbinfo);
+    static napi_value OnStartExecution(napi_env env, napi_callback_info cbinfo);
+    static napi_value OnExecutionFailed(napi_env env, napi_callback_info cbinfo);
+    static napi_value OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo);
     static napi_value GetTotalDuration(napi_env env, napi_callback_info info);
     static napi_value GetCPUDuration(napi_env env, napi_callback_info info);
     static napi_value GetIODuration(napi_env env, napi_callback_info info);
@@ -74,6 +90,8 @@ public:
     static void IncreaseTaskRef(const uv_async_t* req);
 
     static void ThrowNoDependencyError(napi_env env);
+    static void ExecuteListenerCallback(const uv_async_t* req);
+    static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
 
     void StoreTaskId(uint64_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
@@ -134,6 +152,11 @@ public:
     std::recursive_mutex taskMutex_ {};
     bool hasDependency_ {false};
     bool isLongTask_ = {false};
+    uv_async_t* onStartExecutionSignal_ = nullptr;
+    ListenerCallBackInfo* onEnqueuedCallBackInfo = nullptr;
+    ListenerCallBackInfo* onStartExecutionCallBackInfo = nullptr;
+    ListenerCallBackInfo* onExecutionFailedCallBackInfo = nullptr;
+    ListenerCallBackInfo* onExecutionSucceededCallBackInfo = nullptr;
 };
 
 struct CallbackInfo {

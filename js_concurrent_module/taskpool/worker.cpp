@@ -310,6 +310,9 @@ void Worker::PerformTask(const uv_async_t* req)
     for (size_t i = 0; i < argsNum; i++) {
         argsArray[i] = NapiHelper::GetElement(env, args, i);
     }
+    if (task->onStartExecutionSignal_ != nullptr) {
+        uv_async_send(task->onStartExecutionSignal_);
+    }
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, nullptr);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->ClearCurrentTaskInfo();

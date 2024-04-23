@@ -28,6 +28,10 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 static constexpr char ONRECEIVEDATA_STR[] = "onReceiveData";
 static constexpr char SETTRANSFERLIST_STR[] = "setTransferList";
 static constexpr char SET_CLONE_LIST_STR[] = "setCloneList";
+static constexpr char ONENQUEUED_STR[] = "onEnqueued";
+static constexpr char ONSTARTEXECUTION_STR[] = "onStartExecution";
+static constexpr char ONEXECUTIONFAILED_STR[] = "onExecutionFailed";
+static constexpr char ONEXECUTIONSUCCEEDED_STR[] = "onExecutionSucceeded";
 
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
@@ -125,6 +129,10 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
         DECLARE_NAPI_FUNCTION(ONRECEIVEDATA_STR, OnReceiveData),
         DECLARE_NAPI_FUNCTION(ADD_DEPENDENCY_STR, AddDependency),
         DECLARE_NAPI_FUNCTION(REMOVE_DEPENDENCY_STR, RemoveDependency),
+        DECLARE_NAPI_FUNCTION(ONENQUEUED_STR, OnEnqueued),
+        DECLARE_NAPI_FUNCTION(ONSTARTEXECUTION_STR, OnStartExecution),
+        DECLARE_NAPI_FUNCTION(ONEXECUTIONFAILED_STR, OnExecutionFailed),
+        DECLARE_NAPI_FUNCTION(ONEXECUTIONSUCCEEDED_STR, OnExecutionSucceeded),
         DECLARE_NAPI_GETTER(TASK_TOTAL_TIME, GetTotalDuration),
         DECLARE_NAPI_GETTER(TASK_CPU_TIME, GetCPUDuration),
         DECLARE_NAPI_GETTER(TASK_IO_TIME, GetIODuration),
@@ -551,6 +559,216 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     }
     task->TryClearHasDependency();
     HITRACE_HELPER_METER_NAME(TaskManager::GetInstance().GetTaskDependInfoToString(task->taskId_));
+    return nullptr;
+}
+
+void Task::ExecuteListenerCallback(const uv_async_t* req)
+{
+    auto listenerCallBackInfo = static_cast<ListenerCallBackInfo*>(req->data);
+    if (listenerCallBackInfo == nullptr) {
+        HILOG_FATAL("taskpool:: listenerCallBackInfo is null");
+        return;
+    }
+
+    auto env = listenerCallBackInfo->env_;
+    auto func = NapiHelper::GetReferenceValue(env, listenerCallBackInfo->callbackRef_);
+    if (func == nullptr) {
+        HILOG_INFO("taskpool:: ExecuteListenerCallback func is null");
+        return;
+    }
+
+    napi_value result;
+    napi_call_function(env, NapiHelper::GetGlobalObject(env), func, 0, nullptr, &result);
+    if (NapiHelper::IsExceptionPending(env)) {
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        std::string funcStr = NapiHelper::GetPrintString(env, func);
+        HILOG_ERROR("taskpool:: an exception has occurred napi_call_function, func is %{public}s", funcStr.c_str());
+    }
+}
+
+void Task::ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo)
+{
+    if (listenerCallBackInfo == nullptr) {
+        HILOG_FATAL("taskpool:: listenerCallBackInfo is null");
+        return;
+    }
+
+    napi_env env = listenerCallBackInfo->env_;
+    napi_value func = NapiHelper::GetReferenceValue(env, listenerCallBackInfo->callbackRef_);
+    if (func == nullptr) {
+        HILOG_INFO("taskpool:: ExecuteListenerCallback func is null");
+        return;
+    }
+
+    napi_value result;
+    napi_value args = listenerCallBackInfo->taskError_;
+    if (args != nullptr) {
+        napi_call_function(env, NapiHelper::GetGlobalObject(env), func, 1, &args, &result);
+    } else {
+        napi_call_function(env, NapiHelper::GetGlobalObject(env), func, 0, nullptr, &result);
+    }
+
+    if (NapiHelper::IsExceptionPending(env)) {
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        std::string funcStr = NapiHelper::GetPrintString(env, func);
+        HILOG_ERROR("taskpool:: an exception has occurred napi_call_function, func is %{public}s", funcStr.c_str());
+    }
+}
+
+napi_value Task::OnEnqueued(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    napi_value thisVar;
+    if (argc == 0) {
+        HILOG_INFO("taskpool:: the number of the params must be one");
+        return nullptr;
+    }
+
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    napi_valuetype type;
+    NAPI_CALL(env, napi_typeof(env, args[0], &type));
+    if (type != napi_function) {
+        HILOG_ERROR("taskpool:: OnEnqueued's parameter should be function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "taskpool:: OnEnqueued's parameter should be function");
+        return nullptr;
+    }
+
+    Task* task = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: task is nullptr");
+        return nullptr;
+    }
+
+    if (task->taskState_ != ExecuteState::NOT_FOUND) {
+        HILOG_ERROR("taskpool:: The executed task does not support the registration of listeners.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_REGISTRATION_OF_LISTENERS);
+        return nullptr;
+    }
+
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
+    task->onEnqueuedCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    return nullptr;
+}
+
+napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    napi_value thisVar;
+    if (argc == 0) {
+        HILOG_INFO("taskpool:: the number of the params must be one");
+        return nullptr;
+    }
+
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    napi_valuetype type;
+    NAPI_CALL(env, napi_typeof(env, args[0], &type));
+    if (type != napi_function) {
+        HILOG_ERROR("taskpool:: OnStartExecution's parameter should be function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "taskpool:: OnStartExecution's parameter should be function");
+        return nullptr;
+    }
+
+    Task* task = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: task is nullptr");
+        return nullptr;
+    }
+
+    if (task->taskState_ != ExecuteState::NOT_FOUND) {
+        HILOG_ERROR("taskpool:: The executed task does not support the registration of listeners.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_REGISTRATION_OF_LISTENERS);
+        return nullptr;
+    }
+
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
+    task->onStartExecutionCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    auto loop = NapiHelper::GetLibUV(env);
+    ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_,
+        Task::ExecuteListenerCallback, task->onStartExecutionCallBackInfo);
+    return nullptr;
+}
+
+napi_value Task::OnExecutionFailed(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    napi_value thisVar;
+    if (argc == 0) {
+        HILOG_INFO("taskpool:: the number of the params must be one");
+        return nullptr;
+    }
+
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    napi_valuetype type;
+    NAPI_CALL(env, napi_typeof(env, args[0], &type));
+    if (type != napi_function) {
+        HILOG_ERROR("taskpool:: OnExecutionFailed's parameter should be function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "taskpool:: OnExecutionFailed's parameter should be function");
+        return nullptr;
+    }
+
+    Task* task = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: task is nullptr");
+        return nullptr;
+    }
+
+    if (task->taskState_ != ExecuteState::NOT_FOUND) {
+        HILOG_ERROR("taskpool:: The executed task does not support the registration of listeners.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_REGISTRATION_OF_LISTENERS);
+        return nullptr;
+    }
+
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
+    task->onExecutionFailedCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    return nullptr;
+}
+
+napi_value Task::OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    napi_value thisVar;
+    if (argc == 0) {
+        HILOG_INFO("taskpool:: the number of the params must be one");
+        return nullptr;
+    }
+
+    napi_value args[1];
+    napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
+    napi_valuetype type;
+    NAPI_CALL(env, napi_typeof(env, args[0], &type));
+    if (type != napi_function) {
+        HILOG_ERROR("taskpool:: OnExecutionSucceeded's parameter should be function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "taskpool:: OnExecutionSucceeded's parameter should be function");
+        return nullptr;
+    }
+
+    Task* task = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: task is nullptr");
+        return nullptr;
+    }
+
+    if (task->taskState_ != ExecuteState::NOT_FOUND) {
+        HILOG_ERROR("taskpool:: The executed task does not support the registration of listeners.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_REGISTRATION_OF_LISTENERS);
+        return nullptr;
+    }
+
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
+    task->onExecutionSucceededCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
     return nullptr;
 }
 
