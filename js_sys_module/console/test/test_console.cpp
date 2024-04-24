@@ -791,3 +791,32 @@ HWTEST_F(NativeEngineTest, ConsoleTest021, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, cb, argc, argv, &res4);
     ASSERT_CHECK_VALUE_TYPE(env, res4, napi_undefined);
 }
+
+/* @tc.name: Console.TraceHybridStack
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest022, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 0;
+    napi_value res0 = nullptr;
+    std::string funcName = "TraceHybridStack";
+    napi_value argv[] = {nullptr};
+    napi_value cb = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TraceHybridStack, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+
+    argc = 1;
+    std::string message = "abc"; // Random value
+    napi_value nativeMessage1 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage1);
+    napi_value argv2[] = {nativeMessage1};
+
+    cb = nullptr;
+    napi_value res1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TraceHybridStack, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv2, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+}
