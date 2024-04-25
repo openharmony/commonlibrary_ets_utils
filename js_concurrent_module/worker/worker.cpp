@@ -234,7 +234,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             return nullptr;
         }
         g_limitedworkers.push_back(worker);
-        HILOG_INFO("worker:: limited workers num %{public}d", g_limitedworkers.size());
+        HILOG_INFO("worker:: limited workers num %{public}zu", g_limitedworkers.size());
     } else {
         int maxWorkers = (version == WorkerVersion::NEW) ? MAX_THREAD_WORKERS : MAX_WORKERS;
     #if defined(OHOS_PLATFORM)
@@ -256,7 +256,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             return nullptr;
         }
         g_workers.push_back(worker);
-        HILOG_INFO("worker:: workers num %{public}d", g_workers.size());
+        HILOG_INFO("worker:: workers num %{public}zu", g_workers.size());
     }
 
     if (workerParams != nullptr) {
