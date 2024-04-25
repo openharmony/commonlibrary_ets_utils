@@ -17,7 +17,6 @@
 #define JS_CONCURRENT_MODULE_WORKER_WORKER_RUNNER_H
 
 #include <functional>
-#include <pthread.h>
 
 #include "native_engine/native_engine.h"
 #include "thread.h"
@@ -57,7 +56,7 @@ public:
 private:
     WorkerInnerRunner* workerInnerRunner_ {nullptr};
     WorkerStartCallback callback_;
-    pthread_t selfThreadId_ {0};
+    uv_thread_t selfThreadId_ {0};
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_RUNNER_H
