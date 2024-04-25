@@ -62,7 +62,7 @@ public:
     };
 
     static constexpr auto defaultVertexPrinter = [](VertexId vid) { return std::to_string(vid); };
-    static constexpr auto defaultEdgePrinter = [](EdgeDataCPtr eptr) { return " <- "; };
+    static constexpr auto DEFAULT_EDGE_PRINTER = []() { return " <- "; };
 
     explicit Graph(AdjacencyList &&adj)
     {
@@ -115,7 +115,7 @@ public:
 
     static std::string CycleAsString(Path cycle, std::string prompt = "L: ", std::string terminator = "|",
                                      VertexPrinter vertexPrinter = defaultVertexPrinter,
-                                     EdgePrinter edgePrinter = defaultEdgePrinter)
+                                     EdgePrinter edgePrinter = DEFAULT_EDGE_PRINTER)
     {
         if (cycle.vertices.empty() || (cycle.edges.size() != (cycle.vertices.size() - 1))) {
             return "";

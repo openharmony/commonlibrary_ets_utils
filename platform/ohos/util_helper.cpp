@@ -249,14 +249,14 @@ namespace Commonlibrary::Platform {
         napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
 
         int maxByteSize = GetMaxByteSize(encoding);
-        outLen = maxByteSize * inputSize;
+        outLen = static_cast<size_t>(maxByteSize) * inputSize;
         napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
         char *writeResult = static_cast<char*>(data);
 
         std::string buffer = "";
         std::u16string originalStr(originalBuffer, inputSize);
         int shifting = 0;
-        int resultShifting = 0;
+        size_t resultShifting = 0;
         int findIndex = originalStr.find('\0');
         if (findIndex == -1) {
             buffer = UnicodeConversion(encoding, originalBuffer, inputSize);

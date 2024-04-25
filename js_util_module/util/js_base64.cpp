@@ -575,9 +575,9 @@ namespace OHOS::Util {
         napi_queue_async_work_with_qos(env, stdDecodeInfo_->worker, napi_qos_user_initiated);
     }
 
-    size_t Finds(char ch, Type valueType)
+    int Finds(char ch, Type valueType)
     {
-        size_t tableLen = 0;
+        int tableLen = 0;
         unsigned char table[TRAGET_SIXTYFIVE] = {0};
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
             if (memcpy_s(table, TRAGET_SIXTYFIVE - 1, BASEURL, TRAGET_SIXTYFIVE - 1) != EOK) {
@@ -592,8 +592,8 @@ namespace OHOS::Util {
             }
             tableLen = TRAGET_SIXTYFIVE;
         }
-        size_t couts = 0;
-        for (size_t i = 0; i < tableLen; i++) {
+        int couts = 0;
+        for (int i = 0; i < tableLen; i++) {
             if (table[i] == ch) {
                 couts = i;
             }

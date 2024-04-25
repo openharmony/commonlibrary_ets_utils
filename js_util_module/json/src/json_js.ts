@@ -64,8 +64,8 @@ function stringfyArr(value: Object, replacer?: (number | string)[] | null, space
 }
 
 function isParameterType(self: unknown): boolean {
-  return (Array.isArray(self) && self.every((item) => typeof item === 'number' || typeof item === 'string')
-    || self === null || typeof self === 'function');
+  return (Array.isArray(self) && self.every((item) => typeof item === 'number' || typeof item === 'string') ||
+  self === null || typeof self === 'function');
 }
 
 function isSpaceType(self: unknown): boolean {
@@ -151,7 +151,7 @@ function has(value: object, key: string): boolean {
     let error = new BusinessError(`Parameter error. The type of ${key} must be string and not empty`);
     throw error;
   }
-  return value.hasOwnProperty(key);
+  return Object.prototype.hasOwnProperty.call(value, key);
 }
 
 function remove(value: object, key: string): void {
@@ -167,7 +167,7 @@ function remove(value: object, key: string): void {
     let error = new BusinessError(`Parameter error. The type of ${key} must be string and not empty`);
     throw error;
   }
-  if (value.hasOwnProperty(key)) {
+  if (Object.prototype.hasOwnProperty.call(value, key)) {
     delete value[key];
   }
 }
