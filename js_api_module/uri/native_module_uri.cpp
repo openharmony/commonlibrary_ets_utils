@@ -123,6 +123,117 @@ namespace OHOS::Uri {
         return result;
     }
 
+    static napi_value IsRelative(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+        Uri *muri = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        bool flag = muri->IsRelative();
+        NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+        return result;
+    }
+
+    static napi_value IsOpaque(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+        Uri *muri = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        bool flag = muri->IsOpaque();
+        NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+        return result;
+    }
+
+    static napi_value IsHierarchical(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+        Uri *muri = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        bool flag = muri->IsHierarchical();
+        NAPI_CALL(env, napi_get_boolean(env, flag, &result));
+        return result;
+    }
+
+    static napi_value AddQueryValue(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 2;
+        napi_value argv[2] = { nullptr };
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+        Uri *muri = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        std::string key = "";
+        size_t keyLen = 0;
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &keyLen));
+        key.resize(keyLen);
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], key.data(), keyLen + 1, &keyLen));
+        std::string value = "";
+        size_t valueLen = 0;
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], nullptr, 0, &valueLen));
+        value.resize(valueLen);
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], value.data(), valueLen + 1, &valueLen));
+        std::string temp = muri->AddQueryValue(key, value);
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
+        size_t templen = temp.size();
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
+        return result;
+    }
+
+    static napi_value AddSegment(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+        Uri *muri = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        std::string segment = "";
+        size_t segmentLen = 0;
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &segmentLen));
+        segment.resize(segmentLen);
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], segment.data(), segmentLen + 1, &segmentLen));
+        std::string temp = muri->AddSegment(segment);
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
+        size_t tempLen = temp.size();
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), tempLen, &result));
+        return result;
+    }
+
+    static napi_value GetSegment(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+        Uri *muri = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        std::vector<std::string> temp = muri->GetSegment();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
+        napi_value segment = nullptr;
+        napi_create_array(env, &result);
+        size_t size = temp.size();
+        for (size_t i = 0; i < size; i ++) {
+            napi_create_string_utf8(env, temp[i].c_str(), temp[i].length(), &segment);
+            napi_set_element(env, result, i, segment);
+        }
+        return result;
+    }
+
     static napi_value GetScheme(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -268,6 +379,23 @@ namespace OHOS::Uri {
         return result;
     }
 
+    static napi_value ClearQuery(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+        Uri *muri = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        std::string temp = muri->ClearQuery();
+        if (temp.empty()) {
+            napi_get_null(env, &result);
+            return result;
+        }
+        size_t tempLen = temp.size();
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), tempLen, &result));
+        return result;
+    }
+
     napi_value UriInit(napi_env env, napi_value exports)
     {
         const char *uriClassName = "uri";
@@ -277,6 +405,13 @@ namespace OHOS::Uri {
             DECLARE_NAPI_FUNCTION("equals", Equals),
             DECLARE_NAPI_FUNCTION("checkIsAbsolute", IsAbsolute),
             DECLARE_NAPI_FUNCTION("toString", UriToString),
+            DECLARE_NAPI_FUNCTION("checkIsRelative", IsRelative),
+            DECLARE_NAPI_FUNCTION("checkIsOpaque", IsOpaque),
+            DECLARE_NAPI_FUNCTION("checkIsHierarchical", IsHierarchical),
+            DECLARE_NAPI_FUNCTION("addQueryValue", AddQueryValue),
+            DECLARE_NAPI_FUNCTION("getSegment", GetSegment),
+            DECLARE_NAPI_FUNCTION("addSegment", AddSegment),
+            DECLARE_NAPI_FUNCTION("clearQuery", ClearQuery),
             DECLARE_NAPI_GETTER("scheme", GetScheme),
             DECLARE_NAPI_GETTER("authority", GetAuthority),
             DECLARE_NAPI_GETTER("ssp", GetSsp),

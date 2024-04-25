@@ -77,8 +77,10 @@ namespace OHOS::Uri {
     {
         uriData_.SchemeSpecificPart.reserve(data_.length() + uriData_.query.length() + 1);
         uriData_.SchemeSpecificPart.append(data_);
-        uriData_.SchemeSpecificPart.append("?");
-        uriData_.SchemeSpecificPart.append(uriData_.query);
+        if (!uriData_.query.empty()) {
+            uriData_.SchemeSpecificPart.append("?");
+            uriData_.SchemeSpecificPart.append(uriData_.query);
+        }
     }
 
     void Uri::AnalysisUri()
@@ -396,6 +398,97 @@ namespace OHOS::Uri {
         return !uriData_.scheme.empty();
     }
 
+    bool Uri::IsRelative() const
+    {
+        return uriData_.scheme.empty();
+    }
+
+    bool Uri::IsOpaque() const
+    {
+        return !IsHierarchical();
+    }
+
+    bool Uri::IsHierarchical() const
+    {
+        int index = inputUri_.find(':');
+        if (index == -1) {
+            return true;
+        }
+        if (inputUri_.length() == index + 1) {
+            return false;
+        }
+        return inputUri_[index + 1] == '/';
+    }
+
+    std::string Uri::AddQueryValue(const std::string key, const std::string value) const
+    {
+        return BuildUriString("query", key + "=" + value);
+    }
+
+    std::string Uri::AddSegment(const std::string pathSegment) const
+    {
+        return BuildUriString("segment", pathSegment);
+    }
+
+    std::string Uri::BuildUriString(const std::string str, const std::string param) const
+    {
+        std::string result = "";
+        if (!uriData_.scheme.empty()) {
+            result += uriData_.scheme + ":";
+        }
+        if (!uriData_.authority.empty()) {
+            result += "//" + uriData_.authority;
+        }
+        if (!uriData_.path.empty()) {
+            result += uriData_.path ;
+        }
+        if (str == "segment") {
+            if (result.back() == '/') {
+                result += param;
+            } else {
+                result += "/" + param;
+            }
+        }
+        if (str != "clearquery") {
+            if (uriData_.query.empty()) {
+                if (str == "query") {
+                    result +=  "?" + param;
+                }
+            } else {
+                result +=  "?" + uriData_.query;
+                if (str == "query") {
+                    result +=  "&" + param;
+                }
+            }
+        }
+        if (!uriData_.fragment.empty()) {
+            result +=  "#" + uriData_.fragment;
+        }
+        return result;
+    }
+
+    std::vector<std::string> Uri::GetSegment() const
+    {
+        std::vector<std::string> segments;
+        if (uriData_.path.empty()) {
+            return segments;
+        }
+        int previous = 0;
+        int current;
+        for (current = uriData_.path.find('/', previous); current != std::string::npos;
+            current = uriData_.path.find('/', previous)) {
+            if (previous < current) {
+                std::string segment = uriData_.path.substr(previous, current - previous);
+                segments.push_back(segment);
+            }
+            previous = current + 1;
+        }
+        if (previous < uriData_.path.length()) {
+            segments.push_back(uriData_.path.substr(previous));
+        }
+        return segments;
+    }
+
     std::string Uri::IsFailed() const
     {
         return errStr_;
@@ -519,5 +612,10 @@ namespace OHOS::Uri {
     std::string Uri::GetFragment() const
     {
         return uriData_.fragment;
+    }
+
+    std::string Uri::ClearQuery() const
+    {
+        return BuildUriString("clearquery", "");
     }
 } // namespace OHOS::Uri
