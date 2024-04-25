@@ -1871,12 +1871,20 @@ namespace OHOS::Url {
         if (searchParams.size() == 0) {
             return resend;
         }
+        std::string oldstr = "%25";
+        std::string newstr = "%";
         size_t size = searchParams.size() - 1;
+        std::string key = "";
+        std::string value = "";
         for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             napi_value result = nullptr;
             napi_create_array(env, &result);
-            napi_create_string_utf8(env, searchParams[i].c_str(), searchParams[i].length(), &firNapiStr);
-            napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &secNapiStr);
+            key = searchParams[i];
+            value = searchParams[i + 1];
+            ReplaceSpecialSymbols(key, oldstr, newstr);
+            ReplaceSpecialSymbols(value, oldstr, newstr);
+            napi_create_string_utf8(env, key.c_str(), key.length(), &firNapiStr);
+            napi_create_string_utf8(env, value.c_str(), value.length(), &secNapiStr);
             napi_set_element(env, result, 0, firNapiStr);
             napi_set_element(env, result, 1, secNapiStr);
             napi_set_element(env, resend, i / 2, result); // 2:Find the number of keys
@@ -1991,9 +1999,14 @@ namespace OHOS::Url {
             for (auto it = searchParams.begin(); it != searchParams.end(); it += stepSize) {
                 toKeys.push_back(*it);
             }
+            std::string key = "";
             size_t lenToKeys = toKeys.size();
+            std::string oldstr = "%25";
+            std::string newstr = "%";
             for (size_t i = 0; i < lenToKeys; i++) {
-                napi_create_string_utf8(env, toKeys[i].c_str(), toKeys[i].length(), &napiStr);
+                key = toKeys[i];
+                ReplaceSpecialSymbols(key, oldstr, newstr);
+                napi_create_string_utf8(env, key.c_str(), key.length(), &napiStr);
                 napi_set_element(env, result, i, napiStr);
             }
         }
@@ -2013,9 +2026,14 @@ namespace OHOS::Url {
                 it += stepSize) {
                 toKeys.push_back(*(it + 1));
             }
+            std::string value = "";
             size_t lenToKeys = toKeys.size();
+            std::string oldstr = "%25";
+            std::string newstr = "%";
             for (size_t i = 0; i < lenToKeys; i++) {
-                napi_create_string_utf8(env, toKeys[i].c_str(), toKeys[i].length(), &napiStr);
+                value = toKeys[i];
+                ReplaceSpecialSymbols(value, oldstr, newstr);
+                napi_create_string_utf8(env, value.c_str(), value.length(), &napiStr);
                 napi_set_element(env, result, i, napiStr);
             }
         }
