@@ -235,9 +235,6 @@ namespace OHOS::Util {
         if (*(input + inputLen - TRAGET_TWO) == '=') {
             equalCount++;
         }
-        if (*(input + inputLen - TRAGET_THREE) == '=') {
-            equalCount++;
-        }
         retLen = DecodeOut(equalCount, retLen);
         if (retLen > 0) {
             retDecode = new unsigned char[retLen + 1];
@@ -254,9 +251,10 @@ namespace OHOS::Util {
             return retDecode;
         }
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
-            if (inputLen % TRAGET_FOUR == TRAGET_TWO) {
+            int remainder = inputLen % TRAGET_FOUR;
+            if (remainder == TRAGET_TWO) {
                 decodeOutLen += 1;
-            } else {
+            } else if (remainder == TRAGET_THREE) {
                 decodeOutLen += TRAGET_TWO;
             }
         }
@@ -291,21 +289,17 @@ namespace OHOS::Util {
     size_t Base64::DecodeOut(size_t equalCount, size_t retLen)
     {
         size_t temp = retLen;
-        if (equalCount == 1) {
-            decodeOutLen -= 1;
-        }
-        if (equalCount == TRAGET_TWO) {
-            decodeOutLen -= TRAGET_TWO;
-        }
         switch (equalCount) {
             case 0:
                 temp += TRAGET_FOUR;
                 break;
             case 1:
                 temp += TRAGET_FOUR;
+                decodeOutLen -= 1;
                 break;
             case TRAGET_TWO:
                 temp += TRAGET_THREE;
+                decodeOutLen -= TRAGET_TWO;
                 break;
             default:
                 temp += TRAGET_TWO;
@@ -609,21 +603,17 @@ namespace OHOS::Util {
 
     size_t DecodeOut(size_t equalCount, size_t retLen, DecodeInfo *decodeInfo)
     {
-        if (equalCount == 1) {
-            decodeInfo->decodeOutLen -= 1;
-        }
-        if (equalCount == TRAGET_TWO) {
-            decodeInfo->decodeOutLen -= TRAGET_TWO;
-        }
         switch (equalCount) {
             case 0:
                 retLen += TRAGET_FOUR;
                 break;
             case 1:
                 retLen += TRAGET_FOUR;
+                decodeInfo->decodeOutLen -= 1;
                 break;
             case TRAGET_TWO:
                 retLen += TRAGET_THREE;
+                decodeInfo->decodeOutLen -= TRAGET_TWO;
                 break;
             default:
                 retLen += TRAGET_TWO;
@@ -664,9 +654,10 @@ namespace OHOS::Util {
             return nullptr;
         }
         if (decodeInfo->valueType == Type::BASIC_URL_SAFE || decodeInfo->valueType == Type::MIME_URL_SAFE) {
-            if (inputLen % TRAGET_FOUR == TRAGET_TWO) {
+            int remainder = inputLen % TRAGET_FOUR;
+            if (remainder == TRAGET_TWO) {
                 decodeInfo->decodeOutLen += 1;
-            } else {
+            } else if (remainder == TRAGET_THREE) {
                 decodeInfo->decodeOutLen += TRAGET_TWO;
             }
         }
