@@ -28,6 +28,7 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "native_engine.h"
 #include "jni_helper.h"
 
 extern const char _binary_util_js_js_start[];
@@ -296,6 +297,30 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. String expected.");
         napi_value result = OHOS::Util::DoParseUUID(env, args[0]);
+        return result;
+    }
+
+    static napi_value GetHash(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t requireArgc = 1;
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        if (argc < requireArgc) {
+            napi_throw_error(env, "-1", "Expected 1 parameter, actually not included in the parameter.");
+            return nullptr;
+        }
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
+        if (valuetype != napi_object) {
+            napi_throw_error(env, "-1", "Wrong argument type. Object expected.");
+            return nullptr;
+        }
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        int32_t value = engine->GetObjectHash(env, args[0]);
+        napi_value result = nullptr;
+        napi_create_uint32(env, value, &result);
         return result;
     }
 
@@ -1762,7 +1787,8 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("dealwithformatstring", DealWithFormatString),
             DECLARE_NAPI_FUNCTION("randomUUID", RandomUUID),
             DECLARE_NAPI_FUNCTION("randomBinaryUUID", RandomBinaryUUID),
-            DECLARE_NAPI_FUNCTION("parseUUID", ParseUUID)
+            DECLARE_NAPI_FUNCTION("parseUUID", ParseUUID),
+            DECLARE_NAPI_FUNCTION("getHash", GetHash)
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         TextcoderInit(env, exports);

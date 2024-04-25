@@ -29,6 +29,7 @@ interface HelpUtil {
   randomUUID(entropyCache?: boolean): string;
   randomBinaryUUID(entropyCache?: boolean): Uint8Array;
   parseUUID(uuid: string): Uint8Array;
+  getHash(obj: object): number;
 }
 
 interface Fn {
@@ -617,6 +618,11 @@ function parseUUID(uuid: string): Uint8Array {
   }
   let uuidArray: Uint8Array = helpUtil.parseUUID(uuid);
   return uuidArray;
+}
+
+function getHash(obj: object): number {
+  let result: number = helpUtil.getHash(obj);
+  return result;
 }
 
 function callbackified(original: Fn, ...args: Array<string | number | Fn>): void {
@@ -1971,6 +1977,7 @@ export default {
   generateRandomUUID: randomUUID,
   generateRandomBinaryUUID: randomBinaryUUID,
   parseUUID: parseUUID,
+  getHash: getHash,
   TextEncoder: TextEncoder,
   TextDecoder: TextDecoder,
   Base64: base64,
