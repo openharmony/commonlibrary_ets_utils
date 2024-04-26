@@ -28,7 +28,6 @@
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 #include "worker_runner.h"
-#include "worker_handler.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -102,6 +101,27 @@ public:
         * The destructor of the Worker.
         */
     ~Worker();
+
+    /**
+     * The host thread receives the information.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
+    static void HostOnMessage(const uv_async_t* req);
+
+    /**
+     * The host thread receives the information.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
+    static void HostOnError(const uv_async_t* req);
+
+    /**
+     * The worker thread receives the information.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
+    static void WorkerOnMessage(const uv_async_t* req);
 
     /**
      * ExecuteIn in thread.
@@ -339,6 +359,8 @@ public:
      */
     static napi_value GlobalCall(napi_env env, napi_callback_info cbinfo);
 
+    static void HostOnGlobalCall(const uv_async_t* req);
+
     static bool CanCreateWorker(napi_env env, WorkerVersion target);
 
     static WorkerParams* CheckWorkerArgs(napi_env env, napi_value argsValue);
@@ -442,30 +464,6 @@ public:
         }
     }
 
-    // host call
-    void RegisterCallbackForHandler(std::function<void (OHOS::AppExecFwk::WorkerEventHandler*)> callback)
-    {
-        // just into once.
-        if (workerHandleCallback_ == nullptr) {
-            workerHandleCallback_ = callback;
-            if (workerHandler_ != nullptr) {
-                workerHandleCallback_(workerHandler_);
-            }
-        }
-    }
-
-    // worker thread call
-    void SetWorkerHandle(OHOS::AppExecFwk::WorkerEventHandler* handle)
-    {
-        workerHandler_ = handle;
-        if (workerHandleCallback_ != nullptr && hostHandler_ != nullptr) {
-            auto task = [this]() {
-                workerHandleCallback_(workerHandler_);
-            };
-            hostHandler_->PostTask(task);
-        }
-    }
-
     napi_env GetWorkerEnv() const
     {
         return workerEnv_;
@@ -475,19 +473,6 @@ public:
     {
         return hostEnv_;
     }
-
-    void SetEventRunner(std::shared_ptr<OHOS::AppExecFwk::EventRunner> eventRunner)
-    {
-        eventRunner_ = eventRunner;
-    }
-
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> GetEventRunner() const
-    {
-        return eventRunner_;
-    }
-
-    OHOS::AppExecFwk::WorkerEventHandler* workerHandler_ {};
-    std::shared_ptr<OHOS::AppExecFwk::WorkerEventHandler> hostHandler_ {};
 
 private:
     void WorkerOnMessageInner();
@@ -537,6 +522,7 @@ private:
     void IncreaseGlobalCallId();
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    static void HandleDebuggerTask(const uv_async_t* req);
     void DebuggerOnPostTask(std::function<void()>&& task);
 #endif
 
@@ -555,7 +541,12 @@ private:
     MessageQueue workerGlobalCallQueue_ {};
     MessageQueue errorQueue_ {};
 
+    uv_async_t* workerOnMessageSignal_ = nullptr;
+    uv_async_t* hostOnMessageSignal_ = nullptr;
+    uv_async_t* hostOnErrorSignal_ = nullptr;
+    uv_async_t* hostOnGlobalCallSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    uv_async_t debuggerOnPostTaskSignal_ {};
     std::mutex debuggerMutex_;
     std::queue<DebuggerPostTask> debuggerQueue_ {};
 #endif
@@ -563,7 +554,6 @@ private:
     std::atomic<RunnerState> runnerState_ {STARTING};
     std::atomic<HostState> hostState_ {ACTIVE};
     std::unique_ptr<WorkerRunner> runner_ {};
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> eventRunner_ {};
 
     std::atomic<bool> isErrorExit_ = false;
 
@@ -585,7 +575,6 @@ private:
     std::condition_variable cv_;
     std::atomic<bool> globalCallSuccess_ = true;
     std::function<void(napi_env)> workerEnvCallback_;
-    std::function<void(OHOS::AppExecFwk::WorkerEventHandler*)> workerHandleCallback_;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H

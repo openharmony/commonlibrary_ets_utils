@@ -18,24 +18,17 @@
 namespace Commonlibrary::Concurrent::WorkerModule {
 Thread::Thread() : tId_() {}
 
-void* Thread::ThreadFunction(void* arg)
-{
-    pthread_t tid = pthread_self();
-#if defined IOS_PLATFORM || defined MAC_PLATFORM
-    pthread_setname_np("WorkerThread");
-#else
-    pthread_setname_np(tid, "WorkerThread");
-#endif
-    pthread_detach(tid);
-    Thread* thread = reinterpret_cast<Thread*>(arg);
-    thread->Run();
-    return nullptr;
-}
-
 bool Thread::Start()
 {
-    int ret = pthread_create(&tId_, nullptr, ThreadFunction, this);
-
+    int ret = uv_thread_create(&tId_, [](void* arg) {
+#if defined IOS_PLATFORM || defined MAC_PLATFORM
+        pthread_setname_np("WorkerThread");
+#else
+        pthread_setname_np(pthread_self(), "WorkerThread");
+#endif
+        Thread* thread = reinterpret_cast<Thread*>(arg);
+        thread->Run();
+    }, this);
     return ret != 0;
 }
 }  // namespace Commonlibrary::Concurrent::WorkerModule

@@ -16,7 +16,6 @@
 #ifndef JS_CONCURRENT_MODULE_WORKER_THREAD_H
 #define JS_CONCURRENT_MODULE_WORKER_THREAD_H
 
-#include <pthread.h>
 #include <uv.h>
 
 namespace Commonlibrary::Concurrent::WorkerModule {
@@ -25,16 +24,15 @@ public:
     Thread();
     virtual ~Thread() = default;
     bool Start();
-    static void* ThreadFunction(void* arg);
     virtual void Run() = 0;
 
-    pthread_t GetThreadId() const
+    uv_thread_t GetThreadId() const
     {
         return tId_;
     }
 
 private:
-    pthread_t tId_ {0};
+    uv_thread_t tId_ {0};
 };
 }  // namespace Commonlibrary::Concurrent::WorkerModule
 
