@@ -91,7 +91,7 @@ class BusinessError extends Error {
 }
 
 function decodeSafelyInner(input: string): string {
-    const regex = /(%[a-f0-9A-F]{2})|[^%]+/g;;
+    const regex = /(%[a-f0-9A-F]{2})|[^%]+/g;
     return input.match(regex).map(part => {
       if (part.startsWith('%')) {
         try {
@@ -283,8 +283,8 @@ class URLParams {
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
-      let key = array[i].length == 0 ? array[i] : decodeSafelyInner(array[i]);
-      let value = array[i + 1].length == 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
+      let key = array[i].length === 0 ? array[i] : decodeSafelyInner(array[i]);
+      let value = array[i + 1].length === 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
       objfun.call(thisArg, value, key, this);
     }
   }
@@ -430,8 +430,8 @@ class URLSearchParams {
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
-      let key = array[i].length == 0 ? array[i] : decodeSafelyInner(array[i]);
-      let value = array[i + 1].length == 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
+      let key = array[i].length === 0 ? array[i] : decodeSafelyInner(array[i]);
+      let value = array[i + 1].length === 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
       objfun.call(thisArg, value, key, this);
     }
   }
