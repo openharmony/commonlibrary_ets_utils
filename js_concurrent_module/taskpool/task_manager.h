@@ -189,7 +189,6 @@ private:
     uv_async_t* expandHandle_ = nullptr;
     std::atomic<bool> suspend_ = false;
     std::atomic<uint32_t> retryCount_ = 0;
-    std::atomic<uint32_t> expandingCount_ = 0;
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
     std::atomic<bool> needChecking_ = false;
