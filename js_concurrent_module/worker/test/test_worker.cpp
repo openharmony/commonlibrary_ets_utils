@@ -172,6 +172,10 @@ HWTEST_F(NativeEngineTest, PostMessageTest003, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::PostMessage, worker, &cb);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
 
+    uv_async_t* req = new uv_async_t;
+    req->data = worker;
+    Worker::WorkerOnMessage(req);
+
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -199,6 +203,9 @@ HWTEST_F(NativeEngineTest, PostMessageToHostTest001, testing::ext::TestSize.Leve
         napi_create_function(env, funcName.c_str(), funcName.size(), Worker::PostMessageToHost, worker, &cb);
         napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     }
+    uv_async_t* req = new uv_async_t;
+    req->data = worker;
+    Worker::HostOnMessage(req);
 
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
