@@ -474,14 +474,18 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
     TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
     task->taskState_ = ExecuteState::FINISHED;
     napi_reference_unref(env, task->taskRef_, nullptr);
+    if (task->IsGroupCommonTask()) {
+        delete task->currentTaskInfo_;
+        task->currentTaskInfo_ = nullptr;
+    }
     TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(task->groupId_);
     if (taskGroup == nullptr) {
         HILOG_DEBUG("taskpool:: taskGroup has been released");
         return;
     }
-    if (task->IsGroupCommonTask()) {
-        delete task->currentTaskInfo_;
-        task->currentTaskInfo_ = nullptr;
+    if (taskGroup->currentGroupInfo_ == nullptr) {
+        HILOG_DEBUG("taskpool:: taskGroup has been canceled");
+        return;
     }
     uint32_t index = taskGroup->GetTaskIndex(task->taskId_);
     auto groupInfo = taskGroup->currentGroupInfo_;

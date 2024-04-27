@@ -110,6 +110,7 @@ public:
     bool IsDependendByTaskId(uint64_t taskId);
     bool IsDependentByTaskId(uint64_t dependentTaskId);
     void NotifyDependencyTaskInfo(uint64_t taskId);
+    void RemoveDependencyById(uint64_t dependentTaskId, uint64_t taskId);
     bool StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskIdSet);
     bool RemoveTaskDependency(uint64_t taskId, uint64_t dependentId);
     bool CheckCircularDependency(std::set<uint64_t> dependentIdSet, std::set<uint64_t> idSet, uint64_t taskId);
@@ -164,6 +165,7 @@ private:
 
     // <dependent taskId, <taskId1, taskId2, ...>>, update when removeDependency or executeTask
     std::unordered_map<uint64_t, std::set<uint64_t>> dependentTaskInfos_ {};
+    std::shared_mutex dependentTaskInfosMutex_;
 
     // <<pendingTaskId1, priority>, <pendingTaskId2, priority>, ...>
     std::unordered_map<uint64_t, Priority> pendingTaskInfos_ {};

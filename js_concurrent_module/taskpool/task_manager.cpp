@@ -767,26 +767,30 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
 void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(taskId);
     if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
         auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
-
-        // remove dependency after task execute
-        auto dependTaskIter = dependTaskInfos_.find(*taskIdIter);
-        if (dependTaskIter != dependTaskInfos_.end()) {
-            auto dependTaskInnerIter = dependTaskIter->second.find(taskId);
-            if (dependTaskInnerIter != dependTaskIter->second.end()) {
-                dependTaskIter->second.erase(dependTaskInnerIter);
-            }
-        }
+        RemoveDependencyById(taskId, *taskIdIter);
         taskIdIter = iter->second.erase(taskIdIter);
-
         if (taskInfo.first != 0) {
             EnqueueTaskId(taskInfo.first, taskInfo.second);
+        }
+    }
+}
+
+void TaskManager::RemoveDependencyById(uint64_t dependentTaskId, uint64_t taskId)
+{
+    // remove dependency after task execute
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    auto dependTaskIter = dependTaskInfos_.find(taskId);
+    if (dependTaskIter != dependTaskInfos_.end()) {
+        auto dependTaskInnerIter = dependTaskIter->second.find(dependentTaskId);
+        if (dependTaskInnerIter != dependTaskIter->second.end()) {
+            dependTaskIter->second.erase(dependTaskInnerIter);
         }
     }
 }
@@ -803,7 +807,7 @@ bool TaskManager::IsDependendByTaskId(uint64_t taskId)
 
 bool TaskManager::IsDependentByTaskId(uint64_t dependentTaskId)
 {
-    std::shared_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+    std::shared_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(dependentTaskId);
     if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
         return false;
@@ -813,8 +817,8 @@ bool TaskManager::IsDependentByTaskId(uint64_t dependentTaskId)
 
 bool TaskManager::StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskIdSet)
 {
-    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     StoreDependentTaskInfo(taskIdSet, taskId);
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
     if (iter == dependTaskInfos_.end()) {
         for (const auto& dependentId : taskIdSet) {
@@ -866,8 +870,8 @@ bool TaskManager::CheckCircularDependency(std::set<uint64_t> dependentIdSet, std
 
 bool TaskManager::RemoveTaskDependency(uint64_t taskId, uint64_t dependentId)
 {
-    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     RemoveDependentTaskInfo(dependentId, taskId);
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
     if (iter == dependTaskInfos_.end()) {
         return false;
@@ -914,6 +918,7 @@ void TaskManager::RemovePendingTaskInfo(uint64_t taskId)
 
 void TaskManager::StoreDependentTaskInfo(std::set<uint64_t> dependentTaskIdSet, uint64_t taskId)
 {
+    std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     for (const auto& id : dependentTaskIdSet) {
         auto iter = dependentTaskInfos_.find(id);
         if (iter == dependentTaskInfos_.end()) {
@@ -927,6 +932,7 @@ void TaskManager::StoreDependentTaskInfo(std::set<uint64_t> dependentTaskIdSet, 
 
 void TaskManager::RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId)
 {
+    std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(dependentTaskId);
     if (iter == dependentTaskInfos_.end()) {
         return;
@@ -1046,14 +1052,17 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
     }
     RemovePendingTaskInfo(taskId);
     ReleaseCallBackInfo(task);
-    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
-    for (auto dependentTaskIter = dependentTaskInfos_.begin(); dependentTaskIter != dependentTaskInfos_.end();) {
-        if (dependentTaskIter->second.find(taskId) != dependentTaskIter->second.end()) {
-            dependentTaskIter = dependentTaskInfos_.erase(dependentTaskIter);
-        } else {
-            ++dependentTaskIter;
+    {
+        std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
+        for (auto dependentTaskIter = dependentTaskInfos_.begin(); dependentTaskIter != dependentTaskInfos_.end();) {
+            if (dependentTaskIter->second.find(taskId) != dependentTaskIter->second.end()) {
+                dependentTaskIter = dependentTaskInfos_.erase(dependentTaskIter);
+            } else {
+                ++dependentTaskIter;
+            }
         }
     }
+    std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto dependTaskIter = dependTaskInfos_.find(taskId);
     if (dependTaskIter != dependTaskInfos_.end()) {
         dependTaskInfos_.erase(dependTaskIter);
