@@ -125,7 +125,7 @@ function convertArrayToObj(arr: string[]): Record<string, string[]> {
       return obj;
     }, {});
   }
-  
+
 class URLParams {
   urlClass: NativeURLParams;
   parentUrl: URL | null = null;
@@ -163,7 +163,7 @@ class URLParams {
     setName = customEncodeURIComponent(setName);
     setValues = customEncodeURIComponent(setValues);
     this.urlClass.set(setName, setValues);
-    if (this.urlClass.initialValue.hasOwnProperty(setName)) {
+    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, setName)) {
       delete this.urlClass.initialValue[setName];
     }
     if (this.parentUrl !== null) {
@@ -246,7 +246,7 @@ class URLParams {
       throw new BusinessError(`Parameter error.The type of ${deleteName} must be string`);
     }
     this.urlClass.delete(deleteName);
-    if (this.urlClass.initialValue.hasOwnProperty(deleteName)) { 
+    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, deleteName)) {
       delete this.urlClass.initialValue[deleteName];
     }
     if (this.parentUrl !== null) {

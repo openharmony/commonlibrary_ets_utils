@@ -49,7 +49,7 @@ class ConvertXML {
     strXml = dealXml(strXml);
     let converted: ReceiveObject = this.convertxmlclass.convert(strXml, options);
     let strEnd: string = '';
-    if (converted.hasOwnProperty('spaces')) {
+    if (Object.prototype.hasOwnProperty.call(converted, 'spaces')) {
       let space: string | number | undefined = converted.spaces;
       delete converted.spaces;
     }
@@ -70,7 +70,7 @@ class ConvertXML {
     } else {
       converted = this.convertxmlclass.convert(strXml, options);
     }
-    if (converted.hasOwnProperty('spaces')) {
+    if (Object.prototype.hasOwnProperty.call(converted, 'spaces')) {
       let space: string | number | undefined = converted.spaces;
       delete converted.spaces;
     }

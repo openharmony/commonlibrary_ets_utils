@@ -429,7 +429,7 @@ AsyncLock* AsyncLockManager::FindAsyncLock(AsyncLockIdentity *id)
 
 bool AsyncLockManager::GetLockMode(napi_env env, napi_value val, LockMode &mode)
 {
-    int32_t modeNative = NapiHelper::GetUint32Value(env, val);
+    uint32_t modeNative = NapiHelper::GetUint32Value(env, val);
     if (modeNative  < LockMode::LOCK_MODE_SHARED || modeNative > LOCK_MODE_EXCLUSIVE) {
         return false;
     }
