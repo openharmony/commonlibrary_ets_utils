@@ -70,7 +70,7 @@ napi_value StrToNapiValue(napi_env env, const std::string &result)
     return output;
 }
 
-bool IsEscapeRange(const char ch)
+static bool IsEscapeRange(const char ch)
 {
     if ((ch > 0 && ch < '*') || (ch > '*' && ch < '-') || (ch == '/') ||
         (ch > '9' && ch < 'A') || (ch > 'Z' && ch < '_') || (ch == '`') || (ch > 'z')) {
@@ -79,7 +79,7 @@ bool IsEscapeRange(const char ch)
     return false;
 }
 
-std::string ReviseStr(std::string &str, std::string *reviseChar)
+static std::string ReviseStr(std::string &str, std::string *reviseChar)
 {
     icu::StringPiece sp(str.c_str());
     icu::UnicodeString wstr = icu::UnicodeString::fromUTF8(sp);
@@ -160,7 +160,7 @@ napi_value ToString(napi_env env, std::vector<std::string> &searchParams)
     return result;
 }
 
-std::vector<std::string> GetParamsStrig(napi_env env, const napi_value tempStr)
+static std::vector<std::string> GetParamsStrig(napi_env env, const napi_value tempStr)
 {
     std::vector<std::string> vec;
     size_t arraySize = 0;
@@ -1815,8 +1815,8 @@ HWTEST_F(NativeEngineTest, testUrlutilities001, testing::ext::TestSize.Level0)
     OHOS::Url::AnalysisOpaqueHost(inPut, temp, flags);
     inPut = "asdsad";
     OHOS::Url::AnalysisOpaqueHost(inPut, temp, flags);
-    bool IsHexDigit =  OHOS::Url::IsHexDigit('/');
-    ASSERT_FALSE(IsHexDigit);
+    bool isHexDigit =  OHOS::Url::IsHexDigit('/');
+    ASSERT_FALSE(isHexDigit);
 }
 
 HWTEST_F(NativeEngineTest, testUrlutilities002, testing::ext::TestSize.Level0)
@@ -1858,11 +1858,12 @@ HWTEST_F(NativeEngineTest, testUrlutilities002, testing::ext::TestSize.Level0)
     OHOS::Url::AnalysisNoDefaultProtocol(inPut, urlDataInfo, flags);
     inPut = "";
     OHOS::Url::AnalysisOnlyHost(inPut, urlDataInfo, flags, i);
-    bool IsHexDigit =  OHOS::Url::IsHexDigit('b');
-    ASSERT_TRUE(IsHexDigit);
+    bool isHexDigit =  OHOS::Url::IsHexDigit('b');
+    ASSERT_TRUE(isHexDigit);
 }
 
-std::string GetStringUtf8(napi_env env, napi_value str) {
+std::string GetStringUtf8(napi_env env, napi_value str)
+{
     std::string buffer = "";
     size_t bufferSize = 0;
     if (napi_get_value_string_utf8(env, str, nullptr, 0, &bufferSize) != napi_ok) {

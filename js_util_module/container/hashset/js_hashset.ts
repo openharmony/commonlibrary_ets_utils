@@ -99,14 +99,13 @@ if (flag || fastHashSet === undefined) {
     }
     values(): IterableIterator<T> {
       errorUtil.checkBindError('values', HashSet, this);
-      let data: HashSet<T> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].key;
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.keyValueArray[count].key;
           count++;
           return {
             done: done,
@@ -117,14 +116,13 @@ if (flag || fastHashSet === undefined) {
     }
     entries(): IterableIterator<[T, T]> {
       errorUtil.checkBindError('entries', HashSet, this);
-      let data: HashSet<T> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: [T, T] } {
           let done: boolean = false;
           let value: [T, T] = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].entry();
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.keyValueArray[count].entry();
           count++;
           return {
             done: done,

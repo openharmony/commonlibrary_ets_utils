@@ -358,13 +358,12 @@ if (flag || fastVector === undefined) {
     }
     [Symbol.iterator](): IterableIterator<T> {
       let count: number = 0;
-      let vector: Vector<T> = this;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= vector.elementNum;
-          value = done ? undefined : vector[count++];
+          done = count >= this.elementNum;
+          value = done ? undefined : this[count++];
           return {
             done: done,
             value: value,

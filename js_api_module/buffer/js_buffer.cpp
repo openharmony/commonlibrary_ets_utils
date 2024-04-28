@@ -77,7 +77,7 @@ Buffer::~Buffer()
     }
 }
 
-EncodingType Buffer::GetEncodingType(string encode)
+EncodingType Buffer::GetEncodingType(std::string encode)
 {
     if (encode == "hex") {
         return HEX;
@@ -303,7 +303,7 @@ unsigned int Buffer::WriteString(std::string value, unsigned int size)
 
 unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int size)
 {
-    uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(value.c_str()));
+    uint8_t *str = const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(value.data()));
     bool isWriteSuccess = WriteBytes(str, size, raw_ + byteOffset_ + offset);
     return isWriteSuccess ? size : 0; // 0: write failed
 }
@@ -315,7 +315,7 @@ void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end
     }
     unsigned int loop = length > end - offset ? end - offset : length;
 
-    uint8_t *str = reinterpret_cast<uint8_t *>(const_cast<char *>(value.c_str()));
+    uint8_t *str = const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(value.data()));
     while (offset < end) {
         if (loop + offset > end) {
             WriteBytes(str, end - offset, raw_ + byteOffset_ + offset);

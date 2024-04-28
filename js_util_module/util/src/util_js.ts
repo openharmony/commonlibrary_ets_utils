@@ -630,7 +630,7 @@ function callbackified(original: Fn, ...args: Array<string | number | Fn>): void
   if (typeof maybeCb !== 'function') {
     throw new Error('maybe is not function');
   }
-  const cb = (...args: Array<null>) => {
+  const cb = (...args: Array<null>) : void => {
     Reflect.apply(maybeCb, this, args);
   };
   Reflect.apply(original, this, args).then((ret: null) => cb(null, ret), (rej: null) => cb(rej));
@@ -658,7 +658,7 @@ function callbackWrapper(original: Fn): Function {
   if (typeof descriptors.name.value === 'string') {
     descriptors.name.value += 'callbackified';
   }
-  function cb(...args: Array<string | number | Fn>) {
+  function cb(...args: Array<string | number | Fn>): void {
     callbackified(original, ...args);
   }
   Object.defineProperties(cb, descriptors);
@@ -1278,8 +1278,8 @@ class RationalNumber {
   private mnum: number = 0;
   private mden: number = 0;
 
-  public constructor()
-  public constructor(num: number, den: number)
+  public constructor();
+  public constructor(num: number, den: number);
   public constructor(num?: number, den?: number) {
     if (!num && !den) {
 

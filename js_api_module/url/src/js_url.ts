@@ -77,7 +77,7 @@ declare function requireInternal(s: string): UrlInterface;
 const UrlInterface = requireInternal('url');
 
 
-var seachParamsArr: Array<string> = [];
+let seachParamsArr: Array<string> = [];
 const typeErrorCodeId = 401; // 401:ErrorCodeId
 const syntaxErrorCodeId = 10200002; // 10200002:syntaxErrorCodeId
 
@@ -256,7 +256,7 @@ class URLParams {
     }
   }
 
-  forEach(objfun: Function, thisArg?: Object) {
+  forEach(objfun: Function, thisArg?: Object): void {
     if (typeof objfun !== 'function') {
       throw new BusinessError(`Parameter error.The type of ${objfun} must be function`);
     }
@@ -426,7 +426,7 @@ class URLSearchParams {
     return this.urlClass.entries();
   }
 
-  updateParams(input: string) {
+  updateParams(input: string): void {
     let out = [];
     out = parameterProcessing(input);
     this.urlClass.array = out;
@@ -437,7 +437,7 @@ function toHleString(arg: string | symbol | number): string {
   return arg.toString();
 }
 
-function parameterProcess(input: object | string | Iterable<[]>) {
+function parameterProcess(input: object | string | Iterable<[]>): Array<string> {
   if (input === null || typeof input === 'undefined' || input === '') {
     seachParamsArr = [];
     return seachParamsArr;
@@ -448,7 +448,7 @@ function parameterProcess(input: object | string | Iterable<[]>) {
   }
 }
 
-function parameterProcessing(input: object | string | Iterable<[]>) {
+function parameterProcessing(input: object | string | Iterable<[]>): Array<string> {
   if (input === null || typeof input === 'undefined' || input === '') {
     seachParamsArr = [];
     return seachParamsArr;

@@ -170,14 +170,13 @@ if (flag || fastPlainArray === undefined) {
     }
     [Symbol.iterator](): IterableIterator<[number, T]> {
       errorUtil.checkBindError('Symbol.iterator', PlainArray, this);
-      let data: PlainArray<T> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: [number, T] } {
           let done: boolean = false;
           let value: [number, T] = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : [data.members.keys[count], data.members.values[count]] as [number, T];
+          done = count >= this.memberNumber;
+          value = done ? undefined : [this.members.keys[count], this.members.values[count]] as [number, T];
           count++;
           return {
             done: done,

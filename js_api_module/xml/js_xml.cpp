@@ -48,7 +48,7 @@ namespace OHOS::xml {
             return;
         }
         if (type == "isAttri" || type == "isStart") {
-            for (int i = 0; i < CurNspNum; ++i) {
+            for (int i = 0; i < curNspNum; ++i) {
                 out_.append(" xmlns:");
                 out_.append(multNsp[depth_ - 1][i * 2]); // 2: number of args
                 out_.append("=\"");
@@ -56,7 +56,7 @@ namespace OHOS::xml {
                 out_.append("\"");
             }
             multNsp[depth_ - 1].clear();
-            CurNspNum = 0;
+            curNspNum = 0;
         }
     }
 
@@ -106,9 +106,9 @@ namespace OHOS::xml {
         }
         elementStack[depth_ * 3] = prefix; // 3: number of args
         elementStack[depth_ * 3 + 1] = nsTemp; // 3: number of args
-        multNsp[depth_][CurNspNum * 2] = elementStack[depth_ * 3]; // 3: number of args 2: number of args
-        multNsp[depth_][CurNspNum * 2 + 1] = elementStack[depth_ * 3 + 1]; // 3: number of args 2: number of args
-        ++CurNspNum;
+        multNsp[depth_][curNspNum * 2] = elementStack[depth_ * 3]; // 3: number of args 2: number of args
+        multNsp[depth_][curNspNum * 2 + 1] = elementStack[depth_ * 3 + 1]; // 3: number of args 2: number of args
+        ++curNspNum;
         type = "isNsp";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {

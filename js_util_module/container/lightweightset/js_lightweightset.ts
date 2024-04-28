@@ -158,21 +158,19 @@ if (flag || fastLightWeightSet === undefined) {
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', LightWeightSet, this);
       errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
-      let data: LightWeightSet<T> = this;
-      for (let i: number = 0; i < data.memberNumber; i++) {
-        callbackfn.call(thisArg, data.members.keys[i], data.members.keys[i], data);
+      for (let i: number = 0; i < this.memberNumber; i++) {
+        callbackfn.call(thisArg, this.members.keys[i], this.members.keys[i], this);
       }
     }
     [Symbol.iterator](): IterableIterator<T> {
       errorUtil.checkBindError('Symbol.iterator', LightWeightSet, this);
-      let data: LightWeightSet<T> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.members.keys[count];
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.members.keys[count];
           count++;
           return {
             done: done,
@@ -200,15 +198,14 @@ if (flag || fastLightWeightSet === undefined) {
     }
     entries(): IterableIterator<[T, T]> {
       errorUtil.checkBindError('entries', LightWeightSet, this);
-      let data: LightWeightSet<T> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: [T, T] } {
           let done: boolean = false;
           let value: [T, T] = undefined;
           let tempValue: T = undefined;
-          done = count >= data.memberNumber;
-          tempValue = data.members.keys[count];
+          done = count >= this.memberNumber;
+          tempValue = this.members.keys[count];
           value = done ? undefined : ([tempValue, tempValue] as [T, T]);
           count++;
           return {

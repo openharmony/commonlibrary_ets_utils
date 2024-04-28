@@ -90,33 +90,27 @@ if (flag || fastTreeSet === undefined) {
     }
     getFirstValue(): T {
       errorUtil.checkBindError('getFirstValue', TreeSet, this);
-      let tempNode: any = undefined;
-      tempNode = this.constitute.firstNode();
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.firstNode() === undefined) {
+        return this.constitute.firstNode();;
       }
-      return tempNode.key;
+      return this.constitute.firstNode().key;
     }
     getLastValue(): T {
       errorUtil.checkBindError('getLastValue', TreeSet, this);
-      let tempNode: any = undefined;
-      tempNode = this.constitute.lastNode();
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.lastNode() === undefined) {
+        return this.constitute.lastNode();
       }
-      return tempNode.key;
+      return this.constitute.lastNode().key;
     }
     getLowerValue(key: T): T {
       errorUtil.checkBindError('getLowerValue', TreeSet, this);
-      let tempNode: any = undefined;
-      tempNode = this.constitute.getNode(key);
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.getNode(key) === undefined) {
+        return this.constitute.getNode(key);
       }
-      if (tempNode.left !== undefined) {
-        return tempNode.left.key;
+      if (this.constitute.getNode(key).left !== undefined) {
+        return this.constitute.getNode(key).left.key;
       }
-      let node: any = tempNode;
+      let node = this.constitute.getNode(key);
       while (node.parent !== undefined) {
         if (node.parent.right === node) {
           return node.parent.key;
@@ -127,15 +121,13 @@ if (flag || fastTreeSet === undefined) {
     }
     getHigherValue(key: T): T {
       errorUtil.checkBindError('getHigherValue', TreeSet, this);
-      let tempNode: any = undefined;
-      tempNode = this.constitute.getNode(key);
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.getNode(key) === undefined) {
+        return this.constitute.getNode(key);
       }
-      if (tempNode.right !== undefined) {
-        return tempNode.right.key;
+      if (this.constitute.getNode(key).right !== undefined) {
+        return this.constitute.getNode(key).right.key;
       }
-      let node: any = tempNode;
+      let node = this.constitute.getNode(key);
       while (node.parent !== undefined) {
         if (node.parent.left === node) {
           return node.parent.key;
@@ -168,14 +160,13 @@ if (flag || fastTreeSet === undefined) {
     }
     values(): IterableIterator<T> {
       errorUtil.checkBindError('values', TreeSet, this);
-      let data: any = this.constitute;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].value as T;
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.keyValueArray[count].value as T;
           count++;
           return {
             done: done,
@@ -188,22 +179,20 @@ if (flag || fastTreeSet === undefined) {
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', TreeSet, this);
       errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
-      let data: any = this.constitute;
-      let tagetArray: Array<any> = data.keyValueArray;
-      for (let i: number = 0; i < data.memberNumber; i++) {
+      let tagetArray: Array<any> = this.constitute.keyValueArray;
+      for (let i: number = 0; i < this.constitute.memberNumber; i++) {
         callbackfn.call(thisArg, tagetArray[i].value as T, tagetArray[i].key);
       }
     }
     entries(): IterableIterator<[T, T]> {
       errorUtil.checkBindError('entries', TreeSet, this);
-      let data: any = this.constitute;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: [T, T] } {
           let done: boolean = false;
           let value: [T, T] = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].entry();
+          done = count >= this.constitute.memberNumber;
+          value = done ? undefined : this.constitute.keyValueArray[count].entry();
           count++;
           return {
             done: done,

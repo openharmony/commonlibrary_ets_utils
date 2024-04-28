@@ -101,14 +101,13 @@ if (flag || fastHashMap === undefined) {
     }
     keys(): IterableIterator<K> {
       errorUtil.checkBindError('keys', HashMap, this);
-      let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: K } {
           let done: boolean = false;
           let value: K = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].key;
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.keyValueArray[count].key;
           count++;
           return {
             done: done,
@@ -119,14 +118,13 @@ if (flag || fastHashMap === undefined) {
     }
     values(): IterableIterator<V> {
       errorUtil.checkBindError('values', HashMap, this);
-      let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: V } {
           let done: boolean = false;
           let value: V = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].value;
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.keyValueArray[count].value;
           count++;
           return {
             done: done,
@@ -151,14 +149,13 @@ if (flag || fastHashMap === undefined) {
     }
     entries(): IterableIterator<[K, V]> {
       errorUtil.checkBindError('entries', HashMap, this);
-      let data: HashMap<K, V> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: [K, V] } {
           let done: boolean = false;
           let value: [K, V] = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].entry();
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.keyValueArray[count].entry();
           count++;
           return {
             done: done,

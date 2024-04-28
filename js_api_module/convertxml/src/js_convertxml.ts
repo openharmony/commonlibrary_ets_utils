@@ -34,7 +34,7 @@ const TypeErrorCode = 401;
 class BusinessError extends Error {
   code: number;
   constructor(msg: string) {
-    super(msg)
+    super(msg);
     this.name = 'BusinessError';
     this.code = TypeErrorCode;
   }

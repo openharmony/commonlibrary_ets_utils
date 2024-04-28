@@ -39,7 +39,7 @@ using namespace OHOS::xml;
         ASSERT_EQ(valueType, type);                             \
     }
 
-std::string testStr = "";
+static std::string g_testStr = "";
 napi_value Method(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -64,7 +64,7 @@ napi_value Method(napi_env env, napi_callback_info info)
     buffer2.reserve(bufferSize2 + 1);
     buffer2.resize(bufferSize2);
     napi_get_value_string_utf8(env, value, buffer2.data(), bufferSize2 + 1, &bufferSize2);
-    testStr += buffer1 + buffer2;
+    g_testStr += buffer1 + buffer2;
     napi_value result = nullptr;
     napi_get_boolean(env, true, &result);
     return result;
@@ -1077,7 +1077,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
     std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1102,7 +1102,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
     std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle";
     std::string res3 = " todoWorktodo todoPlaytodo go thereabba table trtdApplestd tdBananastd trtablenote";
     std::string result = res1 + res2 + res3;
-    ASSERT_STREQ(testStr.c_str(), result.c_str());
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest002
@@ -1121,7 +1121,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest002, testing::ext::TestSize.Level0)
     std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1142,7 +1142,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest002, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
+    ASSERT_STREQ(g_testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
 }
 
 /* @tc.name: XmlParseTest003
@@ -1161,7 +1161,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
     std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1186,7 +1186,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
     std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
-    ASSERT_STREQ(testStr.c_str(), result.c_str());
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest004
@@ -1205,7 +1205,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest004, testing::ext::TestSize.Level0)
     std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1226,7 +1226,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest004, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
+    ASSERT_STREQ(g_testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
 }
 
 /* @tc.name: XmlParseTest005
@@ -1245,7 +1245,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
     std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1270,7 +1270,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
     std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
-    ASSERT_STREQ(testStr.c_str(), result.c_str());
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest006
@@ -1313,7 +1313,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest006, testing::ext::TestSize.Level0)
     std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
-    ASSERT_STREQ(testStr.c_str(), result.c_str());
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest007
@@ -1332,7 +1332,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest007, testing::ext::TestSize.Level0)
     std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1353,7 +1353,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest007, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
+    ASSERT_STREQ(g_testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
 }
 
 /* @tc.name: XmlParseTest008
@@ -1372,7 +1372,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
     std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1397,7 +1397,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table ";
     std::string res3 = "h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
-    ASSERT_STREQ(testStr.c_str(), result.c_str());
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest009
@@ -1440,7 +1440,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest009, testing::ext::TestSize.Level0)
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
     std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
-    ASSERT_STREQ(testStr.c_str(), result.c_str());
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest0010
@@ -1459,7 +1459,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0010, testing::ext::TestSize.Level0)
     std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1484,7 +1484,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0010, testing::ext::TestSize.Level0)
     std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba table trtdApplestd tdBananastd trtablenote";
     std::string result = res1 + res2 + res3;
-    ASSERT_STREQ(testStr.c_str(), result.c_str());
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
 
 /* @tc.name: XmlParseTest0011
@@ -1503,7 +1503,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0011, testing::ext::TestSize.Level0)
     std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    testStr = "";
+    g_testStr = "";
     OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
@@ -1524,7 +1524,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0011, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "");
+    ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
 /* @tc.name: XmlParseTest0012
@@ -1563,7 +1563,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0012, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options);
-    ASSERT_STREQ(testStr.c_str(), "");
+    ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
 /* @tc.name: Xmlfunctest001

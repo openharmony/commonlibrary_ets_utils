@@ -90,14 +90,13 @@ if (flag || fastLightWeightMap === undefined) {
     }
     entries(): IterableIterator<[K, V]> {
       errorUtil.checkBindError('entries', LightWeightMap, this);
-      let data: LightWeightMap<K, V> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: [K, V] } {
           let done: boolean = false;
           let value: [K, V] = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : [data.members.keys[count], data.members.values[count]] as [K, V];
+          done = count >= this.memberNumber;
+          value = done ? undefined : [this.members.keys[count], this.members.values[count]] as [K, V];
           count++;
           return {
             done: done,
@@ -132,14 +131,13 @@ if (flag || fastLightWeightMap === undefined) {
     }
     keys(): IterableIterator<K> {
       errorUtil.checkBindError('keys', LightWeightMap, this);
-      let data: LightWeightMap<K, V> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: K } {
           let done: boolean = false;
           let value: K = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.members.keys[count];
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.members.keys[count];
           count++;
           return {
             done: done,
@@ -207,9 +205,8 @@ if (flag || fastLightWeightMap === undefined) {
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', LightWeightMap, this);
       errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
-      let data: LightWeightMap<K, V> = this;
-      for (let i: number = 0; i < data.memberNumber; i++) {
-        callbackfn.call(thisArg, data.members.values[i], data.members.keys[i], data);
+      for (let i: number = 0; i < this.memberNumber; i++) {
+        callbackfn.call(thisArg, this.members.values[i], this.members.keys[i], this);
       }
     }
     [Symbol.iterator](): IterableIterator<[K, V]> {
@@ -232,14 +229,13 @@ if (flag || fastLightWeightMap === undefined) {
     }
     values(): IterableIterator<V> {
       errorUtil.checkBindError('values', LightWeightMap, this);
-      let data: LightWeightMap<K, V> = this;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: V } {
           let done: boolean = false;
           let value: V = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.members.values[count];
+          done = count >= this.memberNumber;
+          value = done ? undefined : this.members.values[count];
           count++;
           return {
             done: done,

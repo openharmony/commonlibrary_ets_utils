@@ -79,30 +79,24 @@ if (flag || fastTreeMap === undefined) {
     }
     get(key: K): V {
       errorUtil.checkBindError('get', TreeMap, this);
-      let tempNode: any = undefined;
-      tempNode = this.constitute.getNode(key);
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.getNode(key) === undefined) {
+        return undefined;
       }
-      return tempNode.value;
+      return this.constitute.getNode(key).value;
     }
     getFirstKey(): K {
       errorUtil.checkBindError('getFirstKey', TreeMap, this);
-      let tempNode: any = undefined;
-      tempNode = this.constitute.firstNode();
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.firstNode() === undefined) {
+        return undefined;
       }
-      return tempNode.key;
+      return this.constitute.firstNode().key;
     }
     getLastKey(): K {
       errorUtil.checkBindError('getLastKey', TreeMap, this);
-      let tempNode: any = undefined;
-      tempNode = this.constitute.lastNode();
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.lastNode() === undefined) {
+        return undefined;
       }
-      return tempNode.key;
+      return this.constitute.lastNode().key;
     }
     setAll(map: TreeMap<K, V>): void {
       errorUtil.checkBindError('setAll', TreeMap, this);
@@ -124,15 +118,13 @@ if (flag || fastTreeMap === undefined) {
     getLowerKey(key: K): K {
       errorUtil.checkBindError('getLowerKey', TreeMap, this);
       let result: K | undefined = undefined;
-      let tempNode: any = undefined;
-      tempNode = this.constitute.getNode(key);
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.getNode(key) === undefined) {
+        return undefined;
       }
-      if (tempNode.left !== undefined) {
-        return tempNode.left.key;
+      if (this.constitute.getNode(key).left !== undefined) {
+        return  this.constitute.getNode(key).left.key;
       }
-      let node: any = tempNode;
+      let node =  this.constitute.getNode(key);
       while (node.parent !== undefined) {
         if (node.parent.right === node) {
           return node.parent.key;
@@ -144,15 +136,13 @@ if (flag || fastTreeMap === undefined) {
     getHigherKey(key: K): K {
       errorUtil.checkBindError('getHigherKey', TreeMap, this);
       let result: K | undefined = undefined;
-      let tempNode: any = undefined;
-      tempNode = this.constitute.getNode(key);
-      if (tempNode === undefined) {
-        return tempNode;
+      if (this.constitute.getNode(key) === undefined) {
+        return undefined;
       }
-      if (tempNode.right !== undefined) {
-        return tempNode.right.key;
+      if (this.constitute.getNode(key).right !== undefined) {
+        return this.constitute.getNode(key).right.key;
       }
-      let node: any = tempNode;
+      let node = this.constitute.getNode(key);
       while (node.parent !== undefined) {
         if (node.parent.left === node) {
           return node.parent.key;
@@ -163,14 +153,13 @@ if (flag || fastTreeMap === undefined) {
     }
     keys(): IterableIterator<K> {
       errorUtil.checkBindError('keys', TreeMap, this);
-      let data: any = this.constitute;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: K } {
           let done: boolean = false;
           let value: K = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].key;
+          done = count >= this.constitute.memberNumber;
+          value = done ? undefined : this.constitute.keyValueArray[count].key;
           count++;
           return {
             done: done,
@@ -181,14 +170,13 @@ if (flag || fastTreeMap === undefined) {
     }
     values(): IterableIterator<V> {
       errorUtil.checkBindError('values', TreeMap, this);
-      let data: any = this.constitute;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: V } {
           let done: boolean = false;
           let value: V = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].value;
+          done = count >= this.constitute.memberNumber;
+          value = done ? undefined : this.constitute.keyValueArray[count].value;
           count++;
           return {
             done: done,
@@ -199,34 +187,29 @@ if (flag || fastTreeMap === undefined) {
     }
     replace(key: K, newValue: V): boolean {
       errorUtil.checkBindError('replace', TreeMap, this);
-      let targetNode: any = this.constitute.getNode(key);
-      if (targetNode === undefined) {
+      if (this.constitute.getNode(key) === undefined) {
         return false;
       }
-      targetNode.value = newValue;
+      this.constitute.getNode(key).value = newValue;
       return true;
     }
     forEach(callbackfn: (value?: V, key?: K, map?: TreeMap<K, V>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', TreeMap, this);
       errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
-      let data: any = this.constitute;
-      let tagetArray: Array<any> = [];
-      tagetArray = data.keyValueArray;
-      for (let i: number = 0; i < data.memberNumber; i++) {
-        callbackfn.call(thisArg, tagetArray[i].value as V, tagetArray[i].key);
+      for (let i: number = 0; i < this.constitute.memberNumber; i++) {
+        callbackfn.call(thisArg, this.constitute.keyValueArray[i].value as V, this.constitute.keyValueArray[i].key);
       }
     }
     entries(): IterableIterator<[K, V]> {
       errorUtil.checkBindError('entries', TreeMap, this);
-      let data: any = this.constitute;
       let count: number = 0;
       return {
         next: function (): { done: boolean, value: [K, V] } {
           let done: boolean = false;
           let value: [K, V] = undefined;
-          done = count >= data.memberNumber;
-          value = done ? undefined : data.keyValueArray[count].entry();
+          done = count >= this.constitute.memberNumber;
+          value = done ? undefined : this.constitute.keyValueArray[count].entry();
           count++;
           return {
             done: done,

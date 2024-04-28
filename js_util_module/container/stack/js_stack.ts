@@ -148,13 +148,12 @@ if (flag || fastStack === undefined) {
     [Symbol.iterator](): IterableIterator<T> {
       errorUtil.checkBindError('Symbol.iterator', Stack, this);
       let count: number = 0;
-      let stack: Stack<T> = this;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= stack.elementNum;
-          value = done ? undefined : stack[count++];
+          done = count >= this.elementNum;
+          value = done ? undefined : this[count++];
           return {
             done: done,
             value: value,

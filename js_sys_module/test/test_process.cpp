@@ -46,7 +46,7 @@ static OHOS::JsSysModule::Process::ChildProcess RunCommand(napi_env env, napi_va
 
     return objectInfo;
 }
-std::string testStr = "";
+static std::string testStr = "";
 napi_value Method(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
