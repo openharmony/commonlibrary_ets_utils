@@ -227,7 +227,7 @@ namespace OHOS::Uri {
         napi_value segment = nullptr;
         napi_create_array(env, &result);
         size_t size = temp.size();
-        for (size_t i = 0; i < size; i ++) {
+        for (size_t i = 0; i < size; i++) {
             napi_create_string_utf8(env, temp[i].c_str(), temp[i].length(), &segment);
             napi_set_element(env, result, i, segment);
         }
