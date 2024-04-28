@@ -20,6 +20,7 @@
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
+#include "ohos/init_data.h"
 #include "tools/log.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -338,6 +339,7 @@ HWTEST_F(NativeEngineTest, textEncodeTest003, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, textEncodeTest004, testing::ext::TestSize.Level0)
 {
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("gbk");
 
@@ -386,6 +388,7 @@ HWTEST_F(NativeEngineTest, textEncodeTest005, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeTest006, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeTest006 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("big5");
 
@@ -420,6 +423,7 @@ HWTEST_F(NativeEngineTest, textEncodeTest006, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeTest007, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeTest007 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("shift_jis");
 
@@ -454,6 +458,7 @@ HWTEST_F(NativeEngineTest, textEncodeTest007, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeTest008, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeTest008 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("iso-2022-jp");
 
@@ -488,6 +493,7 @@ HWTEST_F(NativeEngineTest, textEncodeTest008, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeTest009, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeTest009 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("ibm866");
 
@@ -522,6 +528,7 @@ HWTEST_F(NativeEngineTest, textEncodeTest009, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeTest010, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeTest010 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("macintosh");
 
@@ -682,6 +689,7 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest003, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeIntoTest004, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeIntoTest004 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("big5");
 
@@ -724,6 +732,7 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest004, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeIntoTest005, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeIntoTest005 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("shift_jis");
 
@@ -766,6 +775,7 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest005, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeIntoTest006, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeIntoTest006 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("iso-2022-jp");
 
@@ -808,6 +818,7 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest006, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, textEncodeIntoTest007, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("textEncodeIntoTest007 start");
+    SetHwIcuDirectory();
     napi_env env = (napi_env)engine_;
     OHOS::Util::TextEncoder textEncoder("ibm866");
 
