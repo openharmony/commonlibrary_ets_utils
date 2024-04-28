@@ -97,9 +97,15 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 
 void TaskPool::ExecuteCallback(const uv_async_t* req)
 {
-    auto worker = static_cast<Worker*>(req->data);
-    while (!worker->IsQueueEmpty()) {
-        auto resultInfo = worker->Dequeue();
+    auto info = static_cast<CallbackInfo*>(req->data);
+    if (info == nullptr || info->worker == nullptr) {
+        HILOG_ERROR("taskpool:: info or worker is nullptr");
+        return;
+    }
+    auto worker = info->worker;
+    auto& msgQueue = worker->Dequeue(info->hostEnv);
+    while (!msgQueue.IsEmpty()) {
+        auto resultInfo = msgQueue.DeQueue();
         ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
         napi_status status = napi_ok;
         CallbackScope callbackScope(resultInfo->hostEnv, resultInfo->taskId, status);

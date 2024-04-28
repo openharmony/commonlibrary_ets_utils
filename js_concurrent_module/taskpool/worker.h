@@ -41,12 +41,23 @@ enum class WorkerState { IDLE, RUNNING, BLOCKED };
 class Worker {
 public:
     using DebuggerPostTask = std::function<void()>;
+    using MsgQueue = MessageQueue<TaskResultInfo*>;
+
     static Worker* WorkerConstructor(napi_env env);
 
     void NotifyExecuteTask();
-    void Enqueue(TaskResultInfo* resultInfo);
-    TaskResultInfo* Dequeue();
-    bool IsQueueEmpty();
+    
+    void Enqueue(napi_env env, TaskResultInfo* resultInfo)
+    {
+        std::lock_guard<std::mutex> lock(queueMutex_);
+        msgQueueMap_[env].EnQueue(resultInfo);
+    }
+
+    MsgQueue& Dequeue(napi_env env)
+    {
+        std::lock_guard<std::mutex> lock(queueMutex_);
+        return msgQueueMap_[env];
+    }
 
     // the function will only be called when the task is finished or
     // exits abnormally, so we can not put it in the scope directly
@@ -184,6 +195,8 @@ private:
     std::atomic<bool> isExecutingLongTask_ = false;
     std::mutex longMutex_;
     std::unordered_set<uint64_t> longTasksSet_ {};
+    std::mutex queueMutex_; // for sendData
+    std::unordered_map<napi_env, MsgQueue> msgQueueMap_ {};
     friend class TaskManager;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

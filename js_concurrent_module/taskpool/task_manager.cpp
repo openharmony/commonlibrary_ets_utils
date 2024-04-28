@@ -741,10 +741,11 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
         return nullptr;
     }
     Worker* worker = static_cast<Worker*>(task->worker_);
-    worker->Enqueue(resultInfo);
+    worker->Enqueue(task->env_, resultInfo);
     auto callbackInfo = iter->second;
     callbackInfo->refCount++;
-    callbackInfo->onCallbackSignal->data = worker;
+    callbackInfo->onCallbackSignal->data = callbackInfo.get();
+    callbackInfo->worker = worker;
     uv_async_send(callbackInfo->onCallbackSignal);
     return nullptr;
 }

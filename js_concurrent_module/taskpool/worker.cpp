@@ -394,21 +394,6 @@ void Worker::ResetWorkerPriority()
     }
 }
 
-void Worker::Enqueue(TaskResultInfo* resultInfo)
-{
-    hostMessageQueue_.EnQueue(resultInfo);
-}
-
-TaskResultInfo* Worker::Dequeue()
-{
-    return hostMessageQueue_.DeQueue();
-}
-
-bool Worker::IsQueueEmpty()
-{
-    return hostMessageQueue_.IsEmpty();
-}
-
 void Worker::StoreTaskId(uint64_t taskId)
 {
     std::lock_guard<std::mutex> lock(currentTaskIdMutex_);
