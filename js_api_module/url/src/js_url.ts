@@ -90,6 +90,20 @@ class BusinessError extends Error {
   }
 }
 
+function decodeSafelyInner(input: string): string {
+    const regex = /(%[a-f0-9A-F]{2})|[^%]+/g;
+    return input.match(regex).map(part => {
+      if (part.startsWith('%')) {
+        try {
+          return decodeURIComponent(part);
+        } catch (e) {
+          return part;
+        }
+      }
+      return part;
+    }).join('');
+}
+
 function customEncodeURIComponent(str: string | number): string {
   const hexStrLen = 2; // 2:String length of hexadecimal encoded values
   const hexAdecimal = 16; // 16:Hexadecimal number system
@@ -222,7 +236,7 @@ class URLParams {
         if (encodedString === undefined) {
             return encodedString;
         }
-        return decodeURIComponent(encodedString);
+        return decodeSafelyInner(encodedString);
     });
     return outPut;
   }
@@ -234,7 +248,7 @@ class URLParams {
     if (this.urlClass.get(getname) === undefined) {
         return this.urlClass.get(getname);
     }
-    return decodeURIComponent(this.urlClass.get(getname));
+    return decodeSafelyInner(this.urlClass.get(getname));
   }
 
   entries(): Object {
@@ -269,8 +283,8 @@ class URLParams {
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
-      let key = array[i];
-      let value = array[i + 1];
+      let key = array[i].length === 0 ? array[i] : decodeSafelyInner(array[i]);
+      let value = array[i + 1].length === 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
       objfun.call(thisArg, value, key, this);
     }
   }
@@ -378,7 +392,7 @@ class URLSearchParams {
         if (encodedString === undefined) {
             return encodedString;
         }
-        return decodeURIComponent(encodedString);
+        return decodeSafelyInner(encodedString);
     });
     return outPut;
   }
@@ -387,7 +401,7 @@ class URLSearchParams {
     if (this.urlClass.get(getname) === undefined) {
         return this.urlClass.get(getname);
     }
-    return decodeURIComponent(this.urlClass.get(getname));
+    return decodeSafelyInner(this.urlClass.get(getname));
   }
 
   entries(): Object {
@@ -416,8 +430,8 @@ class URLSearchParams {
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
-      let key = array[i];
-      let value = array[i + 1];
+      let key = array[i].length === 0 ? array[i] : decodeSafelyInner(array[i]);
+      let value = array[i + 1].length === 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
       objfun.call(thisArg, value, key, this);
     }
   }
