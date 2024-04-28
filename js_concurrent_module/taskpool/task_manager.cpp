@@ -500,6 +500,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     task->taskState_ = ExecuteState::CANCELED;
     task->CancelPendingTask(env);
     if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+        reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
         napi_reference_unref(env, task->taskRef_, nullptr);
@@ -1164,6 +1165,10 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
         }
     }
     if (groupState == ExecuteState::WAITING && taskGroup->currentGroupInfo_ != nullptr) {
+        auto engine = reinterpret_cast<NativeEngine*>(env);
+        for (size_t i = 0; i < taskGroup->taskIds_.size(); i++) {
+            engine->DecreaseSubEnvCounter();
+        }
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
         napi_reject_deferred(env, taskGroup->currentGroupInfo_->deferred, error);
         napi_delete_reference(env, taskGroup->currentGroupInfo_->resArr);
@@ -1182,6 +1187,7 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
     }
     std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+        reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
     }

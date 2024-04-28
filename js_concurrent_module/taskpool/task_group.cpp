@@ -158,6 +158,8 @@ void TaskGroup::NotifyGroupTask(napi_env env)
         Priority priority = currentGroupInfo_->priority;
         if (task->IsGroupCommonTask()) {
             task->GetTaskInfo(env, napiTask, priority);
+        } else {
+            reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
         }
         task->IncreaseRefCount();
         TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
@@ -174,7 +176,11 @@ void TaskGroup::CancelPendingGroup(napi_env env)
     }
     napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
     auto pendingIter = pendingGroupInfos_.begin();
+    auto engine = reinterpret_cast<NativeEngine*>(env);
     for (; pendingIter != pendingGroupInfos_.end(); ++pendingIter) {
+        for (size_t i = 0; i < taskIds_.size(); i++) {
+            engine->DecreaseSubEnvCounter();
+        }
         GroupInfo* info = *pendingIter;
         napi_reject_deferred(env, info->deferred, error);
         napi_reference_unref(env, groupRef_, nullptr);
