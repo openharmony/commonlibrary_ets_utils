@@ -183,18 +183,15 @@ uint32_t TaskManager::ComputeSuitableThreadNum()
 {
     uint32_t targetNum = 0;
     if (GetTaskNum() != 0 && totalExecCount_ == 0) {
-        // this branch is used for avoiding time-consuming works that may block the taskpool
+        // this branch is used for avoiding time-consuming tasks that may block the taskpool
         targetNum = std::min(STEP_SIZE, GetTaskNum());
-    }
-    uint32_t result = 0;
-    if (totalExecCount_ != 0) {
+    } else if (totalExecCount_ != 0) {
         auto durationPerTask = static_cast<double>(totalExecTime_) / totalExecCount_;
-        result = std::ceil(durationPerTask * GetTaskNum() / MAX_TASK_DURATION);
-        targetNum += std::min(result, GetTaskNum());
+        uint32_t result = std::ceil(durationPerTask * GetTaskNum() / MAX_TASK_DURATION);
+        targetNum = std::min(result, GetTaskNum());
     }
     targetNum += GetRunningWorkers();
-    targetNum |= 1;
-    return targetNum;
+    return targetNum | 1;
 }
 
 void TaskManager::CheckForBlockedWorkers()
@@ -406,11 +403,6 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
 void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
-    // do not check when try to expand
-    if (taskManager.expandingCount_ != 0) {
-        return;
-    }
-
     taskManager.CheckForBlockedWorkers();
     uint32_t targetNum = taskManager.ComputeSuitableThreadNum();
     taskManager.NotifyShrink(targetNum);
@@ -419,22 +411,21 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
 
 void TaskManager::TryExpand()
 {
-    if (GetIdleWorkers() != 0) {
-        return;
-    }
-    // for accuracy, if worker is being created, we will not trigger expansion,
-    // and the expansion will be triggered until all workers are created
-    if (expandingCount_ != 0) {
-        needChecking_ = true;
+    // do not trigger when there are more idleWorkers than tasks
+    if (GetIdleWorkers() > GetTaskNum()) {
         return;
     }
     needChecking_ = false; // do not need to check
     uint32_t targetNum = ComputeSuitableThreadNum();
-    targetNum |= 1;
     uint32_t workerCount = GetThreadNum();
     const uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
+        uint32_t idleNum = GetIdleWorkers();
+        if (step <= idleNum) {
+            return;
+        }
+        step -= idleNum;
         CreateWorkers(hostEnv_, step);
         HILOG_INFO("taskpool:: maxThreads: %{public}u, created num: %{public}u, total num: %{public}u",
             maxThreads, step, GetThreadNum());
@@ -535,11 +526,6 @@ void TaskManager::NotifyWorkerIdle(Worker* worker)
 void TaskManager::NotifyWorkerCreated(Worker* worker)
 {
     NotifyWorkerIdle(worker);
-    expandingCount_--;
-    if (UNLIKELY(needChecking_ && expandingCount_ == 0 && expandHandle_ != nullptr)) {
-        needChecking_ = false;
-        uv_async_send(expandHandle_);
-    }
 }
 
 void TaskManager::NotifyWorkerAdded(Worker* worker)
@@ -664,7 +650,6 @@ void TaskManager::InitTaskManager(napi_env env)
 void TaskManager::CreateWorkers(napi_env env, uint32_t num)
 {
     for (uint32_t i = 0; i < num; i++) {
-        expandingCount_++;
         auto worker = Worker::WorkerConstructor(env);
         NotifyWorkerAdded(worker);
     }
