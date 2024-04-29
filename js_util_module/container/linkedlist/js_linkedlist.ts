@@ -406,13 +406,12 @@ if (flag || fastLinkedList === undefined) {
     [Symbol.iterator](): IterableIterator<T> {
       errorUtil.checkBindError('Symbol.iterator', LinkedList, this);
       let count: number = 0;
-      let linkedlist: LinkedList<T> = this;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= linkedlist.elementNum;
-          value = done ? undefined : linkedlist.getNode(count++).element;
+          done = count >= this.elementNum;
+          value = done ? undefined : this.getNode(count++).element;
           return {
             done: done,
             value: value,

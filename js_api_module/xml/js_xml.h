@@ -154,7 +154,7 @@ namespace OHOS::xml {
         std::string type {};
         std::vector<std::string> elementStack = { "", "", ""};
         std::map<int, std::map<int, std::string>> multNsp;
-        int CurNspNum {};
+        int curNspNum {};
         std::string out_ {};
         bool isHasDecl {};
     };

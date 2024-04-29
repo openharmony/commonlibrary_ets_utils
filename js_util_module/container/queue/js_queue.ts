@@ -150,14 +150,13 @@ if (flag || fastQueue === undefined) {
     [Symbol.iterator](): IterableIterator<T> {
       errorUtil.checkBindError('Symbol.iterator', Queue, this);
       let count: number = this.front;
-      let queue: Queue<T> = this;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count === queue.rear;
-          value = done ? undefined : queue[count];
-          count = (count + 1) % queue.capacity;
+          done = count === this.rear;
+          value = done ? undefined : this[count];
+          count = (count + 1) % this.capacity;
           return {
             done: done,
             value: value,

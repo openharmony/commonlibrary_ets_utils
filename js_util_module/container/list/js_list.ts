@@ -394,13 +394,12 @@ if (flag || fastList === undefined) {
     [Symbol.iterator](): IterableIterator<T> {
       errorUtil.checkBindError('Symbol.iterator', List, this);
       let count: number = 0;
-      let list: List<T> = this;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= list.elementNum;
-          value = done ? undefined : list.getNode(count++).element;
+          done = count >= this.elementNum;
+          value = done ? undefined : this.getNode(count++).element;
           return {
             done: done,
             value: value,

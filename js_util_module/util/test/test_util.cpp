@@ -593,8 +593,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest001, testing::ext::TestSize.Level0)
     uint32_t resWritten = 0;
     napi_get_value_uint32(env, read, &resWritten);
 
-    ASSERT_EQ(resRead, (uint32_t)6);
-    ASSERT_EQ(resWritten, (uint32_t)6);
+    ASSERT_EQ(resRead, static_cast<uint32_t>(6));
+    ASSERT_EQ(resWritten, static_cast<uint32_t>(6));
 }
 
 /**
@@ -635,8 +635,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest002, testing::ext::TestSize.Level0)
     uint32_t resWritten = 0;
     napi_get_value_uint32(env, read, &resWritten);
 
-    ASSERT_EQ(resRead, (uint32_t)4);
-    ASSERT_EQ(resWritten, (uint32_t)4);
+    ASSERT_EQ(resRead, static_cast<uint32_t>(4));
+    ASSERT_EQ(resWritten, static_cast<uint32_t>(4));
 }
 
 /**
@@ -677,8 +677,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest003, testing::ext::TestSize.Level0)
     uint32_t resWritten = 0;
     napi_get_value_uint32(env, read, &resWritten);
 
-    ASSERT_EQ(resRead, (uint32_t)5);
-    ASSERT_EQ(resWritten, (uint32_t)5);
+    ASSERT_EQ(resRead, static_cast<uint32_t>(5));
+    ASSERT_EQ(resWritten, static_cast<uint32_t>(5));
 }
 
 /**
@@ -720,8 +720,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest004, testing::ext::TestSize.Level0)
     uint32_t resWritten = 0;
     napi_get_value_uint32(env, read, &resWritten);
 
-    ASSERT_EQ(resRead, (uint32_t)6);
-    ASSERT_EQ(resWritten, (uint32_t)6);
+    ASSERT_EQ(resRead, static_cast<uint32_t>(6));
+    ASSERT_EQ(resWritten, static_cast<uint32_t>(6));
 }
 
 /**
@@ -763,8 +763,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest005, testing::ext::TestSize.Level0)
     uint32_t resWritten = 0;
     napi_get_value_uint32(env, read, &resWritten);
 
-    ASSERT_EQ(resRead, (uint32_t)7);
-    ASSERT_EQ(resWritten, (uint32_t)7);
+    ASSERT_EQ(resRead, static_cast<uint32_t>(7));
+    ASSERT_EQ(resWritten, static_cast<uint32_t>(7));
 }
 
 /**
@@ -806,8 +806,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest006, testing::ext::TestSize.Level0)
     uint32_t resWritten = 0;
     napi_get_value_uint32(env, read, &resWritten);
 
-    ASSERT_EQ(resRead, (uint32_t)7);
-    ASSERT_EQ(resWritten, (uint32_t)7);
+    ASSERT_EQ(resRead, static_cast<uint32_t>(7));
+    ASSERT_EQ(resWritten, static_cast<uint32_t>(7));
 }
 
 /**
@@ -849,8 +849,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest007, testing::ext::TestSize.Level0)
     uint32_t resWritten = 0;
     napi_get_value_uint32(env, read, &resWritten);
 
-    ASSERT_EQ(resRead, (uint32_t)7);
-    ASSERT_EQ(resWritten, (uint32_t)7);
+    ASSERT_EQ(resRead, static_cast<uint32_t>(7));
+    ASSERT_EQ(resWritten, static_cast<uint32_t>(7));
 }
 
 /**
@@ -1382,10 +1382,10 @@ HWTEST_F(NativeEngineTest, decoderUtf16le003, testing::ext::TestSize.Level0)
     }
     std::u16string tempU16str02 =
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(tempStr01);
-    ASSERT_EQ(0xFEFF, (int)tempU16str02[0]);
-    ASSERT_EQ(0x61, (int)tempU16str02[1]);
-    ASSERT_EQ(0x62, (int)tempU16str02[2]);
-    ASSERT_EQ(0x63, (int)tempU16str02[3]);
+    ASSERT_EQ(0xFEFF, static_cast<int>(tempU16str02[0]));
+    ASSERT_EQ(0x61, static_cast<int>(tempU16str02[1]));
+    ASSERT_EQ(0x62, static_cast<int>(tempU16str02[2]));
+    ASSERT_EQ(0x63, static_cast<int>(tempU16str02[3]));
     if (ch != nullptr) {
         delete []ch;
         ch = nullptr;
@@ -1431,10 +1431,10 @@ HWTEST_F(NativeEngineTest, decoderUtf16le004, testing::ext::TestSize.Level0)
     }
     std::u16string tempU16str02 =
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(tempStr01);
-    ASSERT_EQ(0xFEFF, (int)tempU16str02[0]);
-    ASSERT_EQ(0x61, (int)tempU16str02[1]);
-    ASSERT_EQ(0x62, (int)tempU16str02[2]);
-    ASSERT_EQ(0x63, (int)tempU16str02[3]);
+    ASSERT_EQ(0xFEFF, static_cast<int>(tempU16str02[0]));
+    ASSERT_EQ(0x61, static_cast<int>(tempU16str02[1]));
+    ASSERT_EQ(0x62, static_cast<int>(tempU16str02[2]));
+    ASSERT_EQ(0x63, static_cast<int>(tempU16str02[3]));
     if (ch != nullptr) {
         delete []ch;
         ch = nullptr;
@@ -1522,10 +1522,10 @@ HWTEST_F(NativeEngineTest, decoderUtf16be002, testing::ext::TestSize.Level0)
     }
     std::u16string tempU16str02 =
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(tempStr01);
-    ASSERT_EQ(0xFEFF, (int)tempU16str02[0]);
-    ASSERT_EQ(0x61, (int)tempU16str02[1]);
-    ASSERT_EQ(0x62, (int)tempU16str02[2]);
-    ASSERT_EQ(0x63, (int)tempU16str02[3]);
+    ASSERT_EQ(0xFEFF, static_cast<int>(tempU16str02[0]));
+    ASSERT_EQ(0x61, static_cast<int>(tempU16str02[1]));
+    ASSERT_EQ(0x62, static_cast<int>(tempU16str02[2]));
+    ASSERT_EQ(0x63, static_cast<int>(tempU16str02[3]));
     if (ch != nullptr) {
         delete []ch;
         ch = nullptr;
@@ -1571,10 +1571,10 @@ HWTEST_F(NativeEngineTest, decoderUtf16be003, testing::ext::TestSize.Level0)
     }
     std::u16string tempU16str02 =
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.from_bytes(tempStr01);
-    ASSERT_EQ(0xFEFF, (int)tempU16str02[0]);
-    ASSERT_EQ(0x61, (int)tempU16str02[1]);
-    ASSERT_EQ(0x62, (int)tempU16str02[2]);
-    ASSERT_EQ(0x63, (int)tempU16str02[3]);
+    ASSERT_EQ(0xFEFF, static_cast<int>(tempU16str02[0]));
+    ASSERT_EQ(0x61, static_cast<int>(tempU16str02[1]));
+    ASSERT_EQ(0x62, static_cast<int>(tempU16str02[2]));
+    ASSERT_EQ(0x63, static_cast<int>(tempU16str02[3]));
     if (ch != nullptr) {
         delete []ch;
         ch = nullptr;

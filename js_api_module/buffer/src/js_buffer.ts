@@ -299,7 +299,7 @@ type Options = {
 
 const _log = console.log;
 
-console.log = function (...args) {
+console.log = function (...args) : void {
   if (args.length === 1 && args[0] instanceof Buffer) {
     let buf: Buffer = args[0];
     let bufArr: Array<number> = buf[bufferSymbol].getBufferData();
@@ -1783,7 +1783,7 @@ class Buffer {
     return this[bufferSymbol].getBufferData().entries();
   }
 
-  [Symbol.iterator]() {
+  [Symbol.iterator](): IterableIterator<[number, number]> {
     return this[bufferSymbol].getBufferData().entries();
   }
 }

@@ -1704,7 +1704,7 @@ void Worker::TerminateInner()
     // 1. Update State
     UpdateWorkerState(TERMINATEING);
     // 2. send null signal
-    PostMessageInner(NULL);
+    PostMessageInner(nullptr);
 }
 
 void Worker::CloseInner()
