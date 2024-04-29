@@ -88,9 +88,9 @@ class URI {
       throw new BusinessError('The input parameter fragment is invalid');
     }
     let uriStr: string = scheme;
-    uriStr += ":" + encodeURIComponent(ssp);
-    if (fragment !== null && fragment !== "") {
-      uriStr += "#" + encodeURIComponent(fragment);
+    uriStr += ':' + encodeURIComponent(ssp);
+    if (fragment !== null && fragment !== '') {
+      uriStr += '#' + encodeURIComponent(fragment);
     }
     return createNewUri(uriStr);
   }
@@ -161,14 +161,14 @@ class URI {
     if (this.uricalss.query === null) {
       return null;
     }
-    let queryStrs: string[] = decodeURIComponent(this.uricalss.query).split("&") || [];
+    let queryStrs: string[] = decodeURIComponent(this.uricalss.query).split('&') || [];
     for (let item of queryStrs) {
-      if (key === "" && item === "") {
-        return "";
+      if (key === '' && item === '') {
+        return '';
       }
-      let str = item.split("=") || [];
+      let str = item.split('=') || [];
       if (str.length === 1 && str[0] === key) {
-        return "";
+        return '';
       }
       if (str.length === 2 && str[0] === key) {
         return str[1].replace(/\+/g, ' ');
@@ -205,14 +205,14 @@ class URI {
     if (this.uricalss.query === null) {
       return values;
     }
-    let queryStrs: string[] = decodeURIComponent(this.uricalss.query).split("&") || [];
+    let queryStrs: string[] = decodeURIComponent(this.uricalss.query).split('&') || [];
     for (let item of queryStrs) {
-      if (key === "" && item === "") {
+      if (key === '' && item === '') {
         values.push(item);
       }
-      let str = item.split("=") || [];
+      let str = item.split('=') || [];
       if (str.length === 1 && str[0] === key) {
-        values.push("");
+        values.push('');
       }
       if (str.length === 2 && str[0] === key) {
         values.push(str[1]);
@@ -233,13 +233,13 @@ class URI {
       return defaultValue;
     }
     flag = flag.toLocaleLowerCase();
-    return "false" !== flag && "0" !== flag;
+    return 'false' !== flag && '0' !== flag;
   }
 
   getLastSegment(): string {
     let segments = this.uricalss.getSegment();
     if (!segments) {
-      return "";
+      return '';
     }
     return decodeURIComponent(segments[segments.length - 1]);
   }
@@ -250,7 +250,7 @@ class URI {
     if (segments) {
       segments.forEach(element => {
         array.push(decodeURIComponent(element));
-      })
+      });
     }
     return array;
   }
