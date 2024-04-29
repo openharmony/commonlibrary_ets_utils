@@ -82,15 +82,19 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     return exports;
 }
 
+// ---------------------------------- SendData ---------------------------------------
 void TaskPool::ExecuteCallback(const uv_async_t* req)
 {
-    auto info = static_cast<CallbackInfo*>(req->data);
-    if (info == nullptr || info->worker == nullptr) {
-        HILOG_ERROR("taskpool:: info or worker is nullptr");
+    auto* msgQueue = TaskManager::GetInstance().GetMessageQueue(req);
+    if (msgQueue == nullptr) {
+        HILOG_ERROR("taskpool:: msgQueue is nullptr");
         return;
     }
-    auto worker = info->worker;
-    auto& msgQueue = worker->Dequeue(info->hostEnv);
+    ExecuteCallbackInner(*msgQueue);
+}
+
+void TaskPool::ExecuteCallbackInner(MsgQueue& msgQueue)
+{
     while (!msgQueue.IsEmpty()) {
         auto resultInfo = msgQueue.DeQueue();
         ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
@@ -127,7 +131,7 @@ void TaskPool::ExecuteCallback(const uv_async_t* req)
         if (NapiHelper::IsExceptionPending(env)) {
             napi_value exception = nullptr;
             napi_get_and_clear_last_exception(env, &exception);
-            HILOG_ERROR("taskpool:: an exception has occurred napi_call_function");
+            HILOG_ERROR("taskpool:: an exception has occurred in napi_call_function");
         }
         auto task = TaskManager::GetInstance().GetTask(resultInfo->taskId);
         if (task == nullptr) {
@@ -137,6 +141,7 @@ void TaskPool::ExecuteCallback(const uv_async_t* req)
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
     }
 }
+// ---------------------------------- SendData ---------------------------------------
 
 napi_value TaskPool::GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo)
 {

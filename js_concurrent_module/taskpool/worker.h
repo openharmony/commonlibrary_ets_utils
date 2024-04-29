@@ -35,13 +35,13 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 using namespace Commonlibrary::Concurrent::Common::Helper;
 using namespace Commonlibrary::Platform;
+using MsgQueue = MessageQueue<TaskResultInfo*>;
 
 enum class WorkerState { IDLE, RUNNING, BLOCKED };
 
 class Worker {
 public:
     using DebuggerPostTask = std::function<void()>;
-    using MsgQueue = MessageQueue<TaskResultInfo*>;
 
     static Worker* WorkerConstructor(napi_env env);
 
