@@ -20,11 +20,11 @@ interface NativeURLSearchParams {
   sort(): void;
   has(hasname: string): boolean;
   toString(): string;
-  keys(): Object;
-  values(): Object;
+  keys(): Array<string>;
+  values(): Array<string>;
   getAll(getAllname: string): string[];
   get(getname: string): string;
-  entries(): Object;
+  entries():  Array<Array<string>>;
   delete(deletename: string): void;
   updateParams(): void;
   array: string[];
@@ -38,11 +38,11 @@ interface NativeURLParams {
   sort(): void;
   has(hasname: string): boolean;
   toString(): string;
-  keys(): Object;
-  values(): Object;
+  keys(): Array<string>;
+  values(): Array<string>;
   getAll(getAllname: string): string[];
   get(getname: string): string;
-  entries(): Object;
+  entries(): Array<Array<string>>;
   delete(deletename: string): void;
   updateParams(): void;
   array: string[];
@@ -91,8 +91,11 @@ class BusinessError extends Error {
 }
 
 function decodeSafelyInner(input: string): string {
+    if (input === undefined) {
+        return input;
+    }
     const regex = /(%[a-f0-9A-F]{2})|[^%]+/g;
-    return input.match(regex).map(part => {
+    let outStr = input.match(regex).map(part => {
       if (part.startsWith('%')) {
         try {
           return decodeURIComponent(part);
@@ -102,6 +105,7 @@ function decodeSafelyInner(input: string): string {
       }
       return part;
     }).join('');
+    return outStr.replaceAll('+' , ' ');
 }
 
 function customEncodeURIComponent(str: string | number): string {
@@ -123,9 +127,20 @@ function customEncodeForToString(str: string | number): string {
     let hex = c.charCodeAt(0).toString(hexAdecimal);
     return '%' + (hex.length < hexStrLen ? '0' : '') + hex.toUpperCase();
   })
-    .replace(/(%20)+/g, '+')
-    .replace(/%3D/g, '=')
-    .replace(/%25/g, '%')
+    .replace(/%20|%2B|%3D|%25/g, function (match) {
+      switch (match) {
+        case '%20':
+          return '+';
+        case '%2B':
+          return '+';
+        case '%3D':
+          return '=';
+        case '%25':
+          return '%';
+        default:
+          return match;
+      }
+    });
 }
 
 function convertArrayToObj(arr: string[]): Record<string, string[]> {
@@ -220,11 +235,15 @@ class URLParams {
   }
 
   keys(): Object {
-    return this.urlClass.keys();
+    let temp = this.urlClass.keys();
+    temp = temp.map(value => decodeSafelyInner(value));
+    return temp;
   }
 
   values(): Object {
-    return this.urlClass.values();
+    let temp = this.urlClass.values();
+    temp = temp.map(value => decodeSafelyInner(value));
+    return temp;
   }
 
   getAll(getAllname: string): string[] {
@@ -233,9 +252,6 @@ class URLParams {
     }
     let outPut: string[] = this.urlClass.getAll(getAllname);
     outPut = outPut.map(function(encodedString) {
-        if (encodedString === undefined) {
-            return encodedString;
-        }
         return decodeSafelyInner(encodedString);
     });
     return outPut;
@@ -245,14 +261,15 @@ class URLParams {
     if (arguments.length === 0 || typeof getname !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${getname} must be string`);
     }
-    if (this.urlClass.get(getname) === undefined) {
-        return this.urlClass.get(getname);
-    }
     return decodeSafelyInner(this.urlClass.get(getname));
   }
 
   entries(): Object {
-    return this.urlClass.entries();
+    let temp = this.urlClass.entries();
+    temp = temp.map(innerArr => {
+        return innerArr.map(value => decodeSafelyInner(value));
+    });
+    return temp;
   }
 
   delete(deleteName: string): void {
@@ -379,33 +396,35 @@ class URLSearchParams {
   }
 
   keys(): Object {
-    return this.urlClass.keys();
+    let temp = this.urlClass.keys();
+    temp = temp.map(value => decodeSafelyInner(value));
+    return temp;
   }
 
   values(): Object {
-    return this.urlClass.values();
+    let temp = this.urlClass.values();
+    temp = temp.map(value => decodeSafelyInner(value));
+    return temp;
   }
 
   getAll(getAllname: string): string[] {
     let outPut: string[] = this.urlClass.getAll(getAllname);
     outPut = outPut.map(function(encodedString) {
-        if (encodedString === undefined) {
-            return encodedString;
-        }
         return decodeSafelyInner(encodedString);
     });
     return outPut;
   }
 
   get(getname: string): string {
-    if (this.urlClass.get(getname) === undefined) {
-        return this.urlClass.get(getname);
-    }
     return decodeSafelyInner(this.urlClass.get(getname));
   }
 
   entries(): Object {
-    return this.urlClass.entries();
+    let temp = this.urlClass.entries();
+    temp = temp.map(innerArr => {
+        return innerArr.map(value => decodeSafelyInner(value));
+    });
+    return temp;
   }
 
   delete(deleteName: string): void {
@@ -546,9 +565,9 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
 }
 
 function decodeURISafely(input: string): string {
-  const regex = /(%[0-9A-Fa-f]{2})+|[^%]+/g;
+  const regex = /(%[0-9A-Fa-f]{2})|[^%]+/g;
   return input.match(regex).map(part => {
-    if (part.startsWith('%') && part != '%26' && part != '%3D' && part != '%25') {
+    if (part.startsWith('%') && part != '%26' && part != '%3D' && part != '%25' && part != '%25') {
       try {
         return decodeURIComponent(part);
       } catch (e) {
