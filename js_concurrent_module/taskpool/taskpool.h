@@ -58,7 +58,7 @@ private:
     static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority);
 
     static void TriggerTask(Task* task);
-
+    static void ExecuteCallbackInner(MsgQueue& msgQueue);
     friend class TaskManager;
 };
 

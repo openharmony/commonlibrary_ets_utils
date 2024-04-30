@@ -105,6 +105,7 @@ public:
     void IncreaseRefCount(uint64_t taskId);
     void DecreaseRefCount(napi_env env, uint64_t taskId);
     napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task);
+    MsgQueue* GetMessageQueue(const uv_async_t* req);
 
     // for task dependency
     bool IsDependendByTaskId(uint64_t taskId);

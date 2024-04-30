@@ -684,6 +684,7 @@ void TaskManager::RestoreWorker(Worker* worker)
     }
 }
 
+// ---------------------------------- SendData ---------------------------------------
 void TaskManager::RegisterCallback(napi_env env, uint64_t taskId, std::shared_ptr<CallbackInfo> callbackInfo)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
@@ -749,6 +750,19 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
     uv_async_send(callbackInfo->onCallbackSignal);
     return nullptr;
 }
+
+MsgQueue* TaskManager::GetMessageQueue(const uv_async_t* req)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto info = static_cast<CallbackInfo*>(req->data);
+    if (info == nullptr || info->worker == nullptr) {
+        HILOG_ERROR("taskpool:: info or worker is nullptr");
+        return nullptr;
+    }
+    auto worker = info->worker;
+    return &(worker->Dequeue(info->hostEnv));
+}
+// ---------------------------------- SendData ---------------------------------------
 
 void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
 {
