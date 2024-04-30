@@ -213,7 +213,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             return nullptr;
         }
     }
-
+    HILOG_INFO("worker:: Worker start constructor");
     Worker* worker = nullptr;
     if (limitSign) {
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
@@ -1157,6 +1157,7 @@ void Worker::ClearGlobalCallObject()
 
 void Worker::StartExecuteInThread(napi_env env, const char* script)
 {
+    HILOG_INFO("worker:: Start execute in the thread!");
     // 1. init hostOnMessageSignal_ in host loop
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     if (loop == nullptr) {
@@ -1203,7 +1204,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
 void Worker::ExecuteInThread(const void* data)
 {
     HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
-
+    HILOG_INFO("worker:: Execute in the thread!");
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
