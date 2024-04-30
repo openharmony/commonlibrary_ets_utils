@@ -15,12 +15,14 @@ import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 locks_sources = [
-  "async_lock.cpp",
-  "async_lock_manager.cpp",
-  "deadlock_helpers.cpp",
-  "graph.cpp",
-  "lock_request.cpp",
-  "native_module_locks.cpp",
+  "locks/async_lock.cpp",
+  "locks/async_lock_manager.cpp",
+  "locks/deadlock_helpers.cpp",
+  "locks/graph.cpp",
+  "locks/lock_request.cpp",
+  "json/json_manager.cpp",
+  "utils.cpp",
+  "native_utils_module.cpp",
 ]
 
 concurrent_helper_sources = [ "../common/helper/napi_helper.cpp" ]

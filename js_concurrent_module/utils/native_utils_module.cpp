@@ -13,13 +13,16 @@
  * limitations under the License.
  */
 
-#include "async_lock_manager.h"
+#include "utils.h"
+#include "helper/error_helper.h"
+#include "helper/napi_helper.h"
+#include "helper/object_helper.h"
 
 static napi_module g_utilsModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
-    .nm_register_func = Commonlibrary::Concurrent::LocksModule::AsyncLockManager::Init,
+    .nm_register_func = Commonlibrary::Concurrent::Utils::Init,
     .nm_modname = "arkts.utils",
     .nm_priv = reinterpret_cast<void *>(0),
     .reserved = {0},
