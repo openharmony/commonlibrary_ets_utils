@@ -336,7 +336,7 @@ class URLSearchParams {
     setName = customEncodeURIComponent(setName);
     setValues = customEncodeURIComponent(setValues);
     this.urlClass.set(setName, setValues);
-    if (this.urlClass.initialValue.hasOwnProperty(setName)) { 
+    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, setName)) {
       delete this.urlClass.initialValue[setName];
     }
     if (this.parentUrl !== null) {
@@ -410,7 +410,7 @@ class URLSearchParams {
 
   delete(deleteName: string): void {
     this.urlClass.delete(deleteName);
-    if (this.urlClass.initialValue.hasOwnProperty(deleteName)) { 
+    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, deleteName)) {
       delete this.urlClass.initialValue[deleteName];
     }
     if (this.parentUrl !== null) {
