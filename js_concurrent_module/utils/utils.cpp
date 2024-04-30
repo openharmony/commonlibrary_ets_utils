@@ -21,9 +21,10 @@
 #include "utils.h"
 
 namespace Commonlibrary::Concurrent {
-napi_value Utils::Init(napi_env env, napi_value exports) {
+napi_value Utils::Init(napi_env env, napi_value exports)
+{
     Commonlibrary::Concurrent::LocksModule::AsyncLockManager::Init(env, exports);
     Commonlibrary::Concurrent::JsonManager::Init(env, exports);
     return exports;
 }
-}
+}  // namespace Commonlibrary::Concurrent

@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_UTILS_H
-#define JS_CONCURRENT_MODULE_UTILS_H
+#ifndef JS_CONCURRENT_MODULE_UTILS_UTILS_H
+#define JS_CONCURRENT_MODULE_UTILS_UTILS_H
+
+#include "napi/native_api.h"
 
 namespace Commonlibrary::Concurrent {
 class Utils {
@@ -22,4 +24,4 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
 };
 }  // namespace Commonlibrary::Concurrent
-#endif //JS_CONCURRENT_MODULE_UTILS_H
+#endif //JS_CONCURRENT_MODULE_UTILS_UTILS_H

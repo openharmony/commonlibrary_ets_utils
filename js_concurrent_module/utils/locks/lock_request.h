@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_LOCKS_LOCK_REQUEST_H
-#define JS_CONCURRENT_MODULE_LOCKS_LOCK_REQUEST_H
+#ifndef JS_CONCURRENT_MODULE_UTILS_LOCKS_LOCK_REQUEST_H
+#define JS_CONCURRENT_MODULE_UTILS_LOCKS_LOCK_REQUEST_H
 
 #include <queue>
 #include <string>
@@ -100,4 +100,4 @@ struct RequestTimeoutData {
 };
 
 }  // namespace Commonlibrary::Concurrent::LocksModule
-#endif  // JS_CONCURRENT_MODULE_LOCKS_LOCK_REQUEST_H
+#endif  // JS_CONCURRENT_MODULE_UTILS_LOCKS_LOCK_REQUEST_H

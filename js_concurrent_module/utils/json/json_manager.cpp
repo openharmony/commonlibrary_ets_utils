@@ -13,19 +13,20 @@
  * limitations under the License.
  */
 
-#include <unistd.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "json_manager.h"
 #include "tools/log.h"
 
 namespace Commonlibrary::Concurrent {
 const std::string JSON_NAME = "JSON";
+const std::string ASON_NAME = "ASON";
 const std::string PARSE_NAME = "parse";
 const std::string PARSE_SENDABLE_NAME = "parseSendable";
 const std::string STRINGIFY_NAME = "stringify";
 
-bool JsonManager::GeJsonFunction(napi_env env, napi_value global, std::string jsonName, napi_value &jsonFunction)
+bool JsonManager::GeJsonFunction(napi_env env, napi_value global, const std::string &jsonName, napi_value &jsonFunction)
 {
     napi_value jsonKey;
     napi_create_string_utf8(env, jsonName.c_str(), jsonName.size(), &jsonKey);
@@ -33,7 +34,7 @@ bool JsonManager::GeJsonFunction(napi_env env, napi_value global, std::string js
     bool validFunction = false;
     napi_is_callable(env, jsonFunction, &validFunction);
     if (!validFunction) {
-        HILOG_ERROR("Get JSON function for %{public}s failed.", jsonName.c_str());
+        HILOG_ERROR("Get ASON function for %{public}s failed.", jsonName.c_str());
     }
     return validFunction;
 }
@@ -41,24 +42,25 @@ bool JsonManager::GeJsonFunction(napi_env env, napi_value global, std::string js
 napi_value JsonManager::Init(napi_env env, napi_value exports)
 {
     napi_value global;
-    napi_value json;
-    napi_value parse;
+    napi_value ason;
     napi_value parseSendable;
     napi_value stringify;
-    NAPI_CALL(env, napi_create_object(env, &json));
+    napi_value jsonKey;
+    napi_value jsonValue;
+    NAPI_CALL(env, napi_create_object(env, &ason));
     napi_get_global(env, &global);
-    if (!(GeJsonFunction(env, global, PARSE_NAME, parse) &&
-          GeJsonFunction(env, global, PARSE_SENDABLE_NAME, parseSendable) &&
-          GeJsonFunction(env, global, STRINGIFY_NAME, stringify))) {
+    napi_create_string_utf8(env, JSON_NAME.c_str(), JSON_NAME.size(), &jsonKey);
+    napi_get_property(env, global, jsonKey, &jsonValue);
+    if (!(GeJsonFunction(env, jsonValue, PARSE_SENDABLE_NAME, parseSendable) &&
+          GeJsonFunction(env, jsonValue, STRINGIFY_NAME, stringify))) {
         return exports;
     }
     napi_property_descriptor desc[] = {
-        DECLARE_NAPI_PROPERTY("parse", parse),
-        DECLARE_NAPI_PROPERTY("parseSendable", parseSendable),
-        DECLARE_NAPI_PROPERTY("stringify", stringify),
+        DECLARE_NAPI_PROPERTY(PARSE_NAME.c_str(), parseSendable),
+        DECLARE_NAPI_PROPERTY(STRINGIFY_NAME.c_str(), stringify),
     };
-    napi_define_properties(env, json, sizeof(desc) / sizeof(desc[0]), desc);
-    napi_set_named_property(env, exports, "json", json);
+    napi_define_properties(env, ason, sizeof(desc) / sizeof(desc[0]), desc);
+    napi_set_named_property(env, exports, ASON_NAME.c_str(), ason);
     return exports;
 }
 }

@@ -14,9 +14,6 @@
  */
 
 #include "utils.h"
-#include "helper/error_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
 
 static napi_module g_utilsModule = {
     .nm_version = 1,

@@ -13,20 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_LOCKS_ASYNC_LOCK_MANAGER_H
-#define JS_CONCURRENT_MODULE_LOCKS_ASYNC_LOCK_MANAGER_H
+#ifndef JS_CONCURRENT_MODULE_UTILS_JSON_MANAGER_H
+#define JS_CONCURRENT_MODULE_UTILS_JSON_MANAGER_H
 
 #include <string>
-#include "helper/error_helper.h"
+
 #include "helper/napi_helper.h"
-#include "helper/object_helper.h"
 
 namespace Commonlibrary::Concurrent {
 class JsonManager {
 public:
-    static bool GeJsonFunction(napi_env env, napi_value global, std::string jsonName, napi_value &jsonFunction);
+    static bool GeJsonFunction(napi_env env, napi_value global, const std::string &jsonName, napi_value &jsonFunction);
     static napi_value Init(napi_env env, napi_value exports);
 };
 }  // namespace Commonlibrary::Concurrent
 
-#endif
+#endif // JS_CONCURRENT_MODULE_UTILS_JSON_MANAGER_H
