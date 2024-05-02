@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,14 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_LOCKS_COMMON_H
-#define JS_CONCURRENT_MODULE_LOCKS_COMMON_H
+#include "utils.h"
 
-namespace Commonlibrary::Concurrent::LocksModule {
+static napi_module g_utilsModule = {
+    .nm_version = 1,
+    .nm_flags = 0,
+    .nm_filename = nullptr,
+    .nm_register_func = Commonlibrary::Concurrent::Utils::Init,
+    .nm_modname = "arkts.utils",
+    .nm_priv = reinterpret_cast<void *>(0),
+    .reserved = {0},
+};
 
-using tid_t = int;
-inline constexpr tid_t INVALID_TID = std::numeric_limits<tid_t>::max();
-
-}  // namespace Commonlibrary::Concurrent::LocksModule
-
-#endif
+extern "C" __attribute__((constructor)) void LocksRegister()
+{
+    napi_module_register(&g_utilsModule);
+}

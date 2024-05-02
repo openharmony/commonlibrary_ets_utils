@@ -13,22 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_LOCKS_DEADLOCK_HELPERS_H
-#define JS_CONCURRENT_MODULE_LOCKS_DEADLOCK_HELPERS_H
-
-#include "common.h"
-#include "graph.h"
-#include "async_lock_manager.h"
+#ifndef JS_CONCURRENT_MODULE_UTILS_LOCKS_COMMON_H
+#define JS_CONCURRENT_MODULE_UTILS_LOCKS_COMMON_H
 
 namespace Commonlibrary::Concurrent::LocksModule {
 
-using LockGraph = Graph<tid_t, AsyncLockDependency>;
-using DeadlockInfo = LockGraph::Path;
-
-std::string CreateDeadlockWarningMessage(DeadlockInfo &&deadlock);
-std::string CreateFullLockInfosMessage(tid_t targetTid, std::vector<AsyncLockDependency> &&dependencies,
-                                       DeadlockInfo &&deadlock);
-DeadlockInfo CheckDeadlocks(const std::vector<AsyncLockDependency> &dependencies);
+using tid_t = int;
+inline constexpr tid_t INVALID_TID = std::numeric_limits<tid_t>::max();
 
 }  // namespace Commonlibrary::Concurrent::LocksModule
 

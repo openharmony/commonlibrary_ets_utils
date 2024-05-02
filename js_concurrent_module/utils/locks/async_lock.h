@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef JS_CONCURRENT_MODULE_LOCKS_ASYNC_LOCK_H
-#define JS_CONCURRENT_MODULE_LOCKS_ASYNC_LOCK_H
+#ifndef JS_CONCURRENT_MODULE_UTILS_LOCKS_ASYNC_LOCK_H
+#define JS_CONCURRENT_MODULE_UTILS_LOCKS_ASYNC_LOCK_H
 
 #include <list>
 #include <string>
@@ -65,4 +65,4 @@ private:
 };
 
 }  // namespace Commonlibrary::Concurrent::LocksModule
-#endif  // JS_CONCURRENT_MODULE_LOCKS_ASYNC_LOCK_H
+#endif  // JS_CONCURRENT_MODULE_UTILS_LOCKS_ASYNC_LOCK_H

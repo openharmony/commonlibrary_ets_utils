@@ -19,8 +19,9 @@
 #include <latch>
 #include <thread>
 #include <gtest/gtest.h>
-#include "async_lock.h"
+
 #include "ark_native_engine.h"
+#include "locks/async_lock.h"
 
 using namespace Commonlibrary::Concurrent::LocksModule;
 
