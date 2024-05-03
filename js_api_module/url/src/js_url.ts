@@ -24,7 +24,7 @@ interface NativeURLSearchParams {
   values(): Array<string>;
   getAll(getAllname: string): string[];
   get(getname: string): string;
-  entries():  Array<Array<string>>;
+  entries(): Array<Array<string>>;
   delete(deletename: string): void;
   updateParams(): void;
   array: string[];
@@ -105,7 +105,7 @@ function decodeSafelyInner(input: string): string {
       }
       return part;
     }).join('');
-    return outStr.replaceAll('+' , ' ');
+    return outStr.replaceAll('+', ' ');
 }
 
 function customEncodeURIComponent(str: string | number): string {
@@ -567,7 +567,7 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
 function decodeURISafely(input: string): string {
   const regex = /(%[0-9A-Fa-f]{2})|[^%]+/g;
   return input.match(regex).map(part => {
-    if (part.startsWith('%') && part != '%26' && part != '%3D' && part != '%25' && part != '%25') {
+    if (part.startsWith('%') && part !== '%26' && part !== '%3D' && part !== '%25') {
       try {
         return decodeURIComponent(part);
       } catch (e) {
