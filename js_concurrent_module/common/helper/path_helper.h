@@ -35,6 +35,8 @@ public:
     static constexpr char EXT_NAME_ETS[] = ".ets";
     static constexpr char EXT_NAME_TS[] = ".ts";
     static constexpr char EXT_NAME_JS[] = ".js";
+    static constexpr char NORMALIZED_OHMURL_TAG = '&';
+    static constexpr size_t NORMALIZED_OHMURL_ARGS_NUM = 5;
 
     static bool CheckWorkerPath(napi_env env, std::string script, bool isHar, bool isRelativePath)
     {
@@ -71,12 +73,19 @@ public:
         reinterpret_cast<NativeEngine*>(env)->GetCurrentModuleInfo(moduleName, fileName, isRelativePath);
         if (isRelativePath) {
             // if input is relative path, need to concat new recordName.
+            std::string recordName = moduleName;
             size_t pos = moduleName.rfind(SLASH_TAG);
             if (pos != std::string::npos) {
                 moduleName = moduleName.substr(0, pos + 1); // from spcific file to dir
             }
             script = moduleName + script;
             script = NormalizePath(script); // remove ../ and .ets
+
+            if (recordName.at(0) == NORMALIZED_OHMURL_TAG) {
+                script.append(1, NORMALIZED_OHMURL_TAG);
+                std::vector<std::string> normalizedRes = SplitNormalizedRecordName(recordName);
+                script += normalizedRes[NORMALIZED_OHMURL_ARGS_NUM - 1];
+            }
         } else {
             script = moduleName + script;
         }
@@ -119,6 +128,32 @@ public:
             if (suffix == EXT_NAME_ETS || suffix == EXT_NAME_TS || suffix == EXT_NAME_JS) {
                 res.erase(pos, suffix.length());
             }
+        }
+        return res;
+    }
+
+    /*
+    *  Split the recordName of the new ohmurl rule
+    *  recordName: &moduleName&bundleName&importPath&version
+    */
+    static std::vector<std::string> SplitNormalizedRecordName(const std::string &recordName)
+    {
+        std::vector<std::string> res(NORMALIZED_OHMURL_ARGS_NUM);
+        int index = NORMALIZED_OHMURL_ARGS_NUM - 1;
+        std::string temp;
+        int endIndex = recordName.size() - 1;
+        for (int i = endIndex; i >= 0; i--) {
+            char element = recordName[i];
+            if (element == NORMALIZED_OHMURL_TAG) {
+                res[index] = temp;
+                index--;
+                temp = "";
+                continue;
+            }
+            temp = element + temp;
+        }
+        if (temp.size()) {
+            res[index] = temp;
         }
         return res;
     }
