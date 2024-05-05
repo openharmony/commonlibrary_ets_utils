@@ -91,7 +91,7 @@ class BusinessError extends Error {
 }
 
 function decodeSafelyInner(input: string): string {
-    if (input === undefined) {
+    if (input === undefined || input === '') {
         return input;
     }
     const regex = /(%[a-f0-9A-F]{2})|[^%]+/g;
@@ -565,9 +565,12 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
 }
 
 function decodeURISafely(input: string): string {
+  if (input === '') {
+    return input;
+  }
   const regex = /(%[0-9A-Fa-f]{2})|[^%]+/g;
   return input.match(regex).map(part => {
-    if (part.startsWith('%') && part !== '%26' && part !== '%3D' && part !== '%25') {
+    if (part.startsWith('%') && part !== '%26' && part !== '%3D' && part !== '%25' && part !== '%2B') {
       try {
         return decodeURIComponent(part);
       } catch (e) {
