@@ -322,8 +322,9 @@ namespace OHOS::Uri {
     bool Uri::AnalysisIPV4()
     {
         std::regex ipv4("((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)");
-        std::regex hostname("(([a-zA-Z0-9]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+([a-zA-Z]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?))|"
-                            "([a-zA-Z0-9]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?)");
+        std::regex hostname("(([a-zA-Z0-9]([a-zA-Z0-9\\-~_]*[a-zA-Z0-9])?\\.)+"
+                           "([a-zA-Z]([a-zA-Z0-9\\-~_]*[a-zA-Z0-9])?))|"
+                           "([a-zA-Z0-9]([a-zA-Z0-9\\-~_]*[a-zA-Z0-9])?)");
         bool isIpv4 = std::regex_match(data_, ipv4);
         bool isHosName = std::regex_match(data_, hostname);
         if (!isIpv4 && !isHosName) {
