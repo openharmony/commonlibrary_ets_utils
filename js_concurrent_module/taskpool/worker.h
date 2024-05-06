@@ -18,6 +18,9 @@
 
 #include <mutex>
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+#include "cpp/task.h"
+#endif
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
@@ -38,6 +41,14 @@ using namespace Commonlibrary::Platform;
 using MsgQueue = MessageQueue<TaskResultInfo*>;
 
 enum class WorkerState { IDLE, RUNNING, BLOCKED };
+
+#if defined(ENABLE_TASKPOOL_FFRT)
+static const std::map<Priority, int> WORKERPRIORITY_FFRTQOS_MAP = {
+    {Priority::LOW, ffrt::qos_utility},
+    {Priority::MEDIUM, ffrt::qos_default},
+    {Priority::HIGH, ffrt::qos_user_initiated},
+};
+#endif
 
 class Worker {
 public:
@@ -66,7 +77,7 @@ public:
     static void NotifyHandleTaskResult(Task* task);
 
 private:
-    explicit Worker(napi_env env) : hostEnv_(env) {};
+    explicit Worker(napi_env env);
 
     ~Worker() = default;
 
@@ -131,14 +142,7 @@ private:
     // reset qos_user_initiated when exit PriorityScope
     class PriorityScope {
     public:
-        PriorityScope(Worker* worker, Priority taskPriority) : worker_(worker)
-        {
-            if (taskPriority != worker->priority_) {
-                HILOG_DEBUG("taskpool:: reset worker priority to match task priority");
-                SetWorkerPriority(taskPriority);
-                worker->priority_ = taskPriority;
-            }
-        }
+        PriorityScope(Worker* worker, Priority taskPriority);
         ~PriorityScope()
         {
             worker_->ResetWorkerPriority();

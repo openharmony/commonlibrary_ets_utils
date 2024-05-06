@@ -51,7 +51,12 @@
                 "hilog",
                 "hitrace",
                 "init",
-                "qos_manager"
+                "qos_manager",
+                "bundle_framework",
+                "c_utils",
+                "ffrt",
+                "ipc",
+                "samgr"
             ],
             "third_party": [
                 "icu",

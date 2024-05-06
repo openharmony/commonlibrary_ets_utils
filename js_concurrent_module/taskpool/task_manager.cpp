@@ -19,6 +19,14 @@
 #include <securec.h>
 #include <thread>
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+#include "bundle_info.h"
+#include "bundle_mgr_interface.h"
+#include "bundle_mgr_proxy.h"
+#include "iservice_registry.h"
+#include "status_receiver_interface.h"
+#include "system_ability_definition.h"
+#endif
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
@@ -638,6 +646,11 @@ void TaskManager::InitTaskManager(napi_env env)
         hostEngine = hostEngine->GetHostEngine();
     }
     if (!isInitialized_.exchange(true, std::memory_order_relaxed)) {
+#if defined(ENABLE_TASKPOOL_FFRT)
+        if (!CheckSystemApp()) {
+            return;
+        }
+#endif
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
         // Add a reserved thread for taskpool
         CreateWorkers(hostEnv_);
@@ -1112,6 +1125,38 @@ Task* TaskManager::GetTask(uint64_t taskId)
         return nullptr;
     }
     return iter->second;
+}
+
+bool TaskManager::CheckSystemApp()
+{
+#if defined(ENABLE_TASKPOOL_FFRT)
+    auto abilityManager = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (abilityManager == nullptr) {
+        HILOG_ERROR("taskpool:: fail to GetSystemAbility abilityManager is nullptr.");
+        return false;
+    }
+    auto bundleObj = abilityManager->GetSystemAbility(OHOS::BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (bundleObj == nullptr) {
+        HILOG_ERROR("taskpool:: fail to get bundle manager service.");
+        return false;
+    }
+    auto bundleMgr = OHOS::iface_cast<OHOS::AppExecFwk::IBundleMgr>(bundleObj);
+    if (bundleMgr == nullptr) {
+        HILOG_ERROR("taskpool:: Bundle manager is nullptr.");
+        return false;
+    }
+    OHOS::AppExecFwk::BundleInfo bundleInfo;
+    if (bundleMgr->GetBundleInfoForSelf(
+        static_cast<int32_t>(OHOS::AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), bundleInfo)
+        != OHOS::ERR_OK) {
+        HILOG_ERROR("taskpool:: fail to GetBundleInfoForSelf");
+        return false;
+    }
+    isSystemApp_ = bundleInfo.applicationInfo.isSystemApp;
+    return true;
+#else
+    return false;
+#endif
 }
 
 // ----------------------------------- TaskGroupManager ----------------------------------------
