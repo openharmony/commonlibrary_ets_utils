@@ -341,7 +341,7 @@ namespace OHOS::xml {
                     out_.append("&amp;");
                     break;
                 case '>':
-                    out_.append("&gt");
+                    out_.append("&gt;");
                     break;
                 case '<':
                     out_.append("&lt;");
