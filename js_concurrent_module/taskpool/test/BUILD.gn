@@ -56,6 +56,10 @@ ohos_unittest("test_taskpool_unittest") {
     "napi:ace_napi",
     "qos_manager:qos",
   ]
+
+  if (is_ohos && is_standard_system && !is_arkui_x) {
+    external_deps += [ "ffrt:libffrt" ]
+  }
 }
 
 group("unittest") {

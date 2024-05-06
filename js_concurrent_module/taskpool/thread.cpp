@@ -15,20 +15,43 @@
 
 #include "thread.h"
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+#include "ffrt.h"
+#endif
+#include "task_manager.h"
+
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 Thread::Thread() : tid_() {}
 
 bool Thread::Start()
 {
-    int ret = uv_thread_create(&tid_, [](void* arg) {
-#if defined IOS_PLATFORM || defined MAC_PLATFORM
-        pthread_setname_np("OS_TaskWorker");
-#else
-        pthread_setname_np(pthread_self(), "OS_TaskWorker");
+    if (TaskManager::GetInstance().IsSystemApp()) {
+        HILOG_INFO("taskpool:: system apps use ffrt");
+#if defined(ENABLE_TASKPOOL_FFRT)
+        ffrt::task_attr task_attr;
+        (void)ffrt_task_attr_init(&task_attr);
+        ffrt_task_attr_set_name(&task_attr, "OS_TaskWorker");
+        ffrt_task_attr_set_qos(&task_attr, ffrt_qos_user_initiated);
+        ffrt_task_attr_set_local(&task_attr, true);
+
+        ffrt::submit([this]() {
+            Thread* thread = reinterpret_cast<Thread*>(this);
+            thread->Run();
+        }, {}, {}, task_attr);
 #endif
-        Thread* thread = reinterpret_cast<Thread*>(arg);
-        thread->Run();
-    }, this);
-    return ret != 0;
+        return 0;
+    } else {
+        HILOG_INFO("taskpool:: other apps use ffrt");
+        int ret = uv_thread_create(&tid_, [](void* arg) {
+#if defined IOS_PLATFORM || defined MAC_PLATFORM
+            pthread_setname_np("OS_TaskWorker");
+#else
+            pthread_setname_np(pthread_self(), "OS_TaskWorker");
+#endif
+            Thread* thread = reinterpret_cast<Thread*>(arg);
+            thread->Run();
+        }, this);
+        return ret != 0;
+    }
 }
 }  // namespace Commonlibrary::Concurrent::TaskPoolModule

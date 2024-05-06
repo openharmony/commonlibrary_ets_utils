@@ -134,6 +134,12 @@ public:
     // for callback
     void ReleaseCallBackInfo(Task* task);
 
+    bool CheckSystemApp();
+    bool IsSystemApp() const
+    {
+        return isSystemApp_;
+    }
+
 private:
     TaskManager();
     ~TaskManager();
@@ -204,6 +210,8 @@ private:
     std::mutex taskQueuesMutex_;
 
     std::atomic<bool> isInitialized_ = false;
+
+    std::atomic<bool> isSystemApp_ = false;
 
     std::mutex callbackMutex_;
     std::map<uint32_t, std::shared_ptr<CallbackInfo>> callbackTable_ {};
