@@ -113,7 +113,6 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
     task->taskId_ = reinterpret_cast<uint64_t>(task);
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, TaskPool::HandleTaskResult, task);
-    ConcurrentHelper::UvHandleInit(loop, task->increaseRefSignal_, IncreaseTaskRef, task);
     napi_value taskId = NapiHelper::CreateUint64(env, task->taskId_);
     napi_value napiTrue = NapiHelper::CreateBooleanValue(env, true);
     napi_value napiFalse = NapiHelper::CreateBooleanValue(env, false);
@@ -422,14 +421,8 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         return nullptr;
     }
-    if (task->increaseRefSignal_ == nullptr) {
-        std::string errMessage = "taskpool:: only task can support SendData";
-        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
-        return nullptr;
-    }
-    uv_async_send(task->increaseRefSignal_);
-    TaskResultInfo* resultInfo = new TaskResultInfo(task->env_, task->taskId_, serializationArgs);
+    
+    TaskResultInfo* resultInfo = new TaskResultInfo(task->env_, env, task->taskId_, serializationArgs);
     return TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, task);
 }
 
@@ -1119,16 +1112,6 @@ bool Task::CanExecuteDelayed(napi_env env)
         return false;
     }
     return true;
-}
-
-void Task::IncreaseTaskRef(const uv_async_t* req)
-{
-    auto task = static_cast<Task*>(req->data);
-    if (task == nullptr) {
-        HILOG_FATAL("taskpool:: IncreaseTaskRef task is nullptr");
-        return;
-    }
-    napi_reference_ref(task->env_, task->taskRef_, nullptr);
 }
 
 void Task::SetHasDependency(bool hasDependency)
