@@ -34,10 +34,11 @@ bool Thread::Start()
         ffrt_task_attr_set_qos(&task_attr, ffrt_qos_user_initiated);
         ffrt_task_attr_set_local(&task_attr, true);
 
-        ffrt::submit([this]() {
+        auto task = [this]() {
             Thread* thread = reinterpret_cast<Thread*>(this);
             thread->Run();
-        }, {}, {}, task_attr);
+        };
+        ffrt::submit(task, {}, {}, task_attr);
 #endif
         return 0;
     } else {
