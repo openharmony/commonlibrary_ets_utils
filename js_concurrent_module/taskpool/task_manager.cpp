@@ -761,6 +761,8 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
     callbackInfo->refCount++;
     callbackInfo->onCallbackSignal->data = callbackInfo.get();
     callbackInfo->worker = worker;
+    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
+    workerEngine->IncreaseListeningCounter();
     uv_async_send(callbackInfo->onCallbackSignal);
     return nullptr;
 }

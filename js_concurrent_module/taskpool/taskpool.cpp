@@ -112,7 +112,7 @@ void TaskPool::ExecuteCallbackInner(MsgQueue& msgQueue)
         auto resultInfo = msgQueue.DeQueue();
         ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
         napi_status status = napi_ok;
-        CallbackScope callbackScope(resultInfo->hostEnv, resultInfo->taskId, status);
+        CallbackScope callbackScope(resultInfo->hostEnv, resultInfo->workerEnv, resultInfo->taskId, status);
         if (status != napi_ok) {
             HILOG_ERROR("napi_open_handle_scope failed");
             return;
@@ -146,12 +146,6 @@ void TaskPool::ExecuteCallbackInner(MsgQueue& msgQueue)
             napi_get_and_clear_last_exception(env, &exception);
             HILOG_ERROR("taskpool:: an exception has occurred in napi_call_function");
         }
-        auto task = TaskManager::GetInstance().GetTask(resultInfo->taskId);
-        if (task == nullptr) {
-            HILOG_DEBUG("taskpool:: task has been released or cancelled");
-            continue;
-        }
-        napi_reference_unref(task->env_, task->taskRef_, nullptr);
     }
 }
 // ---------------------------------- SendData ---------------------------------------

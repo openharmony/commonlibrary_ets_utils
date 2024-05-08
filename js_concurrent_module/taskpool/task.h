@@ -88,8 +88,6 @@ public:
                                       bool defaultTransfer = true, bool defaultCloneSendable = false);
     static void TaskDestructor(napi_env env, void* data, void* hint);
 
-    static void IncreaseTaskRef(const uv_async_t* req);
-
     static void ThrowNoDependencyError(napi_env env);
     static void ExecuteListenerCallback(const uv_async_t* req);
     static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
@@ -142,7 +140,6 @@ public:
     std::list<TaskInfo*> pendingTaskInfos_ {}; // for a common task executes multiple times
     void* result_ = nullptr;
     uv_async_t* onResultSignal_ = nullptr;
-    uv_async_t* increaseRefSignal_ = nullptr;
     std::atomic<bool> success_ {true};
     std::atomic<uint64_t> startTime_ {};
     std::atomic<uint64_t> cpuTime_ {};
@@ -179,11 +176,12 @@ struct CallbackInfo {
 };
 
 struct TaskResultInfo {
-    TaskResultInfo(napi_env env, uint64_t id, void* args) : hostEnv(env),
+    TaskResultInfo(napi_env env, napi_env curEnv, uint64_t id, void* args) : hostEnv(env), workerEnv(curEnv),
         taskId(id), serializationArgs(args) {}
     ~TaskResultInfo() = default;
 
     napi_env hostEnv;
+    napi_env workerEnv;
     uint64_t taskId;
     void* serializationArgs;
 };
