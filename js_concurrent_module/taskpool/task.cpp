@@ -218,7 +218,6 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
     }
     name_ = std::string(name);
     delete[] name;
-    reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
     return pendingInfo;
 }
 
@@ -890,6 +889,7 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
     taskInfo->serializationFunction = serializationFunction;
     taskInfo->serializationArguments = serializationArguments;
     taskInfo->priority = priority;
+    reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
     return taskInfo;
 }
 
@@ -930,7 +930,9 @@ void Task::CancelPendingTask(napi_env env)
         return;
     }
     napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
+    auto engine = reinterpret_cast<NativeEngine*>(env);
     for (const auto& info : pendingTaskInfos_) {
+        engine->DecreaseSubEnvCounter();
         napi_reject_deferred(env, info->deferred, error);
         napi_reference_unref(env, taskRef_, nullptr);
         delete info;

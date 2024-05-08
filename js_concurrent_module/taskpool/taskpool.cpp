@@ -436,6 +436,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     if (napiTaskResult == nullptr) {
         napi_get_undefined(task->env_, &napiTaskResult);
     }
+    reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
     if (!task->IsGroupTask()) {
         if (success) {
@@ -454,13 +455,14 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
-    if (!task->IsGroupTask()) {
-        TriggerTask(task);
-    }
+    TriggerTask(task);
 }
 
 void TaskPool::TriggerTask(Task* task)
 {
+    if (task->IsGroupTask()) {
+        return;
+    }
     TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
     task->taskState_ = ExecuteState::FINISHED;
     // seqRunnerTask will trigger the next
