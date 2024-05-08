@@ -189,8 +189,7 @@ napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo
         DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, thisVar),
     };
     NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    engine->WrapSendableObj(env, thisVar, data, Destructor);
+    NAPI_CALL(env, napi_wrap_sendable(env, thisVar, data, Destructor, nullptr, nullptr));
 
     return thisVar;
 }
@@ -210,7 +209,7 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
     return instance;
 }
 
-void AsyncLockManager::Destructor([[maybe_unused]] void *env, void *data, [[maybe_unused]] void *hint)
+void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] void *hint)
 {
     AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
     std::unique_lock<std::mutex> guard(lockMutex);
@@ -236,8 +235,7 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
     NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, argv.get(), &thisVar, nullptr));
 
     AsyncLockIdentity *id;
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    engine->UnwrapSendableObj(env, thisVar, reinterpret_cast<void **>(&id));
+    NAPI_CALL(env, napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&id)));
 
     AsyncLock *asyncLock = nullptr;
     {
