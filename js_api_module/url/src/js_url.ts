@@ -94,6 +94,7 @@ function decodeSafelyInner(input: string): string {
     if (input === undefined || input === '') {
         return input;
     }
+    input = input.replaceAll('+', ' ');
     const regex = /(%[a-f0-9A-F]{2})|[^%]+/g;
     let outStr = input.match(regex).map(part => {
       if (part.startsWith('%')) {
@@ -105,7 +106,7 @@ function decodeSafelyInner(input: string): string {
       }
       return part;
     }).join('');
-    return outStr.replaceAll('+', ' ');
+    return outStr;
 }
 
 function customEncodeURIComponent(str: string | number): string {
