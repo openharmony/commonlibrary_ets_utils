@@ -15,6 +15,10 @@
 
 #include "worker.h"
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+#include "c/executor_task.h"
+#include "ffrt_inner.h"
+#endif
 #include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
 #include "helper/hitrace_helper.h"
 #include "process_helper.h"
@@ -163,6 +167,52 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 }
 #endif
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+void Worker::InitFfrtInfo()
+{
+    if (TaskManager::GetInstance().IsSystemApp()) {
+        static const std::map<int, Priority> FFRTQOS_WORKERPRIORITY_MAP = {
+            {ffrt::qos_utility, Priority::LOW},
+            {ffrt::qos_default, Priority::DEFAULT},
+            {ffrt::qos_user_initiated, Priority::HIGH},
+        };
+        ffrt_qos_t qos = ffrt_this_task_get_qos();
+        priority_ = FFRTQOS_WORKERPRIORITY_MAP.at(qos);
+        ffrtTaskHandle_ = ffrt_get_cur_task();
+    }
+}
+
+void Worker::InitLoopHandleNum()
+{
+    if (ffrtTaskHandle_ == nullptr) {
+        return;
+    }
+
+    uv_loop_t* loop = GetWorkerLoop();
+    if (loop != nullptr) {
+        initActiveHandleNum_ = loop->active_handles;
+    } else {
+        HILOG_ERROR("taskpool:: worker loop is nullptr when init loop handle num.");
+    }
+}
+
+bool Worker::IsLoopActive()
+{
+    uv_loop_t* loop = GetWorkerLoop();
+    if (loop != nullptr) {
+        return uv_loop_alive_taskpool(loop, initActiveHandleNum_);
+    } else {
+        HILOG_ERROR("taskpool:: worker loop is nullptr when judge loop alive.");
+        return false;
+    }
+}
+
+uint64_t Worker::GetWaitTime()
+{
+    return ffrt_epoll_get_wait_time(ffrtTaskHandle_);
+}
+#endif
+
 void Worker::ExecuteInThread(const void* data)
 {
     HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
@@ -198,6 +248,10 @@ void Worker::ExecuteInThread(const void* data)
     if (worker->PrepareForWorkerInstance()) {
         // Call after uv_async_init
         worker->NotifyWorkerCreated();
+#if defined(ENABLE_TASKPOOL_FFRT)
+        worker->InitFfrtInfo();
+        worker->InitLoopHandleNum();
+#endif
         worker->RunLoop();
     } else {
         HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance fail");
