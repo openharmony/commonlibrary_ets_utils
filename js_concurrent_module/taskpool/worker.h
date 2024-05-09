@@ -57,7 +57,7 @@ public:
     static Worker* WorkerConstructor(napi_env env);
 
     void NotifyExecuteTask();
-    
+
     void Enqueue(napi_env env, TaskResultInfo* resultInfo)
     {
         std::lock_guard<std::mutex> lock(queueMutex_);
@@ -75,6 +75,11 @@ public:
     void NotifyTaskFinished();
     static void NotifyTaskResult(napi_env env, Task* task, napi_value result);
     static void NotifyHandleTaskResult(Task* task);
+
+#if defined(ENABLE_TASKPOOL_FFRT)
+    bool IsLoopActive();
+    uint64_t GetWaitTime();
+#endif
 
 private:
     explicit Worker(napi_env env);
@@ -172,6 +177,11 @@ private:
     static void TaskResultCallback(napi_env env, napi_value result, bool success, void* data);
     static void ReleaseWorkerHandles(const uv_async_t* req);
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+    void InitFfrtInfo();
+    void InitLoopHandleNum();
+#endif
+
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};
     uv_async_t* performTaskSignal_ {nullptr};
@@ -202,6 +212,11 @@ private:
     std::mutex queueMutex_; // for sendData
     std::unordered_map<napi_env, MsgQueue> msgQueueMap_ {};
     friend class TaskManager;
+
+#if defined(ENABLE_TASKPOOL_FFRT)
+    void* ffrtTaskHandle_ = nullptr;
+    uint32_t initActiveHandleNum_ = 0;
+#endif
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H

@@ -295,6 +295,14 @@ uint32_t TaskManager::GetIdleWorkers()
     uint32_t idleCount = 0;
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     for (auto& worker : idleWorkers_) {
+#if defined(ENABLE_TASKPOOL_FFRT)
+        if (worker->ffrtTaskHandle_ != nullptr) {
+            if (worker->GetWaitTime() > 0) {
+                idleCount++;
+            }
+            continue;
+        }
+#endif
         if (!ReadThreadInfo(worker, buf, sizeof(buf))) {
             continue;
         }
@@ -314,6 +322,26 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
 {
     char buf[4096]; // 4096: buffer for thread info
     for (auto& worker : idleWorkers_) {
+#if defined(ENABLE_TASKPOOL_FFRT)
+        if (worker->ffrtTaskHandle_ != nullptr) {
+            uint64_t workerWaitTime = worker->GetWaitTime();
+            bool isWorkerLoopActive = worker->IsLoopActive();
+            if (workerWaitTime == 0) {
+                continue;
+            }
+            uint64_t currTime = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count();
+            if (!isWorkerLoopActive) {
+                freeList_.emplace_back(worker);
+            } else if ((currTime - workerWaitTime) > 120) { // 120 : free after 120s
+                freeList_.emplace_back(worker);
+                HILOG_INFO("taskpool:: worker in ffrt epoll wait more than 2 min, force to free.");
+            } else {
+                HILOG_INFO("taskpool:: worker uv alive, and will be free in 2 min if not wake.");
+            }
+            continue;
+        }
+#endif
         if (!ReadThreadInfo(worker, buf, sizeof(buf))) {
             continue;
         }
