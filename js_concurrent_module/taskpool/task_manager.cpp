@@ -23,6 +23,8 @@
 #include "bundle_info.h"
 #include "bundle_mgr_interface.h"
 #include "bundle_mgr_proxy.h"
+#include "c/executor_task.h"
+#include "ffrt_inner.h"
 #include "iservice_registry.h"
 #include "status_receiver_interface.h"
 #include "system_ability_definition.h"
@@ -678,6 +680,11 @@ void TaskManager::InitTaskManager(napi_env env)
 #if defined(ENABLE_TASKPOOL_FFRT)
         if (!CheckSystemApp()) {
             return;
+        }
+        if (isSystemApp_) {
+            ffrt_set_cpu_worker_max_num(ffrt::qos_utility, 12); // 12 : worker max num
+            ffrt_set_cpu_worker_max_num(ffrt::qos_default, 12); // 12 : worker max num
+            ffrt_set_cpu_worker_max_num(ffrt::qos_user_initiated, 12); // 12 : worker max num
         }
 #endif
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);

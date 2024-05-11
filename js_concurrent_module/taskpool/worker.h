@@ -82,7 +82,7 @@ public:
 #endif
 
 private:
-    explicit Worker(napi_env env);
+    explicit Worker(napi_env env) : hostEnv_(env) {};
 
     ~Worker() = default;
 
