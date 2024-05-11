@@ -42,7 +42,7 @@ bool Thread::Start()
 #endif
         return 0;
     } else {
-        HILOG_INFO("taskpool:: other apps use ffrt");
+        HILOG_INFO("taskpool:: other apps do not use ffrt");
         int ret = uv_thread_create(&tid_, [](void* arg) {
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
             pthread_setname_np("OS_TaskWorker");

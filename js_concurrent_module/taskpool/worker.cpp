@@ -30,21 +30,6 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
 using namespace Commonlibrary::Platform;
 
-Worker::Worker(napi_env env) : hostEnv_(env)
-{
-    if (TaskManager::GetInstance().IsSystemApp()) {
-#if defined(ENABLE_TASKPOOL_FFRT)
-        static const std::map<int, Priority> FFRTQOS_WORKERPRIORITY_MAP = {
-            {ffrt::qos_utility, Priority::LOW},
-            {ffrt::qos_default, Priority::DEFAULT},
-            {ffrt::qos_user_initiated, Priority::HIGH},
-        };
-        ffrt_qos_t qos = ffrt_this_task_get_qos();
-        priority_ = FFRTQOS_WORKERPRIORITY_MAP.at(qos);
-#endif
-    }
-}
-
 Worker::PriorityScope::PriorityScope(Worker* worker, Priority taskPriority) : worker_(worker)
 {
     if (taskPriority != worker->priority_) {
