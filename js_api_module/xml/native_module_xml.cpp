@@ -39,10 +39,14 @@ namespace OHOS::xml {
         napi_is_arraybuffer(env, args[0], &bFlag);
         if (bFlag) {
             napi_get_arraybuffer_info(env, args[0], &data, &iLength);
-        }
-        napi_is_dataview(env, args[0], &bFlag);
-        if (bFlag) {
-            napi_get_dataview_info(env, args[0], &iLength, &data, &arraybuffer, &offPos);
+        } else {
+            napi_is_dataview(env, args[0], &bFlag);
+            if (bFlag) {
+                napi_get_dataview_info(env, args[0], &iLength, &data, &arraybuffer, &offPos);
+            } else {
+                napi_throw_error(env, "401", "The parameter type is incorrect, only support ArrayBuffer or DataView.");
+                return nullptr;
+            }
         }
 
         if (argc == 1) {
@@ -89,10 +93,14 @@ namespace OHOS::xml {
         napi_is_arraybuffer(env, args[0], &bFlag);
         if (bFlag) {
             napi_get_arraybuffer_info(env, args[0], &data, &len);
-        }
-        napi_is_dataview(env, args[0], &bFlag);
-        if (bFlag) {
-            napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
+        } else {
+            napi_is_dataview(env, args[0], &bFlag);
+            if (bFlag) {
+                napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
+            } else {
+                napi_throw_error(env, "401", "The parameter type is incorrect, only support ArrayBuffer or DataView.");
+                return nullptr;
+            }
         }
         if (data) {
             std::string strEnd(reinterpret_cast<char*>(data), len);
