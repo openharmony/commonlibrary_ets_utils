@@ -16,7 +16,7 @@
 declare function requireNapi(napiModuleName: string): any;
 const emitter = requireNapi('events.emitter');
 // @ts-ignore
-const { TextEncoder, TextDecoder } = requireNapi('util');
+const { TextEncoder, StringDecoder } = requireNapi('util');
 
 const DEFAULT_HIGH_WATER_MARK = 16 * 1024;
 const DEFAULT_ENCODING = 'utf-8';
@@ -139,7 +139,7 @@ class Readable {
   private listener: EventEmitter | undefined;
   private callbacks: { [key: string]: Function[] } = {};
   protected encoder = new TextEncoder();
-  protected decoder = new TextDecoder();
+  protected stringDecoder = new StringDecoder();
   private isInitialized: boolean = false;
   private pauseInner: boolean;
   private pipeWritableArrayInner: ReadablePipeStream[] = [];
@@ -157,10 +157,12 @@ class Readable {
    * The Readable constructor.
    *
    * @syscap SystemCapability.Utils.Lang
+   * @throws { BusinessError } 401 - Parameter error. Possible causes:
+   * 1.Incorrect parameter types.
    * @crossplatform
    * @since 12
    */
-  constructor(options?: { encoding?: string | null; highWatermark?: number; doRead?: (size: number) => void }) {
+  constructor(options?: { encoding: string | null; highWatermark?: number; doRead?: (size: number) => void }) {
     this.readableEncodingInner = options?.encoding || DEFAULT_ENCODING;
     this.readableHighWatermarkInner = options?.highWatermark || DEFAULT_HIGH_WATER_MARK;
     this.readableObjectModeInner = false;
@@ -171,8 +173,19 @@ class Readable {
     this.readableEndedInner = false;
     this.listener = new EventEmitter();
     this.buf = [];
-    if (typeof options?.doRead === 'function') {
-      this.doRead = options.doRead;
+    if (arguments.length !== 0) {
+      if (typeof options?.doRead === 'function') {
+        this.doRead = options.doRead;
+      }
+      if (this.readableEncodingInner.toLowerCase() === 'utf8') {
+        this.readableEncodingInner = DEFAULT_ENCODING;
+      }
+      if (ENCODING_SET.indexOf(this.readableEncodingInner.toLowerCase()) === -1) {
+        let error = new BusinessError('Incorrect parameter types.', 401);
+      throw error;
+      }
+      this.stringDecoder = new StringDecoder(this.readableEncodingInner);
+      this.encoder = new TextEncoder(this.readableEncodingInner);
     }
   }
 
@@ -340,7 +353,7 @@ class Readable {
     let buffer = null;
     if (size > 0 && size <= this.readableLengthInner) {
       this.readableLengthInner -= size;
-      buffer = this.decoder.decodeWithStream(new Uint8Array(this.buf.splice(0, size)));
+      buffer = this.stringDecoder.write(new Uint8Array(this.buf.splice(0, size)));
       this.doRead !== null && this.listener?.emit(ReadableEvent.DATA, buffer);
     }
     if ((!this.readableInner || size <= -1) && this.readableFlowingInner) {
@@ -404,17 +417,26 @@ class Readable {
    * @since 12
    */
   setEncoding(encoding?: string): boolean {
+    if(this.readableEncodingInner === encoding) {
+      return true;
+    }
     if (!encoding) {
-      this.readableEncodingInner = 'utf8';
+      this.readableEncodingInner = DEFAULT_ENCODING;
+      this.encoder = new TextEncoder(this.readableEncodingInner);
+      this.stringDecoder = new StringDecoder(this.readableEncodingInner);
       return false;
     }
     if (encoding.toLowerCase() === 'utf8') {
       encoding = 'utf-8';
     }
+    if (this.buf.length !== 0) {
+      console.error('stream: The buffer also has data, and encoding is not allowed');
+      return false;
+    }
     if (ENCODING_SET.indexOf(encoding.toLowerCase()) !== -1) {
       try {
         this.encoder = new TextEncoder(encoding);
-        this.decoder = new TextDecoder(encoding);
+        this.stringDecoder = new StringDecoder(encoding);
         this.readableEncodingInner = encoding.toLowerCase();
       } catch (e) {
         this.throwError(e as Error);
@@ -1493,7 +1515,7 @@ class Transform extends Duplex {
       throw new BusinessError('The doTransform() method is not implemented', 10200039);
     }
     if (chunk instanceof Uint8Array) {
-      const chunkString = this.decoder.decodeWithStream(chunk);
+      const chunkString = this.stringDecoder.write(chunk);
       this.doTransform(chunkString, encoding || 'utf8', callback || ((): void => {
       }));
     } else if (typeof chunk === 'string') {
