@@ -36,7 +36,6 @@ public:
     static bool IsConcurrentFunction(napi_env env, napi_value value);
     static bool IsGeneratorFunction(napi_env env, napi_value value);
     static bool IsStrictEqual(napi_env env, napi_value lhs, napi_value rhs);
-    static bool IsSendableObject(napi_env env, napi_value value);
     static bool IsSendable(napi_env env, napi_value value);
     static size_t GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo);
     static napi_value GetNamePropertyInParentPort(napi_env env, napi_ref parentPort, const char* name);
