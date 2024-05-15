@@ -337,13 +337,11 @@ void Worker::PerformTask(const uv_async_t* req)
 {
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     auto worker = static_cast<Worker*>(req->data);
-    HILOG_ERROR("==[ZR]taskpool:: PerformTask in, ffrt task=[%llx]", (uint64_t)worker->ffrtTaskHandle_);
     napi_env env = worker->workerEnv_;
     TaskManager::GetInstance().NotifyWorkerRunning(worker);
     auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
     if (taskInfo.first == 0) {
         worker->NotifyIdle();
-        HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], idle", (uint64_t)worker->ffrtTaskHandle_);
         return;
     }
     RunningScope runningScope(worker);
@@ -351,15 +349,12 @@ void Worker::PerformTask(const uv_async_t* req)
     Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: task has been released");
-        HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], task null", (uint64_t)worker->ffrtTaskHandle_);
         return;
     }
     if (!task->UpdateTask(startTime, worker)) {
-        HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], update task[%llx] fail", (uint64_t)worker->ffrtTaskHandle_, (uint64_t)task);
         return;
     }
     if (task->IsGroupTask() && (!TaskGroupManager::GetInstance().UpdateGroupState(task->groupId_))) {
-        HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], update group task[%llx] fail", (uint64_t)worker->ffrtTaskHandle_, (uint64_t)task);
         return;
     }
     if (task->IsLongTask()) {
@@ -372,16 +367,13 @@ void Worker::PerformTask(const uv_async_t* req)
     HITRACE_HELPER_METER_NAME(strTrace);
     napi_value func = task->DeserializeValue(env, true, false);
     if (func == nullptr) {
-        HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], task[%llx] func null", (uint64_t)worker->ffrtTaskHandle_, (uint64_t)task);
         return;
     }
     napi_value args = task->DeserializeValue(env, false, true);
     if (args == nullptr) {
-        HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], task[%llx] args null", (uint64_t)worker->ffrtTaskHandle_, (uint64_t)task);
         return;
     }
     if (!worker->InitTaskPoolFunc(env, func, task)) {
-        HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], init task[%llx] fail", (uint64_t)worker->ffrtTaskHandle_, (uint64_t)task);
         return;
     }
     uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
@@ -393,7 +385,6 @@ void Worker::PerformTask(const uv_async_t* req)
         uv_async_send(task->onStartExecutionSignal_);
     }
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, nullptr);
-    HILOG_ERROR("==[ZR]taskpool:: ffrt task=[%llx], task[%llx] napi call func done", (uint64_t)worker->ffrtTaskHandle_, (uint64_t)task);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->ClearCurrentTaskInfo();
     task->DecreaseRefCount();
