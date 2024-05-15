@@ -383,9 +383,7 @@ namespace OHOS::Util {
         napi_set_named_property(env, utilError, "code", code);
         napi_set_named_property(env, utilError, "name", name);
         napi_throw(env, utilError);
-        napi_value res = nullptr;
-        NAPI_CALL(env, napi_get_undefined(env, &res));
-        return res;
+        return nullptr;
     }
 
     static napi_value TextdecoderConstructor(napi_env env, napi_callback_info info)
