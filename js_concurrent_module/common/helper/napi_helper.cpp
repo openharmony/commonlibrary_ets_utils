@@ -157,13 +157,6 @@ bool NapiHelper::IsStrictEqual(napi_env env, napi_value lhs, napi_value rhs)
     return res;
 }
 
-bool NapiHelper::IsSendableObject(napi_env env, napi_value value)
-{
-    bool res = false;
-    napi_is_sendable_object(env, value, &res);
-    return res;
-}
-
 bool NapiHelper::IsSendable(napi_env env, napi_value value)
 {
     bool res = false;
