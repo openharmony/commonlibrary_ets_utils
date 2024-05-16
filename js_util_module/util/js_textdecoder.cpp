@@ -74,11 +74,11 @@ namespace OHOS::Util {
         static_cast<uint8_t>(ConverterFlags::FLUSH_FLG);
         napi_typedarray_type type;
         size_t length = 0;
-        void *data1 = nullptr;
+        void *data = nullptr;
         size_t byteOffset = 0;
         napi_value arrayBuffer = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &data1, &arrayBuffer, &byteOffset));
-        const char *source = static_cast<char*>(data1);
+        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset));
+        const char *source = ReplaceNull(data, length);
         size_t limit = GetMinByteSize() * length;
         size_t len = limit * sizeof(UChar);
         UChar *arr = nullptr;
@@ -100,7 +100,6 @@ namespace OHOS::Util {
         if (codeFlag != U_ZERO_ERROR) {
             return ThrowError(env, "TextDecoder decoding error.");
         }
-
         size_t resultLength = 0;
         bool omitInitialBom = false;
         DecodeArr decArr(target, tarStartPos, limit);
@@ -216,5 +215,18 @@ namespace OHOS::Util {
         napi_value res = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &res));
         return res;
+    }
+
+    const char* TextDecoder::ReplaceNull(void *data, size_t length) const
+    {
+        char *str = static_cast<char*>(data);
+        if (encStr_ == "utf-8") {
+            for (size_t i = 0; i < length; ++i) {
+                if (str[i] == '\0') {
+                    str[i] = ' ';
+                }
+            }
+        }
+        return const_cast<const char*>(str);
     }
 }
