@@ -58,7 +58,7 @@
                 "icu",
                 "libxml2",
                 "openssl",
-                "decimal"
+                "decimal.js"
             ]
         },
         "build": {
