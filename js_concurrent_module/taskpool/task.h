@@ -97,6 +97,7 @@ public:
                                   Priority priority = Priority::DEFAULT);
     TaskInfo* GetTaskInfo(napi_env env, napi_value task, Priority priority);
     void UpdateTaskType(TaskType taskType);
+    void UpdatePeriodicTask();
     bool IsRepeatableTask() const;
     bool IsGroupTask() const;
     bool IsGroupCommonTask() const;
@@ -105,7 +106,7 @@ public:
     bool IsSeqRunnerTask() const;
     bool IsFunctionTask() const;
     bool IsLongTask() const;
-    bool IsInitialized() const;
+    bool IsExecuted() const;
     void IncreaseRefCount();
     void DecreaseRefCount();
     bool IsReadyToHandle() const;
@@ -118,6 +119,7 @@ public:
     bool CanForTaskGroup(napi_env env);
     bool CanExecute(napi_env env);
     bool CanExecuteDelayed(napi_env env);
+    bool CanExecutePeriodically(napi_env env);
     void SetHasDependency(bool hasDependency);
     bool HasDependency() const;
     void TryClearHasDependency();
@@ -155,6 +157,11 @@ public:
     ListenerCallBackInfo* onStartExecutionCallBackInfo = nullptr;
     ListenerCallBackInfo* onExecutionFailedCallBackInfo = nullptr;
     ListenerCallBackInfo* onExecutionSucceededCallBackInfo = nullptr;
+
+    // for periodic task
+    bool isPeriodicTask_ {false};
+    uv_timer_t* timer_ {nullptr};
+    Priority periodicTaskPriority_ {Priority::DEFAULT};
 };
 
 struct CallbackInfo {

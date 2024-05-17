@@ -527,6 +527,17 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         return;
     }
     std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+    if (task->isPeriodicTask_) {
+        task->CancelPendingTask(env);
+        uv_timer_stop(task->timer_);
+        uv_close(reinterpret_cast<uv_handle_t*>(task->timer_), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete (uv_timer_t*)handle;
+                handle = nullptr;
+            }
+        });
+        return;
+    }
     if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
         task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED) {
         std::string errMsg = "taskpool:: task is not executed or has been executed";

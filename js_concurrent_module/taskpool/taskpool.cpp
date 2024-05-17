@@ -88,6 +88,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getTaskPoolInfo", GetTaskPoolInfo),
         DECLARE_NAPI_FUNCTION("terminateTask", TerminateTask),
         DECLARE_NAPI_FUNCTION("isConcurrent", IsConcurrent),
+        DECLARE_NAPI_FUNCTION("executePeriodically", ExecutePeriodically),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
@@ -324,7 +325,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
     }
-    if (!task->IsInitialized() || task->taskState_ == ExecuteState::CANCELED ||
+    if (!task->IsExecuted() || task->taskState_ == ExecuteState::CANCELED ||
         task->taskState_ == ExecuteState::FINISHED) {
         task->taskState_ = ExecuteState::DELAYED;
     }
@@ -432,7 +433,9 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     }
     reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
-    if (!task->IsGroupTask()) {
+    if (task->IsGroupTask()) {
+        UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
+    } else if (!task->isPeriodicTask_) {
         if (success) {
             napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
             if (task->onExecutionSucceededCallBackInfo != nullptr) {
@@ -440,13 +443,11 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
             }
         } else {
             napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
-            if ((task->onExecutionFailedCallBackInfo != nullptr) && (napiTaskResult != nullptr)) {
+            if (task->onExecutionFailedCallBackInfo != nullptr) {
                 task->onExecutionFailedCallBackInfo->taskError_ = napiTaskResult;
                 task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo);
             }
         }
-    } else {
-        UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
     TriggerTask(task);
@@ -584,12 +585,105 @@ napi_value TaskPool::IsConcurrent(napi_env env, napi_callback_info cbinfo)
     }
 
     if (!NapiHelper::IsFunction(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param must be function");
         return nullptr;
     }
 
-    bool isConcurrent = false;
-    isConcurrent = NapiHelper::IsConcurrentFunction(env, args[0]);
+    bool isConcurrent = NapiHelper::IsConcurrentFunction(env, args[0]);
     return NapiHelper::CreateBooleanValue(env, isConcurrent);
+}
+
+void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
+{
+    Task* task = reinterpret_cast<Task*>(handle->data);
+    if (task == nullptr) {
+        HILOG_DEBUG("taskpool:: the task is nullptr");
+        return;
+    } else if (!task->isPeriodicTask_) {
+        HILOG_DEBUG("taskpool:: the current task is not a periodic task");
+        return;
+    } else if (task->taskState_ == ExecuteState::CANCELED) {
+        HILOG_DEBUG("taskpool:: the periodic task has been canceled");
+        return;
+    }
+    TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+    task->IncreaseRefCount();
+    napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
+    task->GetTaskInfo(task->env_, napiTask, task->periodicTaskPriority_);
+    if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED) {
+        task->taskState_ = ExecuteState::WAITING;
+        TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->periodicTaskPriority_);
+    }
+    TaskManager::GetInstance().TryTriggerExpand();
+}
+
+napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = 3; // 3 : period, task, priority
+    napi_value args[3]; // 3 : period, task, priority
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
+    if (argc < 2 || argc > 3) { // 2 : period, task and 3 : period, task, priority
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be two or three");
+        return nullptr;
+    }
+    if (!NapiHelper::IsNumber(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param must be number");
+        return nullptr;
+    }
+    int32_t period = NapiHelper::GetInt32Value(env, args[0]);
+    if (period < 0) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the period is less than zero");
+        return nullptr;
+    }
+    if (!NapiHelper::IsObject(env, args[1])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the second param must be task");
+        return nullptr;
+    }
+
+    Task* periodicTask = nullptr;
+    napi_unwrap(env, args[1], reinterpret_cast<void**>(&periodicTask));
+    if (periodicTask == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the second param must be task");
+        return nullptr;
+    }
+    if (!periodicTask->CanExecutePeriodically(env)) {
+        return nullptr;
+    }
+    periodicTask->UpdatePeriodicTask();
+
+    uint32_t priority = Priority::DEFAULT;
+    if (argc >= 3) { // 3 : third param maybe priority
+        if (!NapiHelper::IsNumber(env, args[2])) { // 2 : priority
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the third param must be priority");
+            return nullptr;
+        }
+        priority = NapiHelper::GetUint32Value(env, args[2]); // 2 : priority
+        if (priority >= Priority::NUMBER) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the value of the priority is invalid");
+            return nullptr;
+        }
+    }
+    periodicTask->periodicTaskPriority_ = static_cast<Priority>(priority);
+
+    TriggerTimer(env, periodicTask, period);
+    return nullptr;
+}
+
+void TaskPool::TriggerTimer(napi_env env, Task* task, int32_t period)
+{
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    task->timer_ = new uv_timer_t;
+    uv_timer_init(loop, task->timer_);
+    task->timer_->data = task;
+    uv_update_time(loop);
+    uv_timer_start(task->timer_, PeriodicTaskCallback, period, period);
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    if (engine->IsMainThread()) {
+        uv_async_send(&loop->wq_async);
+    } else {
+        uv_work_t* work = new uv_work_t;
+        uv_queue_work_with_qos(loop, work, [](uv_work_t*) {},
+                               [](uv_work_t* work, int32_t) { delete work; }, uv_qos_user_initiated);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

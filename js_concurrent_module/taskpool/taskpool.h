@@ -45,19 +45,22 @@ private:
     TaskPool(TaskPool &&) = delete;
     TaskPool& operator=(TaskPool &&) = delete;
 
-    static void DelayTask(uv_timer_t* handle);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
     static napi_value ExecuteDelayed(napi_env env, napi_callback_info cbinfo);
+    static void DelayTask(uv_timer_t* handle);
     static napi_value Cancel(napi_env env, napi_callback_info cbinfo);
     static napi_value GetTaskPoolInfo(napi_env env, [[maybe_unused]] napi_callback_info cbinfo);
     static napi_value TerminateTask(napi_env env, napi_callback_info cbinfo);
     static napi_value IsConcurrent(napi_env env, napi_callback_info cbinfo);
+    static napi_value ExecutePeriodically(napi_env env, napi_callback_info cbinfo);
+    static void PeriodicTaskCallback(uv_timer_t* handle);
 
     static void UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success);
     static void ExecuteTask(napi_env env, Task* task, Priority priority = Priority::DEFAULT);
     static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority);
 
     static void TriggerTask(Task* task);
+    static void TriggerTimer(napi_env env, Task* task, int32_t period);
     static void ExecuteCallbackInner(MsgQueue& msgQueue);
     friend class TaskManager;
 };
