@@ -307,9 +307,11 @@ class Readable {
   }
 
   setEndType(): void {
-    this.readableInner = false;
-    this.readableEndedInner = true;
-    Promise.resolve().then((): void => this.listener?.emit(ReadableEvent.END));
+    Promise.resolve().then((): void => {
+      this.readableInner = false;
+      this.readableEndedInner = true;
+      this.listener?.emit(ReadableEvent.END);
+    });
   }
 
   /**
@@ -366,6 +368,7 @@ class Readable {
         this.readableInner = false;
         this.readableEndedInner = true;
         this.listener?.emit(ReadableEvent.ERROR, error);
+        this.listener?.emit(ReadableEvent.CLOSE);
       }
     }
     return buffer;
@@ -478,12 +481,16 @@ class Readable {
     const obj: ReadablePipeStream = {
       write: destination,
       dataCallback: (data: { data: string | Uint8Array }): void => {
-        const flg = destination.write(data.data);
-        if (!flg) {
-          this.pause();
+        destination.write(data.data);
+        if ((destination.writableLength || 0) > (destination.writableHighWatermark || DEFAULT_HIGH_WATER_MARK)) {
+          this.pauseInner = true;
+          this.readableFlowingInner = false;
         }
       },
       drainCallback: (): void => {
+        this.pauseInner = false;
+        this.readableFlowingInner = true;
+        this.read(this.readableLengthInner);
       },
       endCallback: (): void => {
         destination.end();
@@ -658,6 +665,7 @@ class Readable {
           }
         } catch (error) {
           this.listener?.emit(ReadableEvent.ERROR, error);
+          this.listener?.emit(ReadableEvent.CLOSE);
         }
         this.listener?.emit(ReadableEvent.READABLE);
       });
@@ -699,7 +707,6 @@ class Readable {
 Readable.prototype.doRead = null;
 
 class Writable {
-
   public listener: EventEmitter | undefined;
   private callbacks: { [key: string]: Function[] } = {};
   private buffer: ({ encoding?: string, chunk: string | Uint8Array, callback: Function })[] = [];
@@ -1340,25 +1347,26 @@ class Duplex extends Readable {
     super();
     this._writable = new Writable();
     const that = this;
-    this._writable.doWrite = this.doWrite;
-    this._writable.doWritev = this.doWritev;
+    if (this.doWrite) {
+      this._writable.doWrite = this.doWrite?.bind(that);
+    }
+    this._writable.doWritev = this.doWritev?.bind(that);
     Object.defineProperties(that, {
       doWrite: {
         get(): Function {
-          return that._writable.doWrite;
+          return that._writable.doWrite?.bind(that);
         },
         set(value: Function):void {
-          // @ts-ignore
-          that._writable.doWrite = value;
+          that._writable.doWrite = value.bind(that);
         }
       },
       doWritev: {
         get(): Function {
-          return that._writable.doWritev;
+          return that._writable.doWritev?.bind(that);
         },
         set(value: Function):void {
           // @ts-ignore
-          that._writable.doWritev = value;
+          that._writable.doWritev = value?.bind(that);
         }
       }
     });
