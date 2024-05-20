@@ -457,9 +457,20 @@ unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int
 
 std::string Buffer::ToBase64(uint32_t start, uint32_t length)
 {
-    uint8_t data[length];
+    if (length == 0 || length >= UINT32_MAX) {
+        HILOG_ERROR("buffer::length is illegal");
+        return "";
+    }
+    uint8_t *data = new uint8_t[length];
+    if (data == nullptr) {
+        HILOG_ERROR("buffer::data is NULL");
+        return "";
+    }
     ReadBytes(data, start, length);
-    return Base64Encode(reinterpret_cast<const unsigned char*>(data), length, BASE64);
+    std::string result = Base64Encode(reinterpret_cast<const unsigned char*>(data), length, BASE64);
+    delete[] data;
+    data = nullptr;
+    return result;
 }
 
 std::string Buffer::ToBase64Url(uint32_t start, uint32_t length)
