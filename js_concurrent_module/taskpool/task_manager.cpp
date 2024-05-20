@@ -26,6 +26,7 @@
 #include "c/executor_task.h"
 #include "ffrt_inner.h"
 #include "iservice_registry.h"
+#include "parameters.h"
 #include "status_receiver_interface.h"
 #include "system_ability_definition.h"
 #endif
@@ -692,7 +693,11 @@ void TaskManager::InitTaskManager(napi_env env)
         if (!CheckSystemApp()) {
             return;
         }
-        if (isSystemApp_) {
+        disableFfrtFlag_ = OHOS::system::GetIntParameter<int>("persist.commonlibrary.taskpooldisableffrt", 0);
+        if (disableFfrtFlag_) {
+            HILOG_INFO("taskpool:: apps choose the taskpool worker thread");
+        }
+        if (isSystemApp_ && !disableFfrtFlag_) {
             ffrt_set_cpu_worker_max_num(ffrt::qos_utility, 12); // 12 : worker max num
             ffrt_set_cpu_worker_max_num(ffrt::qos_default, 12); // 12 : worker max num
             ffrt_set_cpu_worker_max_num(ffrt::qos_user_initiated, 12); // 12 : worker max num

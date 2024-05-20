@@ -34,7 +34,7 @@ Worker::PriorityScope::PriorityScope(Worker* worker, Priority taskPriority) : wo
 {
     if (taskPriority != worker->priority_) {
         HILOG_DEBUG("taskpool:: reset worker priority to match task priority");
-        if (TaskManager::GetInstance().IsSystemApp()) {
+        if (TaskManager::GetInstance().EnableFfrt()) {
 #if defined(ENABLE_TASKPOOL_FFRT)
             if (ffrt::this_task::update_qos(WORKERPRIORITY_FFRTQOS_MAP.at(taskPriority)) != 0) {
                 SetWorkerPriority(taskPriority);
@@ -155,7 +155,7 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 #if defined(ENABLE_TASKPOOL_FFRT)
 void Worker::InitFfrtInfo()
 {
-    if (TaskManager::GetInstance().IsSystemApp()) {
+    if (TaskManager::GetInstance().EnableFfrt()) {
         static const std::map<int, Priority> FFRTQOS_WORKERPRIORITY_MAP = {
             {ffrt::qos_utility, Priority::LOW},
             {ffrt::qos_default, Priority::DEFAULT},
@@ -460,7 +460,7 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
 void Worker::ResetWorkerPriority()
 {
     if (priority_ != Priority::HIGH) {
-        if (TaskManager::GetInstance().IsSystemApp()) {
+        if (TaskManager::GetInstance().EnableFfrt()) {
 #if defined(ENABLE_TASKPOOL_FFRT)
             if (ffrt::this_task::update_qos(WORKERPRIORITY_FFRTQOS_MAP.at(Priority::HIGH)) != 0) {
                 SetWorkerPriority(Priority::HIGH);
