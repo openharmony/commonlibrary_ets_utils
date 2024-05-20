@@ -177,11 +177,12 @@ napi_value TaskPool::TerminateTask(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
-    if (napiTaskId == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be task");
+    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+    auto task = TaskManager::GetInstance().GetTask(taskId);
+    if (task == nullptr || !task->IsLongTask()) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be long task");
         return nullptr;
     }
-    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
     TaskManager::GetInstance().TerminateTask(taskId);
     return nullptr;
 }
@@ -267,7 +268,6 @@ void TaskPool::DelayTask(uv_timer_t* handle)
             task->taskState_ = ExecuteState::WAITING;
             TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
         }
-        TaskManager::GetInstance().TryTriggerExpand();
     }
     uv_timer_stop(handle);
     uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
@@ -438,14 +438,14 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     } else if (!task->isPeriodicTask_) {
         if (success) {
             napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
-            if (task->onExecutionSucceededCallBackInfo != nullptr) {
-                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo);
+            if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
+                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_);
             }
         } else {
             napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
-            if (task->onExecutionFailedCallBackInfo != nullptr) {
-                task->onExecutionFailedCallBackInfo->taskError_ = napiTaskResult;
-                task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo);
+            if (task->onExecutionFailedCallBackInfo_ != nullptr) {
+                task->onExecutionFailedCallBackInfo_->taskError_ = napiTaskResult;
+                task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_);
             }
         }
     }
@@ -534,7 +534,6 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
-    TaskManager::GetInstance().TryTriggerExpand();
 }
 
 napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
@@ -614,7 +613,6 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->periodicTaskPriority_);
     }
-    TaskManager::GetInstance().TryTriggerExpand();
 }
 
 napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo)
