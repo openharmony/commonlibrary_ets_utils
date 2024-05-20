@@ -80,7 +80,7 @@ ohos_shared_library("taskpool") {
     "napi:ace_napi",
   ]
 
-  if (is_ohos && is_standard_system && !is_arkui_x && current_cpu == "arm64") {
+  if (is_ohos && is_standard_system && !is_arkui_x) {
     defines += [ "ENABLE_TASKPOOL_FFRT" ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
@@ -140,7 +140,7 @@ ohos_source_set("taskpool_static") {
 
   external_deps = [ "hilog:libhilog" ]
 
-  if (is_ohos && is_standard_system && !is_arkui_x && current_cpu == "arm64") {
+  if (is_ohos && is_standard_system && !is_arkui_x) {
     defines += [ "ENABLE_TASKPOOL_FFRT" ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
