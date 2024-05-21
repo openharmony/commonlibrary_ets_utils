@@ -26,7 +26,6 @@ Thread::Thread() : tid_() {}
 bool Thread::Start()
 {
     if (TaskManager::GetInstance().EnableFfrt()) {
-        HILOG_INFO("taskpool:: system apps use ffrt");
 #if defined(ENABLE_TASKPOOL_FFRT)
         ffrt::task_attr task_attr;
         (void)ffrt_task_attr_init(&task_attr);
@@ -42,7 +41,6 @@ bool Thread::Start()
 #endif
         return 0;
     } else {
-        HILOG_INFO("taskpool:: apps do not use ffrt");
         int ret = uv_thread_create(&tid_, [](void* arg) {
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
             pthread_setname_np("OS_TaskWorker");

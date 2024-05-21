@@ -690,17 +690,20 @@ void TaskManager::InitTaskManager(napi_env env)
     }
     if (!isInitialized_.exchange(true, std::memory_order_relaxed)) {
 #if defined(ENABLE_TASKPOOL_FFRT)
-        if (!CheckSystemApp()) {
-            return;
+        globalEnableFfrtFlag_ = OHOS::system::GetIntParameter<int>("persist.commonlibrary.taskpoolglobalenableffrt", 0);
+        if (!globalEnableFfrtFlag_) {
+            UpdateSystemAppFlag();
+            if (IsSystemApp()) {
+                disableFfrtFlag_ = OHOS::system::GetIntParameter<int>("persist.commonlibrary.taskpooldisableffrt", 0);
+            }
         }
-        disableFfrtFlag_ = OHOS::system::GetIntParameter<int>("persist.commonlibrary.taskpooldisableffrt", 0);
-        if (disableFfrtFlag_) {
-            HILOG_INFO("taskpool:: apps choose the taskpool worker thread");
-        }
-        if (isSystemApp_ && !disableFfrtFlag_) {
+        if (EnableFfrt()) {
+            HILOG_INFO("taskpool:: apps use ffrt");
             ffrt_set_cpu_worker_max_num(ffrt::qos_utility, 12); // 12 : worker max num
             ffrt_set_cpu_worker_max_num(ffrt::qos_default, 12); // 12 : worker max num
             ffrt_set_cpu_worker_max_num(ffrt::qos_user_initiated, 12); // 12 : worker max num
+        } else {
+            HILOG_INFO("taskpool:: apps do not use ffrt");
         }
 #endif
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
@@ -1181,37 +1184,34 @@ Task* TaskManager::GetTask(uint64_t taskId)
     return iter->second;
 }
 
-bool TaskManager::CheckSystemApp()
-{
 #if defined(ENABLE_TASKPOOL_FFRT)
+void TaskManager::UpdateSystemAppFlag()
+{
     auto abilityManager = OHOS::SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (abilityManager == nullptr) {
         HILOG_ERROR("taskpool:: fail to GetSystemAbility abilityManager is nullptr.");
-        return false;
+        return;
     }
     auto bundleObj = abilityManager->GetSystemAbility(OHOS::BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
     if (bundleObj == nullptr) {
         HILOG_ERROR("taskpool:: fail to get bundle manager service.");
-        return false;
+        return;
     }
     auto bundleMgr = OHOS::iface_cast<OHOS::AppExecFwk::IBundleMgr>(bundleObj);
     if (bundleMgr == nullptr) {
         HILOG_ERROR("taskpool:: Bundle manager is nullptr.");
-        return false;
+        return;
     }
     OHOS::AppExecFwk::BundleInfo bundleInfo;
     if (bundleMgr->GetBundleInfoForSelf(
         static_cast<int32_t>(OHOS::AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION), bundleInfo)
         != OHOS::ERR_OK) {
         HILOG_ERROR("taskpool:: fail to GetBundleInfoForSelf");
-        return false;
+        return;
     }
     isSystemApp_ = bundleInfo.applicationInfo.isSystemApp;
-    return true;
-#else
-    return false;
-#endif
 }
+#endif
 
 // ----------------------------------- TaskGroupManager ----------------------------------------
 TaskGroupManager& TaskGroupManager::GetInstance()

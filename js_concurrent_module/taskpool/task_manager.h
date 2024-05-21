@@ -134,10 +134,14 @@ public:
     // for callback
     void ReleaseCallBackInfo(Task* task);
 
-    bool CheckSystemApp();
+    void UpdateSystemAppFlag();
+    bool IsSystemApp() const
+    {
+        return isSystemApp_;
+    }
     bool EnableFfrt() const
     {
-        return isSystemApp_ && !disableFfrtFlag_;
+        return globalEnableFfrtFlag_ || (isSystemApp_ && !disableFfrtFlag_);
     }
 
 private:
@@ -213,6 +217,7 @@ private:
 
     std::atomic<bool> isSystemApp_ = false;
     int disableFfrtFlag_ = 0; // 0 means enable ffrt
+    int globalEnableFfrtFlag_ = 0; // 0 means not global enable ffrt
 
     std::mutex callbackMutex_;
     std::map<uint32_t, std::shared_ptr<CallbackInfo>> callbackTable_ {};
