@@ -135,9 +135,9 @@ public:
     void ReleaseCallBackInfo(Task* task);
 
     bool CheckSystemApp();
-    bool IsSystemApp() const
+    bool EnableFfrt() const
     {
-        return isSystemApp_;
+        return isSystemApp_ && !disableFfrtFlag_;
     }
 
 private:
@@ -212,6 +212,7 @@ private:
     std::atomic<bool> isInitialized_ = false;
 
     std::atomic<bool> isSystemApp_ = false;
+    int disableFfrtFlag_ = 0; // 0 means enable ffrt
 
     std::mutex callbackMutex_;
     std::map<uint32_t, std::shared_ptr<CallbackInfo>> callbackTable_ {};

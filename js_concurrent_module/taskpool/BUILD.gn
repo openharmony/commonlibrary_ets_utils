@@ -87,6 +87,7 @@ ohos_shared_library("taskpool") {
       "bundle_framework:appexecfwk_core",
       "c_utils:utils",
       "ffrt:libffrt",
+      "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
     ]
@@ -147,6 +148,7 @@ ohos_source_set("taskpool_static") {
       "bundle_framework:appexecfwk_core",
       "c_utils:utils",
       "ffrt:libffrt",
+      "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
     ]
