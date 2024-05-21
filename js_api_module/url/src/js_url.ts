@@ -91,22 +91,27 @@ class BusinessError extends Error {
 }
 
 function decodeSafelyInner(input: string): string {
-    if (input === undefined || input === '') {
-        return input;
-    }
-    input = input.replaceAll('+', ' ');
-    const regex = /(%[a-f0-9A-F]{2})|[^%]+/g;
-    let outStr = input.match(regex).map(part => {
-      if (part.startsWith('%')) {
-        try {
-          return decodeURIComponent(part);
-        } catch (e) {
-          return part;
-        }
+  if (input === undefined || input === '') {
+    return input;
+  }
+  input = input.replaceAll('+', ' ');
+  let decodedString: string = '';
+  let index: number = 0;    
+  while (index < input.length) {
+    if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
+      const encodedChar = input.slice(index, index + 3);
+      try {
+        decodedString += decodeURIComponent(encodedChar);
+      } catch (e) {
+        decodedString += encodedChar;
       }
-      return part;
-    }).join('');
-    return outStr;
+      index += 3;
+      continue;
+    }
+    decodedString += input[index];
+    index++;
+  }
+  return decodedString;
 }
 
 function customEncodeURIComponent(str: string | number): string {
@@ -142,6 +147,20 @@ function customEncodeForToString(str: string | number): string {
           return match;
       }
     });
+}
+
+function customEncodeURI(str: string, keepCharacters: string): string {
+    let encodedStr = '';
+    let char = '';
+    for (let i = 0; i < str.length; i++) {
+      char = str.charAt(i);
+      if (keepCharacters.indexOf(char) !== -1) {
+        encodedStr += char;
+      } else {
+        encodedStr += encodeURI(char);
+      }
+    }
+    return encodedStr;
 }
 
 function convertArrayToObj(arr: string[]): Record<string, string[]> {
@@ -569,17 +588,25 @@ function decodeURISafely(input: string): string {
   if (input === '') {
     return input;
   }
-  const regex = /(%[0-9A-Fa-f]{2})|[^%]+/g;
-  return input.match(regex).map(part => {
-    if (part.startsWith('%') && part !== '%26' && part !== '%3D' && part !== '%25' && part !== '%2B') {
-      try {
-        return decodeURIComponent(part);
-      } catch (e) {
-        return part;
+  let decodedString: string = '';
+  let index: number = 0;    
+  while (index < input.length) {
+    if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
+      const encodedChar = input.slice(index, index + 3);
+      if (encodedChar !== '%26' && encodedChar !== '%3D' && encodedChar !== '%25' && encodedChar !== '%2B') {
+        try {
+          decodedString += decodeURIComponent(encodedChar);
+        } catch (e) {
+          decodedString += encodedChar;
+        }
+        index += 3;
+        continue;
       }
     }
-    return part;
-  }).join('');
+    decodedString += input[index];
+    index++;
+  }  
+  return decodedString;
 }
 
 function initToStringSeachParams(input: string): Array<string> {
@@ -649,9 +676,9 @@ class URL {
           this.hostname_ = encodeURI(nativeUrl.hostname);
           this.host_ = encodeURI(nativeUrl.host);
         }
-        this.hash_ = encodeURI(nativeUrl.hash);
-        this.protocol_ = encodeURI(nativeUrl.protocol);
-        this.pathname_ = encodeURI(nativeUrl.pathname);
+        this.hash_ = customEncodeURI(nativeUrl.hash, '%|[]{}`');
+        this.protocol_ = nativeUrl.protocol;
+        this.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]`');
         this.port_ = nativeUrl.port;
         this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
         this.searchParamsClass_ = new URLSearchParams(this.search_);
@@ -699,9 +726,9 @@ class URL {
         urlHelper.hostname_ = encodeURI(nativeUrl.hostname);
         urlHelper.host_ = encodeURI(nativeUrl.host);
       }
-      urlHelper.hash_ = encodeURI(nativeUrl.hash);
-      urlHelper.protocol_ = encodeURI(nativeUrl.protocol);
-      urlHelper.pathname_ = encodeURI(nativeUrl.pathname);
+      urlHelper.hash_ = customEncodeURI(nativeUrl.hash, '%|[]{}`');
+      urlHelper.protocol_ = nativeUrl.protocol;
+      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]`');
       urlHelper.port_ = nativeUrl.port;
       urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
       urlHelper.searchParamsClass_ = new URLSearchParams(urlHelper.search_);
