@@ -160,6 +160,7 @@ namespace OHOS::Util {
         void SetBomFlag(const UChar *arr, const UErrorCode codeFlag, const DecodeArr decArr,
                         size_t& rstLen, bool& bomFlag);
         void FreedMemory(UChar *pData);
+        const char* ReplaceNull(void *data, size_t length) const;
         napi_value ThrowError(napi_env env, const char* errMessage);
         uint32_t label_ {};
         std::string encStr_ {};
