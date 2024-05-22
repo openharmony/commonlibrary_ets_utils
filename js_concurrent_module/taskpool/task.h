@@ -74,6 +74,7 @@ public:
     static napi_value OnStartExecution(napi_env env, napi_callback_info cbinfo);
     static napi_value OnExecutionFailed(napi_env env, napi_callback_info cbinfo);
     static napi_value OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo);
+    static napi_value IsDone(napi_env env, napi_callback_info cbinfo);
     static napi_value GetTotalDuration(napi_env env, napi_callback_info info);
     static napi_value GetCPUDuration(napi_env env, napi_callback_info info);
     static napi_value GetIODuration(napi_env env, napi_callback_info info);
