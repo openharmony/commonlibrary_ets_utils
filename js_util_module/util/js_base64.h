@@ -68,8 +68,8 @@ namespace OHOS::Util {
         XFF_FLG = 0xFF,
     };
 
-    void FreeMemory(unsigned char *address);
-    void FreeMemory(char *address);
+    void FreeMemory(unsigned char *&address);
+    void FreeMemory(char *&address);
     unsigned char *EncodeAchieves(EncodeInfo *encodeInfo);
     unsigned char *DecodeAchieves(DecodeInfo *decodeInfo);
 
