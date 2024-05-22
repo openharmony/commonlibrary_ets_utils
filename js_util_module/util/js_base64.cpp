@@ -722,16 +722,18 @@ namespace OHOS::Util {
     }
 
     /* Memory cleanup function */
-    void FreeMemory(char *address)
+    void FreeMemory(char *&address)
     {
         if (address != nullptr) {
             delete[] address;
+            address = nullptr;
         }
     }
-    void FreeMemory(unsigned char *address)
+    void FreeMemory(unsigned char *&address)
     {
         if (address != nullptr) {
             delete[] address;
+            address = nullptr;
         }
     }
 }
