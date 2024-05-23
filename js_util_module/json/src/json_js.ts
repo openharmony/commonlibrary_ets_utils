@@ -73,19 +73,28 @@ function isSpaceType(self: unknown): boolean {
 }
 
 function isCirculateReference(value: Object, seenObjects: Set<Object> = new Set()): boolean {
-  if (value === null || !(value instanceof Object)) {
-    return false;
-  }
   if (seenObjects.has(value)) {
     return true;
   }
   seenObjects.add(value);
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  for (const key in value) {
+    if (Object.prototype.hasOwnProperty.call(value, key)) {
+      const temp = value[key];
+      if (temp !== null && typeof temp === 'object') {
+        if (seenObjects.has(temp)) {
+          return true;
+        }
+        if (isCirculateReference(temp, seenObjects)) {
+          return true;
+        }
+      }
 
-  for (let key in value) {
-    if (isCirculateReference(value[key], seenObjects)) {
-      return true;
     }
   }
+  seenObjects.delete(value);
   return false;
 }
 
