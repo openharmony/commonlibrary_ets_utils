@@ -96,22 +96,30 @@ function decodeSafelyInner(input: string): string {
   }
   input = input.replaceAll('+', ' ');
   let decodedString: string = '';
-  let index: number = 0;    
+  let decodedTemp: string = '';
+  let index: number = 0;
   while (index < input.length) {
     if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
       const encodedChar = input.slice(index, index + 3);
-      try {
-        decodedString += decodeURIComponent(encodedChar);
-      } catch (e) {
-        decodedString += encodedChar;
-      }
+    try {
+      decodedString += decodeURIComponent(decodedTemp + encodedChar);
+      decodedTemp = '';
+    } catch (e) {
+      decodedTemp += encodedChar;
+    }
       index += 3;
       continue;
     }
-    decodedString += input[index];
+    if (decodedTemp === '') {
+      decodedString += input[index];
+    } else {
+      decodedString += decodedTemp;
+      decodedString += input[index];
+      decodedTemp = "";
+    }
     index++;
   }
-  return decodedString;
+  return decodedTemp === '' ? decodedString : decodedString += decodedTemp;
 }
 
 function customEncodeURIComponent(str: string | number): string {
@@ -593,19 +601,22 @@ function decodeURISafely(input: string): string {
   while (index < input.length) {
     if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
       const encodedChar = input.slice(index, index + 3);
-      if (encodedChar !== '%26' && encodedChar !== '%3D' && encodedChar !== '%25' && encodedChar !== '%2B') {
-        try {
-          decodedString += decodeURIComponent(encodedChar);
-        } catch (e) {
-          decodedString += encodedChar;
-        }
+      if (encodedChar === '%26' || encodedChar === '%3D' || encodedChar === '%25' || encodedChar === '%2B') {
+        decodedString += encodedChar;
         index += 3;
         continue;
       }
+      try {
+        decodedString += decodeURIComponent(encodedChar);
+      } catch (e) {
+        decodedString += encodedChar;
+      }
+      index += 3;
+      continue;
     }
     decodedString += input[index];
     index++;
-  }  
+  }
   return decodedString;
 }
 
@@ -667,8 +678,8 @@ class URL {
       this.c_info = nativeUrl;
       if (nativeUrl.onOrOff) {
         this.search_ = nativeUrl.search;
-        this.username_ = encodeURI(nativeUrl.username);
-        this.password_ = encodeURI(nativeUrl.password);
+        this.username_ = customEncodeURI(nativeUrl.username, '%');
+        this.password_ = customEncodeURI(nativeUrl.password, '%');
         if (nativeUrl.GetIsIpv6) {
           this.hostname_ = nativeUrl.hostname;
           this.host_ = nativeUrl.host;
@@ -678,7 +689,7 @@ class URL {
         }
         this.hash_ = customEncodeURI(nativeUrl.hash, '%|[]{}`');
         this.protocol_ = nativeUrl.protocol;
-        this.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]`');
+        this.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]');
         this.port_ = nativeUrl.port;
         this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
         this.searchParamsClass_ = new URLSearchParams(this.search_);
@@ -717,8 +728,8 @@ class URL {
     urlHelper.c_info = nativeUrl;
     if (nativeUrl.onOrOff) {
       urlHelper.search_ = nativeUrl.search;
-      urlHelper.username_ = encodeURI(nativeUrl.username);
-      urlHelper.password_ = encodeURI(nativeUrl.password);
+      urlHelper.username_ = customEncodeURI(nativeUrl.username, '%');
+      urlHelper.password_ = customEncodeURI(nativeUrl.password, '%');
       if (nativeUrl.GetIsIpv6) {
         urlHelper.hostname_ = nativeUrl.hostname;
         urlHelper.host_ = nativeUrl.host;
@@ -728,7 +739,7 @@ class URL {
       }
       urlHelper.hash_ = customEncodeURI(nativeUrl.hash, '%|[]{}`');
       urlHelper.protocol_ = nativeUrl.protocol;
-      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]`');
+      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]');
       urlHelper.port_ = nativeUrl.port;
       urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
       urlHelper.searchParamsClass_ = new URLSearchParams(urlHelper.search_);
@@ -785,7 +796,7 @@ class URL {
     if (this.host_ === null || this.host_ === '' || this.protocol_ === 'file:') {
       return;
     }
-    const usname_ = encodeURI(input);
+    const usname_ = customEncodeURI(input, '%');
     this.c_info.username = usname_;
     this.username_ = this.c_info.username;
     this.setHref();
@@ -797,7 +808,7 @@ class URL {
     if (this.host_ === null || this.host_ === '' || this.protocol_ === 'file:') {
       return;
     }
-    const passwd_ = encodeURI(input);
+    const passwd_ = customEncodeURI(input, '%');
     this.c_info.password = passwd_;
     this.password_ = this.c_info.password;
     this.setHref();
@@ -806,7 +817,7 @@ class URL {
     return this.hash_;
   }
   set hash(fragment) {
-    const fragment_ = encodeURI(fragment);
+    const fragment_ = customEncodeURI(fragment, '%|[]{}`');
     this.c_info.hash = fragment_;
     this.hash_ = this.c_info.hash;
     this.setHref();
@@ -867,9 +878,9 @@ class URL {
   set href(href_) {
     this.c_info.href(href_);
     if (this.c_info.onOrOff) {
-      this.search_ = encodeURI(this.c_info.search);
-      this.username_ = encodeURI(this.c_info.username);
-      this.password_ = encodeURI(this.c_info.password);
+      this.search_ = this.c_info.search;
+      this.username_ = customEncodeURI(this.c_info.username, '%');
+      this.password_ = customEncodeURI(this.c_info.password, '%');
       if (this.c_info.GetIsIpv6) {
         this.hostname_ = this.c_info.hostname;
         this.host_ = this.c_info.host;
@@ -877,9 +888,9 @@ class URL {
         this.hostname_ = encodeURI(this.c_info.hostname);
         this.host_ = encodeURI(this.c_info.host);
       }
-      this.hash_ = encodeURI(this.c_info.hash);
-      this.protocol_ = encodeURI(this.c_info.protocol);
-      this.pathname_ = encodeURI(this.c_info.pathname);
+      this.hash_ = customEncodeURI(this.c_info.hash, '%|[]{}`');
+      this.protocol_ = this.c_info.protocol;
+      this.pathname_ = customEncodeURI(this.c_info.pathname, '%|[]');
       this.port_ = this.c_info.port;
       this.origin_ = this.protocol_ + '//' + this.host_;
       this.searchParamsClass_.updateParams(this.search_);
@@ -892,7 +903,7 @@ class URL {
     return this.pathname_;
   }
   set pathname(path) {
-    const path_ = encodeURI(path);
+    const path_ = customEncodeURI(path, '%|[]');
     this.c_info.pathname = path_;
     this.pathname_ = this.c_info.pathname;
     this.setHref();
