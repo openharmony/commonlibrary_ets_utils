@@ -44,7 +44,7 @@ static const std::vector<std::string> conventFormat = {"utf-8", "UTF-8", "gbk", 
                                                        "windows-1253", "windows-1254", "windows-1255", "windows-1256",
                                                        "windows-1257", "windows-1258", "big5", "euc-jp", "iso-2022-jp",
                                                        "shift_jis", "euc-kr", "x-mac-cyrillic", "utf-16be",
-                                                       "utf-16le"};
+                                                       "utf-16le", "iso-8859-1"};
 
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;
