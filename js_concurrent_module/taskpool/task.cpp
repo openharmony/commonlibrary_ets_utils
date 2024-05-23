@@ -32,6 +32,7 @@ static constexpr char ONENQUEUED_STR[] = "onEnqueued";
 static constexpr char ONSTARTEXECUTION_STR[] = "onStartExecution";
 static constexpr char ONEXECUTIONFAILED_STR[] = "onExecutionFailed";
 static constexpr char ONEXECUTIONSUCCEEDED_STR[] = "onExecutionSucceeded";
+static constexpr char ISDONE_STR[] = "isDone";
 
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
@@ -132,6 +133,7 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
         DECLARE_NAPI_FUNCTION(ONSTARTEXECUTION_STR, OnStartExecution),
         DECLARE_NAPI_FUNCTION(ONEXECUTIONFAILED_STR, OnExecutionFailed),
         DECLARE_NAPI_FUNCTION(ONEXECUTIONSUCCEEDED_STR, OnExecutionSucceeded),
+        DECLARE_NAPI_FUNCTION(ISDONE_STR, IsDone),
         DECLARE_NAPI_GETTER(TASK_TOTAL_TIME, GetTotalDuration),
         DECLARE_NAPI_GETTER(TASK_CPU_TIME, GetCPUDuration),
         DECLARE_NAPI_GETTER(TASK_IO_TIME, GetIODuration),
@@ -762,6 +764,23 @@ napi_value Task::OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo)
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onExecutionSucceededCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
     return nullptr;
+}
+
+napi_value Task::IsDone(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    Task* task = nullptr;
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: task is nullptr");
+        return NapiHelper::CreateBooleanValue(env, false);
+    }
+
+    if (task->taskState_ == ExecuteState::FINISHED) {
+        return NapiHelper::CreateBooleanValue(env, true);
+    }
+    return NapiHelper::CreateBooleanValue(env, false);
 }
 
 napi_value Task::GetTaskDuration(napi_env env, napi_callback_info& cbinfo, std::string durationType)
