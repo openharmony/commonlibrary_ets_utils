@@ -165,7 +165,6 @@ void TaskGroup::NotifyGroupTask(napi_env env)
         TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
-        TaskManager::GetInstance().TryTriggerExpand();
     }
 }
 

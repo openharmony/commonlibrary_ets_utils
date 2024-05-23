@@ -645,7 +645,7 @@ napi_value Task::OnEnqueued(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
-    task->onEnqueuedCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onEnqueuedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
     return nullptr;
 }
 
@@ -683,10 +683,10 @@ napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
-    task->onStartExecutionCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
     auto loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_,
-        Task::ExecuteListenerCallback, task->onStartExecutionCallBackInfo);
+        Task::ExecuteListenerCallback, task->onStartExecutionCallBackInfo_);
     return nullptr;
 }
 
@@ -724,7 +724,7 @@ napi_value Task::OnExecutionFailed(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
-    task->onExecutionFailedCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onExecutionFailedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
     return nullptr;
 }
 
@@ -762,7 +762,7 @@ napi_value Task::OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo)
     }
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
-    task->onExecutionSucceededCallBackInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onExecutionSucceededCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
     return nullptr;
 }
 

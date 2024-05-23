@@ -125,7 +125,6 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
 void SequenceRunner::ExecuteTaskImmediately(uint64_t taskId, Priority priority)
 {
     TaskManager::GetInstance().EnqueueTaskId(taskId, priority);
-    TaskManager::GetInstance().TryTriggerExpand();
 }
 
 void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)

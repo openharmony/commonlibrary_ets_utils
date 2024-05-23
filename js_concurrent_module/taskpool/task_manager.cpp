@@ -50,6 +50,7 @@ static constexpr uint32_t MIN_THREADS = 1; // 1: minimum thread num when idle
 static constexpr uint32_t MIN_TIMEOUT_TIME = 180000; // 180000: 3min
 static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 600000: 10min
 static constexpr int32_t MAX_IDLE_TIME = 50000; // 50000: 50s
+static constexpr uint32_t TRIGGER_INTERVAL = 60000; // 60000: 60s
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2min later will release the thread
 
 // ----------------------------------- TaskManager ----------------------------------------
@@ -258,6 +259,7 @@ void TaskManager::TryTriggerExpand()
 {
     // post the signal to notify the monitor thread to expand
     if (UNLIKELY(!isHandleInited_)) {
+        NotifyExecuteTask();
         needChecking_ = true;
         HILOG_DEBUG("taskpool:: the expandHandle_ is nullptr");
         return;
@@ -450,6 +452,8 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
 
 void TaskManager::TryExpand()
 {
+    // dispatch task in the TaskPoolManager thread
+    NotifyExecuteTask();
     // do not trigger when there are more idleWorkers than tasks
     if (GetIdleWorkers() > GetTaskNum()) {
         return;
@@ -491,7 +495,7 @@ void TaskManager::RunTaskManager()
     ConcurrentHelper::UvHandleInit(loop_, expandHandle_, TaskManager::NotifyExpand);
     timer_ = new uv_timer_t;
     uv_timer_init(loop_, timer_);
-    uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, 60000); // 60000: 1min
+    uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, TRIGGER_INTERVAL);
     isHandleInited_ = true;
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
     pthread_setname_np("OS_TaskManager");
@@ -628,12 +632,12 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
     {
         std::lock_guard<std::mutex> lock(taskQueuesMutex_);
         taskQueues_[priority]->EnqueueTaskId(taskId);
-        Task* task = GetTask(taskId);
-        if (task->onEnqueuedCallBackInfo != nullptr) {
-            task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo);
-        }
     }
-    NotifyExecuteTask();
+    TryTriggerExpand();
+    Task* task = GetTask(taskId);
+    if (task != nullptr && task->onEnqueuedCallBackInfo_ != nullptr) {
+        task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_);
+    }
 }
 
 std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
@@ -1141,20 +1145,20 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
 
 void TaskManager::ReleaseCallBackInfo(Task* task)
 {
-    if (task->onEnqueuedCallBackInfo != nullptr) {
-        delete task->onEnqueuedCallBackInfo;
+    if (task->onEnqueuedCallBackInfo_ != nullptr) {
+        delete task->onEnqueuedCallBackInfo_;
     }
 
-    if (task->onStartExecutionCallBackInfo != nullptr) {
-        delete task->onStartExecutionCallBackInfo;
+    if (task->onStartExecutionCallBackInfo_ != nullptr) {
+        delete task->onStartExecutionCallBackInfo_;
     }
 
-    if (task->onExecutionFailedCallBackInfo != nullptr) {
-        delete task->onExecutionFailedCallBackInfo;
+    if (task->onExecutionFailedCallBackInfo_ != nullptr) {
+        delete task->onExecutionFailedCallBackInfo_;
     }
 
-    if (task->onExecutionSucceededCallBackInfo != nullptr) {
-        delete task->onExecutionSucceededCallBackInfo;
+    if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
+        delete task->onExecutionSucceededCallBackInfo_;
     }
 
     if (task->onStartExecutionSignal_ != nullptr) {
@@ -1380,7 +1384,6 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         HILOG_DEBUG("seqRunner:: Trigger task %{public}" PRIu64 " in seqRunner %{public}" PRIu64 ".",
                     task->taskId_, seqRunnerId);
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
-        TaskManager::GetInstance().TryTriggerExpand();
     }
     return true;
 }

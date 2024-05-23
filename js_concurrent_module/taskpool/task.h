@@ -154,10 +154,10 @@ public:
     bool hasDependency_ {false};
     bool isLongTask_ = {false};
     uv_async_t* onStartExecutionSignal_ = nullptr;
-    ListenerCallBackInfo* onEnqueuedCallBackInfo = nullptr;
-    ListenerCallBackInfo* onStartExecutionCallBackInfo = nullptr;
-    ListenerCallBackInfo* onExecutionFailedCallBackInfo = nullptr;
-    ListenerCallBackInfo* onExecutionSucceededCallBackInfo = nullptr;
+    ListenerCallBackInfo* onEnqueuedCallBackInfo_ = nullptr;
+    ListenerCallBackInfo* onStartExecutionCallBackInfo_ = nullptr;
+    ListenerCallBackInfo* onExecutionFailedCallBackInfo_ = nullptr;
+    ListenerCallBackInfo* onExecutionSucceededCallBackInfo_ = nullptr;
 
     // for periodic task
     bool isPeriodicTask_ {false};
