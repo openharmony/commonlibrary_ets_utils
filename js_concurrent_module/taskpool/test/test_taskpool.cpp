@@ -707,3 +707,28 @@ HWTEST_F(NativeEngineTest, TaskpoolTest059, testing::ext::TestSize.Level0)
     uint32_t result = taskManager.GetIdleWorkers();
     ASSERT_TRUE(result == 0);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.InitTaskManager(env);
+    uint64_t taskId = 36;
+    taskManager.EnqueueTaskId(taskId, Priority::LOW);
+    ASSERT_EQ(taskId, 36);
+
+    std::pair<uint64_t, Priority> result = taskManager.DequeueTaskId();
+    ASSERT_TRUE(result.first == 36);
+    ASSERT_TRUE(result.second == Priority::LOW);
+
+    taskId = 37;
+    taskManager.EnqueueTaskId(taskId, Priority::IDLE);
+    ASSERT_EQ(taskId, 37);
+
+    result = taskManager.DequeueTaskId();
+    ASSERT_TRUE(result.first == 37);
+    ASSERT_TRUE(result.second == Priority::IDLE);
+    result = taskManager.DequeueTaskId();
+    ASSERT_TRUE(result.first == 0);
+    ASSERT_TRUE(result.second == Priority::LOW);
+}

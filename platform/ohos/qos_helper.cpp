@@ -28,6 +28,7 @@ using OHOS::QOS::QosLevel;
 
 #ifdef ENABLE_QOS
 static const std::map<Priority, QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
+    {Priority::IDLE, OHOS::QOS::QosLevel::QOS_BACKGROUND},
     {Priority::LOW, OHOS::QOS::QosLevel::QOS_UTILITY},
     {Priority::DEFAULT, OHOS::QOS::QosLevel::QOS_DEFAULT},
     {Priority::HIGH, OHOS::QOS::QosLevel::QOS_USER_INITIATED}

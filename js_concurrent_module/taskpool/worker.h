@@ -44,6 +44,7 @@ enum class WorkerState { IDLE, RUNNING, BLOCKED };
 
 #if defined(ENABLE_TASKPOOL_FFRT)
 static const std::map<Priority, int> WORKERPRIORITY_FFRTQOS_MAP = {
+    {Priority::IDLE, ffrt::qos_background},
     {Priority::LOW, ffrt::qos_utility},
     {Priority::MEDIUM, ffrt::qos_default},
     {Priority::HIGH, ffrt::qos_user_initiated},

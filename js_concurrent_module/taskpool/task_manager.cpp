@@ -194,13 +194,13 @@ void TaskManager::UpdateExecutedInfo(uint64_t duration)
 uint32_t TaskManager::ComputeSuitableThreadNum()
 {
     uint32_t targetNum = 0;
-    if (GetTaskNum() != 0 && totalExecCount_ == 0) {
+    if (GetNonIdleTaskNum() != 0 && totalExecCount_ == 0) {
         // this branch is used for avoiding time-consuming tasks that may block the taskpool
-        targetNum = std::min(STEP_SIZE, GetTaskNum());
+        targetNum = std::min(STEP_SIZE, GetNonIdleTaskNum());
     } else if (totalExecCount_ != 0) {
         auto durationPerTask = static_cast<double>(totalExecTime_) / totalExecCount_;
-        uint32_t result = std::ceil(durationPerTask * GetTaskNum() / MAX_TASK_DURATION);
-        targetNum = std::min(result, GetTaskNum());
+        uint32_t result = std::ceil(durationPerTask * GetNonIdleTaskNum() / MAX_TASK_DURATION);
+        targetNum = std::min(result, GetNonIdleTaskNum());
     }
     targetNum += GetRunningWorkers();
     return targetNum | 1;
@@ -455,7 +455,7 @@ void TaskManager::TryExpand()
     // dispatch task in the TaskPoolManager thread
     NotifyExecuteTask();
     // do not trigger when there are more idleWorkers than tasks
-    if (GetIdleWorkers() > GetTaskNum()) {
+    if (GetIdleWorkers() > GetNonIdleTaskNum()) {
         return;
     }
     needChecking_ = false; // do not need to check
@@ -621,6 +621,25 @@ uint32_t TaskManager::GetTaskNum()
     return sum;
 }
 
+uint32_t TaskManager::GetNonIdleTaskNum()
+{
+    return nonIdleTaskNum_;
+}
+
+void TaskManager::IncreaseNumIfNoIdle(Priority priority)
+{
+    if (priority != Priority::IDLE) {
+        ++nonIdleTaskNum_;
+    }
+}
+
+void TaskManager::DecreaseNumIfNoIdle(Priority priority)
+{
+    if (priority != Priority::IDLE) {
+        --nonIdleTaskNum_;
+    }
+}
+
 uint32_t TaskManager::GetThreadNum()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
@@ -631,6 +650,7 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
 {
     {
         std::lock_guard<std::mutex> lock(taskQueuesMutex_);
+        IncreaseNumIfNoIdle(priority);
         taskQueues_[priority]->EnqueueTaskId(taskId);
     }
     TryTriggerExpand();
@@ -645,36 +665,55 @@ std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
     auto& highTaskQueue = taskQueues_[Priority::HIGH];
     if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
-        auto& highTaskQueue = taskQueues_[Priority::HIGH];
         highPrioExecuteCount_++;
-        uint64_t taskId = highTaskQueue->DequeueTaskId();
-        if (IsDependendByTaskId(taskId)) {
-            EnqueuePendingTaskInfo(taskId, Priority::HIGH);
-            return std::make_pair(0, Priority::HIGH);
-        }
-        return std::make_pair(taskId, Priority::HIGH);
+        return GetTaskByPriority(highTaskQueue, Priority::HIGH);
     }
     highPrioExecuteCount_ = 0;
 
     auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
     if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
         mediumPrioExecuteCount_++;
-        uint64_t taskId = mediumTaskQueue->DequeueTaskId();
-        if (IsDependendByTaskId(taskId)) {
-            EnqueuePendingTaskInfo(taskId, Priority::MEDIUM);
-            return std::make_pair(0, Priority::MEDIUM);
-        }
-        return std::make_pair(taskId, Priority::MEDIUM);
+        return GetTaskByPriority(mediumTaskQueue, Priority::MEDIUM);
     }
     mediumPrioExecuteCount_ = 0;
 
     auto& lowTaskQueue = taskQueues_[Priority::LOW];
-    uint64_t taskId = lowTaskQueue->DequeueTaskId();
-    if (IsDependendByTaskId(taskId)) {
-        EnqueuePendingTaskInfo(taskId, Priority::LOW);
-        return std::make_pair(0, Priority::LOW);
+    if (!lowTaskQueue->IsEmpty()) {
+        return GetTaskByPriority(lowTaskQueue, Priority::LOW);
     }
-    return std::make_pair(taskId, Priority::LOW);
+
+    auto& idleTaskQueue = taskQueues_[Priority::IDLE];
+    if (highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() && !idleTaskQueue->IsEmpty() && IsChooseIdle()) {
+        return GetTaskByPriority(idleTaskQueue, Priority::IDLE);
+    }
+    return std::make_pair(0, Priority::LOW);
+}
+
+bool TaskManager::IsChooseIdle()
+{
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    for (auto& worker : workers_) {
+        if (worker->state_ == WorkerState::IDLE) {
+            // If worker->state_ is WorkerState::IDLE, it means that the worker is free
+            continue;
+        }
+        // If there is a worker running a task, do not take the idle task.
+        return false;
+    }
+    // Only when all workers are free, will idle task be taken.
+    return true;
+}
+
+std::pair<uint64_t, Priority> TaskManager::GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue,
+    Priority priority)
+{
+    uint64_t taskId = taskQueue->DequeueTaskId();
+    if (IsDependendByTaskId(taskId)) {
+        EnqueuePendingTaskInfo(taskId, priority);
+        return std::make_pair(0, priority);
+    }
+    DecreaseNumIfNoIdle(priority);
+    return std::make_pair(taskId, priority);
 }
 
 void TaskManager::NotifyExecuteTask()
@@ -703,6 +742,7 @@ void TaskManager::InitTaskManager(napi_env env)
         }
         if (EnableFfrt()) {
             HILOG_INFO("taskpool:: apps use ffrt");
+            ffrt_set_cpu_worker_max_num(ffrt::qos_background, 1);
             ffrt_set_cpu_worker_max_num(ffrt::qos_utility, 12); // 12 : worker max num
             ffrt_set_cpu_worker_max_num(ffrt::qos_default, 12); // 12 : worker max num
             ffrt_set_cpu_worker_max_num(ffrt::qos_user_initiated, 12); // 12 : worker max num

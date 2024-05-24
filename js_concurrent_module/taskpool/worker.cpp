@@ -157,6 +157,7 @@ void Worker::InitFfrtInfo()
 {
     if (TaskManager::GetInstance().EnableFfrt()) {
         static const std::map<int, Priority> FFRTQOS_WORKERPRIORITY_MAP = {
+            {ffrt::qos_background, Priority::IDLE},
             {ffrt::qos_utility, Priority::LOW},
             {ffrt::qos_default, Priority::DEFAULT},
             {ffrt::qos_user_initiated, Priority::HIGH},
