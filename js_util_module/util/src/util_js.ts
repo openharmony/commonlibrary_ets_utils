@@ -1011,10 +1011,7 @@ class LruBuffer {
   }
 
   public keys(): Object[] {
-    let arr: Array<Object> = [];
-    for (let key of this.cache.keys()) {
-      arr.push(key);
-    }
+    let arr: Array<Object> = Array.from(this.cache.keys());
     return arr;
   }
 
