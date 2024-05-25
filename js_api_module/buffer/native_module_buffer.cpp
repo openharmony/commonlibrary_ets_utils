@@ -800,15 +800,11 @@ static napi_value ToUtf8(napi_env env, napi_callback_info info)
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
-    uint8_t* data = new uint8_t[length];
-    if (data == nullptr) {
-        HILOG_ERROR("buffer:: data is NULL");
-        return result;
-    }
-    buf->ReadBytes(data, start, length);
-    napi_create_string_utf8(env, reinterpret_cast<char *>(data), length, &result);
-    delete[] data;
-    data = nullptr;
+    std::string data = "";
+    data.reserve(length + 1);
+    data.resize(length);
+    buf->ReadBytes(const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(data.c_str())), start, length);
+    napi_create_string_utf8(env, data.c_str(), length, &result);
     return result;
 }
 
