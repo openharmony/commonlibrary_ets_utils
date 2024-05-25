@@ -1184,6 +1184,16 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
 {
     uint64_t taskId = task->taskId_;
     RemoveTask(taskId);
+    if (task->onResultSignal_ != nullptr) {
+        ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+    }
+
+    if (task->currentTaskInfo_ != nullptr) {
+        delete task->currentTaskInfo_;
+    }
+
+    task->CancelPendingTask(env);
+
     if (task->IsFunctionTask() || task->IsGroupFunctionTask()) {
         return;
     }
@@ -1336,6 +1346,12 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
         }
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
     }
+
+    if (group->currentGroupInfo_ != nullptr) {
+        delete group->currentGroupInfo_;
+    }
+
+    group->CancelPendingGroup(env);
 }
 
 void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
