@@ -26,7 +26,6 @@ namespace Commonlibrary::Concurrent::Common::Helper {
 class PathHelper {
 public:
     static constexpr char PREFIX_BUNDLE[] = "@bundle:";
-    static constexpr char PREFIX_PAG[] = "@package:";
     static constexpr char DOUBLE_POINT_TAG[] = "..";
     static constexpr char NAME_SPACE_TAG = '@';
     static constexpr char POINT_TAG[] = ".";
