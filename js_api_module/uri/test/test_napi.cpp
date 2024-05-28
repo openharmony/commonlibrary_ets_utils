@@ -421,7 +421,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest030, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConstructorTest031, testing::ext::TestSize.Level0)
 {
     OHOS::Uri::Uri uri("ht*tp:/username:password@www.baidu.com:99/path/path?query#fagment");
-    ASSERT_STREQ(uri.IsFailed().c_str(), "scheme does not conform to the rule");
+    ASSERT_STREQ(uri.GetScheme().c_str(), "ht*tp");
 }
 
 HWTEST_F(NativeEngineTest, ConstructorTest032, testing::ext::TestSize.Level0)

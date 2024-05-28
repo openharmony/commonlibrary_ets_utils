@@ -35,12 +35,12 @@ namespace OHOS::Uri {
             g_ruleAlpha.set(alphasAggregate[i]);
         }
 
-        std::string schemeAggregate = digitAggregate + alphasAggregate + "+-.";
+        std::string schemeAggregate = digitAggregate + alphasAggregate + "+-.| _-~!$&=,;'(){}*";
         for (size_t i = 0; i < schemeAggregate.size(); ++i) {
             g_ruleScheme.set(schemeAggregate[i]);
         }
 
-        std::string uricAggregate = schemeAggregate + ";/?:@&=$,[]_!~*'()%";
+        std::string uricAggregate = schemeAggregate + ";/?:@&=$,[]_!~*'()%\"";
         for (size_t i = 0; i < uricAggregate.size(); ++i) {
             g_ruleUrlc.set(uricAggregate[i]);
         }
@@ -322,9 +322,10 @@ namespace OHOS::Uri {
     bool Uri::AnalysisIPV4()
     {
         std::regex ipv4("((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)");
-        std::regex hostname("(([a-zA-Z0-9]([a-zA-Z0-9\\-~_]*[a-zA-Z0-9])?\\.)+"
-                           "([a-zA-Z]([a-zA-Z0-9\\-~_]*[a-zA-Z0-9])?))|"
-                           "([a-zA-Z0-9]([a-zA-Z0-9\\-~_]*[a-zA-Z0-9])?)");
+        std::regex hostname("(([a-zA-Z0-9]([a-zA-Z0-9\\-~_|\\+{}!$&=,;:'()\\*\\s]*[a-zA-Z0-9])?\\.)+"
+                           "([a-zA-Z]([a-zA-Z0-9\\-~_|\\+{}!$&=,;:'()\\*\\s]*"
+                           "[a-zA-Z0-9\\-~_|\\+{}!$&=,;:'()\\*\\s])?))|"
+                           "([a-zA-Z0-9]([a-zA-Z0-9\\-~_|\\+{}!$&=,;:'()\\*\\s]*[a-zA-Z0-9])?)");
         bool isIpv4 = std::regex_match(data_, ipv4);
         bool isHosName = std::regex_match(data_, hostname);
         if (!isIpv4 && !isHosName) {
