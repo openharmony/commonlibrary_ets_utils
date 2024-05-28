@@ -240,7 +240,6 @@ void TaskManager::CheckForBlockedWorkers()
         }
 
         HILOG_INFO("taskpool:: The worker has been marked as timeout.");
-        workerEngine->TerminateExecution();
         // If the current worker has a longTask and is not executing, we will only interrupt it.
         if (worker->HasLongTask()) {
             continue;
@@ -461,7 +460,9 @@ void TaskManager::TryExpand()
     needChecking_ = false; // do not need to check
     uint32_t targetNum = ComputeSuitableThreadNum();
     uint32_t workerCount = GetThreadNum();
-    const uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
+    uint32_t timeoutWorkers = GetTimeoutWorkers();
+    uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
+    maxThreads = (timeoutWorkers == 0) ? maxThreads : maxThreads + 2; // 2: extra threads
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
         uint32_t idleNum = GetIdleWorkers();
