@@ -48,6 +48,10 @@ public:
             return true;
         }
         size_t prev = script.find_first_of(SLASH_TAG);
+        while (prev == 0 && script != "") {
+            script = script.substr(1);
+            prev = script.find_first_of(SLASH_TAG);
+        }
         if (isRelativePath) {
             bundleName = script.substr(0, prev);
             std::string temp = script.substr(prev + 1);
