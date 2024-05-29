@@ -181,6 +181,7 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
     if (data == nullptr) {
         // fail! something terribly bad happened!
         HILOG_FATAL("Internal error: unable to handle the AsyncLock timeout");
+        return;
     }
     // Check deadlocks and form the rejector value with or w/o the warning. It is required to be done
     // first in order to obtain the actual data.
