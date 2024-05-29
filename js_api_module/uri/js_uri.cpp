@@ -412,8 +412,8 @@ namespace OHOS::Uri {
 
     bool Uri::IsHierarchical() const
     {
-        int index = inputUri_.find(':');
-        if (index == -1) {
+        size_t index = inputUri_.find(':');
+        if (index == std::string::npos) {
             return true;
         }
         if (inputUri_.length() == index + 1) {
@@ -475,8 +475,8 @@ namespace OHOS::Uri {
         if (uriData_.path.empty()) {
             return segments;
         }
-        int previous = 0;
-        int current;
+        size_t previous = 0;
+        size_t current;
         for (current = uriData_.path.find('/', previous); current != std::string::npos;
             current = uriData_.path.find('/', previous)) {
             if (previous < current) {

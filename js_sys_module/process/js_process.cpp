@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <grp.h>
+#include <mutex>
 #include <pthread.h>
 #include <pwd.h>
 #include <sched.h>
@@ -44,6 +45,7 @@ namespace OHOS::JsSysModule::Process {
     constexpr int FIRST_APPLICATION_UID = 10000; // 10000 : bundleId lower limit
     constexpr int LAST_APPLICATION_UID = 65535; // 65535 : bundleId upper limit
     thread_local std::multimap<std::string, napi_ref> eventMap;
+    static std::mutex sharedTimedMutex;
     thread_local std::map<napi_ref, napi_ref> pendingUnHandledRejections;
     // support events
     thread_local std::string events = "UnHandleRejection";
@@ -247,6 +249,7 @@ namespace OHOS::JsSysModule::Process {
                 HILOG_ERROR("illegal event");
                 return;
             }
+            std::unique_lock<std::mutex> lock(sharedTimedMutex);
             eventMap.insert(std::make_pair(result, myCallRef));
         }
     }
@@ -271,6 +274,7 @@ namespace OHOS::JsSysModule::Process {
         auto iter = eventMap.equal_range(temp);
         while (iter.first != iter.second) {
             NAPI_CALL(env, napi_delete_reference(env, iter.first->second));
+            std::unique_lock<std::mutex> lock(sharedTimedMutex);
             iter.first = eventMap.erase(iter.first);
             flag = true;
         }

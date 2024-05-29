@@ -255,10 +255,10 @@ namespace Commonlibrary::Platform {
 
         std::string buffer = "";
         std::u16string originalStr(originalBuffer, inputSize);
-        int shifting = 0;
+        size_t shifting = 0;
         size_t resultShifting = 0;
-        int findIndex = originalStr.find('\0');
-        if (findIndex == -1) {
+        size_t findIndex = originalStr.find('\0');
+        if (findIndex == std::string::npos) {
             buffer = UnicodeConversion(encoding, originalBuffer, inputSize);
             outLens = buffer.length();
             if (memcpy_s(writeResult, outLens, reinterpret_cast<char*>(buffer.data()), outLens) != EOK) {
@@ -266,7 +266,7 @@ namespace Commonlibrary::Platform {
                 return;
             }
         } else {
-            while (findIndex != -1) {
+            while (findIndex != std::string::npos) {
                 buffer = UnicodeConversion(encoding, originalBuffer + shifting, inputSize);
                 if (memcpy_s(writeResult + resultShifting, buffer.length(),
                              reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {

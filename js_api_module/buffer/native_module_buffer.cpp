@@ -220,6 +220,14 @@ static vector<uint8_t> GetArray(napi_env env, napi_value arr)
     return vec;
 }
 
+static void freeBolbMemory(Blob *&blob)
+{
+    if (blob != nullptr) {
+        delete blob;
+        blob = nullptr;
+    }
+}
+
 static napi_value BlobConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -230,7 +238,6 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
     size_t argc = 3;
     napi_value argv[3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-
     if (argc == 1) { // Array
         vector<uint8_t> arr = GetArray(env, argv[0]);
         blob->Init(arr.data(), arr.size());
@@ -239,15 +246,14 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
         NAPI_CALL(env, napi_unwrap(env, argv[0], reinterpret_cast<void **>(&blobIn)));
         int32_t start = -1;
         NAPI_CALL(env, napi_get_value_int32(env, argv[1], &start));
-        // 2 : the argument's count is 2
-        if (argc == 2) {
+        if (argc == 2) { // 2 : the argument's count is 2
             blob->Init(blobIn, start);
         } else if (argc == 3) { // 3 : the argument's count is 3
             int32_t end = -1;
-            // 2 : the third argument
-            NAPI_CALL(env, napi_get_value_int32(env, argv[2], &end));
+            NAPI_CALL(env, napi_get_value_int32(env, argv[2], &end)); // 2 : the third argument
             blob->Init(blobIn, start, end);
         } else {
+            freeBolbMemory(blob);
             return nullptr;
         }
     }
@@ -276,6 +282,14 @@ static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *b
     return thisVar;
 }
 
+static void freeBufferMemory(Buffer *&buffer)
+{
+    if (buffer != nullptr) {
+        delete buffer;
+        buffer = nullptr;
+    }
+}
+
 static napi_value BufferConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -283,10 +297,9 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
     if (buffer == nullptr) {
         return nullptr;
     }
-    size_t argc = 4;
-    napi_value argv[4] = { nullptr };
+    size_t argc = 4; // 4:array size
+    napi_value argv[4] = { nullptr }; // 4:array size
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-
     int32_t pType = -1;
     NAPI_CALL(env, napi_get_value_int32(env, argv[0], &pType));
     ParaType paraType = static_cast<ParaType>(pType);
@@ -307,16 +320,16 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
             Buffer *pool = nullptr;
             NAPI_CALL(env, napi_unwrap(env, argv[1], reinterpret_cast<void **>(&pool)));
             uint32_t poolOffset = 0;
-            // 2 : the third argument
-            NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &poolOffset));
+            NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &poolOffset)); // 2 : the third argument
             uint32_t length = 0;
-            // 3 : the forth argument
-            NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length));
+            NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length)); // 3 : the forth argument
             buffer->Init(pool, poolOffset, length);
         } else {
+            freeBufferMemory(buffer);
             return nullptr;
         }
     } else if (paraType == ParaType::STRING) {
+        freeBufferMemory(buffer);
         return nullptr;
     } else if (paraType == ParaType::UINT8ARRAY) {
         napi_typedarray_type type = napi_int8_array;
@@ -330,20 +343,17 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
     } else if (paraType == ParaType::ARRAYBUFFER) {
         void *data = nullptr;
         size_t bufferSize = 0;
-        // 1 : the second argument
-        NAPI_CALL(env, napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize));
+        NAPI_CALL(env, napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize)); // 1 : the second argument
         uint32_t byteOffset = 0;
-        // 2 : the third argument
-        NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &byteOffset));
+        NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &byteOffset)); // 2 : the third argument
         uint32_t length = 0;
-        // 3 : the forth argument
-        NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length));
+        NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length)); // 3 : the forth argument
         buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
     } else {
+        freeBufferMemory(buffer);
         napi_throw_error(env, nullptr, "parameter type is error");
         return nullptr;
     }
-    
     return GetBufferWrapValue(env, thisVar, buffer);
 }
 
