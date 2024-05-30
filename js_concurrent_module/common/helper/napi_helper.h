@@ -66,6 +66,7 @@ public:
     static napi_value CreateUint64(napi_env env, uint64_t value);
     static uint64_t GetUint64Value(napi_env env, napi_value value, bool lossless = false);
     static napi_value GetElement(napi_env env, napi_value value, uint32_t index);
+    static napi_value CreateArrayWithLength(napi_env env, size_t length);
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_NAPI_HELPER_H

@@ -24,6 +24,7 @@
 #include "process_helper.h"
 #include "task_group.h"
 #include "task_manager.h"
+#include "taskpool.h"
 #include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
@@ -382,9 +383,23 @@ void Worker::PerformTask(const uv_async_t* req)
     for (size_t i = 0; i < argsNum; i++) {
         argsArray[i] = NapiHelper::GetElement(env, args, i);
     }
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (task->isMainThreadTask_) {
+        auto onStartExecutionTask = [task]() {
+            if (task->onStartExecutionCallBackInfo_ == nullptr) {
+                return;
+            }
+            Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
+        };
+        TaskManager::GetInstance().PostTask(onStartExecutionTask, "TaskPoolOnStartExecutionTask");
+    } else if (task->onStartExecutionSignal_ != nullptr) {
+        uv_async_send(task->onStartExecutionSignal_);
+    }
+#else
     if (task->onStartExecutionSignal_ != nullptr) {
         uv_async_send(task->onStartExecutionSignal_);
     }
+#endif
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, nullptr);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->ClearCurrentTaskInfo();
@@ -428,7 +443,18 @@ void Worker::NotifyHandleTaskResult(Task* task)
             worker->currentTaskId_.erase(iter);
         }
     }
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (task->isMainThreadTask_) {
+        auto onResultTask = [task]() {
+            TaskPool::HandleTaskResultCallback(task);
+        };
+        TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask");
+    } else {
+        uv_async_send(task->onResultSignal_);
+    }
+#else
     uv_async_send(task->onResultSignal_);
+#endif
     worker->NotifyTaskFinished();
 }
 

@@ -751,6 +751,14 @@ void TaskManager::InitTaskManager(napi_env env)
             HILOG_INFO("taskpool:: apps do not use ffrt");
         }
 #endif
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+        if (runner.get() == nullptr) {
+            HILOG_FATAL("taskpool:: the mainEventRunner is nullptr");
+            return;
+        }
+        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+#endif
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
         // Add a reserved thread for taskpool
         CreateWorkers(hostEnv_);
@@ -858,11 +866,23 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
     worker->Enqueue(task->env_, resultInfo);
     auto callbackInfo = iter->second;
     callbackInfo->refCount++;
-    callbackInfo->onCallbackSignal->data = callbackInfo.get();
     callbackInfo->worker = worker;
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->IncreaseListeningCounter();
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (task->isMainThreadTask_) {
+        auto onCallbackTask = [callbackInfo]() {
+            TaskPool::ExecuteCallbackTask(callbackInfo.get());
+        };
+        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask");
+    } else {
+        callbackInfo->onCallbackSignal->data = callbackInfo.get();
+        uv_async_send(callbackInfo->onCallbackSignal);
+    }
+#else
+    callbackInfo->onCallbackSignal->data = callbackInfo.get();
     uv_async_send(callbackInfo->onCallbackSignal);
+#endif
     return nullptr;
 }
 
@@ -876,6 +896,13 @@ MsgQueue* TaskManager::GetMessageQueue(const uv_async_t* req)
     }
     auto worker = info->worker;
     return &(worker->Dequeue(info->hostEnv));
+}
+
+MsgQueue* TaskManager::GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInfo)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto worker = callbackInfo->worker;
+    return &(worker->Dequeue(callbackInfo->hostEnv));
 }
 // ---------------------------------- SendData ---------------------------------------
 
@@ -1202,9 +1229,15 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
         delete task->onExecutionSucceededCallBackInfo_;
     }
 
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (!task->isMainThreadTask_ && task->onStartExecutionSignal_ != nullptr) {
+        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+    }
+#else
     if (task->onStartExecutionSignal_ != nullptr) {
         ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
     }
+#endif
 }
 
 void TaskManager::StoreTask(uint64_t taskId, Task* task)
@@ -1255,6 +1288,17 @@ void TaskManager::UpdateSystemAppFlag()
         return;
     }
     isSystemApp_ = bundleInfo.applicationInfo.isSystemApp;
+}
+#endif
+
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+bool TaskManager::PostTask(std::function<void()> task, const char* taskName)
+{
+    bool res = mainThreadHandler_->PostTask(task, taskName, 0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+    if (!res) {
+        HILOG_ERROR("taskpool:: the mainThread EventHandler postTask failed");
+    }
+    return res;
 }
 #endif
 

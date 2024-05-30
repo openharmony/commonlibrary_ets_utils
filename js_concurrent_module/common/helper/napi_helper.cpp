@@ -370,4 +370,11 @@ napi_value NapiHelper::GetElement(napi_env env, napi_value value, uint32_t index
     napi_get_element(env, value, index, &result);
     return result;
 }
+
+napi_value NapiHelper::CreateArrayWithLength(napi_env env, size_t length)
+{
+    napi_value argsArray;
+    napi_create_array_with_length(env, length, &argsArray);
+    return argsArray;
+}
 } // namespace Commonlibrary::Concurrent::Common::Helper
