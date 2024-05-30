@@ -407,13 +407,16 @@ HWTEST_F(NativeEngineTest, TaskpoolTest032, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest033, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
-    TaskManager& taskManger = TaskManager::GetInstance();
-    taskManger.InitTaskManager(env);
-    uint64_t taskId = 15;
-    taskManger.EnqueueTaskId(taskId, Priority::HIGH);
-    ASSERT_EQ(taskId, 15);
-    std::pair<uint64_t, Priority> result = taskManger.DequeueTaskId();
-    ASSERT_TRUE(result.first == 15);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.InitTaskManager(env);
+    usleep(50000);
+    // the task will freed in the taskManager's Destuctor and will not cause memory leak
+    Task* task = new Task();
+    auto taskId = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTask(taskId, task);
+    taskManager.EnqueueTaskId(taskId, Priority::HIGH);
+    std::pair<uint64_t, Priority> result = taskManager.DequeueTaskId();
+    ASSERT_TRUE(result.first == taskId);
     ASSERT_TRUE(result.second == Priority::HIGH);
 }
 
