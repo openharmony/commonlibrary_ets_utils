@@ -27,6 +27,9 @@
 #include "napi/native_api.h"
 #include "utils.h"
 #include "tools/log.h"
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+#include "event_handler.h"
+#endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
@@ -90,8 +93,9 @@ public:
     static void TaskDestructor(napi_env env, void* data, void* hint);
 
     static void ThrowNoDependencyError(napi_env env);
-    static void ExecuteListenerCallback(const uv_async_t* req);
-    static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
+    static void StartExecutionCallback(const uv_async_t* req);
+    static void StartExecutionTask(ListenerCallBackInfo* listenerCallbackInfo);
+    static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallbackInfo);
 
     void StoreTaskId(uint64_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
@@ -131,6 +135,8 @@ private:
     Task(Task &&) = delete;
     Task& operator=(Task &&) = delete;
 
+    void InitHandle(napi_env env);
+
 public:
     napi_env env_ = nullptr;
     TaskType taskType_ {TaskType::TASK};
@@ -163,22 +169,34 @@ public:
     bool isPeriodicTask_ {false};
     uv_timer_t* timer_ {nullptr};
     Priority periodicTaskPriority_ {Priority::DEFAULT};
+
+    bool isMainThreadTask_ {true};
 };
 
 struct CallbackInfo {
-    CallbackInfo(napi_env env, uint32_t count, napi_ref ref)
-        : hostEnv(env), refCount(count), callbackRef(ref), onCallbackSignal(nullptr) {}
+    CallbackInfo(napi_env env, uint32_t count, napi_ref ref, Task* task)
+        : hostEnv(env), refCount(count), callbackRef(ref), task(task), onCallbackSignal(nullptr) {}
     ~CallbackInfo()
     {
         napi_delete_reference(hostEnv, callbackRef);
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+        if (task == nullptr) {
+            return;
+        }
+        if (!task->isMainThreadTask_ && onCallbackSignal != nullptr) {
+            Common::Helper::ConcurrentHelper::UvHandleClose(onCallbackSignal);
+        }
+#else
         if (onCallbackSignal != nullptr) {
             Common::Helper::ConcurrentHelper::UvHandleClose(onCallbackSignal);
         }
+#endif
     }
 
     napi_env hostEnv;
     uint32_t refCount;
     napi_ref callbackRef;
+    Task* task;
     uv_async_t* onCallbackSignal;
     Worker* worker;
 };
