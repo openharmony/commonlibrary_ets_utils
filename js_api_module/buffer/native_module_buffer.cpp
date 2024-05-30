@@ -276,20 +276,9 @@ static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *b
     return thisVar;
 }
 
-static napi_value BufferConstructor(napi_env env, napi_callback_info info)
+static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* argv, ParaType paraType)
 {
-    napi_value thisVar = nullptr;
     Buffer *buffer = new Buffer();
-    if (buffer == nullptr) {
-        return nullptr;
-    }
-    size_t argc = 4;
-    napi_value argv[4] = { nullptr };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-
-    int32_t pType = -1;
-    NAPI_CALL(env, napi_get_value_int32(env, argv[0], &pType));
-    ParaType paraType = static_cast<ParaType>(pType);
     if (paraType == ParaType::NUMBER) {
         uint32_t length = 0;
         NAPI_CALL(env, napi_get_value_uint32(env, argv[1], &length));
@@ -307,43 +296,55 @@ static napi_value BufferConstructor(napi_env env, napi_callback_info info)
             Buffer *pool = nullptr;
             NAPI_CALL(env, napi_unwrap(env, argv[1], reinterpret_cast<void **>(&pool)));
             uint32_t poolOffset = 0;
-            // 2 : the third argument
-            NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &poolOffset));
+            NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &poolOffset)); // 2 : the third argument
             uint32_t length = 0;
-            // 3 : the forth argument
-            NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length));
+            NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length)); // 3 : the forth argument
             buffer->Init(pool, poolOffset, length);
         } else {
             return nullptr;
         }
-    } else if (paraType == ParaType::STRING) {
-        return nullptr;
     } else if (paraType == ParaType::UINT8ARRAY) {
         napi_typedarray_type type = napi_int8_array;
         size_t offset = 0;
         size_t aryLen = 0;
         void *resultData = nullptr;
         napi_value resultBuffer = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, argv[1], &type, &aryLen,
-                                                &resultData, &resultBuffer, &offset));
+        NAPI_CALL(env, napi_get_typedarray_info(env, argv[1], &type, &aryLen, &resultData, &resultBuffer, &offset));
         buffer->Init(reinterpret_cast<uint8_t *>(resultData) - offset, offset, aryLen);
     } else if (paraType == ParaType::ARRAYBUFFER) {
         void *data = nullptr;
         size_t bufferSize = 0;
-        // 1 : the second argument
-        NAPI_CALL(env, napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize));
+        NAPI_CALL(env, napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize)); // 1 : the second argument
         uint32_t byteOffset = 0;
-        // 2 : the third argument
-        NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &byteOffset));
+        NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &byteOffset)); // 2 : the third argument
         uint32_t length = 0;
-        // 3 : the forth argument
-        NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length));
+        NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length)); // 3 : the forth argument
         buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
     } else {
         napi_throw_error(env, nullptr, "parameter type is error");
         return nullptr;
     }
-    
+    return buffer;
+}
+
+static napi_value BufferConstructor(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    size_t argc = 4; // the count of argument is 4
+    napi_value argv[4] = { nullptr };  // // the count of argument is 4
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+
+    int32_t pType = -1;
+    NAPI_CALL(env, napi_get_value_int32(env, argv[0], &pType));
+    ParaType paraType = static_cast<ParaType>(pType);
+    if (paraType == ParaType::STRING) {
+        return nullptr;
+    }
+    Buffer *buffer = BufferConstructorInner(env, argc, argv, paraType);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+
     return GetBufferWrapValue(env, thisVar, buffer);
 }
 
