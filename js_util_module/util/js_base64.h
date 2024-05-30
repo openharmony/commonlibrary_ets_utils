@@ -34,7 +34,9 @@ namespace OHOS::Util {
         BASIC,
         MIME,
         BASIC_URL_SAFE,
-        MIME_URL_SAFE
+        MIME_URL_SAFE,
+        TYPED_FIRST = BASIC,
+        TYPED_LAST = MIME_URL_SAFE
     };
 
     struct EncodeInfo {
@@ -72,6 +74,10 @@ namespace OHOS::Util {
     void FreeMemory(char *&address);
     unsigned char *EncodeAchieves(EncodeInfo *encodeInfo);
     unsigned char *DecodeAchieves(DecodeInfo *decodeInfo);
+    unsigned char *EncodeAchievesInner(unsigned char *ret, EncodeInfo *encodeInfo,
+                                       const char *searchArray, size_t inputLen, const unsigned char *input);
+    unsigned char *DecodeAchievesInner(size_t inputLen, size_t equalCount,
+                                       const char *input, DecodeInfo *decodeInfo, unsigned char *retDecode);
 
     class Base64 {
     public:
@@ -156,6 +162,11 @@ namespace OHOS::Util {
         static void EndStdEncodeToString(napi_env env, napi_status status, void *buffer);
         static void ReadStdDecode(napi_env env, void *data);
         static void EndStdDecode(napi_env env, napi_status status, void *buffer);
+        unsigned char *EncodeAchieveInner(const unsigned char *input, unsigned char *ret,
+                                          const char *searchArray, size_t inputLen, Type valueType);
+        bool DecodeSyncInner(napi_env env, napi_value src, Type valueType);
+        unsigned char *DecodeAchieveInner(napi_env env, const char *input,
+                                          size_t inputLen, size_t equalCount, Type valueType);
     };
 }
 #endif // UTIL_JS_BASE64_H

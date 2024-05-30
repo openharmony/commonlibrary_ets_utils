@@ -920,22 +920,6 @@ namespace OHOS::Util {
         return result;
     }
 
-    static napi_value EncodeHelper(napi_env env, size_t argc, napi_value args)
-    {
-        size_t requireArgc = 1;
-        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
-        napi_typedarray_type valuetype0;
-        size_t length = 0;
-        void *data = nullptr;
-        napi_value arraybuffer = nullptr;
-        size_t byteOffset = 0;
-        NAPI_CALL(env, napi_get_typedarray_info(env, args, &valuetype0, &length, &data, &arraybuffer, &byteOffset));
-        if (valuetype0 != napi_uint8_array) {
-            return ThrowError(env, "The type of Parameter must be Uint8Array");
-        }
-        return args;
-    }
-
     static napi_value EncodeToStringHelper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2;
@@ -945,9 +929,13 @@ namespace OHOS::Util {
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
+        if (typeValue < Type::TYPED_FIRST || typeValue > Type::TYPED_LAST) {
+            return ThrowError(env,
+                              "Parameter error.The target encoding type option nust be one of the Type enumerations.");
+        }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
-        return object->EncodeToStringSync(env, EncodeHelper(env, argc, args[0]), typeValue);
+        return object->EncodeToStringSync(env, args[0], typeValue);
     }
 
     static napi_value EncodeBase64Helper(napi_env env, napi_callback_info info)
@@ -959,9 +947,12 @@ namespace OHOS::Util {
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
+        if (typeValue != Type::BASIC && typeValue != Type::BASIC_URL_SAFE) {
+            return ThrowError(env, "Parameter error.The target encoding type option nust be BASIC or BASIC_URL_SAFE.");
+        }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
-        return object->EncodeSync(env, EncodeHelper(env, argc, args[0]), typeValue);
+        return object->EncodeSync(env, args[0], typeValue);
     }
 
     static napi_value EncodeAsyncHelper(napi_env env, napi_callback_info info)
@@ -976,7 +967,7 @@ namespace OHOS::Util {
         Type typeValue = static_cast<Type>(encode);
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
-        return object->Encode(env, EncodeHelper(env, argc, args[0]), typeValue);
+        return object->Encode(env, args[0], typeValue);
     }
 
     static napi_value EncodeToStringAsyncHelper(napi_env env, napi_callback_info info)
@@ -994,27 +985,6 @@ namespace OHOS::Util {
         return result;
     }
 
-    static napi_value DecodeHelper(napi_env env, size_t argc, napi_value args)
-    {
-        size_t requireArgc = 1;
-        NAPI_ASSERT(env, argc >= requireArgc, "Wrong number of arguments");
-        napi_typedarray_type valuetype0;
-        napi_valuetype valuetype1;
-        size_t length = 0;
-        void *data = nullptr;
-        napi_value arraybuffer = nullptr;
-        size_t byteOffset = 0;
-        NAPI_CALL(env, napi_typeof(env, args, &valuetype1));
-        if (valuetype1 != napi_valuetype::napi_string) {
-            NAPI_CALL(env, napi_get_typedarray_info(env, args, &valuetype0, &length,
-                                                    &data, &arraybuffer, &byteOffset));
-        }
-        if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
-            return ThrowError(env, "The type of Parameter must be Uint8Array or string");
-        }
-        return args;
-    }
-
     static napi_value DecodeBase64Helper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2;
@@ -1025,9 +995,13 @@ namespace OHOS::Util {
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
+        if (typeValue < Type::TYPED_FIRST || typeValue > Type::TYPED_LAST) {
+            return ThrowError(env,
+                              "Parameter error.The target encoding type option nust be one of the Type enumerations.");
+        }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
-        return object->DecodeSync(env, DecodeHelper(env, argc, args[0]), typeValue);
+        return object->DecodeSync(env, args[0], typeValue);
     }
 
     static napi_value DecodeAsyncHelper(napi_env env, napi_callback_info info)
@@ -1041,7 +1015,7 @@ namespace OHOS::Util {
         Type typeValue = static_cast<Type>(encode);
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
-        return object->Decode(env, DecodeHelper(env, argc, args[0]), typeValue);
+        return object->Decode(env, args[0], typeValue);
     }
 
     // Types
