@@ -109,6 +109,16 @@ void TaskPool::ExecuteCallback(const uv_async_t* req)
     ExecuteCallbackInner(*msgQueue);
 }
 
+void TaskPool::ExecuteCallbackTask(CallbackInfo* callbackInfo)
+{
+    auto* msgQueue = TaskManager::GetInstance().GetMessageQueueFromCallbackInfo(callbackInfo);
+    if (msgQueue == nullptr) {
+        HILOG_ERROR("taskpool:: msgQueue is nullptr");
+        return;
+    }
+    ExecuteCallbackInner(*msgQueue);
+}
+
 void TaskPool::ExecuteCallbackInner(MsgQueue& msgQueue)
 {
     while (!msgQueue.IsEmpty()) {
@@ -409,6 +419,11 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         HILOG_FATAL("taskpool:: HandleTaskResult task is null");
         return;
     }
+    HandleTaskResultCallback(task);
+}
+
+void TaskPool::HandleTaskResultCallback(Task* task)
+{
     napi_handle_scope scope = nullptr;
     NAPI_CALL_RETURN_VOID(task->env_, napi_open_handle_scope(task->env_, &scope));
     napi_value napiTaskResult = nullptr;

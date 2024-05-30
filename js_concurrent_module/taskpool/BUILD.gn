@@ -81,11 +81,15 @@ ohos_shared_library("taskpool") {
   ]
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
-    defines += [ "ENABLE_TASKPOOL_FFRT" ]
+    defines += [
+      "ENABLE_TASKPOOL_EVENTHANDLER",
+      "ENABLE_TASKPOOL_FFRT",
+    ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
       "c_utils:utils",
+      "eventhandler:libeventhandler",
       "ffrt:libffrt",
       "init:libbegetutil",
       "ipc:ipc_core",
@@ -142,11 +146,15 @@ ohos_source_set("taskpool_static") {
   external_deps = [ "hilog:libhilog" ]
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
-    defines += [ "ENABLE_TASKPOOL_FFRT" ]
+    defines += [
+      "ENABLE_TASKPOOL_EVENTHANDLER",
+      "ENABLE_TASKPOOL_FFRT",
+    ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
       "c_utils:utils",
+      "eventhandler:libeventhandler",
       "ffrt:libffrt",
       "init:libbegetutil",
       "ipc:ipc_core",

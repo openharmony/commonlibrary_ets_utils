@@ -83,11 +83,6 @@ class Base64Helper {
   }
 
   encodeSync(src: Uint8Array, options: Type = Type.BASIC): Uint8Array {
-    if (!Object.values(Type).includes(options) || options === Type.MIME || options === Type.MIME_URL_SAFE) {
-      let error = new BusinessError('Parameter error.' +
-        'The target encoding type option nust be BASIC or BASIC_URL_SAFE.');
-      throw error;
-    }
     return this.base64.encodeSync(src, options);
   }
 
@@ -112,11 +107,6 @@ class Base64Helper {
   }
 
   encodeToStringSync(src: Uint8Array, options: Type = Type.BASIC): string {
-    if (!Object.values(Type).includes(options)) {
-      let error = new BusinessError('Parameter error.' +
-        'The target encoding type option nust be one of the Type enumerations.');
-      throw error;
-    }
     let resultString: string = this.base64.encodeToStringSync(src, options);
     if (options === Type.MIME || options === Type.MIME_URL_SAFE) {
       return this.addBreaks(resultString);
@@ -125,11 +115,6 @@ class Base64Helper {
   }
 
   decodeSync(src: Uint8Array | string, options: Type = Type.BASIC): Uint8Array {
-    if (!Object.values(Type).includes(options)) {
-      let error = new BusinessError('Parameter error.' +
-        'The target encoding type option nust be one of the Type enumerations.');
-      throw error;
-    }
     if (typeof src === 'string') {
       src = src.replace(/[\r\n]/g, '');
     }

@@ -35,7 +35,9 @@ class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
     static void ExecuteCallback(const uv_async_t* req);
+    static void ExecuteCallbackTask(CallbackInfo* callbackInfo);
     static void HandleTaskResult(const uv_async_t* req);
+    static void HandleTaskResultCallback(Task* task);
 
 private:
     TaskPool() = delete;

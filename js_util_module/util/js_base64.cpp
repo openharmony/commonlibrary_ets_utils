@@ -48,11 +48,13 @@ namespace OHOS::Util {
     napi_value Base64::EncodeSync(napi_env env, napi_value src, Type valueType)
     {
         napi_typedarray_type type;
-        size_t byteOffset = 0;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_value resultBuffer = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
+        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        if (type != napi_uint8_array || length == 0) {
+            napi_throw_error(env, "401", "The type of Parameter must be Uint8Array and the length greater than zero");
+            return nullptr;
+        }
         inputEncode_ = static_cast<const unsigned char*>(resultData);
         unsigned char *rets = EncodeAchieve(inputEncode_, length, valueType);
         if (rets == nullptr) {
@@ -78,11 +80,13 @@ namespace OHOS::Util {
     napi_value Base64::EncodeToStringSync(napi_env env, napi_value src, Type valueType)
     {
         napi_typedarray_type type;
-        size_t byteOffset = 0;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_value resultBuffer = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
+        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        if (type != napi_uint8_array || length == 0) {
+            napi_throw_error(env, "401", "The type of Parameter must be Uint8Array and the length greater than zero");
+            return nullptr;
+        }
         inputEncode_ = static_cast<const unsigned char*>(resultData);
         unsigned char *ret = EncodeAchieve(inputEncode_, length, valueType);
         if (ret == nullptr) {
@@ -99,12 +103,7 @@ namespace OHOS::Util {
 
     unsigned char *Base64::EncodeAchieve(const unsigned char *input, size_t inputLen, Type valueType)
     {
-        size_t inp = 0;
-        size_t temp = 0;
-        size_t bitWise = 0;
         unsigned char *ret = nullptr;
-        size_t index = 0;
-        unsigned char table[TRAGET_SIXTYFIVE] = {0};
         outputLen = (inputLen / TRAGET_THREE) * TRAGET_FOUR;
         if ((inputLen % TRAGET_THREE) > 0) {
             outputLen += TRAGET_FOUR;
@@ -123,17 +122,25 @@ namespace OHOS::Util {
         if (ret == nullptr) {
             return ret;
         }
+
+        bool flag = false;
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
-            if (memcpy_s(table, TRAGET_SIXTYFIVE - 1, BASEURL, TRAGET_SIXTYFIVE - 1) != EOK) {
-                HILOG_ERROR("copy baseurl table to dest table error");
-                return nullptr;
-            }
-        } else {
-            if (memcpy_s(table, sizeof(table) / sizeof(table[0]), BASE, TRAGET_SIXTYFIVE) != EOK) {
-                HILOG_ERROR("copy base table to dest table error");
-                return nullptr;
-            }
+            flag = true;
         }
+        const char *searchArray = flag ? BASEURL : BASE;
+        unsigned char *result = nullptr;
+        result = EncodeAchieveInner(input, ret, searchArray, inputLen, valueType);
+
+        return result;
+    }
+
+    unsigned char *Base64::EncodeAchieveInner(const unsigned char *input, unsigned char *ret,
+                                              const char *searchArray, size_t inputLen, Type valueType)
+    {
+        size_t inp = 0;
+        size_t temp = 0;
+        size_t bitWise = 0;
+        size_t index = 0;
         while (inp < inputLen) {
             temp = 0;
             bitWise = 0;
@@ -151,9 +158,9 @@ namespace OHOS::Util {
                     outputLen -= (temp == 1) ? TRAGET_TWO : 1;
                     break;
                 } else if (temp < i && valueType != Type::BASIC_URL_SAFE && valueType != Type::MIME_URL_SAFE) {
-                    ret[index++] = table[BIT_FLG];
+                    ret[index++] = searchArray[BIT_FLG];
                 } else {
-                    ret[index++] = table[(bitWise >> ((TRAGET_THREE - i) * TRAGET_SIX)) & SIXTEEN_FLG];
+                    ret[index++] = searchArray[(bitWise >> ((TRAGET_THREE - i) * TRAGET_SIX)) & SIXTEEN_FLG];
                 }
             }
         }
@@ -164,16 +171,35 @@ namespace OHOS::Util {
     /* base64 decode */
     napi_value Base64::DecodeSync(napi_env env, napi_value src, Type valueType)
     {
+        bool resDecode = DecodeSyncInner(env, src, valueType);
+        if (!resDecode || pret == nullptr) {
+            return nullptr;
+        }
+        void *data = nullptr;
+        napi_value arrayBuffer = nullptr;
+        size_t bufferSize = decodeOutLen;
+        napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
+        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(pret), bufferSize) != EOK) {
+            FreeMemory(pret);
+            HILOG_ERROR("copy retDecode to arraybuffer error");
+            return nullptr;
+        }
+        napi_value result = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
+        FreeMemory(pret);
+        return result;
+    }
+
+    bool Base64::DecodeSyncInner(napi_env env, napi_value src, Type valueType)
+    {
         napi_valuetype valuetype = napi_undefined;
         napi_typeof(env, src, &valuetype);
         napi_typedarray_type type;
-        size_t byteOffset = 0;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_value resultBuffer = nullptr;
         char *inputString = nullptr;
         if (valuetype != napi_valuetype::napi_string) {
-            NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
+            napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         }
         if (valuetype == napi_valuetype::napi_string) {
             size_t prolen = 0;
@@ -183,41 +209,27 @@ namespace OHOS::Util {
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
                     FreeMemory(inputString);
                     napi_throw_error(env, "-1", "decode inputString memset_s failed");
-                    return nullptr;
+                    return false;
                 }
             } else {
                 napi_throw_error(env, "-2", "prolen is error !");
-                return nullptr;
+                return false;
             }
             if (inputString != nullptr) {
                 napi_get_value_string_utf8(env, src, inputString, prolen + 1, &prolen);
                 pret = DecodeAchieve(env, inputString, prolen, valueType);
             }
-        } else if (type == napi_typedarray_type::napi_uint8_array) {
+        } else if (type == napi_typedarray_type::napi_uint8_array && length > 0) {
             inputDecode_ = static_cast<const char*>(resultData);
             pret = DecodeAchieve(env, inputDecode_, length, valueType);
-        }
-        if (pret == nullptr) {
-            if (inputString != nullptr) {
-                FreeMemory(inputString);
-            }
-            return nullptr;
-        }
-        void *data = nullptr;
-        napi_value arrayBuffer = nullptr;
-        size_t bufferSize = decodeOutLen;
-        napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
-        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(pret), bufferSize) != EOK) {
+        } else {
+            napi_throw_error(env, "401",
+                             "The type of Parameter must be Uint8Array or string and the length greater than zero");
             FreeMemory(inputString);
-            FreeMemory(pret);
-            HILOG_ERROR("copy retDecode to arraybuffer error");
-            return nullptr;
+            return false;
         }
-        napi_value result = nullptr;
-        napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
         FreeMemory(inputString);
-        FreeMemory(pret);
-        return result;
+        return true;
     }
 
     unsigned char *Base64::DecodeAchieve(napi_env env, const char *input, size_t inputLen, Type valueType)
@@ -225,10 +237,7 @@ namespace OHOS::Util {
         retLen = (inputLen / TRAGET_FOUR) * TRAGET_THREE;
         decodeOutLen = retLen;
         size_t equalCount = 0;
-        size_t index = 0;
-        size_t inp = 0;
-        size_t temp = 0;
-        size_t bitWise = 0;
+
         if (*(input + inputLen - 1) == '=') {
             equalCount++;
         }
@@ -251,13 +260,25 @@ namespace OHOS::Util {
             return retDecode;
         }
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
-            int remainder = inputLen % TRAGET_FOUR;
+            size_t remainder = inputLen % TRAGET_FOUR;
             if (remainder == TRAGET_TWO) {
                 decodeOutLen += 1;
             } else if (remainder == TRAGET_THREE) {
                 decodeOutLen += TRAGET_TWO;
             }
         }
+        unsigned char *result = nullptr;
+        result = DecodeAchieveInner(env, input, inputLen, equalCount, valueType);
+        return result;
+    }
+
+    unsigned char *Base64::DecodeAchieveInner(napi_env env, const char *input,
+                                              size_t inputLen, size_t equalCount, Type valueType)
+    {
+        size_t index = 0;
+        size_t inp = 0;
+        size_t temp = 0;
+        size_t bitWise = 0;
         while (inp < (inputLen - equalCount)) {
             temp = 0;
             bitWise = 0;
@@ -311,24 +332,14 @@ namespace OHOS::Util {
     /* Decoding lookup function */
     int Base64::Finds(napi_env env, char ch, Type valueType)
     {
-        int tableLen = 0;
-        unsigned char table[TRAGET_SIXTYFIVE] = {0};
+        bool flag = false;
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
-            if (memcpy_s(table, TRAGET_SIXTYFIVE - 1, BASEURL, TRAGET_SIXTYFIVE - 1) != EOK) {
-                HILOG_ERROR("copy baseurl table to dest table error");
-                return -1;
-            }
-            tableLen = TRAGET_SIXTYFIVE - 1;
-        } else {
-            if (memcpy_s(table, sizeof(table) / sizeof(table[0]), BASE, TRAGET_SIXTYFIVE) != EOK) {
-                HILOG_ERROR("copy base table to dest table error");
-                return -1;
-            }
-            tableLen = TRAGET_SIXTYFIVE;
+            flag = true;
         }
-
+        int tableLen = flag ? TRAGET_SIXTYFIVE - 1 : TRAGET_SIXTYFIVE;
+        const char *searchArray = flag ? BASEURL : BASE;
         for (int i = 0; i < tableLen; i++) {
-            if (table[i] == ch) {
+            if (searchArray[i] == ch) {
                 return i;
             }
         }
@@ -339,11 +350,13 @@ namespace OHOS::Util {
     napi_value Base64::Encode(napi_env env, napi_value src, Type valueType)
     {
         napi_typedarray_type type;
-        size_t byteOffset = 0;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_value resultBuffer = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
+        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        if (type != napi_uint8_array || length == 0) {
+            napi_throw_error(env, "401", "The type of Parameter must be Uint8Array and the length greater than zero");
+            return nullptr;
+        }
         unsigned char *inputEncode = nullptr;
         inputEncode = static_cast<unsigned char*>(resultData);
         CreateEncodePromise(env, inputEncode, length, valueType);
@@ -353,11 +366,13 @@ namespace OHOS::Util {
     napi_value Base64::EncodeToString(napi_env env, napi_value src, Type valueType)
     {
         napi_typedarray_type type;
-        size_t byteOffset = 0;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_value resultBuffer = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
+        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        if (type != napi_uint8_array || length == 0) {
+            napi_throw_error(env, "401", "The type of Parameter must be Uint8Array and the length greater than zero");
+            return nullptr;
+        }
         unsigned char *inputEncode = nullptr;
         inputEncode = static_cast<unsigned char*>(resultData);
         CreateEncodeToStringPromise(env, inputEncode, length, valueType);
@@ -397,13 +412,9 @@ namespace OHOS::Util {
     {
         const unsigned char *input = encodeInfo->sinputEncode;
         size_t inputLen = encodeInfo->slength;
-        size_t inp = 0;
-        size_t temp = 0;
-        size_t bitWise = 0;
         unsigned char *ret = nullptr;
-        size_t index = 0;
+
         size_t outputLen = 0;
-        unsigned char table[TRAGET_SIXTYFIVE] = {0};
         outputLen = (inputLen / TRAGET_THREE) * TRAGET_FOUR;
         if ((inputLen % TRAGET_THREE) > 0) {
             outputLen += TRAGET_FOUR;
@@ -424,18 +435,23 @@ namespace OHOS::Util {
             return ret;
         }
 
+        bool flag = false;
         if (encodeInfo->valueType == Type::BASIC_URL_SAFE || encodeInfo->valueType == Type::MIME_URL_SAFE) {
-            if (memcpy_s(table, TRAGET_SIXTYFIVE - 1, BASEURL, TRAGET_SIXTYFIVE - 1) != EOK) {
-                HILOG_ERROR("copy baseurl table to dest table error");
-                return nullptr;
-            }
-        } else {
-            if (memcpy_s(table, sizeof(table) / sizeof(table[0]), BASE, TRAGET_SIXTYFIVE) != EOK) {
-                HILOG_ERROR("copy base table to dest table error");
-                return nullptr;
-            }
+            flag = true;
         }
+        const char *searchArray = flag ? BASEURL : BASE;
+        unsigned char *result = nullptr;
+        result = EncodeAchievesInner(ret, encodeInfo, searchArray, inputLen, input);
+        return result;
+    }
 
+    unsigned char *EncodeAchievesInner(unsigned char *ret, EncodeInfo *encodeInfo,
+                                       const char *searchArray, size_t inputLen, const unsigned char *input)
+    {
+        size_t inp = 0;
+        size_t temp = 0;
+        size_t bitWise = 0;
+        size_t index = 0;
         while (inp < inputLen) {
             temp = 0;
             bitWise = 0;
@@ -455,9 +471,9 @@ namespace OHOS::Util {
                     break;
                 } else if (temp < i &&
                     (encodeInfo->valueType != Type::BASIC_URL_SAFE && encodeInfo->valueType != Type::MIME_URL_SAFE)) {
-                    ret[index++] = table[BIT_FLG];
+                    ret[index++] = searchArray[BIT_FLG];
                 } else {
-                    ret[index++] = table[(bitWise >> ((TRAGET_THREE - i) * TRAGET_SIX)) & SIXTEEN_FLG];
+                    ret[index++] = searchArray[(bitWise >> ((TRAGET_THREE - i) * TRAGET_SIX)) & SIXTEEN_FLG];
                 }
             }
         }
@@ -529,14 +545,12 @@ namespace OHOS::Util {
         napi_valuetype valuetype = napi_undefined;
         napi_typeof(env, src, &valuetype);
         napi_typedarray_type type;
-        size_t byteOffset = 0;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_value resultBuffer = nullptr;
         char *inputString = nullptr;
         char *inputDecode = nullptr;
         if (valuetype != napi_valuetype::napi_string) {
-            NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, &resultBuffer, &byteOffset));
+            NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
         }
         if (valuetype == napi_valuetype::napi_string) {
             size_t prolen = 0;
@@ -553,9 +567,14 @@ namespace OHOS::Util {
             }
             napi_get_value_string_utf8(env, src, inputString, prolen + 1, &prolen);
             CreateDecodePromise(env, inputString, prolen, valueType);
-        } else if (type == napi_typedarray_type::napi_uint8_array) {
+        } else if (type == napi_typedarray_type::napi_uint8_array && length > 0) {
             inputDecode = static_cast<char*>(resultData);
             CreateDecodePromise(env, inputDecode, length, valueType);
+        } else {
+            napi_throw_error(env, "401",
+                             "The type of Parameter must be Uint8Array or string and the length greater than zero");
+            FreeMemory(inputString);
+            return nullptr;
         }
         return stdDecodeInfo_->promise;
     }
@@ -577,28 +596,18 @@ namespace OHOS::Util {
 
     int Finds(char ch, Type valueType)
     {
-        int tableLen = 0;
-        unsigned char table[TRAGET_SIXTYFIVE] = {0};
+        bool flag = false;
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
-            if (memcpy_s(table, TRAGET_SIXTYFIVE - 1, BASEURL, TRAGET_SIXTYFIVE - 1) != EOK) {
-                HILOG_ERROR("copy baseurl table to dest table error");
-                return -1;
-            }
-            tableLen = TRAGET_SIXTYFIVE - 1;
-        } else {
-            if (memcpy_s(table, sizeof(table) / sizeof(table[0]), BASE, TRAGET_SIXTYFIVE) != EOK) {
-                HILOG_ERROR("copy base table to dest table error");
-                return -1;
-            }
-            tableLen = TRAGET_SIXTYFIVE;
+            flag = true;
         }
-        int couts = 0;
+        int tableLen = flag ? TRAGET_SIXTYFIVE - 1 : TRAGET_SIXTYFIVE;
+        const char *searchArray = flag ? BASEURL : BASE;
         for (int i = 0; i < tableLen; i++) {
-            if (table[i] == ch) {
-                couts = i;
+            if (searchArray[i] == ch) {
+                return i;
             }
         }
-        return couts;
+        return -1;
     }
 
     size_t DecodeOut(size_t equalCount, size_t retLen, DecodeInfo *decodeInfo)
@@ -630,10 +639,6 @@ namespace OHOS::Util {
         retLen = (inputLen / TRAGET_FOUR) * TRAGET_THREE;
         decodeInfo->decodeOutLen = retLen;
         size_t equalCount = 0;
-        size_t inp = 0;
-        size_t temp = 0;
-        size_t bitWise = 0;
-        size_t index = 0;
         unsigned char *retDecode = nullptr;
         if (*(input + inputLen - 1) == '=') {
             equalCount++;
@@ -654,13 +659,26 @@ namespace OHOS::Util {
             return nullptr;
         }
         if (decodeInfo->valueType == Type::BASIC_URL_SAFE || decodeInfo->valueType == Type::MIME_URL_SAFE) {
-            int remainder = inputLen % TRAGET_FOUR;
+            size_t remainder = inputLen % TRAGET_FOUR;
             if (remainder == TRAGET_TWO) {
                 decodeInfo->decodeOutLen += 1;
             } else if (remainder == TRAGET_THREE) {
                 decodeInfo->decodeOutLen += TRAGET_TWO;
             }
         }
+
+        unsigned char *result = nullptr;
+        result = DecodeAchievesInner(inputLen, equalCount, input, decodeInfo, retDecode);
+        return result;
+    }
+
+    unsigned char *DecodeAchievesInner(size_t inputLen, size_t equalCount,
+                                       const char *input, DecodeInfo *decodeInfo, unsigned char *retDecode)
+    {
+        size_t inp = 0;
+        size_t temp = 0;
+        size_t bitWise = 0;
+        size_t index = 0;
         while (inp < (inputLen - equalCount)) {
             temp = 0;
             bitWise = 0;
@@ -672,7 +690,7 @@ namespace OHOS::Util {
                 if (findData == -1) {
                     return nullptr;
                 }
-                bitWise = (bitWise << TRAGET_SIX) | findData;
+                bitWise = (bitWise << TRAGET_SIX) | static_cast<size_t>(findData);
                 inp++;
                 temp++;
             }

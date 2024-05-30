@@ -100,8 +100,7 @@ void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
                          napi_value name, napi_value* args, size_t argc)
 {
-    napi_value argsArray;
-    napi_create_array_with_length(env, argc, &argsArray);
+    napi_value argsArray = NapiHelper::CreateArrayWithLength(env, argc);
     for (size_t i = 0; i < argc; i++) {
         napi_set_element(env, argsArray, i, args[i]);
     }
@@ -112,12 +111,11 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
     Task* task = new Task(env, TaskType::TASK, nameStr);
     delete[] nameStr;
     task->taskId_ = reinterpret_cast<uint64_t>(task);
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, TaskPool::HandleTaskResult, task);
+    task->InitHandle(env);
+
     napi_value taskId = NapiHelper::CreateUint64(env, task->taskId_);
     napi_value napiTrue = NapiHelper::CreateBooleanValue(env, true);
     napi_value napiFalse = NapiHelper::CreateBooleanValue(env, false);
-    // add task name to task
     napi_set_named_property(env, napiTask, FUNCTION_STR, func);
     napi_set_named_property(env, napiTask, TASKID_STR, taskId);
     napi_set_named_property(env, napiTask, ARGUMENTS_STR, argsArray);
@@ -161,8 +159,7 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
     delete[] nameStr;
     task->taskId_ = reinterpret_cast<uint64_t>(task);
     task->currentTaskInfo_ = taskInfo;
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, TaskPool::HandleTaskResult, task);
+    task->InitHandle(env);
     return task;
 }
 
@@ -375,9 +372,17 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, thisVar, "taskId");
     uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
-    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
+    auto task = TaskManager::GetInstance().GetTask(taskId);
+    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (!task->isMainThreadTask_) {
+        auto loop = NapiHelper::GetLibUV(env);
+        ConcurrentHelper::UvHandleInit(loop, callbackInfo->onCallbackSignal, TaskPool::ExecuteCallback);
+    }
+#else
     auto loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, callbackInfo->onCallbackSignal, TaskPool::ExecuteCallback);
+#endif
     TaskManager::GetInstance().RegisterCallback(env, taskId, callbackInfo);
     return nullptr;
 }
@@ -556,18 +561,22 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     return nullptr;
 }
 
-void Task::ExecuteListenerCallback(const uv_async_t* req)
+void Task::StartExecutionCallback(const uv_async_t* req)
 {
     auto listenerCallBackInfo = static_cast<ListenerCallBackInfo*>(req->data);
     if (listenerCallBackInfo == nullptr) {
-        HILOG_FATAL("taskpool:: listenerCallBackInfo is null");
+        HILOG_FATAL("taskpool:: StartExecutionCallBackInfo is null");
         return;
     }
+    StartExecutionTask(listenerCallBackInfo);
+}
 
+void Task::StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo)
+{
     auto env = listenerCallBackInfo->env_;
     auto func = NapiHelper::GetReferenceValue(env, listenerCallBackInfo->callbackRef_);
     if (func == nullptr) {
-        HILOG_INFO("taskpool:: ExecuteListenerCallback func is null");
+        HILOG_INFO("taskpool:: StartExecutionCallback func is null");
         return;
     }
 
@@ -684,9 +693,18 @@ napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (!task->isMainThreadTask_) {
+        auto loop = NapiHelper::GetLibUV(env);
+        ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_,
+            Task::StartExecutionCallback, task->onStartExecutionCallBackInfo_);
+    }
+#else
     auto loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_,
-        Task::ExecuteListenerCallback, task->onStartExecutionCallBackInfo_);
+        Task::StartExecutionCallback, task->onStartExecutionCallBackInfo_);
+#endif
+
     return nullptr;
 }
 
@@ -1213,5 +1231,21 @@ void Task::UpdatePeriodicTask()
     taskType_ = TaskType::COMMON_TASK;
     napi_reference_ref(env_, taskRef_, nullptr);
     isPeriodicTask_ = true;
+}
+
+void Task::InitHandle(napi_env env)
+{
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (OHOS::AppExecFwk::EventRunner::Current().get() == nullptr) {
+        isMainThreadTask_ = false;
+        uv_loop_t* loop = NapiHelper::GetLibUV(env);
+        ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
+    } else {
+        HILOG_DEBUG("taskpool:: eventrunner should be nullptr if the current thread is not the main thread");
+    }
+#else
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
+#endif
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

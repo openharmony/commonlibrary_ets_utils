@@ -106,6 +106,7 @@ public:
     void DecreaseRefCount(napi_env env, uint64_t taskId);
     napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task);
     MsgQueue* GetMessageQueue(const uv_async_t* req);
+    MsgQueue* GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInfo);
 
     // for task dependency
     bool IsDependendByTaskId(uint64_t taskId);
@@ -121,6 +122,8 @@ public:
     void StoreDependentTaskInfo(std::set<uint64_t> dependTaskIdSet, uint64_t taskId);
     void RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId);
     std::string GetTaskDependInfoToString(uint64_t taskId);
+
+    bool PostTask(std::function<void()> task, const char* taskName);
 
     // for duration
     void StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration);
@@ -221,7 +224,6 @@ private:
     std::mutex taskQueuesMutex_;
 
     std::atomic<bool> isInitialized_ = false;
-
     std::atomic<bool> isSystemApp_ = false;
     int disableFfrtFlag_ = 0; // 0 means enable ffrt
     int globalEnableFfrtFlag_ = 0; // 0 means not global enable ffrt
@@ -229,6 +231,11 @@ private:
     std::mutex callbackMutex_;
     std::map<uint32_t, std::shared_ptr<CallbackInfo>> callbackTable_ {};
     std::vector<Worker*> freeList_ {};
+
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
+#endif
+
     friend class TaskGroupManager;
 };
 

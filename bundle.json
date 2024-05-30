@@ -56,7 +56,8 @@
                 "c_utils",
                 "ffrt",
                 "ipc",
-                "samgr"
+                "samgr",
+                "eventhandler"
             ],
             "third_party": [
                 "icu",
