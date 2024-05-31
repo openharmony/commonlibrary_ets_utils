@@ -17,6 +17,7 @@
 
 #if defined(ENABLE_TASKPOOL_FFRT)
 #include "ffrt_inner.h"
+#include "c/executor_task.h"
 #endif
 #include "task_manager.h"
 
