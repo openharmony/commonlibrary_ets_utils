@@ -73,6 +73,11 @@ ohos_shared_library("worker") {
     }
   }
 
+  if (is_ohos && is_standard_system && !is_arkui_x) {
+    defines += [ "ENABLE_WORKER_EVENTHANDLER" ]
+    external_deps += [ "eventhandler:libeventhandler" ]
+  }
+
   external_deps += [ "hitrace:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
@@ -146,6 +151,11 @@ ohos_source_set("worker_static") {
   } else {
     deps += [ "$napi_root:ace_napi" ]
     external_deps += [ "hitrace:hitrace_meter" ]
+  }
+
+  if (is_ohos && is_standard_system && !is_arkui_x) {
+    defines += [ "ENABLE_WORKER_EVENTHANDLER" ]
+    external_deps += [ "eventhandler:libeventhandler" ]
   }
 
   subsystem_name = "commonlibrary"
