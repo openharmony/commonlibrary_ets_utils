@@ -167,22 +167,8 @@ void Timer::TimerCallback(uv_timer_t* handle)
     }
 }
 
-napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool repeat)
+napi_value Timer::SetTimeoutInnerCore(napi_env env, napi_value* argv, size_t argc, bool repeat)
 {
-    // 1. check args
-    size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
-    if (argc < 1) {
-        napi_throw_error(env, nullptr, "StartTimeoutOrInterval, callback info is nullptr.");
-        return nullptr;
-    }
-    napi_value* argv = new napi_value[argc];
-    Helper::ObjectScope<napi_value> scope(argv, true);
-    napi_value thisVar = nullptr;
-    napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
-    if (!Helper::NapiHelper::IsCallable(env, argv[0])) {
-        HILOG_ERROR("Set callback timer failed with invalid parameter.");
-        return Helper::NapiHelper::GetUndefinedValue(env);
-    }
     int32_t timeout = 0;
     if (argc > 1) {
         napi_status status = napi_get_value_int32(env, argv[1], &timeout);
@@ -204,7 +190,6 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
                 Helper::NapiHelper::CreateReference(env, argv[idx + 2], 1); // 2 include callback and timeout
         }
     }
-
     // 3. generate time callback id
     // 4. generate time callback info
     // 5. push callback info into timerTable
@@ -238,6 +223,25 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
                                [](uv_work_t *work, int32_t) {delete work; }, uv_qos_user_initiated);
     }
     return Helper::NapiHelper::CreateUint32(env, tId);
+}
+
+napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool repeat)
+{
+    size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < 1) {
+        napi_throw_error(env, nullptr, "StartTimeoutOrInterval, callback info is nullptr.");
+        return nullptr;
+    }
+    napi_value* argv = new napi_value[argc];
+    Helper::ObjectScope<napi_value> scope(argv, true);
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
+    if (!Helper::NapiHelper::IsCallable(env, argv[0])) {
+        HILOG_ERROR("Set callback timer failed with invalid parameter.");
+        return Helper::NapiHelper::GetUndefinedValue(env);
+    }
+
+    return SetTimeoutInnerCore(env, argv, argc, repeat);
 }
 
 void Timer::ClearEnvironmentTimer(napi_env env)

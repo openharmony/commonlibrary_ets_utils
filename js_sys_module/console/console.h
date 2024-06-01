@@ -50,6 +50,7 @@ private:
     static napi_value Dir(napi_env env, napi_callback_info info);
     static napi_value Group(napi_env env, napi_callback_info info);
     static napi_value GroupEnd(napi_env env, napi_callback_info info);
+    static napi_value ProcessTabularData(napi_env env, napi_value tabularData);
     static napi_value Table(napi_env env, napi_callback_info info);
     static napi_value Time(napi_env env, napi_callback_info info);
     static napi_value TimeLog(napi_env env, napi_callback_info info);
