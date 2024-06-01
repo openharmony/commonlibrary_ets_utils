@@ -275,5 +275,28 @@ private:
     std::unordered_map<uint64_t, SequenceRunner*> seqRunners_ {};
     std::mutex seqRunnersMutex_;
 };
+
+class SequenceRunnerManager {
+public:
+    SequenceRunnerManager() = default;
+    ~SequenceRunnerManager() = default;
+
+    static SequenceRunnerManager &GetInstance();
+    SequenceRunner* CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, size_t argc,
+                                            const std::string &name, uint32_t priority);
+    uint64_t DecreaseSeqCount(SequenceRunner* seqRunner);
+    void RemoveGlobalSeqRunnerRef(napi_env env, SequenceRunner* seqRunner);
+    void RemoveSequenceRunner(const std::string &name);
+
+private:
+    SequenceRunnerManager(const SequenceRunnerManager &) = delete;
+    SequenceRunnerManager& operator=(const SequenceRunnerManager &) = delete;
+    SequenceRunnerManager(SequenceRunnerManager &&) = delete;
+    SequenceRunnerManager& operator=(SequenceRunnerManager &&) = delete;
+
+    // <<name1, seqRunner>, <name2, seqRunner>, ...>
+    std::unordered_map<std::string, SequenceRunner*> globalSeqRunner_ {};
+    std::mutex globalSeqRunnerMutex_;
+};
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H
