@@ -16,6 +16,12 @@ interface ArkPrivate {
   Queue: number;
   Load(key: number): Object;
 }
+interface errorUtil{
+  checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
+  checkNewTargetIsNullError(className: string, isNull: boolean): void;
+  checkBindError(methodName: string, className: Function, self: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+}
 let flag: boolean = false;
 let fastQueue: Object = undefined;
 let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
@@ -24,9 +30,9 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
-declare function requireNapi(s: string): any;
+declare function requireNapi(s: string): errorUtil;
 if (flag || fastQueue === undefined) {
-  const { errorUtil } = requireNapi('util.struct');
+  const errorUtil = requireNapi('util.struct');
   class HandlerQueue<T> {
     private isOutBounds(obj: Queue<T>, prop: string): void {
       let index: number = Number.parseInt(prop);

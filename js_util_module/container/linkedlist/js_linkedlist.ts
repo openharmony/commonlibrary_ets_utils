@@ -16,6 +16,13 @@ interface ArkPrivate {
   LinkedList: number;
   Load(key: number): Object;
 }
+interface errorUtil{
+  checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
+  checkNewTargetIsNullError(className: string, isNull: boolean): void;
+  checkBindError(methodName: string, className: Function, self: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+  checkIsEmptyError(isEmpty: boolean): void;
+}
 let flag: boolean = false;
 let fastLinkedList: Object = undefined;
 let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
@@ -24,9 +31,9 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
-declare function requireNapi(s: string): any;
+declare function requireNapi(s: string): errorUtil;
 if (flag || fastLinkedList === undefined) {
-  const { errorUtil } = requireNapi('util.struct');
+  const errorUtil = requireNapi('util.struct');
   class HandlerLinkedList<T> {
     get(obj: LinkedList<T>, prop: string): T {
       if (typeof prop === 'symbol') {

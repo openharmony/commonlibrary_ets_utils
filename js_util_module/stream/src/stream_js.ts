@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-declare function requireNapi(napiModuleName: string): any;
+type AnyType = Object | null | undefined | unknown;
+declare function requireNapi(napiModuleName: string): AnyType;
 const emitter = requireNapi('events.emitter');
 // @ts-ignore
 const { TextEncoder, StringDecoder } = requireNapi('util');
@@ -68,7 +68,7 @@ class EventEmitter {
     }
   }
 
-  emit(event: string, ...args: any[]): void {
+  emit(event: string, ...args: AnyType[]): void {
     if (this.handlers[event]) {
       this.handlers[event].forEach((item: any) => {
         if (args.length > 0) {
