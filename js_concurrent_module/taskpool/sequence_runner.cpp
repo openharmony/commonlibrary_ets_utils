@@ -30,26 +30,54 @@ static constexpr char SEQ_RUNNER_ID_STR[] = "seqRunnerId";
 napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo)
 {
     // get input args out of env and cbinfo
-    size_t argc = 1;
-    napi_value args[1];
+    size_t argc = 2; // 2: The maximum number of parameters is 2
+    napi_value args[2]; // 2: The maximum number of parameters is 2
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
 
     uint32_t priority = Priority::DEFAULT;
-    if (argc > 0) {
-        HILOG_DEBUG("seqRunner:: parse priority params.");
-        if (!NapiHelper::IsNumber(env, args[0])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: first param must be priority.");
+    std::string name = "";
+    if (argc == 2) { // 2: The number of parameters is 2, if the first is seqRunner name, the second must be priority
+        if (NapiHelper::IsString(env, args[0]) && NapiHelper::IsNumber(env, args[1])) {
+            name = NapiHelper::GetString(env, args[0]);
+            priority = NapiHelper::GetUint32Value(env, args[1]);
+            if (priority >= Priority::NUMBER) {
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority value unvalied.");
+                return nullptr;
+            }
+        } else {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: param value unvalied.");
             return nullptr;
         }
-        priority = NapiHelper::GetUint32Value(env, args[0]);
-        if (priority >= Priority::NUMBER) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority value unvalied.");
+    } else if (argc == 1) {
+        if (NapiHelper::IsString(env, args[0])) {
+            name = NapiHelper::GetString(env, args[0]);
+        } else if (NapiHelper::IsNumber(env, args[0])) {
+            priority = NapiHelper::GetUint32Value(env, args[0]);
+            if (priority >= Priority::NUMBER) {
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority value unvalied.");
+                return nullptr;
+            }
+        } else {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: param type unvalied.");
             return nullptr;
         }
     }
+
+    SequenceRunner* seqRunner = nullptr;
+    if (name != "") {
+        seqRunner = SequenceRunnerManager::GetInstance().CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
+        if (seqRunner == nullptr) {
+            HILOG_ERROR("seqRunner:: create or get globalRunner failed");
+            return nullptr;
+        }
+    } else {
+        seqRunner = new SequenceRunner();
+        seqRunner->priority_ = static_cast<Priority>(priority);
+        napi_create_reference(env, thisVar, 0, &seqRunner->seqRunnerRef_);
+    }
+
     // update seqRunner.seqRunnerId
-    SequenceRunner* seqRunner = new SequenceRunner();
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
     napi_value napiSeqRunnerId = NapiHelper::CreateUint64(env, seqRunnerId);
     TaskGroupManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
@@ -58,12 +86,11 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
     };
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    HILOG_DEBUG("seqRunner:: construct seqRunner %{public}" PRIu64 ".", seqRunnerId);
+    HILOG_DEBUG("seqRunner:: construct seqRunner name is %{public}s, seqRunnerid %{public}" PRIu64 ".",
+                seqRunner->seqName_.c_str(), seqRunnerId);
 
-    seqRunner->priority_ = static_cast<Priority>(priority);
     seqRunner->seqRunnerId_ = seqRunnerId;
     napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
-    napi_create_reference(env, thisVar, 0, &seqRunner->seqRunnerRef_);
     return thisVar;
 }
 
@@ -130,7 +157,16 @@ void SequenceRunner::ExecuteTaskImmediately(uint64_t taskId, Priority priority)
 void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     SequenceRunner* seqRunner = static_cast<SequenceRunner*>(data);
-    TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
-    delete seqRunner;
+    if (seqRunner->isGlobalRunner_) {
+        SequenceRunnerManager::GetInstance().RemoveGlobalSeqRunnerRef(env, seqRunner);
+        if (SequenceRunnerManager::GetInstance().DecreaseSeqCount(seqRunner) == 0) {
+            SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqRunner->seqName_);
+            TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
+            delete seqRunner;
+        }
+    } else {
+        TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
+        delete seqRunner;
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

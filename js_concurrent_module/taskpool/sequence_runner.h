@@ -20,7 +20,6 @@
 #include "task.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-
 class SequenceRunner {
 public:
     SequenceRunner() = default;
@@ -41,10 +40,16 @@ private:
 public:
     uint64_t seqRunnerId_ {};
     std::atomic<uint64_t> currentTaskId_ {};
-    napi_ref seqRunnerRef_ = nullptr;
     Priority priority_ {Priority::DEFAULT};
     std::queue<Task*> seqRunnerTasks_ {};
     std::shared_mutex seqRunnerMutex_;
+
+    // for global SequenceRunner
+    std::string seqName_ {};
+    napi_ref seqRunnerRef_ = nullptr;
+    bool isGlobalRunner_ {false};
+    uint64_t count_ = 0;
+    std::unordered_map<napi_env, napi_ref> globalSeqRunnerRef_ {};
 };
 }
 
