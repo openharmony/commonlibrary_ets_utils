@@ -301,11 +301,11 @@ unsigned int Buffer::WriteString(std::string value, unsigned int size)
     return isWriteSuccess ? size : 0; // 0: write failed
 }
 
-unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int size)
+unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int length)
 {
     uint8_t *str = const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(value.data()));
-    bool isWriteSuccess = WriteBytes(str, size, raw_ + byteOffset_ + offset);
-    return isWriteSuccess ? size : 0; // 0: write failed
+    bool isWriteSuccess = WriteBytes(str, length, raw_ + byteOffset_ + offset);
+    return isWriteSuccess ? length : 0; // 0: write failed
 }
 
 void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end, unsigned int length)

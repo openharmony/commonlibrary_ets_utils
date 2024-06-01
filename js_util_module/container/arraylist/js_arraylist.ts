@@ -16,6 +16,12 @@ interface ArkPrivate {
   ArrayList: number;
   Load(key: number): Object;
 }
+interface errorUtil{
+  checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
+  checkNewTargetIsNullError(className: string, isNull: boolean): void;
+  checkBindError(methodName: string, className: Function, self: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+}
 let flag: boolean = false;
 let fastArrayList: Object = undefined;
 let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
@@ -24,9 +30,9 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
-declare function requireNapi(s: string): any;
+declare function requireNapi(s: string): errorUtil;
 if (flag || fastArrayList === undefined) {
-  const { errorUtil } = requireNapi('util.struct');
+  const errorUtil = requireNapi('util.struct');
   class HandlerArrayList<T> {
     private isOutBounds(obj: ArrayList<T>, prop: string): void {
       let index: number = Number.parseInt(prop);
@@ -311,13 +317,12 @@ if (flag || fastArrayList === undefined) {
     [Symbol.iterator](): IterableIterator<T> {
       errorUtil.checkBindError('Symbol.iterator', ArrayList, this);
       let count: number = 0;
-      let arraylist: ArrayList<T> = this;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count >= arraylist.elementNum;
-          value = done ? undefined : arraylist[count++];
+          done = count >= this.elementNum;
+          value = done ? undefined : this[count++];
           return {
             done: done,
             value: value,

@@ -324,7 +324,7 @@ class URLParams {
       return;
     }
     if (typeof thisArg === 'undefined' || thisArg === null) {
-      thisArg = this;
+      thisArg = Object;
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
@@ -473,7 +473,7 @@ class URLSearchParams {
       return;
     }
     if (typeof thisArg === 'undefined' || thisArg === null) {
-      thisArg = this;
+      thisArg = Object;
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
@@ -597,7 +597,7 @@ function decodeURISafely(input: string): string {
     return input;
   }
   let decodedString: string = '';
-  let index: number = 0;    
+  let index: number = 0;
   while (index < input.length) {
     if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
       const encodedChar = input.slice(index, index + 3);
