@@ -53,14 +53,14 @@ static void GetBitVectorFunction(napi_env env, napi_value global, napi_value &bi
 {
     napi_value arkPrivateClass = nullptr;
     napi_value arkPrivateKey = nullptr;
-    std::string arkPrivate_str = "ArkPrivate";
-    napi_create_string_utf8(env, arkPrivate_str.c_str(), arkPrivate_str.size(), &arkPrivateKey);
+    std::string arkPrivateStr = "ArkPrivate";
+    napi_create_string_utf8(env, arkPrivateStr.c_str(), arkPrivateStr.size(), &arkPrivateKey);
     napi_get_property(env, global, arkPrivateKey, &arkPrivateClass);
 
     napi_value loadFunction = nullptr;
     napi_value loadKey = nullptr;
-    std::string load_str = "Load";
-    napi_create_string_utf8(env, load_str.c_str(), load_str.size(), &loadKey);
+    std::string loadStr = "Load";
+    napi_create_string_utf8(env, loadStr.c_str(), loadStr.size(), &loadKey);
     napi_get_property(env, arkPrivateClass, loadKey, &loadFunction);
 
     napi_value bitVectorIndex = nullptr;
