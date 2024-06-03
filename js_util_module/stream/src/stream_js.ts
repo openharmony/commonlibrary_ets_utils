@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-declare function requireNapi(napiModuleName: string): any;
+type AnyType = Object | null | undefined | unknown;
+declare function requireNapi(napiModuleName: string): AnyType;
 const emitter = requireNapi('events.emitter');
 // @ts-ignore
 const { TextEncoder, StringDecoder } = requireNapi('util');
@@ -68,7 +68,7 @@ class EventEmitter {
     }
   }
 
-  emit(event: string, ...args: any[]): void {
+  emit(event: string, ...args: AnyType[]): void {
     if (this.handlers[event]) {
       this.handlers[event].forEach((item: any) => {
         if (args.length > 0) {
@@ -1047,6 +1047,53 @@ class Writable {
     }
   }
 
+  endInner(chunk?: string | Uint8Array, encoding?: string, callback?: Function): void {
+    if (chunk) {
+      if (this.writing) {
+        this.write(chunk, encoding, callback);
+      } else {
+        this.doWrite?.(chunk!, encoding ?? 'utf8', (error?: Error): void => {
+          if (error && error instanceof Error) {
+            this.erroredInner = error;
+            this.listener?.emit(WritableEvent.ERROR, error);
+          } else {
+            this.writableLengthInner! -= this.getChunkLength(chunk);
+            this.writing = false;
+            this.finishMayBe();
+          }
+          this.writableEndedInner = true;
+          this.writableInner = false;
+          asyncFn((): void => {
+            callback?.(this.erroredInner ?? error ?? null);
+          })();
+          if (!this.writableFinishedInner) {
+            this.writableFinishedInner = true;
+            asyncFn((): void => {
+              if ((!this.erroredInner || this.erroredInner.message === 'write after end') && !this.isOnError()) {
+                this.listener?.emit(WritableEvent.FINISH);
+              }
+            })();
+          }
+        });
+      }
+    } else {
+      if (this.writableEndedInner) {
+        this.erroredInner = new BusinessError('write after end', 10200036);
+        callback?.(this.erroredInner);
+      } else {
+        setTimeout(() => callback?.(this.erroredInner));
+      }
+      if (!this.writableFinishedInner && !this.writableEndedInner) {
+        this.writableFinishedInner = true;
+        asyncFn((): void => {
+          if (!this.erroredInner || this.erroredInner.message === 'write after end') {
+            this.listener?.emit(WritableEvent.FINISH);
+          }
+        })();
+      }
+    }
+  }
+
   /**
    * Write the last chunk to Writable.
    *
@@ -1082,50 +1129,7 @@ class Writable {
     this.writableInner = false;
     if (!this.writableEndedInner) {
       if (this.writableCorkedInner === 0) {
-        if (chunk) {
-          if (this.writing) {
-            this.write(chunk, encoding, callback);
-          } else {
-            this.doWrite?.(chunk!, encoding ?? 'utf8', (error?: Error): void => {
-              if (error && error instanceof Error) {
-                this.erroredInner = error;
-                this.listener?.emit(WritableEvent.ERROR, error);
-              } else {
-                this.writableLengthInner! -= this.getChunkLength(chunk);
-                this.writing = false;
-                this.finishMayBe();
-              }
-              this.writableEndedInner = true;
-              this.writableInner = false;
-              asyncFn((): void => {
-                callback?.(this.erroredInner ?? error ?? null);
-              })();
-              if (!this.writableFinishedInner) {
-                this.writableFinishedInner = true;
-                asyncFn((): void => {
-                  if ((!this.erroredInner || this.erroredInner.message === 'write after end') && !this.isOnError()) {
-                    this.listener?.emit(WritableEvent.FINISH);
-                  }
-                })();
-              }
-            });
-          }
-        } else {
-          if (this.writableEndedInner) {
-            this.erroredInner = new BusinessError('write after end', 10200036);
-            callback?.(this.erroredInner);
-          } else {
-            setTimeout(() => callback?.(this.erroredInner));
-          }
-          if (!this.writableFinishedInner && !this.writableEndedInner) {
-            this.writableFinishedInner = true;
-            asyncFn((): void => {
-              if (!this.erroredInner || this.erroredInner.message === 'write after end') {
-                this.listener?.emit(WritableEvent.FINISH);
-              }
-            })();
-          }
-        }
+        this.endInner(chunk, encoding, callback);
       } else {
         this.writableCorkedInner = 1;
         this.uncork();

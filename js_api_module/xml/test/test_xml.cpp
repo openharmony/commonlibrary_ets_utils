@@ -1640,8 +1640,33 @@ HWTEST_F(NativeEngineTest, XmlSerializertest001, testing::ext::TestSize.Level0)
     napi_get_named_property(env, instance, "setNamespace", &testFunc);
     napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
     ASSERT_NE(funcResultValue, nullptr);
+}
 
-    name = "Hello, World!";
+/* @tc.name: XmlSerializertest002
+ * @tc.desc: To XML text to JavaScript object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSerializertest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::xml::XmlSerializerInit(env, exports);
+    napi_value xmlSerializerClass = nullptr;
+    napi_get_named_property(env, exports, "XmlSerializer", &xmlSerializerClass);
+
+    napi_value args[2]; // 2: number of arguments
+    size_t length = 2048; // allocate an ArrayBuffer with a size of 2048 bytes
+    void* pBuffer = nullptr;
+    napi_create_arraybuffer(env, length, &pBuffer, &args[0]);
+    std::string encoding = "utf-8";
+    napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[1]);
+    napi_value instance = nullptr;
+    napi_value val = nullptr;
+    napi_new_instance(env, xmlSerializerClass, 2, args, &instance); // 2: number of arguments
+    napi_value testFunc = nullptr;
+    napi_value funcResultValue = nullptr;
+    std::string name = "Hello, World!";
     napi_create_string_utf8(env, name.c_str(), name.size(), &val);
     napi_get_named_property(env, instance, "setComment", &testFunc);
     napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);

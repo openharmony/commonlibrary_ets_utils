@@ -90,11 +90,7 @@ class BusinessError extends Error {
   }
 }
 
-function decodeSafelyInner(input: string): string {
-  if (input === undefined || input === '') {
-    return input;
-  }
-  input = input.replaceAll('+', ' ');
+function decodeSafelyOut(input: string): string {
   let decodedString: string = '';
   let decodedTemp: string = '';
   let index: number = 0;
@@ -120,6 +116,20 @@ function decodeSafelyInner(input: string): string {
     index++;
   }
   return decodedTemp === '' ? decodedString : decodedString += decodedTemp;
+}
+
+function decodeSafelyInner(input: string): string {
+  if (input === undefined || input === '') {
+    return input;
+  }
+  input = input.replaceAll('+', ' ');
+  let strVal: string = '';
+  try {
+    strVal = decodeURIComponent(input);
+  } catch (e) {
+    strVal = decodeSafelyOut(input);
+  }
+  return strVal;
 }
 
 function customEncodeURIComponent(str: string | number): string {
@@ -324,7 +334,7 @@ class URLParams {
       return;
     }
     if (typeof thisArg === 'undefined' || thisArg === null) {
-      thisArg = this;
+      thisArg = Object;
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
@@ -473,7 +483,7 @@ class URLSearchParams {
       return;
     }
     if (typeof thisArg === 'undefined' || thisArg === null) {
-      thisArg = this;
+      thisArg = Object;
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
@@ -592,12 +602,30 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
   return seachParamsArr;
 }
 
+function RestorePlaceholders(input: string): string {
+  return input.replace(
+    /\[\[\[PERCENT26\]\]\]|\[\[\[PERCENT3D\]\]\]|\[\[\[PERCENT2B\]\]\]|\[\[\[PERCENT25\]\]\]/g, function (match) {
+    switch (match) {
+      case '[[[PERCENT26]]]':
+        return '%26';
+      case '[[[PERCENT2B]]]':
+        return '%2B';
+      case '[[[PERCENT3D]]]':
+        return '%3D';
+      case '[[[PERCENT25]]]':
+        return '%25';
+      default:
+        return match;
+    }
+  })
+}
+
 function decodeURISafely(input: string): string {
   if (input === '') {
     return input;
   }
   let decodedString: string = '';
-  let index: number = 0;    
+  let index: number = 0;
   while (index < input.length) {
     if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
       const encodedChar = input.slice(index, index + 3);
@@ -627,7 +655,27 @@ function initToStringSeachParams(input: string): Array<string> {
   if (input[0] === '?') {
     input = input.slice(1);
   }
-  let strVal: string = decodeURISafely(input);
+  let strVal: string = '';
+  try {
+    strVal = input.replace(/%26|%3D|%2B|%25/g, function (match) {
+      switch (match) {
+        case '%26':
+          return '[[[PERCENT26]]]';
+        case '%3D':
+          return '[[[PERCENT3D]]]';
+        case '%2B':
+          return '[[[PERCENT2B]]]';
+        case '%25':
+          return '[[[PERCENT25]]]';
+        default:
+          return match;
+      }
+    })
+    strVal = decodeURIComponent(strVal);
+    strVal = RestorePlaceholders(strVal);
+  } catch (e) {
+    strVal = decodeURISafely(input);
+  }
   seachParamsArr = UrlInterface.stringParmas(strVal);
   return seachParamsArr;
 }

@@ -16,6 +16,10 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
+config("worker_public_config") {
+  include_dirs = [ js_concurrent_module_common ]
+}
+
 ohos_shared_library("worker") {
   branch_protector_ret = "pac_ret"
   sanitize = {
@@ -25,9 +29,9 @@ ohos_shared_library("worker") {
   }
   include_dirs = [
     "include",
-    js_concurrent_module_common,
     ets_util_path,
   ]
+  public_configs = [ ":worker_public_config" ]
 
   sources = [
     "../common/helper/napi_helper.cpp",
@@ -71,6 +75,11 @@ ohos_shared_library("worker") {
     } else {
       external_deps += [ "hilog:libhilog" ]
     }
+  }
+
+  if (is_ohos && is_standard_system && !is_arkui_x) {
+    defines += [ "ENABLE_WORKER_EVENTHANDLER" ]
+    external_deps += [ "eventhandler:libeventhandler" ]
   }
 
   external_deps += [ "hitrace:hitrace_meter" ]
@@ -146,6 +155,11 @@ ohos_source_set("worker_static") {
   } else {
     deps += [ "$napi_root:ace_napi" ]
     external_deps += [ "hitrace:hitrace_meter" ]
+  }
+
+  if (is_ohos && is_standard_system && !is_arkui_x) {
+    defines += [ "ENABLE_WORKER_EVENTHANDLER" ]
+    external_deps += [ "eventhandler:libeventhandler" ]
   }
 
   subsystem_name = "commonlibrary"

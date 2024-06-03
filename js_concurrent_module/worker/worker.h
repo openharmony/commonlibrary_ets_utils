@@ -28,6 +28,9 @@
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
 #include "worker_runner.h"
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+#include "event_handler.h"
+#endif
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -503,6 +506,12 @@ private:
     void PublishWorkerOverSignal();
     void CloseWorkerCallback();
     void CloseHostCallback();
+    void PostLimitedWorkerOverTask();
+    void PostWorkerOverTask();
+
+    void InitHostHandle(uv_loop_t* loop);
+    void CloseHostHandle();
+    void ClosePartHostHandle();
 
     void ReleaseWorkerThreadContent();
     void ReleaseHostThreadContent();
@@ -575,6 +584,11 @@ private:
     std::condition_variable cv_;
     std::atomic<bool> globalCallSuccess_ = true;
     std::function<void(napi_env)> workerEnvCallback_;
+
+    bool isMainThreadWorker_ = true;
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+    static std::shared_ptr<OHOS::AppExecFwk::EventHandler> g_mainThreadRunner_;
+#endif
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H

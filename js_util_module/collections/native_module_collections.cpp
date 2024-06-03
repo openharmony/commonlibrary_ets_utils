@@ -32,6 +32,7 @@ const std::string SHARED_UINT32_ARRAY = "SharedUint32Array";
 const std::string SHARED_ARRAY_BUFFER = "SendableArrayBuffer";
 const std::string BIT_VECTOR = "BitVector";
 const int ARK_PRIVATE_BIT_VECTOR_INDEX = 14;
+const std::string SHARED_UINT8_CLAMPED_ARRAY = "SharedUint8ClampedArray";
 }  // namespace
 
 static bool GetCollectionFunction(napi_env env, napi_value global, std::string collectionName,
@@ -52,14 +53,14 @@ static void GetBitVectorFunction(napi_env env, napi_value global, napi_value &bi
 {
     napi_value arkPrivateClass = nullptr;
     napi_value arkPrivateKey = nullptr;
-    std::string arkPrivate_str = "ArkPrivate";
-    napi_create_string_utf8(env, arkPrivate_str.c_str(), arkPrivate_str.size(), &arkPrivateKey);
+    std::string arkPrivateStr = "ArkPrivate";
+    napi_create_string_utf8(env, arkPrivateStr.c_str(), arkPrivateStr.size(), &arkPrivateKey);
     napi_get_property(env, global, arkPrivateKey, &arkPrivateClass);
 
     napi_value loadFunction = nullptr;
     napi_value loadKey = nullptr;
-    std::string load_str = "Load";
-    napi_create_string_utf8(env, load_str.c_str(), load_str.size(), &loadKey);
+    std::string loadStr = "Load";
+    napi_create_string_utf8(env, loadStr.c_str(), loadStr.size(), &loadKey);
     napi_get_property(env, arkPrivateClass, loadKey, &loadFunction);
 
     napi_value bitVectorIndex = nullptr;
@@ -82,6 +83,7 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
     napi_value sharedUint32Array;
     napi_value sharedArrayBuffer;
     napi_value bitVector;
+    napi_value sharedUint8ClampedArray;
 
     napi_get_global(env, &global);
     if (!GetCollectionFunction(env, global, SHARED_ARRAY_NAME, sharedArrayValue)) {
@@ -114,6 +116,9 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
     if (!GetCollectionFunction(env, global, SHARED_UINT32_ARRAY, sharedUint32Array)) {
         return exports;
     }
+    if (!GetCollectionFunction(env, global, SHARED_UINT8_CLAMPED_ARRAY, sharedUint8ClampedArray)) {
+        return exports;
+    }
 
     GetBitVectorFunction(env, global, bitVector);
 
@@ -129,6 +134,7 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("Int32Array", sharedInt32Array),
         DECLARE_NAPI_PROPERTY("Uint32Array", sharedUint32Array),
         DECLARE_NAPI_PROPERTY("BitVector", bitVector),
+        DECLARE_NAPI_PROPERTY("Uint8ClampedArray", sharedUint8ClampedArray),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;

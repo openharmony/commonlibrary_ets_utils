@@ -114,6 +114,15 @@ public:
             case ERR_REGISTRATION_OF_LISTENERS:
                 errTitle = "The executed task does not support the registration of listeners.";
                 break;
+            case ERR_TASK_EXECUTE_PERIODICALLY:
+                errTitle = "The concurrent task has been executed and cannot be executed periodically.";
+                break;
+            case ERR_TASK_EXECUTE_AGAIN:
+                errTitle = "The periodic task cannot be executed again, ";
+                break;
+            case ERR_TASK_HAVE_DEPENDENCY:
+                errTitle = "The periodic task cannot have a dependency.";
+                break;
             default:
                 break;
         }
@@ -271,6 +280,12 @@ public:
     static const int32_t ERR_ASYNCLOCK_TIMEOUT = 10200031;
     // 10200034 : The executed task does not support the registration of listeners
     static const int32_t ERR_REGISTRATION_OF_LISTENERS = 10200034;
+    // 10200050 : The concurrent task has been executed and cannot be executed periodically
+    static const int32_t ERR_TASK_EXECUTE_PERIODICALLY = 10200050;
+    // 10200051 : The periodic task cannot be executed again
+    static const int32_t ERR_TASK_EXECUTE_AGAIN = 10200051;
+    // 10200052 : The periodic task cannot have a dependency
+    static const int32_t ERR_TASK_HAVE_DEPENDENCY = 10200052;
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H

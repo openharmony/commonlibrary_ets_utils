@@ -503,6 +503,102 @@ void SetPrimitive(napi_env env, napi_value map, const size_t& length, napi_value
     }
 }
 
+void ProcessNestedObject(napi_env env, napi_value item, napi_value& map, std::map<std::string, bool>& initialMap,
+                         napi_value& valuesKeyArray, size_t index)
+{
+    napi_value keys = nullptr;
+    napi_object_get_keys(env, item, &keys);
+    uint32_t innerLength = 0;
+    napi_get_array_length(env, keys, &innerLength);
+
+    for (size_t j = 0; j < innerLength; ++j) {
+        napi_value keyNumber = nullptr;
+        napi_get_element(env, keys, j, &keyNumber);
+        char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
+        if (innerKey == nullptr) {
+            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "property key must not be null.");
+            return;
+        }
+        napi_value innerItem = nullptr;
+        napi_get_named_property(env, item, innerKey, &innerItem);
+        Helper::CloseHelp::DeletePointer(innerKey, true);
+        if (initialMap.find(std::string(innerKey)) == initialMap.end()) {
+            napi_value mapArray = nullptr;
+            napi_create_array_with_length(env, innerLength, &mapArray);
+            napi_set_element(env, mapArray, index, innerItem);
+            napi_set_named_property(env, map, innerKey, mapArray);
+            initialMap[innerKey] = true;
+        } else {
+            napi_value mapArray = nullptr;
+            napi_get_named_property(env, map, innerKey, &mapArray);
+            napi_set_element(env, mapArray, index, innerItem);
+            napi_set_named_property(env, map, innerKey, mapArray);
+        }
+    }
+}
+
+void InitializeValuesKeyArray(napi_env env, napi_value valuesKeyArray, uint32_t length)
+{
+    for (size_t j = 0; j < length ; ++j) {
+        napi_value result = nullptr;
+        napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &result);
+        napi_set_element(env, valuesKeyArray, j, result);
+    }
+}
+
+napi_value Console::ProcessTabularData(napi_env env, napi_value tabularData)
+{
+    napi_value keyArray = nullptr;
+    napi_object_get_keys(env, tabularData, &keyArray);
+    uint32_t length = 0;
+    napi_get_array_length(env, keyArray, &length);
+    napi_value valuesKeyArray = nullptr;
+    napi_create_array_with_length(env, length, &valuesKeyArray);
+
+    napi_value map = nullptr;
+    napi_create_object(env, &map);
+    bool hasPrimitive = false;
+    bool primitiveInit = false;
+    std::map<std::string, bool> initialMap;
+
+    for (size_t i = 0; i < length; i++) {
+        napi_value keyItem = nullptr;
+        napi_get_element(env, keyArray, i, &keyItem);
+        char* key = Helper::NapiHelper::GetString(env, keyItem);
+        if (key == nullptr) {
+            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "property key must not be null.");
+            return Helper::NapiHelper::GetUndefinedValue(env);
+        }
+        napi_value item = nullptr;
+        napi_get_named_property(env, tabularData, key, &item);
+        Helper::CloseHelp::DeletePointer(key, true);
+        bool isPrimitive = ((item == nullptr) ||
+                            (!Helper::NapiHelper::IsObject(env, item) && !Helper::NapiHelper::IsFunction(env, item)));
+        if (isPrimitive) {
+            if (!primitiveInit) {
+                InitializeValuesKeyArray(env, valuesKeyArray, length);
+                primitiveInit = true;
+            }
+            hasPrimitive = true;
+            napi_set_element(env, valuesKeyArray, i, item);
+        } else {
+            ProcessNestedObject(env, item, map, initialMap, valuesKeyArray, i);
+        }
+    }
+    // set outputKeysArray
+    napi_value outputKeysArray = GetKeyArray(env, map);
+    // set outputValuesArray
+    napi_value outputValuesArray = GetValueArray(env, map, length, keyArray);
+    // if has Primitive, add new colomn Values
+    if (hasPrimitive) {
+        SetPrimitive(env, map, length, valuesKeyArray, outputKeysArray, outputValuesArray);
+    }
+    GraphTable(env, outputKeysArray, outputValuesArray, length);
+    return Helper::NapiHelper::GetUndefinedValue(env);
+}
+
 napi_value Console::Table(napi_env env, napi_callback_info info)
 {
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, info);
@@ -516,97 +612,7 @@ napi_value Console::Table(napi_env env, napi_callback_info info)
         ConsoleLog<LogLevel::INFO>(env, info);
     }
     napi_value tabularData = argv[0];
-    // map/set object is incomplete, needs add.
-    
-    napi_value keyArray = nullptr;
-    napi_object_get_keys(env, tabularData, &keyArray);
-    uint32_t length = 0;
-    napi_get_array_length(env, keyArray, &length);
-    napi_value valuesKeyArray = nullptr;
-    napi_create_array_with_length(env, length, &valuesKeyArray);
-
-    napi_value map = nullptr;
-    napi_create_object(env, &map);
-    bool hasPrimitive = false;
-    bool primitiveInit = false;
-    napi_value keys = nullptr;
-    std::map<std::string, bool> initialMap;
-    for (size_t i = 0; i < length; i++) {
-        // get key
-        napi_value napiNumber = nullptr;
-        napi_get_element(env, keyArray, i, &napiNumber);
-        char* key = Helper::NapiHelper::GetString(env, napiNumber);
-        if (key == nullptr) {
-            Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                            "property key must not be null.");
-            return Helper::NapiHelper::GetUndefinedValue(env);
-        }
-        napi_value item = nullptr;
-        napi_get_named_property(env, tabularData, key, &item);
-        Helper::CloseHelp::DeletePointer(key, true);
-        bool isPrimitive = ((item == nullptr) ||
-                            (!Helper::NapiHelper::IsObject(env, item) && !Helper::NapiHelper::IsFunction(env, item)));
-        if (isPrimitive) {
-            if (!primitiveInit) {
-                for (size_t j = 0; j < length ; ++j) {
-                    napi_value result = nullptr;
-                    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &result);
-                    napi_set_element(env, valuesKeyArray, j, result);
-                }
-                primitiveInit = true;
-            }
-            hasPrimitive = true;
-            napi_set_element(env, valuesKeyArray, i, item);
-        } else {
-            // get inner keys
-            uint32_t innerLength = 0;
-            napi_object_get_keys(env, item, &keys);
-            napi_get_array_length(env, keys, &innerLength);
-            // set value to array
-            for (size_t j = 0; j < innerLength ; ++j) {
-                napi_value keyNumber = nullptr;
-                napi_get_element(env, keys, j, &keyNumber);
-                char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
-                if (innerKey == nullptr) {
-                    Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                                    "property key must not be null.");
-                    return Helper::NapiHelper::GetUndefinedValue(env);
-                }
-                napi_value innerItem = nullptr;
-                if (isPrimitive) {
-                    napi_value result = nullptr;
-                    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &result);
-                    innerItem = result;
-                } else {
-                    napi_get_named_property(env, item, innerKey, &innerItem);
-                }
-                // re-palce(sort) key, value.
-                if (initialMap.find(std::string(innerKey)) == initialMap.end()) {
-                    napi_value mapArray = nullptr;
-                    napi_create_array_with_length(env, length, &mapArray);
-                    napi_set_element(env, mapArray, i, innerItem);
-                    napi_set_named_property(env, map, innerKey, mapArray);
-                    initialMap[innerKey] = true;
-                } else {
-                    napi_value mapArray = nullptr;
-                    napi_get_named_property(env, map, innerKey, &mapArray);
-                    napi_set_element(env, mapArray, i, innerItem);
-                    napi_set_named_property(env, map, innerKey, mapArray);
-                }
-                Helper::CloseHelp::DeletePointer(innerKey, true);
-            }
-        }
-    }
-    // set outputKeysArray
-    napi_value outputKeysArray = GetKeyArray(env, map);
-    // set outputValuesArray
-    napi_value outputValuesArray = GetValueArray(env, map, length, keyArray);
-    // if has Primitive, add new colomn Values
-    if (hasPrimitive) {
-        SetPrimitive(env, map, length, valuesKeyArray, outputKeysArray, outputValuesArray);
-    }
-    GraphTable(env, outputKeysArray, outputValuesArray, length);
-    return Helper::NapiHelper::GetUndefinedValue(env);
+    return ProcessTabularData(env, tabularData);
 }
 
 void Console::PrintTime(std::string timerName, double time, const std::string& log)

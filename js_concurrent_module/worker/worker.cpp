@@ -39,6 +39,9 @@ static std::mutex g_limitedworkersMutex;
 static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::g_mainThreadRunner_ = nullptr;
+#endif
 
 Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
@@ -147,6 +150,16 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
     }
     // register worker Port.
     napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+    if (g_mainThreadRunner_ == nullptr) {
+        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+        if (runner.get() == nullptr) {
+            HILOG_FATAL("worker:: the mainEventRunner is nullptr");
+            return nullptr;
+        }
+        g_mainThreadRunner_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+    }
+#endif
     return exports;
 }
 
@@ -283,34 +296,13 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             {
                 std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
                 if (worker->UpdateHostState(INACTIVE)) {
-                    if (worker->hostOnMessageSignal_ != nullptr &&
-                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_))) {
-                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnMessageSignal_), [](uv_handle_t* handle) {
-                            if (handle != nullptr) {
-                                delete reinterpret_cast<uv_async_t*>(handle);
-                                handle = nullptr;
-                            }
-                        });
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+                    if (!worker->isMainThreadWorker_) {
+                        worker->CloseHostHandle();
                     }
-                    if (worker->hostOnErrorSignal_ != nullptr &&
-                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_))) {
-                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnErrorSignal_), [](uv_handle_t* handle) {
-                            if (handle != nullptr) {
-                                delete reinterpret_cast<uv_async_t*>(handle);
-                                handle = nullptr;
-                            }
-                        });
-                    }
-                    if (worker->hostOnGlobalCallSignal_ != nullptr &&
-                        !uv_is_closing(reinterpret_cast<uv_handle_t*>(worker->hostOnGlobalCallSignal_))) {
-                        uv_close(reinterpret_cast<uv_handle_t*>(worker->hostOnGlobalCallSignal_),
-                            [](uv_handle_t* handle) {
-                            if (handle != nullptr) {
-                                delete reinterpret_cast<uv_async_t*>(handle);
-                                handle = nullptr;
-                            }
-                        });
-                    }
+#else
+                    worker->CloseHostHandle();
+#endif
                     worker->ReleaseHostThreadContent();
                 }
                 if (!worker->IsRunning()) {
@@ -877,7 +869,19 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (env != nullptr && !worker->HostIsStop()) {
         worker->InitGlobalCallStatus(env);
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (worker->isMainThreadWorker_) {
+            auto hostOnGlobalCallTask = [worker]() {
+                worker->HostOnGlobalCallInner();
+            };
+            g_mainThreadRunner_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
+                0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+        } else {
+            uv_async_send(worker->hostOnGlobalCallSignal_);
+        }
+#else
         uv_async_send(worker->hostOnGlobalCallSignal_);
+#endif
     } else {
         HILOG_ERROR("worker:: worker host engine is nullptr when callGloballCallObjectMethod.");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null");
@@ -1158,7 +1162,7 @@ void Worker::ClearGlobalCallObject()
 void Worker::StartExecuteInThread(napi_env env, const char* script)
 {
     HILOG_INFO("worker:: Start execute in the thread!");
-    // 1. init hostOnMessageSignal_ in host loop
+    // 1. init hostHandle in host loop
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     if (loop == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "engine loop is null");
@@ -1166,15 +1170,16 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
         return;
     }
     GetContainerScopeId(env);
-    hostOnMessageSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
-    hostOnMessageSignal_->data = this;
-    hostOnErrorSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnError));
-    hostOnErrorSignal_->data = this;
-    hostOnGlobalCallSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnGlobalCallSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnGlobalCall));
-    hostOnGlobalCallSignal_->data = this;
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+    if (OHOS::AppExecFwk::EventRunner::Current().get() == nullptr) {
+        isMainThreadWorker_ = false;
+        InitHostHandle(loop);
+    } else {
+        HILOG_DEBUG("worker:: eventrunner should be nullptr if the current thread is not the main thread");
+    }
+#else
+    InitHostHandle(loop);
+#endif
 
     // 2. copy the script
     script_ = std::string(script);
@@ -1363,18 +1368,13 @@ void Worker::HostOnMessageInner()
         // receive close signal.
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker received close signal");
-            uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-                if (handle != nullptr) {
-                    delete reinterpret_cast<uv_async_t*>(handle);
-                    handle = nullptr;
-                }
-            });
-            uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-                if (handle != nullptr) {
-                    delete reinterpret_cast<uv_async_t*>(handle);
-                    handle = nullptr;
-                }
-            });
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+            if (!isMainThreadWorker_) {
+                ClosePartHostHandle();
+            }
+#else
+            ClosePartHostHandle();
+#endif
             CloseHostCallback();
             return;
         }
@@ -1612,6 +1612,19 @@ void Worker::CloseHostCallback()
         // handle listeners
         HandleEventListeners(hostEnv_, obj, 1, argv, "exit");
     }
+    if (!isLimitedWorker_) {
+        std::lock_guard<std::mutex> lock(g_workersMutex);
+        std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
+        if (it != g_workers.end()) {
+            g_workers.erase(it);
+        }
+    } else {
+        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+        std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
+        if (it != g_limitedworkers.end()) {
+            g_limitedworkers.erase(it);
+        }
+    }
     CloseHelp::DeletePointer(this, false);
 }
 
@@ -1768,12 +1781,59 @@ void Worker::TerminateWorker()
 
 void Worker::PublishWorkerOverSignal()
 {
-    // post NULL tell host worker is not running
-    if (!HostIsStop()) {
-        hostMessageQueue_.EnQueue(NULL);
+    if (HostIsStop()) {
+        return;
+    }
+    // post nullptr tell host worker is not running
+    hostMessageQueue_.EnQueue(nullptr);
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+    if (isMainThreadWorker_) {
+        if (isLimitedWorker_) {
+            PostLimitedWorkerOverTask();
+        } else {
+            PostWorkerOverTask();
+        }
+    } else {
         uv_async_send(hostOnMessageSignal_);
     }
+#else
+    uv_async_send(hostOnMessageSignal_);
+#endif
 }
+
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+void Worker::PostLimitedWorkerOverTask()
+{
+    auto hostOnOverSignalTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
+            if (it == g_limitedworkers.end()) {
+                return;
+            }
+        }
+        this->HostOnMessageInner();
+    };
+    g_mainThreadRunner_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+}
+
+void Worker::PostWorkerOverTask()
+{
+    auto hostOnOverSignalTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_workersMutex);
+            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
+            if (it == g_workers.end()) {
+                return;
+            }
+        }
+        this->HostOnMessageInner();
+    };
+    g_mainThreadRunner_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+}
+#endif
 
 void Worker::WorkerOnMessage(const uv_async_t* req)
 {
@@ -1889,19 +1949,33 @@ void Worker::HandleUncaughtException(napi_value exception)
     // WorkerGlobalScope onerror
     WorkerOnErrorInner(obj);
 
-    if (hostEnv_ != nullptr) {
-        MessageDataType data = nullptr;
-        napi_value undefined = NapiHelper::GetUndefinedValue(workerEnv_);
-        napi_serialize_inner(workerEnv_, obj, undefined, undefined, false, true, &data);
-        {
-            std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-            if (!HostIsStop()) {
-                errorQueue_.EnQueue(data);
-                uv_async_send(hostOnErrorSignal_);
-            }
-        }
-    } else {
+    if (hostEnv_ == nullptr) {
         HILOG_ERROR("worker:: host engine is nullptr.");
+        return;
+    }
+    MessageDataType data = nullptr;
+    napi_value undefined = NapiHelper::GetUndefinedValue(workerEnv_);
+    napi_serialize_inner(workerEnv_, obj, undefined, undefined, false, true, &data);
+    {
+        std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+        if (HostIsStop()) {
+            return;
+        }
+        errorQueue_.EnQueue(data);
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (isMainThreadWorker_) {
+            auto hostOnErrorTask = [this]() {
+                this->HostOnErrorInner();
+                this->TerminateInner();
+            };
+            g_mainThreadRunner_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
+                0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+        } else {
+            uv_async_send(hostOnErrorSignal_);
+        }
+#else
+        uv_async_send(hostOnErrorSignal_);
+#endif
     }
 }
 
@@ -1918,7 +1992,19 @@ void Worker::PostMessageToHostInner(MessageDataType data)
     std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
     if (hostEnv_ != nullptr && !HostIsStop()) {
         hostMessageQueue_.EnQueue(data);
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (isMainThreadWorker_) {
+            auto hostOnMessageTask = [this]() {
+                this->HostOnMessageInner();
+            };
+            g_mainThreadRunner_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
+                0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+        } else {
+            uv_async_send(hostOnMessageSignal_);
+        }
+#else
         uv_async_send(hostOnMessageSignal_);
+#endif
     } else {
         HILOG_ERROR("worker:: worker host engine is nullptr when PostMessageToHostInner.");
     }
@@ -2075,21 +2161,7 @@ void Worker::ReleaseWorkerThreadContent()
         }
         hostEngine->DecreaseSubEnvCounter();
     }
-    // 1. remove worker instance count
-    if (!workerEngine->IsRestrictedWorkerThread()) {
-        std::lock_guard<std::mutex> lock(g_workersMutex);
-        std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
-        if (it != g_workers.end()) {
-            g_workers.erase(it);
-        }
-    } else {
-        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-        std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
-        if (it != g_limitedworkers.end()) {
-            g_limitedworkers.erase(it);
-        }
-    }
-
+    // 1. delete worker listener
     ParentPortRemoveAllListenerInner();
 
     // 2. delete worker's parentPort
@@ -2242,4 +2314,61 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 }
 #endif
 
+void Worker::InitHostHandle(uv_loop_t* loop)
+{
+    hostOnMessageSignal_ = new uv_async_t;
+    uv_async_init(loop, hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
+    hostOnMessageSignal_->data = this;
+    hostOnErrorSignal_ = new uv_async_t;
+    uv_async_init(loop, hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnError));
+    hostOnErrorSignal_->data = this;
+    hostOnGlobalCallSignal_ = new uv_async_t;
+    uv_async_init(loop, hostOnGlobalCallSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnGlobalCall));
+    hostOnGlobalCallSignal_->data = this;
+}
+
+void Worker::CloseHostHandle()
+{
+    if (hostOnMessageSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_))) {
+        uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
+    if (hostOnErrorSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_))) {
+        uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
+    if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
+        uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_),
+            [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete reinterpret_cast<uv_async_t*>(handle);
+                handle = nullptr;
+            }
+        });
+    }
+}
+
+void Worker::ClosePartHostHandle()
+{
+    uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
+    uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
+}
 } // namespace Commonlibrary::Concurrent::WorkerModule

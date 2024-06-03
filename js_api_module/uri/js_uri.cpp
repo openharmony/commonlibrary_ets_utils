@@ -476,7 +476,7 @@ namespace OHOS::Uri {
             return segments;
         }
         size_t previous = 0;
-        size_t current;
+        size_t current = 0;
         for (current = uriData_.path.find('/', previous); current != std::string::npos;
             current = uriData_.path.find('/', previous)) {
             if (previous < current) {

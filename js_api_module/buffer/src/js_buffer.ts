@@ -529,6 +529,38 @@ class Buffer {
     return new Proxy(this, new HandlerBuffer());
   }
 
+  fillInner(value: string | Buffer | Uint8Array | number, offset: number = 0, end: number = this.length,
+    encoding: string = 'utf8'): Buffer {
+    const normalizedEncoding = encodingTypeErrorCheck(encoding);
+
+    rangeErrorCheck(offset, 'offset', 0, UINT32MAX);
+    rangeErrorCheck(end, 'end', 0, this.length);
+
+    if (offset > end - 1) {
+      return this;
+    }
+    if (typeof value === 'string') {
+      if (normalizedEncoding === 'hex') {
+        let numbers = hexStrtoNumbers(value);
+        this[bufferSymbol].fillNumbers(numbers, offset, end);
+      } else {
+        this[bufferSymbol].fillString(value, offset, end, normalizedEncoding);
+      }
+    }
+    if (typeof value === 'number') {
+      let nums: Array<number> = [];
+      nums.push(value & 0xFF); // 0xFF : get lower 8-bits
+      this[bufferSymbol].fillNumbers(nums, offset, end);
+    }
+    if (value instanceof Buffer) {
+      this[bufferSymbol].fillBuffer(value[bufferSymbol], offset, end);
+    }
+    if (value instanceof Uint8Array) {
+      let nums = Array.from(value);
+      this[bufferSymbol].fillNumbers(nums, offset, end);
+    }
+    return this;
+  }
   /**
    * Fills buf with the specified value. If the offset and end are not given, the entire buf will be filled.
    * @since 9
@@ -573,36 +605,7 @@ class Buffer {
     if (typeof encoding !== 'string') {
       typeErrorCheck(encoding, ['string'], 'encoding');
     }
-
-    const normalizedEncoding = encodingTypeErrorCheck(encoding);
-
-    rangeErrorCheck(offset, 'offset', 0, UINT32MAX);
-    rangeErrorCheck(end, 'end', 0, this.length);
-
-    if (offset > end - 1) {
-      return this;
-    }
-    if (typeof value === 'string') {
-      if (normalizedEncoding === 'hex') {
-        let numbers = hexStrtoNumbers(value);
-        this[bufferSymbol].fillNumbers(numbers, offset, end);
-      } else {
-        this[bufferSymbol].fillString(value, offset, end, normalizedEncoding);
-      }
-    }
-    if (typeof value === 'number') {
-      let nums: Array<number> = [];
-      nums.push(value & 0xFF); // 0xFF : get lower 8-bits
-      this[bufferSymbol].fillNumbers(nums, offset, end);
-    }
-    if (value instanceof Buffer) {
-      this[bufferSymbol].fillBuffer(value[bufferSymbol], offset, end);
-    }
-    if (value instanceof Uint8Array) {
-      let nums = Array.from(value);
-      this[bufferSymbol].fillNumbers(nums, offset, end);
-    }
-    return this;
+    return this.fillInner(value, offset, end, encoding);
   }
 
   write(str: string, offset: number = 0, length: number = this.length - offset, encoding: string = 'utf8'): number {
@@ -688,76 +691,156 @@ class Buffer {
     return offset;
   }
 
+  private readIntBEType(offset: number, byteLength: number): number | undefined {
+    switch (byteLength) {
+      case oneByte:
+        return this.readInt8(offset);
+      case twoBytes:
+        return this.readInt16BE(offset);
+      case threeBytes:
+        return this.readInt24BE(offset);
+      case fourBytes:
+        return this.readInt32BE(offset);
+      case fiveBytes:
+        return this.readInt40BE(offset);
+      case sixBytes:
+        return this.readInt48BE(offset);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
+  private readIntLEType(offset: number, byteLength: number): number | undefined {
+    switch (byteLength) {
+      case oneByte:
+        return this.readInt8(offset);
+      case twoBytes:
+        return this.readInt16LE(offset);
+      case threeBytes:
+        return this.readInt24LE(offset);
+      case fourBytes:
+        return this.readInt32LE(offset);
+      case fiveBytes:
+        return this.readInt40LE(offset);
+      case sixBytes:
+        return this.readInt48LE(offset);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
+  private readUIntBEType(offset: number, byteLength: number): number | undefined {
+    switch (byteLength) {
+      case oneByte:
+        return this.readUInt8(offset);
+      case twoBytes:
+        return this.readUInt16BE(offset);
+      case threeBytes:
+        return this.readUInt24BE(offset);
+      case fourBytes:
+        return this.readUInt32BE(offset);
+      case fiveBytes:
+        return this.readUInt40BE(offset);
+      case sixBytes:
+        return this.readUInt48BE(offset);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
+  private readUIntLEType(offset: number, byteLength: number): number | undefined {
+    switch (byteLength) {
+      case oneByte:
+        return this.readUInt8(offset);
+      case twoBytes:
+        return this.readUInt16LE(offset);
+      case threeBytes:
+        return this.readUInt24LE(offset);
+      case fourBytes:
+        return this.readUInt32LE(offset);
+      case fiveBytes:
+        return this.readUInt40LE(offset);
+      case sixBytes:
+        return this.readUInt48LE(offset);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
   private readData(offset: number, byteLength: number, style: Style): number | undefined {
     rangeErrorCheck(byteLength, 'byteLength', oneByte, sixBytes);
     if (style === Style.intBE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.readInt8(offset);
-        case twoBytes:
-          return this.readInt16BE(offset);
-        case threeBytes:
-          return this.readInt24BE(offset);
-        case fourBytes:
-          return this.readInt32BE(offset);
-        case fiveBytes:
-          return this.readInt40BE(offset);
-        case sixBytes:
-          return this.readInt48BE(offset);
-        default:
-          break;
-      }
+      return this.readIntBEType(offset, byteLength);
     } else if (style === Style.intLE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.readInt8(offset);
-        case twoBytes:
-          return this.readInt16LE(offset);
-        case threeBytes:
-          return this.readInt24LE(offset);
-        case fourBytes:
-          return this.readInt32LE(offset);
-        case fiveBytes:
-          return this.readInt40LE(offset);
-        case sixBytes:
-          return this.readInt48LE(offset);
-        default:
-          break;
-      }
+      return this.readIntLEType(offset, byteLength);
     } else if (style === Style.uintLE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.readUInt8(offset);
-        case twoBytes:
-          return this.readUInt16LE(offset);
-        case threeBytes:
-          return this.readUInt24LE(offset);
-        case fourBytes:
-          return this.readUInt32LE(offset);
-        case fiveBytes:
-          return this.readUInt40LE(offset);
-        case sixBytes:
-          return this.readUInt48LE(offset);
-        default:
-          break;
-      }
+      return this.readUIntLEType(offset, byteLength);
     } else if (style === Style.uintBE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.readUInt8(offset);
-        case twoBytes:
-          return this.readUInt16BE(offset);
-        case threeBytes:
-          return this.readUInt24BE(offset);
-        case fourBytes:
-          return this.readUInt32BE(offset);
-        case fiveBytes:
-          return this.readUInt40BE(offset);
-        case sixBytes:
-          return this.readUInt48BE(offset);
-        default:
-          break;
-      }
+      return this.readUIntBEType(offset, byteLength);
+    }
+    return undefined;
+  }
+
+  private writeIntBEType(value: number, offset: number, byteLength: number): number | undefined {
+    switch (byteLength) {
+      case oneByte:
+        return this.writeInt8(value, offset);
+      case twoBytes:
+        return this.writeInt16BE(value, offset);
+      case threeBytes:
+        return this.writeUInt24BE(value, offset);
+      case fourBytes:
+        return this.writeInt32BE(value, offset);
+      case fiveBytes:
+        return this.writeUInt40BE(value, offset);
+      case sixBytes:
+        return this.writeUInt48BE(value, offset);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
+  private writeUIntBEType(value: number, offset: number, byteLength: number): number | undefined {
+    switch (byteLength) {
+      case oneByte:
+        return this.writeUInt8(value, offset);
+      case twoBytes:
+        return this.writeUInt16BE(value, offset);
+      case threeBytes:
+        return this.writeUInt24BE(value, offset);
+      case fourBytes:
+        return this.writeUInt32BE(value, offset);
+      case fiveBytes:
+        return this.writeUInt40BE(value, offset);
+      case sixBytes:
+        return this.writeUInt48BE(value, offset);
+      default:
+        break;
+    }
+    return undefined;
+  }
+
+  private writeUIntLEType(value: number, offset: number, byteLength: number): number | undefined {
+    switch (byteLength) {
+      case oneByte:
+        return this.writeUInt8(value, offset);
+      case twoBytes:
+        return this.writeUInt16LE(value, offset);
+      case threeBytes:
+        return this.writeUInt24LE(value, offset);
+      case fourBytes:
+        return this.writeUInt32LE(value, offset);
+      case fiveBytes:
+        return this.writeUInt40LE(value, offset);
+      case sixBytes:
+        return this.writeUInt48LE(value, offset);
+      default:
+        break;
     }
     return undefined;
   }
@@ -765,73 +848,11 @@ class Buffer {
   private writeData(value: number, offset: number, byteLength: number, style: Style): number | undefined {
     rangeErrorCheck(byteLength, 'byteLength', oneByte, sixBytes);
     if (style === Style.intBE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.writeInt8(value, offset);
-        case twoBytes:
-          return this.writeInt16BE(value, offset);
-        case threeBytes:
-          return this.writeUInt24BE(value, offset);
-        case fourBytes:
-          return this.writeInt32BE(value, offset);
-        case fiveBytes:
-          return this.writeUInt40BE(value, offset);
-        case sixBytes:
-          return this.writeUInt48BE(value, offset);
-        default:
-          break;
-      }
-    } else if (style === Style.intLE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.writeUInt8(value, offset);
-        case twoBytes:
-          return this.writeUInt16LE(value, offset);
-        case threeBytes:
-          return this.writeUInt24LE(value, offset);
-        case fourBytes:
-          return this.writeUInt32LE(value, offset);
-        case fiveBytes:
-          return this.writeUInt40LE(value, offset);
-        case sixBytes:
-          return this.writeUInt48LE(value, offset);
-        default:
-          break;
-      }
-    } else if (style === Style.uintLE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.writeUInt8(value, offset);
-        case twoBytes:
-          return this.writeUInt16LE(value, offset);
-        case threeBytes:
-          return this.writeUInt24LE(value, offset);
-        case fourBytes:
-          return this.writeUInt32LE(value, offset);
-        case fiveBytes:
-          return this.writeUInt40LE(value, offset);
-        case sixBytes:
-          return this.writeUInt48LE(value, offset);
-        default:
-          break;
-      }
+      return this.writeIntBEType(value, offset, byteLength);
+    } else if (style === Style.intLE || style === Style.uintLE) {
+      return this.writeUIntLEType(value, offset, byteLength);
     } else if (style === Style.uintBE) {
-      switch (byteLength) {
-        case oneByte:
-          return this.writeUInt8(value, offset);
-        case twoBytes:
-          return this.writeUInt16BE(value, offset);
-        case threeBytes:
-          return this.writeUInt24BE(value, offset);
-        case fourBytes:
-          return this.writeUInt32BE(value, offset);
-        case fiveBytes:
-          return this.writeUInt40BE(value, offset);
-        case sixBytes:
-          return this.writeUInt48BE(value, offset);
-        default:
-          break;
-      }
+      return this.writeUIntBEType(value, offset, byteLength);
     }
     return undefined;
   }
@@ -1524,6 +1545,38 @@ class Buffer {
     return offset;
   }
 
+  compareInner(target: Buffer | Uint8Array, targetStart: number = 0, targetEnd: number = target.length,
+    sourceStart: number = 0, sourceEnd: number = this.length): number {
+      let length1: number = sourceEnd - sourceStart;
+      let length2: number = targetEnd - targetStart;
+      let length: number = length1 > length2 ? length2 : length1;
+      if (target instanceof Buffer) {
+        let val = this[bufferSymbol].compare(target[bufferSymbol], targetStart, sourceStart, length);
+        if (val === 0) {
+          if (length1 === length2) {
+            return 0;
+          }
+          return length1 < length2 ? -1 : 1;
+        } else {
+          return val < 0 ? 1 : -1;
+        }
+      } else {
+        let bufData1 = this[bufferSymbol].getBufferData();
+        for (let i = 0; i < length; i++) {
+          let value1 = +bufData1[i + sourceStart];
+          let value2 = +target[i + targetStart];
+          if (value1 === value2) {
+            continue;
+          }
+          return value1 < value2 ? -1 : 1;
+        }
+        if (length1 === length2) {
+          return 0;
+        }
+        return length1 < length2 ? -1 : 1;
+      }
+    }
+
   compare(target: Buffer | Uint8Array, targetStart: number = 0, targetEnd: number = target.length,
     sourceStart: number = 0, sourceEnd: number = this.length): number {
     if (targetStart === null) {
@@ -1553,34 +1606,7 @@ class Buffer {
     if (targetStart >= targetEnd) {
       return 1;
     }
-    let length1: number = sourceEnd - sourceStart;
-    let length2: number = targetEnd - targetStart;
-    let length: number = length1 > length2 ? length2 : length1;
-    if (target instanceof Buffer) {
-      let val = this[bufferSymbol].compare(target[bufferSymbol], targetStart, sourceStart, length);
-      if (val === 0) {
-        if (length1 === length2) {
-          return 0;
-        }
-        return length1 < length2 ? -1 : 1;
-      } else {
-        return val < 0 ? 1 : -1;
-      }
-    } else {
-      let bufData1 = this[bufferSymbol].getBufferData();
-      for (let i = 0; i < length; i++) {
-        let value1 = +bufData1[i + sourceStart];
-        let value2 = +target[i + targetStart];
-        if (value1 === value2) {
-          continue;
-        }
-        return value1 < value2 ? -1 : 1;
-      }
-      if (length1 === length2) {
-        return 0;
-      }
-      return length1 < length2 ? -1 : 1;
-    }
+    return this.compareInner(target, targetStart, targetEnd, sourceStart, sourceEnd);
   }
 
   equals(otherBuffer: Uint8Array | Buffer): boolean {

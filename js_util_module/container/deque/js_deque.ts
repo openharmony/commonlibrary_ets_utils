@@ -16,6 +16,12 @@ interface ArkPrivate {
   Deque: number;
   Load(key: number): Object;
 }
+interface errorUtil{
+  checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
+  checkNewTargetIsNullError(className: string, isNull: boolean): void;
+  checkBindError(methodName: string, className: Function, self: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+}
 let flag: boolean = false;
 let fastDeque: Object = undefined;
 let arkPritvate: ArkPrivate = globalThis.ArkPrivate || undefined;
@@ -24,9 +30,9 @@ if (arkPritvate !== undefined) {
 } else {
   flag = true;
 }
-declare function requireNapi(s: string): any;
+declare function requireNapi(s: string): errorUtil;
 if (flag || fastDeque === undefined) {
-  const { errorUtil } = requireNapi('util.struct');
+  const errorUtil = requireNapi('util.struct');
   class HandlerDeque<T> {
     private isOutBounds(prop: string): void {
       let index: number = Number.parseInt(prop);
@@ -202,15 +208,14 @@ if (flag || fastDeque === undefined) {
     }
     [Symbol.iterator](): IterableIterator<T> {
       errorUtil.checkBindError('Symbol.iterator', Deque, this);
-      let deque: Deque<T> = this;
-      let count: number = deque.front;
+      let count: number = this.front;
       return {
         next: function (): { done: boolean, value: T } {
           let done: boolean = false;
           let value: T = undefined;
-          done = count === deque.rear;
-          value = done ? undefined : deque[count];
-          count = (count + 1) % deque.capacity;
+          done = count === this.rear;
+          value = done ? undefined : this[count];
+          count = (count + 1) % this.capacity;
           return {
             done: done,
             value: value,
