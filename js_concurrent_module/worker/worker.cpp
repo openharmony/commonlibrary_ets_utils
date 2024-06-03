@@ -1183,16 +1183,23 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
 
     // 2. copy the script
     script_ = std::string(script);
-    CloseHelp::DeletePointer(script, true);
     // isBundle : FA mode and BundlePack.
     bool isBundle = reinterpret_cast<NativeEngine*>(env)->GetIsBundle();
     // if worker file is packed in har, need find moduleName in hostVM, and concat new recordName.
-    if ((script_.find_first_of(PathHelper::NAME_SPACE_TAG) == 0 &&
-        script_.find(PathHelper::PREFIX_BUNDLE) == std::string::npos) ||
+    bool isHar = script_.find_first_of(PathHelper::NAME_SPACE_TAG) == 0;
+    if ((isHar && script_.find(PathHelper::PREFIX_BUNDLE) == std::string::npos) ||
         (!isBundle && script_.find_first_of(PathHelper::POINT_TAG) == 0)) {
         PathHelper::ConcatFileNameForWorker(env, script_, fileName_, isRelativePath_);
         HILOG_DEBUG("worker:: Concated worker recordName: %{public}s, fileName: %{public}s",
                     script_.c_str(), fileName_.c_str());
+    }
+    // check the path is vaild.
+    if (!isBundle && !PathHelper::CheckWorkerPath(env, script_, isHar, isRelativePath_)) {
+        HILOG_ERROR("worker:: the file path is invaild, can't find the file : %{public}s.", script);
+        CloseHelp::DeletePointer(script, true);
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH,
+                                "the file path is invaild, can't find the file.");
+        return;
     }
 
     // 3. create WorkerRunner to Execute
@@ -1204,6 +1211,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     } else {
         HILOG_ERROR("runner_ is nullptr");
     }
+    CloseHelp::DeletePointer(script, true);
 }
 
 void Worker::ExecuteInThread(const void* data)
