@@ -2378,5 +2378,11 @@ void Worker::ClosePartHostHandle()
             handle = nullptr;
         }
     });
+    uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
+        if (handle != nullptr) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
+        }
+    });
 }
 } // namespace Commonlibrary::Concurrent::WorkerModule
