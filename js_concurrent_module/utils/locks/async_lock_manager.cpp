@@ -189,7 +189,7 @@ napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo
         DECLARE_NAPI_FUNCTION_WITH_DATA("lockAsync", LockAsync, thisVar),
     };
     NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
-    NAPI_CALL(env, napi_wrap_sendable(env, thisVar, data, Destructor, nullptr, nullptr));
+    NAPI_CALL(env, napi_wrap_sendable(env, thisVar, data, Destructor, nullptr));
 
     return thisVar;
 }
