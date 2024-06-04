@@ -819,6 +819,7 @@ namespace OHOS::xml {
                 return;
             } else {
                 xmlPullParserError_ = "unterminated entity ref";
+                break;
             }
         }
         ParseEntityFunc(start, out, isEntityToken, textEnum);
