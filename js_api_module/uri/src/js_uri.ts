@@ -67,7 +67,6 @@ class URI {
     if (typeof input !== 'string' || input.length === 0) {
       throw new BusinessError(`Parameter error.The type of ${input} must be string`);
     }
-    console.debug('URI:: uri src is: ' + input);
     this.uricalss = new uri.Uri(input);
     let errStr: string = this.uricalss.isFailed;
     if (errStr.length !== 0) {
