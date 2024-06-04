@@ -176,7 +176,7 @@ public:
 
 struct CallbackInfo {
     CallbackInfo(napi_env env, uint32_t count, napi_ref ref, Task* task)
-        : hostEnv(env), refCount(count), callbackRef(ref), task(task), onCallbackSignal(nullptr) {}
+        : hostEnv(env), refCount(count), callbackRef(ref), task(task), onCallbackSignal(nullptr), worker(nullptr) {}
     ~CallbackInfo()
     {
         napi_delete_reference(hostEnv, callbackRef);

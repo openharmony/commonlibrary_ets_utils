@@ -333,8 +333,8 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
             if (workerWaitTime == 0) {
                 continue;
             }
-            uint64_t currTime = std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::steady_clock::now().time_since_epoch()).count();
+            uint64_t currTime = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count());
             if (!isWorkerLoopActive) {
                 freeList_.emplace_back(worker);
             } else if ((currTime - workerWaitTime) > 120) { // 120 : free after 120s
