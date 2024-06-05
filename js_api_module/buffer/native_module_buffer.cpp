@@ -610,6 +610,20 @@ static napi_value GetBufferData(napi_env env, napi_callback_info info)
     return result;
 }
 
+static napi_value GetArrayBuffer(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+    Buffer *buf = nullptr;
+    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    uint32_t length = buf->GetLength();
+    void *data = nullptr;
+    napi_value arrayBuffer = nullptr;
+    NAPI_CALL(env, napi_create_arraybuffer(env, length, &data, &arrayBuffer));
+    buf->ReadBytesForArrayBuffer(data, length);
+    return arrayBuffer;
+}
+
 static napi_value Get(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1056,6 +1070,7 @@ static napi_value BufferInit(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("fillNumbers", FillNumbers),
         DECLARE_NAPI_FUNCTION("fillBuffer", FillBuffer),
         DECLARE_NAPI_FUNCTION("getBufferData", GetBufferData),
+        DECLARE_NAPI_FUNCTION("getArrayBuffer", GetArrayBuffer),
         DECLARE_NAPI_FUNCTION("get", Get),
         DECLARE_NAPI_FUNCTION("set", Set),
         DECLARE_NAPI_FUNCTION("subBuffer", SubBuffer),

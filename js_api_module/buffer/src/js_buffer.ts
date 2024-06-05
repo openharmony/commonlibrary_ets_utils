@@ -217,6 +217,7 @@ interface NativeBuffer {
   writeUInt32LE(value: number, offset: number): number;
   readUInt32LE(offset: number): number;
   getBufferData(): Array<number>;
+  getArrayBuffer(): ArrayBufferLike;
   get(index: number): number;
   set(index: number, value: number): undefined;
   subBuffer(target: NativeBuffer, start: number, end: number): undefined;
@@ -497,8 +498,8 @@ class Buffer {
     if (this._arrayBuffer) {
       return this._arrayBuffer;
     }
-    let arr = this[bufferSymbol].getBufferData();
-    return new Uint8Array(arr).buffer;
+    let arr = this[bufferSymbol].getArrayBuffer();
+    return arr;
   }
 
   constructor(value: number | Buffer | Uint8Array | ArrayBuffer | Array<number> | string,
