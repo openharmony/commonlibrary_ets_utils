@@ -147,24 +147,19 @@ function customEncodeForToString(str: string | number): string {
   const hexStrLen = 2; // 2:String length of hexadecimal encoded values
   const hexAdecimal = 16; // 16:Hexadecimal number system
   const regex = /[!'()~]/g;
+  const encodeMap = {
+    '%20': '+',
+    '%2B': '+',
+    '%3D': '=',
+    '%25': '%',
+  };
   return encodeURIComponent(str).replace(regex, function (c) {
     let hex = c.charCodeAt(0).toString(hexAdecimal);
     return '%' + (hex.length < hexStrLen ? '0' : '') + hex.toUpperCase();
   })
-    .replace(/%20|%2B|%3D|%25/g, function (match) {
-      switch (match) {
-        case '%20':
-          return '+';
-        case '%2B':
-          return '+';
-        case '%3D':
-          return '=';
-        case '%25':
-          return '%';
-        default:
-          return match;
-      }
-    });
+    .replace(/%[a-fA-F0-9]{2}/g, function (match) {
+        return encodeMap[match] || match;
+      });
 }
 
 function customEncodeURI(str: string, keepCharacters: string): string {
@@ -257,19 +252,29 @@ class URLParams {
   }
 
   toString(): string {
-    let outPut: string = '';
+    const resultArray: string[] = [];
     let arrayLen: number = this.urlClass.array.length;
+    let array: string[] = this.urlClass.array;
+    let key: string = '';
+    let value: string = '';
+    let initVal: Record<string, string[]> = this.urlClass.initialValue;
     for (let pos: number = 0; pos < arrayLen; pos += 2) { // 2:Even subscripts exist as key values
-      let key: string = this.urlClass.array[pos];
-      let value: string = this.urlClass.array[pos + 1];
-      let shouldEncode: boolean = Object.entries(this.urlClass.initialValue).some(([k, v]) => k === key && v.includes(value));
+      key = array[pos];
+      value = array[pos + 1];
+      let shouldEncode = false;
+      for (let k in initVal) {
+        if (k === key && initVal[k].includes(value)) {
+          shouldEncode = true;
+          break;
+        }
+      }
       if (shouldEncode) {
         key = customEncodeForToString(key);
         value = customEncodeForToString(value).replace(/=/g, '%3D');
       }
-      outPut += `${pos > 0 ? '&' : ''}${key}=${value}`;
+      resultArray.push(`${pos > 0 ? '&' : ''}${key}=${value}`);
     }
-    return outPut;
+    return resultArray.join('');
   }
 
   keys(): Object {
@@ -418,19 +423,29 @@ class URLSearchParams {
   }
 
   toString(): string {
-    let outPut: string = '';
+    const resultArray: string[] = [];
     let arrayLen: number = this.urlClass.array.length;
+    let array: string[] = this.urlClass.array;
+    let key: string = '';
+    let value: string = '';
+    let initVal: Record<string, string[]> = this.urlClass.initialValue;
     for (let pos: number = 0; pos < arrayLen; pos += 2) { // 2:Even subscripts exist as key values
-      let key: string = this.urlClass.array[pos];
-      let value: string = this.urlClass.array[pos + 1];
-      let shouldEncode: boolean = Object.entries(this.urlClass.initialValue).some(([k, v]) => k === key && v.includes(value));
+      key = array[pos];
+      value = array[pos + 1];
+      let shouldEncode = false;
+      for (let k in initVal) {
+        if (k === key && initVal[k].includes(value)) {
+          shouldEncode = true;
+          break;
+        }
+      }
       if (shouldEncode) {
         key = customEncodeForToString(key);
         value = customEncodeForToString(value).replace(/=/g, '%3D');
       }
-      outPut += `${pos > 0 ? '&' : ''}${key}=${value}`;
+      resultArray.push(`${pos > 0 ? '&' : ''}${key}=${value}`);
     }
-    return outPut;
+    return resultArray.join('');
   }
 
   keys(): Object {
@@ -602,7 +617,7 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
   return seachParamsArr;
 }
 
-function RestorePlaceholders(input: string): string {
+function restorePlaceholders(input: string): string {
   return input.replace(
     /\[\[\[PERCENT26\]\]\]|\[\[\[PERCENT3D\]\]\]|\[\[\[PERCENT2B\]\]\]|\[\[\[PERCENT25\]\]\]/g, function (match) {
     switch (match) {
@@ -617,7 +632,7 @@ function RestorePlaceholders(input: string): string {
       default:
         return match;
     }
-  })
+  });
 }
 
 function decodeURISafely(input: string): string {
@@ -670,9 +685,9 @@ function initToStringSeachParams(input: string): Array<string> {
         default:
           return match;
       }
-    })
+    });
     strVal = decodeURIComponent(strVal);
-    strVal = RestorePlaceholders(strVal);
+    strVal = restorePlaceholders(strVal);
   } catch (e) {
     strVal = decodeURISafely(input);
   }
