@@ -874,11 +874,47 @@ static napi_value ToBase64Url(napi_env env, napi_callback_info info)
     return result;
 }
 
+uint32_t GetValue(napi_env env, EncodingType &eType, std::string &str, const char *&data, napi_value &args)
+{
+    std::u16string u16Str;
+    uint32_t len = 0;
+    switch (eType) {
+        case ASCII:
+        case LATIN1:
+        case BINARY:
+            str = GetStringASCII(env, args);
+            data = str.c_str();
+            break;
+        case UTF8:
+            str = GetStringUtf8(env, args);
+            data = str.c_str();
+            break;
+        case UTF16LE: {
+            u16Str = GetStringUtf16LE(env, args);
+            data = reinterpret_cast<char *>(const_cast<char16_t *>(u16Str.c_str()));
+            len = u16Str.length() * 2; // 2 : 2 means the length of wide char String is 2 times of char String
+            break;
+        }
+        case BASE64:
+        case BASE64URL:
+            str = GetStringBase64(env, args, eType);
+            data = str.c_str();
+            break;
+        case HEX:
+            str = GetStringHex(env, args);
+            data = str.c_str();
+            break;
+        default:
+            break;
+    }
+    return len;
+}
+
 static napi_value IndexOf(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 4;
-    napi_value args[4] = { nullptr };
+    size_t argc = 4; // 4:The number of parameters is 4
+    napi_value args[4] = { nullptr }; // 4:The number of parameters is 4
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     uint32_t offset = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &offset));
@@ -886,40 +922,10 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     // 2 : the third argument
     string type = GetStringASCII(env, args[2]);
     EncodingType eType = Buffer::GetEncodingType(type);
-    std::string str;
-    std::u16string u16Str;
+    std::string str = "";
     uint32_t len = 0;
     const char *data = nullptr;
-    switch (eType) {
-        case ASCII:
-        case LATIN1:
-        case BINARY:
-            str = GetStringASCII(env, args[0]);
-            data = str.c_str();
-            break;
-        case UTF8:
-            str = GetStringUtf8(env, args[0]);
-            data = str.c_str();
-            break;
-        case UTF16LE: {
-            u16Str = GetStringUtf16LE(env, args[0]);
-            data = reinterpret_cast<char *>(const_cast<char16_t *>(u16Str.c_str()));
-            len = u16Str.length() * 2; // 2 : 2 means the length of wide char String is 2 times of char String
-            break;
-        }
-        case BASE64:
-        case BASE64URL:
-            str = GetStringBase64(env, args[0], eType);
-            data = str.c_str();
-            break;
-        case HEX:
-            str = GetStringHex(env, args[0]);
-            data = str.c_str();
-            break;
-        default:
-            break;
-    }
-
+    len = GetValue(env, eType, str, data, args[0]);
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     bool isReverse = false;
