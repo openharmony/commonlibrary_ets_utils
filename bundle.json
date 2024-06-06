@@ -46,6 +46,7 @@
         "ram": "~4096KB",
         "deps": {
             "components": [
+                "ace_engine",
                 "bounds_checking_function",
                 "napi",
                 "hilog",
