@@ -289,6 +289,18 @@ void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
     }
 }
 
+void Buffer::ReadBytesForArrayBuffer(void *data, uint32_t length)
+{
+    if (length == 0) {
+        HILOG_DEBUG("Buffer::ReadBytesForArrayBuffer size is 0");
+        return;
+    }
+    if (memcpy_s(data, length, reinterpret_cast<const void*>(raw_ + byteOffset_), length) != EOK) {
+        HILOG_ERROR("copy raw to arraybuffer error");
+        return;
+    }
+}
+
 void Buffer::WriteByte(uint8_t number, uint32_t offset)
 {
     WriteBytes(&number, 1, raw_ + byteOffset_ + offset);

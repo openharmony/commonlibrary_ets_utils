@@ -47,6 +47,7 @@ public:
     void WriteUInt32LE(int32_t value, uint32_t offset);
 
     void ReadBytes(uint8_t *data, uint32_t offset, uint32_t length);
+    void ReadBytesForArrayBuffer(void *data, uint32_t length);
     int32_t ReadInt32BE(uint32_t offset);
     int32_t ReadInt32LE(uint32_t offset);
     uint32_t ReadUInt32BE(uint32_t offset);
