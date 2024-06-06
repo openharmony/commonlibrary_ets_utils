@@ -86,17 +86,24 @@ function dealXml(strXml: string): string {
       return '><';
     }
   }).trim();
+  if ((strXml.indexOf('[CDATA')) !== -1) {
+    return dealXmlInner(strXml);
+  }
+  return strXml;
+}
+
+function dealXmlInner(strXml: string): string {
   strXml = strXml.replace(/\]\]><!\[CDATA/g, ']]> <![CDATA');
-  return strXml.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, function(match) {
-   return match.replace(/\\/g, '\\\\').replace(/[\r\n\t\v]/g, function(suit) {
-     switch(suit) {
-       case '\n': return '\\n';
-       case '\r': return '\\r';
-       case '\t': return '\\t';
-       case '\v': return '\\v';
-       default: return suit;
-     }
-   })
+  return strXml.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, function (match) {
+    return match.replace(/\\/g, '\\\\').replace(/[\r\n\t\v]/g, function (suit) {
+      switch (suit) {
+        case '\n': return '\\n';
+        case '\r': return '\\r';
+        case '\t': return '\\t';
+        case '\v': return '\\v';
+        default: return suit;
+      }
+    })
   });
 }
 
