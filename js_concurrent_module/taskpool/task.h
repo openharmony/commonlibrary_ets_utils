@@ -112,6 +112,7 @@ public:
     bool IsFunctionTask() const;
     bool IsLongTask() const;
     bool IsPeriodicTask() const;
+    bool IsMainThreadTask() const;
     bool IsExecuted() const;
     void IncreaseRefCount();
     void DecreaseRefCount();

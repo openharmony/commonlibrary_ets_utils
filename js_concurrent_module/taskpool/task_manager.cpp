@@ -533,7 +533,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         return;
     }
     std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-    if (task->isPeriodicTask_) {
+    if (task->IsPeriodicTask()) {
         task->CancelPendingTask(env);
         uv_timer_stop(task->timer_);
         uv_close(reinterpret_cast<uv_handle_t*>(task->timer_), [](uv_handle_t* handle) {
@@ -870,7 +870,7 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->IncreaseListeningCounter();
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (task->isMainThreadTask_) {
+    if (task->IsMainThreadTask()) {
         auto onCallbackTask = [callbackInfo]() {
             TaskPool::ExecuteCallbackTask(callbackInfo.get());
         };
@@ -1240,7 +1240,7 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
     }
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (!task->isMainThreadTask_ && task->onStartExecutionSignal_ != nullptr) {
+    if (!task->IsMainThreadTask() && task->onStartExecutionSignal_ != nullptr) {
         ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
     }
 #else

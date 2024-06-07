@@ -384,7 +384,7 @@ void Worker::PerformTask(const uv_async_t* req)
         argsArray[i] = NapiHelper::GetElement(env, args, i);
     }
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (task->isMainThreadTask_) {
+    if (task->IsMainThreadTask()) {
         auto onStartExecutionTask = [task]() {
             if (task->onStartExecutionCallBackInfo_ == nullptr) {
                 return;
@@ -444,7 +444,7 @@ void Worker::NotifyHandleTaskResult(Task* task)
         }
     }
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (task->isMainThreadTask_) {
+    if (task->IsMainThreadTask()) {
         auto onResultTask = [task]() {
             TaskPool::HandleTaskResultCallback(task);
         };

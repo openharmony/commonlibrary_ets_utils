@@ -375,7 +375,7 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     auto task = TaskManager::GetInstance().GetTask(taskId);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (!task->isMainThreadTask_) {
+    if (!task->IsMainThreadTask()) {
         auto loop = NapiHelper::GetLibUV(env);
         ConcurrentHelper::UvHandleInit(loop, callbackInfo->onCallbackSignal, TaskPool::ExecuteCallback);
     }
@@ -714,7 +714,7 @@ napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (!task->isMainThreadTask_) {
+    if (!task->IsMainThreadTask()) {
         auto loop = NapiHelper::GetLibUV(env);
         ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_,
             Task::StartExecutionCallback, task->onStartExecutionCallBackInfo_);
@@ -866,13 +866,12 @@ void Task::UpdateTaskType(TaskType taskType)
 
 bool Task::IsRepeatableTask() const
 {
-    return taskType_ == TaskType::COMMON_TASK || taskType_ == TaskType::GROUP_COMMON_TASK ||
-           taskType_ == TaskType::GROUP_FUNCTION_TASK;
+    return IsCommonTask() || IsGroupCommonTask() || IsGroupFunctionTask();
 }
 
 bool Task::IsGroupTask() const
 {
-    return taskType_ == TaskType::GROUP_COMMON_TASK || taskType_ == TaskType::GROUP_FUNCTION_TASK;
+    return IsGroupCommonTask() || IsGroupFunctionTask();
 }
 
 bool Task::IsGroupCommonTask() const
@@ -908,6 +907,11 @@ bool Task::IsLongTask() const
 bool Task::IsPeriodicTask() const
 {
     return isPeriodicTask_;
+}
+
+bool Task::IsMainThreadTask() const
+{
+    return isMainThreadTask_;
 }
 
 // The uninitialized state is Task, and then taskType_ will be updated based on the task type.
@@ -986,13 +990,13 @@ void Task::CancelPendingTask(napi_env env)
         return;
     }
     napi_value error = nullptr;
-    if (!isPeriodicTask_) {
+    if (!IsPeriodicTask()) {
         error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
     }
     auto engine = reinterpret_cast<NativeEngine*>(env);
     for (const auto& info : pendingTaskInfos_) {
         engine->DecreaseSubEnvCounter();
-        if (!isPeriodicTask_) {
+        if (!IsPeriodicTask()) {
             napi_reject_deferred(env, info->deferred, error);
         }
         napi_reference_unref(env, taskRef_, nullptr);
@@ -1072,25 +1076,25 @@ bool Task::CanForSequenceRunner(napi_env env)
 {
     std::string errMessage = "";
     // task with dependence is not allowed
-    if (hasDependency_) {
+    if (HasDependency()) {
         errMessage = "seqRunner:: dependent task not allowed.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER, errMessage.c_str());
         return false;
     }
-    if (isPeriodicTask_) {
+    if (IsPeriodicTask()) {
         errMessage = "taskpool:: SequenceRunner cannot execute the periodicTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::COMMON_TASK || taskType_ == TaskType::SEQRUNNER_TASK) {
+    if (IsCommonTask() || IsSeqRunnerTask()) {
         errMessage = "taskpool:: SequenceRunner cannot execute seqRunnerTask or executedTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::GROUP_COMMON_TASK) {
+    if (IsGroupCommonTask()) {
         errMessage = "taskpool:: SequenceRunner cannot execute groupTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
@@ -1102,31 +1106,31 @@ bool Task::CanForSequenceRunner(napi_env env)
 bool Task::CanForTaskGroup(napi_env env)
 {
     std::string errMessage = "";
-    if (hasDependency_) {
+    if (HasDependency()) {
         errMessage = "taskpool:: dependent task not allowed.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (isPeriodicTask_) {
+    if (IsPeriodicTask()) {
         errMessage = "taskpool:: The interface does not support the periodicTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::COMMON_TASK || taskType_ == TaskType::SEQRUNNER_TASK) {
+    if (IsCommonTask() || IsSeqRunnerTask()) {
         errMessage = "taskpool:: taskGroup cannot add seqRunnerTask or executedTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::GROUP_COMMON_TASK) {
+    if (IsGroupCommonTask()) {
         errMessage = "taskpool:: taskGroup cannot add groupTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (isLongTask_) {
+    if (IsLongTask()) {
         errMessage = "taskpool:: The interface does not support the long task";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
@@ -1139,31 +1143,31 @@ bool Task::CanForTaskGroup(napi_env env)
 bool Task::CanExecute(napi_env env)
 {
     std::string errMessage = "";
-    if (taskType_ == TaskType::GROUP_COMMON_TASK) {
+    if (IsGroupCommonTask()) {
         errMessage = "taskpool:: groupTask cannot execute outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::SEQRUNNER_TASK) {
+    if (IsSeqRunnerTask()) {
         errMessage = "taskpool:: seqRunnerTask cannot execute outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::COMMON_TASK && hasDependency_) {
+    if (IsCommonTask() && HasDependency()) {
         errMessage = "taskpool:: executedTask with dependency cannot execute again";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ != TaskType::TASK && isLongTask_) {
+    if (IsExecuted() && IsLongTask()) {
         errMessage = "taskpool:: The long task can only be executed once";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (isPeriodicTask_) {
+    if (IsPeriodicTask()) {
         errMessage = "taskpool:: the periodicTask cannot execute again";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
@@ -1175,31 +1179,31 @@ bool Task::CanExecute(napi_env env)
 bool Task::CanExecuteDelayed(napi_env env)
 {
     std::string errMessage = "";
-    if (taskType_ == TaskType::GROUP_COMMON_TASK) {
+    if (IsGroupCommonTask()) {
         errMessage = "taskpool:: groupTask cannot executeDelayed outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::SEQRUNNER_TASK) {
+    if (IsSeqRunnerTask()) {
         errMessage = "taskpool:: seqRunnerTask cannot executeDelayed outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ == TaskType::COMMON_TASK && hasDependency_) {
+    if (IsCommonTask() && HasDependency()) {
         errMessage = "taskpool:: executedTask with dependency cannot executeDelayed again";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (taskType_ != TaskType::TASK && isLongTask_) {
+    if (IsExecuted() && IsLongTask()) {
         errMessage = "taskpool:: Multiple executions of longTask are not supported in the executeDelayed";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
-    if (isPeriodicTask_) {
+    if (IsPeriodicTask()) {
         errMessage = "taskpool:: the periodicTask cannot executeDelayed";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
@@ -1210,11 +1214,11 @@ bool Task::CanExecuteDelayed(napi_env env)
 
 bool Task::CanExecutePeriodically(napi_env env)
 {
-    if (taskType_ != TaskType::TASK || isPeriodicTask_) {
+    if (IsExecuted() || IsPeriodicTask()) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_PERIODICALLY);
         return false;
     }
-    if (hasDependency_) {
+    if (HasDependency()) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "taskpool:: the task with dependency cannot executePeriodically");
         return false;
@@ -1234,7 +1238,7 @@ bool Task::HasDependency() const
 
 void Task::TryClearHasDependency()
 {
-    if (taskType_ != TaskType::TASK) {
+    if (IsExecuted()) {
         return;
     }
     if ((!TaskManager::GetInstance().IsDependentByTaskId(taskId_)) &&
