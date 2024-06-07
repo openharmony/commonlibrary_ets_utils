@@ -27,14 +27,37 @@ bool IsOneByte(uint8_t u8Char)
     return (u8Char & 0x80) == 0;
 }
 
+void Utf8ToUtf16BEToData(const unsigned char *data, u16string &u16Str, string::size_type &index, uint8_t &c1)
+{
+    uint8_t c2 = data[++index]; // The second byte
+    uint8_t c3 = data[++index]; // The third byte
+    uint8_t c4 = data[++index]; // The forth byte
+    // Calculate the UNICODE code point value (3 bits lower for the first byte, 6 bits for the other)
+    // 3 : shift left 3 times of UTF8_VALID_BITS
+    uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS)) |
+        // 2 : shift left 2 times of UTF8_VALID_BITS
+        ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS)) |
+        ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
+        (c4 & LOWER_6_BITS_MASK);
+    // In UTF-16, U+10000 to U+10FFFF represent surrogate pairs with two 16-bit units
+    if (codePoint >= UTF16_SPECIAL_VALUE) {
+        codePoint -= UTF16_SPECIAL_VALUE;
+        // 10 : a half of 20 , shift right 10 bits
+        u16Str.push_back(static_cast<char16_t>((codePoint >> 10) | HIGH_AGENT_MASK));
+        u16Str.push_back(static_cast<char16_t>((codePoint & LOWER_10_BITS_MASK) | LOW_AGENT_MASK));
+    } else { // In UTF-16, U+0000 to U+D7FF and U+E000 to U+FFFF are Unicode code point values
+        // U+D800 to U+DFFF are invalid characters, for simplicity,
+        // assume it does not exist (if any, not encoded)
+        u16Str.push_back(static_cast<char16_t>(codePoint));
+    }
+}
+
 u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
 {
     u16string u16Str = u"";
     u16Str.reserve(u8Str.size());
     string::size_type len = u8Str.length();
-
     const unsigned char *data = reinterpret_cast<const unsigned char *>(u8Str.data());
-
     bool isOk = true;
     for (string::size_type i = 0; i < len; ++i) {
         uint8_t c1 = data[i]; // The first byte
@@ -44,28 +67,7 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
         }
         switch (c1 & HIGER_4_BITS_MASK) {
             case FOUR_BYTES_STYLE: { // 4 byte characters, from 0x10000 to 0x10FFFF
-                uint8_t c2 = data[++i]; // The second byte
-                uint8_t c3 = data[++i]; // The third byte
-                uint8_t c4 = data[++i]; // The forth byte
-                // Calculate the UNICODE code point value (3 bits lower for the first byte, 6 bits for the other)
-                // 3 : shift left 3 times of UTF8_VALID_BITS
-                uint32_t codePoint = ((c1 & LOWER_3_BITS_MASK) << (3 * UTF8_VALID_BITS)) |
-                    // 2 : shift left 2 times of UTF8_VALID_BITS
-                    ((c2 & LOWER_6_BITS_MASK) << (2 * UTF8_VALID_BITS)) |
-                    ((c3 & LOWER_6_BITS_MASK) << UTF8_VALID_BITS) |
-                    (c4 & LOWER_6_BITS_MASK);
-
-                // In UTF-16, U+10000 to U+10FFFF represent surrogate pairs with two 16-bit units
-                if (codePoint >= UTF16_SPECIAL_VALUE) {
-                    codePoint -= UTF16_SPECIAL_VALUE;
-                    // 10 : a half of 20 , shift right 10 bits
-                    u16Str.push_back(static_cast<char16_t>((codePoint >> 10) | HIGH_AGENT_MASK));
-                    u16Str.push_back(static_cast<char16_t>((codePoint & LOWER_10_BITS_MASK) | LOW_AGENT_MASK));
-                } else { // In UTF-16, U+0000 to U+D7FF and U+E000 to U+FFFF are Unicode code point values
-                    // U+D800 to U+DFFF are invalid characters, for simplicity,
-                    // assume it does not exist (if any, not encoded)
-                    u16Str.push_back(static_cast<char16_t>(codePoint));
-                }
+                Utf8ToUtf16BEToData(data, u16Str, i, c1);
                 break;
             }
             case THREE_BYTES_STYLE: { // 3 byte characters, from 0x800 to 0xFFFF
@@ -99,7 +101,6 @@ u16string Utf8ToUtf16BE(const string &u8Str, bool *ok)
     if (ok != nullptr) {
         *ok = isOk;
     }
-
     return u16Str;
 }
 

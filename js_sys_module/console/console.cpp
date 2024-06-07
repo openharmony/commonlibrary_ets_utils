@@ -504,7 +504,7 @@ void SetPrimitive(napi_env env, napi_value map, const size_t& length, napi_value
 }
 
 void ProcessNestedObject(napi_env env, napi_value item, napi_value& map, std::map<std::string, bool>& initialMap,
-                         napi_value& valuesKeyArray, size_t index)
+                         size_t index)
 {
     napi_value keys = nullptr;
     napi_object_get_keys(env, item, &keys);
@@ -584,7 +584,7 @@ napi_value Console::ProcessTabularData(napi_env env, napi_value tabularData)
             hasPrimitive = true;
             napi_set_element(env, valuesKeyArray, i, item);
         } else {
-            ProcessNestedObject(env, item, map, initialMap, valuesKeyArray, i);
+            ProcessNestedObject(env, item, map, initialMap, i);
         }
     }
     // set outputKeysArray
