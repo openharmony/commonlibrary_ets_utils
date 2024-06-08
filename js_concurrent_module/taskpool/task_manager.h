@@ -147,6 +147,13 @@ public:
         return globalEnableFfrtFlag_ || (isSystemApp_ && !disableFfrtFlag_);
     }
 
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> GetMainThreadRunner() const
+    {
+        return mainThreadRunner_;
+    }
+#endif
+
 private:
     TaskManager();
     ~TaskManager();
@@ -233,6 +240,7 @@ private:
     std::vector<Worker*> freeList_ {};
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner_ {};
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
 #endif
 

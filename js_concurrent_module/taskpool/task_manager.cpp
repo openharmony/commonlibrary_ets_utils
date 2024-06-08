@@ -752,12 +752,12 @@ void TaskManager::InitTaskManager(napi_env env)
         }
 #endif
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        if (runner.get() == nullptr) {
+        mainThreadRunner_ = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+        if (mainThreadRunner_.get() == nullptr) {
             HILOG_FATAL("taskpool:: the mainEventRunner is nullptr");
             return;
         }
-        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(mainThreadRunner_);
 #endif
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
         // Add a reserved thread for taskpool

@@ -185,7 +185,7 @@ struct CallbackInfo {
         if (task == nullptr) {
             return;
         }
-        if (!task->isMainThreadTask_ && onCallbackSignal != nullptr) {
+        if (!task->IsMainThreadTask() && onCallbackSignal != nullptr) {
             Common::Helper::ConcurrentHelper::UvHandleClose(onCallbackSignal);
         }
 #else
