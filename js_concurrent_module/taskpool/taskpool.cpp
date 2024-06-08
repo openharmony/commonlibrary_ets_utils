@@ -38,6 +38,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value longTaskClass = nullptr;
     napi_define_class(env, "LongTask", NAPI_AUTO_LENGTH, Task::LongTaskConstructor,
                       nullptr, 0, nullptr, &longTaskClass);
+    napi_value genericsTaskClass = nullptr;
+    napi_define_class(env, "GenericsTask", NAPI_AUTO_LENGTH, Task::TaskConstructor,
+                      nullptr, 0, nullptr, &genericsTaskClass);
     napi_value isCanceledFunc = nullptr;
     napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, Task::IsCanceled, NULL, &isCanceledFunc);
     napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
@@ -80,6 +83,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY("Task", taskClass),
         DECLARE_NAPI_PROPERTY("LongTask", longTaskClass),
+        DECLARE_NAPI_PROPERTY("GenericsTask", genericsTaskClass),
         DECLARE_NAPI_PROPERTY("TaskGroup", taskGroupClass),
         DECLARE_NAPI_PROPERTY("SequenceRunner", seqRunnerClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
@@ -452,7 +456,7 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
     if (task->IsGroupTask()) {
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
-    } else if (!task->isPeriodicTask_) {
+    } else if (!task->IsPeriodicTask()) {
         if (success) {
             napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
             if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
@@ -615,7 +619,7 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: the task is nullptr");
         return;
-    } else if (!task->isPeriodicTask_) {
+    } else if (!task->IsPeriodicTask()) {
         HILOG_DEBUG("taskpool:: the current task is not a periodic task");
         return;
     } else if (task->taskState_ == ExecuteState::CANCELED) {
