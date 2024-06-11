@@ -18,6 +18,7 @@
 
 #include <queue>
 #include "task.h"
+#include <unordered_map>
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 class SequenceRunner {
