@@ -47,8 +47,8 @@ namespace OHOS::JsSysModule::Process {
     thread_local std::multimap<std::string, napi_ref> eventMap;
     static std::mutex g_sharedTimedMutex;
     thread_local std::map<napi_ref, napi_ref> pendingUnHandledRejections;
-    // support events
-    thread_local std::string events = "UnHandleRejection";
+    // support g_events
+    thread_local std::string g_events = "UnHandleRejection";
     thread_local int g_processStartRealtime = 0;
 
     napi_value Process::GetUid(napi_env env) const
@@ -244,7 +244,7 @@ namespace OHOS::JsSysModule::Process {
             return;
         }
         if (!result.empty()) {
-            size_t pos = events.find(result);
+            size_t pos = g_events.find(result);
             if (pos == std::string::npos) {
                 HILOG_ERROR("illegal event");
                 return;
