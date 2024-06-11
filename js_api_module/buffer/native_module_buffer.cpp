@@ -43,6 +43,7 @@ void FinalizeBufferCallback(napi_env env, void *finalizeData, void *finalizeHint
     if (finalizeData != nullptr) {
         auto obj = reinterpret_cast<Buffer *>(finalizeData);
         delete obj;
+        obj = nullptr;
     }
 }
 
@@ -51,6 +52,7 @@ void FinalizeBlobCallback(napi_env env, void *finalizeData, void *finalizeHint)
     if (finalizeData != nullptr) {
         auto obj = reinterpret_cast<Blob *>(finalizeData);
         delete obj;
+        obj = nullptr;
     }
 }
 
@@ -323,7 +325,7 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
         void *resultData = nullptr;
         napi_value resultBuffer = nullptr;
         NAPI_CALL(env, napi_get_typedarray_info(env, argv[1], &type, &aryLen, &resultData, &resultBuffer, &offset));
-        buffer->Init(reinterpret_cast<uint8_t *>(resultData) - offset, offset, aryLen);
+        buffer->InitUintArray(reinterpret_cast<uint8_t *>(resultData) - offset, offset, aryLen);
     } else if (paraType == ParaType::ARRAYBUFFER) {
         void *data = nullptr;
         size_t bufferSize = 0;
