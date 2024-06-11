@@ -74,6 +74,38 @@ namespace OHOS::xml {
         return thisVar;
     }
 
+    std::string DealCdata(void *data, size_t len)
+    {
+        std::string strEnd(reinterpret_cast<char*>(data), len);
+        strEnd = strEnd.substr(0, std::strlen(strEnd.c_str()));
+        std::string cDataBegin = "<![CDATA[";
+        std::string cDataEnd = "]]>";
+        size_t foundPosBegin = strEnd.find(cDataBegin);
+        size_t foundPosEnd = strEnd.find(cDataEnd);
+        size_t count = 0;
+        while (foundPosBegin != std::string::npos) {
+            std::string temp = strEnd.substr(foundPosBegin, foundPosEnd - foundPosBegin + cDataEnd.length());
+            std::string resStr = "";
+            for (char c : temp) {
+                if (c != '\r' && c != '\n') {
+                    resStr += c;
+                }
+                if (c == '\r') {
+                    resStr += "\\r";
+                    count++;
+                }
+                if (c == '\n') {
+                    resStr += "\\n";
+                    count++;
+                }
+            }
+            strEnd.replace(foundPosBegin, temp.length(), resStr);
+            foundPosBegin = strEnd.find(cDataBegin, foundPosBegin + 1);
+            foundPosEnd = strEnd.find(cDataEnd, foundPosEnd + count + 1);
+        }
+        return strEnd;
+    }
+
     static napi_value XmlPullParserConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -103,35 +135,7 @@ namespace OHOS::xml {
             }
         }
         if (data) {
-            std::string strEnd(reinterpret_cast<char*>(data), len);
-            strEnd = strEnd.substr(0, std::strlen(strEnd.c_str()));
-            std::string cDataBegin = "<![CDATA[";
-            std::string cDataEnd = "]]>";
-            size_t foundPosBegin = strEnd.find(cDataBegin);
-            size_t foundPosEnd = strEnd.find(cDataEnd);
-            size_t count = 0;
-
-            while (foundPosBegin != std::string::npos) {
-                std::string temp = strEnd.substr(foundPosBegin, foundPosEnd - foundPosBegin + cDataEnd.length());
-                std::string resStr = "";
-                for (char c : temp) {
-                    if (c != '\r' && c != '\n') {
-                        resStr += c;
-                    }
-                    if (c == '\r') {
-                        resStr += "\\r";
-                        count++;
-                    }
-                    if (c == '\n') {
-                        resStr += "\\n";
-                        count++;
-                    }
-                }
-                strEnd.replace(foundPosBegin, temp.length(), resStr);
-                foundPosBegin = strEnd.find(cDataBegin, foundPosBegin + 1);
-                foundPosEnd = strEnd.find(cDataEnd, foundPosEnd + count + 1);
-            }
-
+            std::string strEnd = DealCdata(data, len);
             if (argc == 1) {
                 object = new XmlPullParser(strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
