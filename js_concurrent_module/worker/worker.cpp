@@ -40,7 +40,8 @@ static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::g_mainThreadRunner_ = nullptr;
+std::shared_ptr<OHOS::AppExecFwk::EventRunner> Worker::g_mainThreadRunner_ = nullptr;
+std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::g_mainThreadHandler_ = nullptr;
 #endif
 
 Worker::Worker(napi_env env, napi_ref thisVar)
@@ -151,13 +152,13 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
     // register worker Port.
     napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-    if (g_mainThreadRunner_ == nullptr) {
-        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        if (runner.get() == nullptr) {
+    if (g_mainThreadRunner_ == nullptr && g_mainThreadHandler_ == nullptr) {
+        g_mainThreadRunner_ = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+        if (g_mainThreadRunner_.get() == nullptr) {
             HILOG_FATAL("worker:: the mainEventRunner is nullptr");
             return nullptr;
         }
-        g_mainThreadRunner_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+        g_mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(g_mainThreadRunner_);
     }
 #endif
     return exports;
@@ -874,7 +875,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
             auto hostOnGlobalCallTask = [worker]() {
                 worker->HostOnGlobalCallInner();
             };
-            g_mainThreadRunner_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
+            g_mainThreadHandler_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
                 0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
         } else {
             uv_async_send(worker->hostOnGlobalCallSignal_);
@@ -1171,7 +1172,8 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     }
     GetContainerScopeId(env);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-    if (OHOS::AppExecFwk::EventRunner::Current().get() == nullptr) {
+    auto runner = OHOS::AppExecFwk::EventRunner::Current();
+    if (runner.get() == nullptr || runner.get() != g_mainThreadRunner_.get()) {
         isMainThreadWorker_ = false;
         InitHostHandle(loop);
     } else {
@@ -1822,7 +1824,7 @@ void Worker::PostLimitedWorkerOverTask()
         }
         this->HostOnMessageInner();
     };
-    g_mainThreadRunner_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
+    g_mainThreadHandler_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
@@ -1838,7 +1840,7 @@ void Worker::PostWorkerOverTask()
         }
         this->HostOnMessageInner();
     };
-    g_mainThreadRunner_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
+    g_mainThreadHandler_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 #endif
@@ -1976,7 +1978,7 @@ void Worker::HandleUncaughtException(napi_value exception)
                 this->HostOnErrorInner();
                 this->TerminateInner();
             };
-            g_mainThreadRunner_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
+            g_mainThreadHandler_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
                 0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
         } else {
             uv_async_send(hostOnErrorSignal_);
@@ -2005,7 +2007,7 @@ void Worker::PostMessageToHostInner(MessageDataType data)
             auto hostOnMessageTask = [this]() {
                 this->HostOnMessageInner();
             };
-            g_mainThreadRunner_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
+            g_mainThreadHandler_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
                 0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
         } else {
             uv_async_send(hostOnMessageSignal_);
