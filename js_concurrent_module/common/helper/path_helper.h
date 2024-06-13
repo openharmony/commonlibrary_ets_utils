@@ -142,10 +142,10 @@ public:
     static std::vector<std::string> SplitNormalizedRecordName(const std::string &recordName)
     {
         std::vector<std::string> res(NORMALIZED_OHMURL_ARGS_NUM);
-        size_t index = NORMALIZED_OHMURL_ARGS_NUM - 1;
+        int index = NORMALIZED_OHMURL_ARGS_NUM - 1;
         std::string temp;
-        size_t endIndex = recordName.size() - 1;
-        for (size_t i = endIndex; i >= 0; i--) {
+        int endIndex = static_cast<int>(recordName.size()) - 1;
+        for (int i = endIndex; i >= 0; i--) {
             char element = recordName[i];
             if (element == NORMALIZED_OHMURL_TAG) {
                 res[index] = temp;

@@ -94,8 +94,8 @@ public:
 
     static void ThrowNoDependencyError(napi_env env);
     static void StartExecutionCallback(const uv_async_t* req);
-    static void StartExecutionTask(ListenerCallBackInfo* listenerCallbackInfo);
-    static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallbackInfo);
+    static void StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo);
+    static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
 
     void StoreTaskId(uint64_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,

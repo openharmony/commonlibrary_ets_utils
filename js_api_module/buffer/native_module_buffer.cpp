@@ -14,7 +14,9 @@
  */
 
 #include <algorithm>
+#include <codecvt>
 #include <iostream>
+#include <locale>
 #include <vector>
 
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
@@ -237,34 +239,39 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
     if (blob == nullptr) {
         return nullptr;
     }
-    size_t argc = 3;
-    napi_value argv[3] = { nullptr };
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    size_t argc = 3; // the argument's count is 3
+    napi_value argv[3] = { nullptr }; // the argument's count is 3
+    if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+        freeBolbMemory(blob);
+        return nullptr;
+    }
     if (argc == 1) { // Array
         vector<uint8_t> arr = GetArray(env, argv[0]);
         blob->Init(arr.data(), arr.size());
     } else { // Blob
         Blob *blobIn = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, argv[0], reinterpret_cast<void **>(&blobIn)));
+        napi_unwrap(env, argv[0], reinterpret_cast<void **>(&blobIn));
         int32_t start = -1;
-        NAPI_CALL(env, napi_get_value_int32(env, argv[1], &start));
+        if (napi_get_value_int32(env, argv[1], &start) != napi_ok) {
+            freeBolbMemory(blob);
+            return nullptr;
+        }
         if (argc == 2) { // 2 : the argument's count is 2
             blob->Init(blobIn, start);
         } else if (argc == 3) { // 3 : the argument's count is 3
             int32_t end = -1;
-            NAPI_CALL(env, napi_get_value_int32(env, argv[2], &end)); // 2 : the third argument
+            if (napi_get_value_int32(env, argv[2], &end) != napi_ok) { // 2 : the third argument
+                freeBolbMemory(blob);
+                return nullptr;
+            }
             blob->Init(blobIn, start, end);
         } else {
             freeBolbMemory(blob);
             return nullptr;
         }
     }
-    napi_status status = napi_wrap(env, thisVar, blob,  FinalizeBlobCallback, nullptr, nullptr);
-    if (status != napi_ok) {
-        if (blob != nullptr) {
-            delete blob;
-        }
-        HILOG_ERROR("can not create blob");
+    if (napi_wrap(env, thisVar, blob,  FinalizeBlobCallback, nullptr, nullptr) != napi_ok) {
+        freeBolbMemory(blob);
         return nullptr;
     }
     return thisVar;
@@ -291,30 +298,44 @@ static void freeBufferMemory(Buffer *&buffer)
     }
 }
 
+static Buffer* DealParaTypeBuffer(napi_env env, size_t argc, napi_value* argv, uint32_t length, Buffer* buffer)
+{
+    if (argc == 2) { // the count of argument is 2
+        Buffer *buf = nullptr;
+        napi_unwrap(env, argv[1], reinterpret_cast<void **>(&buf));
+        buffer->Init(buf);
+    } else if (argc == 4) { // the count of argument is 4
+        Buffer *pool = nullptr;
+        napi_unwrap(env, argv[1], reinterpret_cast<void **>(&pool));
+        uint32_t poolOffset = 0;
+        if (napi_get_value_uint32(env, argv[2], &poolOffset) != napi_ok || // 2 : the third argument
+            napi_get_value_uint32(env, argv[3], &length) != napi_ok) { // 3 : the forth argument
+            return nullptr;
+        }
+        buffer->Init(pool, poolOffset, length);
+    } else {
+        return nullptr;
+    }
+    return buffer;
+}
+
 static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* argv, ParaType paraType)
 {
     Buffer *buffer = new Buffer();
     uint32_t length = 0;
     if (paraType == ParaType::NUMBER) {
-        NAPI_CALL(env, napi_get_value_uint32(env, argv[1], &length));
+        if (napi_get_value_uint32(env, argv[1], &length) != napi_ok) {
+            freeBufferMemory(buffer);
+            return nullptr;
+        }
         buffer->Init(length);
     } else if (paraType == ParaType::NUMBERS) {
         vector<uint8_t> arr = GetArray(env, argv[1]);
         buffer->Init(arr.size());
         buffer->SetArray(arr);
     } else if (paraType == ParaType::BUFFER) {
-        if (argc == 2) { // the count of argument is 2
-            Buffer *buf = nullptr;
-            NAPI_CALL(env, napi_unwrap(env, argv[1], reinterpret_cast<void **>(&buf)));
-            buffer->Init(buf);
-        } else if (argc == 4) { // the count of argument is 4
-            Buffer *pool = nullptr;
-            NAPI_CALL(env, napi_unwrap(env, argv[1], reinterpret_cast<void **>(&pool)));
-            uint32_t poolOffset = 0;
-            NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &poolOffset)); // 2 : the third argument
-            NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length)); // 3 : the forth argument
-            buffer->Init(pool, poolOffset, length);
-        } else {
+        buffer = DealParaTypeBuffer(env, argc, argv, length, buffer);
+        if (buffer == nullptr) {
             freeBufferMemory(buffer);
             return nullptr;
         }
@@ -324,15 +345,21 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
         size_t aryLen = 0;
         void *resultData = nullptr;
         napi_value resultBuffer = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, argv[1], &type, &aryLen, &resultData, &resultBuffer, &offset));
+        if (napi_get_typedarray_info(env, argv[1], &type, &aryLen, &resultData, &resultBuffer, &offset) != napi_ok) {
+            freeBufferMemory(buffer);
+            return nullptr;
+        }
         buffer->InitUintArray(reinterpret_cast<uint8_t *>(resultData) - offset, offset, aryLen);
     } else if (paraType == ParaType::ARRAYBUFFER) {
         void *data = nullptr;
         size_t bufferSize = 0;
-        NAPI_CALL(env, napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize)); // 1 : the second argument
+        napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize); // 1 : the second argument
         uint32_t byteOffset = 0;
-        NAPI_CALL(env, napi_get_value_uint32(env, argv[2], &byteOffset)); // 2 : the third argument
-        NAPI_CALL(env, napi_get_value_uint32(env, argv[3], &length)); // 3 : the forth argument
+        if (napi_get_value_uint32(env, argv[2], &byteOffset) != napi_ok || // 2 : the third argument
+            napi_get_value_uint32(env, argv[3], &length) != napi_ok) { // 3 : the fourth argument
+            freeBufferMemory(buffer);
+            return nullptr;
+        }
         buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
     } else {
         freeBufferMemory(buffer);
@@ -773,7 +800,6 @@ static napi_value Copy(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     // 4 : 4 arguments is right
     NAPI_ASSERT(env, argc == 4, "Wrong number of arguments");
-    
     uint32_t targetStart = 0;
     uint32_t sourceStart = 0;
     uint32_t sourceEnd = 0;
@@ -880,7 +906,6 @@ uint32_t GetValue(napi_env env, EncodingType &eType, std::string &str, napi_valu
 {
     std::u16string u16Str = u"";
     uint32_t len = 0;
-    const char *data = nullptr;
     switch (eType) {
         case ASCII:
         case LATIN1:
@@ -892,8 +917,7 @@ uint32_t GetValue(napi_env env, EncodingType &eType, std::string &str, napi_valu
             break;
         case UTF16LE: {
             u16Str = GetStringUtf16LE(env, args);
-            data = reinterpret_cast<char *>(const_cast<char16_t *>(u16Str.c_str()));
-            str = data;
+            str = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(u16Str);
             len = u16Str.length() * 2; // 2 : 2 means the length of wide char String is 2 times of char String
             break;
         }
@@ -925,7 +949,6 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     std::string str = "";
     uint32_t len = 0;
     len = GetValue(env, eType, str, args[0]);
-    const char *data = str.c_str();
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     bool isReverse = false;
@@ -934,10 +957,10 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     int index = -1;
     if (isReverse) {
         len = (eType == UTF16LE) ? len : str.length();
-        index = buf->LastIndexOf(data, offset, len);
+        index = buf->LastIndexOf(str.c_str(), offset, len);
     } else {
         len = (eType == UTF16LE) ? len : str.length();
-        index = buf->IndexOf(data, offset, len);
+        index = buf->IndexOf(str.c_str(), offset, len);
     }
     napi_value result = nullptr;
     napi_create_int32(env, index, &result);
