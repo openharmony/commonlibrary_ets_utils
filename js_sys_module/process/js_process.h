@@ -22,6 +22,7 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "native_engine/native_engine.h"
 
 namespace OHOS::JsSysModule::Process {
     using ClearRefCallback = void (*)(napi_env env);
@@ -220,13 +221,6 @@ namespace OHOS::JsSysModule::Process {
          * @param name The parameter is the environment variable name.
          */
         napi_value GetEnvironmentVar(napi_env env, napi_value name) const;
-
-        /**
-         * Init ProcessStartRealtime.
-         *
-         * @param env The parameter is NAPI environment variables.
-         */
-        void InitProcessStartRealtime(napi_env env);
 
         /**
          * Clear references to callbacks.
