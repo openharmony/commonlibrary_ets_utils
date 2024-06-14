@@ -510,7 +510,6 @@ void ProcessNestedObject(napi_env env, napi_value item, napi_value& map, std::ma
     napi_object_get_keys(env, item, &keys);
     uint32_t innerLength = 0;
     napi_get_array_length(env, keys, &innerLength);
-
     for (size_t j = 0; j < innerLength; ++j) {
         napi_value keyNumber = nullptr;
         napi_get_element(env, keys, j, &keyNumber);
@@ -522,7 +521,6 @@ void ProcessNestedObject(napi_env env, napi_value item, napi_value& map, std::ma
         }
         napi_value innerItem = nullptr;
         napi_get_named_property(env, item, innerKey, &innerItem);
-        Helper::CloseHelp::DeletePointer(innerKey, true);
         if (initialMap.find(std::string(innerKey)) == initialMap.end()) {
             napi_value mapArray = nullptr;
             napi_create_array_with_length(env, innerLength, &mapArray);
@@ -535,6 +533,7 @@ void ProcessNestedObject(napi_env env, napi_value item, napi_value& map, std::ma
             napi_set_element(env, mapArray, index, innerItem);
             napi_set_named_property(env, map, innerKey, mapArray);
         }
+        Helper::CloseHelp::DeletePointer(innerKey, true);
     }
 }
 
