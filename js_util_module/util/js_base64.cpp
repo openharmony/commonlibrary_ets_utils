@@ -225,7 +225,6 @@ namespace OHOS::Util {
         } else {
             napi_throw_error(env, "401",
                              "The type of Parameter must be Uint8Array or string and the length greater than zero");
-            FreeMemory(inputString);
             return false;
         }
         FreeMemory(inputString);
@@ -269,6 +268,9 @@ namespace OHOS::Util {
         }
         unsigned char *result = nullptr;
         result = DecodeAchieveInner(env, input, inputLen, equalCount, valueType);
+        if (result == nullptr) {
+            FreeMemory(retDecode);
+        }
         return result;
     }
 
@@ -288,7 +290,6 @@ namespace OHOS::Util {
                 }
                 int findsData = Finds(env, input[inp], valueType);
                 if (findsData == -1) {
-                    FreeMemory(retDecode);
                     return nullptr;
                 }
                 bitWise = (bitWise << TRAGET_SIX) | static_cast<size_t>(findsData);
@@ -602,12 +603,13 @@ namespace OHOS::Util {
         }
         int tableLen = flag ? TRAGET_SIXTYFIVE - 1 : TRAGET_SIXTYFIVE;
         const char *searchArray = flag ? BASEURL : BASE;
+        int couts = 0;
         for (int i = 0; i < tableLen; i++) {
             if (searchArray[i] == ch) {
-                return i;
+                couts = i;
             }
         }
-        return -1;
+        return couts;
     }
 
     size_t DecodeOut(size_t equalCount, size_t retLen, DecodeInfo *decodeInfo)
@@ -669,6 +671,9 @@ namespace OHOS::Util {
 
         unsigned char *result = nullptr;
         result = DecodeAchievesInner(inputLen, equalCount, input, decodeInfo, retDecode);
+        if (result == nullptr) {
+            FreeMemory(retDecode);
+        }
         return result;
     }
 

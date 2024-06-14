@@ -115,7 +115,7 @@ class Base64Helper {
   }
 
   decodeSync(src: Uint8Array | string, options: Type = Type.BASIC): Uint8Array {
-    if (typeof src === 'string') {
+    if (typeof src === 'string' && (src.indexOf('\r') !== -1 || src.indexOf('\n') !== -1)) {
       src = src.replace(/[\r\n]/g, '');
     }
     return this.base64.decodeSync(src, options);

@@ -67,5 +67,7 @@ namespace Commonlibrary::Platform {
     std::u16string EncodeUtf16BE(napi_env env, napi_value src);
     void OtherEncodeUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars);
     void EncodeTo16BE(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars);
+    void FreedMemory(char16_t *&data);
+    char16_t *ApplyMemory(const size_t &inputSize);
 } // namespace Commonlibrary::Platform
 #endif // PLATFORM_UTIL_HELPER_H

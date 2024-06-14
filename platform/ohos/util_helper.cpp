@@ -245,7 +245,7 @@ namespace Commonlibrary::Platform {
         void *data = nullptr;
         size_t inputSize = 0;
         napi_get_value_string_utf16(env, src, nullptr, 0, &inputSize);
-        char16_t originalBuffer[inputSize + 1];
+        char16_t *originalBuffer = ApplyMemory(inputSize);
         napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
 
         int maxByteSize = GetMaxByteSize(encoding);
@@ -289,6 +289,7 @@ namespace Commonlibrary::Platform {
                 return;
             }
         }
+        FreedMemory(originalBuffer);
     }
 
     std::u16string EncodeUtf16BE(napi_env env, napi_value src)
@@ -313,10 +314,10 @@ namespace Commonlibrary::Platform {
     {
         size_t inputSize = 0;
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
-        char16_t originalBuffer[inputSize + 1];
+        char16_t *originalBuffer = ApplyMemory(inputSize);
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
 
-        char16_t targetBuffer[inputSize + 1];
+        std::vector<char16_t> targetBuffer(inputSize + 1, u'\0');
         size_t writableSize = length;
         std::string bufferResult = "";
         size_t i = 0;
@@ -338,13 +339,14 @@ namespace Commonlibrary::Platform {
         }
         *nchar = static_cast<int32_t>(i);
         *written = static_cast<int32_t>(writeLength);
+        FreedMemory(originalBuffer);
     }
 
     void EncodeTo16BE(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
     {
         size_t inputSize = 0;
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
-        char16_t originalBuffer[inputSize + 1];
+        char16_t *originalBuffer = ApplyMemory(inputSize);
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
 
         size_t writableSize = length;
@@ -375,5 +377,31 @@ namespace Commonlibrary::Platform {
         }
         *nchars = static_cast<int32_t>(i);
         *written = static_cast<int32_t>(writeLength);
+        FreedMemory(originalBuffer);
+    }
+
+    char16_t *ApplyMemory(const size_t &inputSize)
+    {
+        char16_t *originalBuffer = nullptr;
+        if (inputSize > 0) {
+            originalBuffer = new char16_t[inputSize + 1];
+            if (memset_s(originalBuffer, inputSize + 1, u'\0', inputSize + 1) != EOK) {
+                HILOG_ERROR("encode originalBuffer memset_s failed");
+                FreedMemory(originalBuffer);
+                return nullptr;
+            }
+        } else {
+            HILOG_ERROR("inputSize is error");
+            return nullptr;
+        }
+        return originalBuffer;
+    }
+
+    void FreedMemory(char16_t *&data)
+    {
+        if (data != nullptr) {
+            delete[] data;
+            data = nullptr;
+        }
     }
 } // namespace Commonlibrary::Platform
