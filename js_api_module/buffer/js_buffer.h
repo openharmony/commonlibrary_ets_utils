@@ -34,7 +34,6 @@ public:
     void Init(Buffer *buffer);
     void Init(Buffer *pool, unsigned int poolOffset, unsigned int length);
     void Init(uint8_t *buffer, unsigned int byteOffset, unsigned int length);
-    void InitUintArray(uint8_t *buffer, unsigned int byteOffset, unsigned int length);
 
     unsigned int GetLength();
     void SetLength(unsigned int len);
