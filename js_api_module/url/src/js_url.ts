@@ -177,16 +177,25 @@ function customEncodeURI(str: string, keepCharacters: string): string {
 }
 
 function convertArrayToObj(arr: string[]): Record<string, string[]> {
-    return arr.reduce((obj, val, index) => {
-      if (index % 2 === 0) { // 2:Even subscripts exist as key values
-        if (!obj[val]) {
-          obj[val] = [];
-        }
-        obj[val].push(arr[index + 1]);
+  return arr.reduce((obj, val, index) => {
+    if (index % 2 === 0) { // 2:Even subscripts exist as key values
+      if (!obj[val]) {
+        obj[val] = [];
       }
-      return obj;
-    }, {});
-  }
+      obj[val].push(arr[index + 1]);
+    }
+    return obj;
+  }, {});
+}
+
+function removeKeyValuePairs(str: string, key: string): string {
+  const regex = new RegExp(`\\b${key}=[^&]*&?`, 'g');
+  let result = str.replace(regex, '');
+  if (result.endsWith('&')) {
+    result = result.slice(0, -1);
+  }  
+  return result;
+}
 
 class URLParams {
   urlClass: NativeURLParams;
@@ -324,8 +333,9 @@ class URLParams {
       delete this.urlClass.initialValue[deleteName];
     }
     if (this.parentUrl !== null) {
-      this.parentUrl.c_info.search = this.toString();
-      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      let searchStr: string = removeKeyValuePairs(this.parentUrl.c_info.search, deleteName);
+      this.parentUrl.c_info.search = searchStr;
+      this.parentUrl.search_ = searchStr;
       this.parentUrl.setHref();
     }
   }
@@ -486,8 +496,9 @@ class URLSearchParams {
       delete this.urlClass.initialValue[deleteName];
     }
     if (this.parentUrl !== null) {
-      this.parentUrl.c_info.search = this.toString();
-      this.parentUrl.search_ = this.parentUrl.c_info.search;
+      let searchStr: string = removeKeyValuePairs(this.parentUrl.c_info.search, deleteName);
+      this.parentUrl.c_info.search = searchStr;
+      this.parentUrl.search_ = searchStr;
       this.parentUrl.setHref();
     }
   }
