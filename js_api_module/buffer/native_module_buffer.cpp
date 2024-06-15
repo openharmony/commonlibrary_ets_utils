@@ -248,9 +248,9 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
         blob->Init(arr.data(), arr.size());
     } else { // Blob
         Blob *blobIn = nullptr;
-        napi_unwrap(env, argv[0], reinterpret_cast<void **>(&blobIn));
         int32_t start = -1;
-        if (napi_get_value_int32(env, argv[1], &start) != napi_ok) {
+        if (napi_get_value_int32(env, argv[1], &start) != napi_ok ||
+            napi_unwrap(env, argv[0], reinterpret_cast<void **>(&blobIn)) != napi_ok) {
             freeBolbMemory(blob);
             return nullptr;
         }
@@ -296,21 +296,21 @@ static void freeBufferMemory(Buffer *&buffer)
     }
 }
 
-static Buffer* DealParaTypeBuffer(napi_env env, size_t argc, napi_value* argv, uint32_t length, Buffer* buffer)
+static Buffer* DealParaTypeBuffer(napi_env env, size_t argc, napi_value* argv, uint32_t length, Buffer*& buffer)
 {
+    Buffer *valueBuffer = nullptr;
+    if (napi_unwrap(env, argv[1], reinterpret_cast<void **>(&valueBuffer)) != napi_ok) {
+        return nullptr;
+    }
     if (argc == 2) { // the count of argument is 2
-        Buffer *buf = nullptr;
-        napi_unwrap(env, argv[1], reinterpret_cast<void **>(&buf));
-        buffer->Init(buf);
+        buffer->Init(valueBuffer);
     } else if (argc == 4) { // the count of argument is 4
-        Buffer *pool = nullptr;
-        napi_unwrap(env, argv[1], reinterpret_cast<void **>(&pool));
         uint32_t poolOffset = 0;
         if (napi_get_value_uint32(env, argv[2], &poolOffset) != napi_ok || // 2 : the third argument
             napi_get_value_uint32(env, argv[3], &length) != napi_ok) { // 3 : the forth argument
             return nullptr;
         }
-        buffer->Init(pool, poolOffset, length);
+        buffer->Init(valueBuffer, poolOffset, length);
     } else {
         return nullptr;
     }
@@ -332,8 +332,8 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
         buffer->Init(arr.size());
         buffer->SetArray(arr);
     } else if (paraType == ParaType::BUFFER) {
-        buffer = DealParaTypeBuffer(env, argc, argv, length, buffer);
-        if (buffer == nullptr) {
+        auto rstBuffer = DealParaTypeBuffer(env, argc, argv, length, buffer);
+        if (rstBuffer == nullptr) {
             freeBufferMemory(buffer);
             return nullptr;
         }
@@ -351,9 +351,9 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
     } else if (paraType == ParaType::ARRAYBUFFER) {
         void *data = nullptr;
         size_t bufferSize = 0;
-        napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize); // 1 : the second argument
         uint32_t byteOffset = 0;
-        if (napi_get_value_uint32(env, argv[2], &byteOffset) != napi_ok || // 2 : the third argument
+        if (napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize) != napi_ok || // 1 : the second argument
+            napi_get_value_uint32(env, argv[2], &byteOffset) != napi_ok || // 2 : the third argument
             napi_get_value_uint32(env, argv[3], &length) != napi_ok) { // 3 : the fourth argument
             freeBufferMemory(buffer);
             return nullptr;
