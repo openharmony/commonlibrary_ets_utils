@@ -69,23 +69,6 @@ void Buffer::Init(uint8_t *buffer, unsigned int byteOffset, unsigned int length)
     this->needRelease_ = false;
 }
 
-void Buffer::InitUintArray(uint8_t *buffer, unsigned int byteOffset, unsigned int length)
-{
-    if (buffer != nullptr && length >= 0) {
-        this->raw_ = reinterpret_cast<uint8_t *>(malloc(length));
-        this->needRelease_ = true;
-        if (raw_ == nullptr) {
-            HILOG_FATAL("Buffer constructor malloc failed");
-        } else {
-            this->length_ = length;
-            this->byteOffset_ = byteOffset;
-            if (memcpy_s(this->raw_, this->length_, buffer, length) != EOK) {
-                HILOG_FATAL("Buffer constructor memcpy_s failed");
-            }
-        }
-    }
-}
-
 Buffer::~Buffer()
 {
     if (raw_ != nullptr && needRelease_) {
