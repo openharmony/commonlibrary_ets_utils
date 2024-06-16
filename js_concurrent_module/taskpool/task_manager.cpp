@@ -46,12 +46,13 @@ static constexpr int8_t MEDIUM_PRIORITY_TASK_COUNT = 5;
 static constexpr int32_t MAX_TASK_DURATION = 100; // 100: 100ms
 static constexpr uint32_t STEP_SIZE = 2;
 static constexpr uint32_t DEFAULT_THREADS = 3;
-static constexpr uint32_t MIN_THREADS = 1; // 1: minimum thread num when idle
+static constexpr uint32_t DEFAULT_MIN_THREADS = 1; // 1: minimum thread num when idle
 static constexpr uint32_t MIN_TIMEOUT_TIME = 180000; // 180000: 3min
 static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 600000: 10min
-static constexpr int32_t MAX_IDLE_TIME = 50000; // 50000: 50s
-static constexpr uint32_t TRIGGER_INTERVAL = 60000; // 60000: 60s
-[[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2min later will release the thread
+static constexpr int32_t MAX_IDLE_TIME = 30000; // 30000: 30s
+static constexpr uint32_t TRIGGER_INTERVAL = 30000; // 30000: 30s
+static constexpr uint32_t SHRINK_STEP = 4; // 4: try to release 4 threads every time
+[[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
 
 // ----------------------------------- TaskManager ----------------------------------------
 TaskManager& TaskManager::GetInstance()
@@ -203,7 +204,7 @@ uint32_t TaskManager::ComputeSuitableThreadNum()
         targetNum = std::min(result, GetNonIdleTaskNum());
     }
     targetNum += GetRunningWorkers();
-    return targetNum | 1;
+    return targetNum;
 }
 
 void TaskManager::CheckForBlockedWorkers()
@@ -337,11 +338,11 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
                 std::chrono::steady_clock::now().time_since_epoch()).count());
             if (!isWorkerLoopActive) {
                 freeList_.emplace_back(worker);
-            } else if ((currTime - workerWaitTime) > 120) { // 120 : free after 120s
+            } else if ((currTime - workerWaitTime) > IDLE_THRESHOLD * TRIGGER_INTERVAL) {
                 freeList_.emplace_back(worker);
-                HILOG_INFO("taskpool:: worker in ffrt epoll wait more than 2 min, force to free.");
+                HILOG_INFO("taskpool:: worker in ffrt epoll wait more than 2 intervals, force to free.");
             } else {
-                HILOG_INFO("taskpool:: worker uv alive, and will be free in 2 min if not wake.");
+                HILOG_INFO("taskpool:: worker uv alive, and will be free in 2 intervals if not wake.");
             }
             continue;
         }
@@ -418,22 +419,42 @@ void TaskManager::TriggerShrink(uint32_t step)
 
 void TaskManager::NotifyShrink(uint32_t targetNum)
 {
-    uint32_t workerCount = GetThreadNum();
-    if (workerCount > MIN_THREADS && workerCount > targetNum) {
-        std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
-        targetNum = std::max(MIN_THREADS, targetNum);
-        uint32_t step = std::min(workerCount - targetNum, STEP_SIZE);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
+    uint32_t workerCount = workers_.size();
+    uint32_t minThread = ConcurrentHelper::IsLowMemory() ? 0 : DEFAULT_MIN_THREADS;
+    if (minThread == 0) {
+        HILOG_INFO("taskpool:: the system now is under low memory");
+    }
+    if (workerCount > minThread && workerCount > targetNum) {
+        targetNum = std::max(minThread, targetNum);
+        uint32_t step = std::min(workerCount - targetNum, SHRINK_STEP);
         TriggerShrink(step);
     }
     // remove all timeout workers
-    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     for (auto iter = timeoutWorkers_.begin(); iter != timeoutWorkers_.end();) {
         HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", (*iter)->tid_);
         uv_async_send((*iter)->clearWorkerSignal_);
         timeoutWorkers_.erase(iter++);
+ 
+        return;
+    }
+    uint32_t idleNum = idleWorkers_.size();
+    // System memory state is moderate and the worker has exeuted tasks, we will try to release it
+    if (ConcurrentHelper::IsModerateMemory() && workerCount == idleNum && workerCount == DEFAULT_MIN_THREADS) {
+        auto worker = *(idleWorkers_.begin());
+        if (worker && worker->clearWorkerSignal_ != nullptr && worker->hasExecuted_) {
+            uv_async_send(worker->clearWorkerSignal_);
+            idleWorkers_.erase(worker);
+        }
+        return;
+    }
+
+    // Create a worker for performance
+    if (!ConcurrentHelper::IsLowMemory() && workers_.empty()) {
+        CreateWorkers(hostEnv_);
     }
     // stop the timer
-    if ((workers_.size() == idleWorkers_.size() && workers_.size() == MIN_THREADS) && timeoutWorkers_.empty()) {
+    if ((workerCount == idleNum && workerCount <= minThread) && timeoutWorkers_.empty()) {
         suspend_ = true;
         uv_timer_stop(timer_);
         HILOG_DEBUG("taskpool:: timer will be suspended");

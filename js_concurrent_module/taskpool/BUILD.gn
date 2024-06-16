@@ -27,7 +27,10 @@ taskpool_sources = [
   "worker.cpp",
 ]
 
-concurrent_helper_sources = [ "../common/helper/napi_helper.cpp" ]
+concurrent_helper_sources = [
+  "../common/helper/concurrent_helper.cpp",
+  "../common/helper/napi_helper.cpp",
+]
 
 concurrent_platform_sources = []
 
