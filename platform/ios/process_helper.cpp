@@ -476,4 +476,20 @@ int GetThreadPRY(int tid)
     int32_t pri = getpriority(PRIO_DARWIN_THREAD, 0);   // 0: current thread
     return pri;
 }
+
+double GetStartRealtime()
+{
+    int pid = getpid();
+    struct kinfo_proc info;
+    size_t size = sizeof(info);
+    int mib[] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, pid};
+
+    int ret = sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, NULL, 0);
+    if (ret == 0) {
+        double tvSec = info.kp_proc.p_un.__p_starttime.tv_sec;
+        double tvUsec = info.kp_proc.p_un.__p_starttime.tv_usec;
+        return tvSec * 1000.0 + tvUsec / 1000.0; // 1000.0 : Calculate milliseconds
+    }
+    return 0;
+}
 } // namespace Commonlibrary::Platform
