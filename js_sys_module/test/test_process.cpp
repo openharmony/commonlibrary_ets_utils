@@ -626,13 +626,12 @@ HWTEST_F(NativeEngineTest, ProcesGetGetStartRealtime001, testing::ext::TestSize.
     napi_env env = (napi_env)engine_;
     OHOS::JsSysModule::Process::Process process;
     napi_value result = process.GetStartRealtime(env);
-    int32_t num = 0;
-    napi_get_value_int32(env, result, &num);
+    double num = 0;
+    napi_get_value_double(env, result, &num);
     bool res = false;
-    if (num == 0) {
+    if (num != 0) {
         res = true;
     }
-    napi_get_value_bool(env, result, &res);
     ASSERT_TRUE(res);
 }
 

@@ -22,7 +22,6 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "native_engine/native_engine.h"
 
 namespace OHOS::JsSysModule::Process {
     using ClearRefCallback = void (*)(napi_env env);

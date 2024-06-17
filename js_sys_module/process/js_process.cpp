@@ -415,8 +415,8 @@ namespace OHOS::JsSysModule::Process {
     napi_value Process::GetStartRealtime(napi_env env) const
     {
         napi_value result = nullptr;
-        int startRealTime = reinterpret_cast<NativeEngine*>(env)->GetProcessStartRealTime();
-        napi_create_int32(env, startRealTime, &result);
+        double startRealtime = GetProcessStartRealtime();
+        napi_create_double(env, startRealtime, &result);
         return result;
     }
 
