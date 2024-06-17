@@ -20,6 +20,7 @@
 #include <string>
 
 #include "native_engine/native_engine.h"
+#include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::Common::Helper {
 class PathHelper {
@@ -29,11 +30,42 @@ public:
     static constexpr char NAME_SPACE_TAG = '@';
     static constexpr char POINT_TAG[] = ".";
     static constexpr char SLASH_TAG = '/';
+    static constexpr char PAG_TAG[] = "pkg_modules";
     static constexpr char EXT_NAME_ETS[] = ".ets";
     static constexpr char EXT_NAME_TS[] = ".ts";
     static constexpr char EXT_NAME_JS[] = ".js";
     static constexpr char NORMALIZED_OHMURL_TAG = '&';
     static constexpr size_t NORMALIZED_OHMURL_ARGS_NUM = 5;
+
+    static bool CheckWorkerPath(napi_env env, std::string script, bool isHar, bool isRelativePath)
+    {
+        std::string ohmurl = "";
+        std::string moduleName = "";
+        std::string bundleName = "";
+        if (script.find(PAG_TAG) == 0 || script.find(NAME_SPACE_TAG) != std::string::npos) {
+            HILOG_INFO("worker:: the HAR path cannot be verified");
+            return true;
+        }
+        size_t prev = script.find_first_of(SLASH_TAG);
+        while (prev == 0 && script != "") {
+            script = script.substr(1);
+            prev = script.find_first_of(SLASH_TAG);
+        }
+        if (isRelativePath) {
+            bundleName = script.substr(0, prev);
+            std::string temp = script.substr(prev + 1);
+            prev = temp.find_first_of(SLASH_TAG);
+            moduleName = temp.substr(0, prev);
+            ohmurl = PREFIX_BUNDLE + script;
+        } else {
+            moduleName = script.substr(0, prev);
+            bundleName = reinterpret_cast<NativeEngine*>(env)->GetBundleName();
+            prev = script.find_last_of(POINT_TAG);
+            script = script.substr(0, prev);
+            ohmurl = PREFIX_BUNDLE + bundleName + SLASH_TAG + script;
+        }
+        return reinterpret_cast<NativeEngine*>(env)->IsExecuteModuleInAbcFile(bundleName, moduleName, ohmurl);
+    }
 
     static void ConcatFileNameForWorker(napi_env env, std::string &script, std::string &fileName, bool &isRelativePath)
     {
