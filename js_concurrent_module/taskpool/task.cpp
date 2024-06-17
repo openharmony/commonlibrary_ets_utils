@@ -1264,8 +1264,7 @@ void Task::UpdatePeriodicTask()
 void Task::InitHandle(napi_env env)
 {
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    auto runner = OHOS::AppExecFwk::EventRunner::Current();
-    if (runner.get() == nullptr || runner.get() != TaskManager::GetInstance().GetMainThreadRunner().get()) {
+    if (!OHOS::AppExecFwk::EventRunner::IsAppMainThread()) {
         isMainThreadTask_ = false;
         uv_loop_t* loop = NapiHelper::GetLibUV(env);
         ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
