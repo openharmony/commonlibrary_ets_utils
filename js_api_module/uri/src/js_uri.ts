@@ -161,20 +161,61 @@ class URI {
     if (this.uricalss.query === null) {
       return null;
     }
-    let queryStrs: string[] = decodeURIComponent(this.uricalss.query).split('&') || [];
+    let queryStrs: string[] = this.uricalss.query.split('&') || [];
     for (let item of queryStrs) {
       if (key === '' && item === '') {
         return '';
       }
       let str = item.split('=') || [];
-      if (str.length === 1 && str[0] === key) {
+      if (str.length === 1 && this.decodeSafelyInner(str[0]) === key) {
         return '';
       }
-      if (str.length === 2 && str[0] === key) {
-        return str[1].replace(/\+/g, ' ');
+      if (str.length === 2 && this.decodeSafelyInner(str[0]) === key) {
+        return this.decodeSafelyInner(str[1].replace(/\+/g, ' '));
       }
     }
     return value;
+  }
+
+  decodeSafelyOut(input: string): string {
+    let decodedString: string = '';
+    let decodedTemp: string = '';
+    let index: number = 0;
+    while (index < input.length) {
+      if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
+        const encodedChar = input.slice(index, index + 3);
+        try {
+          decodedString += decodeURIComponent(decodedTemp + encodedChar);
+          decodedTemp = '';
+        } catch (e) {
+          decodedTemp += encodedChar;
+        }
+        index += 3;
+        continue;
+      }
+      if (decodedTemp === '') {
+        decodedString += input[index];
+      } else {
+        decodedString += decodedTemp;
+        decodedString += input[index];
+        decodedTemp = '';
+      }
+      index++;
+    }
+    return decodedTemp === '' ? decodedString : decodedString += decodedTemp;
+  }
+
+  decodeSafelyInner(input: string): string {
+    if (input === undefined || input === '') {
+      return input;
+    }
+    let strVal: string = '';
+    try {
+      strVal = decodeURIComponent(input);
+    } catch (e) {
+      strVal = this.decodeSafelyOut(input);
+    }
+    return strVal;
   }
 
   getQueryNames(): string[] {
@@ -191,7 +232,7 @@ class URI {
         separator = end;
       }
       let name: string = this.uricalss.query.substring(start, separator);
-      names.add(decodeURIComponent(name));
+      names.add(this.decodeSafelyInner(name));
       start = end + 1;
     }
     return Array.from(names);
@@ -205,17 +246,17 @@ class URI {
     if (this.uricalss.query === null) {
       return values;
     }
-    let queryStrs: string[] = decodeURIComponent(this.uricalss.query).split('&') || [];
+    let queryStrs: string[] = this.uricalss.query.split('&') || [];
     for (let item of queryStrs) {
       if (key === '' && item === '') {
         values.push(item);
       }
       let str = item.split('=') || [];
-      if (str.length === 1 && str[0] === key) {
+      if (str.length === 1 && this.decodeSafelyInner(str[0]) === key) {
         values.push('');
       }
-      if (str.length === 2 && str[0] === key) {
-        values.push(str[1]);
+      if (str.length === 2 && this.decodeSafelyInner(str[0]) === key) {
+        values.push(this.decodeSafelyInner(str[1]));
       }
     }
     return values;
@@ -241,7 +282,7 @@ class URI {
     if (!segments) {
       return '';
     }
-    return decodeURIComponent(segments[segments.length - 1]);
+    return this.decodeSafelyInner(segments[segments.length - 1]);
   }
 
   getSegment(): string[] {
@@ -249,7 +290,7 @@ class URI {
     let segments = this.uricalss.getSegment();
     if (segments) {
       segments.forEach(element => {
-        array.push(decodeURIComponent(element));
+        array.push(this.decodeSafelyInner(element));
       });
     }
     return array;
@@ -271,7 +312,7 @@ class URI {
 
   get authority(): string | null {
     if (this.uricalss.authority === null) {
-      return this.uricalss.authority;
+      return null;
     }
     let thisAuthority: string = this.uricalss.authority;
     if (thisAuthority.indexOf('[') !== -1) {
@@ -279,11 +320,11 @@ class URI {
       let brr: string[] = arr[1].split(']');
       arr[1] = '[' + brr[0] + ']';
       arr[2] = brr[1];
-      arr[0] = decodeURIComponent(arr[0]);
-      arr[2] = decodeURIComponent(arr[2]);
+      arr[0] = this.decodeSafelyInner(arr[0]);
+      arr[2] = this.decodeSafelyInner(arr[2]);
       return arr.join('');
     } else {
-      return decodeURIComponent(thisAuthority);
+      return this.decodeSafelyInner(thisAuthority);
     }
   }
 
@@ -294,16 +335,16 @@ class URI {
       let brr: string[] = arr[1].split(']');
       arr[1] = '[' + brr[0] + ']';
       arr[2] = brr[1];
-      arr[0] = decodeURIComponent(arr[0]);
-      arr[2] = decodeURIComponent(arr[2]);
+      arr[0] = this.decodeSafelyInner(arr[0]);
+      arr[2] = this.decodeSafelyInner(arr[2]);
       return arr.join('');
     } else {
-      return decodeURIComponent(thisSsp);
+      return this.decodeSafelyInner(thisSsp);
     }
   }
 
   get userInfo(): string | null {
-    return this.uricalss.userInfo === null ? this.uricalss.userInfo : decodeURIComponent(this.uricalss.userInfo);
+    return this.uricalss.userInfo === null ? null : this.decodeSafelyInner(this.uricalss.userInfo);
   }
 
   get host(): string | null {
@@ -315,15 +356,15 @@ class URI {
   }
 
   get path(): string | null {
-    return this.uricalss.path === null ? this.uricalss.path : decodeURIComponent(this.uricalss.path);
+    return this.uricalss.path === null ? null : this.decodeSafelyInner(this.uricalss.path);
   }
 
   get query(): string | null {
-    return this.uricalss.query === null ? this.uricalss.query : decodeURIComponent(this.uricalss.query);
+    return this.uricalss.query === null ? null : this.decodeSafelyInner(this.uricalss.query);
   }
 
   get fragment(): string | null {
-    return this.uricalss.fragment === null ? this.uricalss.fragment : decodeURIComponent(this.uricalss.fragment);
+    return this.uricalss.fragment === null ? null : this.decodeSafelyInner(this.uricalss.fragment);
   }
 
   get encodedUserInfo(): string | null {
