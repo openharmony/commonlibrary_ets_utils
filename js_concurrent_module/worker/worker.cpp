@@ -1172,8 +1172,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     }
     GetContainerScopeId(env);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-    auto runner = OHOS::AppExecFwk::EventRunner::Current();
-    if (runner.get() == nullptr || runner.get() != g_mainThreadRunner_.get()) {
+    if (!OHOS::AppExecFwk::EventRunner::IsAppMainThread()) {
         isMainThreadWorker_ = false;
         InitHostHandle(loop);
     } else {
