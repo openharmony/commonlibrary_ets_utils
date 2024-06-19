@@ -1758,13 +1758,13 @@ HWTEST_F(NativeEngineTest, GetNSCount001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, DealExclamationGroup001, testing::ext::TestSize.Level0)
 {
     TagEnum tEnum = XmlTest::DealExclamationGroup("stER");
-    ASSERT_EQ(tEnum, TagEnum::ERROR1);
+    ASSERT_EQ(tEnum, TagEnum::ERROR);
 
     tEnum = XmlTest::DealExclamationGroup("stNR");
     ASSERT_EQ(tEnum, TagEnum::NOTATIONDECL);
 
     tEnum = XmlTest::DealExclamationGroup("staR");
-    ASSERT_EQ(tEnum, TagEnum::ERROR1);
+    ASSERT_EQ(tEnum, TagEnum::ERROR);
 }
 
 /* @tc.name: DealLtGroup
@@ -1963,7 +1963,7 @@ HWTEST_F(NativeEngineTest, ParseOneTagFunc, testing::ext::TestSize.Level0)
 {
     OHOS::xml::XmlTest testXml;
     OHOS::xml::TagEnum res = testXml.TestParseOneTagFunc();
-    ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR1);
+    ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR);
 }
 
 /* @tc.name: ParseEntityDecl
@@ -2132,7 +2132,7 @@ HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal002, testing::ext::TestSize.Leve
     ASSERT_TRUE(res);
 
     res = XmlTest::ParseStartTagFuncDeal("==", false);
-    ASSERT_TRUE(res);
+    ASSERT_FALSE(res);
 }
 
 /* @tc.name: ParseStartTagFunc
@@ -2142,8 +2142,8 @@ HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal002, testing::ext::TestSize.Leve
 HWTEST_F(NativeEngineTest, ParseStartTagFunc, testing::ext::TestSize.Level0)
 {
     OHOS::xml::XmlPullParser xmlPullParser("", "utf-8");
-    bool res = xmlPullParser.ParseStartTagFunc(false, false);
-    ASSERT_FALSE(res);
+    TagEnum res = xmlPullParser.ParseStartTagFunc(false, false);
+    ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR);
 }
 
 /* @tc.name: ParseDeclaration002

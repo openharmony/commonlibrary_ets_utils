@@ -250,7 +250,7 @@ bool XmlTest::TestParseComment(napi_env env)
 TagEnum XmlTest::TestParseOneTagFunc()
 {
     OHOS::xml::XmlPullParser xml("1", "utf8");
-    xml.type = TagEnum::ERROR1;
+    xml.type = TagEnum::ERROR;
     TagEnum res = xml.ParseOneTagFunc();
     return res;
 }
