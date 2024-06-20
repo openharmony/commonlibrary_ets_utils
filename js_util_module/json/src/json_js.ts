@@ -26,7 +26,23 @@ class BusinessError extends Error {
 type TransformsFunc = (this: Object, key: string, value: Object) => Object | undefined | null;
 type ReplacerType = (number | string)[] | null | TransformsFunc;
 
-function parse(text: string, reviver?: TransformsFunc): Object | null {
+const enum BigIntMode {
+  DEFAULT = 0,
+  PARSE_AS_BIGINT = 1,
+  ALWAYS_PARSE_AS_BIGINT = 2,
+}
+
+interface ParseOptions {
+  bigIntMode?: BigIntMode;
+}
+
+export interface JSON {
+  parseBigInt(text: string, reviver?: (this: any, key: string, value: any) => any, options?: ParseOptions): any;
+  stringifyBigInt(value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string;
+  stringifyBigInt(value: any, replacer?: (number | string)[] | null, space?: string | number): string;
+}
+
+function parse(text: string, reviver?: TransformsFunc, options?: ParseOptions): Object | null {
   if (typeof text !== 'string') {
     let error = new BusinessError(`Parameter error. The type of ${text} must be string`);
     throw error;
@@ -39,7 +55,7 @@ function parse(text: string, reviver?: TransformsFunc): Object | null {
   }
 
   try {
-    return JSON.parse(text, reviver);
+    return (JSON as unknown as JSON).parseBigInt(text, reviver, options);
   } catch (e) {
     let error = new BusinessError(`e.message: `+ (e as Error).message + `, e.name: ` + (e as Error).name);
     throw error;
@@ -57,9 +73,9 @@ function stringfyFun(value: Object, replacer?: (this: Object, key: string, value
 
 function stringfyArr(value: Object, replacer?: (number | string)[] | null, space?: string | number): string {
   if (arguments.length === 1) {
-    return JSON.stringify(value);
+    return (JSON as unknown as JSON).stringifyBigInt(value);
   } else {
-    return JSON.stringify(value, replacer, space);
+    return (JSON as unknown as JSON).stringifyBigInt(value, replacer, space);
   }
 }
 
@@ -99,18 +115,6 @@ function isCirculateReference(value: Object, seenObjects: Set<Object> = new Set(
 }
 
 function stringify(value: Object, replacer?: ReplacerType, space?: string | number): string {
-  if (typeof (value as Object) === 'undefined' || !(value instanceof Object)) {
-    let error = new BusinessError(`Parameter error. The type of ${value} must be Object`);
-    throw error;
-  }
-  if (value === null) {
-    let error = new BusinessError(`Parameter error. The type of ${value} is null`);
-    throw error;
-  }
-  if (typeof value === 'bigint') {
-    let error = new BusinessError(`Parameter error. The type of ${value} is Bigint`);
-    throw error;
-  }
   if (isCirculateReference(value)) {
     let error = new BusinessError(`Parameter error. The object circular Reference`);
     throw error;
