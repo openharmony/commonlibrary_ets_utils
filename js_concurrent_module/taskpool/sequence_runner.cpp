@@ -27,6 +27,24 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 static constexpr char EXECUTE_STR[] = "execute";
 static constexpr char SEQ_RUNNER_ID_STR[] = "seqRunnerId";
 
+void SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar, SequenceRunner *seqRunner)
+{
+    // update seqRunner.seqRunnerId
+    uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
+    napi_value napiSeqRunnerId = NapiHelper::CreateUint64(env, seqRunnerId);
+    TaskGroupManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_PROPERTY(SEQ_RUNNER_ID_STR, napiSeqRunnerId),
+        DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
+    };
+    napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
+    HILOG_DEBUG("seqRunner:: construct seqRunner name is %{public}s, seqRunnerid %{public}" PRIu64 ".",
+                seqRunner->seqName_.c_str(), seqRunnerId);
+
+    seqRunner->seqRunnerId_ = seqRunnerId;
+    napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
+}
+
 napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo)
 {
     // get input args out of env and cbinfo
@@ -77,20 +95,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         napi_create_reference(env, thisVar, 0, &seqRunner->seqRunnerRef_);
     }
 
-    // update seqRunner.seqRunnerId
-    uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
-    napi_value napiSeqRunnerId = NapiHelper::CreateUint64(env, seqRunnerId);
-    TaskGroupManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
-    napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY(SEQ_RUNNER_ID_STR, napiSeqRunnerId),
-        DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
-    };
-    napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    HILOG_DEBUG("seqRunner:: construct seqRunner name is %{public}s, seqRunnerid %{public}" PRIu64 ".",
-                seqRunner->seqName_.c_str(), seqRunnerId);
-
-    seqRunner->seqRunnerId_ = seqRunnerId;
-    napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
+    SeqRunnerConstructorInner(env, thisVar, seqRunner);
     return thisVar;
 }
 
