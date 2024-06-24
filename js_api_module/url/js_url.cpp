@@ -1694,6 +1694,16 @@ namespace OHOS::Url {
         }
     }
 
+    bool ContainsWideOrUnicodeChars(const std::string& str)
+    {
+        for (char c : str) {
+            if (static_cast<unsigned char>(c) > 127) { // 127:Value range for non ASCII characters
+                return true;
+            }
+        }
+        return false;
+    }
+
     void URLSearchParams::HandleIllegalChar(std::wstring& inputStr, std::wstring::const_iterator it)
     {
         std::wstring::iterator iter = inputStr.begin();
@@ -1760,8 +1770,10 @@ namespace OHOS::Url {
             HILOG_ERROR("can not get buffer value");
             return nullptr;
         }
-        std::string temp = name;
-        std::string sname = ToUSVString(temp);
+        std::string sname = name;
+        if (ContainsWideOrUnicodeChars(name)) {
+            sname = ToUSVString(name);
+        }
         napi_value result = nullptr;
         if (searchParams.size() == 0) {
             return result;
@@ -1789,8 +1801,10 @@ namespace OHOS::Url {
             HILOG_ERROR("can not get buffer value");
             return nullptr;
         }
-        std::string sname = ToUSVString(name);
-
+        std::string sname = name;
+        if (ContainsWideOrUnicodeChars(name)) {
+            sname = ToUSVString(name);
+        }
         napi_value result = nullptr;
         napi_value napiStr = nullptr;
         NAPI_CALL(env, napi_create_array(env, &result));
@@ -1853,7 +1867,10 @@ namespace OHOS::Url {
             HILOG_ERROR("can not get buffer value");
             return;
         }
-        std::string sname = ToUSVString(name);
+        std::string sname = name;
+        if (ContainsWideOrUnicodeChars(name)) {
+            sname = ToUSVString(name);
+        }
         for (auto iter = searchParams.begin(); iter != searchParams.end();) {
             if (*iter == sname) {
                 iter = searchParams.erase(iter, iter + 2); // 2:Searching for the number and number of keys and values
