@@ -98,11 +98,13 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
         TimerCallbackInfo* callbackInfo = iter->second;
-        timerTable.erase(tId);
         if (callbackInfo->env_ != env) {
             HILOG_ERROR("Timer is deleting by another thread, please check js code. TimerID:%{public}d", tId);
+        } else {
+            timerTable.erase(tId);
+            Helper::CloseHelp::DeletePointer(callbackInfo, false);
+            HILOG_DEBUG("Timer has been successfully deleted.TimerID:%{public}d", tId);
         }
-        Helper::CloseHelp::DeletePointer(callbackInfo, false);
     }
     return Helper::NapiHelper::GetUndefinedValue(env);
 }
@@ -210,6 +212,7 @@ napi_value Timer::SetTimeoutInnerCore(napi_env env, napi_value* argv, size_t arg
         }
     }
 
+    HILOG_DEBUG("SetTimeoutInnerCore function call before libuv! tId = %{public}u,timeout = %{public}u", tId, timeout);
     // 6. start timer
     uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
