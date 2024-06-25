@@ -506,8 +506,15 @@ private:
     void PublishWorkerOverSignal();
     void CloseWorkerCallback();
     void CloseHostCallback();
+
     void PostLimitedWorkerOverTask();
     void PostWorkerOverTask();
+    void PostLimitedWorkerErrorTask();
+    void PostWorkerErrorTask();
+    void PostLimitedWorkerMessageTask();
+    void PostWorkerMessageTask();
+    void PostLimitedWorkerGlobalCallTask();
+    void PostWorkerGlobalCallTask();
 
     void InitHostHandle(uv_loop_t* loop);
     void CloseHostHandle();

@@ -1304,7 +1304,7 @@ void TaskManager::UpdateSystemAppFlag()
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 bool TaskManager::PostTask(std::function<void()> task, const char* taskName)
 {
-    bool res = mainThreadHandler_->PostTask(task, taskName, 0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+    bool res = mainThreadHandler_->PostTask(task, taskName, 0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
     if (!res) {
         HILOG_ERROR("taskpool:: the mainThread EventHandler postTask failed");
     }
