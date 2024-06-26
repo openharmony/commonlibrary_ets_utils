@@ -24,6 +24,8 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 Thread::Thread() : tid_() {}
 
+static constexpr uint64_t STACK_SIZE = 8 * 1024 * 1024;
+
 bool Thread::Start()
 {
     if (TaskManager::GetInstance().EnableFfrt()) {
@@ -33,7 +35,7 @@ bool Thread::Start()
         ffrt_task_attr_set_name(&task_attr, "OS_TaskWorker");
         ffrt_task_attr_set_qos(&task_attr, ffrt_qos_user_initiated);
         ffrt_task_attr_set_local(&task_attr, true);
-
+        ffrt_task_attr_set_stack_size(&task_attr, STACK_SIZE);
         auto task = [this]() {
             Thread* thread = reinterpret_cast<Thread*>(this);
             thread->Run();
