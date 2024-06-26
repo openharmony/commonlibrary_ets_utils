@@ -720,6 +720,10 @@ std::pair<uint64_t, Priority> TaskManager::GetTaskByPriority(const std::unique_p
 void TaskManager::NotifyExecuteTask()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
+        // When there are only idle tasks and workers executing them, it is not triggered
+        return;
+    }
     for (auto& worker : idleWorkers_) {
         worker->NotifyExecuteTask();
     }
