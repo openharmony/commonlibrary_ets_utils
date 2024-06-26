@@ -1276,4 +1276,28 @@ void Task::InitHandle(napi_env env)
     ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
 #endif
 }
+
+void Task::ClearDelayedTimers()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    TaskMessage *taskMessage = nullptr;
+    for (auto t: delayedTimers_) {
+        if (t == nullptr) {
+            continue;
+        }
+        taskMessage = static_cast<TaskMessage *>(t->data);
+        napi_value error = ErrorHelper::NewError(env_, 0, "taskpool:: task has been canceled");
+        napi_reject_deferred(env_, taskMessage->deferred, error);
+        uv_timer_stop(t);
+        uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
+            if (handle != nullptr) {
+                delete (uv_timer_t*)handle;
+                handle = nullptr;
+            }
+        });
+        delete taskMessage;
+        taskMessage = nullptr;
+    }
+    delayedTimers_.clear();
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
