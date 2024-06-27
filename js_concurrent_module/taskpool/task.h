@@ -19,6 +19,7 @@
 #include <list>
 #include <map>
 #include <mutex>
+#include <set>
 #include <shared_mutex>
 #include <string>
 #include <uv.h>
@@ -130,6 +131,7 @@ public:
     void SetHasDependency(bool hasDependency);
     bool HasDependency() const;
     void TryClearHasDependency();
+    void ClearDelayedTimers();
 
 private:
     Task(const Task &) = delete;
@@ -171,6 +173,8 @@ public:
     bool isPeriodicTask_ {false};
     uv_timer_t* timer_ {nullptr};
     Priority periodicTaskPriority_ {Priority::DEFAULT};
+
+    std::set<uv_timer_t*> delayedTimers_ {}; // task delayed timer
 
     bool isMainThreadTask_ {true};
 };

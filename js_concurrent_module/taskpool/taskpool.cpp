@@ -285,6 +285,10 @@ void TaskPool::DelayTask(uv_timer_t* handle)
             TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
         }
     }
+    if (task != nullptr) {
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        task->delayedTimers_.erase(handle);
+    }
     uv_timer_stop(handle);
     uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
         if (handle != nullptr) {
@@ -362,6 +366,10 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     HITRACE_HELPER_METER_NAME(strTrace);
 
     uv_timer_start(timer, reinterpret_cast<uv_timer_cb>(DelayTask), delayTime, 0);
+    {
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        task->delayedTimers_.insert(timer);
+    }
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);

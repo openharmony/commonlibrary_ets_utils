@@ -551,6 +551,9 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
         return;
     }
+    
+    task->ClearDelayedTimers();
+
     ExecuteState state = task->taskState_;
     task->taskState_ = ExecuteState::CANCELED;
     task->CancelPendingTask(env);
@@ -1193,6 +1196,8 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
     }
 
     task->CancelPendingTask(env);
+
+    task->ClearDelayedTimers();
 
     if (task->IsFunctionTask() || task->IsGroupFunctionTask()) {
         return;
