@@ -754,8 +754,6 @@ class Writable {
     this.erroredInner = null;
     this.encoding = 'utf8';
     this.closedInner = false;
-    // @ts-ignore
-    this.doWritev = null;
     this.doInitialize((error: Error): void => {
       if (error) {
         this.listener?.emit(WritableEvent.ERROR, error);
@@ -1342,6 +1340,8 @@ class Writable {
   }
 }
 
+// @ts-ignore
+Writable.prototype.doWritev = null;
 Writable.prototype.doWrite = Writable.prototype.noWriteOpes;
 
 class Duplex extends Readable {
