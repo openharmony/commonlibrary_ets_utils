@@ -209,10 +209,10 @@ class URLParams {
 
   append(params1: string, params2: string): void {
     if (arguments.length === 0 || typeof params1 !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${params1} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${params1} must be string`);
     }
     if (arguments.length === 1 || typeof params2 !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${params2} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${params2} must be string`);
     }
     params1 = customEncodeURIComponent(params1);
     params2 = customEncodeURIComponent(params2);
@@ -226,10 +226,10 @@ class URLParams {
 
   set(setName: string, setValues: string): void {
     if (arguments.length === 0 || typeof setName !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${setName} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${setName} must be string`);
     }
     if (arguments.length === 1 || typeof setValues !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${setValues} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${setValues} must be string`);
     }
     setName = customEncodeURIComponent(setName);
     setValues = customEncodeURIComponent(setValues);
@@ -255,7 +255,7 @@ class URLParams {
 
   has(hasname: string): boolean {
     if (typeof hasname !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${hasname} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${hasname} must be string`);
     }
     return this.urlClass.has(hasname);
   }
@@ -300,7 +300,7 @@ class URLParams {
 
   getAll(getAllname: string): string[] {
     if ((arguments.length !== 1) || (typeof getAllname !== 'string')) {
-      throw new BusinessError(`Parameter error.The type of ${getAllname} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${getAllname} must be string`);
     }
     let outPut: string[] = this.urlClass.getAll(getAllname);
     outPut = outPut.map(function(encodedString) {
@@ -311,7 +311,7 @@ class URLParams {
 
   get(getname: string): string {
     if (arguments.length === 0 || typeof getname !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${getname} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${getname} must be string`);
     }
     return decodeSafelyInner(this.urlClass.get(getname));
   }
@@ -326,7 +326,7 @@ class URLParams {
 
   delete(deleteName: string): void {
     if (arguments.length === 0 || typeof deleteName !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${deleteName} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${deleteName} must be string`);
     }
     this.urlClass.delete(deleteName);
     if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, deleteName)) {
@@ -342,7 +342,7 @@ class URLParams {
 
   forEach(objfun: Function, thisArg?: Object): void {
     if (typeof objfun !== 'function') {
-      throw new BusinessError(`Parameter error.The type of ${objfun} must be function`);
+      throw new BusinessError(`Parameter error. The type of ${objfun} must be function`);
     }
     let array = this.urlClass.array;
     if (array.length === 0) {
@@ -381,10 +381,10 @@ class URLSearchParams {
   }
   append(params1: string, params2: string): void {
     if (arguments.length === 0 || typeof params1 !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${params1} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${params1} must be string`);
     }
     if (arguments.length === 1 || typeof params2 !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${params2} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${params2} must be string`);
     }
     params1 = customEncodeURIComponent(params1);
     params2 = customEncodeURIComponent(params2);
@@ -398,10 +398,10 @@ class URLSearchParams {
 
   set(setName: string, setValues: string): void {
     if (arguments.length === 0 || typeof setName !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${setName} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${setName} must be string`);
     }
     if (arguments.length === 1 || typeof setValues !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${setValues} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${setValues} must be string`);
     }
     setName = customEncodeURIComponent(setName);
     setValues = customEncodeURIComponent(setValues);
@@ -427,7 +427,7 @@ class URLSearchParams {
 
   has(hasname: string): boolean {
     if (typeof hasname !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${hasname} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${hasname} must be string`);
     }
     return this.urlClass.has(hasname);
   }
@@ -590,7 +590,7 @@ function iteratorMethodThrow(input: Iterable<[string]>): Array<string> {
   seachParamsArr = [];
   for (const pair of input) {
     if ((typeof pair !== 'object' && typeof pair !== 'function') || pair === null || typeof pair[Symbol.iterator] !== 'function') {
-      throw new BusinessError(`Parameter error.The type of ${input} must be string[][]`);
+      throw new BusinessError(`Parameter error. The type of ${input} must be string[][]`);
     }
     const convertedPair = [];
     for (let element of pair) {
@@ -601,7 +601,7 @@ function iteratorMethodThrow(input: Iterable<[string]>): Array<string> {
 
   for (const pair of pairs) {
     if (pair.length !== 2) { // 2:Searching for the number and number of keys and values 2
-      throw new BusinessError(`Parameter error.The type of ${input} must be string[][]`);
+      throw new BusinessError(`Parameter error. The type of ${input} must be string[][]`);
     }
     seachParamsArr.push(pair[0], pair[1]);
   }
@@ -676,7 +676,7 @@ function decodeURISafely(input: string): string {
 
 function initToStringSeachParams(input: string): Array<string> {
   if (typeof input !== 'string') {
-    throw new BusinessError(`Parameter error.The type of ${input} must be string`);
+    throw new BusinessError(`Parameter error. The type of ${input} must be string`);
   }
   if (input[0] === '?') {
     input = input.slice(1);
@@ -731,7 +731,7 @@ class URL {
       if (typeof inputUrl === 'string' && inputUrl.length > 0) {
         nativeUrl = new UrlInterface.Url(inputUrl);
       } else {
-        console.error('Input parameter error');
+        throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
       }
     } else if (arguments.length === 2) { // 2:The number of parameters is 2
       if (typeof inputUrl === 'string') {
@@ -739,7 +739,7 @@ class URL {
           if (inputBase.length > 0) {
             nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
           } else {
-            console.error('Input parameter error');
+            throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
             return;
           }
         } else if (typeof inputBase === 'object') {
@@ -779,7 +779,7 @@ class URL {
 
   static parseURL(inputUrl: string, inputBase?: string | NativeUrl | URL): URL {
     if (typeof inputUrl !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${inputUrl} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
     }
     let nativeUrl !: NativeUrl;
     if (arguments.length === 1 || (arguments.length === 2 && (typeof inputBase === 'undefined' || inputBase === null))) {
@@ -789,13 +789,13 @@ class URL {
         if (inputBase.length > 0) {
           nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
         } else {
-          throw new BusinessError(`Parameter error.The type of ${inputBase} must be string`);
+          throw new BusinessError(`Parameter error. The type of ${inputBase} must be string`);
         }
       } else if (typeof inputBase === 'object') {
         let nativeBase: NativeUrl = inputBase.getInfo();
         nativeUrl = new UrlInterface.Url(inputUrl, nativeBase);
       } else {
-        throw new BusinessError(`Parameter error.The type of ${inputBase} must be string or URL`);
+        throw new BusinessError(`Parameter error. The type of ${inputBase} must be string or URL`);
       }
     }
     let urlHelper = new URL();

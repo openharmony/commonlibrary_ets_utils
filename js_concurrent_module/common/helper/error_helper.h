@@ -109,7 +109,7 @@ public:
                 errTitle = "lockAsync timed out";
                 break;
             case TYPE_ERROR:
-                errTitle = "The input parameters are invalid, ";
+                errTitle = "Parameter error. The input parameters are invalid, ";
                 break;
             case ERR_REGISTRATION_OF_LISTENERS:
                 errTitle = "The executed task does not support the registration of listeners.";

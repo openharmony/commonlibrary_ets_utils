@@ -129,23 +129,27 @@ class ErrorMessage {
     return ret;
   }
 
-  private getArgumentStr(): string {
-    return 'The type of "' + this.argument + '" must be ';
+  private getArgumentStr(flag: boolean): string {
+    if (flag) {
+      return 'Parameter error. The type of "' + this.argument + '" must be ';
+    } else {
+      return 'The type of "' + this.argument + '" must be ';
+    }
   }
 
-  private getTypeString(): string {
+  private getTypeString(flag: boolean): string {
     let str = '';
     switch (this.typeErrorCat) {
       case TypeErrorCategories.COMMON:
-        str += this.getArgumentStr() + this.getErrorTypeStrings(this.types) +
+        str += this.getArgumentStr(flag) + this.getErrorTypeStrings(this.types) +
           '. Received value is: ' + getTypeName(this.receivedObj);
         break;
       case TypeErrorCategories.SIZE:
-        str += this.getArgumentStr() + this.getErrorTypeStrings(this.types) +
+        str += this.getArgumentStr(flag) + this.getErrorTypeStrings(this.types) +
           ' and the value cannot be negative. Received value is: ' + getTypeName(this.receivedObj);
         break;
       case TypeErrorCategories.ENCODING:
-        str += this.getArgumentStr() + this.getErrorTypeStrings(this.types) +
+        str += this.getArgumentStr(flag) + this.getErrorTypeStrings(this.types) +
           '. the encoding ' + this.receivedObj + ' is unknown';
         break;
       case TypeErrorCategories.PROPERTY:
@@ -177,8 +181,10 @@ class ErrorMessage {
     let str = '';
     switch (this.errorNumber) {
       case ERROR_CODES.TYPE_ERROR:
+        str = this.getTypeString(true);
+        break;
       case ERROR_CODES.PROPERTY_TYPE_ERROR:
-        str = this.getTypeString();
+        str = this.getTypeString(false);
         break;
       case ERROR_CODES.RANGE_ERROR:
         str = this.getRangeString();
@@ -351,7 +357,8 @@ class Blob {
     let type = options.type ? options.type : '';
     let endings = options.endings ? options.endings : 'transparent';
     if (endings !== 'transparent' && endings !== 'native') {
-      throw new BusinessError('invalid arg value of options.endings', errorMap.typeError);
+      throw new BusinessError('Parameter error. The value of endings is neither "transparent" nor "native"',
+                              errorMap.typeError);
     }
     let arr: Array<number> = [];
     if (sources instanceof Array || isTypedArray(sources)) {
@@ -1868,7 +1875,7 @@ function sizeErrorCheck(param: unknown, paramName: string, types: string[],
   if (Number(param) < rangeLeft || Number(param) > rangeRight) {
     let typeString = types.join(', ');
     typeString = typeString.replace(',', ' or');
-    let msg = 'The type of "' + paramName + '" must be ' + typeString +
+    let msg = 'Parameter error. The type of "' + paramName + '" must be ' + typeString +
       ' and the value cannot be negative. Received value is: ' + Number(param).toString();
     throw new BusinessError(msg, errorMap.typeError);
   }
