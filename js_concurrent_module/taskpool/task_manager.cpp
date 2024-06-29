@@ -83,7 +83,7 @@ TaskManager::~TaskManager()
     }
 
     {
-        std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
         for (auto& worker : workers_) {
             delete worker;
         }
@@ -91,7 +91,7 @@ TaskManager::~TaskManager()
     }
 
     {
-        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
         for (auto& [_, task] : tasks_) {
             delete task;
             task = nullptr;
@@ -103,7 +103,7 @@ TaskManager::~TaskManager()
 
 void TaskManager::CountTraceForWorker()
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     int64_t threadNum = static_cast<int64_t>(workers_.size());
     int64_t idleWorkers = static_cast<int64_t>(idleWorkers_.size());
     int64_t timeoutWorkers = static_cast<int64_t>(timeoutWorkers_.size());
@@ -118,7 +118,7 @@ napi_value TaskManager::GetThreadInfos(napi_env env)
     napi_value threadInfos = nullptr;
     napi_create_array(env, &threadInfos);
     {
-        std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
         int32_t i = 0;
         for (auto& worker : workers_) {
             if (worker->workerEnv_ == nullptr) {
@@ -155,7 +155,7 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
     napi_value taskInfos = nullptr;
     napi_create_array(env, &taskInfos);
     {
-        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
         int32_t i = 0;
         for (const auto& [_, task] : tasks_) {
             if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::DELAYED ||
@@ -163,7 +163,7 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
                 continue;
             }
             napi_value taskInfoValue = NapiHelper::CreateObject(env);
-            std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+            std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
             napi_value taskId = NapiHelper::CreateUint32(env, task->taskId_);
             napi_value name = nullptr;
             napi_create_string_utf8(env, task->name_.c_str(), task->name_.size(), &name);
@@ -211,7 +211,7 @@ void TaskManager::CheckForBlockedWorkers()
     // the threshold will be dynamically modified to provide more flexibility in detecting exceptions
     // if the thread num has reached the limit and the idle worker is not available, a short time will be used,
     // else we will choose the longer one
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     bool needChecking = false;
     bool state = (GetThreadNum() == ConcurrentHelper::GetMaxThreads()) && (GetIdleWorkers() == 0);
     uint64_t threshold = state ? MIN_TIMEOUT_TIME : MAX_TIMEOUT_TIME;
@@ -297,7 +297,7 @@ uint32_t TaskManager::GetIdleWorkers()
 {
     char buf[4096]; // 4096: buffer for thread info
     uint32_t idleCount = 0;
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     for (auto& worker : idleWorkers_) {
 #if defined(ENABLE_TASKPOOL_FFRT)
         if (worker->ffrtTaskHandle_ != nullptr) {
@@ -393,7 +393,7 @@ void TaskManager::TriggerShrink(uint32_t step)
 #else
 uint32_t TaskManager::GetIdleWorkers()
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     return idleWorkers_.size();
 }
 
@@ -420,13 +420,13 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
 {
     uint32_t workerCount = GetThreadNum();
     if (workerCount > MIN_THREADS && workerCount > targetNum) {
-        std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
         targetNum = std::max(MIN_THREADS, targetNum);
         uint32_t step = std::min(workerCount - targetNum, STEP_SIZE);
         TriggerShrink(step);
     }
     // remove all timeout workers
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     for (auto iter = timeoutWorkers_.begin(); iter != timeoutWorkers_.end();) {
         HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", (*iter)->tid_);
         uv_async_send((*iter)->clearWorkerSignal_);
@@ -532,7 +532,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         HILOG_DEBUG("taskpool:: task has been canceled");
         return;
     }
-    std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->IsPeriodicTask()) {
         task->CancelPendingTask(env);
         uv_timer_stop(task->timer_);
@@ -570,7 +570,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
 void TaskManager::NotifyWorkerIdle(Worker* worker)
 {
     {
-        std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
         if (worker->state_ == WorkerState::BLOCKED) {
             return;
         }
@@ -589,21 +589,21 @@ void TaskManager::NotifyWorkerCreated(Worker* worker)
 
 void TaskManager::NotifyWorkerAdded(Worker* worker)
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     workers_.insert(worker);
     HILOG_DEBUG("taskpool:: a new worker has been added and the current num is %{public}zu", workers_.size());
 }
 
 void TaskManager::NotifyWorkerRunning(Worker* worker)
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     idleWorkers_.erase(worker);
     CountTraceForWorker();
 }
 
 uint32_t TaskManager::GetRunningWorkers()
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     return std::count_if(workers_.begin(), workers_.end(), [](const auto& worker) {
         return worker->runningCount_ != 0;
     });
@@ -611,7 +611,7 @@ uint32_t TaskManager::GetRunningWorkers()
 
 uint32_t TaskManager::GetTimeoutWorkers()
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     return timeoutWorkers_.size();
 }
 
@@ -646,7 +646,7 @@ void TaskManager::DecreaseNumIfNoIdle(Priority priority)
 
 uint32_t TaskManager::GetThreadNum()
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     return workers_.size();
 }
 
@@ -695,7 +695,7 @@ std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
 
 bool TaskManager::IsChooseIdle()
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     for (auto& worker : workers_) {
         if (worker->state_ == WorkerState::IDLE) {
             // If worker->state_ is WorkerState::IDLE, it means that the worker is free
@@ -722,7 +722,7 @@ std::pair<uint64_t, Priority> TaskManager::GetTaskByPriority(const std::unique_p
 
 void TaskManager::NotifyExecuteTask()
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
         // When there are only idle tasks and workers executing them, it is not triggered
         return;
@@ -786,14 +786,14 @@ void TaskManager::CreateWorkers(napi_env env, uint32_t num)
 
 void TaskManager::RemoveWorker(Worker* worker)
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     idleWorkers_.erase(worker);
     workers_.erase(worker);
 }
 
 void TaskManager::RestoreWorker(Worker* worker)
 {
-    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
         uv_timer_again(timer_);
@@ -1261,19 +1261,19 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
 
 void TaskManager::StoreTask(uint64_t taskId, Task* task)
 {
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     tasks_.emplace(taskId, task);
 }
 
 void TaskManager::RemoveTask(uint64_t taskId)
 {
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     tasks_.erase(taskId);
 }
 
 Task* TaskManager::GetTask(uint64_t taskId)
 {
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     auto iter = tasks_.find(taskId);
     if (iter == tasks_.end()) {
         return nullptr;
@@ -1375,7 +1375,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     if (taskGroup->groupState_ == ExecuteState::CANCELED) {
         return;
     }
-    std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskGroup->taskGroupMutex_);
     if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::NOT_FOUND ||
         taskGroup->groupState_ == ExecuteState::FINISHED) {
         std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
@@ -1412,7 +1412,7 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
         HILOG_INFO("taskpool:: CancelGroupTask task is nullptr");
         return;
     }
-    std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         delete task->currentTaskInfo_;

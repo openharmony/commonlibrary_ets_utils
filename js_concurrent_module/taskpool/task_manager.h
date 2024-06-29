@@ -184,7 +184,7 @@ private:
 
     // <taskId, Task>
     std::unordered_map<uint64_t, Task*> tasks_ {};
-    std::recursive_mutex tasksMutex_;
+    RECURSIVE_MUTEX tasksMutex_;
 
     // <taskId, <dependent taskId1, dependent taskId2, ...>>, update when removeDependency or executeTask
     std::unordered_map<uint64_t, std::set<uint64_t>> dependTaskInfos_ {};
@@ -209,7 +209,7 @@ private:
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};
     std::unordered_set<Worker*> timeoutWorkers_ {};
-    std::recursive_mutex workersMutex_;
+    RECURSIVE_MUTEX workersMutex_;
 
     // for load balance
     napi_env hostEnv_ = nullptr;

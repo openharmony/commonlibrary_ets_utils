@@ -286,7 +286,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         }
     }
     if (task != nullptr) {
-        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
         task->delayedTimers_.erase(handle);
     }
     uv_timer_stop(handle);
@@ -367,7 +367,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
 
     uv_timer_start(timer, reinterpret_cast<uv_timer_cb>(DelayTask), delayTime, 0);
     {
-        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
         task->delayedTimers_.insert(timer);
     }
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
@@ -399,7 +399,7 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     groupInfo->resArr = arrRef;
     napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
     {
-        std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskGroup->taskGroupMutex_);
         if (taskGroup->currentGroupInfo_ == nullptr) {
             taskGroup->currentGroupInfo_ = groupInfo;
             for (auto iter = taskGroup->taskRefs_.begin(); iter != taskGroup->taskRefs_.end(); iter++) {
