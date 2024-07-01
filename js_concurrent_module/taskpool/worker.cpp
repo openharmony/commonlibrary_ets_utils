@@ -255,8 +255,9 @@ bool Worker::PrepareForWorkerInstance()
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    workerEngine->SetDebuggerPostTaskFunc(
-        std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
+    workerEngine->SetDebuggerPostTaskFunc([this](std::function<void()>&& task) {
+        this->DebuggerOnPostTask(std::move(task));
+    });
 #endif
     if (!workerEngine->CallInitWorkerFunc(workerEngine)) {
         HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc fail");

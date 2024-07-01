@@ -770,7 +770,7 @@ void TaskManager::InitTaskManager(napi_env env)
         // Add a reserved thread for taskpool
         CreateWorkers(hostEnv_);
         // Create a timer to manage worker threads
-        std::thread workerManager(&TaskManager::RunTaskManager, this);
+        std::thread workerManager([this] {this->RunTaskManager();});
         workerManager.detach();
     }
 }

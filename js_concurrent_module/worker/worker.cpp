@@ -1310,8 +1310,9 @@ bool Worker::PrepareForWorkerInstance()
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
         // 2. init worker environment
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-        workerEngine->SetDebuggerPostTaskFunc(
-            std::bind(&Worker::DebuggerOnPostTask, this, std::placeholders::_1));
+        workerEngine->SetDebuggerPostTaskFunc([this](std::function<void()>&& task) {
+            this->DebuggerOnPostTask(std::move(task));
+        });
 #endif
         if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
             HILOG_ERROR("worker:: CallInitWorkerFunc error");
