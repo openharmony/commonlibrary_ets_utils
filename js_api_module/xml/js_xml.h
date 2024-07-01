@@ -178,7 +178,7 @@ namespace OHOS::xml {
         NOTATIONDECL,
         PARAMETER_ENTITY_REF,
         OK,
-        ERROR1
+        ERROR
     };
 
     enum class TextEnum {
@@ -338,9 +338,9 @@ namespace OHOS::xml {
         void ParseEntity(std::string& out, bool isEntityToken, bool throwOnResolveFailure, TextEnum textEnum);
         std::string ParseTagValue(char delimiter, bool resolveEntities, bool throwOnResolveFailure, TextEnum textEnum);
         bool ParseNsp();
-        void ParseStartTag(bool xmldecl, bool throwOnResolveFailure);
+        TagEnum ParseStartTag(bool xmldecl, bool throwOnResolveFailure);
         void ParseDeclaration();
-        void ParseEndTag();
+        bool ParseEndTag();
         std::string ParseDelimiterInfo(std::string delimiter, bool returnText);
         std::string ParseDelimiter(bool returnText);
         bool ParserDoctInnerInfo(bool requireSystemName, bool assignFields);
@@ -366,7 +366,7 @@ namespace OHOS::xml {
         TagEnum DealExclamationGroup();
         void ParseEntityFunc(size_t start, std::string &out, bool isEntityToken, TextEnum textEnum);
         bool ParseStartTagFuncDeal(bool throwOnResolveFailure);
-        bool ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure);
+        TagEnum ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure);
         TagEnum ParseOneTagFunc();
         size_t ParseTagValueInner(size_t &start, std::string &result, char delimiter, TextEnum textEnum, bool bFlag);
         bool ParseTagValueFunc(char &c, bool bFlag, TextEnum textEnum, size_t &start, std::string &result);

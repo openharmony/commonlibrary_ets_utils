@@ -542,7 +542,9 @@ namespace OHOS::xml {
     {
         if (tagFunc_ || attrFunc_ || tokenFunc_) {
             while (type != TagEnum::END_DOCUMENT) {
-                ParseOneTag();
+                if (ParseOneTag() == TagEnum::ERROR) {
+                    break;
+                }
                 bool bRec = false;
                 if (tagFunc_) {
                     napi_value returnVal = nullptr;
@@ -604,7 +606,7 @@ namespace OHOS::xml {
             default:
                 break;
         }
-        return TagEnum::ERROR1;
+        return TagEnum::ERROR;
     }
 
     TagEnum XmlPullParser::DealLtGroup()
@@ -731,7 +733,8 @@ namespace OHOS::xml {
             c == '_' || c == ':' || relaxed) {
             position_++;
         } else {
-            xmlPullParserError_ = "name expected";
+            xmlPullParserError_ = "The node name contains invalid characters: ";
+            xmlPullParserError_ += c;
             return "";
         }
         return ParseNameInner(start);
@@ -793,7 +796,10 @@ namespace OHOS::xml {
         bUnresolved_ = true;
     }
 
-    void XmlPullParser::ParseEntity(std::string &out, bool isEntityToken, bool throwOnResolveFailure, TextEnum textEnum)
+    void XmlPullParser::ParseEntity(std::string &out,
+                                    bool isEntityToken,
+                                    bool throwOnResolveFailure,
+                                    TextEnum textEnum)
     {
         size_t start = out.length();
         if (strXml_[position_++] != '&') {
@@ -1035,6 +1041,9 @@ namespace OHOS::xml {
     bool XmlPullParser::ParseStartTagFuncDeal(bool throwOnResolveFailure)
     {
         std::string attrName = ParseName();
+        if (attrName.empty()) {
+            return false;
+        }
         int i = (attriCount_++) * 4; // 4: number of args
         attributes.resize(attributes.size() + 4); // 4: number of args
         attributes[i] = "";
@@ -1071,20 +1080,20 @@ namespace OHOS::xml {
         return true;
     }
 
-    bool XmlPullParser::ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure)
+    TagEnum XmlPullParser::ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure)
     {
         while (true) {
             SkipInvalidChar();
             if (position_ >= max_ && DealLength(1)) {
                 xmlPullParserError_ = "UNEXPECTED_EOF";
-                return false;
+                return TagEnum::ERROR;
             }
             unsigned char temp = strXml_[position_];
             if (xmldecl) {
                 if (temp == '?') {
                     position_++;
                     SkipChar('>');
-                    return false;
+                    return TagEnum::XML_DECLARATION;
                 }
             } else {
                 if (temp == '/') {
@@ -1100,22 +1109,22 @@ namespace OHOS::xml {
             }
             bool bRecv = ParseStartTagFuncDeal(throwOnResolveFailure);
             if (!bRecv) {
-                return false;
+                return TagEnum::ERROR;
             }
         }
-        return true;
+        return TagEnum::OK;
     }
 
-    void XmlPullParser::ParseStartTag(bool xmldecl, bool throwOnResolveFailure)
+    TagEnum XmlPullParser::ParseStartTag(bool xmldecl, bool throwOnResolveFailure)
     {
         if (!xmldecl) {
             SkipChar('<');
         }
         name_ = ParseName();
         attriCount_ = 0;
-        bool bRecv = ParseStartTagFunc(xmldecl, throwOnResolveFailure);
-        if (!bRecv) {
-            return;
+        TagEnum bRecv = ParseStartTagFunc(xmldecl, throwOnResolveFailure);
+        if (bRecv != TagEnum::OK) {
+            return bRecv;
         }
         size_t sp = depth++ * 4; // 4: number of args
         elementStack_.resize(sp + 4); // 4: number of args
@@ -1140,6 +1149,7 @@ namespace OHOS::xml {
         elementStack_[sp] = namespace_;
         elementStack_[sp + 1] = prefix_;
         elementStack_[sp + 2] = name_; // 2: number of args
+        return TagEnum::OK;
     }
 
     void XmlPullParser::ParseDeclaration()
@@ -1176,17 +1186,20 @@ namespace OHOS::xml {
         text_ = "";
     }
 
-    void XmlPullParser::ParseEndTag()
+    bool XmlPullParser::ParseEndTag()
     {
         SkipChar('<');
         SkipChar('/');
         name_ = ParseName();
+        if (name_.empty()) {
+            return false;
+        }
         SkipInvalidChar();
         SkipChar('>');
         if (depth == 0) {
             xmlPullParserError_ = "read end tag " + name_ + " with no tags open";
             type = TagEnum::COMMENT;
-            return;
+            return true;
         }
         size_t sp = (depth - 1) * 4; // 4: number of args
         if (name_ == elementStack_[sp + 3]) { // 3: number of args
@@ -1196,6 +1209,7 @@ namespace OHOS::xml {
         } else if (!relaxed) {
             xmlPullParserError_ = "expected: /" + elementStack_[sp + 3] + " read: " + name_; // 3: number of args
         }
+        return true;
     }
 
     std::string XmlPullParser::ParseDelimiterInfo(std::string delimiter, bool returnText)
@@ -1549,11 +1563,15 @@ namespace OHOS::xml {
             case TagEnum::START_DOCUMENT:
                 return type;
             case TagEnum::START_TAG: {
-                ParseStartTag(false, false);
-                return type; }
+                if (ParseStartTag(false, false) == TagEnum::ERROR) {
+                    return TagEnum::ERROR;
+                }
+                return type;}
             case TagEnum::END_TAG: {
-                ParseEndTag();
-                return type; }
+                if (ParseEndTag()) {
+                    return type;
+                }
+                return TagEnum::ERROR;}
             case TagEnum::END_DOCUMENT:
                 return type;
             case TagEnum::ENTITY_REFERENCE: {
@@ -1579,7 +1597,7 @@ namespace OHOS::xml {
                 return TagEnum::OK;
             default:
                 xmlPullParserError_ = "Unexpected token";
-                return TagEnum::ERROR1;
+                return TagEnum::ERROR;
         }
     }
 
@@ -1596,9 +1614,7 @@ namespace OHOS::xml {
         ParserPriorDeal();
         while (true) {
             TagEnum typeTem = ParseOneTagFunc();
-            if (typeTem == TagEnum::ERROR1) {
-                return TagEnum::ERROR1;
-            } else if (typeTem != TagEnum::OK) {
+            if (typeTem != TagEnum::OK) {
                 return typeTem;
             }
             if (depth == 0 && (type == TagEnum::ENTITY_REFERENCE || type == TagEnum::TEXT || type == TagEnum::CDSECT)) {
