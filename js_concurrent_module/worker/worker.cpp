@@ -872,11 +872,11 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         worker->InitGlobalCallStatus(env);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (worker->isMainThreadWorker_) {
-            auto hostOnGlobalCallTask = [worker]() {
-                worker->HostOnGlobalCallInner();
-            };
-            g_mainThreadHandler_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
-                0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+            if (worker->isLimitedWorker_) {
+                worker->PostLimitedWorkerGlobalCallTask();
+            } else {
+                worker->PostWorkerGlobalCallTask();
+            }
         } else {
             uv_async_send(worker->hostOnGlobalCallSignal_);
         }
@@ -1827,7 +1827,7 @@ void Worker::PostLimitedWorkerOverTask()
         this->HostOnMessageInner();
     };
     g_mainThreadHandler_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
 }
 
 void Worker::PostWorkerOverTask()
@@ -1843,7 +1843,105 @@ void Worker::PostWorkerOverTask()
         this->HostOnMessageInner();
     };
     g_mainThreadHandler_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+}
+
+void Worker::PostLimitedWorkerErrorTask()
+{
+    auto hostOnErrorTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
+            if (it == g_limitedworkers.end()) {
+                return;
+            }
+        }
+        this->HostOnErrorInner();
+        this->TerminateInner();
+    };
+    g_mainThreadHandler_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+}
+
+void Worker::PostWorkerErrorTask()
+{
+    auto hostOnErrorTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_workersMutex);
+            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
+            if (it == g_workers.end()) {
+                return;
+            }
+        }
+        this->HostOnErrorInner();
+        this->TerminateInner();
+    };
+    g_mainThreadHandler_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+}
+
+void Worker::PostLimitedWorkerMessageTask()
+{
+    auto hostOnMessageTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
+            if (it == g_limitedworkers.end()) {
+                return;
+            }
+        }
+        this->HostOnMessageInner();
+    };
+    g_mainThreadHandler_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+}
+
+void Worker::PostWorkerMessageTask()
+{
+    auto hostOnMessageTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_workersMutex);
+            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
+            if (it == g_workers.end()) {
+                return;
+            }
+        }
+        this->HostOnMessageInner();
+    };
+    g_mainThreadHandler_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+}
+
+void Worker::PostLimitedWorkerGlobalCallTask()
+{
+    auto hostOnGlobalCallTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
+            if (it == g_limitedworkers.end()) {
+                return;
+            }
+        }
+        this->HostOnGlobalCallInner();
+    };
+    g_mainThreadHandler_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+}
+
+void Worker::PostWorkerGlobalCallTask()
+{
+    auto hostOnGlobalCallTask = [this]() {
+        {
+            std::lock_guard<std::mutex> lock(g_workersMutex);
+            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
+            if (it == g_workers.end()) {
+                return;
+            }
+        }
+        this->HostOnGlobalCallInner();
+    };
+    g_mainThreadHandler_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
 }
 #endif
 
@@ -1976,12 +2074,11 @@ void Worker::HandleUncaughtException(napi_value exception)
         errorQueue_.EnQueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_) {
-            auto hostOnErrorTask = [this]() {
-                this->HostOnErrorInner();
-                this->TerminateInner();
-            };
-            g_mainThreadHandler_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
-                0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+            if (isLimitedWorker_) {
+                this->PostLimitedWorkerErrorTask();
+            } else {
+                this->PostWorkerErrorTask();
+            }
         } else {
             uv_async_send(hostOnErrorSignal_);
         }
@@ -2006,11 +2103,11 @@ void Worker::PostMessageToHostInner(MessageDataType data)
         hostMessageQueue_.EnQueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_) {
-            auto hostOnMessageTask = [this]() {
-                this->HostOnMessageInner();
-            };
-            g_mainThreadHandler_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
-                0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+            if (isLimitedWorker_) {
+                this->PostLimitedWorkerMessageTask();
+            } else {
+                this->PostWorkerMessageTask();
+            }
         } else {
             uv_async_send(hostOnMessageSignal_);
         }
