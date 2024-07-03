@@ -149,7 +149,7 @@ class ErrorMessage {
           '. the encoding ' + this.receivedObj + ' is unknown';
         break;
       case TypeErrorCategories.PROPERTY:
-        str += 'Cannot set property ' + this.argument + ' of Buffer which has only a getter';
+        str += this.argument + ' cannot be set for the buffer that has only a getter';
       default:
         break;
     }
@@ -184,7 +184,7 @@ class ErrorMessage {
         str = this.getRangeString();
         break;
       case ERROR_CODES.BUFFER_SIZE_ERROR:
-        str = 'Buffer size must be a multiple of ' + this.receivedObj;
+        str = 'The buffer size must be a multiple of ' + this.receivedObj;
         break;
       default:
         break;
