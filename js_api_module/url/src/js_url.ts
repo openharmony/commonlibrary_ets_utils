@@ -28,7 +28,6 @@ interface NativeURLSearchParams {
   delete(deletename: string): void;
   updateParams(): void;
   array: string[];
-  initialValue: Record<string, string[]>;
 }
 
 interface NativeURLParams {
@@ -46,7 +45,6 @@ interface NativeURLParams {
   delete(deletename: string): void;
   updateParams(): void;
   array: string[];
-  initialValue: Record<string, string[]>;
 }
 
 interface NativeUrl {
@@ -111,55 +109,22 @@ function decodeSafelyOut(input: string): string {
     } else {
       decodedString += decodedTemp;
       decodedString += input[index];
-      decodedTemp = "";
+      decodedTemp = '';
     }
     index++;
   }
   return decodedTemp === '' ? decodedString : decodedString += decodedTemp;
 }
 
-function decodeSafelyInner(input: string): string {
-  if (input === undefined || input === '') {
-    return input;
-  }
-  input = input.replaceAll('+', ' ');
-  let strVal: string = '';
-  try {
-    strVal = decodeURIComponent(input);
-  } catch (e) {
-    strVal = decodeSafelyOut(input);
-  }
-  return strVal;
-}
-
-function customEncodeURIComponent(str: string | number): string {
-  const hexStrLen = 2; // 2:String length of hexadecimal encoded values
-  const hexAdecimal = 16; // 16:Hexadecimal number system
-  const regex = /[!'()~]/g;
-  return encodeURIComponent(str).replace(regex, function (c) {
-    let hex = c.charCodeAt(0).toString(hexAdecimal);
-    return '%' + (hex.length < hexStrLen ? '0' : '') + hex.toUpperCase();
-  })
-    .replace(/(%20)+/g, '+');
-}
-
 function customEncodeForToString(str: string | number): string {
   const hexStrLen = 2; // 2:String length of hexadecimal encoded values
   const hexAdecimal = 16; // 16:Hexadecimal number system
   const regex = /[!'()~]/g;
-  const encodeMap = {
-    '%20': '+',
-    '%2B': '+',
-    '%3D': '=',
-    '%25': '%',
-  };
   return encodeURIComponent(str).replace(regex, function (c) {
     let hex = c.charCodeAt(0).toString(hexAdecimal);
     return '%' + (hex.length < hexStrLen ? '0' : '') + hex.toUpperCase();
   })
-    .replace(/%[a-fA-F0-9]{2}/g, function (match) {
-        return encodeMap[match] || match;
-      });
+    .replace(/%20/g, '+');
 }
 
 function customEncodeURI(str: string, keepCharacters: string): string {
@@ -174,18 +139,6 @@ function customEncodeURI(str: string, keepCharacters: string): string {
       }
     }
     return encodedStr;
-}
-
-function convertArrayToObj(arr: string[]): Record<string, string[]> {
-  return arr.reduce((obj, val, index) => {
-    if (index % 2 === 0) { // 2:Even subscripts exist as key values
-      if (!obj[val]) {
-        obj[val] = [];
-      }
-      obj[val].push(arr[index + 1]);
-    }
-    return obj;
-  }, {});
 }
 
 function removeKeyValuePairs(str: string, key: string): string {
@@ -204,7 +157,6 @@ class URLParams {
     let out: string[] = parameterProcess(input);
     this.urlClass = new UrlInterface.URLParams1();
     this.urlClass.array = out;
-    this.urlClass.initialValue = convertArrayToObj(out);
   }
 
   append(params1: string, params2: string): void {
@@ -214,8 +166,6 @@ class URLParams {
     if (arguments.length === 1 || typeof params2 !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${params2} must be string`);
     }
-    params1 = customEncodeURIComponent(params1);
-    params2 = customEncodeURIComponent(params2);
     this.urlClass.append(params1, params2);
     if (this.parentUrl !== null) {
       this.parentUrl.c_info.search = this.toString();
@@ -231,12 +181,7 @@ class URLParams {
     if (arguments.length === 1 || typeof setValues !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${setValues} must be string`);
     }
-    setName = customEncodeURIComponent(setName);
-    setValues = customEncodeURIComponent(setValues);
     this.urlClass.set(setName, setValues);
-    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, setName)) {
-      delete this.urlClass.initialValue[setName];
-    }
     if (this.parentUrl !== null) {
       this.parentUrl.c_info.search = this.toString();
       this.parentUrl.search_ = this.parentUrl.c_info.search;
@@ -266,62 +211,38 @@ class URLParams {
     let array: string[] = this.urlClass.array;
     let key: string = '';
     let value: string = '';
-    let initVal: Record<string, string[]> = this.urlClass.initialValue;
     for (let pos: number = 0; pos < arrayLen; pos += 2) { // 2:Even subscripts exist as key values
-      key = array[pos];
-      value = array[pos + 1];
-      let shouldEncode = false;
-      for (let k in initVal) {
-        if (k === key && initVal[k].includes(value)) {
-          shouldEncode = true;
-          break;
-        }
-      }
-      if (shouldEncode) {
-        key = customEncodeForToString(key);
-        value = customEncodeForToString(value).replace(/=/g, '%3D');
-      }
+      key = customEncodeForToString(array[pos]).replace(/=/g, '%3D');
+      value = customEncodeForToString(array[pos + 1]).replace(/=/g, '%3D');
       resultArray.push(`${pos > 0 ? '&' : ''}${key}=${value}`);
     }
     return resultArray.join('');
   }
 
   keys(): Object {
-    let temp = this.urlClass.keys();
-    temp = temp.map(value => decodeSafelyInner(value));
-    return temp;
+    return this.urlClass.keys();
   }
 
   values(): Object {
-    let temp = this.urlClass.values();
-    temp = temp.map(value => decodeSafelyInner(value));
-    return temp;
+    return this.urlClass.values();
   }
 
   getAll(getAllname: string): string[] {
     if ((arguments.length !== 1) || (typeof getAllname !== 'string')) {
       throw new BusinessError(`Parameter error.The type of ${getAllname} must be string`);
     }
-    let outPut: string[] = this.urlClass.getAll(getAllname);
-    outPut = outPut.map(function(encodedString) {
-        return decodeSafelyInner(encodedString);
-    });
-    return outPut;
+    return this.urlClass.getAll(getAllname);
   }
 
   get(getname: string): string {
     if (arguments.length === 0 || typeof getname !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${getname} must be string`);
     }
-    return decodeSafelyInner(this.urlClass.get(getname));
+    return this.urlClass.get(getname);
   }
 
   entries(): Object {
-    let temp = this.urlClass.entries();
-    temp = temp.map(innerArr => {
-        return innerArr.map(value => decodeSafelyInner(value));
-    });
-    return temp;
+    return this.urlClass.entries();
   }
 
   delete(deleteName: string): void {
@@ -329,9 +250,6 @@ class URLParams {
       throw new BusinessError(`Parameter error.The type of ${deleteName} must be string`);
     }
     this.urlClass.delete(deleteName);
-    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, deleteName)) {
-      delete this.urlClass.initialValue[deleteName];
-    }
     if (this.parentUrl !== null) {
       let searchStr: string = removeKeyValuePairs(this.parentUrl.c_info.search, deleteName);
       this.parentUrl.c_info.search = searchStr;
@@ -353,8 +271,8 @@ class URLParams {
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
-      let key = array[i].length === 0 ? array[i] : decodeSafelyInner(array[i]);
-      let value = array[i + 1].length === 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
+      let key = array[i];
+      let value = array[i + 1];
       objfun.call(thisArg, value, key, this);
     }
   }
@@ -377,7 +295,6 @@ class URLSearchParams {
     let out: string[] = parameterProcessing(input);
     this.urlClass = new UrlInterface.URLSearchParams1();
     this.urlClass.array = out;
-    this.urlClass.initialValue = convertArrayToObj(out);
   }
   append(params1: string, params2: string): void {
     if (arguments.length === 0 || typeof params1 !== 'string') {
@@ -386,8 +303,6 @@ class URLSearchParams {
     if (arguments.length === 1 || typeof params2 !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${params2} must be string`);
     }
-    params1 = customEncodeURIComponent(params1);
-    params2 = customEncodeURIComponent(params2);
     this.urlClass.append(params1, params2);
     if (this.parentUrl !== null) {
       this.parentUrl.c_info.search = this.toString();
@@ -403,12 +318,7 @@ class URLSearchParams {
     if (arguments.length === 1 || typeof setValues !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${setValues} must be string`);
     }
-    setName = customEncodeURIComponent(setName);
-    setValues = customEncodeURIComponent(setValues);
     this.urlClass.set(setName, setValues);
-    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, setName)) {
-      delete this.urlClass.initialValue[setName];
-    }
     if (this.parentUrl !== null) {
       this.parentUrl.c_info.search = this.toString();
       this.parentUrl.search_ = this.parentUrl.c_info.search;
@@ -438,63 +348,36 @@ class URLSearchParams {
     let array: string[] = this.urlClass.array;
     let key: string = '';
     let value: string = '';
-    let initVal: Record<string, string[]> = this.urlClass.initialValue;
     for (let pos: number = 0; pos < arrayLen; pos += 2) { // 2:Even subscripts exist as key values
-      key = array[pos];
-      value = array[pos + 1];
-      let shouldEncode = false;
-      for (let k in initVal) {
-        if (k === key && initVal[k].includes(value)) {
-          shouldEncode = true;
-          break;
-        }
-      }
-      if (shouldEncode) {
-        key = customEncodeForToString(key);
-        value = customEncodeForToString(value).replace(/=/g, '%3D');
-      }
+      key = customEncodeForToString(array[pos]).replace(/=/g, '%3D');
+      value = customEncodeForToString(array[pos + 1]).replace(/=/g, '%3D');
       resultArray.push(`${pos > 0 ? '&' : ''}${key}=${value}`);
     }
     return resultArray.join('');
   }
 
   keys(): Object {
-    let temp = this.urlClass.keys();
-    temp = temp.map(value => decodeSafelyInner(value));
-    return temp;
+    return this.urlClass.keys();
   }
 
   values(): Object {
-    let temp = this.urlClass.values();
-    temp = temp.map(value => decodeSafelyInner(value));
-    return temp;
+    return this.urlClass.values();
   }
 
   getAll(getAllname: string): string[] {
-    let outPut: string[] = this.urlClass.getAll(getAllname);
-    outPut = outPut.map(function(encodedString) {
-        return decodeSafelyInner(encodedString);
-    });
-    return outPut;
+    return this.urlClass.getAll(getAllname);
   }
 
   get(getname: string): string {
-    return decodeSafelyInner(this.urlClass.get(getname));
+    return this.urlClass.get(getname);
   }
 
   entries(): Object {
-    let temp = this.urlClass.entries();
-    temp = temp.map(innerArr => {
-        return innerArr.map(value => decodeSafelyInner(value));
-    });
-    return temp;
+    return this.urlClass.entries();
   }
 
   delete(deleteName: string): void {
     this.urlClass.delete(deleteName);
-    if (Object.prototype.hasOwnProperty.call(this.urlClass.initialValue, deleteName)) {
-      delete this.urlClass.initialValue[deleteName];
-    }
     if (this.parentUrl !== null) {
       let searchStr: string = removeKeyValuePairs(this.parentUrl.c_info.search, deleteName);
       this.parentUrl.c_info.search = searchStr;
@@ -513,8 +396,8 @@ class URLSearchParams {
     }
     let size = array.length - 1;
     for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values 2
-      let key = array[i].length === 0 ? array[i] : decodeSafelyInner(array[i]);
-      let value = array[i + 1].length === 0 ? array[i + 1] : decodeSafelyInner(array[i + 1]);
+      let key = array[i];
+      let value = array[i + 1];
       objfun.call(thisArg, value, key, this);
     }
   }
@@ -539,6 +422,9 @@ function parameterProcess(input: object | string | Iterable<[]>): Array<string> 
     seachParamsArr = [];
     return seachParamsArr;
   } else if (typeof input === 'object' || typeof input === 'function') {
+    if (input instanceof URLParams) {
+        return input.urlClass.array;
+    }
     return sysObjectParams(input);
   } else {
     return initToStringSeachParams(input);
@@ -550,6 +436,9 @@ function parameterProcessing(input: object | string | Iterable<[]>): Array<strin
     seachParamsArr = [];
     return seachParamsArr;
   } else if (typeof input === 'object' || typeof input === 'function') {
+    if (input instanceof URLSearchParams) {
+        return input.urlClass.array;
+    }
     return initObjectSeachParams(input);
   } else {
     return initToStringSeachParams(input);
@@ -628,50 +517,14 @@ function iteratorMethod(input: Iterable<[string]>): Array<string> {
   return seachParamsArr;
 }
 
-function restorePlaceholders(input: string): string {
-  return input.replace(
-    /\[\[\[PERCENT26\]\]\]|\[\[\[PERCENT3D\]\]\]|\[\[\[PERCENT2B\]\]\]|\[\[\[PERCENT25\]\]\]/g, function (match) {
-    switch (match) {
-      case '[[[PERCENT26]]]':
-        return '%26';
-      case '[[[PERCENT2B]]]':
-        return '%2B';
-      case '[[[PERCENT3D]]]':
-        return '%3D';
-      case '[[[PERCENT25]]]':
-        return '%25';
-      default:
-        return match;
-    }
-  });
-}
-
-function decodeURISafely(input: string): string {
-  if (input === '') {
-    return input;
+function decodeStringParmas(input: string): string {
+  let strVal = '';
+  try {
+    strVal = decodeURIComponent(input);
+  } catch (e) {
+    strVal = decodeSafelyOut(input);
   }
-  let decodedString: string = '';
-  let index: number = 0;
-  while (index < input.length) {
-    if (input[index] === '%' && /[0-9A-Fa-f]{2}/.test(input.slice(index + 1, index + 3))) {
-      const encodedChar = input.slice(index, index + 3);
-      if (encodedChar === '%26' || encodedChar === '%3D' || encodedChar === '%25' || encodedChar === '%2B') {
-        decodedString += encodedChar;
-        index += 3;
-        continue;
-      }
-      try {
-        decodedString += decodeURIComponent(encodedChar);
-      } catch (e) {
-        decodedString += encodedChar;
-      }
-      index += 3;
-      continue;
-    }
-    decodedString += input[index];
-    index++;
-  }
-  return decodedString;
+  return strVal;
 }
 
 function initToStringSeachParams(input: string): Array<string> {
@@ -681,29 +534,11 @@ function initToStringSeachParams(input: string): Array<string> {
   if (input[0] === '?') {
     input = input.slice(1);
   }
-  let strVal: string = '';
-  try {
-    strVal = input.replace(/%26|%3D|%2B|%25/g, function (match) {
-      switch (match) {
-        case '%26':
-          return '[[[PERCENT26]]]';
-        case '%3D':
-          return '[[[PERCENT3D]]]';
-        case '%2B':
-          return '[[[PERCENT2B]]]';
-        case '%25':
-          return '[[[PERCENT25]]]';
-        default:
-          return match;
-      }
-    });
-    strVal = decodeURIComponent(strVal);
-    strVal = restorePlaceholders(strVal);
-  } catch (e) {
-    strVal = decodeURISafely(input);
-  }
-  seachParamsArr = UrlInterface.stringParmas(strVal);
-  return seachParamsArr;
+  let strVal = input.replace(/\+/g, ' ');
+  seachParamsArr = UrlInterface.stringParmas(strVal);  
+  return seachParamsArr.map(item => {
+    return item = decodeStringParmas(item);
+  })
 }
 
 class URL {
@@ -766,8 +601,8 @@ class URL {
         this.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]');
         this.port_ = nativeUrl.port;
         this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
-        this.searchParamsClass_ = new URLSearchParams(this.search_);
-        this.URLParamsClass_ = new URLParams(this.search_);
+        this.searchParamsClass_ = new URLSearchParams(customEncodeURI(this.search_, '%^[]|'));
+        this.URLParamsClass_ = new URLParams(customEncodeURI(this.search_, '%^[]|'));
         this.URLParamsClass_.parentUrl = this;
         this.searchParamsClass_.parentUrl = this;
         this.setHref();
@@ -816,8 +651,8 @@ class URL {
       urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]');
       urlHelper.port_ = nativeUrl.port;
       urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
-      urlHelper.searchParamsClass_ = new URLSearchParams(urlHelper.search_);
-      urlHelper.URLParamsClass_ = new URLParams(urlHelper.search_);
+      urlHelper.searchParamsClass_ = new URLSearchParams(customEncodeURI(urlHelper.search_, '%^[]|'));
+      urlHelper.URLParamsClass_ = new URLParams(customEncodeURI(urlHelper.search_, '%^[]|'));
       urlHelper.URLParamsClass_.parentUrl = urlHelper;
       urlHelper.searchParamsClass_.parentUrl = urlHelper;
       urlHelper.setHref();
