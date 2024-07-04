@@ -477,7 +477,7 @@ int GetThreadPRY(int tid)
     return pri;
 }
 
-double GetStartRealtime()
+double GetProcessStartRealtime()
 {
     int pid = getpid();
     struct kinfo_proc info;
