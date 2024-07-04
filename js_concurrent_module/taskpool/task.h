@@ -32,6 +32,11 @@
 #include "event_handler.h"
 #endif
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+#include "c/executor_task.h"
+#include "ffrt_inner.h"
+#endif
+
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
 
@@ -46,6 +51,12 @@ struct TaskInfo {
     void* serializationFunction = nullptr;
     void* serializationArguments = nullptr;
 };
+
+#if defined(ENABLE_TASKPOOL_FFRT)
+#define RECURSIVE_MUTEX ffrt::recursive_mutex
+#else
+#define RECURSIVE_MUTEX std::recursive_mutex
+#endif
 
 struct ListenerCallBackInfo {
     ListenerCallBackInfo(napi_env env, napi_ref callbackRef, napi_value taskError) : env_(env),
@@ -160,7 +171,7 @@ public:
     void* worker_ {nullptr};
     napi_ref taskRef_ {};
     std::atomic<uint32_t> taskRefCount_ {};
-    std::recursive_mutex taskMutex_ {};
+    RECURSIVE_MUTEX taskMutex_ {};
     bool hasDependency_ {false};
     bool isLongTask_ = {false};
     uv_async_t* onStartExecutionSignal_ = nullptr;

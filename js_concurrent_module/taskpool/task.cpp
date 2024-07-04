@@ -202,7 +202,7 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
         return nullptr;
     }
     {
-        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
         if (currentTaskInfo_ == nullptr) {
             currentTaskInfo_ = pendingInfo;
         } else {
@@ -427,7 +427,7 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         return nullptr;
     }
-    
+
     TaskResultInfo* resultInfo = new TaskResultInfo(task->env_, env, task->taskId_, serializationArgs);
     return TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, task);
 }
@@ -971,7 +971,7 @@ bool Task::IsReadyToHandle() const
 void Task::NotifyPendingTask()
 {
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
-    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
     napi_reference_unref(env_, taskRef_, nullptr);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
@@ -1023,7 +1023,7 @@ napi_value Task::DeserializeValue(napi_env env, bool isFunc, bool isArgs)
     napi_value result = nullptr;
     napi_status status = napi_ok;
     std::string errMessage = "";
-    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
     if (UNLIKELY(currentTaskInfo_ == nullptr)) {
         HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
         return nullptr;
@@ -1279,7 +1279,7 @@ void Task::InitHandle(napi_env env)
 
 void Task::ClearDelayedTimers()
 {
-    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
     TaskMessage *taskMessage = nullptr;
     for (auto t: delayedTimers_) {
         if (t == nullptr) {

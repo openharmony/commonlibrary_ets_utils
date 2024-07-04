@@ -139,7 +139,7 @@ uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)
 
 void TaskGroup::NotifyGroupTask(napi_env env)
 {
-    std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskGroupMutex_);
     if (pendingGroupInfos_.empty()) {
         return;
     }
