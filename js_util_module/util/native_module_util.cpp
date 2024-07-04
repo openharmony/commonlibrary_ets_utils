@@ -119,6 +119,24 @@ namespace OHOS::Util {
         return str;
     }
 
+    static napi_value ThrowError(napi_env env, const char* errMessage)
+    {
+        napi_value utilError = nullptr;
+        napi_value code = nullptr;
+        uint32_t errCode = 401;
+        napi_create_uint32(env, errCode, &code);
+        napi_value name = nullptr;
+        std::string errName = "BusinessError";
+        napi_value msg = nullptr;
+        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
+        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
+        napi_create_error(env, nullptr, msg, &utilError);
+        napi_set_named_property(env, utilError, "code", code);
+        napi_set_named_property(env, utilError, "name", name);
+        napi_throw(env, utilError);
+        return nullptr;
+    }
+
     static napi_value FormatString(napi_env env, std::string &str)
     {
         std::string res;
@@ -314,8 +332,7 @@ namespace OHOS::Util {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_object) {
-            napi_throw_error(env, "-1", "Wrong argument type. Object expected.");
-            return nullptr;
+            return ThrowError(env, "Parameter error. The type of Parameter must be object.");
         }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         int32_t value = engine->GetObjectHash(env, args[0]);
@@ -365,24 +382,6 @@ namespace OHOS::Util {
         napi_status naFat = napi_get_value_bool(env, resultFatal, &bResultFat);
         napi_status naBom = napi_get_value_bool(env, resultIgnorebom, &bResultIgnbom);
         SetVec(naFat, naBom, bResultFat, bResultIgnbom, paraVec);
-        return nullptr;
-    }
-
-    static napi_value ThrowError(napi_env env, const char* errMessage)
-    {
-        napi_value utilError = nullptr;
-        napi_value code = nullptr;
-        uint32_t errCode = 401;
-        napi_create_uint32(env, errCode, &code);
-        napi_value name = nullptr;
-        std::string errName = "BusinessError";
-        napi_value msg = nullptr;
-        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
-        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
-        napi_create_error(env, nullptr, msg, &utilError);
-        napi_set_named_property(env, utilError, "code", code);
-        napi_set_named_property(env, utilError, "name", name);
-        napi_throw(env, utilError);
         return nullptr;
     }
 
