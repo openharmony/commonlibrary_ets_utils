@@ -379,6 +379,7 @@ void Worker::PerformTask(const uv_async_t* req)
     if (!worker->InitTaskPoolFunc(env, func, task)) {
         return;
     }
+    worker->hasExecuted_ = true;
     uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
     napi_value argsArray[argsNum];
     for (size_t i = 0; i < argsNum; i++) {

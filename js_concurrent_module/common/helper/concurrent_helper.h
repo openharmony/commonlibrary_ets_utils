@@ -17,6 +17,8 @@
 #define JS_CONCURRENT_MODULE_COMMON_HELPER_CONCURRENT_HELPER_H
 
 #include <chrono>
+#include <fstream>
+#include <sstream>
 #include <uv.h>
 #if defined(OHOS_PLATFORM)
 #include <unistd.h>
@@ -43,6 +45,12 @@ public:
 
     ConcurrentHelper() = delete;
     ~ConcurrentHelper() = delete;
+
+    enum class SystemMemoryLevel {
+        MEMORY_LEVEL_LOW,
+        MEMORY_LEVEL_MODERATE,
+        MEMORY_LEVEL_NORMAL
+    };
 
     static uint32_t GetMaxThreads()
     {
@@ -88,6 +96,14 @@ public:
             }
         });
     }
+
+#if defined(OHOS_PLATFORM)
+    static std::optional<double> GetSystemMemoryRatio();
+    static SystemMemoryLevel GetMemoryLevel();
+    static uint64_t ParseLine(const std::string& line);
+#endif
+    static bool IsLowMemory();
+    static bool IsModerateMemory();
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_CONCURRENT_HELPER_H
