@@ -185,18 +185,21 @@ napi_value TaskPool::TerminateTask(napi_env env, napi_callback_info cbinfo)
     napi_value args[1];
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of the params must be one.");
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be object");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the params must be object.");
         return nullptr;
     }
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
     uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
     auto task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr || !task->IsLongTask()) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be long task");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the params must be long task.");
         return nullptr;
     }
     TaskManager::GetInstance().TerminateTask(taskId);
@@ -208,7 +211,8 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be at least one");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of params must be at least one.");
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -220,12 +224,13 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
         if (argc > 1) {
             if (!NapiHelper::IsNumber(env, args[1])) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority type is error");
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "the type of the second param must be number.");
                 return nullptr;
             }
             priority = NapiHelper::GetUint32Value(env, args[1]);
             if (priority >= Priority::NUMBER) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority value is error");
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value is error");
                 return nullptr;
             }
         }
@@ -235,7 +240,8 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
         if (task == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param must be task");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "the type of the first param must be task.");
             return nullptr;
         }
         if (!task->CanExecute(env)) {
@@ -250,7 +256,8 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         return promise;
     }
     if (type != napi_function) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: first param must be object or function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the first param must be object or function.");
         return nullptr;
     }
     Task* task = Task::GenerateFunctionTask(env, args[0], args + 1, argc - 1, TaskType::FUNCTION_TASK);
@@ -307,11 +314,13 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     napi_value args[3]; // 3: delayTime, task and priority
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 2 || argc > 3) { // 2: delayTime and task 3: delayTime, task and priority
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be two or three");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of params must be two or three.");
         return nullptr;
     }
     if (!NapiHelper::IsNumber(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: delayTime type is error");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the first param must be number.");
         return nullptr;
     }
     int32_t delayTime = NapiHelper::GetInt32Value(env, args[0]);
@@ -320,13 +329,15 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[1])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: task type is error");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the second param must be object.");
         return nullptr;
     }
     Task* task = nullptr;
     napi_unwrap(env, args[1], reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of second param must be task");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of second param must be task");
         return nullptr;
     }
     if (!task->CanExecuteDelayed(env)) {
@@ -336,12 +347,13 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
     if (argc > 2) { // 2: the params might have priority
         if (!NapiHelper::IsNumber(env, args[2])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority type is error");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "the type of the third param must be number.");
             return nullptr;
         }
         priority = NapiHelper::GetUint32Value(env, args[2]); // 2: get task priority
         if (priority >= Priority::NUMBER) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: priority value is error");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value is error.");
             return nullptr;
         }
     }
@@ -572,19 +584,22 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     napi_value args[1];
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of the params must be 1.");
         return nullptr;
     }
 
     if (!NapiHelper::IsObject(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be object");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the params must be object.");
         return nullptr;
     }
 
     if (!NapiHelper::HasNameProperty(env, args[0], GROUP_ID_STR)) {
         napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
         if (napiTaskId == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the type of the params must be task");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "the type of the params must be task.");
             return nullptr;
         }
         uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
@@ -593,7 +608,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         napi_value napiGroupId = NapiHelper::GetNameProperty(env, args[0], GROUP_ID_STR);
         if (napiGroupId == nullptr) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                                    "taskpool:: the type of the params must be taskGroup");
+                "the type of the params must be taskGroup.");
             return nullptr;
         }
         uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
@@ -608,12 +623,14 @@ napi_value TaskPool::IsConcurrent(napi_env env, napi_callback_info cbinfo)
     napi_value args[1];
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc != 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of the params must be one");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of the params must be 1.");
         return nullptr;
     }
 
     if (!NapiHelper::IsFunction(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param must be function");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the first param must be function.");
         return nullptr;
     }
 
@@ -650,27 +667,27 @@ napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo
     napi_value args[3]; // 3 : period, task, priority
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 2 || argc > 3) { // 2 : period, task and 3 : period, task, priority
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of params must be two or three");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of params must be two or three.");
         return nullptr;
     }
     if (!NapiHelper::IsNumber(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the first param must be number");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be number.");
         return nullptr;
     }
     int32_t period = NapiHelper::GetInt32Value(env, args[0]);
     if (period < 0) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the period is less than zero");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the period value is less than zero.");
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[1])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the second param must be task");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the second param must be task.");
         return nullptr;
     }
 
     Task* periodicTask = nullptr;
     napi_unwrap(env, args[1], reinterpret_cast<void**>(&periodicTask));
     if (periodicTask == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the second param must be task");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the second param must be task.");
         return nullptr;
     }
     if (!periodicTask->CanExecutePeriodically(env)) {
@@ -681,12 +698,12 @@ napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo
     uint32_t priority = Priority::DEFAULT;
     if (argc >= 3) { // 3 : third param maybe priority
         if (!NapiHelper::IsNumber(env, args[2])) { // 2 : priority
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the third param must be priority");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the third param must be priority.");
             return nullptr;
         }
         priority = NapiHelper::GetUint32Value(env, args[2]); // 2 : priority
         if (priority >= Priority::NUMBER) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the value of the priority is invalid");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the value of the priority is invalid.");
             return nullptr;
         }
     }

@@ -181,7 +181,7 @@ class Readable {
         this.readableEncodingInner = DEFAULT_ENCODING;
       }
       if (ENCODING_SET.indexOf(this.readableEncodingInner.toLowerCase()) === -1) {
-        let error = new BusinessError('Incorrect parameter types.', 401);
+        let error = new BusinessError('Parameter error. Incorrect parameter types.', 401);
       throw error;
       }
       this.stringDecoder = new StringDecoder(this.readableEncodingInner);
@@ -328,7 +328,7 @@ class Readable {
    */
   read(size?: number): string | null {
     if (size && typeof size !== 'number') {
-      this.throwError(new BusinessError('The size parameter is invalid', 401));
+      this.throwError(new BusinessError(`Parameter error. The type of ${size} must be object`, 401));
       return null;
     }
     if (this.doRead === null && this.readableInner) {
@@ -447,7 +447,7 @@ class Readable {
       }
       return true;
     } else {
-      const err: BusinessError = new BusinessError(`Unknown encoding: ${encoding}`);
+      const err: BusinessError = new BusinessError(`Parameter error. The type of ${encoding} must be string.`);
       this.throwError(err);
       return false;
     }
@@ -581,11 +581,11 @@ class Readable {
    */
   off(event: string, callback?: Function): void {
     if (!event) {
-      this.throwError(new BusinessError('event is null', 401));
+      this.throwError(new BusinessError(`Parameter error. The value of ${event} is null`, 401));
       return;
     }
     if (event && typeof event !== 'string') {
-      this.throwError(new BusinessError('event is not string', 401));
+      this.throwError(new BusinessError(`Parameter error. The type of ${event} must be string`, 401));
       return;
     }
     if (callback) {
@@ -895,10 +895,10 @@ class Writable {
       this.setDefaultEncoding(encoding);
     }
     if (chunk === null) {
-      throw new BusinessError('The "chunk" argument must be of type string or UintArray', 401);
+      throw new BusinessError(`Parameter error. The type of ${chunk} must be string or UintArray`, 401);
     }
     if (typeof chunk !== 'string' && !(chunk instanceof Uint8Array)) {
-      throw new BusinessError('The "chunk" argument must be of type string or UintArray', 401);
+      throw new BusinessError(`Parameter error. The type of ${chunk} must be string or UintArray`, 401);
     }
     if (this.ending && !this.writing) {
       setTimeout((): void => {
@@ -1238,7 +1238,7 @@ class Writable {
    */
   off(event: string, callback?: Function): void {
     if (!event) {
-      this.throwError(new BusinessError('event is null', 401));
+      this.throwError(new BusinessError(`Parameter error. The value of event is null `, 401));
       return;
     }
     if (callback) {

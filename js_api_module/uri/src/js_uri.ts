@@ -65,7 +65,7 @@ class URI {
   uricalss: NativeUri;
   constructor(input: string) {
     if (typeof input !== 'string' || input.length === 0) {
-      throw new BusinessError(`Parameter error.The type of ${input} must be string`);
+      throw new BusinessError(`Parameter error. The type of ${input} must be string`);
     }
     this.uricalss = new uri.Uri(input);
     let errStr: string = this.uricalss.isFailed;
@@ -78,13 +78,13 @@ class URI {
 
   static createFromParts(scheme: string, ssp: string, fragment: string): URI {
     if (scheme === null || typeof scheme !== 'string') {
-      throw new BusinessError('The input parameter scheme is invalid');
+      throw new BusinessError(`Parameter error. The type of ${scheme} must be string`);
     }
     if (ssp === null || typeof ssp !== 'string') {
-      throw new BusinessError('The input parameter ssp is invalid');
+      throw new BusinessError(`Parameter error. The type of ${ssp} must be string`);
     }
     if (typeof fragment !== 'string') {
-      throw new BusinessError('The input parameter fragment is invalid');
+      throw new BusinessError(`Parameter error. The type of ${fragment} must be string`);
     }
     let uriStr: string = scheme;
     uriStr += ':' + encodeURIComponent(ssp);
@@ -106,7 +106,7 @@ class URI {
     if (other instanceof URI) {
       return this.uricalss.equals(other.uricalss);
     }
-    throw new BusinessError(`Parameter error.The type of ${other} must be URI`);
+    throw new BusinessError(`Parameter error. The type of ${other} must be URI`);
   }
 
   checkIsAbsolute(): boolean {
@@ -127,10 +127,10 @@ class URI {
 
   addQueryValue(key: string, value: string): URI {
     if (key === null || typeof key !== 'string') {
-      throw new BusinessError('The input parameter key is invalid');
+      throw new BusinessError(`Parameter error. The type of ${key} must be string`);
     }
     if (value === null || typeof value !== 'string') {
-      throw new BusinessError('The input parameter value is invalid');
+      throw new BusinessError(`Parameter error. The type of ${value} must be string`);
     }
     let uriStr = this.uricalss.addQueryValue(encodeURIComponent(key), encodeURIComponent(value));
     return createNewUri(uriStr);
@@ -138,7 +138,7 @@ class URI {
 
   addEncodedSegment(pathSegment: string): URI {
     if (pathSegment === null || typeof pathSegment !== 'string') {
-      throw new BusinessError('The input pathSegment value is invalid');
+      throw new BusinessError(`Parameter error. The type of ${pathSegment} must be string`);
     }
     let uriStr: string = this.uricalss.addSegment(pathSegment);
     return createNewUri(uriStr);
@@ -146,7 +146,7 @@ class URI {
 
   addSegment(pathSegment: string): URI {
     if (pathSegment === null || typeof pathSegment !== 'string') {
-      throw new BusinessError('The input pathSegment value is invalid');
+      throw new BusinessError(`Parameter error. The type of ${pathSegment} must be string`);
     }
     let uriStr = this.uricalss.addSegment(encodeURIComponent(pathSegment));
     return createNewUri(uriStr);
@@ -154,7 +154,7 @@ class URI {
 
   getQueryValue(key: string): string | null {
     if (key === null || typeof key !== 'string') {
-      throw new BusinessError('The input parameter key is invalid');
+      throw new BusinessError(`Parameter error. The type of ${key} must be string`);
     }
     let value: string | null = null;
     if (this.uricalss.query === null) {
@@ -239,7 +239,7 @@ class URI {
 
   getQueryValues(key: string): string[] {
     if (key === null || typeof key !== 'string') {
-      throw new BusinessError('The input parameter key is invalid');
+      throw new BusinessError(`Parameter error. The type of ${key} must be string`);
     }
     let values = new Array();
     if (this.uricalss.query === null) {
@@ -263,10 +263,10 @@ class URI {
 
   getBooleanQueryValue(key: string, defaultValue: boolean): boolean {
     if (key === null || typeof key !== 'string') {
-      throw new BusinessError('The input parameter key is invalid');
+      throw new BusinessError(`Parameter error. The type of ${key} must be string`);
     }
     if (defaultValue === null || typeof defaultValue !== 'boolean') {
-      throw new BusinessError('The input parameter defaultValue is invalid');
+      throw new BusinessError(`Parameter error. The type of ${key} must be boolean`);
     }
     let flag = this.getQueryValue(key);
     if (flag == null) {

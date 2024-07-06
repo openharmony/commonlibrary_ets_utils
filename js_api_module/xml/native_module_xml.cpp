@@ -44,7 +44,7 @@ namespace OHOS::xml {
             if (bFlag) {
                 napi_get_dataview_info(env, args[0], &iLength, &data, &arraybuffer, &offPos);
             } else {
-                napi_throw_error(env, "401", "The parameter type is incorrect, only support ArrayBuffer or DataView.");
+                napi_throw_error(env, "401", "Parameter error. The type of Parameter must be ArrayBuffer or DataView.");
                 return nullptr;
             }
         }
@@ -130,7 +130,7 @@ namespace OHOS::xml {
             if (bFlag) {
                 napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
             } else {
-                napi_throw_error(env, "401", "The parameter type is incorrect, only support ArrayBuffer or DataView.");
+                napi_throw_error(env, "401", "Parameter error. The type of Parameter must be ArrayBuffer or DataView.");
                 return nullptr;
             }
         }

@@ -49,7 +49,6 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
-
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_value thisVar = nullptr;
@@ -70,7 +69,8 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     if (!NapiHelper::IsFunction(env, func)) {
         errMessage = "taskpool:: the first or second param of task must be function";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of the first or second param of task must be function.");
         return nullptr;
     }
 
@@ -232,7 +232,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     }
     if (argc > 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                                "taskpool:: the number of setTransferList parma must be less than 2");
+            "the number of setTransferList parma must be less than 2.");
         return nullptr;
     }
     Task* task = nullptr;
@@ -251,7 +251,8 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (!NapiHelper::IsArray(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setTransferList first param must be array");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of setTransferList first param must be array.");
         return nullptr;
     }
     // set task.defaultTransfer false
@@ -266,7 +267,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
         napi_value transferVal = NapiHelper::GetElement(env, args[0], i);
         if (!NapiHelper::IsArrayBuffer(env, transferVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                                    "taskpool:: the element in array must be arraybuffer");
+                "the type of the element in array must be arraybuffer.");
             return nullptr;
         }
     }
@@ -287,11 +288,13 @@ napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (argc != 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: the number of setCloneList parma must be 1");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of setCloneList parma must be 1.");
         return nullptr;
     }
     if (!NapiHelper::IsArray(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskpool:: setCloneList first param must be array");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of setCloneList first param must be array.");
         return nullptr;
     }
     Task* task = nullptr;
@@ -311,7 +314,7 @@ napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
         napi_value cloneVal = NapiHelper::GetElement(env, args[0], i);
         if (!NapiHelper::IsArrayBuffer(env, cloneVal) && !NapiHelper::IsSendable(env, cloneVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "taskpool:: setCloneList elements in array must be ArrayBuffer or Sendable Class instance");
+                "the type of setCloneList elements in array must be arraybuffer or sendable.");
             return nullptr;
         }
     }
@@ -344,7 +347,7 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     if (argc >= 2) { // 2: the number of parmas
         HILOG_ERROR("taskpool:: the number of OnReceiveData parma must be less than 2");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "taskpool:: the number of OnReceiveData parma must be less than 2");
+            "the number of OnReceiveData parma must be less than 2.");
         return nullptr;
     }
 
@@ -365,7 +368,7 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnReceiveData's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "taskpool:: OnReceiveData's parameter should be function");
+            "the type of onReceiveData's parameter must be function.");
         return nullptr;
     }
     // store callbackInfo
@@ -438,7 +441,7 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
     if (argc == 0) {
         std::string errMessage = "taskpool:: addDependency has no params";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "addDependency has no params.");
         return nullptr;
     }
 
@@ -473,7 +476,8 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             errMessage = "taskpool:: addDependency param is not task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "the type of the addDependency param must be task.");
             return nullptr;
         } else {
             Task* dependentTask = nullptr;
@@ -519,7 +523,7 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     if (argc == 0) {
         std::string errMessage = "taskpool:: removeDependency has no params";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "removeDependency has no params.");
         return nullptr;
     }
     napi_status status = napi_ok;
@@ -548,7 +552,8 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             std::string errMessage = "taskpool:: removeDependency param is not task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "the type of removeDependency param must be task.");
             return nullptr;
         }
         Task* dependentTask = nullptr;
@@ -656,7 +661,7 @@ napi_value Task::OnEnqueued(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnEnqueued's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "taskpool:: OnEnqueued's parameter should be function");
+            "the type of OnEnqueued's parameter must be function.");
         return nullptr;
     }
 
@@ -694,7 +699,7 @@ napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnStartExecution's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "taskpool:: OnStartExecution's parameter should be function");
+            "the type of OnStartExecution's parameter must be function.");
         return nullptr;
     }
 
@@ -744,7 +749,7 @@ napi_value Task::OnExecutionFailed(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnExecutionFailed's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "taskpool:: OnExecutionFailed's parameter should be function");
+            "the type of OnExecutionFailed's parameter must be function.");
         return nullptr;
     }
 
@@ -782,7 +787,7 @@ napi_value Task::OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnExecutionSucceeded's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "taskpool:: OnExecutionSucceeded's parameter should be function");
+            "the type of OnExecutionSucceeded's parameter must be function");
         return nullptr;
     }
 

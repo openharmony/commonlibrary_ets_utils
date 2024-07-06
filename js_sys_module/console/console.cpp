@@ -197,7 +197,7 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
         napi_status status = napi_coerce_to_string(env, argv[0], &buffer);
         if (status != napi_ok) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                            "Timer or Counter name must be String.");
+                "the type of Timer or Counter name must be string.");
             return "";
         }
         argv[0] = buffer;

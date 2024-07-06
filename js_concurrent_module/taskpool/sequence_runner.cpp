@@ -60,11 +60,12 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
             name = NapiHelper::GetString(env, args[0]);
             priority = NapiHelper::GetUint32Value(env, args[1]);
             if (priority >= Priority::NUMBER) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority value unvalied.");
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value unvalied.");
                 return nullptr;
             }
         } else {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: param value unvalied.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "the type of first param must be string and the type of second param must be string.");
             return nullptr;
         }
     } else if (argc == 1) {
@@ -73,11 +74,12 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         } else if (NapiHelper::IsNumber(env, args[0])) {
             priority = NapiHelper::GetUint32Value(env, args[0]);
             if (priority >= Priority::NUMBER) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority value unvalied.");
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value unvalied.");
                 return nullptr;
             }
         } else {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: param type unvalied.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "the type of first param must be string or number.");
             return nullptr;
         }
     }
@@ -109,13 +111,13 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (argc < 1) {
         errMessage = "seqRunner:: number of params at least one";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of param at least one.");
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[0]) || !NapiHelper::HasNameProperty(env, args[0], TASKID_STR)) {
         errMessage = "seqRunner:: first param must be task.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be task.");
         return nullptr;
     }
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, thisVar, SEQ_RUNNER_ID_STR);
@@ -128,7 +130,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     Task* task = nullptr;
     napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup:: the type of the params must be task");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of param must be task.");
         return nullptr;
     }
     if (!task->CanForSequenceRunner(env)) {
