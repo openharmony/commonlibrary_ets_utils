@@ -584,7 +584,7 @@ namespace OHOS::JsSysModule::Process {
         uv_pid_t ownPid = uv_os_getpid();
         // 64:The maximum valid signal value is 64.
         if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
-            napi_throw_error(env, "401", "Parameter error. The type of Parameter must be a number from 1 to 64.");
+            napi_throw_error(env, "401", "Parameter error. The type of signal must be number,and from 1 to 64.");
             return nullptr;
         }
         bool flag = false;
