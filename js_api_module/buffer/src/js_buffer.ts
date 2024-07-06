@@ -2252,10 +2252,10 @@ function getUtf8ByteLength(str: string): number {
 
 function getBase64ByteLength(str: string): number {
   let bytes = str.length;
-  for (let i = 0, len = str.length; i < len; i++) {
-    if (bytes > 1 && str.charCodeAt(i) === 0x3D) { // 0x3D : ascii code represent of '='
-      bytes--;
-    }
+  let pos = 0;
+  while (bytes > 1 && (pos = str.indexOf('=', pos)) !== -1) { // Find '=' in str and calculate the length of str
+    bytes--;
+    pos++;
   }
   return (bytes * threeBytes) >>> twoBytes;
 }
