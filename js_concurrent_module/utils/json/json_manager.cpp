@@ -24,6 +24,7 @@ const std::string JSON_NAME = "JSON";
 const std::string ASON_NAME = "ASON";
 const std::string PARSE_NAME = "parse";
 const std::string PARSE_SENDABLE_NAME = "parseSendable";
+const std::string STRINGIFY_SENDABLE_NAME = "stringifySendable";
 const std::string STRINGIFY_NAME = "stringify";
 
 bool JsonManager::GeJsonFunction(napi_env env, napi_value global, const std::string &jsonName, napi_value &jsonFunction)
@@ -52,7 +53,7 @@ napi_value JsonManager::Init(napi_env env, napi_value exports)
     napi_create_string_utf8(env, JSON_NAME.c_str(), JSON_NAME.size(), &jsonKey);
     napi_get_property(env, global, jsonKey, &jsonValue);
     if (!(GeJsonFunction(env, jsonValue, PARSE_SENDABLE_NAME, parseSendable) &&
-          GeJsonFunction(env, jsonValue, STRINGIFY_NAME, stringify))) {
+          GeJsonFunction(env, jsonValue, STRINGIFY_SENDABLE_NAME, stringify))) {
         return exports;
     }
     napi_property_descriptor desc[] = {
