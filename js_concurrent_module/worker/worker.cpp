@@ -298,7 +298,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
                 std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
                 if (worker->UpdateHostState(INACTIVE)) {
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-                    if (!worker->isMainThreadWorker_) {
+                    if (!worker->isMainThreadWorker_ || worker->isLimitedWorker_) {
                         worker->CloseHostHandle();
                     }
 #else
@@ -878,12 +878,8 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     if (env != nullptr && !worker->HostIsStop()) {
         worker->InitGlobalCallStatus(env);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-        if (worker->isMainThreadWorker_) {
-            if (worker->isLimitedWorker_) {
-                worker->PostLimitedWorkerGlobalCallTask();
-            } else {
-                worker->PostWorkerGlobalCallTask();
-            }
+        if (worker->isMainThreadWorker_ && !worker->isLimitedWorker_) {
+            worker->PostWorkerGlobalCallTask();
         } else {
             uv_async_send(worker->hostOnGlobalCallSignal_);
         }
@@ -1185,8 +1181,8 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     if (!OHOS::AppExecFwk::EventRunner::IsAppMainThread()) {
         isMainThreadWorker_ = false;
         InitHostHandle(loop);
-    } else {
-        HILOG_DEBUG("worker:: eventrunner should be nullptr if the current thread is not the main thread");
+    } else if (isLimitedWorker_) {
+        InitHostHandle(loop);
     }
 #else
     InitHostHandle(loop);
@@ -1392,7 +1388,7 @@ void Worker::HostOnMessageInner()
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker received close signal");
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-            if (!isMainThreadWorker_) {
+            if (!isMainThreadWorker_ || isLimitedWorker_) {
                 ClosePartHostHandle();
             }
 #else
@@ -1810,12 +1806,8 @@ void Worker::PublishWorkerOverSignal()
     // post nullptr tell host worker is not running
     hostMessageQueue_.EnQueue(nullptr);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-    if (isMainThreadWorker_) {
-        if (isLimitedWorker_) {
-            PostLimitedWorkerOverTask();
-        } else {
-            PostWorkerOverTask();
-        }
+    if (isMainThreadWorker_ && !isLimitedWorker_) {
+        PostWorkerOverTask();
     } else {
         uv_async_send(hostOnMessageSignal_);
     }
@@ -1825,134 +1817,63 @@ void Worker::PublishWorkerOverSignal()
 }
 
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-void Worker::PostLimitedWorkerOverTask()
-{
-    auto hostOnOverSignalTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
-            if (it == g_limitedworkers.end()) {
-                return;
-            }
-        }
-        this->HostOnMessageInner();
-    };
-    g_mainThreadHandler_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
-}
-
 void Worker::PostWorkerOverTask()
 {
     auto hostOnOverSignalTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_workersMutex);
-            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
-            if (it == g_workers.end()) {
-                return;
-            }
+        if (IsValidWorker(this)) {
+            HILOG_INFO("worker:: host thread receive terminate signal.");
+            this->HostOnMessageInner();
         }
-        this->HostOnMessageInner();
     };
     g_mainThreadHandler_->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
-}
-
-void Worker::PostLimitedWorkerErrorTask()
-{
-    auto hostOnErrorTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
-            if (it == g_limitedworkers.end()) {
-                return;
-            }
-        }
-        this->HostOnErrorInner();
-        this->TerminateInner();
-    };
-    g_mainThreadHandler_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
 }
 
 void Worker::PostWorkerErrorTask()
 {
     auto hostOnErrorTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_workersMutex);
-            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
-            if (it == g_workers.end()) {
-                return;
-            }
+        if (IsValidWorker(this)) {
+            HILOG_INFO("worker:: host thread receive error message.");
+            this->HostOnErrorInner();
+            this->TerminateInner();
         }
-        this->HostOnErrorInner();
-        this->TerminateInner();
     };
     g_mainThreadHandler_->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
-}
-
-void Worker::PostLimitedWorkerMessageTask()
-{
-    auto hostOnMessageTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
-            if (it == g_limitedworkers.end()) {
-                return;
-            }
-        }
-        this->HostOnMessageInner();
-    };
-    g_mainThreadHandler_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
 }
 
 void Worker::PostWorkerMessageTask()
 {
     auto hostOnMessageTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_workersMutex);
-            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
-            if (it == g_workers.end()) {
-                return;
-            }
+        if (IsValidWorker(this)) {
+            HILOG_DEBUG("worker:: host thread receive message.");
+            this->HostOnMessageInner();
         }
-        this->HostOnMessageInner();
     };
     g_mainThreadHandler_->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
-}
-
-void Worker::PostLimitedWorkerGlobalCallTask()
-{
-    auto hostOnGlobalCallTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-            std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
-            if (it == g_limitedworkers.end()) {
-                return;
-            }
-        }
-        this->HostOnGlobalCallInner();
-    };
-    g_mainThreadHandler_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
 }
 
 void Worker::PostWorkerGlobalCallTask()
 {
     auto hostOnGlobalCallTask = [this]() {
-        {
-            std::lock_guard<std::mutex> lock(g_workersMutex);
-            std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
-            if (it == g_workers.end()) {
-                return;
-            }
+        if (IsValidWorker(this)) {
+            HILOG_DEBUG("worker:: host thread receive globalCall signal.");
+            this->HostOnGlobalCallInner();
         }
-        this->HostOnGlobalCallInner();
     };
     g_mainThreadHandler_->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+}
+
+bool Worker::IsValidWorker(Worker* worker)
+{
+    std::lock_guard<std::mutex> lock(g_workersMutex);
+    std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), worker);
+    if (it == g_workers.end()) {
+        return false;
+    }
+    return true;
 }
 #endif
 
@@ -2084,12 +2005,8 @@ void Worker::HandleUncaughtException(napi_value exception)
         }
         errorQueue_.EnQueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-        if (isMainThreadWorker_) {
-            if (isLimitedWorker_) {
-                this->PostLimitedWorkerErrorTask();
-            } else {
-                this->PostWorkerErrorTask();
-            }
+        if (isMainThreadWorker_ && !isLimitedWorker_) {
+            PostWorkerErrorTask();
         } else {
             uv_async_send(hostOnErrorSignal_);
         }
@@ -2113,12 +2030,8 @@ void Worker::PostMessageToHostInner(MessageDataType data)
     if (hostEnv_ != nullptr && !HostIsStop()) {
         hostMessageQueue_.EnQueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-        if (isMainThreadWorker_) {
-            if (isLimitedWorker_) {
-                this->PostLimitedWorkerMessageTask();
-            } else {
-                this->PostWorkerMessageTask();
-            }
+        if (isMainThreadWorker_ && !isLimitedWorker_) {
+            PostWorkerMessageTask();
         } else {
             uv_async_send(hostOnMessageSignal_);
         }

@@ -507,14 +507,11 @@ private:
     void CloseWorkerCallback();
     void CloseHostCallback();
 
-    void PostLimitedWorkerOverTask();
     void PostWorkerOverTask();
-    void PostLimitedWorkerErrorTask();
     void PostWorkerErrorTask();
-    void PostLimitedWorkerMessageTask();
     void PostWorkerMessageTask();
-    void PostLimitedWorkerGlobalCallTask();
     void PostWorkerGlobalCallTask();
+    static bool IsValidWorker(Worker* worker);
 
     void InitHostHandle(uv_loop_t* loop);
     void CloseHostHandle();
