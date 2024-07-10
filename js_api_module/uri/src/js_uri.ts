@@ -168,9 +168,8 @@ class URI {
       let str = item.split('=') || [];
       if (str.length === 1 && this.decodeSafelyInner(str[0]) === key) {
         return '';
-      }
-      if (str.length === 2 && this.decodeSafelyInner(str[0]) === key) {
-        return this.decodeSafelyInner(str[1].replace(/\+/g, ' '));
+      } else if (this.decodeSafelyInner(str[0]) === key) {
+        return this.decodeSafelyInner(item.substring(str[0].length + 1).replace(/\+/g, ' '));
       }
     }
     return value;
@@ -253,9 +252,8 @@ class URI {
       let str = item.split('=') || [];
       if (str.length === 1 && this.decodeSafelyInner(str[0]) === key) {
         values.push('');
-      }
-      if (str.length === 2 && this.decodeSafelyInner(str[0]) === key) {
-        values.push(this.decodeSafelyInner(str[1]));
+      } else if (this.decodeSafelyInner(str[0]) === key) {
+        values.push(this.decodeSafelyInner(item.substring(str[0].length + 1)));
       }
     }
     return values;
