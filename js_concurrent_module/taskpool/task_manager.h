@@ -154,6 +154,8 @@ public:
     }
 #endif
 
+    bool CheckTask(Task* task);
+
 private:
     TaskManager();
     ~TaskManager();
