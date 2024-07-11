@@ -25,6 +25,7 @@ static const char* AVAILABLE_MEM = "MemAvailable:";
 static const char* MEM_INFO = "/proc/meminfo";
 static const char* TOTAL_MEM = "MemTotal:";
 
+#if defined(OHOS_PLATFORM)
 uint64_t ConcurrentHelper::ParseLine(const std::string& line)
 {
     std::istringstream iss(line);
@@ -37,7 +38,6 @@ uint64_t ConcurrentHelper::ParseLine(const std::string& line)
     return 0;
 }
 
-#if defined(OHOS_PLATFORM)
 std::optional<double> ConcurrentHelper::GetSystemMemoryRatio()
 {
     uint64_t totalMemory = 0;
