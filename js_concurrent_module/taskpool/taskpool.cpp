@@ -286,10 +286,12 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         task->IncreaseRefCount();
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
         TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, taskMessage->priority);
-        taskInfo->deferred = taskMessage->deferred;
-        if (task->taskState_ == ExecuteState::DELAYED || task->taskState_ == ExecuteState::FINISHED) {
-            task->taskState_ = ExecuteState::WAITING;
-            TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
+        if (taskInfo != nullptr) {
+            taskInfo->deferred = taskMessage->deferred;
+            if (task->taskState_ == ExecuteState::DELAYED || task->taskState_ == ExecuteState::FINISHED) {
+                task->taskState_ = ExecuteState::WAITING;
+                TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
+            }
         }
     }
     if (task != nullptr) {
