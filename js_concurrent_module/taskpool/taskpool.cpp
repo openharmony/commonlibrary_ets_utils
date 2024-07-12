@@ -292,6 +292,12 @@ void TaskPool::DelayTask(uv_timer_t* handle)
                 task->taskState_ = ExecuteState::WAITING;
                 TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
             }
+        } else {
+            napi_value execption = nullptr;
+            napi_get_and_clear_last_exception(task->env_, &execption);
+            if (execption != nullptr) {
+                napi_reject_deferred(task->env_, taskMessage->deferred, execption);
+            }
         }
     }
     if (task != nullptr) {
