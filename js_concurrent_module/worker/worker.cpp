@@ -1822,6 +1822,7 @@ void Worker::PostWorkerOverTask()
     auto hostOnOverSignalTask = [this]() {
         if (IsValidWorker(this)) {
             HILOG_INFO("worker:: host thread receive terminate signal.");
+            HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
             this->HostOnMessageInner();
         }
     };
@@ -1834,6 +1835,7 @@ void Worker::PostWorkerErrorTask()
     auto hostOnErrorTask = [this]() {
         if (IsValidWorker(this)) {
             HILOG_INFO("worker:: host thread receive error message.");
+            HITRACE_HELPER_METER_NAME("Worker:: HostOnErrorMessage");
             this->HostOnErrorInner();
             this->TerminateInner();
         }
@@ -1847,6 +1849,7 @@ void Worker::PostWorkerMessageTask()
     auto hostOnMessageTask = [this]() {
         if (IsValidWorker(this)) {
             HILOG_DEBUG("worker:: host thread receive message.");
+            HITRACE_HELPER_METER_NAME("Worker:: HostOnMessage");
             this->HostOnMessageInner();
         }
     };
@@ -1859,6 +1862,7 @@ void Worker::PostWorkerGlobalCallTask()
     auto hostOnGlobalCallTask = [this]() {
         if (IsValidWorker(this)) {
             HILOG_DEBUG("worker:: host thread receive globalCall signal.");
+            HITRACE_HELPER_METER_NAME("Worker:: HostOnGlobalCallSignal");
             this->HostOnGlobalCallInner();
         }
     };
