@@ -115,6 +115,14 @@ function isCirculateReference(value: Object, seenObjects: Set<Object> = new Set(
 }
 
 function stringify(value: Object, replacer?: ReplacerType, space?: string | number): string {
+  if (typeof (value as Object) === 'undefined') {
+    let error = new BusinessError(`Parameter error. The type of ${value} must be Object`);
+    throw error;
+  }
+  if (value === null) {
+    let error = new BusinessError(`Parameter error. The type of ${value} is null`);
+    throw error;
+  }
   if (isCirculateReference(value)) {
     let error = new BusinessError(`Parameter error. The object circular Reference`);
     throw error;
