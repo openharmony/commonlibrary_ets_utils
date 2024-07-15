@@ -50,6 +50,7 @@ Worker::PriorityScope::PriorityScope(Worker* worker, Priority taskPriority) : wo
 
 Worker::RunningScope::~RunningScope()
 {
+    HILOG_INFO("taskpool:: RunningScope destruction");
     if (scope_ != nullptr) {
         napi_close_handle_scope(worker_->workerEnv_, scope_);
     }
@@ -368,12 +369,15 @@ void Worker::PerformTask(const uv_async_t* req)
     std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_)
                             + ", priority : " + std::to_string(taskInfo.second);
     HITRACE_HELPER_METER_NAME(strTrace);
+    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
     napi_value func = task->DeserializeValue(env, true, false);
     if (func == nullptr) {
+        HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " func is nullptr", task->taskId_);
         return;
     }
     napi_value args = task->DeserializeValue(env, false, true);
     if (args == nullptr) {
+        HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " args is nullptr", task->taskId_);
         return;
     }
     if (!worker->InitTaskPoolFunc(env, func, task)) {
@@ -414,6 +418,7 @@ void Worker::PerformTask(const uv_async_t* req)
 void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    HILOG_DEBUG("taskpool:: NotifyTaskResult task:%{public}" PRIu64, task->taskId_);
     void* resultData = nullptr;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     bool defaultTransfer = true;
@@ -544,6 +549,7 @@ void Worker::UpdateExecutedInfo()
 // Only when the worker has no longTask can it be released.
 void Worker::TerminateTask(uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool:: TerminateTask task:%{public}" PRIu64, taskId);
     std::lock_guard<std::mutex> lock(longMutex_);
     longTasksSet_.erase(taskId);
     if (longTasksSet_.empty()) {
@@ -554,6 +560,7 @@ void Worker::TerminateTask(uint64_t taskId)
 // to store longTasks' state
 void Worker::UpdateLongTaskInfo(Task* task)
 {
+    HILOG_DEBUG("taskpool:: UpdateLongTaskInfo task:%{public}" PRIu64, task->taskId_);
     TaskManager::GetInstance().StoreLongTaskInfo(task->taskId_, this);
     std::lock_guard<std::mutex> lock(longMutex_);
     hasLongTask_ = true;

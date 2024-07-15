@@ -541,6 +541,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     // 3. Find waiting taskInfo, cancel it
     // 4. Find canceled taskInfo, skip it
     std::string strTrace = "CancelTask: taskId: " + std::to_string(taskId);
+    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
     HITRACE_HELPER_METER_NAME(strTrace);
     Task* task = GetTask(taskId);
     if (task == nullptr) {
@@ -798,6 +799,7 @@ void TaskManager::InitTaskManager(napi_env env)
 
 void TaskManager::CreateWorkers(napi_env env, uint32_t num)
 {
+    HILOG_DEBUG("taskpool:: CreateWorkers, num:%{public}u", num);
     for (uint32_t i = 0; i < num; i++) {
         auto worker = Worker::WorkerConstructor(env);
         NotifyWorkerAdded(worker);
@@ -882,6 +884,7 @@ void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
 
 napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " NotifyCallbackExecute", task->taskId_);
     std::lock_guard<std::mutex> lock(callbackMutex_);
     auto iter = callbackTable_.find(task->taskId_);
     if (iter == callbackTable_.end() || iter->second == nullptr) {
@@ -936,10 +939,12 @@ MsgQueue* TaskManager::GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInf
 
 void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " NotifyDependencyTaskInfo", taskId);
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(taskId);
     if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
+        HILOG_DEBUG("taskpool:: dependentTaskInfo empty");
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
@@ -954,6 +959,7 @@ void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
 
 void TaskManager::RemoveDependencyById(uint64_t dependentTaskId, uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool::task:%{public}" PRIu64 " RemoveDependencyById", taskId);
     // remove dependency after task execute
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto dependTaskIter = dependTaskInfos_.find(taskId);
@@ -987,6 +993,7 @@ bool TaskManager::IsDependentByTaskId(uint64_t dependentTaskId)
 
 bool TaskManager::StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskIdSet)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " StoreTaskDependency", taskId);
     StoreDependentTaskInfo(taskIdSet, taskId);
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
@@ -1040,6 +1047,7 @@ bool TaskManager::CheckCircularDependency(std::set<uint64_t> dependentIdSet, std
 
 bool TaskManager::RemoveTaskDependency(uint64_t taskId, uint64_t dependentId)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " RemoveTaskDependency", taskId);
     RemoveDependentTaskInfo(dependentId, taskId);
     std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
@@ -1082,12 +1090,14 @@ std::pair<uint64_t, Priority> TaskManager::DequeuePendingTaskInfo(uint64_t taskI
 
 void TaskManager::RemovePendingTaskInfo(uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " RemovePendingTaskInfo", taskId);
     std::unique_lock<std::shared_mutex> lock(pendingTaskInfosMutex_);
     pendingTaskInfos_.erase(taskId);
 }
 
 void TaskManager::StoreDependentTaskInfo(std::set<uint64_t> dependentTaskIdSet, uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " StoreDependentTaskInfo", taskId);
     std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     for (const auto& id : dependentTaskIdSet) {
         auto iter = dependentTaskInfos_.find(id);
@@ -1102,6 +1112,7 @@ void TaskManager::StoreDependentTaskInfo(std::set<uint64_t> dependentTaskIdSet, 
 
 void TaskManager::RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " RemoveDependentTaskInfo", taskId);
     std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(dependentTaskId);
     if (iter == dependentTaskInfos_.end()) {
@@ -1129,6 +1140,7 @@ std::string TaskManager::GetTaskDependInfoToString(uint64_t taskId)
 
 void TaskManager::StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " StoreTaskDuration", taskId);
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
     auto iter = taskDurationInfos_.find(taskId);
     if (iter == taskDurationInfos_.end()) {
@@ -1172,6 +1184,7 @@ std::string TaskManager::GetTaskName(uint64_t taskId)
 
 void TaskManager::RemoveTaskDuration(uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " RemoveTaskDuration", taskId);
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
     auto iter = taskDurationInfos_.find(taskId);
     if (iter != taskDurationInfos_.end()) {
@@ -1200,6 +1213,7 @@ Worker* TaskManager::GetLongTaskInfo(uint64_t taskId)
 
 void TaskManager::TerminateTask(uint64_t taskId)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TerminateTask", taskId);
     auto worker = GetLongTaskInfo(taskId);
     if (UNLIKELY(worker == nullptr)) {
         return;
@@ -1253,6 +1267,7 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
 
 void TaskManager::ReleaseCallBackInfo(Task* task)
 {
+    HILOG_DEBUG("taskpool:: ReleaseCallBackInfo task:%{public}" PRIu64, task->taskId_);
     if (task->onEnqueuedCallBackInfo_ != nullptr) {
         delete task->onEnqueuedCallBackInfo_;
     }
@@ -1368,6 +1383,7 @@ void TaskGroupManager::AddTask(uint64_t groupId, napi_ref taskRef, uint64_t task
 
 void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
 {
+    HILOG_DEBUG("taskpool:: ReleaseTaskGroupData group");
     TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
     for (uint64_t taskId : group->taskIds_) {
         Task* task = TaskManager::GetInstance().GetTask(taskId);
@@ -1388,6 +1404,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
 {
     std::string strTrace = "CancelGroup: groupId: " + std::to_string(groupId);
     HITRACE_HELPER_METER_NAME(strTrace);
+    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
     TaskGroup* taskGroup = GetTaskGroup(groupId);
     if (taskGroup == nullptr) {
         HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
@@ -1428,6 +1445,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
 
 void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup* group)
 {
+    HILOG_DEBUG("taskpool:: CancelGroupTask task:%{public}" PRIu64, taskId);
     auto task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr) {
         HILOG_INFO("taskpool:: CancelGroupTask task is nullptr");
@@ -1552,6 +1570,7 @@ TaskGroup* TaskGroupManager::GetTaskGroup(uint64_t groupId)
 
 bool TaskGroupManager::UpdateGroupState(uint64_t groupId)
 {
+    HILOG_DEBUG("taskpool:: UpdateGroupState groupId:%{public}" PRIu64, groupId);
     TaskGroup* group = GetTaskGroup(groupId);
     if (group == nullptr || group->groupState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: UpdateGroupState taskGroup has been released or canceled");

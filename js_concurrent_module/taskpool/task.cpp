@@ -93,6 +93,7 @@ napi_value Task::LongTaskConstructor(napi_env env, napi_callback_info cbinfo)
 void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     Task* task = static_cast<Task*>(data);
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TaskDestructor", task->taskId_);
     TaskManager::GetInstance().ReleaseTaskData(env, task);
     delete task;
 }
@@ -100,6 +101,7 @@ void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
                          napi_value name, napi_value* args, size_t argc)
 {
+    HILOG_DEBUG("taskpool:: task GenerateTask");
     napi_value argsArray = NapiHelper::CreateArrayWithLength(env, argc);
     for (size_t i = 0; i < argc; i++) {
         napi_set_element(env, argsArray, i, args[i]);
@@ -143,6 +145,7 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
 
 Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args, size_t argc, TaskType type)
 {
+    HILOG_DEBUG("taskpool:: task GenerateFunctionTask");
     napi_value argsArray;
     napi_create_array_with_length(env, argc, &argsArray);
     for (size_t i = 0; i < argc; i++) {
@@ -151,6 +154,7 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     TaskInfo* taskInfo = GenerateTaskInfo(env, func, argsArray, undefined, undefined, Priority::DEFAULT);
     if (taskInfo == nullptr) {
+        HILOG_ERROR("taskpool:: task GenerateFunctionTask end, taskInfo is nullptr");
         return nullptr;
     }
     napi_value napiFuncName = NapiHelper::GetNameProperty(env, func, NAME);
@@ -588,6 +592,7 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
 
 void Task::StartExecutionCallback(const uv_async_t* req)
 {
+    HILOG_DEBUG("taskpool:: task StartExecutionCallback");
     auto listenerCallBackInfo = static_cast<ListenerCallBackInfo*>(req->data);
     if (listenerCallBackInfo == nullptr) {
         HILOG_FATAL("taskpool:: StartExecutionCallBackInfo is null");
@@ -617,6 +622,7 @@ void Task::StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo)
 
 void Task::ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo)
 {
+    HILOG_DEBUG("taskpool:: task ExecuteListenerCallback");
     if (listenerCallBackInfo == nullptr) {
         HILOG_FATAL("taskpool:: listenerCallBackInfo is null");
         return;
@@ -929,6 +935,7 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
                                  napi_value transferList, napi_value cloneList, Priority priority,
                                  bool defaultTransfer, bool defaultCloneSendable)
 {
+    HILOG_DEBUG("taskpool:: task GenerateTaskInfo");
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     void* serializationFunction = nullptr;
     napi_status status = napi_serialize_inner(env, func, undefined, undefined,
@@ -975,12 +982,14 @@ bool Task::IsReadyToHandle() const
 
 void Task::NotifyPendingTask()
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " NotifyPendingTask", taskId_);
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
     napi_reference_unref(env_, taskRef_, nullptr);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
         currentTaskInfo_ = nullptr;
+        HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " NotifyPendingTask end, currentTaskInfo_ nullptr", taskId_);
         return;
     }
     currentTaskInfo_ = pendingTaskInfos_.front();
@@ -991,7 +1000,9 @@ void Task::NotifyPendingTask()
 
 void Task::CancelPendingTask(napi_env env)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " CancelPendingTask", taskId_);
     if (pendingTaskInfos_.empty()) {
+        HILOG_DEBUG("taskpool:: task CancelPendingTask end, pendingTaskInfos_ nullptr");
         return;
     }
     napi_value error = nullptr;
@@ -1012,6 +1023,7 @@ void Task::CancelPendingTask(napi_env env)
 
 bool Task::UpdateTask(uint64_t startTime, void* worker)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " UpdateTask", taskId_);
     if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
         static_cast<Worker*>(worker)->NotifyTaskFinished();
         HILOG_DEBUG("taskpool:: task has been canceled");
@@ -1067,6 +1079,7 @@ napi_value Task::DeserializeValue(napi_env env, bool isFunc, bool isArgs)
 
 void Task::StoreTaskDuration()
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " StoreTaskDuration", taskId_);
     cpuTime_ = ConcurrentHelper::GetMilliseconds();
     uint64_t cpuDuration = cpuTime_ - startTime_;
     if (ioTime_ != 0) {
@@ -1243,7 +1256,9 @@ bool Task::HasDependency() const
 
 void Task::TryClearHasDependency()
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TryClearHasDependency", taskId_);
     if (IsExecuted()) {
+        HILOG_DEBUG("taskpool:: task TryClearHasDependency end, task is executed");
         return;
     }
     if ((!TaskManager::GetInstance().IsDependentByTaskId(taskId_)) &&
@@ -1284,6 +1299,7 @@ void Task::InitHandle(napi_env env)
 
 void Task::ClearDelayedTimers()
 {
+    HILOG_DEBUG("taskpool:: task ClearDelayedTimers");
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
     TaskMessage *taskMessage = nullptr;
     for (auto t: delayedTimers_) {
