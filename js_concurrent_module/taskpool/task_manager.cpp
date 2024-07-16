@@ -899,6 +899,7 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
     workerEngine->IncreaseListeningCounter();
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (task->IsMainThreadTask()) {
+        HITRACE_HELPER_METER_NAME("NotifyCallbackExecute: PostTask");
         auto onCallbackTask = [callbackInfo]() {
             TaskPool::ExecuteCallbackTask(callbackInfo.get());
         };
