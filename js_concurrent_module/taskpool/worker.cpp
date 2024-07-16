@@ -387,6 +387,7 @@ void Worker::PerformTask(const uv_async_t* req)
     }
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (task->IsMainThreadTask()) {
+        HITRACE_HELPER_METER_NAME("PerformTask: PostTask");
         auto onStartExecutionTask = [task]() {
             if (task->onStartExecutionCallBackInfo_ == nullptr) {
                 return;
@@ -447,6 +448,7 @@ void Worker::NotifyHandleTaskResult(Task* task)
     }
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (task->IsMainThreadTask()) {
+        HITRACE_HELPER_METER_NAME("NotifyHandleTaskResult: PostTask");
         auto onResultTask = [task]() {
             TaskPool::HandleTaskResultCallback(task);
         };
