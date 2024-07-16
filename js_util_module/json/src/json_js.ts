@@ -37,9 +37,9 @@ interface ParseOptions {
 }
 
 export interface JSON {
-  parseBigInt(text: string, reviver?: (this: any, key: string, value: any) => any, options?: ParseOptions): any;
-  stringifyBigInt(value: any, replacer?: (this: any, key: string, value: any) => any, space?: string | number): string;
-  stringifyBigInt(value: any, replacer?: (number | string)[] | null, space?: string | number): string;
+  parseBigInt(text: string, reviver?: TransformsFunc, options?: ParseOptions): Object | null;
+  stringifyBigInt(value: Object, replacer?: TransformsFunc, space?: string | number): string;
+  stringifyBigInt(value: Object, replacer?: (number | string)[] | null, space?: string | number): string;
 }
 
 function parse(text: string, reviver?: TransformsFunc, options?: ParseOptions): Object | null {
