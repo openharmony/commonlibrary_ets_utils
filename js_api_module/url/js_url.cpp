@@ -1960,7 +1960,7 @@ namespace OHOS::Url {
     void URLSearchParams::Sort()
     {
         size_t len = searchParams.size();
-        if (len <= 2 && (len % 2 != 0)) { // 2: Iterate over key-value pairs
+        if (len <= 2 || (len % 2 != 0)) { // 2: Iterate over key-value pairs
             return;
         }
         size_t i = 0;

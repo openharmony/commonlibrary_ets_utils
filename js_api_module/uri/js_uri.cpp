@@ -306,10 +306,14 @@ namespace OHOS::Uri {
             errStr_ = "port does not conform to the rule";
             return false;
         } else if (CheckCharacter(port, g_ruleDigit, false)) {
-            if (port.size() == 0) {
+            if (port.size() == 0 || port.size() > 10) { // 10:The maximum number of bits for int value
                 return false;
             }
-            uriData_.port = std::stoi(port);
+            double tempPort = std::strtod(port.c_str(), nullptr);
+            if (tempPort < 0 || tempPort > INT32_MAX) {
+                return false;
+            }
+            uriData_.port = static_cast<int>(tempPort);
             data_ = data_.substr(0, pos);
             return true;
         } else {
