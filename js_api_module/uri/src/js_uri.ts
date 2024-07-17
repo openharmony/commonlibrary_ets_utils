@@ -70,7 +70,7 @@ class URI {
     this.uricalss = new uri.Uri(input);
     let errStr: string = this.uricalss.isFailed;
     if (errStr.length !== 0) {
-      let err : BusinessError = new BusinessError('Syntax Error. Invalid Uri string');
+      let err : BusinessError = new BusinessError(`Syntax Error. Invalid Uri string: The ${errStr}`);
       err.code = SyntaxErrorCodeId;
       throw err;
     }
