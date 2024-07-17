@@ -322,7 +322,7 @@ unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int
 
 void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end, unsigned int length)
 {
-    if (end - offset <= 0) {
+    if (end - offset <= 0 || value.length() == 0) {
         return;
     }
     unsigned int loop = length > end - offset ? end - offset : length;

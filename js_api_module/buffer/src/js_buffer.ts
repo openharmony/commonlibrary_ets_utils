@@ -1727,7 +1727,7 @@ class Buffer {
       if (typeof byteOffset === 'string') {
         encoding = byteOffset;
       }
-      if (typeof byteOffset !== 'number') {
+      if (typeof byteOffset !== 'number' || byteOffset > this[lengthSymbol]) {
         byteOffset = 0;
       }
       if (encoding === null) {
@@ -1758,6 +1758,20 @@ class Buffer {
       encoding = 'utf8';
     }
     encoding = encodingTypeErrorCheck(encoding);
+    if (typeof value === 'string') {
+      const length = this[lengthSymbol];
+      if (byteOffset > length) {
+        return false;
+      }
+      if (byteOffset < 0) {
+        let byteOffsetAbs: number = Math.abs(byteOffset);
+        if (byteOffsetAbs <= length) {
+          byteOffset = length - byteOffsetAbs;
+        } else {
+          byteOffset = 0;
+        }
+      }
+    }
     return this.indexOf(value, byteOffset, encoding) !== -1;
   }
 
