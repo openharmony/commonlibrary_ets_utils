@@ -90,6 +90,9 @@ public:
             case ERR_NOT_REGISTERED:
                 errTitle = "The callback is not registered on the host side";
                 break;
+            case ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER:
+                errTitle = "A dependent task cannot be added to SequenceRunner.";
+                break;
             case ERR_CIRCULAR_DEPENDENCY:
                 errTitle = "There is a circular dependency";
                 break;
@@ -270,7 +273,7 @@ public:
     // 10200023 : The function is not called in the concurrent function
     static const int32_t ERR_NOT_IN_CONCURRENT_FUNCTION = 10200023;
     static const int32_t ERR_NOT_REGISTERED = 10200024; // 10200024 : The callback is not registered on the host side
-    // 10200025 : The task to be added to SequenceRunner has dependent tasks
+    // 10200025 : A dependent task cannot be added to SequenceRunner.
     static const int32_t ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER = 10200025;
     static const int32_t ERR_CIRCULAR_DEPENDENCY = 10200026; // 10200026 : There is a circular dependency
     static const int32_t ERR_INEXISTENT_DEPENDENCY = 10200027; // 10200027: The dependency does not exist
