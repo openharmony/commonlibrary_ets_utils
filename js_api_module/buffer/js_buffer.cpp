@@ -492,7 +492,7 @@ std::string Buffer::ToBase64Url(uint32_t start, uint32_t length)
     return Base64Encode(reinterpret_cast<const unsigned char*>(data), length, BASE64URL);
 }
 
-int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len)
+int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len, uint64_t &resultIndex)
 {
     if (data == nullptr) {
         return -1;
@@ -500,7 +500,12 @@ int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len)
     uint8_t sData[length_ - offset];
     ReadBytes(sData, offset, length_ - offset);
     int index = FindIndex(sData, reinterpret_cast<uint8_t *>(const_cast<char *>(data)), length_ - offset, len);
-    return index == -1 ? index : (offset + index);
+    if (index == -1) { // -1:The target to be searched does not exist
+        return index;
+    } else {
+        resultIndex = static_cast<uint64_t>(offset) + static_cast<uint64_t>(index);
+        return -2; // -2:The number of invalid data
+    }
 }
 
 int Buffer::LastIndexOf(const char *data, uint32_t offset, uint32_t len)

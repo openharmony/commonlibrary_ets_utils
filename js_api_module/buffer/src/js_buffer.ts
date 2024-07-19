@@ -1692,6 +1692,7 @@ class Buffer {
   indexOf(value: string | number | Buffer | Uint8Array, byteOffset: number = 0, encoding: string = 'utf8'): number {
     typeErrorCheck(value, ['string', 'number', 'Buffer', 'Uint8Array'], 'value');
     if (typeof value === 'string') {
+      const length = this[lengthSymbol];
       if (typeof byteOffset === 'string') {
         encoding = byteOffset;
       }
@@ -1702,6 +1703,17 @@ class Buffer {
         encoding = 'utf8';
       }
       encoding = encodingTypeErrorCheck(encoding);
+      if (byteOffset > length) {
+        return -1;
+      }
+      if (byteOffset < 0) {
+        let offsetResult = Math.abs(byteOffset);
+        if (offsetResult > length) {
+          byteOffset = 0;
+        } else {
+          byteOffset = length - offsetResult;
+        }
+      }
       return this[bufferSymbol].indexOf(value, byteOffset, encoding, false);
     } else if (typeof value === 'number') {
       value = +value;
