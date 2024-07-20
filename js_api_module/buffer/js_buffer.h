@@ -61,7 +61,7 @@ public:
     void SubBuffer(Buffer *tBuf, uint32_t start, uint32_t end);
     uint32_t Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t sEnd);
     int Compare(Buffer *tBuf, uint32_t targetStart, uint32_t sourceStart, uint32_t length);
-    int IndexOf(const char *data, uint32_t offset, uint32_t len);
+    int IndexOf(const char *data, uint32_t offset, uint32_t len, uint64_t &resultIndex);
     int LastIndexOf(const char *data, uint32_t offset, uint32_t len);
     std::string ToBase64(uint32_t start, uint32_t length);
     std::string ToBase64Url(uint32_t start, uint32_t length);

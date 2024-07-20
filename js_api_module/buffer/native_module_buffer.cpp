@@ -953,12 +953,21 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     // 3 : the forth argument
     NAPI_CALL(env, napi_get_value_bool(env, args[3], &isReverse));
     int index = -1;
+    int indexNumber = -1;
+    uint64_t resultIndex = 0;
     if (isReverse) {
         len = (eType == UTF16LE) ? len : str.length();
         index = buf->LastIndexOf(str.c_str(), offset, len);
     } else {
         len = (eType == UTF16LE) ? len : str.length();
-        index = buf->IndexOf(str.c_str(), offset, len);
+        indexNumber = buf->IndexOf(str.c_str(), offset, len, resultIndex);
+        if (indexNumber == -1) {
+            index = indexNumber;
+        } else {
+            napi_value result = nullptr;
+            napi_create_int64(env, resultIndex, &result);
+            return result;
+        }
     }
     napi_value result = nullptr;
     napi_create_int32(env, index, &result);

@@ -15,6 +15,7 @@
 
 #include "converter.h"
 
+#include <climits>
 #include <codecvt>
 #include <locale>
 
@@ -439,7 +440,11 @@ int FindIndex(uint8_t* source, uint8_t* target, int soulen, int tarlen)
                 int badValue = GetBadCharLengthInReverseOrder(target, source[i], j);
                 int goodSuffix = GetGoodSuffixLengthByLastChar(target, j, tarlen);
                 int distance = badValue > goodSuffix ? badValue : goodSuffix;
-                i = i + tarlen - 1 - j + distance;
+                if (i + tarlen - 1 - j + distance  > INT_MAX) {
+                    return -1;
+                } else {
+                    i = i + tarlen - 1 - j + distance;
+                }
                 j = tarlen - 1;
             }
         }

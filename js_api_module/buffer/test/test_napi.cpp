@@ -134,7 +134,8 @@ HWTEST_F(NativeEngineTest, ConstructorTest005, testing::ext::TestSize.Level0)
     buf->SetArray(array, 0);
     result = buf->LastIndexOf(nullptr, 0, 0);
     ASSERT_EQ(result, -1);
-    result = buf->IndexOf(nullptr, 0, 0);
+    uint64_t resultIndex = 0;
+    result = buf->IndexOf(nullptr, 0, 0, resultIndex);
     ASSERT_EQ(result, -1);
     delete buf;
     buf = nullptr;
@@ -708,8 +709,10 @@ HWTEST_F(NativeEngineTest, IndexOfTest001, testing::ext::TestSize.Level0)
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
     buf->Init(20);
     buf->WriteString("this is a string", 16);
-    int index = buf->IndexOf("is", 0, 2);
-    ASSERT_EQ(index, 2);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("is", 0, 2, resultIndex);
+    ASSERT_EQ(index, -2);
+    ASSERT_EQ(resultIndex, 2);
 }
 
 /**
@@ -723,8 +726,10 @@ HWTEST_F(NativeEngineTest, IndexOfTest002, testing::ext::TestSize.Level0)
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
     buf->Init(7);
     buf->WriteString("3363333", 7);
-    int index = buf->IndexOf("36", 0, 2);
-    ASSERT_EQ(index, 1);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("36", 0, 2, resultIndex);
+    ASSERT_EQ(index, -2);
+    ASSERT_EQ(resultIndex, 1);
 }
 
 /**
@@ -738,8 +743,10 @@ HWTEST_F(NativeEngineTest, IndexOfTest003, testing::ext::TestSize.Level0)
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
     buf->Init(12);
     buf->WriteString("322362326233", 12);
-    int index = buf->IndexOf("2623", 0, 4);
-    ASSERT_EQ(index, 7);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("2623", 0, 4, resultIndex);
+    ASSERT_EQ(index, -2);
+    ASSERT_EQ(resultIndex, 7);
 }
 
 /**
