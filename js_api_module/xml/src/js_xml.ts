@@ -75,9 +75,13 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   setAttributes(name: string, value: string): void {
-    if (typeof name !== 'string' || name.length === 0) {
+    if (typeof name !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+    }
+    if (name.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
     }
     if (typeof value !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${value} must be string`);
@@ -89,16 +93,22 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   addEmptyElement(name: string): void {
-    if (typeof name !== 'string' || name.length === 0) {
+    if (typeof name !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${name} must be string`);
     }
+    if (name.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+    }
+
     this.xmlSerializerClass.addEmptyElement(name);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
       throw new Error(errStr);
     }
   }
+
   setDeclaration(): void {
     this.xmlSerializerClass.setDeclaration();
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -106,9 +116,13 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   startElement(name: string): void {
-    if (typeof name !== 'string' || name.length === 0) {
+    if (typeof name !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+    }
+    if (name.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
     }
     this.xmlSerializerClass.startElement(name);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -116,6 +130,7 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   endElement(): void {
     this.xmlSerializerClass.endElement();
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -123,9 +138,13 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   setNamespace(prefix: string, ns: string): void {
-    if (typeof prefix !== 'string' || prefix.length === 0) {
+    if (typeof prefix !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${prefix} must be string`);
+    }
+    if (prefix.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
     }
     if (typeof ns !== 'string' || ns.length === 0) {
       throw new BusinessError(`Parameter error.The type of ${ns} must be string`);
@@ -136,10 +155,14 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   setComment(text: string): void {
-    if (typeof text !== 'string' || text.length === 0) {
+    if (typeof text !== 'string') {
       let error = new BusinessError(`Parameter error.The type of ${text} must be string`);
       throw error;
+    }
+    if (text.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setComment(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -147,9 +170,13 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   setCDATA(text: string): void {
-    if (typeof text !== 'string' || text.length === 0) {
+    if (typeof text !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+    }
+    if (text.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setCDATA(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -157,9 +184,13 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   setText(text: string): void {
-    if (typeof text !== 'string' || text.length === 0) {
+    if (typeof text !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+    }
+    if (text.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setText(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -167,9 +198,13 @@ class XmlSerializer {
       throw new Error(errStr);
     }
   }
+
   setDocType(text: string): void {
-    if (typeof text !== 'string' || text.length === 0) {
+    if (typeof text !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+    }
+    if (text.length === 0) {
+      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setDocType(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
