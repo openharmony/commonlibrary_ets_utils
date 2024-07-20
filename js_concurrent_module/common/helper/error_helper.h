@@ -100,7 +100,7 @@ public:
                 errTitle = "The dependency does not exist, ";
                 break;
             case ERR_DELAY_TIME_ERROR:
-                errTitle = "The delayTime is less than zero";
+                errTitle = "";
                 break;
             case ERR_IN_BOTH_CLONE_AND_TRANSFER:
                 errTitle = "An ArrayBuffer cannot be set as both a transfer list and a clone list";

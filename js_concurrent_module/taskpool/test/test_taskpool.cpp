@@ -413,7 +413,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest033, testing::ext::TestSize.Level0)
     // the task will freed in the taskManager's Destuctor and will not cause memory leak
     Task* task = new Task();
     auto taskId = reinterpret_cast<uint64_t>(task);
-    taskManager.StoreTask(taskId, task);
     taskManager.EnqueueTaskId(taskId, Priority::HIGH);
     std::pair<uint64_t, Priority> result = taskManager.DequeueTaskId();
     ASSERT_TRUE(result.first == taskId);
