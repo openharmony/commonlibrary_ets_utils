@@ -20,20 +20,16 @@ interface HelpUtil {
   Base64Helper: NativeBase64;
   Types: Object;
   StringDecoder: Object;
-  dealwithformatstring(formatString: string | Array<string | number | Fn>): string;
-  printf(formatString: string | Array<string | number | Fn>,
+  dealwithformatstring(formatString: string | Array<string | number | Function>): string;
+  printf(formatString: string | Array<string | number | Function>,
     ...valueString: Array<Object>): string;
-  format(formatString: Array<string | number | Fn>, ...valueString: Array<Object>): string
+  format(formatString: Array<string | number | Function>, ...valueString: Array<Object>): string
   geterrorstring(errnum: number): string;
   errnoToString(errnum: number): string;
   randomUUID(entropyCache?: boolean): string;
   randomBinaryUUID(entropyCache?: boolean): Uint8Array;
   parseUUID(uuid: string): Uint8Array;
   getHash(obj: object): number;
-}
-
-interface Fn {
-  (): void;
 }
 
 type AnyType = Object | null | undefined;
@@ -223,7 +219,7 @@ function switchLittleValue(enter: string, protoName: string, obj: Object, count:
   return str;
 }
 
-function arrayToString(enter: string, arr: Array<string | number | Fn>, count: number): string {
+function arrayToString(enter: string, arr: Array<string | number | Function>, count: number): string {
   let str: string = '';
   if (!arr.length) {
     return '';
@@ -321,7 +317,7 @@ function switchBigValue(enter: string, protoName: string, obj: Object, count: nu
   return str;
 }
 
-function arrayToBigString(enter: string, arr: Array<string | number | Fn>, count: number): string {
+function arrayToBigString(enter: string, arr: Array<string | number | Function>, count: number): string {
   let str: string = '';
   if (!arr.length) {
     return '';
@@ -460,9 +456,7 @@ function switchStringValue(value: Object | symbol): string {
   return str;
 }
 
-// printf(formatString : string | Array<string | number | Fn>, 
-//   ...valueString : Array<string | number | Fn | object>) : string;
-function printf(formatString: Array<string | number | Fn>, ...valueString: Array<Object>): string {
+function printf(formatString: Array<string | number | Function>, ...valueString: Array<Object>): string {
   let formats: string = helpUtil.dealwithformatstring(formatString);
   let arr: Array<Object> = [];
   arr = formats.split(' ');
@@ -501,7 +495,7 @@ function printf(formatString: Array<string | number | Fn>, ...valueString: Array
   return helpUtilString;
 }
 
-function format(formatString: Array<string | number | Fn>, ...valueString: Array<Object>): string {
+function format(formatString: Array<string | number | Function>, ...valueString: Array<Object>): string {
   if (!(formatString instanceof Array) && (typeof formatString !== 'string')) {
     let error = new BusinessError(`Parameter error. The type of ${formatString} must be string or array`);
     throw error;
@@ -607,7 +601,7 @@ function getHash(obj: object): number {
   return result;
 }
 
-function callbackified(original: Fn, ...args: Array<string | number | Fn>): void {
+function callbackified(original: Function, ...args: Array<string | number | Function>): void {
   const maybeCb = args.pop();
   if (typeof maybeCb !== 'function') {
     throw new Error('maybe is not function');
@@ -618,7 +612,7 @@ function callbackified(original: Fn, ...args: Array<string | number | Fn>): void
   Reflect.apply(original, this, args).then((ret: null) => cb(null, ret), (rej: null) => cb(rej));
 }
 
-function getOwnPropertyDescriptors(obj: Fn): PropertyDescriptorMap {
+function getOwnPropertyDescriptors(obj: Function): PropertyDescriptorMap {
   const result: PropertyDescriptorMap = {};
   for (let key of Reflect.ownKeys(obj)) {
     if (typeof key === 'string') {
@@ -628,10 +622,13 @@ function getOwnPropertyDescriptors(obj: Fn): PropertyDescriptorMap {
   return result;
 }
 
-function callbackWrapper(original: Fn): Function {
+function callbackWrapper(original: Function): Function {
   if (typeof original !== 'function') {
     let error = new BusinessError(`Parameter error. The type of ${original} must be function`);
     throw error;
+  }
+  if (original.constructor.name !== 'AsyncFunction') {
+    console.error('callbackWrapper: The type of Parameter must be AsyncFunction');
   }
   const descriptors = getOwnPropertyDescriptors(original);
   if (typeof descriptors.length.value === 'number') {
@@ -640,7 +637,7 @@ function callbackWrapper(original: Fn): Function {
   if (typeof descriptors.name.value === 'string') {
     descriptors.name.value += 'callbackified';
   }
-  function cb(...args: Array<string | number | Fn>): void {
+  function cb(...args: Array<string | number | Function>): void {
     callbackified(original, ...args);
   }
   Object.defineProperties(cb, descriptors);
