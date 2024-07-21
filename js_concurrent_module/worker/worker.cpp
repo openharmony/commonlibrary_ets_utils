@@ -474,7 +474,9 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
             "the type of instanceName must be string.");
         return nullptr;
     }
-    std::string instanceName = NapiHelper::GetString(env, args[0]);
+    char* nameValue = NapiHelper::GetString(env, args[0]);
+    std::string instanceName = std::string(nameValue);
+    CloseHelp::DeletePointer(nameValue, true);
 
     Worker* worker = nullptr;
     napi_unwrap(env, thisVar, (void**)&worker);
@@ -517,7 +519,9 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
             "the type of instanceName must be string.");
         return nullptr;
     }
-    std::string instanceName = NapiHelper::GetString(env, args[0]);
+    char* nameValue = NapiHelper::GetString(env, args[0]);
+    std::string instanceName = std::string(nameValue);
+    CloseHelp::DeletePointer(nameValue, true);
     if (!worker->RemoveGlobalCallObject(instanceName)) {
         HILOG_ERROR("worker:: unregister unexist globalCallObject");
     }
@@ -1484,7 +1488,9 @@ void Worker::HostOnGlobalCallInner()
     napi_value methodName = nullptr;
     napi_get_element(hostEnv_, argsArray, 1, &methodName);
 
-    std::string instanceNameStr = NapiHelper::GetString(hostEnv_, instanceName);
+    char* nameValue = NapiHelper::GetString(hostEnv_, instanceName);
+    std::string instanceNameStr = std::string(nameValue);
+    CloseHelp::DeletePointer(nameValue, true);
     auto iter = globalCallObjects_.find(instanceNameStr);
     if (iter == globalCallObjects_.end()) {
         HILOG_ERROR("worker:: there is no instance: %{public}s registered for global call", instanceNameStr.c_str());
@@ -1500,6 +1506,7 @@ void Worker::HostOnGlobalCallInner()
     if (!hasProperty) {
         const char* methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
         HILOG_ERROR("worker:: registered obj for global call has no method: %{public}s", methodNameStr);
+        CloseHelp::DeletePointer(methodNameStr, true);
         AddGlobalCallError(ErrorHelper::ERR_CALL_METHOD_ON_BINDING_OBJ);
         globalCallSuccess_ = false;
         cv_.notify_one();
@@ -1513,6 +1520,7 @@ void Worker::HostOnGlobalCallInner()
     if (!validMethod) {
         const char* methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
         HILOG_ERROR("worker:: method %{public}s shall be callable and not async or generator method", methodNameStr);
+        CloseHelp::DeletePointer(methodNameStr, true);
         AddGlobalCallError(ErrorHelper::ERR_CALL_METHOD_ON_BINDING_OBJ);
         globalCallSuccess_ = false;
         cv_.notify_one();
