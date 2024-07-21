@@ -282,6 +282,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         napi_value error = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(task->env_, taskMessage->deferred, error);
     } else {
+        HILOG_DEBUG("taskpool:: DelayTask task:%{public}" PRIu64, taskMessage->taskId);
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
@@ -445,6 +446,7 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
 
 void TaskPool::HandleTaskResult(const uv_async_t* req)
 {
+    HILOG_DEBUG("taskpool:: HandleTaskResult task");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto task = static_cast<Task*>(req->data);
     if (task == nullptr) {
@@ -500,10 +502,12 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
     TriggerTask(task);
+    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
 }
 
 void TaskPool::TriggerTask(Task* task)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TriggerTask", task->taskId_);
     if (task->IsGroupTask()) {
         return;
     }
@@ -528,6 +532,7 @@ void TaskPool::TriggerTask(Task* task)
 
 void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " UpdateGroupInfoByResult", task->taskId_);
     TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
     task->taskState_ = ExecuteState::FINISHED;
     napi_reference_unref(env, task->taskRef_, nullptr);
@@ -576,6 +581,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
+    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
     if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
@@ -648,6 +654,7 @@ napi_value TaskPool::IsConcurrent(napi_env env, napi_callback_info cbinfo)
 
 void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
 {
+    HILOG_DEBUG("taskpool:: PeriodicTaskCallback");
     Task* task = reinterpret_cast<Task*>(handle->data);
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: the task is nullptr");
@@ -723,6 +730,7 @@ napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo
 
 void TaskPool::TriggerTimer(napi_env env, Task* task, int32_t period)
 {
+    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TriggerTimer", task->taskId_);
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     task->timer_ = new uv_timer_t;
     uv_timer_init(loop, task->timer_);

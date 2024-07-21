@@ -65,6 +65,7 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
 
 void TaskGroup::TaskGroupDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
+    HILOG_DEBUG("taskpool::TaskGroupDestructor");
     TaskGroup* group = static_cast<TaskGroup*>(data);
     TaskGroupManager::GetInstance().ReleaseTaskGroupData(env, group);
     delete group;
@@ -144,6 +145,7 @@ uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)
 
 void TaskGroup::NotifyGroupTask(napi_env env)
 {
+    HILOG_DEBUG("taskpool:: NotifyGroupTask");
     std::lock_guard<RECURSIVE_MUTEX> lock(taskGroupMutex_);
     if (pendingGroupInfos_.empty()) {
         return;
@@ -175,6 +177,7 @@ void TaskGroup::NotifyGroupTask(napi_env env)
 
 void TaskGroup::CancelPendingGroup(napi_env env)
 {
+    HILOG_DEBUG("taskpool:: CancelPendingGroup");
     if (pendingGroupInfos_.empty()) {
         return;
     }
