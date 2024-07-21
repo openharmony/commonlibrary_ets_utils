@@ -64,6 +64,10 @@ private:
     static void TriggerTask(Task* task);
     static void TriggerTimer(napi_env env, Task* task, int32_t period);
     static void ExecuteCallbackInner(MsgQueue& msgQueue);
+    static bool CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint32_t &priority, int32_t &delayTime,
+                                   Task* &task);
+    static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t &period, uint32_t &priority,
+                                        Task* &task);
     friend class TaskManager;
 };
 
