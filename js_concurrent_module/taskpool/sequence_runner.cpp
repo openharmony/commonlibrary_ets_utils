@@ -142,7 +142,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (seqRunner->currentTaskId_ == 0) {
-        HILOG_DEBUG("seqRunner:: task %{public}" PRIu64 " in seqRunner %{public}" PRIu64 " immediately.",
+        HILOG_INFO("seqRunner:: task %{public}" PRIu64 " in seqRunner %{public}" PRIu64 " immediately.",
                     task->taskId_, seqRunnerId);
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();

@@ -1026,7 +1026,7 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
     HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " UpdateTask", taskId_);
     if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
         static_cast<Worker*>(worker)->NotifyTaskFinished();
-        HILOG_DEBUG("taskpool:: task has been canceled");
+        HILOG_INFO("taskpool:: task has been canceled, taskId %{public}" PRIu64, taskId_);
         return false;
     }
     taskState_ = ExecuteState::RUNNING;
