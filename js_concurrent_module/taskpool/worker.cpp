@@ -369,7 +369,7 @@ void Worker::PerformTask(const uv_async_t* req)
     std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_)
                             + ", priority : " + std::to_string(taskInfo.second);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
     napi_value func = task->DeserializeValue(env, true, false);
     if (func == nullptr) {
         HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " func is nullptr", task->taskId_);

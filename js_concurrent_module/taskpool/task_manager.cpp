@@ -541,7 +541,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     // 3. Find waiting taskInfo, cancel it
     // 4. Find canceled taskInfo, skip it
     std::string strTrace = "CancelTask: taskId: " + std::to_string(taskId);
-    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
     HITRACE_HELPER_METER_NAME(strTrace);
     Task* task = GetTask(taskId);
     if (task == nullptr) {
@@ -1405,7 +1405,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
 {
     std::string strTrace = "CancelGroup: groupId: " + std::to_string(groupId);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
     TaskGroup* taskGroup = GetTaskGroup(groupId);
     if (taskGroup == nullptr) {
         HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
