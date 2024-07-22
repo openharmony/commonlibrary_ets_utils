@@ -242,13 +242,10 @@ namespace OHOS::Xml {
 
     void ConvertXml::GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object, int flag)
     {
-        napi_value elements = nullptr;
-        napi_create_array(env, &elements);
         napi_value recvElement = nullptr;
         napi_create_array(env, &recvElement);
         xmlNodePtr pNode = curNode;
         int32_t index = 0;
-        int32_t index1 = 0;
         bool bFlag = false;
         while (pNode != nullptr) {
             bFlag = false;
@@ -256,10 +253,6 @@ namespace OHOS::Xml {
             napi_create_object(env, &elementsObject);
             SetNodeInfo(env, pNode, elementsObject);
             SetAttributes(env, pNode, elementsObject);
-            napi_value tempElement = nullptr;
-            napi_create_array(env, &tempElement);
-            napi_value elementObj = nullptr;
-            napi_create_object(env, &elementObj);
             char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(pNode));
             if (curContent != nullptr) {
                 if (pNode->children != nullptr) {
@@ -272,12 +265,11 @@ namespace OHOS::Xml {
                 }
                 xmlFree(reinterpret_cast<void*>(curContent));
             }
-            SetPrevInfo(env, recvElement, flag, index1);
+            SetPrevInfo(env, recvElement, flag, index);
             if (elementsObject != nullptr && bFlag) {
-                napi_set_element(env, recvElement, index1++, elementsObject);
+                napi_set_element(env, recvElement, index++, elementsObject);
                 elementsObject = nullptr;
             }
-            index++;
             pNode = pNode->next;
         }
         if (bFlag) {
@@ -306,16 +298,14 @@ namespace OHOS::Xml {
 
     napi_value ConvertXml::Convert(napi_env env, std::string strXml)
     {
-        xmlDocPtr doc = nullptr;
         xmlNodePtr curNode = nullptr;
-        napi_status status = napi_ok;
         napi_value object = nullptr;
-        status = napi_create_object(env, &object);
+        napi_status status = napi_create_object(env, &object);
         if (status != napi_ok) {
             return nullptr;
         }
         size_t len = strXml.size();
-        doc = xmlParseMemory(strXml.c_str(), len);
+        xmlDocPtr doc = xmlParseMemory(strXml.c_str(), len);
         if (!doc) {
             xmlFreeDoc(doc);
             DealSingleLine(env, strXml, object);
