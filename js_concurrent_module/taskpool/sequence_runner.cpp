@@ -38,8 +38,8 @@ void SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar
         DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
     };
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    HILOG_DEBUG("seqRunner:: construct seqRunner name is %{public}s, seqRunnerid %{public}" PRIu64 ".",
-                seqRunner->seqName_.c_str(), seqRunnerId);
+    HILOG_DEBUG("seqRunner:: construct seqRunner name is %{public}s, seqRunnerid %{public}s.",
+                seqRunner->seqName_.c_str(), std::to_string(seqRunnerId).c_str());
 
     seqRunner->seqRunnerId_ = seqRunnerId;
     napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
@@ -142,15 +142,15 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (seqRunner->currentTaskId_ == 0) {
-        HILOG_INFO("seqRunner:: task %{public}" PRIu64 " in seqRunner %{public}" PRIu64 " immediately.",
-                    task->taskId_, seqRunnerId);
+        HILOG_INFO("seqRunner:: task %{public}s in seqRunner %{public}s immediately.",
+                   std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
         task->taskState_ = ExecuteState::WAITING;
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
-        HILOG_DEBUG("seqRunner:: add %{public}" PRIu64 " to seqRunner %{public}" PRIu64 ".",
-                    task->taskId_, seqRunnerId);
+        HILOG_DEBUG("seqRunner:: add %{public}s to seqRunner %{public}s.",
+                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
         TaskGroupManager::GetInstance().AddTaskToSeqRunner(seqRunnerId, task);
     }
     return promise;

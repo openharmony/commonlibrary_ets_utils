@@ -93,7 +93,7 @@ napi_value Task::LongTaskConstructor(napi_env env, napi_callback_info cbinfo)
 void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     Task* task = static_cast<Task*>(data);
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TaskDestructor", task->taskId_);
+    HILOG_DEBUG("taskpool:: task:%{public}s TaskDestructor", std::to_string(task->taskId_).c_str());
     TaskManager::GetInstance().ReleaseTaskData(env, task);
     delete task;
 }
@@ -982,14 +982,15 @@ bool Task::IsReadyToHandle() const
 
 void Task::NotifyPendingTask()
 {
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " NotifyPendingTask", taskId_);
+    HILOG_DEBUG("taskpool:: task:%{public}s NotifyPendingTask", std::to_string(taskId_).c_str());
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
     napi_reference_unref(env_, taskRef_, nullptr);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
         currentTaskInfo_ = nullptr;
-        HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " NotifyPendingTask end, currentTaskInfo_ nullptr", taskId_);
+        HILOG_DEBUG("taskpool:: task:%{public}s NotifyPendingTask end, currentTaskInfo_ nullptr",
+                    std::to_string(taskId_).c_str());
         return;
     }
     currentTaskInfo_ = pendingTaskInfos_.front();
@@ -1000,7 +1001,7 @@ void Task::NotifyPendingTask()
 
 void Task::CancelPendingTask(napi_env env)
 {
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " CancelPendingTask", taskId_);
+    HILOG_DEBUG("taskpool:: task:%{public}s CancelPendingTask", std::to_string(taskId_).c_str());
     if (pendingTaskInfos_.empty()) {
         HILOG_DEBUG("taskpool:: task CancelPendingTask end, pendingTaskInfos_ nullptr");
         return;
@@ -1023,10 +1024,10 @@ void Task::CancelPendingTask(napi_env env)
 
 bool Task::UpdateTask(uint64_t startTime, void* worker)
 {
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " UpdateTask", taskId_);
+    HILOG_DEBUG("taskpool:: task:%{public}s UpdateTask", std::to_string(taskId_).c_str());
     if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
         static_cast<Worker*>(worker)->NotifyTaskFinished();
-        HILOG_INFO("taskpool:: task has been canceled, taskId %{public}" PRIu64, taskId_);
+        HILOG_INFO("taskpool:: task has been canceled, taskId %{public}s", std::to_string(taskId_).c_str());
         return false;
     }
     taskState_ = ExecuteState::RUNNING;
@@ -1079,7 +1080,7 @@ napi_value Task::DeserializeValue(napi_env env, bool isFunc, bool isArgs)
 
 void Task::StoreTaskDuration()
 {
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " StoreTaskDuration", taskId_);
+    HILOG_DEBUG("taskpool:: task:%{public}s StoreTaskDuration", std::to_string(taskId_).c_str());
     cpuTime_ = ConcurrentHelper::GetMilliseconds();
     uint64_t cpuDuration = cpuTime_ - startTime_;
     if (ioTime_ != 0) {
@@ -1256,7 +1257,7 @@ bool Task::HasDependency() const
 
 void Task::TryClearHasDependency()
 {
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TryClearHasDependency", taskId_);
+    HILOG_DEBUG("taskpool:: task:%{public}s TryClearHasDependency", std::to_string(taskId_).c_str());
     if (IsExecuted()) {
         HILOG_DEBUG("taskpool:: task TryClearHasDependency end, task is executed");
         return;
