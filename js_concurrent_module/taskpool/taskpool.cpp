@@ -525,9 +525,19 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         }
         HILOG_INFO("taskpool:: taskGroup perform end, taskGroupId %{public}s", std::to_string(task->groupId_).c_str());
         napi_resolve_deferred(env, groupInfo->deferred, resArr);
+        for (uint64_t taskId : taskGroup->taskIds_) {
+            auto task = TaskManager::GetInstance().GetTask(taskId);
+            if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
+                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_);
+            }
+        }
     } else {
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has exception or has been canceled");
         napi_reject_deferred(env, groupInfo->deferred, error);
+        if (task->onExecutionFailedCallBackInfo_ != nullptr) {
+            task->onExecutionFailedCallBackInfo_->taskError_ = res;
+            task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_);
+        }
     }
     taskGroup->groupState_ = ExecuteState::FINISHED;
     napi_delete_reference(env, groupInfo->resArr);
