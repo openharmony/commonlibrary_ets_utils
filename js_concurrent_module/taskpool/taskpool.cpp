@@ -293,6 +293,12 @@ void TaskPool::DelayTask(uv_timer_t* handle)
                 task->taskState_ = ExecuteState::WAITING;
                 TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
             }
+        } else {
+            napi_value execption = nullptr;
+            napi_get_and_clear_last_exception(task->env_, &execption);
+            if (execption != nullptr) {
+                napi_reject_deferred(task->env_, taskMessage->deferred, execption);
+            }
         }
     }
     if (task != nullptr) {
@@ -325,12 +331,6 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
         task->taskState_ = ExecuteState::DELAYED;
     }
     task->UpdateTaskType(TaskType::COMMON_TASK);
-
-    napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
-    TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, static_cast<Priority>(priority));
-    if (taskInfo == nullptr) {
-        return nullptr;
-    }
 
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_update_time(loop);
@@ -639,6 +639,17 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
         return;
     }
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+
+    if (!task->isFirstTaskInfo_) {
+        napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
+        TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, task->periodicTaskPriority_);
+        if (taskInfo == nullptr) {
+            HILOG_DEBUG("taskpool:: the periodic task taskInfo is nullptr");
+            return;
+        }
+    }
+    task->isFirstTaskInfo_ = false;
+
     task->IncreaseRefCount();
     HILOG_INFO("taskpool:: PeriodicTaskCallback taskId %{public}s", std::to_string(task->taskId_).c_str());
     if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED) {
@@ -662,11 +673,13 @@ napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo
     periodicTask->UpdatePeriodicTask();
 
     periodicTask->periodicTaskPriority_ = static_cast<Priority>(priority);
-    napi_value napiTask = NapiHelper::GetReferenceValue(periodicTask->env_, periodicTask->taskRef_);
-    TaskInfo* taskInfo = periodicTask->GetTaskInfo(periodicTask->env_, napiTask, periodicTask->periodicTaskPriority_);
+    napi_value napiTask = NapiHelper::GetReferenceValue(env, periodicTask->taskRef_);
+    TaskInfo* taskInfo = periodicTask->GetTaskInfo(env, napiTask, periodicTask->periodicTaskPriority_);
     if (taskInfo == nullptr) {
         return nullptr;
     }
+
+    periodicTask->isFirstTaskInfo_ = true; // periodic task first Generate TaskInfo
 
     TriggerTimer(env, periodicTask, period);
     return nullptr;

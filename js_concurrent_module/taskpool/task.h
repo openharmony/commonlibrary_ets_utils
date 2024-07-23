@@ -182,6 +182,8 @@ public:
 
     // for periodic task
     bool isPeriodicTask_ {false};
+    // periodic task first Generate TaskInfo
+    std::atomic<bool> isFirstTaskInfo_ {false};
     uv_timer_t* timer_ {nullptr};
     Priority periodicTaskPriority_ {Priority::DEFAULT};
 
