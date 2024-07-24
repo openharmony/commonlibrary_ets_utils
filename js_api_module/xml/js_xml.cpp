@@ -1068,6 +1068,7 @@ namespace OHOS::xml {
                 delimiter = ' ';
             } else {
                 xmlPullParserError_ = "attr value delimiter missing!";
+                return false;
             }
             attributes[i + 3] = ParseTagValue(delimiter, true, // 3: number of args
                 throwOnResolveFailure, TextEnum::ATTRI); // 3: number of args
