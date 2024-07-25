@@ -372,12 +372,12 @@ void Worker::PerformTask(const uv_async_t* req)
     HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
     napi_value func = task->DeserializeValue(env, true, false);
     if (func == nullptr) {
-        HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " func is nullptr", task->taskId_);
+        HILOG_DEBUG("taskpool:: task:%{public}s func is nullptr", std::to_string(task->taskId_).c_str());
         return;
     }
     napi_value args = task->DeserializeValue(env, false, true);
     if (args == nullptr) {
-        HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " args is nullptr", task->taskId_);
+        HILOG_DEBUG("taskpool:: task:%{public}s args is nullptr", std::to_string(task->taskId_).c_str());
         return;
     }
     if (!worker->InitTaskPoolFunc(env, func, task)) {
@@ -419,7 +419,7 @@ void Worker::PerformTask(const uv_async_t* req)
 void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    HILOG_DEBUG("taskpool:: NotifyTaskResult task:%{public}" PRIu64, task->taskId_);
+    HILOG_DEBUG("taskpool:: NotifyTaskResult task:%{public}s", std::to_string(task->taskId_).c_str());
     void* resultData = nullptr;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     bool defaultTransfer = true;
@@ -551,7 +551,7 @@ void Worker::UpdateExecutedInfo()
 // Only when the worker has no longTask can it be released.
 void Worker::TerminateTask(uint64_t taskId)
 {
-    HILOG_DEBUG("taskpool:: TerminateTask task:%{public}" PRIu64, taskId);
+    HILOG_DEBUG("taskpool:: TerminateTask task:%{public}s", std::to_string(taskId).c_str());
     std::lock_guard<std::mutex> lock(longMutex_);
     longTasksSet_.erase(taskId);
     if (longTasksSet_.empty()) {
@@ -562,7 +562,7 @@ void Worker::TerminateTask(uint64_t taskId)
 // to store longTasks' state
 void Worker::UpdateLongTaskInfo(Task* task)
 {
-    HILOG_DEBUG("taskpool:: UpdateLongTaskInfo task:%{public}" PRIu64, task->taskId_);
+    HILOG_DEBUG("taskpool:: UpdateLongTaskInfo task:%{public}s", std::to_string(task->taskId_).c_str());
     TaskManager::GetInstance().StoreLongTaskInfo(task->taskId_, this);
     std::lock_guard<std::mutex> lock(longMutex_);
     hasLongTask_ = true;
