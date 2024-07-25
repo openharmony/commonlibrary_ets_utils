@@ -643,7 +643,7 @@ namespace OHOS::xml {
         }
         switch (strXml_[position_]) {
             case '&':
-                return inDeclaration ? TagEnum::ENTITY_REFERENCE : TagEnum::TEXT;
+                return TagEnum::ENTITY_REFERENCE;
             case '<':
                 return DealLtGroup();
             case '%':
