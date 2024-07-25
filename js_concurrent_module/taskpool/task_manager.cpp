@@ -435,18 +435,22 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
         HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", (*iter)->tid_);
         uv_async_send((*iter)->clearWorkerSignal_);
         timeoutWorkers_.erase(iter++);
- 
         return;
     }
     uint32_t idleNum = idleWorkers_.size();
     // System memory state is moderate and the worker has exeuted tasks, we will try to release it
     if (ConcurrentHelper::IsModerateMemory() && workerCount == idleNum && workerCount == DEFAULT_MIN_THREADS) {
         auto worker = *(idleWorkers_.begin());
-        if (worker && worker->clearWorkerSignal_ != nullptr && worker->hasExecuted_) {
-            uv_async_send(worker->clearWorkerSignal_);
-            idleWorkers_.erase(worker);
+        if (worker == nullptr || worker->clearWorkerSignal_ == nullptr) {
+            return;
         }
-        return;
+        if (worker->HasLongTask()) { // worker that has longTask should not be released
+            return;
+        }
+        if (worker->hasExecuted_) { // worker that hasn't execute any tasks should not be released
+            TriggerShrink(DEFAULT_MIN_THREADS);
+            return;
+        }
     }
 
     // Create a worker for performance
