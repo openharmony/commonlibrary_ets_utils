@@ -211,10 +211,6 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
 
 void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] void *hint)
 {
-    if (data == nullptr) {
-        HILOG_INFO("return because data is nullptr");
-        return;
-    }
     AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
     std::unique_lock<std::mutex> guard(lockMutex);
     if (identity->isAnonymous) {
