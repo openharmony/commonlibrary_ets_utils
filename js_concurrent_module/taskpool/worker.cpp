@@ -393,6 +393,9 @@ void Worker::PerformTask(const uv_async_t* req)
     if (task->IsMainThreadTask()) {
         HITRACE_HELPER_METER_NAME("PerformTask: PostTask");
         auto onStartExecutionTask = [task]() {
+            if (!TaskManager::GetInstance().CheckTask(task)) {
+                return;
+            }
             if (task->onStartExecutionCallBackInfo_ == nullptr) {
                 return;
             }
@@ -455,6 +458,9 @@ void Worker::NotifyHandleTaskResult(Task* task)
     if (task->IsMainThreadTask()) {
         HITRACE_HELPER_METER_NAME("NotifyHandleTaskResult: PostTask");
         auto onResultTask = [task]() {
+            if (!TaskManager::GetInstance().CheckTask(task)) {
+                return;
+            }
             TaskPool::HandleTaskResultCallback(task);
         };
         TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask");
