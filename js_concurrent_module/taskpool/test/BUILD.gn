@@ -57,7 +57,7 @@ ohos_unittest("test_taskpool_unittest") {
     "qos_manager:qos",
   ]
 
-  if (is_ohos && is_standard_system && !is_arkui_x && current_cpu == "arm64") {
+  if (is_ohos && is_standard_system && !is_arkui_x) {
     external_deps += [ "ffrt:libffrt" ]
   }
 }
