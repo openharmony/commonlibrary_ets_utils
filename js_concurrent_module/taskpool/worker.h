@@ -199,7 +199,7 @@ private:
     std::atomic<uint64_t> idlePoint_ = ConcurrentHelper::GetMilliseconds();
     std::atomic<uint64_t> startTime_ = ConcurrentHelper::GetMilliseconds();
     std::atomic<WorkerState> state_ {WorkerState::IDLE};
-    std::atomic<bool> hasExecuted_ = false; // false means this worker haven't execute any tasks
+    std::atomic<bool> hasExecuted_ = false; // false means this worker hasn't execute any tasks
     Priority priority_ {Priority::DEFAULT};
     pid_t tid_ = 0;
     std::vector<uint64_t> currentTaskId_ {};
