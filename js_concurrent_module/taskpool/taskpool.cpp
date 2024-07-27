@@ -282,7 +282,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         napi_value error = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(task->env_, taskMessage->deferred, error);
     } else {
-        HILOG_DEBUG("taskpool:: DelayTask task:%{public}" PRIu64, taskMessage->taskId);
+        HILOG_INFO("taskpool:: DelayTask taskId %{public}s", std::to_string(taskMessage->taskId).c_str());
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
@@ -477,8 +477,8 @@ void TaskPool::TriggerTask(Task* task)
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
         if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
-            HILOG_ERROR("seqRunner:: task %{public}" PRIu64 " trigger in seqRunner %{public}" PRIu64 " failed",
-                        task->taskId_, task->seqRunnerId_);
+            HILOG_ERROR("seqRunner:: task %{public}s trigger in seqRunner %{public}s failed",
+                        std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
         }
     } else if (task->IsCommonTask()) {
         task->NotifyPendingTask();
@@ -493,7 +493,7 @@ void TaskPool::TriggerTask(Task* task)
 
 void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success)
 {
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " UpdateGroupInfoByResult", task->taskId_);
+    HILOG_DEBUG("taskpool:: task:%{public}s UpdateGroupInfoByResult", std::to_string(task->taskId_).c_str());
     TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
     task->taskState_ = ExecuteState::FINISHED;
     napi_reference_unref(env, task->taskRef_, nullptr);
@@ -662,7 +662,7 @@ napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo
 
 void TaskPool::TriggerTimer(napi_env env, Task* task, int32_t period)
 {
-    HILOG_DEBUG("taskpool:: task:%{public}" PRIu64 " TriggerTimer", task->taskId_);
+    HILOG_INFO("taskpool::TriggerTimer taskId %{public}s", std::to_string(task->taskId_).c_str());
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     task->timer_ = new uv_timer_t;
     uv_timer_init(loop, task->timer_);
