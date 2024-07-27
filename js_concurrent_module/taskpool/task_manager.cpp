@@ -171,7 +171,7 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
             napi_set_named_property(env, taskInfoValue, "name", name);
             ExecuteState state = task->taskState_;
             uint64_t duration = 0;
-            if (state == ExecuteState::RUNNING) {
+            if (state == ExecuteState::RUNNING || state == ExecuteState::ENDING) {
                 duration = ConcurrentHelper::GetMilliseconds() - task->startTime_;
             }
             napi_value stateValue = NapiHelper::CreateUint32(env, static_cast<uint32_t>(state));

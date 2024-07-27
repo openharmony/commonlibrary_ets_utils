@@ -826,7 +826,7 @@ napi_value Task::IsDone(napi_env env, napi_callback_info cbinfo)
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
-    if (task->taskState_ == ExecuteState::FINISHED) {
+    if (task->taskState_ == ExecuteState::FINISHED || task->taskState_ == ExecuteState::ENDING) {
         return NapiHelper::CreateBooleanValue(env, true);
     }
     return NapiHelper::CreateBooleanValue(env, false);
