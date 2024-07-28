@@ -1205,9 +1205,8 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
                     script_.c_str(), fileName_.c_str());
     }
     // check the path is vaild.
-    bool isNormalizedOhmUrlPack = reinterpret_cast<NativeEngine*>(env)->GetIsNormalizedOhmUrlPack();
-    if (!isNormalizedOhmUrlPack && !isBundle) {
-        if (!PathHelper::CheckWorkerPath(env, script_, isHar, isRelativePath_)) {
+    if (!isBundle) {
+        if (!PathHelper::CheckWorkerPath(env, script_, fileName_, isRelativePath_)) {
             HILOG_ERROR("worker:: the file path is invaild, can't find the file : %{public}s.", script);
             CloseHelp::DeletePointer(script, true);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH,

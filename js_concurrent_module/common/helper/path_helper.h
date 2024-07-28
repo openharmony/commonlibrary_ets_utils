@@ -35,9 +35,10 @@ public:
     static constexpr char EXT_NAME_TS[] = ".ts";
     static constexpr char EXT_NAME_JS[] = ".js";
     static constexpr char NORMALIZED_OHMURL_TAG = '&';
+    static constexpr char PHYCICAL_FILE_PATH[] = "src/main";
     static constexpr size_t NORMALIZED_OHMURL_ARGS_NUM = 5;
 
-    static bool CheckWorkerPath(napi_env env, std::string script, bool isHar, bool isRelativePath)
+    static bool CheckWorkerPath(napi_env env, std::string script, std::string fileName, bool isRelativePath)
     {
         std::string ohmurl = "";
         std::string moduleName = "";
@@ -46,23 +47,65 @@ public:
             HILOG_INFO("worker:: the HAR path cannot be verified");
             return true;
         }
+
+        bool isNormalizedOhmUrlPack = reinterpret_cast<NativeEngine*>(env)->GetIsNormalizedOhmUrlPack();
+        if (isNormalizedOhmUrlPack) {
+            return CheckNormalizedWorkerPath(env, script, fileName, isRelativePath);
+        }
         size_t prev = script.find_first_of(SLASH_TAG);
         while (prev == 0 && script != "") {
             script = script.substr(1);
             prev = script.find_first_of(SLASH_TAG);
         }
         if (isRelativePath) {
-            bundleName = script.substr(0, prev);
+            if (prev != std::string::npos) {
+                bundleName = script.substr(0, prev);
+            }
             std::string temp = script.substr(prev + 1);
             prev = temp.find_first_of(SLASH_TAG);
-            moduleName = temp.substr(0, prev);
+            if (prev != std::string::npos) {
+                moduleName = temp.substr(0, prev);
+            }
             ohmurl = PREFIX_BUNDLE + script;
         } else {
-            moduleName = script.substr(0, prev);
+            if (prev != std::string::npos) {
+                moduleName = script.substr(0, prev);
+            }
             bundleName = reinterpret_cast<NativeEngine*>(env)->GetBundleName();
             prev = script.find_last_of(POINT_TAG);
-            script = script.substr(0, prev);
+            if (prev != std::string::npos) {
+                script = script.substr(0, prev);
+            }
             ohmurl = PREFIX_BUNDLE + bundleName + SLASH_TAG + script;
+        }
+        return reinterpret_cast<NativeEngine*>(env)->IsExecuteModuleInAbcFile(bundleName, moduleName, ohmurl);
+    }
+
+    static bool CheckNormalizedWorkerPath(napi_env env, std::string script, std::string fileName, bool isRelativePath)
+    {
+        std::string ohmurl = "";
+        std::string moduleName = "";
+        std::string bundleName = "";
+        if (isRelativePath) {
+            size_t prev = fileName.find_first_of(SLASH_TAG);
+            if (prev != std::string::npos) {
+                moduleName = fileName.substr(0, prev);
+            }
+            ohmurl = script;
+        } else {
+            size_t prev = script.find_last_of(POINT_TAG);
+            if (prev != std::string::npos) {
+                script = script.substr(0, prev);
+            }
+            prev = script.find_first_of(SLASH_TAG);
+            std::string path;
+            if (prev != std::string::npos) {
+                moduleName = script.substr(0, prev);
+                path = script.substr(prev);
+            }
+            bundleName = reinterpret_cast<NativeEngine*>(env)->GetBundleName();
+            std::string pkgName = reinterpret_cast<NativeEngine*>(env)->GetPkgName(moduleName);
+            ohmurl = NORMALIZED_OHMURL_TAG + pkgName + SLASH_TAG + PHYCICAL_FILE_PATH + path + NORMALIZED_OHMURL_TAG;
         }
         return reinterpret_cast<NativeEngine*>(env)->IsExecuteModuleInAbcFile(bundleName, moduleName, ohmurl);
     }
