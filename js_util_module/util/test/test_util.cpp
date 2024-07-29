@@ -1037,7 +1037,7 @@ HWTEST_F(NativeEngineTest, GetFatal002, testing::ext::TestSize.Level0)
     napi_value naVal = textDecoder.GetFatal(env);
     bool result = false;
     napi_get_value_bool(env, naVal, &result);
-    ASSERT_FALSE(result);
+    ASSERT_TRUE(result);
 }
 
 /**
@@ -1146,7 +1146,7 @@ HWTEST_F(NativeEngineTest, GetIgnoreBOM004, testing::ext::TestSize.Level0)
     napi_value naVal = textDecoder.GetIgnoreBOM(env);
     bool result = false;
     napi_get_value_bool(env, naVal, &result);
-    ASSERT_FALSE(result);
+    ASSERT_TRUE(result);
 }
 
 /**
@@ -1575,6 +1575,94 @@ HWTEST_F(NativeEngineTest, decoderUtf16be003, testing::ext::TestSize.Level0)
     ASSERT_EQ(0x61, static_cast<int>(tempU16str02[1]));
     ASSERT_EQ(0x62, static_cast<int>(tempU16str02[2]));
     ASSERT_EQ(0x63, static_cast<int>(tempU16str02[3]));
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderUtf8-BOM001
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM001 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int>  inputVec;
+    int fatal = 0;
+    int ignoreBOM = 1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = true;
+    size_t byteLength = 6;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[8] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "ABC");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderUtf8-BOM002
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM002 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int>  inputVec;
+    int fatal = 0;
+    int ignoreBOM = 0;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = true;
+    size_t byteLength = 6;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[8] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "\uFEFFABC");
     if (ch != nullptr) {
         delete []ch;
         ch = nullptr;
