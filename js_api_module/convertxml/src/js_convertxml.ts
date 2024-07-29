@@ -79,7 +79,7 @@ class ConvertXML {
 }
 
 function dealXml(strXml: string): string {
-  strXml = strXml.replace(/(<!\[CDATA\[[\s\S]*?\]\]>)|(>\s+<)/g,  function(match, group) {
+  strXml = strXml.replace(/(<!\[CDATA\[[\s\S]*?\]\]>)|(>\s+<)/g, function(match, group) {
     if (group) {
       return group;
     } else {
@@ -103,7 +103,7 @@ function dealXmlInner(strXml: string): string {
         case '\v': return '\\v';
         default: return suit;
       }
-    })
+    });
   });
 }
 

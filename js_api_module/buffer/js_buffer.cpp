@@ -399,6 +399,9 @@ void Buffer::FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end)
     unsigned int loop = buffer->GetLength() > end - offset ? end - offset : buffer->GetLength();
 
     while (offset < end) {
+        if (offset + loop > end) {
+            loop = end - offset;
+        }
         WriteBytes(buffer->GetRaw() + buffer->byteOffset_, loop, raw_ + byteOffset_ + offset);
         offset += loop;
     }
@@ -412,6 +415,9 @@ void Buffer::FillNumber(vector<uint8_t> numbers, unsigned int offset, unsigned i
     unsigned int loop = numbers.size() > end - offset ? end - offset : numbers.size();
 
     while (offset < end) {
+        if (offset + loop > end) {
+            loop = end - offset;
+        }
         WriteBytes(numbers.data(), loop, raw_ + byteOffset_ + offset);
         offset += loop;
     }
