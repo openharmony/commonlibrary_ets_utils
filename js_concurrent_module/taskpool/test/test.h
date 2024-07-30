@@ -20,6 +20,11 @@
 
 #include "gtest/gtest.h"
 
+#if defined(ENABLE_TASKPOOL_FFRT)
+#include "c/executor_task.h"
+#include "ffrt_inner.h"
+#endif
+
 class NativeEngineTest : public testing::Test {
 public:
     NativeEngineTest();
