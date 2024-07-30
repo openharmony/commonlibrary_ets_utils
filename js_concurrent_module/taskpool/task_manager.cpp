@@ -92,6 +92,17 @@ TaskManager::~TaskManager()
     }
 
     {
+        std::lock_guard<std::mutex> lock(callbackMutex_);
+        for (auto& [_, callbackPtr] : callbackTable_) {
+            if (callbackPtr == nullptr) {
+                continue;
+            }
+            callbackPtr.reset();
+        }
+        callbackTable_.clear();
+    }
+
+    {
         std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
         for (auto& [_, task] : tasks_) {
             delete task;
