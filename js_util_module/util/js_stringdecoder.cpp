@@ -33,7 +33,14 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     void *data = nullptr;
     size_t byteOffset = 0;
     napi_value arrayBuffer = nullptr;
-    NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset));
+    bool result = false;
+    napi_is_typedarray(env, src, &result);
+    if (!result) {
+        napi_throw_error(env, "401",
+            "Parameter error. The type of Parameter must be Uint8Array or string.");
+        return nullptr;
+    }
+    napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset);
     const char *source = static_cast<char*>(data);
     size_t limit = static_cast<size_t>(ucnv_getMinCharSize(conv_)) * length;
     size_t len = limit * sizeof(UChar);

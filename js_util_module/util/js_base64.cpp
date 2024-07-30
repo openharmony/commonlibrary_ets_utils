@@ -50,7 +50,7 @@ namespace OHOS::Util {
         napi_typedarray_type type;
         size_t length = 0;
         void *resultData = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -83,7 +83,7 @@ namespace OHOS::Util {
         napi_typedarray_type type;
         size_t length = 0;
         void *resultData = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -356,7 +356,7 @@ namespace OHOS::Util {
         napi_typedarray_type type;
         size_t length = 0;
         void *resultData = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -373,7 +373,7 @@ namespace OHOS::Util {
         napi_typedarray_type type;
         size_t length = 0;
         void *resultData = nullptr;
-        NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -556,7 +556,12 @@ namespace OHOS::Util {
         char *inputString = nullptr;
         char *inputDecode = nullptr;
         if (valuetype != napi_valuetype::napi_string) {
-            NAPI_CALL(env, napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr));
+            if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
+                std::string errMsg =
+                    "Parameter error. The type of Parameter must be Uint8Array or string.";
+                napi_throw_error(env, "401", errMsg.c_str());
+                return nullptr;
+            }
         }
         if (valuetype == napi_valuetype::napi_string) {
             size_t prolen = 0;
