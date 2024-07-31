@@ -1576,8 +1576,11 @@ namespace OHOS::Util {
                     HILOG_ERROR("can not get argv value");
                     return nullptr;
                 }
-                NAPI_ASSERT(env, CheckEncodingFormat(buffer),
-                            "Wrong encoding format, the current encoding format is not support");
+                if (!CheckEncodingFormat(buffer)) {
+                    napi_throw_error(env, "401",
+                        "Parameter error. Wrong encoding format, the current encoding format is not support.");
+                    return nullptr;
+                }
                 enconding = buffer;
             }
         }
