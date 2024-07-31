@@ -57,7 +57,7 @@ function parse(text: string, reviver?: TransformsFunc, options?: ParseOptions): 
   try {
     return (JSON as unknown as JSON).parseBigInt(text, reviver, options);
   } catch (e) {
-    let error = new BusinessError(`e.message: `+ (e as Error).message + `, e.name: ` + (e as Error).name);
+    let error = new BusinessError(`e.message: ` + (e as Error).message + `, e.name: ` + (e as Error).name);
     throw error;
   }
 }
@@ -99,15 +99,10 @@ function isCirculateReference(value: Object, seenObjects: Set<Object> = new Set(
   for (const key in value) {
     if (Object.prototype.hasOwnProperty.call(value, key)) {
       const temp = value[key];
-      if (temp !== null && typeof temp === 'object') {
-        if (seenObjects.has(temp)) {
-          return true;
-        }
-        if (isCirculateReference(temp, seenObjects)) {
-          return true;
-        }
+      if (temp !== null && typeof temp === 'object' &&
+        (seenObjects.has(temp) || isCirculateReference(temp, seenObjects))) {      
+        return true;
       }
-
     }
   }
   seenObjects.delete(value);

@@ -91,7 +91,7 @@ if (flag || fastTreeSet === undefined) {
     getFirstValue(): T {
       errorUtil.checkBindError('getFirstValue', TreeSet, this);
       if (this.constitute.firstNode() === undefined) {
-        return this.constitute.firstNode();;
+        return this.constitute.firstNode();
       }
       return this.constitute.firstNode().key;
     }

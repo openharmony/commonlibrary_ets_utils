@@ -538,7 +538,7 @@ function initToStringSeachParams(input: string): Array<string> {
   seachParamsArr = UrlInterface.stringParmas(strVal);  
   return seachParamsArr.map(item => {
     return item = decodeStringParmas(item);
-  })
+  });
 }
 
 class URL {
