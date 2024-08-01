@@ -71,6 +71,7 @@ TaskManager::TaskManager()
 
 TaskManager::~TaskManager()
 {
+    HILOG_INFO("taskpool:: ~TaskManager");
     if (timer_ == nullptr) {
         HILOG_ERROR("taskpool:: timer_ is nullptr");
     } else {
