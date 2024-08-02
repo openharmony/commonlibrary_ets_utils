@@ -20,20 +20,20 @@
 #include "tools/log.h"
 
 namespace {
-const std::string SHARED_ARRAY_NAME = "SharedArray";
-const std::string SHARED_SET_NAME = "SharedSet";
-const std::string SHARED_MAP_NAME = "SharedMap";
-const std::string SHARED_INT8_ARRAY = "SharedInt8Array";
-const std::string SHARED_UINT8_ARRAY = "SharedUint8Array";
-const std::string SHARED_INT16_ARRAY = "SharedInt16Array";
-const std::string SHARED_UINT16_ARRAY = "SharedUint16Array";
-const std::string SHARED_INT32_ARRAY = "SharedInt32Array";
-const std::string SHARED_UINT32_ARRAY = "SharedUint32Array";
-const std::string SHARED_ARRAY_BUFFER = "SendableArrayBuffer";
+const std::string SENDABLE_ARRAY_NAME = "SendableArray";
+const std::string SENDABLE_SET_NAME = "SendableSet";
+const std::string SENDABLE_MAP_NAME = "SendableMap";
+const std::string SENDABLE_INT8_ARRAY = "SendableInt8Array";
+const std::string SENDABLE_UINT8_ARRAY = "SendableUint8Array";
+const std::string SENDABLE_INT16_ARRAY = "SendableInt16Array";
+const std::string SENDABLE_UINT16_ARRAY = "SendableUint16Array";
+const std::string SENDABLE_INT32_ARRAY = "SendableInt32Array";
+const std::string SENDABLE_UINT32_ARRAY = "SendableUint32Array";
+const std::string SENDABLE_ARRAY_BUFFER = "SendableArrayBuffer";
 const std::string BIT_VECTOR = "BitVector";
 const int ARK_PRIVATE_BIT_VECTOR_INDEX = 14;
-const std::string SHARED_UINT8_CLAMPED_ARRAY = "SharedUint8ClampedArray";
-const std::string SHARED_FLOAT32_ARRAY = "SharedFloat32Array";
+const std::string SENDABLE_UINT8_CLAMPED_ARRAY = "SendableUint8ClampedArray";
+const std::string SENDABLE_FLOAT32_ARRAY = "SendableFloat32Array";
 }  // namespace
 
 static bool GetCollectionFunction(napi_env env, napi_value global, std::string collectionName,
@@ -73,75 +73,75 @@ static void GetBitVectorFunction(napi_env env, napi_value global, napi_value &bi
 static napi_value InitArkTSCollections(napi_env env, napi_value exports)
 {
     napi_value global;
-    napi_value sharedArrayValue;
-    napi_value sharedSetValue;
-    napi_value sharedMapValue;
-    napi_value sharedInt8Array;
-    napi_value sharedUint8Array;
-    napi_value sharedInt16Array;
-    napi_value sharedUint16Array;
-    napi_value sharedInt32Array;
-    napi_value sharedUint32Array;
-    napi_value sharedArrayBuffer;
+    napi_value sendableArrayValue;
+    napi_value sendableSetValue;
+    napi_value sendableMapValue;
+    napi_value sendableInt8Array;
+    napi_value sendableUint8Array;
+    napi_value sendableInt16Array;
+    napi_value sendableUint16Array;
+    napi_value sendableInt32Array;
+    napi_value sendableUint32Array;
+    napi_value sendableArrayBuffer;
     napi_value bitVector;
-    napi_value sharedUint8ClampedArray;
-    napi_value sharedFloat32Array;
+    napi_value sendableUint8ClampedArray;
+    napi_value sendableFloat32Array;
 
     napi_get_global(env, &global);
-    if (!GetCollectionFunction(env, global, SHARED_ARRAY_NAME, sharedArrayValue)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_ARRAY_NAME, sendableArrayValue)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_SET_NAME, sharedSetValue)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_SET_NAME, sendableSetValue)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_MAP_NAME, sharedMapValue)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_MAP_NAME, sendableMapValue)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_ARRAY_BUFFER, sharedArrayBuffer)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_ARRAY_BUFFER, sendableArrayBuffer)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_INT8_ARRAY, sharedInt8Array)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_INT8_ARRAY, sendableInt8Array)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_UINT8_ARRAY, sharedUint8Array)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_UINT8_ARRAY, sendableUint8Array)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_INT16_ARRAY, sharedInt16Array)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_INT16_ARRAY, sendableInt16Array)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_UINT16_ARRAY, sharedUint16Array)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_UINT16_ARRAY, sendableUint16Array)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_INT32_ARRAY, sharedInt32Array)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_INT32_ARRAY, sendableInt32Array)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_UINT32_ARRAY, sharedUint32Array)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_UINT32_ARRAY, sendableUint32Array)) {
         return exports;
     }
-    if (!GetCollectionFunction(env, global, SHARED_UINT8_CLAMPED_ARRAY, sharedUint8ClampedArray)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_UINT8_CLAMPED_ARRAY, sendableUint8ClampedArray)) {
         return exports;
     }
 
-    if (!GetCollectionFunction(env, global, SHARED_FLOAT32_ARRAY, sharedFloat32Array)) {
+    if (!GetCollectionFunction(env, global, SENDABLE_FLOAT32_ARRAY, sendableFloat32Array)) {
         return exports;
     }
 
     GetBitVectorFunction(env, global, bitVector);
 
     napi_property_descriptor desc[] = {
-        DECLARE_NAPI_PROPERTY("Array", sharedArrayValue),
-        DECLARE_NAPI_PROPERTY("Set", sharedSetValue),
-        DECLARE_NAPI_PROPERTY("Map", sharedMapValue),
-        DECLARE_NAPI_PROPERTY("ArrayBuffer", sharedArrayBuffer),
-        DECLARE_NAPI_PROPERTY("Int8Array", sharedInt8Array),
-        DECLARE_NAPI_PROPERTY("Uint8Array", sharedUint8Array),
-        DECLARE_NAPI_PROPERTY("Int16Array", sharedInt16Array),
-        DECLARE_NAPI_PROPERTY("Uint16Array", sharedUint16Array),
-        DECLARE_NAPI_PROPERTY("Int32Array", sharedInt32Array),
-        DECLARE_NAPI_PROPERTY("Uint32Array", sharedUint32Array),
+        DECLARE_NAPI_PROPERTY("Array", sendableArrayValue),
+        DECLARE_NAPI_PROPERTY("Set", sendableSetValue),
+        DECLARE_NAPI_PROPERTY("Map", sendableMapValue),
+        DECLARE_NAPI_PROPERTY("ArrayBuffer", sendableArrayBuffer),
+        DECLARE_NAPI_PROPERTY("Int8Array", sendableInt8Array),
+        DECLARE_NAPI_PROPERTY("Uint8Array", sendableUint8Array),
+        DECLARE_NAPI_PROPERTY("Int16Array", sendableInt16Array),
+        DECLARE_NAPI_PROPERTY("Uint16Array", sendableUint16Array),
+        DECLARE_NAPI_PROPERTY("Int32Array", sendableInt32Array),
+        DECLARE_NAPI_PROPERTY("Uint32Array", sendableUint32Array),
         DECLARE_NAPI_PROPERTY("BitVector", bitVector),
-        DECLARE_NAPI_PROPERTY("Uint8ClampedArray", sharedUint8ClampedArray),
-        DECLARE_NAPI_PROPERTY("Float32Array", sharedFloat32Array),
+        DECLARE_NAPI_PROPERTY("Uint8ClampedArray", sendableUint8ClampedArray),
+        DECLARE_NAPI_PROPERTY("Float32Array", sendableFloat32Array),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;
