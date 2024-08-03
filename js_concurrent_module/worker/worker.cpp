@@ -39,6 +39,7 @@ static std::mutex g_limitedworkersMutex;
 static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
+static constexpr size_t GLOBAL_CALL_MAX_COUNT = 65535;
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 std::shared_ptr<OHOS::AppExecFwk::EventRunner> Worker::g_mainThreadRunner_ = nullptr;
 std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::g_mainThreadHandler_ = nullptr;
@@ -1463,6 +1464,12 @@ void Worker::HostOnGlobalCallInner()
     MessageDataType data = nullptr;
     uint32_t currentCallId = 0;
     size_t size = hostGlobalCallQueue_.GetSize();
+    if (size < 0 || size > GLOBAL_CALL_MAX_COUNT) {
+        HILOG_ERROR("worker:: hostGlobalCallQueue_ size error");
+        globalCallSuccess_ = false;
+        cv_.notify_one();
+        return;
+    }
     for (size_t i = 0; i < size; i++) {
         std::pair<uint32_t, MessageDataType> pair = hostGlobalCallQueue_.Front();
         hostGlobalCallQueue_.Pop();
