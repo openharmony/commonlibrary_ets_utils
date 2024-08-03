@@ -501,6 +501,7 @@ private:
     void PostMessageToHostInner(MessageDataType data);
 
     void TerminateWorker();
+    void EraseWorker();
     void CloseInner();
 
     void PublishWorkerOverSignal();
