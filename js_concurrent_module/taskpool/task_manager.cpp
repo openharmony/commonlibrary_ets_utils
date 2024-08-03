@@ -943,14 +943,22 @@ MsgQueue* TaskManager::GetMessageQueue(const uv_async_t* req)
         return nullptr;
     }
     auto worker = info->worker;
-    return &(worker->Dequeue(info->hostEnv));
+    MsgQueue* queue = nullptr;
+    worker->Dequeue(info->hostEnv, queue);
+    return queue;
 }
 
 MsgQueue* TaskManager::GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInfo)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
+    if (callbackInfo == nullptr || callbackInfo->worker == nullptr) {
+        HILOG_ERROR("taskpool:: callbackInfo or worker is nullptr");
+        return nullptr;
+    }
     auto worker = callbackInfo->worker;
-    return &(worker->Dequeue(callbackInfo->hostEnv));
+    MsgQueue* queue = nullptr;
+    worker->Dequeue(callbackInfo->hostEnv, queue);
+    return queue;
 }
 // ---------------------------------- SendData ---------------------------------------
 

@@ -65,10 +65,13 @@ public:
         msgQueueMap_[env].EnQueue(resultInfo);
     }
 
-    MsgQueue& Dequeue(napi_env env)
+    void Dequeue(napi_env env, MsgQueue*& queue)
     {
         std::lock_guard<std::mutex> lock(queueMutex_);
-        return msgQueueMap_[env];
+        auto item = msgQueueMap_.find(env);
+        if (item != msgQueueMap_.end()) {
+            queue = &(item->second);
+        }
     }
 
     // the function will only be called when the task is finished or
