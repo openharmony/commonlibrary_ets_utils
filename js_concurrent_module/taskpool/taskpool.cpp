@@ -127,6 +127,10 @@ void TaskPool::ExecuteCallbackInner(MsgQueue& msgQueue)
 {
     while (!msgQueue.IsEmpty()) {
         auto resultInfo = msgQueue.DeQueue();
+        if (resultInfo == nullptr) {
+            HILOG_DEBUG("taskpool:: resultInfo is nullptr");
+            continue;
+        }
         ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
         napi_status status = napi_ok;
         CallbackScope callbackScope(resultInfo->hostEnv, resultInfo->workerEnv, resultInfo->taskId, status);
