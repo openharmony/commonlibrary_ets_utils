@@ -717,6 +717,20 @@ namespace OHOS::Util {
         return EncodeIntoOne(env, info);
     }
 
+    static napi_value Create(napi_env env, napi_callback_info info)
+    {
+        napi_value textEncoderObj = TextEncoderConstructor(env, info);
+        napi_property_descriptor textEncoderDesc[] = {
+            DECLARE_NAPI_GETTER("encoding", GetEncoding),
+            DECLARE_NAPI_FUNCTION("encode", Encode),
+            DECLARE_NAPI_FUNCTION("encodeInto", EncodeIntoArgs),
+            DECLARE_NAPI_FUNCTION("encodeIntoUint8Array", EncodeIntoUint8Array),
+        };
+        napi_define_properties(env, textEncoderObj, sizeof(textEncoderDesc) / sizeof(textEncoderDesc[0]),
+                               textEncoderDesc);
+        return textEncoderObj;
+    }
+
     static napi_value TextcoderInit(napi_env env, napi_value exports)
     {
         const char *textEncoderClassName = "TextEncoder";
@@ -726,6 +740,7 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("encode", Encode),
             DECLARE_NAPI_FUNCTION("encodeInto", EncodeIntoArgs),
             DECLARE_NAPI_FUNCTION("encodeIntoUint8Array", EncodeIntoUint8Array),
+            DECLARE_NAPI_STATIC_FUNCTION("create", Create),
 
         };
         NAPI_CALL(env, napi_define_class(env, textEncoderClassName, strlen(textEncoderClassName),
