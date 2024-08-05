@@ -23,6 +23,7 @@
 #include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "native_engine/native_engine.h"
 #include "tools/log.h"
 
 namespace OHOS::xml {
@@ -287,6 +288,9 @@ namespace OHOS::xml {
             const std::string START_PROCESSING_INSTRUCTION = "<?";
             const std::string XML = "xml ";
         };
+        struct APIVersion {
+            const int32_t API12 = 12;
+        };
         struct SrcLinkList {
             SrcLinkList* next;
             std::string strBuffer;
@@ -302,8 +306,14 @@ namespace OHOS::xml {
             SrcLinkList(SrcLinkList* pNext, const std::string &strTemp, int iPos, int iMax) :next(pNext),
                 strBuffer(strTemp), position(iPos), max(iMax) {}
         };
-        XmlPullParser(const std::string &strXml, const std::string &encoding) : strXml_(strXml),
-            encoding_(encoding) {};
+        XmlPullParser(napi_env env, const std::string &strXml, const std::string &encoding) :env_(env), strXml_(strXml),
+            encoding_(encoding)
+        {
+            NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+            if (engine != nullptr) {
+                apiVersion_ = engine->GetApiVersion() % API_VERSION_MOD;
+            }
+        };
         ~XmlPullParser()
         {
             while (srcLinkList_) {
@@ -381,10 +391,14 @@ namespace OHOS::xml {
         napi_value tagFunc_ {nullptr};
         napi_value attrFunc_ {nullptr};
         napi_value tokenFunc_ {nullptr};
+        napi_env env_ {nullptr};
         TagText tagText_;
+        APIVersion APIVerIsolation_;
         std::string strXml_ {};
         std::string version_ {};
         std::string encoding_ {};
+        int32_t apiVersion_ {0};
+        int32_t API_VERSION_MOD {100};
         std::string prefix_ {};
         std::string namespace_ {};
         std::string name_ {};

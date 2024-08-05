@@ -1078,7 +1078,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1122,7 +1122,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest002, testing::ext::TestSize.Level0)
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1162,7 +1162,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1206,7 +1206,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest004, testing::ext::TestSize.Level0)
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1246,7 +1246,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1289,7 +1289,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest006, testing::ext::TestSize.Level0)
     std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1333,7 +1333,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest007, testing::ext::TestSize.Level0)
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1373,7 +1373,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1416,7 +1416,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest009, testing::ext::TestSize.Level0)
     std::string str7 = "<h:td>Apples</h:td> <h:td>Bananas</h:td> </h:tr>";
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1460,7 +1460,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0010, testing::ext::TestSize.Level0)
     std::string str8 = "</h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1504,7 +1504,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0011, testing::ext::TestSize.Level0)
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
     g_testStr = "";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1543,7 +1543,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0012, testing::ext::TestSize.Level0)
     std::string str7 = "            <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>";
     std::string str8 = "    </h:table></note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6 + str7 + str8;
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     napi_value options = nullptr;
     napi_create_object(env, &options);
     const char* key1 = "supportDoctype";
@@ -1572,8 +1572,9 @@ HWTEST_F(NativeEngineTest, XmlParseTest0012, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, Xmlfunctest001, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     std::string strXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>    <title>Happy</title>    <todo>Work</todo>";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     ASSERT_EQ(xmlPullParser.GetColumnNumber(), 1);
     ASSERT_EQ(xmlPullParser.GetDepth(), 0);
     ASSERT_EQ(xmlPullParser.GetLineNumber(), 1);
@@ -1756,8 +1757,8 @@ HWTEST_F(NativeEngineTest, Xmltest001, testing::ext::TestSize.Level0)
     XmlTest::XmlSerializerError(env);
 
     std::string strXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>    <title>Happy</title>    <todo>Work</todo>";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
-    XmlTest::PushSrcLinkList();
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    XmlTest::PushSrcLinkList(env);
     std::string strTemp = "xml version";
     xmlPullParser.Replace(strTemp, "xml", "convert");
     ASSERT_STREQ(strTemp.c_str(), "convert version");
@@ -1769,10 +1770,11 @@ HWTEST_F(NativeEngineTest, Xmltest001, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, GetNSCount001, testing::ext::TestSize.Level0)
 {
-    size_t res = XmlTest::GetNSCount(1);
+    napi_env env = (napi_env)engine_;
+    size_t res = XmlTest::GetNSCount(env, 1);
     ASSERT_EQ(res, 0);
 
-    std::string str = XmlTest::XmlPullParserError();
+    std::string str = XmlTest::XmlPullParserError(env);
     ASSERT_STREQ(str.c_str(), "IndexOutOfBoundsException");
 }
 
@@ -1782,13 +1784,14 @@ HWTEST_F(NativeEngineTest, GetNSCount001, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, DealExclamationGroup001, testing::ext::TestSize.Level0)
 {
-    TagEnum tEnum = XmlTest::DealExclamationGroup("stER");
+    napi_env env = (napi_env)engine_;
+    TagEnum tEnum = XmlTest::DealExclamationGroup(env, "stER");
     ASSERT_EQ(tEnum, TagEnum::ERROR);
 
-    tEnum = XmlTest::DealExclamationGroup("stNR");
+    tEnum = XmlTest::DealExclamationGroup(env, "stNR");
     ASSERT_EQ(tEnum, TagEnum::NOTATIONDECL);
 
-    tEnum = XmlTest::DealExclamationGroup("staR");
+    tEnum = XmlTest::DealExclamationGroup(env, "staR");
     ASSERT_EQ(tEnum, TagEnum::ERROR);
 }
 
@@ -1798,10 +1801,11 @@ HWTEST_F(NativeEngineTest, DealExclamationGroup001, testing::ext::TestSize.Level
  */
 HWTEST_F(NativeEngineTest, DealLtGroup001, testing::ext::TestSize.Level0)
 {
-    TagEnum tEnum = XmlTest::DealLtGroup();
+    napi_env env = (napi_env)engine_;
+    TagEnum tEnum = XmlTest::DealLtGroup(env);
     ASSERT_EQ(tEnum, TagEnum::END_TAG);
 
-    tEnum = XmlTest::ParseTagType();
+    tEnum = XmlTest::ParseTagType(env);
     ASSERT_EQ(tEnum, TagEnum::TEXT);
 }
 
@@ -1811,18 +1815,19 @@ HWTEST_F(NativeEngineTest, DealLtGroup001, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, MakeStrUpper001, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     std::string strXml = "to";
-    OHOS::xml::XmlPullParser xmlPullParser(strXml, "utf-8");
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     std::string src = "C";
     xmlPullParser.MakeStrUpper(src);
     ASSERT_STREQ(src.c_str(), "c");
 
     std::string str = "todo";
-    src = XmlTest::SkipText(strXml, str);
+    src = XmlTest::SkipText(env, strXml, str);
     ASSERT_STREQ(src.c_str(), "expected: 'todo' but was EOF");
 
     strXml = "<todo>Work</todo>";
-    src = XmlTest::SkipText(strXml, str);
+    src = XmlTest::SkipText(env, strXml, str);
     ASSERT_STREQ(src.c_str(), "expected: \"todo\" but was \"<tod...\"");
 }
 
@@ -1848,7 +1853,7 @@ HWTEST_F(NativeEngineTest, GetLineNumber, testing::ext::TestSize.Level0)
     OHOS::xml::XmlTest testXml;
     int res = testXml.TestGetLineNumber(env);
 
-    OHOS::xml::XmlPullParser xml("1\n1", "utf8");
+    OHOS::xml::XmlPullParser xml(env, "1\n1", "utf8");
     xml.ParseInneNotaDecl();
     ASSERT_EQ(res, 2); // 2: LineNumber
 }
@@ -1871,7 +1876,8 @@ HWTEST_F(NativeEngineTest, GetText, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal, testing::ext::TestSize.Level0)
 {
-    OHOS::xml::XmlPullParser xml("", "utf8");
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlPullParser xml(env, "", "utf8");
     bool res = xml.ParseStartTagFuncDeal(true);
     ASSERT_FALSE(res);
 }
@@ -1931,12 +1937,13 @@ HWTEST_F(NativeEngineTest, ParseEndTag, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParserDoctInnerInfo, testing::ext::TestSize.Level0)
 {
-    OHOS::xml::XmlPullParser xml("S11", "utf8");
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlPullParser xml(env, "S11", "utf8");
     bool res = xml.ParserDoctInnerInfo(false, true);
 
-    OHOS::xml::XmlPullParser xml1("P11", "utf8");
+    OHOS::xml::XmlPullParser xml1(env, "P11", "utf8");
     res = xml1.ParserDoctInnerInfo(true, true);
-    OHOS::xml::XmlPullParser xml2("P11", "utf8");
+    OHOS::xml::XmlPullParser xml2(env, "P11", "utf8");
     res = xml2.ParserDoctInnerInfo(true, false);
     ASSERT_TRUE(res);
 }
@@ -1947,7 +1954,8 @@ HWTEST_F(NativeEngineTest, ParserDoctInnerInfo, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseDelimiter, testing::ext::TestSize.Level0)
 {
-    OHOS::xml::XmlPullParser xml("\"\'1", "utf8");
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlPullParser xml(env, "\"\'1", "utf8");
     std::string res = xml.ParseDelimiter(false);
     ASSERT_STREQ(res.c_str(), "");
 }
@@ -1958,11 +1966,12 @@ HWTEST_F(NativeEngineTest, ParseDelimiter, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseSpecText, testing::ext::TestSize.Level0)
 {
-    OHOS::xml::XmlPullParser xml("()*", "utf8");
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlPullParser xml(env, "()*", "utf8");
     xml.ParseSpecText();
-    OHOS::xml::XmlPullParser xml1("E", "utf8");
+    OHOS::xml::XmlPullParser xml1(env, "E", "utf8");
     xml1.ParseSpecText();
-    OHOS::xml::XmlPullParser xml2("A", "utf8");
+    OHOS::xml::XmlPullParser xml2(env, "A", "utf8");
     xml2.ParseSpecText();
     bool res = false;
     ASSERT_FALSE(res);
@@ -1986,8 +1995,9 @@ HWTEST_F(NativeEngineTest, ParseComment, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseOneTagFunc, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     OHOS::xml::XmlTest testXml;
-    OHOS::xml::TagEnum res = testXml.TestParseOneTagFunc();
+    OHOS::xml::TagEnum res = testXml.TestParseOneTagFunc(env);
     ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR);
 }
 
@@ -1997,8 +2007,9 @@ HWTEST_F(NativeEngineTest, ParseOneTagFunc, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, TestParseEntityDecl, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     OHOS::xml::XmlTest testXml;
-    testXml.TestParseEntityDecl();
+    testXml.TestParseEntityDecl(env);
     bool res = false;
     ASSERT_FALSE(res);
 }
@@ -2009,7 +2020,8 @@ HWTEST_F(NativeEngineTest, TestParseEntityDecl, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseNameInner, testing::ext::TestSize.Level0)
 {
-    std::string res = XmlTest::ParseNameInner(1);
+    napi_env env = (napi_env)engine_;
+    std::string res = XmlTest::ParseNameInner(env, 1);
     ASSERT_STREQ(res.c_str(), "version");
 }
 
@@ -2019,7 +2031,8 @@ HWTEST_F(NativeEngineTest, ParseNameInner, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseName, testing::ext::TestSize.Level0)
 {
-    std::string res = XmlTest::ParseName();
+    napi_env env = (napi_env)engine_;
+    std::string res = XmlTest::ParseName(env);
     ASSERT_STREQ(res.c_str(), "");
 }
 
@@ -2029,23 +2042,24 @@ HWTEST_F(NativeEngineTest, ParseName, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseEntityFunc, testing::ext::TestSize.Level0)
 {
-    OHOS::xml::XmlPullParser xmlPullParser("xml", "utf8");
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlPullParser xmlPullParser(env, "xml", "utf8");
     std::string out = "W#x2";
-    XmlTest::ParseEntityFunc(out, "", true, TextEnum::ENTITY_DECL);
+    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
 
     out = "W#1";
-    XmlTest::ParseEntityFunc(out, "", true, TextEnum::ENTITY_DECL);
+    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
 
     out = "Work1";
-    XmlTest::ParseEntityFunc(out, "", true, TextEnum::ENTITY_DECL);
+    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
 
     out = "Work";
-    XmlTest::ParseEntityFunc(out, "", true, TextEnum::TEXT);
-    XmlTest::ParseEntityFunc(out, "", false, TextEnum::TEXT);
+    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::TEXT);
+    XmlTest::ParseEntityFunc(env, out, "", false, TextEnum::TEXT);
 
     out = "W";
-    XmlTest::ParseEntityFunc(out, "", true, TextEnum::TEXT);
-    XmlTest::ParseEntityFunc(out, "info", true, TextEnum::TEXT);
+    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::TEXT);
+    XmlTest::ParseEntityFunc(env, out, "info", true, TextEnum::TEXT);
 }
 
 /* @tc.name: ParseEntity
@@ -2054,7 +2068,8 @@ HWTEST_F(NativeEngineTest, ParseEntityFunc, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseEntity, testing::ext::TestSize.Level0)
 {
-    std::string res = XmlTest::ParseEntity();
+    napi_env env = (napi_env)engine_;
+    std::string res = XmlTest::ParseEntity(env);
     ASSERT_STREQ(res.c_str(), "Should not be reached");
 }
 
@@ -2064,16 +2079,17 @@ HWTEST_F(NativeEngineTest, ParseEntity, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseTagValueInner, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     size_t start = 0;
     std::string result = "xml";
     size_t position = 1;
     std::string xmlStr = "todo";
-    size_t res = XmlTest::ParseTagValueInner(start, result, position, xmlStr);
+    size_t res = XmlTest::ParseTagValueInner(env, start, result, position, xmlStr);
     ASSERT_EQ(res, 2);
 
     start = 1;
     xmlStr = "t";
-    res = XmlTest::ParseTagValueInner(start, result, position, xmlStr);
+    res = XmlTest::ParseTagValueInner(env, start, result, position, xmlStr);
     ASSERT_EQ(res, 0);
 }
 
@@ -2083,12 +2099,13 @@ HWTEST_F(NativeEngineTest, ParseTagValueInner, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseTagValue, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     size_t max = 1;
     std::string strXml = "W";
-    std::string res = XmlTest::ParseTagValue('c', false, TextEnum::TEXT, max);
+    std::string res = XmlTest::ParseTagValue(env, 'c', false, TextEnum::TEXT, max);
     ASSERT_STREQ(res.c_str(), "xml");
 
-    res = XmlTest::ParseTagValue('e', true, TextEnum::ATTRI, max);
+    res = XmlTest::ParseTagValue(env, 'e', true, TextEnum::ATTRI, max);
     ASSERT_STREQ(res.c_str(), "");
 }
 
@@ -2098,14 +2115,15 @@ HWTEST_F(NativeEngineTest, ParseTagValue, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, GetNamespace, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     std::string prefix = "";
     size_t depth = 2;
-    std::string res = XmlTest::GetNamespace(prefix, depth);
+    std::string res = XmlTest::GetNamespace(env, prefix, depth);
     ASSERT_STREQ(res.c_str(), "W");
 
     prefix = "fix";
     depth = 1;
-    std::string res1 = XmlTest::GetNamespace(prefix, depth);
+    std::string res1 = XmlTest::GetNamespace(env, prefix, depth);
     ASSERT_STREQ(res1.c_str(), "");
 }
 
@@ -2115,7 +2133,8 @@ HWTEST_F(NativeEngineTest, GetNamespace, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseNspFunc, testing::ext::TestSize.Level0)
 {
-    std::string res = XmlTest::ParseNspFunc();
+    napi_env env = (napi_env)engine_;
+    std::string res = XmlTest::ParseNspFunc(env);
     ASSERT_STREQ(res.c_str(), "illegal empty namespace");
 }
 
@@ -2125,12 +2144,13 @@ HWTEST_F(NativeEngineTest, ParseNspFunc, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseNspFunction, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     std::string pushStr = "yu:er";
-    std::string res = XmlTest::ParseNspFunction(pushStr);
+    std::string res = XmlTest::ParseNspFunction(env, pushStr);
     ASSERT_STREQ(res.c_str(), "Undefined Prefix: yu in ");
 
     pushStr = ":yuer";
-    res = XmlTest::ParseNspFunction(pushStr);
+    res = XmlTest::ParseNspFunction(env, pushStr);
     ASSERT_STREQ(res.c_str(), "illegal attribute name: ");
 }
 
@@ -2140,7 +2160,8 @@ HWTEST_F(NativeEngineTest, ParseNspFunction, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseNsp002, testing::ext::TestSize.Level0)
 {
-    bool res = XmlTest::ParseNsp();
+    napi_env env = (napi_env)engine_;
+    bool res = XmlTest::ParseNsp(env);
     ASSERT_FALSE(res);
 }
 
@@ -2150,13 +2171,14 @@ HWTEST_F(NativeEngineTest, ParseNsp002, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal002, testing::ext::TestSize.Level0)
 {
-    bool res = XmlTest::ParseStartTagFuncDeal("w=", false);
+    napi_env env = (napi_env)engine_;
+    bool res = XmlTest::ParseStartTagFuncDeal(env, "w=", false);
     ASSERT_FALSE(res);
 
-    res = XmlTest::ParseStartTagFuncDeal("=q", true);
+    res = XmlTest::ParseStartTagFuncDeal(env, "=q", true);
     ASSERT_TRUE(res);
 
-    res = XmlTest::ParseStartTagFuncDeal("==", false);
+    res = XmlTest::ParseStartTagFuncDeal(env, "==", false);
     ASSERT_FALSE(res);
 }
 
@@ -2166,7 +2188,8 @@ HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal002, testing::ext::TestSize.Leve
  */
 HWTEST_F(NativeEngineTest, ParseStartTagFunc, testing::ext::TestSize.Level0)
 {
-    OHOS::xml::XmlPullParser xmlPullParser("", "utf-8");
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlPullParser xmlPullParser(env, "", "utf-8");
     TagEnum res = xmlPullParser.ParseStartTagFunc(false, false);
     ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR);
 }
@@ -2177,19 +2200,20 @@ HWTEST_F(NativeEngineTest, ParseStartTagFunc, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, ParseDeclaration002, testing::ext::TestSize.Level0)
 {
+    napi_env env = (napi_env)engine_;
     std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
-    bool res = XmlTest::ParseDeclaration(xml);
+    bool res = XmlTest::ParseDeclaration(env, xml);
     ASSERT_TRUE(res);
 
     xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?><todo>Work</todo>";
-    res = XmlTest::ParseDeclaration(xml);
+    res = XmlTest::ParseDeclaration(env, xml);
     ASSERT_TRUE(res);
 
     xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"else\"?><todo>Work</todo>";
-    res = XmlTest::ParseDeclaration(xml);
+    res = XmlTest::ParseDeclaration(env, xml);
     ASSERT_TRUE(res);
 
     xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standa=\"no\"?><todo>Work</todo>";
-    res = XmlTest::ParseDeclaration(xml);
+    res = XmlTest::ParseDeclaration(env, xml);
     ASSERT_TRUE(res);
 }
