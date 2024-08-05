@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "message_queue.h"
 #include "test.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -601,4 +602,95 @@ HWTEST_F(NativeEngineTest, ParentPortRemoveEventListenerTest001, testing::ext::T
     } else {
         ASSERT_TRUE(result == nullptr);
     }
+}
+
+//worker GlobalCal
+HWTEST_F(NativeEngineTest, GlobalCallTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    bool status = false;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    if (worker !=nullptr) {
+        status = worker->UpdateWorkerState(Worker::RunnerState::RUNNING);
+    }
+    // ------- workerEnv---------
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+
+    napi_value argv[2] = {nullptr};
+    std::string message = "host";
+    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    std::string funcName = "GlobalCall";
+    napi_value cb = nullptr;
+    napi_value funcValue = nullptr;
+    napi_create_function(workerEnv, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
+    argv[1] = funcValue;
+
+    napi_value callResult = nullptr;
+    // ------- workerEnv---------
+    if (status) {
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::GlobalCall, worker, &cb);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+        uv_async_t* req = new uv_async_t;
+        req->data = worker;
+        Worker::HostOnGlobalCall(req);
+        result = Worker_Terminate(env, global);
+        ASSERT_TRUE(result != nullptr);
+    } else {
+        ASSERT_TRUE(result == nullptr);
+    }
+}
+
+//messageQueue DeQueue_QUEUE_IS_NULL
+HWTEST_F(NativeEngineTest, MessageQueueTest001, testing::ext::TestSize.Level0)
+{
+    MessageQueue queue;
+    ASSERT_TRUE(queue.IsEmpty());
+    MessageDataType data = nullptr;
+    ASSERT_FALSE(queue.DeQueue(&data));
+}
+
+//messageQueue DeQueue_DATA_IS_NULL
+HWTEST_F(NativeEngineTest, MessageQueueTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    MessageQueue queue;
+    MessageDataType data = nullptr;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_serialize_inner(env, undefined, undefined, undefined, false, true, &data);
+    queue.EnQueue(data);
+    ASSERT_TRUE(queue.DeQueue(nullptr));
+    queue.Clear(env);
+}
+
+//messageQueue MARKEDMESSAGEQUEUE
+HWTEST_F(NativeEngineTest, MarkedMessageQueue001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    MarkedMessageQueue queue;
+    MessageDataType data = nullptr;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_serialize_inner(env, undefined, undefined, undefined, false, true, &data);
+    queue.Push(1, data);
+    queue.Pop();
+    ASSERT_TRUE(queue.IsEmpty());
+
+    MessageDataType dataType = nullptr;
+    napi_serialize_inner(env, undefined, undefined, undefined, false, true, &dataType);
+    queue.Push(2, dataType);
+    std::pair<uint32_t, MessageDataType> pair = queue.Front();
+    ASSERT_EQ(pair.first, 2);
+    queue.Clear(env);
+    ASSERT_TRUE(queue.IsEmpty());
 }
