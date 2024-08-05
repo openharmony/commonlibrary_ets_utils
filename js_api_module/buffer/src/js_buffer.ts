@@ -27,11 +27,11 @@ function getTypeName(obj: unknown): string {
 }
 
 class BusinessError extends Error {
-  errorNumber: number;
+  code: number;
   constructor(message: string, errorNumber: number) {
     super(message);
     this.name = 'BusinessError';
-    this.errorNumber = errorNumber;
+    this.code = errorNumber;
   }
 }
 
@@ -2023,6 +2023,9 @@ function normalizeEncoding(enc: string): string | undefined {
 
 function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | string | object | Array<number>,
   offsetOrEncoding?: number | string, length?: number): Buffer {
+  if (value === null || value === undefined) {
+    throw typeError(value, 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object']);
+  }
   if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
     return createBufferFromArrayBuffer(value, offsetOrEncoding, length);
   }
@@ -2056,16 +2059,13 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
       }
     }
   }
-  throw typeError(getTypeName(value), 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like']);
+  throw typeError(value, 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like']);
 }
 
 function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
   offsetOrEncoding?: number | string, length?: number): Buffer {
   offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
   const maxLength: number = value.byteLength - offsetOrEncoding;
-  if (offsetOrEncoding < 0) {
-    throw typeError(offsetOrEncoding, 'offset', ['number']);
-  }
   if (length === undefined) {
     length = maxLength;
   } else {
