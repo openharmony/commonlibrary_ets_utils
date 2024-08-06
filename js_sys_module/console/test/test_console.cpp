@@ -100,6 +100,15 @@ napi_value StrToNapiValue(napi_env env, const std::string &result)
     return output;
 }
 
+void ConsoleTest::SetGroupIndent(const std::string& newGroupIndent)
+{
+    Console::groupIndent = newGroupIndent;
+}
+
+std::string ConsoleTest::GetGroupIndent()
+{
+    return Console::groupIndent;
+}
 /* @tc.name: Console.Log/Console.Info/Console.debug/Console.error/Console.warn Test001
  * @tc.desc: Test.
  * @tc.type: FUNC
@@ -616,6 +625,16 @@ HWTEST_F(NativeEngineTest, ConsoleTest016, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TimeEnd, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc2, argv2, &res6);
     ASSERT_CHECK_VALUE_TYPE(env, res6, napi_undefined);
+
+    size_t argc3 = 1;
+    napi_value nativeMessage2 = nullptr;
+    napi_value argv3[] = {nativeMessage2};
+    cb = nullptr;
+    funcName = "TimeEnd";
+    napi_value res7 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TimeEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc3, argv3, &res7);
+    ASSERT_CHECK_VALUE_TYPE(env, res7, napi_undefined);
 }
 
 /* @tc.name: Console.Trace
@@ -819,4 +838,57 @@ HWTEST_F(NativeEngineTest, ConsoleTest022, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TraceHybridStack, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc, argv2, &res1);
     ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+}
+
+/* @tc.name: GroupEnd
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest023, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 0;
+    napi_value res0 = nullptr;
+    std::string funcName = "GroupEnd";
+    napi_value argv[] = {nullptr};
+    napi_value cb = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::GroupEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+
+    // Test case 1: Normal case, groupIndent size is greater than GROUPINDETATIONWIDTH
+    constexpr size_t GROUPINDETATIONWIDTH = 2;
+    ConsoleTest::SetGroupIndent(std::string(10 + GROUPINDETATIONWIDTH, ' '));
+    napi_value argv1[] = {nullptr};
+    napi_value res1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::GroupEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv1, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+    ASSERT_EQ(ConsoleTest::GetGroupIndent().size(), 10); // Check if groupIndent is correctly reduced
+}
+
+/* @tc.name: ConsoleLog
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest024, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 3;
+    std::string message = "";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value nativeMessage1 = nullptr;
+    std::string message2 = "test console";
+    napi_value nativeMessage3 = nullptr;
+    napi_create_string_utf8(env, message2.c_str(), message2.length(), &nativeMessage3);
+    napi_value argv[] = {nativeMessage0, nativeMessage1, nativeMessage3};
+
+    std::string funcName = "ConsoleLog";
+    napi_value cb = nullptr;
+    napi_value res0 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
 }
