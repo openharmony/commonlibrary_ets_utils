@@ -87,7 +87,10 @@ namespace Commonlibrary::Platform {
         char *target = targetArray;
         const char *targetLimit = targetArray + limit;
         const UChar *sourceLimit = source + u_strlen(source);
-
+        if (sourceLimit == nullptr) {
+            HILOG_ERROR("textencoder::sourceLimit is nullptr");
+            return "";
+        }
         ucnv_fromUnicode(converter, &target, targetLimit, &source, sourceLimit, nullptr, true, &codeflag);
         if (U_FAILURE(codeflag)) {
             HILOG_ERROR("textencoder::ucnv_fromUnicode conversion failed.");
@@ -246,13 +249,15 @@ namespace Commonlibrary::Platform {
         size_t inputSize = 0;
         napi_get_value_string_utf16(env, src, nullptr, 0, &inputSize);
         char16_t *originalBuffer = ApplyMemory(inputSize);
+        if (originalBuffer == nullptr) {
+            HILOG_ERROR("textencoder::originalBuffer is nullptr");
+            return;
+        }
         napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
-
         int maxByteSize = GetMaxByteSize(encoding);
         outLen = static_cast<size_t>(maxByteSize) * inputSize;
         napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
         char *writeResult = static_cast<char*>(data);
-
         std::string buffer = "";
         std::u16string originalStr(originalBuffer, inputSize);
         size_t shifting = 0;
