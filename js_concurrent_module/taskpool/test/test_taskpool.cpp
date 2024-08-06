@@ -731,3 +731,126 @@ HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
     ASSERT_TRUE(result.first == 0);
     ASSERT_TRUE(result.second == Priority::LOW);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest061, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr, nullptr};
+    std::string funcName = "TaskGroupConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::TaskGroupConstructor, nullptr, &cb);
+
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest062, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskGroupConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::TaskGroupConstructor, nullptr, &cb);
+
+    napi_call_function(env, nullptr, cb, 1, argv, &result);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest063, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup taskGroup;
+    uint32_t taskId = 10;
+    taskGroup.taskIds_.push_back(taskId);
+    uint32_t index = taskGroup.GetTaskIndex(taskId);
+    ASSERT_EQ(index, 0);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest064, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup taskGroup;
+    uint32_t taskId = 11;
+    taskGroup.taskIds_.push_back(taskId);
+    uint32_t index = taskGroup.GetTaskIndex(1);
+    ASSERT_EQ(index, 1);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest065, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup taskGroup;
+    GroupInfo* groupInfo = new GroupInfo();
+    taskGroup.pendingGroupInfos_.push_back(groupInfo);
+    taskGroup.NotifyGroupTask(env);
+    delete groupInfo;
+    groupInfo = nullptr;
+    ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest066, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup taskGroup;
+    taskGroup.groupId_ = 123;
+
+    Task* task = new Task();
+    task->taskType_ = TaskType::GROUP_COMMON_TASK;
+    task->groupId_ = taskGroup.groupId_;
+    task->taskId_ = 1;
+    napi_reference_ref(env, task->taskRef_, nullptr);
+    taskGroupManager.AddTask(taskGroup.groupId_, task->taskRef_, task->taskId_);
+
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->priority = Priority::DEFAULT;
+    taskGroup.pendingGroupInfos_.push_back(groupInfo);
+    taskGroup.NotifyGroupTask(env);
+    delete task;
+    task = nullptr;
+    delete groupInfo;
+    groupInfo = nullptr;
+    ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest067, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup taskGroup;
+    taskGroup.groupId_ = 123;
+
+    Task* task = new Task();
+    task->taskType_ = TaskType::COMMON_TASK;
+    task->groupId_ = taskGroup.groupId_;
+    task->taskId_ = 1;
+    napi_reference_ref(env, task->taskRef_, nullptr);
+    taskGroupManager.AddTask(taskGroup.groupId_, nullptr, task->taskId_);
+
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->priority = Priority::DEFAULT;
+    taskGroup.pendingGroupInfos_.push_back(groupInfo);
+    taskGroup.NotifyGroupTask(env);
+    delete task;
+    task = nullptr;
+    delete groupInfo;
+    groupInfo = nullptr;
+    ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest068, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup taskGroup;
+    taskGroup.groupId_ = 123;
+
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->priority = Priority::DEFAULT;
+    taskGroup.pendingGroupInfos_.push_back(groupInfo);
+    taskGroup.CancelPendingGroup(env);
+
+    ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
+}
