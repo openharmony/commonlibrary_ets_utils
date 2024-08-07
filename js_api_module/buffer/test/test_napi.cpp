@@ -1228,3 +1228,69 @@ HWTEST_F(NativeEngineTest, HexDecodeTest001, testing::ext::TestSize.Level0)
     std::string ret = OHOS::buffer::HexDecode("313g");
     ASSERT_EQ(ret, "1");
 }
+
+/**
+ * @tc.name: FindIndex001
+ * @tc.desc: Buffer FindIndex.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FindIndex001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(15);
+    buf->WriteString("This is a buffer", 15);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("2623", 0, 4, resultIndex);
+    ASSERT_EQ(index, -1);
+}
+
+/**
+ * @tc.name: FindIndex002
+ * @tc.desc: Buffer FindIndex.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FindIndex002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(15);
+    buf->WriteString("This is a buffer", 15);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("f", 0, 1, resultIndex);
+    ASSERT_EQ(index, -2);
+    ASSERT_EQ(resultIndex, 12);
+}
+
+/**
+ * @tc.name: FindIndex003
+ * @tc.desc: Buffer FindIndex.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FindIndex003, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(15);
+    buf->WriteString("23456789abcdefg", 15);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("3", 0, 1, resultIndex);
+    ASSERT_EQ(index, -2);
+    ASSERT_EQ(resultIndex, 1);
+}
+
+/**
+ * @tc.name: FindIndex004
+ * @tc.desc: Buffer FindIndex.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FindIndex004, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(15);
+    buf->WriteString("23456789abcdefg", 15);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("3", 10, 1, resultIndex);
+    ASSERT_EQ(index, -1);
+}

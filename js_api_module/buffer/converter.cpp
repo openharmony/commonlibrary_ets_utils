@@ -435,16 +435,15 @@ int FindIndex(uint8_t* source, uint8_t* target, int soulen, int tarlen)
             if (j == tarlen - 1) {
                 int badValue = GetBadCharLengthInReverseOrder(target, source[i], j);
                 i = i + badValue;
-                j = tarlen - 1;
             } else {
                 int badValue = GetBadCharLengthInReverseOrder(target, source[i], j);
                 int goodSuffix = GetGoodSuffixLengthByLastChar(target, j, tarlen);
                 int distance = badValue > goodSuffix ? badValue : goodSuffix;
-                if (i + tarlen - 1 - j + distance  > INT_MAX) {
+                long addRst = static_cast<long>(i) + tarlen + distance;
+                if (abs(addRst) > INT_MAX) {
                     return -1;
-                } else {
-                    i = i + tarlen - 1 - j + distance;
                 }
+                i = i + tarlen - 1 - j + distance;
                 j = tarlen - 1;
             }
         }
