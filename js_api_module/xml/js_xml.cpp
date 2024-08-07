@@ -1655,7 +1655,7 @@ namespace OHOS::xml {
 
     int XmlPullParser::GetColumnNumber() const
     {
-        size_t result = bufferStartColumn_;
+        size_t result = 0;
         for (size_t i = 0; i < position_; i++) {
             if (strXml_[i] == '\n') {
                 result = 0;
