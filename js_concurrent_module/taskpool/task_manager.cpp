@@ -581,6 +581,9 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
             }
         });
         return;
+    } else if (task->IsSeqRunnerTask()) {
+        CancelSeqRunnerTask(env, task);
+        return;
     }
     if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
         task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED) {
@@ -602,6 +605,17 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         napi_reference_unref(env, task->taskRef_, nullptr);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
+    }
+}
+
+void TaskManager::CancelSeqRunnerTask(napi_env env, Task *task)
+{
+    if (task->taskState_ == ExecuteState::FINISHED) {
+        std::string errMsg = "taskpool:: sequenceRunner task has been executed";
+        HILOG_ERROR("%{public}s", errMsg.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
+    } else {
+        task->taskState_ = ExecuteState::CANCELED;
     }
 }
 
@@ -1565,6 +1579,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         Task* task = seqRunner->seqRunnerTasks_.front();
         seqRunner->seqRunnerTasks_.pop();
         while (task->taskState_ == ExecuteState::CANCELED) {
+            DisposeCanceledTask(env, task);
             if (seqRunner->seqRunnerTasks_.empty()) {
                 HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty in cancel loop.",
                             std::to_string(seqRunnerId).c_str());
@@ -1582,6 +1597,16 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
     }
     return true;
+}
+
+void TaskGroupManager::DisposeCanceledTask(napi_env env, Task* task)
+{
+    napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: sequenceRunner task has been canceled");
+    napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
+    reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+    napi_reference_unref(env, task->taskRef_, nullptr);
+    delete task->currentTaskInfo_;
+    task->currentTaskInfo_ = nullptr;
 }
 
 void TaskGroupManager::StoreTaskGroup(uint64_t groupId, TaskGroup* taskGroup)

@@ -65,6 +65,7 @@ public:
     void EnqueueTaskId(uint64_t taskId, Priority priority = Priority::DEFAULT);
     std::pair<uint64_t, Priority> DequeueTaskId();
     void CancelTask(napi_env env, uint64_t taskId);
+    void CancelSeqRunnerTask(napi_env env, Task* task);
     void ReleaseTaskData(napi_env env, Task* task);
 
     // for worker state
@@ -267,6 +268,7 @@ public:
 
     void AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task);
     bool TriggerSeqRunner(napi_env env, Task* lastTask);
+    void DisposeCanceledTask(napi_env env, Task* task);
     void StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner);
     void RemoveSequenceRunner(uint64_t seqRunnerId);
     SequenceRunner* GetSeqRunner(uint64_t seqRunnerId);
