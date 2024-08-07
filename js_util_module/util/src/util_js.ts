@@ -718,6 +718,19 @@ class TextDecoder {
     }
   }
 
+  public decodeToString(input: Uint8Array, options?: { stream?: boolean }): string {
+    if (input === null) {
+      throw new BusinessError(`Parameter error. The type of Parameter must be Uint8Array.`);
+    }
+    if (arguments.length === 0 || input === undefined || input.length === 0) {
+      return "";
+    }
+    if (arguments.length === 1) {
+      return this.textDecoder.decodeToString(input);
+    }
+    return this.textDecoder.decodeToString(input, options);
+  }
+
   public decodeWithStream(input: Uint8Array, options?: { stream?: boolean }): string {
     let uint8: Uint8Array = new Uint8Array(input);
     if (arguments.length === 1) {

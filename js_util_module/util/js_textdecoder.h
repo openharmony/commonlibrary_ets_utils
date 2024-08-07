@@ -70,6 +70,8 @@ namespace OHOS::Util {
          */
         napi_value Decode(napi_env env, napi_value src, bool iflag);
 
+        napi_value DecodeToString(napi_env env, napi_value src, bool iflag);
+
         /**
          * Get encoding format.
          *
@@ -115,11 +117,7 @@ namespace OHOS::Util {
         bool IsBomFlag() const
         {
             uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
-            if (temp == static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG)) {
-                return true;
-            } else {
-                return false;
-            }
+            return temp == static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
         }
 
         /**
@@ -128,11 +126,7 @@ namespace OHOS::Util {
         bool IsUnicode() const
         {
             uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::UNICODE_FLG);
-            if (temp == static_cast<uint32_t>(ConverterFlags::UNICODE_FLG)) {
-                return true;
-            } else {
-                return false;
-            }
+            return temp == static_cast<uint32_t>(ConverterFlags::UNICODE_FLG);
         }
 
         /**
@@ -141,11 +135,7 @@ namespace OHOS::Util {
         bool IsIgnoreBom() const
         {
             uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG);
-            if (temp == static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG)) {
-                return true;
-            } else {
-                return false;
-            }
+            return temp == static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG);
         }
 
         /**
@@ -159,6 +149,7 @@ namespace OHOS::Util {
     private:
         void SetBomFlag(const UChar *arr, const UErrorCode codeFlag, const DecodeArr decArr,
                         size_t& rstLen, bool& bomFlag);
+        void SetIgnoreBOM(const UChar *arr, size_t resultLen, bool& bomFlag);
         void FreedMemory(UChar *pData);
         const char* ReplaceNull(void *data, size_t length) const;
         napi_value ThrowError(napi_env env, const char* errMessage);

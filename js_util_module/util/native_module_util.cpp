@@ -440,6 +440,55 @@ namespace OHOS::Util {
         return thisVar;
     }
 
+    static napi_value DecodeToString(napi_env env, napi_callback_info info)
+    {
+        size_t tempArgc = 2; // 2:The number of parameters is 2
+        napi_value thisVar = nullptr;
+        napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
+        size_t argc = 0;
+        void *dataPara = nullptr;
+        napi_typedarray_type type;
+        size_t length = 0;
+        void *data = nullptr;
+        napi_value arraybuffer = nullptr;
+        size_t byteOffset = 0;
+        bool iStream = false;
+        TextDecoder *textDecoder = nullptr;
+        napi_unwrap(env, thisVar, (void**)&textDecoder);
+        napi_value valStr = nullptr;
+        if (tempArgc == 1) {
+            argc = 1;
+            napi_value argv = nullptr;
+            napi_get_cb_info(env, info, &argc, &argv, nullptr, &dataPara);
+            napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset);
+            if (type != napi_uint8_array) {
+                return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
+            }
+            valStr = textDecoder->DecodeToString(env, argv, iStream);
+        } else if (tempArgc == 2) { // 2: The number of parameters is 2.
+            argc = 2; // 2: The number of parameters is 2.
+            napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
+            napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara);
+            napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset);
+            if (type != napi_uint8_array) {
+                return ThrowError(env, "Parameter error. The type of first Parameter must be Uint8Array.");
+            }
+            napi_valuetype valueType;
+            napi_typeof(env, argvArr[1], &valueType);
+            if (valueType != napi_undefined && valueType != napi_null) {
+                if (valueType != napi_object) {
+                    return ThrowError(env, "Parameter error. The type of second Parameter must be object.");
+                }
+                const char *messageKeyStrStream = "stream";
+                napi_value resultStream = nullptr;
+                napi_get_named_property(env, argvArr[1], messageKeyStrStream, &resultStream);
+                napi_get_value_bool(env, resultStream, &iStream);
+            }
+            valStr = textDecoder->DecodeToString(env, argvArr[0], iStream);
+        }
+        return valStr;
+    }
+
     static napi_value TextdecoderDecode(napi_env env, napi_callback_info info)
     {
         size_t tempArgc = 2; // 2:The number of parameters is 2
@@ -751,6 +800,7 @@ namespace OHOS::Util {
         const char *textDecoderClassName = "TextDecoder";
         napi_value textDecoderClass = nullptr;
         napi_property_descriptor textdecoderDesc[] = {
+            DECLARE_NAPI_FUNCTION("decodeToString", DecodeToString),
             DECLARE_NAPI_FUNCTION("decode", TextdecoderDecode),
             DECLARE_NAPI_FUNCTION("decodeWithStream", TextdecoderDecode),
             DECLARE_NAPI_GETTER("encoding", TextdecoderGetEncoding),
