@@ -137,13 +137,13 @@ namespace OHOS::xml {
         if (data) {
             std::string strEnd = DealCdata(data, len);
             if (argc == 1) {
-                object = new XmlPullParser(strEnd, "utf-8");
+                object = new XmlPullParser(env, strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
                 NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
                 NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
                 std::string strEncoding = "";
                 XmlSerializer::DealNapiStrValue(env, args[1], strEncoding);
-                object = new XmlPullParser(strEnd, strEncoding);
+                object = new XmlPullParser(env, strEnd, strEncoding);
             }
         }
         napi_wrap(

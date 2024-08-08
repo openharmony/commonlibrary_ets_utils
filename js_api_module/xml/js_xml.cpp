@@ -643,7 +643,11 @@ namespace OHOS::xml {
         }
         switch (strXml_[position_]) {
             case '&':
-                return TagEnum::ENTITY_REFERENCE;
+                if (apiVersion_ >= APIVerIsolation_.API12) {
+                    return TagEnum::ENTITY_REFERENCE;
+                } else {
+                    return inDeclaration ? TagEnum::ENTITY_REFERENCE : TagEnum::TEXT;
+                }
             case '<':
                 return DealLtGroup();
             case '%':
