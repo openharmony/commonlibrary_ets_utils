@@ -403,7 +403,7 @@ public:
     void AddListenerInner(napi_env env, const char* type, const WorkerListener* listener);
     void RemoveListenerInner(napi_env env, const char* type, napi_ref callback);
     void RemoveAllListenerInner();
-
+    void EraseWorker();
     uv_loop_t* GetWorkerLoop() const
     {
         if (workerEnv_ != nullptr) {
@@ -501,7 +501,7 @@ private:
     void PostMessageToHostInner(MessageDataType data);
 
     void TerminateWorker();
-    void EraseWorker();
+    
     void CloseInner();
 
     void PublishWorkerOverSignal();
