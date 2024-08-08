@@ -27,6 +27,8 @@ public:
     static napi_value SetTimeout(napi_env env, napi_callback_info cbinfo);
     static napi_value SetInterval(napi_env env, napi_callback_info cbinfo);
     static napi_value ClearTimer(napi_env env, napi_callback_info cbinfo);
+    static void DeleteTimer(uint32_t tId, TimerCallbackInfo* callbackInfo);
+    static std::map<uint32_t, TimerCallbackInfo*>& create_timerTable();
 };
 
 napi_value TimerTest::SetTimeout(napi_env env, napi_callback_info cbinfo)
@@ -42,6 +44,16 @@ napi_value TimerTest::SetInterval(napi_env env, napi_callback_info cbinfo)
 napi_value TimerTest::ClearTimer(napi_env env, napi_callback_info cbinfo)
 {
     return Timer::ClearTimer(env, cbinfo);
+};
+
+void TimerTest::DeleteTimer(uint32_t tId, TimerCallbackInfo* callbackInfo)
+{
+    return Timer::DeleteTimer(tId, callbackInfo);
+};
+
+std::map<uint32_t, TimerCallbackInfo*>& TimerTest::create_timerTable()
+{
+    return Timer::timerTable;
 };
 }
 #endif // TEST_TIMER_H

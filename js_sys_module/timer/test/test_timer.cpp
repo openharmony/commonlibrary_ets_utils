@@ -312,3 +312,23 @@ HWTEST_F(NativeEngineTest, TimerTest012, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, cb, argc, argv, &tId);
     ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
 }
+
+/* @tc.name: DeleteTimer
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest013, testing::ext::TestSize.Level0)
+{
+    std::map<uint32_t, TimerCallbackInfo*>& table = TimerTest::create_timerTable();
+    napi_env env = (napi_env)engine_;
+    uint32_t tId = 1;
+    int32_t timeout = 1000;
+    napi_ref callback = nullptr;
+    bool repeat = false;
+    size_t argc = 0;
+    napi_ref* argv = nullptr;
+    TimerCallbackInfo* callbackInfo = new TimerCallbackInfo(env, tId, timeout, callback, repeat, argc, argv);
+    table[tId] = callbackInfo;
+    TimerTest::DeleteTimer(tId, callbackInfo);
+    ASSERT_TRUE(table.find(tId) == table.end());
+}
