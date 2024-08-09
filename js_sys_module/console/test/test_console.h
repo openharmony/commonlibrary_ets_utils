@@ -38,6 +38,8 @@ public:
     static napi_value TraceHybridStack(napi_env env, napi_callback_info info);
     static napi_value Assert(napi_env env, napi_callback_info info);
     static void PrintTime(std::string timerName, double time, std::string& log);
+    static void SetGroupIndent(const std::string& newGroupIndent);
+    static std::string GetGroupIndent();
 };
 }
 #endif // TEST_CONSOLE_H

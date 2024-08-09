@@ -34,26 +34,15 @@ namespace OHOS::Util {
     TextDecoder::TextDecoder(const std::string &buff, std::vector<int> optionVec)
         : label_(0), encStr_(buff), tranTool_(nullptr, nullptr)
     {
-        uint32_t i32Flag = 0;
-        if (optionVec.size() == 2) { // 2:Meaning of optionVec size 2
-            if (optionVec[0] >= 0 && optionVec[1] >= 0) {
-                i32Flag |= optionVec[0] ? static_cast<uint32_t>(ConverterFlags::FATAL_FLG) : 0;
-                i32Flag |= optionVec[1] ? static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG) : 0;
-            } else if (optionVec[0] >= 0 && optionVec[1] < 0) {
-                i32Flag |= optionVec[0] ? static_cast<uint32_t>(ConverterFlags::FATAL_FLG) : 0;
-            } else if (optionVec[0] < 0 && optionVec[1] >= 0) {
-                i32Flag |= optionVec[1] ? static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG) : 0;
-            }
-        }
-        label_ = i32Flag;
+        label_ |= optionVec[0] ? static_cast<uint32_t>(ConverterFlags::FATAL_FLG) : 0;
+        label_ |= optionVec[1] ? static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG) : 0;
 #if !defined(__ARKUI_CROSS__)
         SetHwIcuDirectory();
 #endif
-        bool fatal = (i32Flag & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
+        bool fatal = (label_ & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
              static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter *conv = CreateConverter(encStr_, codeflag);
-
         if (U_FAILURE(codeflag)) {
             HILOG_ERROR("ucnv_open failed !");
             return;
@@ -111,6 +100,55 @@ namespace OHOS::Util {
         std::string tepStr = ConvertToString(arrDat, length);
         napi_value resultStr = nullptr;
         NAPI_CALL(env, napi_create_string_utf8(env, tepStr.c_str(), tepStr.size(), &resultStr));
+        FreedMemory(arr);
+        if (flush) {
+            label_ &= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
+            Reset();
+        }
+        return resultStr;
+    }
+
+    napi_value TextDecoder::DecodeToString(napi_env env, napi_value src, bool iflag)
+    {
+        uint8_t flags = 0;
+        flags |= (iflag ? 0 : static_cast<uint8_t>(ConverterFlags::FLUSH_FLG));
+        UBool flush = (flags & static_cast<uint8_t>(ConverterFlags::FLUSH_FLG)) ==
+            static_cast<uint8_t>(ConverterFlags::FLUSH_FLG);
+        napi_typedarray_type type;
+        size_t length = 0;
+        void *data = nullptr;
+        size_t byteOffset = 0;
+        napi_value arrayBuffer = nullptr;
+        napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset);
+        const char *source = static_cast<char *>(data);
+        size_t limit = GetMinByteSize() * length;
+        size_t len = limit * sizeof(UChar);
+        UChar *arr = nullptr;
+        if (limit > 0) {
+            arr = new UChar[limit + 1]{0};
+        } else {
+            HILOG_DEBUG("limit is error");
+            return nullptr;
+        }
+        UChar *target = arr;
+        UErrorCode codeFlag = U_ZERO_ERROR;
+        ucnv_toUnicode(GetConverterPtr(), &target, target + len, &source, source + length, nullptr, flush, &codeFlag);
+        if (codeFlag != U_ZERO_ERROR) {
+            FreedMemory(arr);
+            napi_throw_error(env, "401",
+                "Parameter error. Please check if the decode data matches the encoding format.");
+            return nullptr;
+        }
+        size_t resultLen = target - arr;
+        bool omitInitialBom = false;
+        SetIgnoreBOM(arr, resultLen, omitInitialBom);
+        UChar *arrDat = arr;
+        if (omitInitialBom) {
+            arrDat = &arr[1];
+            resultLen--;
+        }
+        napi_value resultStr = nullptr;
+        napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arrDat), resultLen, &resultStr);
         FreedMemory(arr);
         if (flush) {
             label_ &= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
@@ -194,6 +232,23 @@ namespace OHOS::Util {
                     label_ |= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
                 }
             }
+        }
+    }
+
+    void TextDecoder::SetIgnoreBOM(const UChar *arr, size_t resultLen, bool &bomFlag)
+    {
+        switch (ucnv_getType(GetConverterPtr())) {
+            case UCNV_UTF8:
+            case UCNV_UTF16_BigEndian:
+            case UCNV_UTF16_LittleEndian:
+                label_ |= static_cast<uint32_t>(ConverterFlags::UNICODE_FLG);
+                break;
+            default:
+                break;
+        }
+        if (resultLen > 0 && IsUnicode() && IsIgnoreBom()) {
+            bomFlag = (arr[0] == 0xFEFF) ? true : false;
+            label_ |= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
         }
     }
 
