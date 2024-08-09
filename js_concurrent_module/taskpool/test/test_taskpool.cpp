@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -164,12 +164,13 @@ HWTEST_F(NativeEngineTest, TaskpoolTest014, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.InitTaskManager(env);
+    usleep(50000);
     uint32_t taskNum = taskManager.GetTaskNum();
     ASSERT_TRUE(taskNum == 0);
     uint32_t threadNum = taskManager.GetThreadNum();
-    ASSERT_TRUE(threadNum == 0);
+    ASSERT_TRUE(threadNum != 0);
     uint32_t idleWorkers = taskManager.GetIdleWorkers();
-    ASSERT_TRUE(idleWorkers == 0);
+    ASSERT_TRUE(idleWorkers != 0);
     uint32_t runningWorkers = taskManager.GetRunningWorkers();
     ASSERT_TRUE(runningWorkers == 0);
     uint32_t timeoutWorkers = taskManager.GetTimeoutWorkers();
@@ -388,10 +389,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest031, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.InitTaskManager(env);
-    uint64_t taskId = 13;
-    Task* task = taskManager.GetTask(taskId);
-    taskManager.StoreTask(taskId, task);
-    ASSERT_EQ(taskId, 13);
+    Task* task = new Task();
+    auto id = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTask(id, task);
+    Task* res = taskManager.GetTask(id);
+    ASSERT_EQ(task, res);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest032, testing::ext::TestSize.Level0)
@@ -704,7 +706,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest059, testing::ext::TestSize.Level0)
     taskManager.TryTriggerExpand();
     usleep(50000);
     uint32_t result = taskManager.GetIdleWorkers();
-    ASSERT_TRUE(result == 0);
+    ASSERT_TRUE(result != 0);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
@@ -853,4 +855,111 @@ HWTEST_F(NativeEngineTest, TaskpoolTest068, testing::ext::TestSize.Level0)
     taskGroup.CancelPendingGroup(env);
 
     ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest069, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* pointer = new Task();
+    auto task = reinterpret_cast<uint64_t>(pointer);
+    auto worker = Worker::WorkerConstructor(env);
+    taskManager.StoreLongTaskInfo(task, worker);
+    auto res = taskManager.GetLongTaskInfo(task);
+    ASSERT_TRUE(worker == res);
+    taskManager.TerminateTask(task);
+    res = taskManager.GetLongTaskInfo(task);
+    ASSERT_TRUE(res == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest070, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    auto id = reinterpret_cast<uint64_t>(task);
+    task->isLongTask_ = true;
+    task->taskId_ = id;
+    taskManager.StoreTask(id, task);
+    taskManager.EnqueueTaskId(id);
+    usleep(50000);
+    auto res = taskManager.GetLongTaskInfo(id);
+    ASSERT_NE(res, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest071, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    char buf[4096]; // 4096: buffer length for thread state
+    auto worker = Worker::WorkerConstructor(env);
+    usleep(50000);
+    bool res = taskManager.ReadThreadInfo(worker, buf, sizeof(buf));
+    ASSERT_TRUE(res == true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest072, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    auto id = reinterpret_cast<uint64_t>(task);
+    bool res = taskManager.IsDependendByTaskId(id);
+    ASSERT_NE(res, true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest073, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    auto id = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTask(id, task);
+    bool res = taskManager.CheckTask(task);
+    ASSERT_TRUE(res == true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest074, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    auto res = taskManager.GetThreadInfos(env);
+    ASSERT_TRUE(res != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest075, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    auto res = taskManager.GetTaskInfos(env);
+    ASSERT_TRUE(res != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest076, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    auto id = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTaskDuration(id, 0, 0);
+    auto totalTime = taskManager.GetTaskDuration(id, TASK_TOTAL_TIME);
+    auto cpuTime = taskManager.GetTaskDuration(id, TASK_CPU_TIME);
+    ASSERT_TRUE(totalTime == 0);
+    ASSERT_TRUE(cpuTime == 0);
+    taskManager.StoreTaskDuration(id, 100, 100); // 100: 100 seconds
+    totalTime = taskManager.GetTaskDuration(id, TASK_TOTAL_TIME);
+    cpuTime = taskManager.GetTaskDuration(id, TASK_CPU_TIME);
+    ASSERT_TRUE(totalTime == 100);
+    ASSERT_TRUE(cpuTime == 100);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest077, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task(env, TaskType::COMMON_TASK, "test");
+    auto id = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTask(id, task);
+    auto res = taskManager.GetTaskName(id);
+    ASSERT_TRUE(strcmp(res.c_str(), "test") == 0);
 }
