@@ -2217,3 +2217,460 @@ HWTEST_F(NativeEngineTest, ParseDeclaration002, testing::ext::TestSize.Level0)
     res = XmlTest::ParseDeclaration(env, xml);
     ASSERT_TRUE(res);
 }
+
+/* @tc.name: DealNapiStrValue001
+ * @tc.desc: Test DealNapiStrValue Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealNapiStrValue001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str = "<?xml version=\"1.0\" encoding=\"utf-8\" standa=\"no\"?><todo>Work</todo>";
+    std::string output = XmlTest::DealNapiStrValueFunction(env, str);
+    ASSERT_STREQ(output.c_str(), str.c_str());
+}
+
+/* @tc.name: DealNapiStrValue002
+ * @tc.desc: Test DealNapiStrValue Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealNapiStrValue002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string strPrior = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n";
+    std::string output = XmlTest::DealNapiStrValueFunction(env, strPrior);
+    ASSERT_STREQ(output.c_str(), strPrior.c_str());
+}
+
+/* @tc.name: DealNapiStrValue003
+ * @tc.desc: Test DealNapiStrValue Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealNapiStrValue003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    std::string output = XmlTest::DealNapiStrValueFunction(env, str1);
+    ASSERT_STREQ(output.c_str(), str1.c_str());
+}
+
+/* @tc.name: SplicNsp001
+ * @tc.desc: Test SplicNsp Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SplicNspFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "isStart";
+    int output = XmlTest::SplicNspFunction(env, str1);
+    ASSERT_EQ(output, 0);
+}
+
+/* @tc.name: SetNamespaceFunction001
+ * @tc.desc: Test SetNamespace Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetNamespaceFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 1024;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    std::string str1 = "h";
+    std::string str2 = "http://www.w3.org/TR/html4/";
+    xmlSerializer.SetDeclaration();
+    xmlSerializer.SetNamespace(str1, str2);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+    std::string result = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<h:"
+                         "note xmlns:h=\"http://www.w3.org/TR/html4/\"/>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetNamespaceFunction002
+ * @tc.desc: Test SetNamespace Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetNamespaceFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 1024;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    std::string str1 = "b";
+    std::string str2 = "http://www.w3.org/TR/html4/";
+    xmlSerializer.SetDeclaration();
+    xmlSerializer.SetNamespace(str1, str2);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+    std::string result = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<b:"
+                         "note xmlns:b=\"http://www.w3.org/TR/html4/\"/>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetNamespaceFunction003
+ * @tc.desc: Test SetNamespace Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetNamespaceFunction003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    std::string str1 = "h";
+    std::string str2 = "http://www.111/";
+    xmlSerializer.SetDeclaration();
+    xmlSerializer.SetNamespace(str1, str2);
+    xmlSerializer.StartElement("note1");
+    xmlSerializer.StartElement("note2");
+    xmlSerializer.EndElement();
+    xmlSerializer.EndElement();
+    std::string result = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<h:"
+                         "note1 xmlns:h=\"http://www.111/\">\r\n  <h:note2/>\r\n</h:note1>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetNamespaceFunction004
+ * @tc.desc: Test SetNamespace Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetNamespaceFunction004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "h";
+    std::string str2 = "http://www.111/";
+    std::string result = " xmlns:h=\"http://www.111/\"/>";
+    std::string outPut = XmlTest::SetNamespaceFunction(env, str1, str2);
+    ASSERT_STREQ(outPut.c_str(), result.c_str());
+}
+
+/* @tc.name: StartElementFunction001
+ * @tc.desc: Test StartElement Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, StartElementFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetComment("Hi!");
+    xmlSerializer.EndElement();
+    std::string result = "<note>\r\n  <!--Hi!-->\r\n</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: EndElementFunction001
+ * @tc.desc: Test EndElement Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EndElementFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetCData("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.EndElement();
+    std::string result = "<note>\r\n  <![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>\r\n</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: EndElementFunction002
+ * @tc.desc: Test EndElement Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EndElementFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.SetDeclaration();
+    xmlSerializer.SetNamespace("h", "http://www.w3.org/TR/html4/");
+    xmlSerializer.StartElement("note1");
+    xmlSerializer.StartElement("note2");
+    xmlSerializer.EndElement();
+    xmlSerializer.EndElement();
+    std::string result = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<h:note1 xmlns:"
+                         "h=\"http://www.w3.org/TR/html4/\">\r\n  <h:note2/>\r\n</h:note1>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: AddEmptyElementFunction001
+ * @tc.desc: Test AddEmptyElement Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, AddEmptyElementFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.AddEmptyElement("a");
+    xmlSerializer.EndElement();
+    std::string result = "<note>\r\n  <a/>\r\n</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: AddEmptyElementFunction002
+ * @tc.desc: Test AddEmptyElement Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, AddEmptyElementFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+    xmlSerializer.AddEmptyElement("b");
+    std::string result = "<note/>\r\n<b/>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetTextFunction001
+ * @tc.desc: Test SetText Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetTextFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetText("Hello\"World");
+    xmlSerializer.EndElement();
+    std::string result = "<note importance=\"high\">Hello&quot;World</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetTextFunction002
+ * @tc.desc: Test SetText Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetTextFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetText("Happy5");
+    xmlSerializer.EndElement();
+    std::string result = "<note importance=\"high\">Happy5</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetCommentFunction001
+ * @tc.desc: Test SetComment Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCommentFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetComment("Hi!");
+    xmlSerializer.EndElement();
+    std::string result = "<note>\r\n  <!--Hi!-->\r\n</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetCommentFunction002
+ * @tc.desc: Test SetComment Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCommentFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetComment("Hi!");
+    xmlSerializer.EndElement();
+    std::string result = "<note>\r\n  <!--Hi!-->\r\n</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetCDataFunction001
+ * @tc.desc: Test SetCData Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDataFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.SetCData("root SYSTEM");
+    std::string result = "<![CDATA[root SYSTEM]]>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetCDataFunction002
+ * @tc.desc: Test SetCData Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDataFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+    xmlSerializer.SetCData("root SYSTEM \"http://www.test.org/test.dtd\"");
+    std::string result = "<note/>\r\n<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: SetCDataFunction003
+ * @tc.desc: Test SetCData Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDataFunction003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetCData("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.EndElement();
+    std::string result = "<note>\r\n  <![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>\r\n</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: WriteEscapedFunction001
+ * @tc.desc: Test WriteEscaped Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, WriteEscapedFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetText("Hello>World");
+    xmlSerializer.EndElement();
+    std::string result = "<note importance=\"high\">Hello&gt;World</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: WriteEscapedFunction002
+ * @tc.desc: Test WriteEscaped Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, WriteEscapedFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetText("Hello<World");
+    xmlSerializer.EndElement();
+    std::string result = "<note importance=\"high\">Hello&lt;World</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: WriteEscapedFunction003
+ * @tc.desc: Test WriteEscaped Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, WriteEscapedFunction003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetText("Hello&World");
+    xmlSerializer.EndElement();
+    std::string result = "<note importance=\"high\">Hello&amp;World</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: WriteEscapedFunction004
+ * @tc.desc: Test WriteEscaped Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, WriteEscapedFunction004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 2048;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetText("Hello'World");
+    xmlSerializer.EndElement();
+    std::string result = "<note importance=\"high\">Hello&apos;World</note>";
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
+}
+
+/* @tc.name: XmlSerializerErrorFunction001
+ * @tc.desc: Test XmlSerializerErro Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSerializerErrorFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string outPut = XmlTest::XmlSerializerErrorFunction(env);
+    std::string result = "illegal position for declaration";
+    ASSERT_STREQ(outPut.c_str(), result.c_str());
+}
