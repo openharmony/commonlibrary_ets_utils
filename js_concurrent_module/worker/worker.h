@@ -595,6 +595,8 @@ private:
     static std::shared_ptr<OHOS::AppExecFwk::EventRunner> g_mainThreadRunner_;
     static std::shared_ptr<OHOS::AppExecFwk::EventHandler> g_mainThreadHandler_;
 #endif
+
+    friend class WorkersTest;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H

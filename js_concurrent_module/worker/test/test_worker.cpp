@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 
+#include <thread>
+#include <uv.h>
+
+#include "ark_native_engine.h"
 #include "message_queue.h"
 #include "test.h"
 #include "napi/native_api.h"
@@ -796,4 +800,180 @@ HWTEST_F(NativeEngineTest, WorkerTest003, testing::ext::TestSize.Level0)
     worker->EraseWorker();
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
+}
+
+namespace Commonlibrary::Concurrent::WorkerModule {
+class WorkersTest : public testing::Test {
+public:
+    static void SetUpTestSuite()
+    {
+        InitializeEngine();
+    }
+
+    static void TearDownTestSuite()
+    {
+        DestroyEngine();
+    }
+
+    static void InitializeEngine()
+    {
+        panda::RuntimeOption option;
+        option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
+        const int64_t poolSize = 0x1000000;  // 16M
+        option.SetGcPoolSize(poolSize);
+        option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::ERROR);
+        option.SetDebuggerLibraryPath("");
+        vm_ = panda::JSNApi::CreateJSVM(option);
+        ASSERT_TRUE(vm_ != nullptr);
+        engine_ = new ArkNativeEngine(vm_, nullptr);
+    }
+
+    static void DestroyEngine()
+    {
+        delete engine_;
+        engine_ = nullptr;
+        panda::JSNApi::DestroyJSVM(vm_);
+    }
+
+    static napi_env GetEnv()
+    {
+        return reinterpret_cast<napi_env>(engine_);
+    }
+
+    static void WorkerOnMessage(const uv_async_t *req)
+    {
+        Worker *worker = static_cast<Worker*>(req->data);
+        ASSERT_NE(worker, nullptr);
+        napi_env workerEnv = worker->GetWorkerEnv();
+        void *data = nullptr;
+        while (worker->workerMessageQueue_.DeQueue(&data)) {
+            if (data == nullptr) {
+                worker->TerminateWorker();
+                return;
+            }
+            napi_value result = nullptr;
+            napi_status status = napi_deserialize(workerEnv, data, &result);
+            ASSERT_TRUE(status == napi_ok);
+            uint32_t number = 0;
+            status = napi_get_value_uint32(workerEnv, result, &number);
+            ASSERT_TRUE(status == napi_ok);
+            ASSERT_TRUE(number != 0);
+            napi_delete_serialization_data(workerEnv, data);
+            number = 1000; // 1000 : test number
+            napi_value numVal = nullptr;
+            status = napi_create_uint32(workerEnv, number, &numVal);
+            ASSERT_TRUE(status == napi_ok);
+            napi_value undefined = nullptr;
+            napi_get_undefined(workerEnv, &undefined);
+            void *workerData = nullptr;
+            status = napi_serialize_inner(workerEnv, numVal, undefined, undefined, false, true, &workerData);
+            ASSERT_TRUE(status == napi_ok);
+            ASSERT_NE(workerData, nullptr);
+            worker->PostMessageToHostInner(workerData);
+        }
+    }
+
+    static void HostOnMessage(const uv_async_t *req)
+    {
+        Worker *worker = static_cast<Worker*>(req->data);
+        ASSERT_NE(worker, nullptr);
+        void *data = nullptr;
+        while (worker->hostMessageQueue_.DeQueue(&data)) {
+            if (data == nullptr) {
+                return;
+            }
+            napi_env hostEnv = worker->GetHostEnv();
+            napi_value result = nullptr;
+            napi_status status = napi_deserialize(hostEnv, data, &result);
+            ASSERT_TRUE(status == napi_ok);
+            uint32_t number = 0;
+            status = napi_get_value_uint32(hostEnv, result, &number);
+            ASSERT_TRUE(status == napi_ok);
+            ASSERT_EQ(number, 1000); // 1000 : test number
+            napi_delete_serialization_data(hostEnv, data);
+        }
+    }
+
+    static void WorkerThreadFunction(void *data)
+    {
+        auto worker = reinterpret_cast<Worker*>(data);
+        napi_env hostEnv = worker->GetHostEnv();
+        ASSERT_NE(hostEnv, nullptr);
+        napi_env workerEnv  = nullptr;
+        napi_status status = napi_create_runtime(hostEnv, &workerEnv);
+        ASSERT_TRUE(status == napi_ok);
+        worker->SetWorkerEnv(workerEnv);
+        uv_loop_t *workerLoop = nullptr;
+        status = napi_get_uv_event_loop(workerEnv, &workerLoop);
+        ASSERT_TRUE(status == napi_ok);
+        worker->workerOnMessageSignal_ = new uv_async_t;
+        uv_async_init(workerLoop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(WorkerOnMessage));
+        worker->workerOnMessageSignal_->data = worker;
+        worker->Loop();
+    }
+
+    static void UpdateMainThreadWorkerFlag(Worker *worker, bool isMainThreadWorker)
+    {
+        worker->isMainThreadWorker_ = isMainThreadWorker;
+    }
+
+    static void InitHostHandle(Worker *worker, uv_loop_t *loop)
+    {
+        worker->hostOnMessageSignal_ = new uv_async_t;
+        uv_async_init(loop, worker->hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(HostOnMessage));
+        worker->hostOnMessageSignal_->data = worker;
+    }
+
+    static void PostMessage(Worker *worker, void *message)
+    {
+        worker->PostMessageInner(message);
+    }
+
+protected:
+    static thread_local NativeEngine *engine_;
+    static thread_local EcmaVM *vm_;
+};
+
+thread_local NativeEngine *WorkersTest::engine_ = nullptr;
+thread_local EcmaVM *WorkersTest::vm_ = nullptr;
+}
+
+HWTEST_F(WorkersTest, ConstructorTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = WorkersTest::GetEnv();
+    Worker *worker = new Worker(env, nullptr);
+    ASSERT_TRUE(worker != nullptr);
+    napi_env hostEnv = worker->GetHostEnv();
+    ASSERT_TRUE(env == hostEnv);
+    napi_env workerEnv = worker->GetWorkerEnv();
+    ASSERT_TRUE(workerEnv == nullptr);
+    delete worker;
+    worker = nullptr;
+}
+
+HWTEST_F(WorkersTest, PostMessageTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = WorkersTest::GetEnv();
+    Worker *worker = new Worker(env, nullptr);
+    UpdateMainThreadWorkerFlag(worker, false);
+    ASSERT_TRUE(worker != nullptr);
+    uv_loop_t *loop = nullptr;
+    napi_status status = napi_get_uv_event_loop(env, &loop);
+    ASSERT_TRUE(status == napi_ok);
+    InitHostHandle(worker, loop);
+
+    std::thread t(WorkerThreadFunction, worker);
+    t.detach();
+    uint32_t number = 200; // 200 : test number
+    napi_value numVal = nullptr;
+    status = napi_create_uint32(env, number, &numVal);
+    ASSERT_TRUE(status == napi_ok);
+    void *data = nullptr;
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    status = napi_serialize(env, numVal, undefined, undefined, &data);
+    ASSERT_TRUE(status == napi_ok);
+    uv_sleep(1000); // 1000 : for post and receive message
+    PostMessage(worker, data);
+    uv_sleep(1000); // 1000 : for post and receive message
 }
