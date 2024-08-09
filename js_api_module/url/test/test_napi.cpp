@@ -2129,3 +2129,81 @@ HWTEST_F(NativeEngineTest, testUrlModule005, testing::ext::TestSize.Level0)
     DealNapiStrValue(env, result, output);
     ASSERT_STREQ(output.c_str(), "aa");
 }
+HWTEST_F(NativeEngineTest, testUrlModule006, testing::ext::TestSize.Level0)
+{
+    std::string inPut =  "#1asdf";
+    std::string temp = "";
+    std::bitset<11> flags; // 11:Each bit of a BIT represents a different parsing state.
+    bool isFalse = OHOS::Url::AnalysisScheme(inPut, temp, flags);
+    ASSERT_FALSE(isFalse);
+}
+
+HWTEST_F(NativeEngineTest, testUrlModule007, testing::ext::TestSize.Level0)
+{
+    std::string inPut =  "";
+    std::string temp = "";
+    std::bitset<11> flags(1023) ; // 11:Each bit of a BIT represents a different parsing state.
+    OHOS::Url::AnalysisScheme(inPut, temp, flags);
+    long a = flags.to_ulong();
+    ASSERT_EQ(a, 1023);
+}
+
+HWTEST_F(NativeEngineTest, testUrlModule008, testing::ext::TestSize.Level0)
+{
+    std::string inPut =  "66666";
+    std::string temp = "";
+    std::bitset<11> flags(1023) ; // 11:Each bit of a BIT represents a different parsing state.
+    OHOS::Url::AnalysisScheme(inPut, temp, flags);
+    long a = flags.to_ulong();
+    ASSERT_EQ(a, 1023);
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities009, testing::ext::TestSize.Level0)
+{
+    std::string inPut = "99::1080:0:0:8:800:200C:417A";
+    OHOS::Url::FormatIpv6(inPut);
+    ASSERT_STREQ(inPut.c_str(), "99:1080:0:0:8:800:200C:417A");
+    inPut = "::99:1080:0:0:8:800:200C:417A";
+    OHOS::Url::FormatIpv6(inPut);
+    ASSERT_STREQ(inPut.c_str(), "0:99:1080:0:0:8:800:200C:417A");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities010, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://0377.0xff.255.1:80/index.html");
+    std::string str = "0x.23.56";
+    url.SetHostname(str);
+    ASSERT_STREQ(str.c_str(), "0x.23.56");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities011, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://0377.0xff.255.1:80/index.html");
+    std::string str = "0.23.56";
+    url.SetHostname(str);
+    ASSERT_STREQ(str.c_str(), "0.23.56");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities012, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://0377.0xff.255.1:80/index.html");
+    std::string str = "33."".";
+    url.SetHostname(str);
+    ASSERT_STREQ(str.c_str(), "33..");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities013, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string str = "111111111.1001000.111.10101";
+    url.SetHost(str);
+    ASSERT_STREQ(str.c_str(), "111111111.1001000.111.10101");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities014, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://username:password@host:199/directory/file?query#fragment");
+    std::string str = "10.11.11111111";
+    url.SetHost(str);
+    ASSERT_STREQ(str.c_str(), "10.11.11111111");
+}
