@@ -23,6 +23,7 @@
 #include "js_buffer.h"
 #include "tools/log.h"
 
+#include <limits>
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -70,6 +71,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest002, testing::ext::TestSize.Level0)
     buf2->Init(buf1);
     ASSERT_EQ(buf2->GetLength(), 10);
 }
+
 
 /**
  * @tc.name: ConstructorTest003
@@ -126,10 +128,11 @@ HWTEST_F(NativeEngineTest, ConstructorTest005, testing::ext::TestSize.Level0)
     buf->FillString("abc", 1, 0, "utf16le");
     buf->FillString("abc", 1, 0, "binary");
     buf->FillString("abc", 1, 0, "sos");
+    buf->FillString("abc", 1, 0, "hex");
     std::vector<uint8_t> array;
-    buf->FillNumber(array, 1, 0);
+    buf->FillNumber(array, 0, 0);
     OHOS::buffer::Buffer *buffer = new OHOS::buffer::Buffer();
-    buf->FillBuffer(buffer, 1, 0);
+    buf->FillBuffer(buffer, 0, 0);
     buf->FillBuffer(nullptr, 1, 0);
     buf->SetArray(array, 0);
     result = buf->LastIndexOf(nullptr, 0, 0);
@@ -480,6 +483,25 @@ HWTEST_F(NativeEngineTest, ReadBytesTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: ReadBytesTest002
+ * @tc.desc: Read value error when length is zero.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, ReadBytesTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(4);
+    FillZero(buf, 4);
+    buf->WriteUInt32BE(0x12345678, 0);
+    uint32_t length = buf->GetLength();
+    uint8_t data[length];
+    buf->ReadBytes(data, 0, 0);
+    uint8_t res[4] = {0x12, 0x34, 0x56, 0x78};
+    ASSERT_NE(data[0], res[0]);
+}
+
+/**
  * @tc.name: WriteStringTest001
  * @tc.desc: Write string to buffer.
  * @tc.type: FUNC
@@ -614,6 +636,9 @@ HWTEST_F(NativeEngineTest, WriteStringTest006, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, SubBufferTest001, testing::ext::TestSize.Level0)
 {
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->SubBuffer(nullptr, 0, 10);
+
     OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
     buf1->Init(10);
     FillZero(buf1, 10);
@@ -621,6 +646,8 @@ HWTEST_F(NativeEngineTest, SubBufferTest001, testing::ext::TestSize.Level0)
     buf1->WriteString(str, 0, 10);
     OHOS::buffer::Buffer *buf2 = new OHOS::buffer::Buffer();
     buf2->SubBuffer(buf1, 0, 10);
+    buf1->ReadBytesForArrayBuffer(NULL, 0);
+
     ASSERT_EQ(buf2->GetLength(), 10);
     uint8_t data[11];
     buf2->ReadBytes(data, 0, 10);
@@ -675,6 +702,20 @@ HWTEST_F(NativeEngineTest, CopyTest001, testing::ext::TestSize.Level0)
     uint8_t data[20] = {0};
     buffer->ReadBytes(data, tOffset, tEnd);
     ASSERT_STREQ(reinterpret_cast<char*>(data), "this is a string");
+}
+
+/**
+ * @tc.name: CopyTest002
+ * @tc.desc: Copies data with len 0
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, CopyTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(20);
+    std::string value = "YWJjZA";
+    ASSERT_EQ(buf->Copy(buf, 0, 2, 2), 0);
 }
 
 /**
@@ -747,6 +788,22 @@ HWTEST_F(NativeEngineTest, IndexOfTest003, testing::ext::TestSize.Level0)
     int index = buf->IndexOf("2623", 0, 4, resultIndex);
     ASSERT_EQ(index, -2);
     ASSERT_EQ(resultIndex, 7);
+}
+
+/**
+ * @tc.name: IndexOfTest004
+ * @tc.desc: Data is not in buf.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, IndexOfTest004, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(12);
+    buf->WriteString("322362326233", 12);
+    uint64_t resultIndex = 0;
+    int index = buf->IndexOf("99", 0, 2, resultIndex);
+    ASSERT_EQ(index, -1);
 }
 
 /**
@@ -853,6 +910,37 @@ HWTEST_F(NativeEngineTest, ToBase64Test002, testing::ext::TestSize.Level0)
     buf->WriteString("this is a big string", 20);
     std::string base64Str = buf->ToBase64(0, 20);
     ASSERT_STREQ(base64Str.c_str(), "dGhpcyBpcyBhIGJpZyBzdHJpbmc=");
+}
+
+/**
+ * @tc.name: ToBase64Test003
+ * @tc.desc: Convert to base64 with length 0.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, ToBase64Test003, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(30);
+    buf->WriteString("this is a big string", 20);
+    std::string base64Str = buf->ToBase64(0, 0);
+    ASSERT_STREQ(base64Str.c_str(), "");
+}
+
+/**
+ * @tc.name: ToBase64UrlTest001
+ * @tc.desc: Convert the contents of the buffer into a string in Base64 format.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, ToBase64UrlTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(20);
+    buf->WriteString("this is a string", 16);
+    std::string base64Str = buf->ToBase64Url(0, 16);
+    std::string  stra = OHOS::buffer::Base64Encode(nullptr, 10, OHOS::buffer::BASE64URL);
+    ASSERT_STREQ(base64Str.c_str(), "dGhpcyBpcyBhIHN0cmluZw");
 }
 
 /**
@@ -969,9 +1057,11 @@ HWTEST_F(NativeEngineTest, FillStringTest001, testing::ext::TestSize.Level0)
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
     buf->Init(20);
     std::string value = "abcd";
+    std::string encoding = "ascii";
+    buf->FillString(value, 1, 1, encoding);
+
     unsigned int offset = 0;
     unsigned int end = 10;
-    std::string encoding = "ascii";
     buf->FillString(value, offset, end, encoding);
     uint8_t data[20] = {0};
     buf->ReadBytes(data, offset, end);
@@ -1081,6 +1171,7 @@ HWTEST_F(NativeEngineTest, BlobConstructorTest004, testing::ext::TestSize.Level0
     OHOS::buffer::Blob *blob1 = new OHOS::buffer::Blob();
     blob->Init(blob1, 1, 0);
     blob->Init(blob1, 1, -1);
+    blob->Init(blob1, -1, 1);
     blob->Init(nullptr, 0, 1);
     blob->Init(data, 1);
     ASSERT_EQ(blob->GetLength(), 1);
@@ -1227,6 +1318,100 @@ HWTEST_F(NativeEngineTest, HexDecodeTest001, testing::ext::TestSize.Level0)
 {
     std::string ret = OHOS::buffer::HexDecode("313g");
     ASSERT_EQ(ret, "1");
+}
+
+/**
+ * @tc.name: Utf16BEToLETest001
+ * @tc.desc: Utf16BEToLE
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, Utf16BEToLETest001, testing::ext::TestSize.Level0)
+{
+    std::u16string wstrBE = u"\x0041\x0042\x0043";
+    std::u16string re = OHOS::buffer::Utf16BEToLE(wstrBE);
+    char16_t results[] = {0x4100, 0x4200, 0x4300};
+    for (int i = 0; i < 3; i++) {
+        ASSERT_EQ(results[i], re[i]);
+    }
+}
+
+/**
+ * @tc.name: Base64EncodeTest001
+ * @tc.desc: Base64 encode with max size_t
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, Base64EncodeTest001, testing::ext::TestSize.Level0)
+{
+    unsigned char data[] = {0x1A, 0x2B, 0x3C, 0x4D};
+    size_t len = std::numeric_limits<size_t>::max();
+    std::string stra = OHOS::buffer::Base64Encode(data, len, OHOS::buffer::BASE64URL);
+    ASSERT_EQ(stra, "");
+}
+
+/**
+ * @tc.name: Base64EncodeTest002
+ * @tc.desc: Base64 encode
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, Base64EncodeTest002, testing::ext::TestSize.Level0)
+{
+    std::string value = "abc";
+    std::string strb = OHOS::buffer::Base64Decode(value, OHOS::buffer::BASE64URL);
+
+    unsigned char data[] = {0x1A, 0x2B, 0x3C, 0x4D};
+    std::string stra = OHOS::buffer::Base64Encode(data, 4, OHOS::buffer::BASE64URL);
+    ASSERT_EQ(stra, "Gis8TQ");
+}
+
+/**
+ * @tc.name: GetGoodSuffixLengthByLastCharTest001
+ * @tc.desc: Get good suffix length by last char
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, GetGoodSuffixLengthByLastCharTest001, testing::ext::TestSize.Level0)
+{
+    uint8_t pat[] = "ababcab";
+    int patLen = sizeof(pat) - 1;
+    int patIndex = 4;
+
+    int length = OHOS::buffer::GetGoodSuffixLengthByLastChar(pat, patIndex, patLen);
+    ASSERT_EQ(length, 3);
+}
+
+/**
+ * @tc.name: FindLastIndexTest001
+ * @tc.desc: Find last index with error
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FindLastIndexTest001, testing::ext::TestSize.Level0)
+{
+    int rel1 = OHOS::buffer::FindLastIndex(nullptr, nullptr, 2, 1);
+    ASSERT_EQ(rel1, -1);
+
+    uint8_t data[] = "abc";
+    int rel2 = OHOS::buffer::FindLastIndex(data, data, 2, 0);
+    ASSERT_EQ(rel2, -1);
+}
+
+/**
+ * @tc.name: FindIndex005
+ * @tc.desc: Find index with error.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FindIndex005, testing::ext::TestSize.Level0)
+{
+    int rel1 = OHOS::buffer::FindIndex(nullptr, nullptr, 2, 1);
+    ASSERT_EQ(rel1, -1);
+
+    uint8_t data[] = "abc";
+    int rel2 = OHOS::buffer::FindIndex(data, data, 2, 0);
+    ASSERT_EQ(rel2, -1);
 }
 
 /**
