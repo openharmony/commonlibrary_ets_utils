@@ -50,6 +50,10 @@ public:
     static bool ParseStartTagFuncDeal(napi_env env, std::string xml, bool relax);
     static bool ParseDeclaration(napi_env env, std::string str);
     static bool ReadInternalSubset();
+    static std::string DealNapiStrValueFunction(napi_env env, std::string pushStr);
+    static int SplicNspFunction(napi_env env, std::string pushStr);
+    static std::string SetNamespaceFunction(napi_env env, std::string prefix, const std::string &nsTemp);
+    static std::string XmlSerializerErrorFunction(napi_env env);
     int TestGetColumnNumber(napi_env env);
     int TestGetLineNumber(napi_env env);
     std::string TestGetText(napi_env env);
@@ -213,6 +217,7 @@ void XmlTest::TestParseDeclaration(napi_env env)
     xml.attributes.push_back("");
     xml.attributes.push_back("");
     xml.attributes.push_back("");
+    xml.attributes.push_back("1.0");
     xml.ParseDeclaration();
 }
 
@@ -412,5 +417,42 @@ bool XmlTest::ParseDeclaration(napi_env env, std::string str)
     xmlPullParser.ParseDeclaration();
     return true;
 }
+
+std::string XmlTest::DealNapiStrValueFunction(napi_env env, std::string pushStr)
+{
+    napi_value arg = nullptr;
+    std::string output = "";
+    napi_create_string_utf8(env, pushStr.c_str(), pushStr.size(), &arg);
+    XmlSerializer xmlSerializer = construct(env);
+    xmlSerializer.DealNapiStrValue(env, arg, output);
+    return output;
+}
+
+int XmlTest::SplicNspFunction(napi_env env, std::string pushStr)
+{
+    XmlSerializer xmlSerializer = construct(env);
+    xmlSerializer.type = pushStr;
+    return xmlSerializer.curNspNum;
+}
+
+std::string XmlTest::SetNamespaceFunction(napi_env env, std::string prefix, const std::string &nsTemp)
+{
+    XmlSerializer xmlSerializer = construct(env);
+    xmlSerializer.type = "isStart";
+    xmlSerializer.SetDeclaration();
+    xmlSerializer.SetNamespace(prefix, nsTemp);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+    return xmlSerializer.out_;
+}
+
+std::string XmlTest::XmlSerializerErrorFunction(napi_env env)
+{
+    XmlSerializer xmlSerializer = construct(env);
+    xmlSerializer.isHasDecl = true;
+    xmlSerializer.SetDeclaration();
+    return xmlSerializer.xmlSerializerError_;
+}
+
 }
 #endif // TEST_XML_H
