@@ -25,14 +25,45 @@
 #include "ffrt_inner.h"
 #endif
 
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 class NativeEngineTest : public testing::Test {
 public:
     NativeEngineTest();
     virtual ~NativeEngineTest();
     void SetUp() override {}
     void TearDown() override {}
+
+    static napi_value IsConcurrent(napi_env env, napi_value argv[], size_t argc);
+    static napi_value GetTaskPoolInfo(napi_env env, napi_value argv[], size_t argc);
+    static napi_value TerminateTask(napi_env env, napi_value argv[], size_t argc);
+    static napi_value Execute(napi_env env, napi_value argv[], size_t argc);
+    static napi_value ExecuteDelayed(napi_env env, napi_value argv[], size_t argc);
+
+    class ExceptionScope {
+    public:
+        explicit ExceptionScope(napi_env env) : env_(env) {}
+        ~ExceptionScope()
+        {
+            napi_value exception = nullptr;
+            napi_get_and_clear_last_exception(env_, &exception);
+        }
+    private:
+        napi_env env_ = nullptr;
+    };
+
 protected:
-    NativeEngine *engine_;
+    NativeEngine *engine_ = nullptr;
 };
 
+class SendableUtils {
+public:
+    SendableUtils() = default;
+    ~SendableUtils() = default;
+
+    static napi_value CreateSendableClass(napi_env env);
+    static napi_value CreateSendableInstance(napi_env env);
+    static napi_value Foo(napi_env env, napi_callback_info info);
+    static napi_value Bar(napi_env env, napi_callback_info info);
+};
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // TEST_CONVERTXML_UNITTEST_TEST_H
