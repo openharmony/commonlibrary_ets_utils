@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     }
 
     g_nativeEngine = new ArkNativeEngine(vm, nullptr);
-
+    g_nativeEngine->SetInitWorkerFunc([](NativeEngine*) {});
     int ret = testing::UnitTest::GetInstance()->Run();
 
     g_nativeEngine->Loop(LOOP_NOWAIT);
