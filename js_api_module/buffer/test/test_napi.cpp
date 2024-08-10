@@ -717,6 +717,27 @@ HWTEST_F(NativeEngineTest, CopyTest002, testing::ext::TestSize.Level0)
     std::string value = "YWJjZA";
     ASSERT_EQ(buf->Copy(buf, 0, 2, 2), 0);
 }
+/**
+ * @tc.name: CopyTest003
+ * @tc.desc: Buffer Copy.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, CopyTest003, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    buf->Init(data, 0, 10);
+    uint32_t res = buf->Copy(buf, 0, 4, 10);
+    ASSERT_EQ(res, 6);
+    res = buf->Copy(buf, 0, 0, 0);
+    ASSERT_EQ(res, 0);
+    delete buf;
+    OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
+    res = buf1->Copy(buf1, 0, 4, 10);
+    delete buf1;
+    ASSERT_EQ(res, 0);
+}
 
 /**
  * @tc.name: CompareTest001
@@ -1321,26 +1342,6 @@ HWTEST_F(NativeEngineTest, HexDecodeTest001, testing::ext::TestSize.Level0)
 }
 
 /**
- * @tc.name: CopyTest002
- * @tc.desc: Buffer Copy.
- * @tc.type: FUNC
- * @tc.require:issueI5J5Z3
- */
-HWTEST_F(NativeEngineTest, CopyTest002, testing::ext::TestSize.Level0)
-{
-    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
-    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    buf->Init(data, 0, 10);
-    uint32_t res = buf->Copy(buf, 0, 4, 10);
-    ASSERT_EQ(res, 6);
-    res = buf->Copy(buf, 0, 0, 0);
-    ASSERT_EQ(res, 0);
-    delete buf;
-    OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
-    res = buf1->Copy(buf1, 0, 4, 10);
-    delete buf1;
-    ASSERT_EQ(res, 0);
-}
  * @tc.name: Utf16BEToLETest001
  * @tc.desc: Utf16BEToLE
  * @tc.type: FUNC
