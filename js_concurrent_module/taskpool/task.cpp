@@ -486,6 +486,10 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         } else {
             Task* dependentTask = nullptr;
             napi_unwrap(env, args[i], reinterpret_cast<void**>(&dependentTask));
+            if (dependentTask == nullptr) {
+                HILOG_ERROR("taskpool:: dependentTask is nullptr");
+                return nullptr;
+            }
             if (dependentTask->taskId_ == task->taskId_) {
                 HILOG_ERROR("taskpool:: there is a circular dependency");
                 ErrorHelper::ThrowError(env, ErrorHelper::ERR_CIRCULAR_DEPENDENCY);
