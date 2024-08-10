@@ -1641,7 +1641,7 @@ class Buffer {
     typeErrorCheck(target, ['Buffer', 'Uint8Array'], 'target');
     targetStart = isNaN(targetStart) ? 0 : Number(targetStart);
     sourceStart = isNaN(sourceStart) ? 0 : Number(sourceStart);
-    sourceEnd = isNaN(sourceEnd) ? 0 : Number(sourceEnd);
+    sourceEnd = isNaN(sourceEnd) ? this.length : Number(sourceEnd);
     rangeLeftErrorCheck(targetStart, 'targetStart', 0);
     rangeLeftErrorCheck(sourceStart, 'sourceStart', 0);
     rangeLeftErrorCheck(sourceEnd, 'sourceEnd', 0);
@@ -1652,15 +1652,18 @@ class Buffer {
       return 0;
     }
     if (target instanceof Buffer) {
+      sourceEnd = sourceEnd > this.length ? this.length : sourceEnd;
       return this[bufferSymbol].copy(target[bufferSymbol], targetStart, sourceStart, sourceEnd);
     }
-    let sLength: number = sourceEnd;
-    let tLength: number = target.length;
-    let length = tLength > sLength ? sLength : tLength;
-    for (let i = targetStart; i < length; i++) {
-      target[i] = this[i];
+    if (sourceEnd - sourceStart > target.length - targetStart) {
+        sourceEnd = target.length - targetStart + sourceStart;
     }
-    return length - targetStart;
+    let sLength = sourceEnd - sourceStart;
+    let res = sLength > this.length - sourceStart ? this.length - sourceStart : sLength;
+    for (let i = 0; i < res; i++) {
+      target[targetStart++] = this[sourceStart++];
+    }
+    return res;
   }
 
   toString(encoding: string = 'utf8', start: number = 0, end: number = this.length): string {
@@ -2035,14 +2038,7 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
   if (value instanceof Array) {
     return createBufferFromArray(value);
   }
-  let encoding = '';
-  if (typeof value === 'string' || typeof value[Symbol.toPrimitive] === 'function') {
-    offsetOrEncoding = offsetOrEncoding ? offsetOrEncoding : 'utf8';
-    if (typeof offsetOrEncoding === 'number') {
-      offsetOrEncoding = 'utf8';
-    }
-    encoding = encodingTypeErrorCheck(offsetOrEncoding);
-  }
+  let encoding = checkEncodeing(value, offsetOrEncoding);
   if (typeof value === 'string') {
     return fromString(value, encoding);
   }
@@ -2060,6 +2056,17 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
     }
   }
   throw typeError(value, 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like']);
+}
+
+function checkEncodeing(value: string | object, offsetOrEncoding: string | number | undefined): string {
+  if (typeof value === 'string' || typeof value[Symbol.toPrimitive] === 'function') {
+    offsetOrEncoding = offsetOrEncoding ? offsetOrEncoding : 'utf8';
+    if (typeof offsetOrEncoding === 'number') {
+      offsetOrEncoding = 'utf8';
+    }
+    return encodingTypeErrorCheck(offsetOrEncoding);
+  }
+  return '';
 }
 
 function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,

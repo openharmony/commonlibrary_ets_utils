@@ -137,7 +137,21 @@ uint32_t Buffer::Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t s
     uint8_t *src = this->raw_ + this->byteOffset_ + sStart;
     uint32_t sLength = sEnd - sStart;
     uint32_t len = tLength > sLength ? sLength : tLength;
-    WriteBytes(src, len, dest);
+    if (tBuf->raw_ == this->raw_) {
+        if (src == nullptr || dest == nullptr) {
+            return len;
+        }
+        if (len == 0) {
+            HILOG_DEBUG("Buffer::WriteBytes size is 0");
+            return len;
+        }
+        if (memmove_s(dest, len, src, len) != EOK) {
+            HILOG_FATAL("Buffer WriteBytes memmove_s failed");
+            return len;
+        }
+    } else {
+        WriteBytes(src, len, dest);
+    }
     return len;
 }
 
