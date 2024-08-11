@@ -155,10 +155,6 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
 #if defined(ENABLE_WORKER_EVENTHANDLER)
     if (g_mainThreadRunner_ == nullptr && g_mainThreadHandler_ == nullptr) {
         g_mainThreadRunner_ = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        if (g_mainThreadRunner_.get() == nullptr) {
-            HILOG_FATAL("worker:: the mainEventRunner is nullptr");
-            return nullptr;
-        }
         g_mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(g_mainThreadRunner_);
     }
 #endif
@@ -1783,10 +1779,8 @@ void Worker::TerminateWorker()
     {
         std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
         uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
@@ -2371,27 +2365,20 @@ void Worker::CloseHostHandle()
 {
     if (hostOnMessageSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_))) {
         uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
     if (hostOnErrorSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_))) {
         uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
     if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_),
-            [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+        uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
 }
@@ -2399,22 +2386,16 @@ void Worker::CloseHostHandle()
 void Worker::ClosePartHostHandle()
 {
     uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
+        delete reinterpret_cast<uv_async_t*>(handle);
+        handle = nullptr;
     });
     uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
+        delete reinterpret_cast<uv_async_t*>(handle);
+        handle = nullptr;
     });
     uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
+        delete reinterpret_cast<uv_async_t*>(handle);
+        handle = nullptr;
     });
 }
 

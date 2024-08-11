@@ -52,9 +52,11 @@ int main(int argc, char **argv)
     int ret = testing::UnitTest::GetInstance()->Run();
 
     g_nativeEngine->Loop(LOOP_NOWAIT);
+    if (g_nativeEngine) {
+        delete g_nativeEngine;
+        g_nativeEngine = nullptr;
+    }
 
-    delete g_nativeEngine;
-    g_nativeEngine = nullptr;
     panda::JSNApi::DestroyJSVM(vm);
     vm = nullptr;
 
