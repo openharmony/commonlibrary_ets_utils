@@ -74,6 +74,7 @@ public:
         }
     }
 
+    void NotifyTaskBegin();
     // the function will only be called when the task is finished or
     // exits abnormally, so we can not put it in the scope directly
     void NotifyTaskFinished();
