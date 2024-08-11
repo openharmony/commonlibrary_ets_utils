@@ -36,6 +36,7 @@ ohos_unittest("test_taskpool_unittest") {
   cflags = [ "-g3" ]
 
   sources = [
+    "test.cpp",
     "test_ark.cpp",
     "test_taskpool.cpp",
   ]

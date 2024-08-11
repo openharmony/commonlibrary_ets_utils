@@ -20,12 +20,14 @@
 using panda::RuntimeOption;
 static NativeEngine *g_nativeEngine = nullptr;
 
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 NativeEngineTest::NativeEngineTest()
 {
     engine_ = g_nativeEngine;
 }
 
 NativeEngineTest::~NativeEngineTest() {}
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 
 int main(int argc, char **argv)
 {
