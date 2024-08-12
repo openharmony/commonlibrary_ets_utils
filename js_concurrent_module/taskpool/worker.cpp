@@ -320,9 +320,16 @@ void Worker::NotifyWorkerCreated()
     TaskManager::GetInstance().NotifyWorkerCreated(this);
 }
 
+void Worker::NotifyTaskBegin()
+{
+    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    workerEngine->NotifyTaskBegin();
+}
+
 void Worker::NotifyTaskFinished()
 {
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    workerEngine->NotifyTaskFinished();
     if (--runningCount_ != 0 || workerEngine->HasPendingJob()) {
         // the worker state is still RUNNING and the start time will be updated
         startTime_ = ConcurrentHelper::GetMilliseconds();
@@ -355,6 +362,9 @@ void Worker::PerformTask(const uv_async_t* req)
         HILOG_DEBUG("taskpool:: task has been released");
         return;
     }
+    // try to record the memory data for gc
+    worker->NotifyTaskBegin();
+
     if (!task->UpdateTask(startTime, worker)) {
         return;
     }
@@ -370,6 +380,7 @@ void Worker::PerformTask(const uv_async_t* req)
                             + ", priority : " + std::to_string(taskInfo.second);
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+
     napi_value func = task->DeserializeValue(env, true, false);
     if (func == nullptr) {
         HILOG_DEBUG("taskpool:: task:%{public}s func is nullptr", std::to_string(task->taskId_).c_str());
