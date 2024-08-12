@@ -456,6 +456,10 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, &napiTask, nullptr);
     Task* task = nullptr;
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: task is nullptr");
+        return nullptr;
+    }
     std::string errMessage = "";
     if (task->IsPeriodicTask()) {
         HILOG_ERROR("taskpool:: the periodic task cannot have a dependency");
