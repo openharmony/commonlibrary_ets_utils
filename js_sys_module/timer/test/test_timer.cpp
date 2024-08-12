@@ -332,3 +332,82 @@ HWTEST_F(NativeEngineTest, TimerTest013, testing::ext::TestSize.Level0)
     TimerTest::DeleteTimer(tId, callbackInfo);
     ASSERT_TRUE(table.find(tId) == table.end());
 }
+
+/* @tc.name: Settimeout
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest014, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 2;
+    napi_value nativeMessage0 = nullptr;
+    napi_create_uint32(env, 50, &nativeMessage0); // Random number
+    napi_value nativeMessage1 = nullptr;
+    napi_create_function(env, "callback", NAPI_AUTO_LENGTH, TimerCallback, nullptr, &nativeMessage1);
+    napi_value argv[] = {nativeMessage1, nativeMessage0};
+    napi_value setTimeoutCB = nullptr;
+    napi_create_function(env, "setTimeout", NAPI_AUTO_LENGTH, TimerTest::SetTimeout, nullptr, &setTimeoutCB);
+    napi_value tId = nullptr;
+    napi_call_function(env, nullptr, setTimeoutCB, argc, argv, &tId);
+    ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
+    napi_env* env2 = new napi_env;
+    napi_create_runtime(env, env2);
+    napi_value argv1[] = {tId};
+    napi_value clearTimerCB = nullptr;
+    napi_create_function(*env2, "clearTimer", NAPI_AUTO_LENGTH, TimerTest::ClearTimer, nullptr, &clearTimerCB);
+    napi_value res = nullptr;
+    napi_call_function(*env2, nullptr, clearTimerCB, 1, argv1, &res);
+    ASSERT_CHECK_VALUE_TYPE(*env2, res, napi_undefined);
+}
+
+/* @tc.name: ClearEnvironmentTimer
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest015, testing::ext::TestSize.Level0)
+{
+    uv_timer_t* handle = new uv_timer_t;
+    handle->data = nullptr;
+    TimerTest::TimerCallback(handle);
+
+    napi_env env = (napi_env)engine_;
+    size_t argc = 2;
+    napi_value nativeMessage0 = nullptr;
+    napi_create_uint32(env, 50, &nativeMessage0); // Random number
+    napi_value nativeMessage1 = nullptr;
+    napi_create_function(env, "callback", NAPI_AUTO_LENGTH, TimerCallback, nullptr, &nativeMessage1);
+    napi_value argv[] = {nativeMessage1, nativeMessage0};
+    napi_value setTimeoutCB = nullptr;
+    napi_create_function(env, "setTimeout", NAPI_AUTO_LENGTH, TimerTest::SetTimeout, nullptr, &setTimeoutCB);
+    napi_value tId = nullptr;
+    napi_call_function(env, nullptr, setTimeoutCB, argc, argv, &tId);
+    ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
+    napi_env* env2 = new napi_env;
+    napi_create_runtime(env, env2);
+    TimerTest::ClearEnvironmentTimer(*env2);
+    std::map<uint32_t, TimerCallbackInfo*>& table = TimerTest::create_timerTable();
+    ASSERT_TRUE(table.size() != 0);
+}
+
+/* @tc.name: settimeout
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest016, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env* env2 = new napi_env;
+    napi_create_runtime(env, env2);
+    size_t argc = 2;
+    napi_value nativeMessage0 = nullptr;
+    napi_create_uint32(*env2, 50, &nativeMessage0); // Random number
+    napi_value nativeMessage1 = nullptr;
+    napi_create_function(*env2, "callback", NAPI_AUTO_LENGTH, TimerCallback, nullptr, &nativeMessage1);
+    napi_value argv[] = {nativeMessage1, nativeMessage0};
+    napi_value setTimeoutCB = nullptr;
+    napi_create_function(*env2, "setTimeout", NAPI_AUTO_LENGTH, TimerTest::SetTimeout, nullptr, &setTimeoutCB);
+    napi_value tId = nullptr;
+    napi_call_function(*env2, nullptr, setTimeoutCB, argc, argv, &tId);
+    ASSERT_CHECK_VALUE_TYPE(*env2, tId, napi_number);
+}

@@ -40,6 +40,7 @@ public:
     static void PrintTime(std::string timerName, double time, std::string& log);
     static void SetGroupIndent(const std::string& newGroupIndent);
     static std::string GetGroupIndent();
+    static std::string ParseLogContent(const std::vector<std::string>& params);
 };
 }
 #endif // TEST_CONSOLE_H
