@@ -1107,7 +1107,7 @@ class LRUCache {
   }
 
   public contains(key: Object): boolean {
-    if (typeof (key as Object) === 'undefined' || key === null) {
+    if (typeof (key as Object) === 'undefined') {
       let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
       throw error;
     }
