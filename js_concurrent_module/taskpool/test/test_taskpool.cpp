@@ -36,6 +36,27 @@ void GetSendableFunction(napi_env env, const char* str, napi_value& result)
     napi_get_property(env, instance, name, &result);
 }
 
+napi_value CreateTaskObject(napi_env env, TaskType taskType = TaskType::TASK)
+{
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    size_t argc = 0;
+    napi_value func = nullptr;
+    napi_create_string_utf8(env, "testFunc", NAPI_AUTO_LENGTH, &func);
+    napi_value* args = new napi_value[argc];
+    napi_value taskName = NapiHelper::CreateEmptyString(env);
+    Task* task = Task::GenerateTask(env, thisValue, func, taskName, args, argc);
+    task->UpdateTaskType(taskType);
+    napi_wrap(
+        env, thisValue, task,
+        [](napi_env environment, void* data, void* hint) {
+            auto obj = reinterpret_cast<Task*>(data);
+            if (obj != nullptr) {
+                delete obj;
+            }
+        }, nullptr, nullptr);
+    return thisValue;
+}
+
 HWTEST_F(NativeEngineTest, TaskpoolTest001, testing::ext::TestSize.Level0)
 {
     TaskManager &taskManager = TaskManager::GetInstance();
@@ -818,50 +839,49 @@ HWTEST_F(NativeEngineTest, TaskpoolTest066, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
-    TaskGroup taskGroup;
-    taskGroup.groupId_ = 123;
-
-    Task* task = new Task();
-    task->taskType_ = TaskType::GROUP_COMMON_TASK;
-    task->groupId_ = taskGroup.groupId_;
-    task->taskId_ = 1;
-    napi_reference_ref(env, task->taskRef_, nullptr);
-    taskGroupManager.AddTask(taskGroup.groupId_, task->taskRef_, task->taskId_);
+    TaskGroup* taskGroup = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(taskGroup);
+    taskGroup->groupId_ = groupId;
+    taskGroupManager.StoreTaskGroup(groupId, taskGroup);
 
     GroupInfo* groupInfo = new GroupInfo();
     groupInfo->priority = Priority::DEFAULT;
-    taskGroup.pendingGroupInfos_.push_back(groupInfo);
-    taskGroup.NotifyGroupTask(env);
-    delete task;
-    task = nullptr;
-    delete groupInfo;
-    groupInfo = nullptr;
-    ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
+    taskGroup->pendingGroupInfos_.push_back(groupInfo);
+    taskGroup->NotifyGroupTask(env);
+    ASSERT_TRUE(taskGroup->pendingGroupInfos_.empty());
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest067, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
-    TaskGroup taskGroup;
-    taskGroup.groupId_ = 123;
+    TaskGroup* taskGroup = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(taskGroup);
+    taskGroup->groupId_ = groupId;
+    taskGroupManager.StoreTaskGroup(groupId, taskGroup);
 
     Task* task = new Task();
     task->taskType_ = TaskType::COMMON_TASK;
-    task->groupId_ = taskGroup.groupId_;
-    task->taskId_ = 1;
+    task->groupId_ = groupId;
+    task->taskId_ = reinterpret_cast<uint64_t>(task);
     napi_reference_ref(env, task->taskRef_, nullptr);
-    taskGroupManager.AddTask(taskGroup.groupId_, nullptr, task->taskId_);
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_wrap(
+        env, thisValue, task,
+        [](napi_env environment, void* data, void* hint) {
+            auto obj = reinterpret_cast<Task*>(data);
+            if (obj != nullptr) {
+                delete obj;
+            }
+        }, nullptr, nullptr);
+    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 1);
+    taskGroupManager.AddTask(groupId, ref, task->taskId_);
 
     GroupInfo* groupInfo = new GroupInfo();
     groupInfo->priority = Priority::DEFAULT;
-    taskGroup.pendingGroupInfos_.push_back(groupInfo);
-    taskGroup.NotifyGroupTask(env);
-    delete task;
-    task = nullptr;
-    delete groupInfo;
-    groupInfo = nullptr;
-    ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
+    taskGroup->pendingGroupInfos_.push_back(groupInfo);
+    taskGroup->NotifyGroupTask(env);
+    ASSERT_TRUE(taskGroup->pendingGroupInfos_.empty());
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest068, testing::ext::TestSize.Level0)
@@ -869,11 +889,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest068, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
     TaskGroup taskGroup;
-    taskGroup.groupId_ = 123;
 
     GroupInfo* groupInfo = new GroupInfo();
     groupInfo->priority = Priority::DEFAULT;
     taskGroup.pendingGroupInfos_.push_back(groupInfo);
+    uint64_t taskId = 68;
+    taskGroup.taskIds_.push_back(taskId);
     taskGroup.CancelPendingGroup(env);
 
     ASSERT_TRUE(taskGroup.pendingGroupInfos_.empty());
@@ -1070,4 +1091,184 @@ HWTEST_F(NativeEngineTest, TaskpoolTest085, testing::ext::TestSize.Level0)
     std::string funcName = "ExecuteDelayed";
     result = NativeEngineTest::ExecuteDelayed(env, argv, 2);
     ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest086, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string func = "SeqRunnerConstructor";
+    napi_value callback = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &callback);
+
+    napi_value argv1[] = {nullptr};
+    napi_create_uint32(env, 1, &argv1[0]);
+    napi_call_function(env, nullptr, callback, 1, argv1, &result);
+    ASSERT_NE(result, nullptr);
+
+    napi_value argv2[2] = {nullptr};
+    napi_create_uint32(env, 1, &argv2[0]);
+    napi_create_string_utf8(env, "seq01", NAPI_AUTO_LENGTH, &argv2[1]);
+    result = nullptr;
+    napi_call_function(env, nullptr, callback, 2, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value argv3[2] = {nullptr};
+    napi_create_string_utf8(env, "seq02", NAPI_AUTO_LENGTH, &argv3[0]);
+    napi_create_uint32(env, 1, &argv3[1]);
+    result = nullptr;
+    napi_call_function(env, nullptr, callback, 2, argv3, &result);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest087, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string func = "SeqRunnerConstructor";
+    napi_value callback = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &callback);
+
+    napi_value argv[2] = {nullptr};
+    napi_create_string_utf8(env, "seq03", NAPI_AUTO_LENGTH, &argv[0]);
+    napi_create_uint32(env, 1, &argv[1]);
+    napi_value result = nullptr;
+    napi_call_function(env, nullptr, callback, 2, argv, &result);
+    ASSERT_NE(result, nullptr);
+
+    func = "Execute";
+    napi_value cb = nullptr;
+    napi_value res = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), SequenceRunner::Execute, nullptr, &cb);
+
+    napi_value argv1[] = {nullptr};
+    napi_create_uint32(env, 1, &argv1[0]);
+    napi_call_function(env, nullptr, cb, 1, argv1, &res);
+    ASSERT_EQ(res, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value thisValue = CreateTaskObject(env);
+    napi_value argv2[] = {thisValue};
+    res = nullptr;
+    napi_call_function(env, nullptr, cb, 1, argv2, &res);
+    ASSERT_NE(res, nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, result, "seqRunnerId");
+    uint64_t seqId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
+    SequenceRunner seq;
+    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
+    taskGroupManager.StoreSequenceRunner(seqId, &seq);
+
+    res = nullptr;
+    napi_call_function(env, nullptr, cb, 1, argv2, &res);
+    ASSERT_NE(res, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest088, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = {nullptr};
+    std::string func = "TaskGroupConstructor";
+    napi_value callback = nullptr;
+    napi_value taskGroupResult = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), TaskGroup::TaskGroupConstructor, nullptr, &callback);
+    napi_call_function(env, nullptr, callback, 0, argv, &taskGroupResult);
+
+    func = "AddTask";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), TaskGroup::AddTask, nullptr, &cb);
+    
+    napi_value napiGroupId = NapiHelper::GetNameProperty(env, taskGroupResult, "groupId");
+    uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
+
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup* group = new TaskGroup();
+    group->groupId_ = groupId;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+
+    napi_value thisValue = CreateTaskObject(env);
+    napi_value argv1[] = {thisValue};
+    napi_call_function(env, nullptr, cb, 1, argv1, &result);
+    ASSERT_NE(result, nullptr);
+
+    napi_value thisValue2 = CreateTaskObject(env, TaskType::SEQRUNNER_TASK);
+    napi_value argv2[] = {thisValue2};
+    result = nullptr;
+    napi_call_function(env, nullptr, cb, 1, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest089, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = {nullptr};
+    std::string func = "TaskGroupConstructor";
+    napi_value callback = nullptr;
+    napi_value taskGroupResult = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), TaskGroup::TaskGroupConstructor, nullptr, &callback);
+    napi_call_function(env, nullptr, callback, 0, argv, &taskGroupResult);
+
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_value argv1[] = {thisValue};
+    func = "AddTask";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), TaskGroup::AddTask, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv1, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest090, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskGroupConstructor";
+    napi_value callback = nullptr;
+    napi_value taskGroupResult = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::TaskGroupConstructor, nullptr, &callback);
+    napi_call_function(env, nullptr, callback, 0, argv, &taskGroupResult);
+
+    auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_value thisValue = nullptr;
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &thisValue);
+    napi_value argv1[] = {thisValue};
+    funcName = "AddTask";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::AddTask, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv1, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest091, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = {nullptr};
+    std::string funcName = "TaskGroupConstructor";
+    napi_value callback = nullptr;
+    napi_value taskGroupResult = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::TaskGroupConstructor, nullptr, &callback);
+    napi_call_function(env, nullptr, callback, 0, argv, &taskGroupResult);
+
+    napi_value argv1[] = {};
+    napi_create_uint32(env, 1, &argv1[0]);
+    funcName = "AddTask";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::AddTask, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv1, &result);
+    ASSERT_EQ(result, nullptr);
 }
