@@ -109,6 +109,11 @@ std::string ConsoleTest::GetGroupIndent()
 {
     return Console::groupIndent;
 }
+
+std::string ConsoleTest::ParseLogContent(const std::vector<std::string>& params)
+{
+    return Console::ParseLogContent(params);
+}
 /* @tc.name: Console.Log/Console.Info/Console.debug/Console.error/Console.warn Test001
  * @tc.desc: Test.
  * @tc.type: FUNC
@@ -891,4 +896,16 @@ HWTEST_F(NativeEngineTest, ConsoleTest024, testing::ext::TestSize.Level0)
                          ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc, argv, &res0);
     ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ParseLogContent
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest025, testing::ext::TestSize.Level0)
+{
+    std::string res;
+    std::vector<std::string> params;
+    res = ConsoleTest::ParseLogContent(params);
+    ASSERT_TRUE(res == "");
 }
