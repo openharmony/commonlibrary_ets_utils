@@ -165,6 +165,7 @@ HWTEST_F(NativeEngineTest, getEncodingTest001, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
 
     OHOS::Util::TextEncoder textEncoder("GBK");
+    textEncoder.SetOrgEncoding("GBK");
     napi_value result = textEncoder.GetEncoding(env);
 
     char *buffer = nullptr;
@@ -192,6 +193,7 @@ HWTEST_F(NativeEngineTest, getEncodingTest002, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
 
     OHOS::Util::TextEncoder textEncoder("gb18030");
+    textEncoder.SetOrgEncoding("gb18030");
     napi_value result = textEncoder.GetEncoding(env);
 
     char *buffer = nullptr;
@@ -219,6 +221,7 @@ HWTEST_F(NativeEngineTest, getEncodingTest003, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
 
     OHOS::Util::TextEncoder textEncoder("GB18030");
+    textEncoder.SetOrgEncoding("GB18030");
     napi_value result = textEncoder.GetEncoding(env);
 
     char *buffer = nullptr;

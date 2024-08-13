@@ -592,7 +592,8 @@ namespace OHOS::Util {
         napi_value thisVar = nullptr;
         napi_value src = nullptr;
         napi_get_cb_info(env, info, &argc, &src, &thisVar, nullptr);
-        std::string enconding = "utf-8";
+        std::string encoding = "utf-8";
+        std::string orgEncoding = encoding;
         if (argc == 1) {
             napi_get_cb_info(env, info, &argc, &src, nullptr, nullptr);
             napi_valuetype valuetype;
@@ -611,12 +612,18 @@ namespace OHOS::Util {
                     HILOG_ERROR("can not get src value");
                     return nullptr;
                 }
+                orgEncoding = buffer;
+                for (char &temp : buffer) {
+                    temp = std::tolower(static_cast<unsigned char>(temp));
+                }
                 NAPI_ASSERT(env, CheckEncodingFormat(buffer),
                             "Wrong encoding format, the current encoding format is not support");
-                enconding = buffer;
+                encoding = buffer;
             }
         }
-        auto object = new TextEncoder(enconding);
+        auto object = new TextEncoder(encoding);
+        object->SetOrgEncoding(orgEncoding);
+        object->SetApiIsolated(env);
         napi_wrap(
             env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
