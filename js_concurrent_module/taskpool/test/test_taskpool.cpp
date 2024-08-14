@@ -36,6 +36,19 @@ void GetSendableFunction(napi_env env, const char* str, napi_value& result)
     napi_get_property(env, instance, name, &result);
 }
 
+napi_value GeneratorTask(napi_env env, napi_value thisVar)
+{
+    napi_value func = nullptr;
+    GetSendableFunction(env, "foo", func);
+    napi_value argv[] = { func };
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value task = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, thisVar, cb, 1, argv, &task);
+    return task;
+}
+
 napi_value CreateTaskObject(napi_env env, TaskType taskType = TaskType::TASK)
 {
     napi_value thisValue = NapiHelper::CreateObject(env);
@@ -1271,4 +1284,263 @@ HWTEST_F(NativeEngineTest, TaskpoolTest091, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), TaskGroup::AddTask, nullptr, &cb);
     napi_call_function(env, nullptr, cb, 1, argv1, &result);
     ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest092, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value argv[2] = {};
+    std::string funcName = "OnReceiveData";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, nullptr, &cb);
+    napi_call_function(env, global, cb, 0, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ExceptionScope scope(env);
+    argv[0] = nullptr;
+    argv[1] = nullptr;
+    result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, nullptr, &cb);
+    napi_call_function(env, global, cb, 2, argv, &result);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest093, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    ExceptionScope scope(env);
+    napi_value func = nullptr;
+    GetSendableFunction(env, "foo", func);
+    napi_value argv[] = { func };
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value task = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, global, cb, 1, argv, &task);
+    auto& taskManager = TaskManager::GetInstance();
+    Task* pointer = nullptr;
+    napi_unwrap(env, task, reinterpret_cast<void**>(&pointer));
+    taskManager.StoreTask(pointer->taskId_, pointer);
+    
+    funcName = "OnReceiveData";
+    cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, nullptr, &cb);
+    napi_call_function(env, global, cb, 1, argv, &result);
+    auto res = taskManager.GetCallbackInfo(pointer->taskId_);
+    ASSERT_TRUE(res != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest094, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = { nullptr, nullptr };
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest095, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    const char* str = "Task";
+    napi_value name = nullptr;
+    napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &name);
+    napi_value argv[] = { name, nullptr };
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest096, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    ExceptionScope scope(env);
+    napi_value func = nullptr;
+    GetSendableFunction(env, "foo", func);
+    napi_value argv[] = { func };
+    std::string funcName = "TaskConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::TaskConstructor, nullptr, &cb);
+    napi_call_function(env, global, cb, 1, argv, &result);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest097, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    ExceptionScope scope(env);
+    napi_value func = nullptr;
+    GetSendableFunction(env, "bar", func);
+    napi_value argv[] = { func };
+    std::string funcName = "LongTaskConstructor";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::LongTaskConstructor, nullptr, &cb);
+    napi_call_function(env, global, cb, 1, argv, &result);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest098, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = { nullptr };
+    std::string funcName = "SendData";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::SendData, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &result);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest099, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value argv[] = {};
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest100, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    auto task = GeneratorTask(env, global);
+    Task* pointer = nullptr;
+    napi_unwrap(env, task, reinterpret_cast<void**>(&pointer));
+    pointer->isPeriodicTask_ = true;
+
+    napi_value argv[] = { nullptr };
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    napi_call_function(env, task, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest101, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    auto task = GeneratorTask(env, global);
+    Task* pointer = nullptr;
+    napi_unwrap(env, task, reinterpret_cast<void**>(&pointer));
+    pointer->taskType_ = TaskType::COMMON_TASK;
+
+    napi_value argv[] = { nullptr };
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    napi_call_function(env, task, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest102, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    auto task = GeneratorTask(env, global);
+    auto dependentTask = GeneratorTask(env, global);
+
+    napi_value argv[] = { task };
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    napi_call_function(env, task, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest103, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    auto task = GeneratorTask(env, global);
+    napi_value obj;
+    napi_create_object(env, &obj);
+    auto dependentTask = GeneratorTask(env, obj);
+
+    napi_value argv[] = { dependentTask };
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    napi_call_function(env, task, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest104, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj;
+    napi_create_object(env, &obj);
+    auto task = GeneratorTask(env, obj);
+    napi_value argv[] = { nullptr, nullptr };
+    std::string funcName = "SetTransferList";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::SetTransferList, nullptr, &cb);
+    napi_call_function(env, task, cb, 2, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest105, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj;
+    napi_create_object(env, &obj);
+    auto task = GeneratorTask(env, obj);
+    napi_value array;
+    napi_create_array_with_length(env, 1, &array);
+
+    napi_value argv[] = { array };
+    std::string funcName = "SetTransferList";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::SetTransferList, nullptr, &cb);
+    napi_call_function(env, task, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
 }
