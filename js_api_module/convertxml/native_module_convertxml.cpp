@@ -28,7 +28,7 @@ namespace OHOS::Xml {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
-        auto objectInfo = new ConvertXml();
+        auto objectInfo = new ConvertXml(env);
         napi_wrap(
             env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
