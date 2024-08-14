@@ -1023,7 +1023,8 @@ class LRUCache {
   public constructor(capacity?: number) {
     if (capacity !== undefined && capacity !== null) {
       if (capacity <= 0 || capacity % 1 !== 0 || capacity > this.maxNumber) {
-        throw new Error('data error');
+        let error = new BusinessError(`Parameter error. The type of ${capacity} must be small integer`);
+        throw error;
       }
       this.maxSize = capacity;
     }
@@ -1056,7 +1057,8 @@ class LRUCache {
       throw error;
     }
     if (newCapacity <= 0 || newCapacity % 1 !== 0 || newCapacity > this.maxNumber) {
-      throw new Error('data error');
+      let error = new BusinessError(`Parameter error. The type of ${newCapacity} must be small integer`);
+      throw error;
     } else if (this.cache.size > newCapacity) {
       this.changeCapacity(newCapacity);
     }
@@ -1065,12 +1067,9 @@ class LRUCache {
   }
 
   public get(key: Object): Object {
-    if (typeof (key as Object) === 'undefined') {
+    if (typeof (key as Object) === 'undefined' || key === null) {
       let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
       throw error;
-    }
-    if (key === null) {
-      throw new Error('key not be null');
     }
     let value: Object;
     if (this.cache.has(key)) {
@@ -1107,7 +1106,8 @@ class LRUCache {
       throw error;
     }
     if (key === null || value === null) {
-      throw new Error('key or value not be null');
+      let error = new BusinessError(`Parameter error. The type of key and value must be Object`);
+      throw error;
     }
     let former: Object = undefined;
     this.putCount++;
@@ -1127,13 +1127,11 @@ class LRUCache {
   }
 
   public remove(key: Object): Object {
-    if (typeof (key as Object) === 'undefined') {
+    if (typeof (key as Object) === 'undefined' || key === null) {
       let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
       throw error;
     }
-    if (key === null) {
-      throw new Error('key not be null');
-    } else if (this.cache.has(key)) {
+    if (this.cache.has(key)) {
       let former: Object = this.cache.get(key);
       this.cache.delete(key);
       if (former !== null) {
