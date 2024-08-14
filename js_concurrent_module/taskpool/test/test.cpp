@@ -59,7 +59,6 @@ napi_value SendableUtils::Bar(napi_env env, napi_callback_info info)
 
 napi_value NativeEngineTest::IsConcurrent(napi_env env, napi_value argv[], size_t argc)
 {
-    ExceptionScope scope(env);
     std::string funcName = "IsConcurrent";
     napi_value cb = nullptr;
     napi_value result = nullptr;
@@ -70,7 +69,6 @@ napi_value NativeEngineTest::IsConcurrent(napi_env env, napi_value argv[], size_
 
 napi_value NativeEngineTest::GetTaskPoolInfo(napi_env env, napi_value argv[], size_t argc)
 {
-    ExceptionScope scope(env);
     std::string funcName = "GetTaskPoolInfo";
     napi_value cb = nullptr;
     napi_value result = nullptr;
@@ -81,7 +79,6 @@ napi_value NativeEngineTest::GetTaskPoolInfo(napi_env env, napi_value argv[], si
 
 napi_value NativeEngineTest::TerminateTask(napi_env env, napi_value argv[], size_t argc)
 {
-    ExceptionScope scope(env);
     std::string funcName = "TerminateTask";
     napi_value cb = nullptr;
     napi_value result = nullptr;
@@ -92,7 +89,6 @@ napi_value NativeEngineTest::TerminateTask(napi_env env, napi_value argv[], size
 
 napi_value NativeEngineTest::Execute(napi_env env, napi_value argv[], size_t argc)
 {
-    ExceptionScope scope(env);
     std::string funcName = "Execute";
     napi_value cb = nullptr;
     napi_value result = nullptr;
@@ -103,11 +99,20 @@ napi_value NativeEngineTest::Execute(napi_env env, napi_value argv[], size_t arg
 
 napi_value NativeEngineTest::ExecuteDelayed(napi_env env, napi_value argv[], size_t argc)
 {
-    ExceptionScope scope(env);
     std::string funcName = "ExecuteDelayed";
     napi_value cb = nullptr;
     napi_value result = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), TaskPool::ExecuteDelayed, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &result);
+    return result;
+}
+
+napi_value NativeEngineTest::Cancel(napi_env env, napi_value argv[], size_t argc)
+{
+    std::string funcName = "Cancel";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskPool::Cancel, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc, argv, &result);
     return result;
 }
