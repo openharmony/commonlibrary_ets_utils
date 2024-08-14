@@ -25,7 +25,7 @@ namespace OHOS::Util {
     napi_value TextEncoder::GetEncoding(napi_env env) const
     {
         napi_value result = nullptr;
-        NAPI_CALL(env, napi_create_string_utf8(env, encoding_.c_str(), encoding_.length(), &result));
+        NAPI_CALL(env, napi_create_string_utf8(env, orgEncoding_.c_str(), orgEncoding_.length(), &result));
 
         return result;
     }
@@ -37,7 +37,7 @@ namespace OHOS::Util {
         size_t outLens = 0;
         void *data = nullptr;
         napi_value arrayBuffer = nullptr;
-        if (encoding_ == "utf-8" || encoding_ == "UTF-8") {
+        if (encoding_ == "utf-8") {
             size_t bufferSize = 0;
             if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
                 HILOG_ERROR("textencoder::can not get src size");

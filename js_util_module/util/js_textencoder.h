@@ -20,9 +20,12 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "native_engine.h"
 #include "unicode/ucnv.h"
 
 namespace OHOS::Util {
+    constexpr const int32_t API_VERSION_MOD = 100; // 100: api version mod
+    constexpr const int32_t API13 = 13; // 13: api version
     class TextEncoder {
     public:
         /**
@@ -61,8 +64,27 @@ namespace OHOS::Util {
          */
         napi_value EncodeInto(napi_env env, napi_value src, napi_value dest) const;
 
+        void SetOrgEncoding(std::string orgEncoding)
+        {
+            orgEncoding_ = orgEncoding;
+        }
+
+        void SetApiIsolated(napi_env env)
+        {
+            if (encoding_ != "utf-16be" && encoding_ != "utf-16le") {
+                return;
+            }
+            NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+            if (engine != nullptr) {
+                int32_t currentApi = engine->GetApiVersion() % API_VERSION_MOD;
+                if (currentApi >= API13) {
+                    encoding_ = encoding_ == "utf-16be" ? "utf-16le" : "utf-16be";
+                }
+            }
+        }
     private:
         std::string encoding_ {};
+        std::string orgEncoding_ {};
     };
 }
 #endif // UTIL_JS_TEXTENCODER_H
