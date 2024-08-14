@@ -1920,8 +1920,15 @@ function encodingTypeErrorCheck(encoding: string): string {
 
 function rangeErrorCheck(param: number | bigint, paramName: string, rangeLeft: bigint | number,
   rangeRight: bigint | number, rangeLeftExpr: string = '', rangeRightExpr: string = ''): void {
-  let left = BigInt(rangeLeft);
-  let right = BigInt(rangeRight);
+  let left : bigint | number;
+  let right : bigint | number;
+  if (Number.isInteger(rangeLeft) && Number.isInteger(rangeRight)) {
+    left= BigInt(rangeLeft);
+    right = BigInt(rangeRight);
+  } else {
+    left = rangeLeft;
+    right = rangeRight;
+  }
   if (param < left || param > right) {
     throw rangeError(paramName, rangeLeftExpr === '' ? rangeLeft : rangeLeftExpr,
       rangeRightExpr === '' ? rangeRight : rangeRightExpr, param);
