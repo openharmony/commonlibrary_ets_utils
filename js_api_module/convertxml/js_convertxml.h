@@ -22,6 +22,7 @@
 #include "libxml/tree.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "native_engine/native_engine.h"
 
 namespace OHOS::Xml {
     enum class SpaceType {
@@ -69,11 +70,24 @@ namespace OHOS::Xml {
     };
 
     class ConvertXml {
+    struct APIVersion {
+        const int32_t API13 = 13;
+    };
     public:
         /**
          * To convert XML text to JavaScript object.
          */
-        explicit ConvertXml();
+        explicit ConvertXml(napi_env env) :env_(env)
+        {
+            NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+            if (engine != nullptr) {
+                apiVersion_ = engine->GetApiVersion() % API_VERSION_MOD;
+            }
+            spaceType_ = SpaceType::T_INIT;
+            strSpace_ = "";
+            iSpace_ = 0;
+            apiFlag_ = apiVersion_ >= APIVerIsolation_.API13;
+        };
 
         /**
          * The destructor of the ConvertXml.
@@ -110,9 +124,11 @@ namespace OHOS::Xml {
     private:
         void SetAttributes(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const;
         void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
-        void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const;
+        void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
+                         const std::string parentName = "") const;
         void SetEndInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
-        void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object, int flag = 0);
+        void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object, int flag = 0,
+                        const std::string parentName = "");
         std::string GetNodeType(const xmlElementType enumType) const;
         void SetKeyValue(napi_env env, const napi_value &object, const std::string strKey,
                          const std::string strValue) const;
@@ -134,6 +150,11 @@ namespace OHOS::Xml {
         Options options_;
         std::vector<napi_value> prevObj_ {};
         XmlInfo xmlInfo_;
+        int32_t apiVersion_ {0};
+        int32_t API_VERSION_MOD {100};
+        APIVersion APIVerIsolation_;
+        bool apiFlag_ {false};
+        napi_env env_ {nullptr};
     };
 } // namespace OHOS::Xml
 #endif // CONVERTXML_JS_CONVERTXML_H

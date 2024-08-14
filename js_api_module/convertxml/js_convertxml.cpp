@@ -17,12 +17,6 @@
 #include "securec.h"
 #include "tools/log.h"
 namespace OHOS::Xml {
-    ConvertXml::ConvertXml()
-    {
-            spaceType_ = SpaceType::T_INIT;
-            strSpace_ = "";
-            iSpace_ = 0;
-    }
     std::string ConvertXml::GetNodeType(const xmlElementType enumType) const
     {
         std::string strResult = "";
@@ -181,22 +175,25 @@ namespace OHOS::Xml {
             xmlFree(reinterpret_cast<void*>(curContent));
         }
     }
-    void ConvertXml::SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const
+    void ConvertXml::SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
+                                 const std::string parentName) const
     {
         if (curNode->type == xmlElementType::XML_TEXT_NODE) {
             return;
-        } else {
-            if (curNode->type == xmlElementType::XML_PI_NODE) {
-                if (!options_.ignoreInstruction) {
-                    SetKeyValue(env, elementsObject, options_.type, GetNodeType(curNode->type));
-                }
-            } else {
-                    SetKeyValue(env, elementsObject, options_.type, GetNodeType(curNode->type));
+        }
+        if (curNode->type == xmlElementType::XML_PI_NODE) {
+            if (!options_.ignoreInstruction) {
+                SetKeyValue(env, elementsObject, options_.type, GetNodeType(curNode->type));
             }
-            if ((curNode->type != xmlElementType::XML_COMMENT_NODE) &&
-                (curNode->type != xmlElementType::XML_CDATA_SECTION_NODE)) {
-                if (!(curNode->type == xmlElementType::XML_PI_NODE && options_.ignoreInstruction)) {
-                    SetKeyValue(env, elementsObject, options_.name, reinterpret_cast<const char*>(curNode->name));
+        } else {
+                SetKeyValue(env, elementsObject, options_.type, GetNodeType(curNode->type));
+        }
+        if ((curNode->type != xmlElementType::XML_COMMENT_NODE) &&
+            (curNode->type != xmlElementType::XML_CDATA_SECTION_NODE)) {
+            if (!(curNode->type == xmlElementType::XML_PI_NODE && options_.ignoreInstruction)) {
+                SetKeyValue(env, elementsObject, options_.name, reinterpret_cast<const char*>(curNode->name));
+                if (!parentName.empty()) {
+                    SetKeyValue(env, elementsObject, options_.parent, parentName);
                 }
             }
         }
@@ -240,7 +237,8 @@ namespace OHOS::Xml {
         }
     }
 
-    void ConvertXml::GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object, int flag)
+    void ConvertXml::GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
+                                int flag, const std::string parentName)
     {
         napi_value elements = nullptr;
         napi_create_array(env, &elements);
@@ -254,7 +252,7 @@ namespace OHOS::Xml {
             bFlag = false;
             napi_value elementsObject = nullptr;
             napi_create_object(env, &elementsObject);
-            SetNodeInfo(env, pNode, elementsObject);
+            SetNodeInfo(env, pNode, elementsObject, parentName);
             SetAttributes(env, pNode, elementsObject);
             napi_value tempElement = nullptr;
             napi_create_array(env, &tempElement);
@@ -264,7 +262,8 @@ namespace OHOS::Xml {
             if (curContent != nullptr) {
                 if (pNode->children != nullptr) {
                     curNode = pNode->children;
-                    GetXMLInfo(env, curNode, elementsObject, 1);
+                    const std::string parentName = apiFlag_ ? reinterpret_cast<const char*>(pNode->name): "";
+                    GetXMLInfo(env, curNode, elementsObject, 1, parentName);
                     bFlag = true;
                 } else {
                     SetXmlElementType(env, pNode, elementsObject, bFlag);

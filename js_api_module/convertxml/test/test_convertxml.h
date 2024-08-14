@@ -23,82 +23,82 @@ class CxmlTest {
 public:
     CxmlTest() = default;
     ~CxmlTest() = default;
-    static std::string Trim(std::string strXmltrim);
-    static std::string GetNodeType(const xmlElementType enumType);
+    static std::string Trim(napi_env env, std::string strXmltrim);
+    static std::string GetNodeType(napi_env env, const xmlElementType enumType);
     static void GetPrevNodeList(napi_env env, xmlNodePtr curNode);
     static void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag);
     static void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject);
     static void DealSpaces(napi_env env, const napi_value napiObj);
-    static void SetDefaultKey(size_t i, const std::string strRecv);
+    static void SetDefaultKey(napi_env env, size_t i, const std::string strRecv);
     static void DealSingleLine(napi_env env, std::string &strXml, const napi_value &object);
     static void DealComplex(napi_env env, std::string &strXml, const napi_value &object);
-    static void Replace(std::string &str, const std::string src, const std::string dst);
-    static void DealCDataInfo(bool bCData, xmlNodePtr &curNode);
+    static void Replace(napi_env env, std::string &str, const std::string src, const std::string dst);
+    static void DealCDataInfo(napi_env env, bool bCData, xmlNodePtr &curNode);
 };
 
-std::string CxmlTest::Trim(std::string strXmltrim)
+std::string CxmlTest::Trim(napi_env env, std::string strXmltrim)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     return convert.Trim(strXmltrim);
 }
 
-std::string CxmlTest::GetNodeType(const xmlElementType enumType)
+std::string CxmlTest::GetNodeType(napi_env env, const xmlElementType enumType)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     return convert.GetNodeType(enumType);
 }
 
 void CxmlTest::GetPrevNodeList(napi_env env, xmlNodePtr curNode)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.GetPrevNodeList(env, curNode);
 }
 
 void CxmlTest::SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.SetXmlElementType(env, curNode, elementsObject, bFlag);
 }
 
 void CxmlTest::SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.SetNodeInfo(env, curNode, elementsObject);
 }
 
 void CxmlTest::DealSpaces(napi_env env, const napi_value napiObj)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.DealSpaces(env, napiObj);
 }
 
-void CxmlTest::SetDefaultKey(size_t i, const std::string strRecv)
+void CxmlTest::SetDefaultKey(napi_env env, size_t i, const std::string strRecv)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.SetDefaultKey(i, strRecv);
 }
 
 void CxmlTest::DealSingleLine(napi_env env, std::string &strXml, const napi_value &object)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.DealSingleLine(env, strXml, object);
 }
 
 void CxmlTest::DealComplex(napi_env env, std::string &strXml, const napi_value &object)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.DealComplex(env, strXml, object);
 }
 
-void CxmlTest::Replace(std::string &str, const std::string src, const std::string dst)
+void CxmlTest::Replace(napi_env env, std::string &str, const std::string src, const std::string dst)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.Replace(str, src, dst);
 }
 
-void CxmlTest::DealCDataInfo(bool bCData, xmlNodePtr &curNode)
+void CxmlTest::DealCDataInfo(napi_env env, bool bCData, xmlNodePtr &curNode)
 {
-    ConvertXml convert;
+    ConvertXml convert(env);
     convert.DealCDataInfo(bCData, curNode);
 }
 }
