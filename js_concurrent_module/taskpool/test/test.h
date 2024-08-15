@@ -38,6 +38,7 @@ public:
     static napi_value TerminateTask(napi_env env, napi_value argv[], size_t argc);
     static napi_value Execute(napi_env env, napi_value argv[], size_t argc);
     static napi_value ExecuteDelayed(napi_env env, napi_value argv[], size_t argc);
+    static napi_value Cancel(napi_env env, napi_value argv[], size_t argc);
 
     class ExceptionScope {
     public:
