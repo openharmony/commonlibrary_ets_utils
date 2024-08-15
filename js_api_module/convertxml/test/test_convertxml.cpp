@@ -59,7 +59,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest001, testing::ext::TestSize.Level0)
     xmlSerializer.SetDeclaration();
 
     Options op;
-    ConvertXml *convertXml = new ConvertXml();
+    ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
     napi_value jsObj = convertXml->Convert(env, xmlStr);
 
@@ -97,7 +97,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest002, testing::ext::TestSize.Level0)
     xmlSerializer.EndElement();
 
     Options op;
-    ConvertXml *convertXml = new ConvertXml();
+    ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
     napi_value jsObj = convertXml->Convert(env, xmlStr);
 
@@ -136,7 +136,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest003, testing::ext::TestSize.Level0)
     xmlSerializer.EndElement();
 
     Options op;
-    ConvertXml *convertXml = new ConvertXml();
+    ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
     napi_value jsObj = convertXml->Convert(env, xmlStr);
 
@@ -176,7 +176,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest004, testing::ext::TestSize.Level0)
     xmlSerializer.EndElement();
 
     Options op;
-    ConvertXml *convertXml = new ConvertXml();
+    ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
     napi_value jsObj = convertXml->Convert(env, xmlStr);
 
@@ -214,7 +214,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest005, testing::ext::TestSize.Level0)
     xmlSerializer.EndElement();
 
     Options op;
-    ConvertXml *convertXml = new ConvertXml();
+    ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
     napi_value jsObj = convertXml->Convert(env, xmlStr);
 
@@ -252,7 +252,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest006, testing::ext::TestSize.Level0)
     xmlSerializer.EndElement();
 
     Options op;
-    ConvertXml *convertXml = new ConvertXml();
+    ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
     napi_value jsObj = convertXml->Convert(env, xmlStr);
 
@@ -280,7 +280,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest006, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConstructorTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
     std::string str2 = "<note importance=\"high\" logged=\"true\"><todo>Play</todo></note>";
     std::string strXml = str1 + str2;
@@ -305,7 +305,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest002, testing::ext::TestSize.Level0)
     const char* utf8Name = "_declaration";
     napi_create_object(env, &object);
     bool isHas = false;
-    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
@@ -326,7 +326,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
     const char* utf8Name = "_declaration";
     napi_create_object(env, &object);
     bool isHas = false;
-    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
@@ -340,7 +340,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConvertTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><note importance=\"high\" logged=\"true\">    ";
     std::string str2 = "<title>Happy</title>    <todo>Work</todo>    <todo>Play</todo></note>";
     std::string strXml = str1 + str2;
@@ -365,7 +365,7 @@ HWTEST_F(NativeEngineTest, ConvertTest002, testing::ext::TestSize.Level0)
     const char* utf8Name = "_declaration";
     napi_create_object(env, &object);
     bool isHas = false;
-    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
@@ -386,7 +386,7 @@ HWTEST_F(NativeEngineTest, ConvertTest003, testing::ext::TestSize.Level0)
     const char* utf8Name = "_elements";
     napi_create_object(env, &object);
     bool isHas = false;
-    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
     object = convertXml.Convert(env, strXml);
     napi_has_named_property(env, object, utf8Name, &isHas);
@@ -410,7 +410,7 @@ HWTEST_F(NativeEngineTest, DealOptionsTest001, testing::ext::TestSize.Level0)
         "nameKey", "_name", "elementsKey", "_elements"};
 
     obj = setProperty(env, obj, proVec);
-    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml();
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
     convertXml.DealOptions(env, obj);
     bool isHas = false;
     napi_has_named_property(env, obj, "textKey", &isHas);
@@ -457,32 +457,34 @@ HWTEST_F(NativeEngineTest, NativeModuleConvertXmlTest001, testing::ext::TestSize
 
 HWTEST_F(NativeEngineTest, TrimTest001, testing::ext::TestSize.Level1)
 {
-    CxmlTest::Trim("");
-    std::string res = CxmlTest::Trim(" #e ");
+    napi_env env = (napi_env)engine_;
+    CxmlTest::Trim(env, "");
+    std::string res = CxmlTest::Trim(env, " #e ");
     ASSERT_STREQ(res.c_str(), "#e");
 }
 
 HWTEST_F(NativeEngineTest, GetNodeTypeTest001, testing::ext::TestSize.Level1)
 {
+    napi_env env = (napi_env)engine_;
     xmlElementType enumType = XML_ATTRIBUTE_NODE;
-    std::string res = CxmlTest::GetNodeType(enumType);
+    std::string res = CxmlTest::GetNodeType(env, enumType);
     ASSERT_STREQ(res.c_str(), "attribute");
     enumType = XML_ENTITY_REF_NODE;
-    CxmlTest::GetNodeType(enumType);
+    CxmlTest::GetNodeType(env, enumType);
     enumType = XML_ENTITY_NODE;
-    CxmlTest::GetNodeType(enumType);
+    CxmlTest::GetNodeType(env, enumType);
     enumType = XML_PI_NODE;
-    CxmlTest::GetNodeType(enumType);
+    CxmlTest::GetNodeType(env, enumType);
     enumType = XML_DOCUMENT_NODE;
-    CxmlTest::GetNodeType(enumType);
+    CxmlTest::GetNodeType(env, enumType);
     enumType = XML_DOCUMENT_TYPE_NODE;
-    CxmlTest::GetNodeType(enumType);
+    CxmlTest::GetNodeType(env, enumType);
     enumType = XML_DOCUMENT_FRAG_NODE;
-    CxmlTest::GetNodeType(enumType);
+    CxmlTest::GetNodeType(env, enumType);
     enumType = XML_DOCB_DOCUMENT_NODE;
-    CxmlTest::GetNodeType(enumType);
+    CxmlTest::GetNodeType(env, enumType);
     enumType = XML_XINCLUDE_END;
-    res = CxmlTest::GetNodeType(enumType);
+    res = CxmlTest::GetNodeType(env, enumType);
     ASSERT_STREQ(res.c_str(), "");
 }
 
@@ -563,9 +565,10 @@ HWTEST_F(NativeEngineTest, DealSpacesTest002, testing::ext::TestSize.Level1)
 
 HWTEST_F(NativeEngineTest, SetDefaultKeyTest001, testing::ext::TestSize.Level1)
 {
+    napi_env env = (napi_env)engine_;
     size_t i = 15; // 15: number of default number
     std::string key = "hello";
-    CxmlTest::SetDefaultKey(i, key);
+    CxmlTest::SetDefaultKey(env, i, key);
     ASSERT_STREQ(key.c_str(), "hello");
 }
 
@@ -591,15 +594,17 @@ HWTEST_F(NativeEngineTest, DealComplexTest001, testing::ext::TestSize.Level1)
 
 HWTEST_F(NativeEngineTest, ReplaceTest001, testing::ext::TestSize.Level1)
 {
+    napi_env env = (napi_env)engine_;
     std::string str = "xmlsss<!DOCTYPE>ssa";
     std::string src = "sss";
     std::string dst = "zyy";
-    CxmlTest::Replace(str, src, dst);
+    CxmlTest::Replace(env, str, src, dst);
     ASSERT_STREQ(str.c_str(), "xmlzyy<!DOCTYPE>ssa");
 }
 
 HWTEST_F(NativeEngineTest, DealCDataInfo001, testing::ext::TestSize.Level1)
 {
+    napi_env env = (napi_env)engine_;
     bool flag = true;
     xmlNodePtr curNode = new xmlNode;
     xmlNodePtr curNode1 = new xmlNode;
@@ -611,7 +616,7 @@ HWTEST_F(NativeEngineTest, DealCDataInfo001, testing::ext::TestSize.Level1)
     curNode2->type = XML_CDATA_SECTION_NODE;
     curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
     curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
-    CxmlTest::DealCDataInfo(flag, curNode);
+    CxmlTest::DealCDataInfo(env, flag, curNode);
     delete curNode2;
     delete curNode1;
     delete curNode;
