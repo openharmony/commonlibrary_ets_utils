@@ -14,9 +14,11 @@
  */
 
 #include <uv.h>
+
 #include "async_lock.h"
 #include "async_lock_manager.h"
 #include "helper/error_helper.h"
+#include "helper/hitrace_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "tools/log.h"
@@ -79,6 +81,7 @@ napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
     LockRequest *lockRequest = nullptr;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, nullptr, reinterpret_cast<void **>(&lockRequest)));
+    HITRACE_HELPER_METER_NAME("AsyncLock FinallyCallback, " + lockRequest->GetLockInfo());
     lockRequest->lock_->CleanUpLockRequestOnCompletion(lockRequest);
 
     napi_value undefined;
@@ -96,6 +99,7 @@ void LockRequest::CallCallbackAsync()
 
 void LockRequest::CallCallback()
 {
+    HITRACE_HELPER_METER_NAME("AsyncLock Callback, " + GetLockInfo());
     if (AbortIfNeeded()) {
         napi_delete_reference(env_, callback_);
         lock_->CleanUpLockRequestOnCompletion(this);
@@ -223,6 +227,17 @@ void LockRequest::HandleRequestTimeout(std::string &&errorMessage)
     napi_reject_deferred(env_, deferred_, error);
 
     napi_close_handle_scope(env_, scope);
+}
+
+std::string LockRequest::GetLockInfo() const
+{
+    std::string strTrace;
+    if (lock_->GetLockId() == 0) {
+        strTrace += "lockName: " + lock_->GetLockName();
+    } else {
+        strTrace += "lockId: " + std::to_string(lock_->GetLockId());
+    }
+    return strTrace;
 }
 
 } // namespace Commonlibrary::Concurrent::LocksModule

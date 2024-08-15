@@ -48,6 +48,15 @@ public:
     std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
     std::vector<RequestCreationInfo> GetPendingRequestInfos();
 
+    std::string GetLockName() const
+    {
+        return lockName_;
+    }
+    uint32_t GetLockId() const
+    {
+        return anonymousLockId_;
+    }
+
 private:
     void ProcessPendingLockRequest();
     bool CanAcquireLock(LockRequest *lockRequest);
