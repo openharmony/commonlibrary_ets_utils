@@ -213,10 +213,9 @@ static vector<uint8_t> GetArray(napi_env env, napi_value arr)
     vector<uint8_t> vec;
     for (size_t i = 0; i < length; i++) {
         napi_get_element(env, arr, i, &napiNumber);
-        uint32_t num = 0;
-        napi_get_value_uint32(env, napiNumber, &num);
-        // 255 : the max number of one byte unsigned value
-        num = num > 255 ? 0 : num;
+        int32_t num = 0;
+        napi_get_value_int32(env, napiNumber, &num);
+        num = num & 0xFF;
         vec.push_back(num);
     }
     return vec;
@@ -317,6 +316,38 @@ static Buffer* DealParaTypeBuffer(napi_env env, size_t argc, napi_value* argv, u
     return buffer;
 }
 
+static bool InitAnyArrayBuffer(napi_env env, napi_value* argv, Buffer *&buffer)
+{
+    void *data = nullptr;
+    size_t bufferSize = 0;
+    uint32_t byteOffset = 0;
+    uint32_t length = 0;
+    bool isShared = false;
+    if (napi_get_value_uint32(env, argv[2], &byteOffset) != napi_ok || // 2 : the third argument
+        napi_get_value_uint32(env, argv[3], &length) != napi_ok) { // 3 : the fourth argument
+        freeBufferMemory(buffer);
+        return false;
+    }
+    if (napi_is_shared_array_buffer(env, argv[1], &isShared) != napi_ok) {
+        freeBufferMemory(buffer);
+        return false;
+    }
+    if (isShared) {
+        if (napi_get_shared_array_buffer_info(env, argv[1], &data, &bufferSize) != napi_ok) {
+            freeBufferMemory(buffer);
+            return false;
+        }
+        buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
+        return true;
+    }
+    if (napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize) != napi_ok) {
+        freeBufferMemory(buffer);
+        return false;
+    }
+    buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
+    return true;
+}
+
 static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* argv, ParaType paraType)
 {
     Buffer *buffer = new Buffer();
@@ -349,16 +380,9 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
         }
         buffer->Init(reinterpret_cast<uint8_t *>(resultData) - offset, offset, aryLen);
     } else if (paraType == ParaType::ARRAYBUFFER) {
-        void *data = nullptr;
-        size_t bufferSize = 0;
-        uint32_t byteOffset = 0;
-        if (napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize) != napi_ok || // 1 : the second argument
-            napi_get_value_uint32(env, argv[2], &byteOffset) != napi_ok || // 2 : the third argument
-            napi_get_value_uint32(env, argv[3], &length) != napi_ok) { // 3 : the fourth argument
-            freeBufferMemory(buffer);
+        if (!InitAnyArrayBuffer(env, argv, buffer)) {
             return nullptr;
         }
-        buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
     } else {
         freeBufferMemory(buffer);
         napi_throw_error(env, nullptr, "parameter type is error");
