@@ -13,13 +13,15 @@
  * limitations under the License.
  */
 
-#include <unistd.h>
-#include <sys/types.h>
-
 #include "async_lock_manager.h"
-#include "deadlock_helpers.h"
+
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "async_lock.h"
+#include "deadlock_helpers.h"
 #include "helper/error_helper.h"
+#include "helper/hitrace_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "tools/log.h"
@@ -230,6 +232,7 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
 
 napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
 {
+    HITRACE_HELPER_METER_NAME("Async lockAsync");
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     NAPI_ASSERT(env, 0 < argc && argc < 4U, "Invalid number of arguments");
 
@@ -251,6 +254,13 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
         napi_get_undefined(env, &undefined);
         return undefined;
     }
+    std::string strTrace = "lockAsync: ";
+    if (id->isAnonymous) {
+        strTrace += "lockId: " + std::to_string(id->id);
+    } else {
+        strTrace += "lockName: " + id->name;
+    }
+    HITRACE_HELPER_METER_NAME(strTrace);
     LockMode mode = LOCK_MODE_EXCLUSIVE;
     LockOptions options;
     if (argc > 1 && !GetLockMode(env, argv[1], mode)) {

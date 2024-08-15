@@ -53,6 +53,15 @@ public:
     std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
     std::vector<RequestCreationInfo> GetPendingRequestInfos();
 
+    std::string GetLockName() const
+    {
+        return lockName_;
+    }
+    uint32_t GetLockId() const
+    {
+        return anonymousLockId_;
+    }
+
 private:
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
