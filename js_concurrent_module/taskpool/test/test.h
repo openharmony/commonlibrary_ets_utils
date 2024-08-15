@@ -40,6 +40,9 @@ public:
     static napi_value ExecuteDelayed(napi_env env, napi_value argv[], size_t argc);
     static napi_value Cancel(napi_env env, napi_value argv[], size_t argc);
 
+    static void TaskGroupDestructor(napi_env env, void* data);
+    static void SequenceRunnerDestructor(napi_env env, void* data);
+
     class ExceptionScope {
     public:
         explicit ExceptionScope(napi_env env) : env_(env) {}

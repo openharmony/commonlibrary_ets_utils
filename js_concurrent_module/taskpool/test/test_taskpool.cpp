@@ -1957,3 +1957,279 @@ HWTEST_F(NativeEngineTest, TaskpoolTest128, testing::ext::TestSize.Level0)
     res = task->CanExecute(env);
     ASSERT_TRUE(res == false);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest129, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    SequenceRunner* seqRunner = new SequenceRunner();
+    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    seqRunner->seqName_ = "seq01";
+    void* data = static_cast<void*>(seqRunner);
+    NativeEngineTest::SequenceRunnerDestructor(env, data);
+
+    SequenceRunner* seqRunner2 = new SequenceRunner();
+    seqRunner2->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner2);
+    seqRunner2->seqName_ = "seq02";
+    void* data2 = static_cast<void*>(seqRunner2);
+    NativeEngineTest::SequenceRunnerDestructor(env, data2);
+
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest130, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroup* taskGroup = new TaskGroup();
+    Task* task = new Task(env, TaskType::COMMON_TASK, "groupTask");
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    taskGroup->taskIds_.push_back(taskId);
+    task->taskId_ = taskId;
+    napi_reference_ref(env, task->taskRef_, nullptr);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    taskManager.StoreTask(taskId, task);
+    taskGroup->taskIds_.push_back(2);
+
+    GroupInfo* groupInfo = new GroupInfo();
+    taskGroup->currentGroupInfo_ = groupInfo;
+
+    void* data = static_cast<void*>(taskGroup);
+    NativeEngineTest::TaskGroupDestructor(env, data);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = taskId;
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
+    
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+    uv_async_t* req = new uv_async_t;
+    req->data = cbInfo;
+    
+    TaskPool::ExecuteCallback(req);
+    ASSERT_TRUE(true);
+
+    Worker* worker = Worker::WorkerConstructor(env);
+    void* args = nullptr;
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
+    worker->Enqueue(env, resultInfo);
+    TaskResultInfo* resultInfo2 = nullptr;
+    worker->Enqueue(env, resultInfo2);
+    
+    TaskManager &taskManager = TaskManager::GetInstance();
+    taskManager.RegisterCallback(env, taskId, nullptr);
+    cbInfo->worker = worker;
+    TaskPool::ExecuteCallback(req);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = taskId;
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
+    
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+    uv_async_t* req = new uv_async_t;
+    req->data = cbInfo;
+
+    Worker* worker = Worker::WorkerConstructor(env);
+    void* args = nullptr;
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
+    worker->Enqueue(env, resultInfo);
+    
+    TaskManager &taskManager = TaskManager::GetInstance();
+    auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_value funValue = nullptr;
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funValue);
+    napi_value argv[] = {funValue};
+    napi_ref callbackRef = NapiHelper::CreateReference(env, argv[0], 1);
+    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
+    taskManager.RegisterCallback(env, taskId, callbackInfo);
+    cbInfo->worker = worker;
+    TaskPool::ExecuteCallback(req);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = taskId;
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
+    
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+    uv_async_t* req = new uv_async_t;
+    req->data = cbInfo;
+
+    Worker* worker = Worker::WorkerConstructor(env);
+    size_t argc = 1;
+    napi_value argv[] = {nullptr};
+    napi_create_uint32(env, 1, &argv[0]);
+    napi_value argsArray;
+    napi_create_array_with_length(env, argc, &argsArray);
+    for (size_t i = 0; i < argc; i++) {
+        napi_set_element(env, argsArray, i, argv[i]);
+    }
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    void* serializationArgs = nullptr;
+    napi_serialize_inner(env, argsArray, undefined, undefined, true, false, &serializationArgs);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, serializationArgs);
+    worker->Enqueue(env, resultInfo);
+    
+    TaskManager &taskManager = TaskManager::GetInstance();
+    auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_value funValue = nullptr;
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funValue);
+    napi_value argv1[] = {funValue};
+    napi_ref callbackRef = NapiHelper::CreateReference(env, argv1[0], 1);
+    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
+    taskManager.RegisterCallback(env, taskId, callbackInfo);
+    cbInfo->worker = worker;
+    TaskPool::ExecuteCallback(req);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest134, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = taskId;
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
+    
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+    TaskPool::ExecuteCallbackTask(cbInfo);
+    ASSERT_TRUE(true);
+
+    Worker* worker = Worker::WorkerConstructor(env);
+    void* args = nullptr;
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
+    worker->Enqueue(env, resultInfo);
+    cbInfo->worker = worker;
+    TaskPool::ExecuteCallbackTask(cbInfo);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest135, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = {};
+    napi_value result = NativeEngineTest::TerminateTask(env, argv, 0);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_value argv1[] = {thisValue};
+    result = NativeEngineTest::TerminateTask(env, argv1, 1);
+    ASSERT_TRUE(result == nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    size_t argc = 0;
+    napi_value func = nullptr;
+    napi_create_string_utf8(env, "testLongFunc", NAPI_AUTO_LENGTH, &func);
+    napi_value* args = new napi_value[1];
+    napi_value taskName = NapiHelper::CreateEmptyString(env);
+    Task* task = Task::GenerateTask(env, thisValue, func, taskName, args, argc);
+    task->isLongTask_ = true;
+    TaskManager &taskManager = TaskManager::GetInstance();
+    taskManager.StoreTask(task->taskId_, task);
+    napi_value argv2[] = {thisValue};
+    result = NativeEngineTest::TerminateTask(env, argv2, 1);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest136, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = {};
+    napi_value result = NativeEngineTest::Execute(env, argv, 0);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_value argv1[] = {thisValue};
+    result = NativeEngineTest::Execute(env, argv1, 1);
+    ASSERT_TRUE(result == nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    thisValue = CreateTaskObject(env);
+    napi_value argv2[] = {thisValue};
+    result = NativeEngineTest::Execute(env, argv2, 1);
+    ASSERT_TRUE(result != nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_create_string_utf8(env, "test", NAPI_AUTO_LENGTH, &argv2[0]);
+    result = NativeEngineTest::Execute(env, argv2, 1);
+    ASSERT_TRUE(result == nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    thisValue = CreateTaskObject(env);
+    napi_value argv3[2] = {};
+    argv3[0] = thisValue;
+    napi_create_string_utf8(env, "test", NAPI_AUTO_LENGTH, &argv[1]);
+    result = NativeEngineTest::Execute(env, argv3, 2);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest137, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value thisValue = CreateTaskObject(env);
+    napi_value argv[2] = {};
+    argv[0] = thisValue;
+    napi_create_uint32(env, 1, &argv[1]);
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_TRUE(result != nullptr);
+
+    thisValue = CreateTaskObject(env, TaskType::SEQRUNNER_TASK);
+    napi_value argv1[2] = {};
+    argv1[0] = thisValue;
+    napi_create_uint32(env, 1, &argv[1]);
+    result = NativeEngineTest::Execute(env, argv1, 2);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value func = nullptr;
+    GetSendableFunction(env, "foo", func);
+    napi_value argv2[] = {func};
+    result = NativeEngineTest::Execute(env, argv2, 1);
+    ASSERT_TRUE(result != nullptr);
+
+    thisValue = CreateTaskObject(env);
+    napi_value argv3[2] = {};
+    argv3[0] = thisValue;
+    napi_create_uint32(env, 5, &argv3[1]);
+    result = NativeEngineTest::Execute(env, argv3, 2);
+    ASSERT_TRUE(result == nullptr);
+}
