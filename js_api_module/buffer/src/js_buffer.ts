@@ -491,7 +491,7 @@ class HandlerBuffer {
   }
 }
 class Buffer {
-  private _arrayBuffer: ArrayBuffer | undefined;
+  private _arrayBuffer: ArrayBuffer | SharedArrayBuffer | undefined;
 
   public get length(): number {
     return this[lengthSymbol];
@@ -509,7 +509,7 @@ class Buffer {
     return arr;
   }
 
-  constructor(value: number | Buffer | Uint8Array | ArrayBuffer | Array<number> | string,
+  constructor(value: number | Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | Array<number> | string,
     byteOffsetOrEncoding?: number | string, length?: number) {
     if (arguments.length === 1) {
       if (typeof value === 'number') {
@@ -522,7 +522,7 @@ class Buffer {
         this[bufferSymbol] = new internalBuffer.Buffer(ParaType.NUMBERS, value);
       }
     } else if (arguments.length === 3 && typeof byteOffsetOrEncoding === 'number' && typeof length === 'number') {
-      if (value instanceof ArrayBuffer) {
+      if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
         this[bufferSymbol] = new internalBuffer.Buffer(ParaType.ARRAYBUFFER, value, byteOffsetOrEncoding, length);
         this._arrayBuffer = value;
       } else if (value instanceof Buffer) {
