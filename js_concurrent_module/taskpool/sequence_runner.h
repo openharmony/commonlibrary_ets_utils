@@ -40,6 +40,7 @@ private:
     static void SequenceRunnerDestructor(napi_env env, void* data, void* hint);
     static void SeqRunnerConstructorInner(napi_env env, napi_value &thisVar, SequenceRunner *seqRunner);
 
+    friend class NativeEngineTest;
 public:
     uint64_t seqRunnerId_ {};
     std::atomic<uint64_t> currentTaskId_ {};

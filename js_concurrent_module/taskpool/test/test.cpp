@@ -17,6 +17,8 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "sequence_runner.h"
+#include "task_group.h"
 #include "taskpool.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
@@ -115,5 +117,17 @@ napi_value NativeEngineTest::Cancel(napi_env env, napi_value argv[], size_t argc
     napi_create_function(env, funcName.c_str(), funcName.size(), TaskPool::Cancel, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc, argv, &result);
     return result;
+}
+
+void NativeEngineTest::TaskGroupDestructor(napi_env env, void* data)
+{
+    void* hint = nullptr;
+    TaskGroup::TaskGroupDestructor(env, data, hint);
+}
+
+void NativeEngineTest::SequenceRunnerDestructor(napi_env env, void* data)
+{
+    void* hint = nullptr;
+    SequenceRunner::SequenceRunnerDestructor(env, data, hint);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
