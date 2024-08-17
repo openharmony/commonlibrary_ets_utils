@@ -130,4 +130,35 @@ void NativeEngineTest::SequenceRunnerDestructor(napi_env env, void* data)
     void* hint = nullptr;
     SequenceRunner::SequenceRunnerDestructor(env, data, hint);
 }
+
+napi_value NativeEngineTest::ExecutePeriodically(napi_env env, napi_value argv[], size_t argc)
+{
+    std::string funcName = "ExecutePeriodically";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskPool::ExecutePeriodically, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &result);
+    return result;
+}
+
+napi_value NativeEngineTest::ExecuteGroup(napi_env env, napi_value taskGroup)
+{
+    return TaskPool::ExecuteGroup(env, taskGroup, Priority::DEFAULT);
+}
+
+void NativeEngineTest::DelayTask(uv_timer_t* handle)
+{
+    TaskPool::DelayTask(handle);
+}
+
+void NativeEngineTest::PeriodicTaskCallback(uv_timer_t* handle)
+{
+    TaskPool::PeriodicTaskCallback(handle);
+}
+
+void NativeEngineTest::UpdateGroupInfoByResult(napi_env env, uv_timer_t* handle, napi_value res, bool success)
+{
+    Task* task = reinterpret_cast<Task*>(handle->data);
+    TaskPool::UpdateGroupInfoByResult(env, task, res, success);
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

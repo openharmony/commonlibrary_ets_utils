@@ -39,6 +39,11 @@ public:
     static napi_value Execute(napi_env env, napi_value argv[], size_t argc);
     static napi_value ExecuteDelayed(napi_env env, napi_value argv[], size_t argc);
     static napi_value Cancel(napi_env env, napi_value argv[], size_t argc);
+    static void DelayTask(uv_timer_t* handle);
+    static napi_value ExecuteGroup(napi_env env, napi_value taskGroup);
+    static napi_value ExecutePeriodically(napi_env env, napi_value argv[], size_t argc);
+    static void PeriodicTaskCallback(uv_timer_t* handle);
+    static void UpdateGroupInfoByResult(napi_env env, uv_timer_t* handle, napi_value res, bool success);
 
     static void TaskGroupDestructor(napi_env env, void* data);
     static void SequenceRunnerDestructor(napi_env env, void* data);
