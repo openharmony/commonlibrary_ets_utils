@@ -575,10 +575,8 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         task->CancelPendingTask(env);
         uv_timer_stop(task->timer_);
         uv_close(reinterpret_cast<uv_handle_t*>(task->timer_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete (uv_timer_t*)handle;
-                handle = nullptr;
-            }
+            delete (uv_timer_t*)handle;
+            handle = nullptr;
         });
         return;
     } else if (task->IsSeqRunnerTask()) {
@@ -811,12 +809,8 @@ void TaskManager::InitTaskManager(napi_env env)
         }
 #endif
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-        mainThreadRunner_ = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        if (mainThreadRunner_.get() == nullptr) {
-            HILOG_FATAL("taskpool:: the mainEventRunner is nullptr");
-            return;
-        }
-        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(mainThreadRunner_);
+        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
+            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
 #endif
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
         // Add a reserved thread for taskpool
@@ -1388,11 +1382,7 @@ void TaskManager::UpdateSystemAppFlag()
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 bool TaskManager::PostTask(std::function<void()> task, const char* taskName)
 {
-    bool res = mainThreadHandler_->PostTask(task, taskName, 0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
-    if (!res) {
-        HILOG_ERROR("taskpool:: the mainThread EventHandler postTask failed");
-    }
-    return res;
+    return mainThreadHandler_->PostTask(task, taskName, 0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
 }
 #endif
 

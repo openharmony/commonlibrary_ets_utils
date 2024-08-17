@@ -33,7 +33,6 @@
 #include "task_group.h"
 #include "worker.h"
 
-
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
@@ -148,13 +147,6 @@ public:
         return globalEnableFfrtFlag_ || (isSystemApp_ && !disableFfrtFlag_);
     }
 
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> GetMainThreadRunner() const
-    {
-        return mainThreadRunner_;
-    }
-#endif
-
     bool CheckTask(Task* task);
 
 private:
@@ -243,7 +235,6 @@ private:
     std::vector<Worker*> freeList_ {};
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner_ {};
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
 #endif
 

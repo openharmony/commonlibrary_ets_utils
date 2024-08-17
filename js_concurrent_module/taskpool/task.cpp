@@ -1330,10 +1330,8 @@ void Task::ClearDelayedTimers()
         napi_reject_deferred(env_, taskMessage->deferred, error);
         uv_timer_stop(t);
         uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete (uv_timer_t*)handle;
-                handle = nullptr;
-            }
+            delete (uv_timer_t*)handle;
+            handle = nullptr;
         });
         delete taskMessage;
         taskMessage = nullptr;
