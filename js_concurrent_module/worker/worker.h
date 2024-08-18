@@ -591,10 +591,6 @@ private:
     std::function<void(napi_env)> workerEnvCallback_;
 
     bool isMainThreadWorker_ = true;
-#if defined(ENABLE_WORKER_EVENTHANDLER)
-    static std::shared_ptr<OHOS::AppExecFwk::EventRunner> g_mainThreadRunner_;
-    static std::shared_ptr<OHOS::AppExecFwk::EventHandler> g_mainThreadHandler_;
-#endif
 
     friend class WorkersTest;
 };
