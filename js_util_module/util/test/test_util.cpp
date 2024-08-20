@@ -579,7 +579,7 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest001, testing::ext::TestSize.Level0)
     napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
 
     napi_value dest = nullptr;
-        napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &dest);
 
     napi_value result = textEncoder.EncodeInto(env, src, dest);
 
@@ -621,7 +621,7 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest002, testing::ext::TestSize.Level0)
     napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
 
     napi_value dest = nullptr;
-        napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &dest);
 
     napi_value result = textEncoder.EncodeInto(env, src, dest);
 
@@ -663,7 +663,7 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest003, testing::ext::TestSize.Level0)
     napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
 
     napi_value dest = nullptr;
-        napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &dest);
 
     napi_value result = textEncoder.EncodeInto(env, src, dest);
 
@@ -2754,4 +2754,58 @@ HWTEST_F(NativeEngineTest, stringDecoderEnd002, testing::ext::TestSize.Level0)
         HILOG_ERROR("can not get arg value");
     }
     ASSERT_STREQ("", buffer.c_str());
+}
+
+/* @tc.name: testDecode001
+ * @tc.desc: Test for abnormal situations in the decode function
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, testDecode001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testDecode001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+
+    unsigned char input[4] = {99, 122, 69, 122};
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 4;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
+    int ret = memcpy_s(data, sizeof(input), reinterpret_cast<void*>(input), sizeof(input));
+    ASSERT_EQ(0, ret);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_TRUE(result == nullptr);
+}
+
+/* @tc.name: testDecode002
+ * @tc.desc: Test for abnormal situations in the decode function
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, testDecode002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testDecode002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    napi_value src = nullptr;
+    napi_create_int32(env, 9, &src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_TRUE(result == nullptr);
+}
+
+/* @tc.name: testDecodeSync001
+ * @tc.desc: Test for abnormal situations in the DecodeSync function
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, testDecodeSync001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testDecodeSync001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+
+    napi_value src = nullptr;
+    napi_create_int32(env, 9, &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_TRUE(result == nullptr);
 }
