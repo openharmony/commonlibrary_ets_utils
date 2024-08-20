@@ -456,7 +456,7 @@ HWTEST_F(NativeEngineTest, GetConstructorName001, testing::ext::TestSize.Level0)
 
     napi_value testInstance = nullptr;
     ASSERT_CHECK_CALL(napi_new_instance(env, testClass, 0, nullptr, &testInstance));
-
+    napi_set_named_property(env, testInstance, "constructor", testClass);
     std::string resVal = NapiHelper::GetConstructorName(env, testInstance);
     ASSERT_EQ(resVal, "TestClass");
 }
