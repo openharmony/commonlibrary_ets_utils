@@ -1214,6 +1214,7 @@ uint64_t TaskManager::GetTaskDuration(uint64_t taskId, std::string durationType)
 
 std::string TaskManager::GetTaskName(uint64_t taskId)
 {
+    std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     auto iter = tasks_.find(taskId);
     if (iter == tasks_.end()) {
         return "";
