@@ -1153,6 +1153,27 @@ HWTEST_F(NativeEngineTest, GetIgnoreBOM004, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: GetIgnoreBOM005
+ * @tc.desc: Test date type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetIgnoreBOM005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = -1;
+    int ignoreBOM = 0;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string str = "ssn";
+    OHOS::Util::TextDecoder textDecoder(str, inputVec);
+    napi_value naVal = textDecoder.GetIgnoreBOM(env);
+    bool result = false;
+    napi_get_value_bool(env, naVal, &result);
+    ASSERT_FALSE(result);
+}
+
+/**
  * @tc.name: decoderUtf8001 utf-8
  * @tc.desc: Test date type.
  * @tc.type: FUNC
@@ -1211,11 +1232,11 @@ HWTEST_F(NativeEngineTest, decoderUtf8002, testing::ext::TestSize.Level0)
     std::string str = "utf-8";
     OHOS::Util::TextDecoder textDecoder(str, inputVec);
     bool iflag = true;
-    size_t byteLength = 3;
+    size_t byteLength = 5;
     void* data = nullptr;
     napi_value resultBuff = nullptr;
     napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
-    unsigned char arr[3] = {0x61, 0x62, 0x63};
+    unsigned char arr[5] = {0x61, '\0', 0x62, 0x63, '\0'};
     int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
     ASSERT_EQ(0, ret);
     napi_value result2 = nullptr;
@@ -1229,7 +1250,7 @@ HWTEST_F(NativeEngineTest, decoderUtf8002, testing::ext::TestSize.Level0)
         ch = new char[bufferSize + 1]();
         napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
     }
-    ASSERT_STREQ("abc", ch);
+    ASSERT_STREQ("a bc ", ch);
     if (ch != nullptr) {
         delete []ch;
         ch = nullptr;
@@ -1672,6 +1693,95 @@ HWTEST_F(NativeEngineTest, decoderUtf8BOM002, testing::ext::TestSize.Level0)
     }
 }
 
+/**
+ * @tc.name: decoderUtf8-BOM003
+ * @tc.desc: Decoder utf8 BOM with limit err.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = -1;
+    int ignoreBOM = -1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string str = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(str, inputVec);
+    bool iflag = false;
+    size_t byteLength = 0;
+    void *data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    ASSERT_TRUE(testString == nullptr);
+}
+
+/**
+ * @tc.name: decoderUtf8-BOM004
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM004, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM001 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int>  inputVec;
+    int fatal = 0;
+    int ignoreBOM = 1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = false;
+    size_t byteLength = 6;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[8] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "ABC");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: getMinByteSizeTest001 utf-8
+ * @tc.desc: get minbyte size with tranTool nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, getMinByteSizeTest001, testing::ext::TestSize.Level0)
+{
+    std::vector<int> inputVec;
+    int fatal = -1;
+    int ignoreBOM = -1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string str = "XYZ123";
+    OHOS::Util::TextDecoder textDecoder(str, inputVec);
+    textDecoder.Reset();
+    size_t rel1 = textDecoder.GetMinByteSize();
+    ASSERT_EQ(rel1, 0);
+}
+
 /* @tc.name: encodeTest001
  * @tc.desc: Encodes all bytes in the specified u8 array into
              the newly allocated u8 array using the Base64 encoding scheme.
@@ -1841,6 +1951,66 @@ HWTEST_F(NativeEngineTest, encodeTest005, testing::ext::TestSize.Level0)
     napi_get_typedarray_info(env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
     char* res = (char*)srcData;
     for (size_t i = 0; i < 8; i++) {
+        ASSERT_EQ(res[i], excepted[i]);
+    }
+}
+
+/* @tc.name: encodeTest006
+ * @tc.desc: Encode sync with napi_uint16_array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, encodeTest006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest006 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    unsigned char input[6] = {66, 97, 115, 101, 54, 51};
+    napi_value arrayBuffer = nullptr;
+    void* data = nullptr;
+    size_t arrayBufferSize = 6;
+    napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
+    int ret = memcpy_s(data, sizeof(input), reinterpret_cast<void*>(input), sizeof(input));
+    ASSERT_EQ(0, ret);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint16_array, arrayBufferSize, arrayBuffer, 0, &src);
+
+    napi_value result = base64.EncodeSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(nullptr, result);
+    napi_value result1 = base64.EncodeToStringSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(nullptr, result1);
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+}
+
+/* @tc.name: encodeTest007
+ * @tc.desc: Encodes all bytes in the specified u8 array with type BASIC_URL_SAFE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, encodeTest007, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest007 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    unsigned char input[4] = {168, 174, 155, 255};
+    napi_value arrayBuffer = nullptr;
+    void* data = nullptr;
+    size_t arrayBufferSize = 4;
+    napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
+    int ret = memcpy_s(data, sizeof(input), reinterpret_cast<void*>(input), sizeof(input));
+    ASSERT_EQ(0, ret);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
+
+    napi_value result = base64.EncodeSync(env, src, OHOS::Util::Type::BASIC_URL_SAFE);
+    char excepted[7] = {113, 75, 54, 98, 95, 119};
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void* srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+    napi_get_typedarray_info(env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+    char* res = (char*)srcData;
+    for (size_t i = 0; i < 6; i++) {
         ASSERT_EQ(res[i], excepted[i]);
     }
 }
@@ -2196,6 +2366,59 @@ HWTEST_F(NativeEngineTest, decodeTest005, testing::ext::TestSize.Level0)
     }
 }
 
+/* @tc.name: decodeTest006
+ * @tc.desc: Decodes the Base64-encoded string or input unit32 array with return null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest006 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+
+    std::string input1 = "";
+    napi_value src1 = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &src1);
+    base64.DecodeSync(env, src1, OHOS::Util::Type::BASIC_URL_SAFE);
+    napi_value result1 = base64.DecodeSync(env, src1, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result1, nullptr);
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    unsigned char input[20] = {81, 109, 70, 122, 90, 84, 89, 48, 73, 69, 53, 118, 90, 71, 85, 117, 97, 110, 77, 61};
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 20;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
+    int ret = memcpy_s(data, sizeof(input), reinterpret_cast<void*>(input), sizeof(input));
+    ASSERT_EQ(0, ret);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint32_array, arrayBufferSize, arrayBuffer, 0, &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result, nullptr);
+    
+    napi_get_and_clear_last_exception(env, &exception);
+}
+
+/* @tc.name: decodeTest007
+ * @tc.desc: Decodes the Base64-encoded string with type BASIC_URL_SAFE.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest007, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest007 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    std::string input = "qK6b/w==";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC_URL_SAFE);
+    ASSERT_EQ(nullptr, result);
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+}
+
 /* @tc.name: encodeAsyncTest001
  * @tc.desc: Asynchronously encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
@@ -2220,6 +2443,14 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest001, testing::ext::TestSize.Level0)
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
+
+    napi_value src1 = nullptr;
+    napi_create_typedarray(env, napi_uint16_array, arrayBufferSize, arrayBuffer, 0, &src1);
+    napi_value result1 = base64.Encode(env, src1, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result1, nullptr);
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
 }
 
 /* @tc.name: encodeAsyncTest002
@@ -2350,6 +2581,14 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001, testing::ext::TestSize.Le
     bool res = false;
     napi_is_promise(env, result, &res);
     ASSERT_TRUE(res);
+
+    napi_value src1 = nullptr;
+    napi_create_typedarray(env, napi_uint16_array, arrayBufferSize, arrayBuffer, 0, &src1);
+    napi_value result1 = base64.EncodeToString(env, src1, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result1, nullptr);
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
 }
 
 /* @tc.name: encodeToStringAsyncTest002
@@ -2596,6 +2835,20 @@ HWTEST_F(NativeEngineTest, stringDecoderWrite001, testing::ext::TestSize.Level0)
         HILOG_ERROR("can not get arg value");
     }
     ASSERT_STREQ("你好", buffer.c_str());
+
+    napi_value testResEnd = stringDecoder.End(env);
+    size_t bufferEndSizeEnd = 0;
+    if (napi_get_value_string_utf8(env, testResEnd, nullptr, 0, &bufferEndSizeEnd) != napi_ok) {
+        HILOG_ERROR("can not get arg size");
+    }
+    std::string bufferEnd = "";
+    bufferEnd.reserve(bufferEndSizeEnd);
+    bufferEnd.resize(bufferEndSizeEnd);
+    if (napi_get_value_string_utf8(
+        env, testResEnd, bufferEnd.data(), bufferEndSizeEnd + 1, &bufferEndSizeEnd) != napi_ok) {
+        HILOG_ERROR("can not get arg value");
+    }
+    ASSERT_STREQ("", bufferEnd.c_str());
 }
 
 /**
@@ -2654,6 +2907,21 @@ HWTEST_F(NativeEngineTest, stringDecoderWrite002, testing::ext::TestSize.Level0)
     ASSERT_STREQ("你好", buffer.c_str());
 }
 
+/**
+ * @tc.name: stringDecoderWrite003
+ * @tc.desc: Test the write function with not typedarray.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWrite003, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    napi_value testRes = stringDecoder.Write(env, nullptr);
+    ASSERT_EQ(testRes, nullptr);
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+}
 
 /**
  * @tc.name: stringDecoderEnd001
@@ -2754,4 +3022,66 @@ HWTEST_F(NativeEngineTest, stringDecoderEnd002, testing::ext::TestSize.Level0)
         HILOG_ERROR("can not get arg value");
     }
     ASSERT_STREQ("", buffer.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderEnd003
+ * @tc.desc: string decoder end with pending len 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderEnd003, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    const int arrCount = 6;
+    size_t byteLength = arrCount;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    unsigned char arr[arrCount] = {0xE4, 0xBD, 0xA0, 0xE5, 0xA5, 0xBD};
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    stringDecoder.Write(env, result, false);
+
+    napi_value testResEnd = stringDecoder.End(env);
+    size_t bufferEndSizeEnd = 0;
+    if (napi_get_value_string_utf8(env, testResEnd, nullptr, 0, &bufferEndSizeEnd) != napi_ok) {
+        HILOG_ERROR("can not get arg size");
+    }
+    std::string bufferEnd = "";
+    bufferEnd.reserve(bufferEndSizeEnd);
+    bufferEnd.resize(bufferEndSizeEnd);
+    if (napi_get_value_string_utf8(
+        env, testResEnd, bufferEnd.data(), bufferEndSizeEnd + 1, &bufferEndSizeEnd) != napi_ok) {
+        HILOG_ERROR("can not get arg value");
+    }
+    ASSERT_STREQ("", bufferEnd.c_str());
+}
+
+/**
+ * @tc.name: charEncodeAchieves001
+ * @tc.desc: char encode achieves with throw error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, charEncodeAchieves001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::EncodeInfo* stdEncodeInfo = nullptr;
+    stdEncodeInfo = new OHOS::Util::EncodeInfo();
+    stdEncodeInfo->slength = 0;
+    unsigned char* res = OHOS::Util::EncodeAchieves(env, stdEncodeInfo);
+    ASSERT_EQ(nullptr, res);
+
+    OHOS::Util::EncodeInfo* stdEncodeInfo1 = nullptr;
+    unsigned char arr[] = {0xE4, 0xBD, 0xA0, 0xE5, 0xA5, 0xBD};
+    stdEncodeInfo1 = new OHOS::Util::EncodeInfo();
+    stdEncodeInfo1->sinputEncode = arr;
+    stdEncodeInfo1->slength = 1;
+    stdEncodeInfo1->valueType = OHOS::Util::Type::BASIC_URL_SAFE;
+    unsigned char* res1 = OHOS::Util::EncodeAchieves(env, stdEncodeInfo1);
+    ASSERT_EQ(0x35, static_cast<unsigned char>(*res1));
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
 }
