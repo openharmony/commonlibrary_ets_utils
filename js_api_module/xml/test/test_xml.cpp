@@ -2685,7 +2685,7 @@ HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction001, testing::ext::TestSi
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
     std::string str3 = "    <title>Hello\rWorld\n</title>";
-    std::string str4 = "    <todo>Work\r\n</todo>";   
+    std::string str4 = "    <todo>Work\r\n</todo>";
     std::string str5 = "    <mess><![CDATA[This is a \r\n CDATA section]]></mess>";
     std::string str6 = "</note>";
     std::string strXml = str1 + str2 + str3 + str4 + str5 + str6;
