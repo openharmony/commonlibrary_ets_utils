@@ -444,10 +444,15 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     }
     // remove all timeout workers
     for (auto iter = timeoutWorkers_.begin(); iter != timeoutWorkers_.end();) {
-        HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", (*iter)->tid_);
-        uv_async_send((*iter)->clearWorkerSignal_);
-        timeoutWorkers_.erase(iter++);
-        return;
+        if (workers_.find(*iter) == workers_.end()) {
+            HILOG_WARN("taskpool:: current worker maybe release");
+            iter = timeoutWorkers_.erase(iter);
+        } else {
+            HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", (*iter)->tid_);
+            uv_async_send((*iter)->clearWorkerSignal_);
+            timeoutWorkers_.erase(iter++);
+            return;
+        }
     }
     uint32_t idleNum = idleWorkers_.size();
     // System memory state is moderate and the worker has exeuted tasks, we will try to release it
@@ -827,6 +832,7 @@ void TaskManager::RemoveWorker(Worker* worker)
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     idleWorkers_.erase(worker);
+    timeoutWorkers_.erase(worker);
     workers_.erase(worker);
 }
 
