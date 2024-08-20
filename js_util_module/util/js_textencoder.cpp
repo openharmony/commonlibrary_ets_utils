@@ -32,35 +32,17 @@ namespace OHOS::Util {
 
     napi_value TextEncoder::Encode(napi_env env, napi_value src) const
     {
-        std::string buffer = "";
-        size_t  outLen = 0;
-        size_t outLens = 0;
-        void *data = nullptr;
-        napi_value arrayBuffer = nullptr;
+        napi_value result = nullptr;
         if (encoding_ == "utf-8") {
-            size_t bufferSize = 0;
-            if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
-                HILOG_ERROR("textencoder::can not get src size");
-                return nullptr;
-            }
-            buffer.resize(bufferSize);
-            if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-                HILOG_ERROR("textencoder::can not get src value");
-                return nullptr;
-            }
-            outLen = buffer.length();
-            outLens = outLen;
-            napi_create_arraybuffer(env, outLen, &data, &arrayBuffer);
-            if (memcpy_s(data, outLen, reinterpret_cast<void*>(buffer.data()), outLen) != EOK) {
-                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
-                return nullptr;
-            }
+            // optimized, fastpath for utf-8 encode
+            napi_encode(env, src, &result);
         } else {
+            size_t outLens = 0;
+            napi_value arrayBuffer = nullptr;
             EncodeConversion(env, src, &arrayBuffer, outLens, encoding_);
+            napi_create_typedarray(env, napi_uint8_array, outLens, arrayBuffer, 0, &result);
         }
 
-        napi_value result = nullptr;
-        napi_create_typedarray(env, napi_uint8_array, outLens, arrayBuffer, 0, &result);
         return result;
     }
 

@@ -703,26 +703,25 @@ namespace OHOS::Util {
     static napi_value EncodeIntoOne(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
+        // EncodeIntoOne is invoked by EncodeIntoArgs, argc can be 0 or 1
+        // if argc is 0, typeof args is undefined.
         size_t argc = 1;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        napi_value result;
-        if (argc == 1) {
-            napi_valuetype valuetype;
-            NAPI_CALL(env, napi_typeof(env, args, &valuetype));
-            if (!IsValidValue(env, args)) {
-                napi_get_undefined(env, &result);
-                return result;
-            }
-            if (valuetype != napi_string) {
-                return ThrowError(env, "Parameter error. The type of Parameter must be string.");
-            }
-        } else {
+        napi_value result = nullptr;
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args, &valuetype));
+
+        if (valuetype == napi_null || valuetype == napi_undefined) {
             napi_get_undefined(env, &result);
             return result;
         }
+        if (valuetype != napi_string) {
+            return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+        }
+
         TextEncoder *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void **)&object));
         result = object->Encode(env, args);
         return result;
     }
@@ -786,10 +785,8 @@ namespace OHOS::Util {
 
     static napi_value EncodeIntoArgs(napi_env env, napi_callback_info info)
     {
-        napi_value thisVar = nullptr;
         size_t argc = 0;
-        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
-        napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         if (argc >= 2) { // 2:The number of parameters is 2
             return EncodeIntoTwo(env, info);
         }
