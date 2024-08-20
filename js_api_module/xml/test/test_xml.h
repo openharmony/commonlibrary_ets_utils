@@ -50,6 +50,8 @@ public:
     static bool ParseStartTagFuncDeal(napi_env env, std::string xml, bool relax);
     static bool ParseDeclaration(napi_env env, std::string str);
     static bool ReadInternalSubset();
+    static bool ParseStartTag(napi_env env, std::string str);
+    static bool ParseEndTagFunction(napi_env env, std::string str);
     static std::string DealNapiStrValueFunction(napi_env env, std::string pushStr);
     static int SplicNspFunction(napi_env env, std::string pushStr);
     static std::string SetNamespaceFunction(napi_env env, std::string prefix, const std::string &nsTemp);
@@ -454,5 +456,29 @@ std::string XmlTest::XmlSerializerErrorFunction(napi_env env)
     return xmlSerializer.xmlSerializerError_;
 }
 
+bool XmlTest::ParseStartTag(napi_env env, std::string str)
+{
+    OHOS::xml::XmlPullParser xmlPullParser(env, str, "utf-8");
+    xmlPullParser.attriCount_ = 3; // values greater than pos_
+    xmlPullParser.defaultAttributes["lt;"]["<"] = "lt;";
+    xmlPullParser.defaultAttributes["lt;"]["<"] = "<";
+    xmlPullParser.defaultAttributes["gt;"]["<"] = "gt;";
+    xmlPullParser.defaultAttributes["gt;"]["<"] = ">";
+    xmlPullParser.ParseDeclaration();
+    return true;
 }
-#endif // TEST_XML_H
+
+bool XmlTest::ParseEndTagFunction(napi_env env, std::string str)
+{
+    OHOS::xml::XmlPullParser xml(env, str, "utf8");
+    xml.relaxed = false;
+    xml.depth = 1;
+    xml.elementStack_.resize(20); // 20 :vector size
+    xml.elementStack_[3] = "!"; // 3: index of three
+    xml.ParseEndTag();
+    xml.depth = 0;
+    xml.ParseEndTag();
+    return true;
+}
+}
+#endif // TEST_XML_Hs

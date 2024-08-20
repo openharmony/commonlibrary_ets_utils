@@ -2674,3 +2674,66 @@ HWTEST_F(NativeEngineTest, XmlSerializerErrorFunction001, testing::ext::TestSize
     std::string result = "illegal position for declaration";
     ASSERT_STREQ(outPut.c_str(), result.c_str());
 }
+
+/* @tc.name: XmlParseTagValueFuncFunction001
+ * @tc.desc: Test ParseTagValueFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <title>Hello\rWorld\n</title>";
+    std::string str4 = "    <todo>Work\r\n</todo>";   
+    std::string str5 = "    <mess><![CDATA[This is a \r\n CDATA section]]></mess>";
+    std::string str6 = "</note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    std::string result = "";
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
+}
+
+/* @tc.name: ParseStartTagFunction001
+ * @tc.desc: Test ParseStartTag Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseStartTagFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    bool res = XmlTest::ParseStartTag(env, xml);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: ParseEndTagFunction001
+ * @tc.desc: Test ParseStartTag Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseEndTagFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    bool res = XmlTest::ParseEndTagFunction(env, xml);
+    ASSERT_TRUE(res);
+}
