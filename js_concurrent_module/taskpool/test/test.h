@@ -47,6 +47,17 @@ public:
 
     static void TaskGroupDestructor(napi_env env, void* data);
     static void SequenceRunnerDestructor(napi_env env, void* data);
+    static void TryTriggerExpand();
+    static void CheckForBlockedWorkers(napi_env env);
+    static void TriggerShrink(napi_env env);
+    static void foo(const uv_async_t* req);
+    static void NotifyShrink(napi_env env);
+    static void TryExpand(napi_env env);
+    static void CancelTask(napi_env env);
+    static void NotifyWorkerIdle(napi_env env);
+    static void EnqueueTaskId(napi_env env);
+    static void GetTaskByPriority(napi_env env);
+    static void RestoreWorker(napi_env env);
 
     class ExceptionScope {
     public:
