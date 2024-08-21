@@ -91,6 +91,12 @@ namespace OHOS::Url {
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
     void AnalysisOnlyHost(const std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, size_t pos);
+    void FormatIpv4(std::vector<std::string> nums, std::string& host,
+                    std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags);
+    void AnalysisSpecialFile(std::string& temp, size_t pos, UrlData& urlinfo,
+                             std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void AnalysisFile(std::string& input, UrlData& urlinfo,
+                      std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
 
     class URL {
     public:

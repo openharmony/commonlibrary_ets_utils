@@ -2207,3 +2207,205 @@ HWTEST_F(NativeEngineTest, testUrlutilities014, testing::ext::TestSize.Level0)
     url.SetHost(str);
     ASSERT_STREQ(str.c_str(), "10.11.11111111");
 }
+
+HWTEST_F(NativeEngineTest, testUrlutilities015, testing::ext::TestSize.Level0)
+{
+    std::string str = "hello world!";
+    size_t number = 0;
+    OHOS::Url::SplitNum(str, number);
+    ASSERT_STREQ(str.c_str(), "hello world!");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities016, testing::ext::TestSize.Level0)
+{
+    std::string input = "H+#LLOWORLD";
+    std::string scheme = "";
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    bool rst = OHOS::Url::AnalysisScheme(input, scheme, flags);
+    ASSERT_FALSE(rst);
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities017, testing::ext::TestSize.Level0)
+{
+    std::string input = "H+#LLOWORLD:";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    size_t pos = 0;
+    OHOS::Url::AnalysisOnlyHost(input, urlinfo, flags, pos);
+    ASSERT_STREQ(input.c_str(), "H+#LLOWORLD:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities018, testing::ext::TestSize.Level0)
+{
+    std::string input = "H+#LLOWORLD:65536";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    size_t pos = 0;
+    OHOS::Url::AnalysisOnlyHost(input, urlinfo, flags, pos);
+    ASSERT_STREQ(input.c_str(), "H+#LLOWORLD:65536");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities019, testing::ext::TestSize.Level0)
+{
+    std::string input01 = "256";
+    std::vector<std::string> nums;
+    nums.push_back(input01);
+    std::string host;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::FormatIpv4(nums, host, flags);
+    ASSERT_STREQ(host.c_str(), "0.0.1.0");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities020, testing::ext::TestSize.Level0)
+{
+    std::string input = "abcdefghi";
+    std::string input01 = "1";
+    std::string input02 = "2";
+    std::vector<std::string> nums;
+    nums.push_back(input);
+    nums.push_back(input01);
+    nums.push_back(input02);
+    std::string host;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::FormatIpv4(nums, host, flags);
+    ASSERT_EQ(nums.size(), 3);
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities021, testing::ext::TestSize.Level0)
+{
+    std::string input = "155.155.256.111111111";
+    std::string host;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalyseIPv4(input, host, flags);
+    ASSERT_STREQ(input.c_str(), "155.155.256.111111111");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities022, testing::ext::TestSize.Level0)
+{
+    std::string input = "http://example.com/path/.%2E/to%2eresource";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisFilePath(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "to%2eresource");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities023, testing::ext::TestSize.Level0)
+{
+    std::string input = "http://example.com/path/to%2eresource/%2E";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisFilePath(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "%2E");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities024, testing::ext::TestSize.Level0)
+{
+    std::string input = ".%2E";
+    OHOS::Url::UrlData urlinfo;
+    std::string str = "h:";
+    urlinfo.path.push_back(str);
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisFilePath(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), ".%2E");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities025, testing::ext::TestSize.Level0)
+{
+    std::string input = ".%2E";
+    OHOS::Url::UrlData urlinfo;
+    std::string str = "w:";
+    urlinfo.path.push_back(str);
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisFilePath(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), ".%2E");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities026, testing::ext::TestSize.Level0)
+{
+    std::string input = ".%2E";
+    OHOS::Url::UrlData urlinfo;
+    std::string str = "z:";
+    urlinfo.path.push_back(str);
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisFilePath(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), ".%2E");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities027, testing::ext::TestSize.Level0)
+{
+    std::string temp = "w:51";
+    size_t pos = 2;
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisSpecialFile(temp, pos, urlinfo, flags);
+    ASSERT_STREQ(temp.c_str(), "w:51");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities028, testing::ext::TestSize.Level0)
+{
+    std::string input = "/g";;
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisFile(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "g");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities029, testing::ext::TestSize.Level0)
+{
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    std::string input = "//abc";
+    OHOS::Url::UrlData urlinfo;
+    OHOS::Url::AnalysisFile(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "//abc");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities030, testing::ext::TestSize.Level0)
+{
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    std::string input = "/abc";
+    OHOS::Url::UrlData urlinfo;
+    OHOS::Url::AnalyInfoPath(flags, urlinfo, input);
+    ASSERT_STREQ(input.c_str(), "/abc");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities031, testing::ext::TestSize.Level0)
+{
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    std::string input = ":h";
+    OHOS::Url::UrlData urlinfo;
+    OHOS::Url::AnalyHostPath(input, flags, urlinfo);
+    ASSERT_TRUE(flags[0]);
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities032, testing::ext::TestSize.Level0)
+{
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    std::string input = "///";
+    OHOS::Url::UrlData urlinfo;
+    OHOS::Url::AnalysisNoDefaultProtocol(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "///");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities033, testing::ext::TestSize.Level0)
+{
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    std::string input = "//";
+    OHOS::Url::UrlData urlinfo;
+    OHOS::Url::AnalysisNoDefaultProtocol(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "//");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities034, testing::ext::TestSize.Level0)
+{
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    std::string input = "//::/";
+    OHOS::Url::UrlData urlinfo;
+    AnalysisNoDefaultProtocol(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "//::/");
+}
