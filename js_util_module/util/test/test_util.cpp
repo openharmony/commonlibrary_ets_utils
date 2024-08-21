@@ -2804,6 +2804,41 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest005, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+/* @tc.name: decodeAsyncTest006
+ * @tc.desc: Use the Base64 encoding scheme to asynchronously decode a
+             Base64-encoded string or input u8 array into a newly allocated u8 array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeAsyncTest006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest006 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+
+    napi_value src = nullptr;
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(nullptr, result);
+
+    std::string input1 = "";
+    napi_value src1 = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &src1);
+    napi_value result1 = base64.Decode(env, src1, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(nullptr, result1);
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 0;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
+    napi_value src2 = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src2);
+    napi_value result2 = base64.Decode(env, src2, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(nullptr, result2);
+
+    napi_get_and_clear_last_exception(env, &exception);
+}
+
 /**
  * @tc.name: stringDecoderWrite001
  * @tc.desc: Test the write function with complete data.
@@ -3138,4 +3173,34 @@ HWTEST_F(NativeEngineTest, testDecodeSync001, testing::ext::TestSize.Level0)
     napi_create_int32(env, 9, &src);
     napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
     ASSERT_TRUE(result == nullptr);
+}
+
+/**
+ * @tc.name: charDecodeAchieves001
+ * @tc.desc: char dencode achieves with throw error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, charDencodeAchieves001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::DecodeInfo* stdDecodeInfo2 = nullptr;
+    char arr2[] = {0xE4, 0xBD, 0xA0, 0xE5, 0xA5, 0xBD};
+    stdDecodeInfo2 = new OHOS::Util::DecodeInfo();
+    stdDecodeInfo2->sinputDecode = arr2;
+    stdDecodeInfo2->slength = 2;
+    stdDecodeInfo2->valueType = OHOS::Util::Type::BASIC_URL_SAFE;
+    unsigned char* res2 = OHOS::Util::DecodeAchieves(env, stdDecodeInfo2);
+    ASSERT_EQ(0, static_cast<const char>(*res2));
+
+    OHOS::Util::DecodeInfo* stdDecodeInfo3 = nullptr;
+    char arr3[] = {0xE4, 0xBD, 0xA0, 0xE5, 0xA5, 0xBD};
+    stdDecodeInfo3 = new OHOS::Util::DecodeInfo();
+    stdDecodeInfo3->sinputDecode = arr3;
+    stdDecodeInfo3->slength = 3;
+    stdDecodeInfo3->valueType = OHOS::Util::Type::BASIC_URL_SAFE;
+    unsigned char* res3 = OHOS::Util::DecodeAchieves(env, stdDecodeInfo3);
+    ASSERT_EQ(0, static_cast<unsigned char>(*res3));
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
 }
