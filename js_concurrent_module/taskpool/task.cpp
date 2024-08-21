@@ -612,7 +612,7 @@ void Task::StartExecutionCallback(const uv_async_t* req)
 {
     HILOG_DEBUG("taskpool:: task StartExecutionCallback");
     auto listenerCallBackInfo = static_cast<ListenerCallBackInfo*>(req->data);
-    if (listenerCallBackInfo == nullptr) {
+    if (listenerCallBackInfo == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: StartExecutionCallBackInfo is null");
         return;
     }
@@ -641,7 +641,7 @@ void Task::StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo)
 void Task::ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo)
 {
     HILOG_DEBUG("taskpool:: task ExecuteListenerCallback");
-    if (listenerCallBackInfo == nullptr) {
+    if (listenerCallBackInfo == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: listenerCallBackInfo is null");
         return;
     }
