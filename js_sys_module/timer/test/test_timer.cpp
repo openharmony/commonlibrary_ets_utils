@@ -45,6 +45,16 @@ napi_value TimerCallback(napi_env env, napi_callback_info info)
     return nullptr;
 }
 
+napi_value ThrowingCallback(napi_env env, napi_callback_info info)
+{
+    napi_value errorMessage;
+    napi_value error;
+    napi_create_string_utf8(env, "An error occurred!", NAPI_AUTO_LENGTH, &errorMessage);
+    napi_create_error(env, nullptr, errorMessage, &error);
+    napi_throw(env, error);
+    return nullptr;
+}
+
 /* @tc.name: Init
  * @tc.desc: Test.
  * @tc.type: FUNC
@@ -410,4 +420,37 @@ HWTEST_F(NativeEngineTest, TimerTest016, testing::ext::TestSize.Level0)
     napi_value tId = nullptr;
     napi_call_function(*env2, nullptr, setTimeoutCB, argc, argv, &tId);
     ASSERT_CHECK_VALUE_TYPE(*env2, tId, napi_number);
+}
+
+/* @tc.name: settimeout
+ * @tc.desc: Test.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest017, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env env2 = nullptr;
+    uv_timer_t* handle = new uv_timer_t;
+    uint32_t tId2 = 1;
+    int32_t timeout = 1000;
+    napi_ref callback = nullptr;
+    bool repeat = false;
+    size_t argc2 = 0;
+    napi_ref* argv2 = nullptr;
+    handle->data = new TimerCallbackInfo(env, tId2, timeout, callback, repeat, argc2, argv2);
+    TimerCallbackInfo* callbackInfo = static_cast<TimerCallbackInfo*>(handle->data);
+    callbackInfo->env_ = env2;
+    TimerTest::TimerCallback(handle);
+
+    size_t argc = 2;
+    napi_value nativeMessage0 = nullptr;
+    napi_create_uint32(env, 50, &nativeMessage0); // Random number
+    napi_value nativeMessage1 = nullptr;
+    napi_create_function(env, "callback", NAPI_AUTO_LENGTH, ThrowingCallback, nullptr, &nativeMessage1);
+    napi_value argv[] = {nativeMessage1, nativeMessage0};
+    napi_value setTimeoutCB = nullptr;
+    napi_create_function(env, "setTimeout", NAPI_AUTO_LENGTH, TimerTest::SetTimeout, nullptr, &setTimeoutCB);
+    napi_value tId = nullptr;
+    napi_call_function(env, nullptr, setTimeoutCB, argc, argv, &tId);
+    ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
 }
