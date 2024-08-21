@@ -239,6 +239,7 @@ private:
 #endif
 
     friend class TaskGroupManager;
+    friend class NativeEngineTest;
 };
 
 class TaskGroupManager {

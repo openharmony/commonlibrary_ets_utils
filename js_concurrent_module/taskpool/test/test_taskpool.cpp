@@ -2653,3 +2653,19 @@ HWTEST_F(NativeEngineTest, TaskpoolTest149, testing::ext::TestSize.Level0)
     NativeEngineTest::UpdateGroupInfoByResult(env, handle, res, true);
     ASSERT_TRUE(true);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest150, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    NativeEngineTest::TryTriggerExpand();
+    NativeEngineTest::CheckForBlockedWorkers(env);
+    NativeEngineTest::TriggerShrink(env);
+    NativeEngineTest::NotifyShrink(env);
+    NativeEngineTest::TryExpand(env);
+    NativeEngineTest::CancelTask(env);
+    NativeEngineTest::NotifyWorkerIdle(env);
+    NativeEngineTest::EnqueueTaskId(env);
+    NativeEngineTest::GetTaskByPriority(env);
+    NativeEngineTest::RestoreWorker(env);
+    ASSERT_TRUE(true);
+}
