@@ -1204,7 +1204,7 @@ class RationalNumber {
   public constructor(num: number, den: number);
   public constructor(num?: number, den?: number) {
     if (!num && !den) {
-
+      return;
     }
     else {
       num = den < 0 ? num * (-1) : num;

@@ -35,7 +35,7 @@ void Blob::Init(uint8_t *blob, unsigned int length)
 
 void Blob::Init(Blob *blob, int start)
 {
-    if (blob != nullptr) {
+    if (blob != nullptr && blob->raw_ != nullptr) {
         this->raw_ = reinterpret_cast<uint8_t *>(malloc(blob->length_));
         if (raw_ == nullptr) {
             HILOG_FATAL("Blob constructor malloc failed");
@@ -56,7 +56,7 @@ void Blob::Init(Blob *blob, int start, int end)
     if ((start > 0 && end < 0) || (start < 0 && end > 0)) {
         return;
     }
-    if (blob == nullptr) {
+    if (blob == nullptr || blob->raw_ == nullptr) {
         return;
     }
     unsigned int length = static_cast<unsigned int>(end - start);
@@ -103,7 +103,7 @@ unsigned int Blob::GetLength()
 
 void Blob::ReadBytes(uint8_t *data, int length)
 {
-    if (memcpy_s(data, length, raw_, length) != EOK) {
+    if (raw_ != nullptr && memcpy_s(data, length, raw_, length) != EOK) {
         HILOG_FATAL("read bytes from blob error");
     }
 }
