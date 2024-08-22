@@ -414,6 +414,26 @@ int FindLastIndex(uint8_t *source, uint8_t *target, int soulen, int tarlen)
     return -1;
 }
 
+bool FindIndexInner(uint8_t* target, uint8_t* source, int tarlen, int &indexI, int &indexJ)
+{
+    if (indexJ == tarlen - 1) {
+        int badValue = GetBadCharLengthInReverseOrder(target, source[indexI], indexJ);
+        indexI = indexI + badValue;
+    } else {
+        int badValue = GetBadCharLengthInReverseOrder(target, source[indexI], indexJ);
+        int goodSuffix = GetGoodSuffixLengthByLastChar(target, indexJ, tarlen);
+        int distance = badValue > goodSuffix ? badValue : goodSuffix;
+        long addVal = static_cast<long>(indexI) + tarlen;
+        long addRst = addVal + distance;
+        if (abs(addVal) > INT_MAX || abs(addRst) > INT_MAX) {
+            return false;
+        }
+        indexI = indexI + tarlen - 1 - indexJ + distance;
+        indexJ = tarlen - 1;
+    }
+    return true;
+}
+
 int FindIndex(uint8_t* source, uint8_t* target, int soulen, int tarlen)
 {
     if (source == nullptr || target == nullptr) {
@@ -432,19 +452,9 @@ int FindIndex(uint8_t* source, uint8_t* target, int soulen, int tarlen)
             i--;
             j--;
         } else {
-            if (j == tarlen - 1) {
-                int badValue = GetBadCharLengthInReverseOrder(target, source[i], j);
-                i = i + badValue;
-            } else {
-                int badValue = GetBadCharLengthInReverseOrder(target, source[i], j);
-                int goodSuffix = GetGoodSuffixLengthByLastChar(target, j, tarlen);
-                int distance = badValue > goodSuffix ? badValue : goodSuffix;
-                long addRst = static_cast<long>(i) + tarlen + distance;
-                if (abs(addRst) > INT_MAX) {
-                    return -1;
-                }
-                i = i + tarlen - 1 - j + distance;
-                j = tarlen - 1;
+            bool flag = FindIndexInner(target, source, tarlen, i, j);
+            if (!flag) {
+                return -1;
             }
         }
     }
