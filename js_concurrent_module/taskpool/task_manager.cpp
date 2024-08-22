@@ -526,7 +526,7 @@ void TaskManager::NotifyExpand(const uv_async_t* req)
 void TaskManager::RunTaskManager()
 {
     loop_ = uv_loop_new();
-    if (loop_ == nullptr) {
+    if (loop_ == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: new loop failed.");
         return;
     }

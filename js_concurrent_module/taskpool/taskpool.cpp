@@ -414,7 +414,7 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     HILOG_DEBUG("taskpool:: HandleTaskResult task");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto task = static_cast<Task*>(req->data);
-    if (task == nullptr) {
+    if (task == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: HandleTaskResult task is null");
         return;
     }

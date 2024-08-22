@@ -487,11 +487,11 @@ void Worker::NotifyHandleTaskResult(Task* task)
 void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, void* data)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    if (env == nullptr) {
+    if (env == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: TaskResultCallback engine is null");
         return;
     }
-    if (data == nullptr) {
+    if (data == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
