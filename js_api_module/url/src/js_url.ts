@@ -127,18 +127,12 @@ function customEncodeForToString(str: string | number): string {
     .replace(/%20/g, '+');
 }
 
-function customEncodeURI(str: string, keepCharacters: string): string {
-    let encodedStr = '';
-    let char = '';
-    for (let i = 0; i < str.length; i++) {
-      char = str.charAt(i);
-      if (keepCharacters.indexOf(char) !== -1) {
-        encodedStr += char;
-      } else {
-        encodedStr += encodeURI(char);
-      }
-    }
-    return encodedStr;
+function customEncodeURI(str: string, keepCharacters: object): string {
+  let encodedStr = encodeURI(str);
+  for (let key in keepCharacters) {
+    encodedStr = encodedStr.replaceAll(`${key}`, keepCharacters[key]);
+  }
+  return encodedStr;
 }
 
 function removeKeyValuePairs(str: string, key: string): string {
@@ -587,8 +581,8 @@ class URL {
       this.c_info = nativeUrl;
       if (nativeUrl.onOrOff) {
         this.search_ = nativeUrl.search;
-        this.username_ = customEncodeURI(nativeUrl.username, '%');
-        this.password_ = customEncodeURI(nativeUrl.password, '%');
+        this.username_ = customEncodeURI(nativeUrl.username, {'%25':'%'});
+        this.password_ = customEncodeURI(nativeUrl.password, {'%25':'%'});
         if (nativeUrl.GetIsIpv6) {
           this.hostname_ = nativeUrl.hostname;
           this.host_ = nativeUrl.host;
@@ -596,13 +590,16 @@ class URL {
           this.hostname_ = encodeURI(nativeUrl.hostname);
           this.host_ = encodeURI(nativeUrl.host);
         }
-        this.hash_ = customEncodeURI(nativeUrl.hash, '%|[]{}`');
+        this.hash_ = customEncodeURI(nativeUrl.hash, 
+            {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
         this.protocol_ = nativeUrl.protocol;
-        this.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]');
+        this.pathname_ = customEncodeURI(nativeUrl.pathname, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
         this.port_ = nativeUrl.port;
         this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
-        this.searchParamsClass_ = new URLSearchParams(customEncodeURI(this.search_, '%^[]|'));
-        this.URLParamsClass_ = new URLParams(customEncodeURI(this.search_, '%^[]|'));
+        this.searchParamsClass_ = new URLSearchParams(customEncodeURI(this.search_,
+            {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
+        this.URLParamsClass_ = new URLParams(customEncodeURI(this.search_,
+            {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
         this.URLParamsClass_.parentUrl = this;
         this.searchParamsClass_.parentUrl = this;
         this.setHref();
@@ -637,8 +634,8 @@ class URL {
     urlHelper.c_info = nativeUrl;
     if (nativeUrl.onOrOff) {
       urlHelper.search_ = nativeUrl.search;
-      urlHelper.username_ = customEncodeURI(nativeUrl.username, '%');
-      urlHelper.password_ = customEncodeURI(nativeUrl.password, '%');
+      urlHelper.username_ = customEncodeURI(nativeUrl.username, {'%25':'%'});
+      urlHelper.password_ = customEncodeURI(nativeUrl.password, {'%25':'%'});
       if (nativeUrl.GetIsIpv6) {
         urlHelper.hostname_ = nativeUrl.hostname;
         urlHelper.host_ = nativeUrl.host;
@@ -646,13 +643,16 @@ class URL {
         urlHelper.hostname_ = encodeURI(nativeUrl.hostname);
         urlHelper.host_ = encodeURI(nativeUrl.host);
       }
-      urlHelper.hash_ = customEncodeURI(nativeUrl.hash, '%|[]{}`');
+      urlHelper.hash_ = customEncodeURI(nativeUrl.hash,
+        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
       urlHelper.protocol_ = nativeUrl.protocol;
-      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, '%|[]');
+      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
       urlHelper.port_ = nativeUrl.port;
       urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
-      urlHelper.searchParamsClass_ = new URLSearchParams(customEncodeURI(urlHelper.search_, '%^[]|'));
-      urlHelper.URLParamsClass_ = new URLParams(customEncodeURI(urlHelper.search_, '%^[]|'));
+      urlHelper.searchParamsClass_ = new URLSearchParams(customEncodeURI(urlHelper.search_,
+        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
+      urlHelper.URLParamsClass_ = new URLParams(customEncodeURI(urlHelper.search_,
+        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
       urlHelper.URLParamsClass_.parentUrl = urlHelper;
       urlHelper.searchParamsClass_.parentUrl = urlHelper;
       urlHelper.setHref();
@@ -705,7 +705,7 @@ class URL {
     if (this.host_ === null || this.host_ === '' || this.protocol_ === 'file:') {
       return;
     }
-    const usname_ = customEncodeURI(input, '%');
+    const usname_ = customEncodeURI(input, {'%25':'%'});
     this.c_info.username = usname_;
     this.username_ = this.c_info.username;
     this.setHref();
@@ -717,7 +717,7 @@ class URL {
     if (this.host_ === null || this.host_ === '' || this.protocol_ === 'file:') {
       return;
     }
-    const passwd_ = customEncodeURI(input, '%');
+    const passwd_ = customEncodeURI(input, {'%25':'%'});
     this.c_info.password = passwd_;
     this.password_ = this.c_info.password;
     this.setHref();
@@ -726,7 +726,8 @@ class URL {
     return this.hash_;
   }
   set hash(fragment) {
-    const fragment_ = customEncodeURI(fragment, '%|[]{}`');
+    const fragment_ = customEncodeURI(fragment,
+      {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
     this.c_info.hash = fragment_;
     this.hash_ = this.c_info.hash;
     this.setHref();
@@ -788,8 +789,8 @@ class URL {
     this.c_info.href(href_);
     if (this.c_info.onOrOff) {
       this.search_ = this.c_info.search;
-      this.username_ = customEncodeURI(this.c_info.username, '%');
-      this.password_ = customEncodeURI(this.c_info.password, '%');
+      this.username_ = customEncodeURI(this.c_info.username, {'%25':'%'});
+      this.password_ = customEncodeURI(this.c_info.password, {'%25':'%'});
       if (this.c_info.GetIsIpv6) {
         this.hostname_ = this.c_info.hostname;
         this.host_ = this.c_info.host;
@@ -797,9 +798,10 @@ class URL {
         this.hostname_ = encodeURI(this.c_info.hostname);
         this.host_ = encodeURI(this.c_info.host);
       }
-      this.hash_ = customEncodeURI(this.c_info.hash, '%|[]{}`');
+      this.hash_ = customEncodeURI(this.c_info.hash,
+        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
       this.protocol_ = this.c_info.protocol;
-      this.pathname_ = customEncodeURI(this.c_info.pathname, '%|[]');
+      this.pathname_ = customEncodeURI(this.c_info.pathname, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
       this.port_ = this.c_info.port;
       this.origin_ = this.protocol_ + '//' + this.host_;
       this.searchParamsClass_.updateParams(this.search_);
@@ -812,7 +814,7 @@ class URL {
     return this.pathname_;
   }
   set pathname(path) {
-    const path_ = customEncodeURI(path, '%|[]');
+    const path_ = customEncodeURI(path, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
     this.c_info.pathname = path_;
     this.pathname_ = this.c_info.pathname;
     this.setHref();
