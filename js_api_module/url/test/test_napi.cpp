@@ -2409,3 +2409,47 @@ HWTEST_F(NativeEngineTest, testUrlutilities034, testing::ext::TestSize.Level0)
     AnalysisNoDefaultProtocol(input, urlinfo, flags);
     ASSERT_STREQ(input.c_str(), "//::/");
 }
+
+HWTEST_F(NativeEngineTest, testUrlutilities035, testing::ext::TestSize.Level0)
+{
+    std::string input = "abc:d:e";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    size_t pos = 0;
+    OHOS::Url::AnalysisOnlyHost(input, urlinfo, flags, pos);
+    ASSERT_STREQ(input.c_str(), "abc:d:e");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities036, testing::ext::TestSize.Level0)
+{
+    std::string input = "abc:d:e/fg";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    size_t pos = 6; // 6:string position
+    OHOS::Url::ParsingHostAndPath(input, urlinfo, pos, flags);
+    ASSERT_STREQ(input.c_str(), "abc:d:e/fg");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities037, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::UrlData urlData;
+    OHOS::Url::UrlData baseData;
+    baseData.path.push_back("");
+    urlData.path.push_back("");
+    bool isFile = false;
+    OHOS::Url::ShorteningPath(urlData, baseData, isFile);
+    ASSERT_FALSE(isFile);
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities038, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::UrlData urlData;
+    OHOS::Url::UrlData baseData;
+    baseData.path.push_back("a:");
+    urlData.path.push_back("a");
+    bool isFile = true;
+    OHOS::Url::ShorteningPath(urlData, baseData, isFile);
+    ASSERT_TRUE(isFile);
+}
