@@ -34,6 +34,7 @@ public:
     static void DealComplex(napi_env env, std::string &strXml, const napi_value &object);
     static void Replace(napi_env env, std::string &str, const std::string src, const std::string dst);
     static void DealCDataInfo(napi_env env, bool bCData, xmlNodePtr &curNode);
+    static void GetAnDSetPrevNodeList(napi_env env, xmlNodePtr curNode);
 };
 
 std::string CxmlTest::Trim(napi_env env, std::string strXmltrim)
@@ -100,6 +101,18 @@ void CxmlTest::DealCDataInfo(napi_env env, bool bCData, xmlNodePtr &curNode)
 {
     ConvertXml convert(env);
     convert.DealCDataInfo(bCData, curNode);
+}
+
+void CxmlTest::GetAnDSetPrevNodeList(napi_env env, xmlNodePtr curNode)
+{
+    ConvertXml convert(env);
+    convert.GetPrevNodeList(env, curNode);
+    convert.GetPrevNodeList(env, curNode);
+
+    napi_value recvElement = nullptr;
+    napi_create_array(env, &recvElement);
+    int32_t index = 0;
+    convert.SetPrevInfo(env, recvElement, 0, index);
 }
 }
 #endif // TEST_CONVERTXML_H

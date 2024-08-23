@@ -44,6 +44,47 @@ napi_value setProperty(napi_env env, napi_value obj, std::vector<std::string> pr
     return obj;
 }
 
+napi_value setPropertyForTrim(napi_env env, napi_value obj, std::vector<std::string> proVec)
+{
+    const size_t boolNum = 8; // 8 : the counts of the bool value
+    const size_t firstNum = 0;
+    const size_t secondNum = 1;
+    const size_t thirdNum = 2;
+    napi_value val = nullptr;
+    for (size_t i = 0; i < proVec.size();) {
+        if (i == firstNum) {
+            napi_get_boolean(env, true, &val);
+            napi_set_named_property(env, obj, proVec[i].c_str(), val);
+            i++;
+            continue;
+        }
+        if (i == secondNum) {
+            const char* str = "abc";
+            napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &val);
+            napi_set_named_property(env, obj, proVec[i].c_str(), val);
+            i++;
+            continue;
+        }
+        if (i == thirdNum) {
+            int32_t number = 12345;
+            napi_create_int32(env, number, &val);
+            napi_set_named_property(env, obj, proVec[i].c_str(), val);
+            i++;
+            continue;
+        }
+        if (i < boolNum) {
+            napi_get_boolean(env, false, &val);
+            napi_set_named_property(env, obj, proVec[i].c_str(), val);
+            i++;
+        } else {
+            napi_create_string_utf8(env, proVec[i + 1].c_str(), proVec[i + 1].size(), &val);
+            napi_set_named_property(env, obj, proVec[i].c_str(), val);
+            i += 2; // 2 : the length of the value and property
+        }
+    }
+    return obj;
+}
+
 /* @tc.name: ConvertXmlTest001
  * @tc.desc: Convert the xml object containing only declaration items to a js object.
  * @tc.type: FUNC
@@ -393,6 +434,136 @@ HWTEST_F(NativeEngineTest, ConvertTest003, testing::ext::TestSize.Level0)
     ASSERT_TRUE(isHas);
 }
 
+/* @tc.name: ConvertTest004
+ * @tc.desc: Convert the xml object containing doctype to a js object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConvertTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    std::vector<std::string> proVec = {"trim", "ignoreDeclaration", "ignoreInstruction", "ignoreAttributes",
+        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey", "_declaration",
+        "instructionKey", "_instruction", "attributesKey", "_attributes", "textKey", "_text", "cdataKey", "_cdata",
+        "doctypeKey", "_doctype", "commentKey", "_comment", "parentKey", "_parent", "typeKey", "_type",
+        "nameKey", "_name", "elementsKey", "_elements"};
+    obj = setPropertyForTrim(env, obj, proVec);
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
+    convertXml.DealOptions(env, obj);
+    bool isHas = false;
+    napi_has_named_property(env, obj, "textKey", &isHas);
+    ASSERT_TRUE(isHas);
+
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\"><todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_valuetype valuetype = napi_undefined;
+
+    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    bool isObj = valuetype == napi_valuetype::napi_object;
+    ASSERT_TRUE(isObj);
+}
+
+/* @tc.name: ConvertTest005
+ * @tc.desc: Convert the xml object and set spaces info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConvertTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    std::vector<std::string> proVec = {"trim", "spaces", "ignoreInstruction", "ignoreAttributes",
+        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey", "_declaration",
+        "instructionKey", "_instruction", "attributesKey", "_attributes", "textKey", "_text", "cdataKey", "_cdata",
+        "doctypeKey", "_doctype", "commentKey", "_comment", "parentKey", "_parent", "typeKey", "_type",
+        "nameKey", "_name", "elementsKey", "_elements"};
+    obj = setPropertyForTrim(env, obj, proVec);
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
+    convertXml.DealOptions(env, obj);
+    bool isHas = false;
+    napi_has_named_property(env, obj, "textKey", &isHas);
+    ASSERT_TRUE(isHas);
+
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\"><todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_valuetype valuetype = napi_undefined;
+
+    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    bool isObj = valuetype == napi_valuetype::napi_object;
+    ASSERT_TRUE(isObj);
+}
+
+/* @tc.name: ConvertTest006
+ * @tc.desc: Convert the xml object and set spaces info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConvertTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    std::vector<std::string> proVec = {"trim", "ignoreDeclaration", "spaces", "compact",
+        "ignoreComment", "ignoreCDATA", "ignoreDoctype", "ignoreText", "declarationKey", "_declaration",
+        "instructionKey", "_instruction", "attributesKey", "_attributes", "textKey", "_text", "cdataKey", "_cdata",
+        "doctypeKey", "_doctype", "commentKey", "_comment", "parentKey", "_parent", "typeKey", "_type",
+        "nameKey", "_name", "elementsKey", "_elements"};
+    obj = setPropertyForTrim(env, obj, proVec);
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
+    convertXml.DealOptions(env, obj);
+    bool isHas = false;
+    napi_has_named_property(env, obj, "textKey", &isHas);
+    ASSERT_TRUE(isHas);
+
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\"><todo>Play</todo></note>";
+    std::string strXml = str1 + str2;
+    napi_valuetype valuetype = napi_undefined;
+
+    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    bool isObj = valuetype == napi_valuetype::napi_object;
+    ASSERT_TRUE(isObj);
+}
+
+/* @tc.name: DealNapiStrValueTest001
+ * @tc.desc: Deal napi string value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealNapiStrValueTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    std::string str = "";
+
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
+    napi_status rel = convertXml.DealNapiStrValue(env, nullptr, str);
+
+    ASSERT_FALSE(rel == napi_ok);
+}
+
+/* @tc.name: DealIgnoreTest001
+ * @tc.desc: Deal napi string value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealIgnoreTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    std::string str = "";
+
+    OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
+    napi_status rel = convertXml.DealNapiStrValue(env, nullptr, str);
+
+    ASSERT_FALSE(rel == napi_ok);
+}
+
 /* @tc.name: DealOptionsTest001
  * @tc.desc: Convert the xml object containing doctype to a js object.
  * @tc.type: FUNC
@@ -504,6 +675,22 @@ HWTEST_F(NativeEngineTest, GetPrevNodeListTest001, testing::ext::TestSize.Level1
     delete curNode1;
 }
 
+HWTEST_F(NativeEngineTest, SetPrevInfoTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    xmlNodePtr curNode = new xmlNode;
+    xmlNodePtr curNode1 = new xmlNode;
+    curNode->prev = curNode1;
+    curNode1->prev = nullptr;
+    curNode1->type = XML_PI_NODE;
+    curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
+    curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
+    CxmlTest::GetAnDSetPrevNodeList(env, curNode);
+    ASSERT_TRUE(curNode != nullptr);
+    delete curNode;
+    delete curNode1;
+}
+
 HWTEST_F(NativeEngineTest, SetXmlElementTypeTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
@@ -582,6 +769,16 @@ HWTEST_F(NativeEngineTest, DealSingleLineTest001, testing::ext::TestSize.Level1)
     ASSERT_STREQ(key.c_str(), "<node>xmlsss<zyyzyy>ssassa</node>");
 }
 
+HWTEST_F(NativeEngineTest, DealSingleLineTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    std::string key = " xmlsss<zyyzyy>ssa";
+    napi_value napiObj = nullptr;
+    napi_create_object(env, &napiObj);
+    CxmlTest::DealSingleLine(env, key, napiObj);
+    ASSERT_STREQ(key.c_str(), "<node> xmlsss<zyyzyy>ssassa</node>");
+}
+
 HWTEST_F(NativeEngineTest, DealComplexTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
@@ -620,5 +817,24 @@ HWTEST_F(NativeEngineTest, DealCDataInfo001, testing::ext::TestSize.Level1)
     delete curNode2;
     delete curNode1;
     delete curNode;
+    ASSERT_TRUE(flag);
+}
+
+HWTEST_F(NativeEngineTest, DealCDataInfo002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    bool flag = true;
+    xmlNodePtr curNode = new xmlNode;
+    xmlNodePtr curNode1 = new xmlNode;
+    xmlNodePtr curNode2 = new xmlNode;
+    curNode->next = curNode1;
+    curNode->type = XML_CDATA_SECTION_NODE;
+    curNode1->type = XML_TEXT_NODE;
+    curNode1->next = curNode2;
+    curNode2->type = XML_CDATA_SECTION_NODE;
+
+    curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
+    curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>(" \t\t\t\t\t"));
+    CxmlTest::DealCDataInfo(env, flag, curNode);
     ASSERT_TRUE(flag);
 }
