@@ -30,7 +30,7 @@ public:
     napi_value End(napi_env env, napi_value src);
     napi_value End(napi_env env);
 private:
-    void FreedMemory(UChar *pData);
+    void FreedMemory(UChar *&pData);
     const char* pend_ {};
     int pendingLen_ {};
     UConverter* conv_ {};
