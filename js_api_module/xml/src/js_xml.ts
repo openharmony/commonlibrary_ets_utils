@@ -64,7 +64,7 @@ class XmlSerializer {
     } else if (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'string' && inputStr.length !== 0)) {
       let strTemp: string = inputStr;
       if (strTemp.toLowerCase() !== 'utf-8') {
-        throw new Error('Just support utf-8');
+        throw new BusinessError('Parameter error.Just support utf-8');
       }
       this.xmlSerializerClass = new XML.XmlSerializer(obj, inputStr);
     } else {
@@ -72,7 +72,7 @@ class XmlSerializer {
     }
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -90,7 +90,7 @@ class XmlSerializer {
     this.xmlSerializerClass.setAttributes(name, value);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -105,7 +105,7 @@ class XmlSerializer {
     this.xmlSerializerClass.addEmptyElement(name);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -113,7 +113,7 @@ class XmlSerializer {
     this.xmlSerializerClass.setDeclaration();
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -127,7 +127,7 @@ class XmlSerializer {
     this.xmlSerializerClass.startElement(name);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -135,7 +135,7 @@ class XmlSerializer {
     this.xmlSerializerClass.endElement();
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -152,7 +152,7 @@ class XmlSerializer {
     this.xmlSerializerClass.setNamespace(prefix, ns);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -167,7 +167,7 @@ class XmlSerializer {
     this.xmlSerializerClass.setComment(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -181,7 +181,7 @@ class XmlSerializer {
     this.xmlSerializerClass.setCDATA(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -195,7 +195,7 @@ class XmlSerializer {
     this.xmlSerializerClass.setText(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 
@@ -209,7 +209,7 @@ class XmlSerializer {
     this.xmlSerializerClass.setDocType(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 }
@@ -228,7 +228,7 @@ class XmlPullParser {
       'string' && inputStr.length !== 0)) {
       let strTemp: string = inputStr;
       if (strTemp.toLowerCase() !== 'utf-8') {
-        throw new Error('Just support utf-8');
+        throw new BusinessError('Parameter error.Just support utf-8');
       }
       this.xmlPullParserClass = new XML.XmlPullParser(obj, inputStr);
     } else {
@@ -236,7 +236,7 @@ class XmlPullParser {
     }
     let errStr: string = this.xmlPullParserClass.XmlPullParserError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
   parse(options: object): void {
@@ -246,7 +246,7 @@ class XmlPullParser {
     this.xmlPullParserClass.parse(options);
     let errStr: string = this.xmlPullParserClass.XmlPullParserError();
     if (errStr.length !== 0) {
-      throw new Error(errStr);
+      throw new BusinessError(errStr);
     }
   }
 }
