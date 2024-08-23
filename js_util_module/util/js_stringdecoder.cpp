@@ -63,9 +63,10 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     }
     pendingLen_ = ucnv_toUCountPending(conv_, &codeFlag);
     pend_ = source + length - pendingLen_;
-    std::string tepStr = ConvertToString(arr, length);
+
     napi_value resultStr = nullptr;
-    NAPI_CALL(env, napi_create_string_utf8(env, tepStr.c_str(), tepStr.size(), &resultStr));
+    size_t resultLen = target - arr;
+    napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arr), resultLen, &resultStr);
     FreedMemory(arr);
     return resultStr;
 }
