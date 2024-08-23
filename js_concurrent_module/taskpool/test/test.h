@@ -58,6 +58,9 @@ public:
     static void EnqueueTaskId(napi_env env);
     static void GetTaskByPriority(napi_env env);
     static void RestoreWorker(napi_env env);
+    static void StoreDependentId(uint64_t taskId, uint64_t dependentId);
+    static void StoreDependentTaskId(uint64_t taskId, uint64_t dependentId);
+    static void StoreTaskDuration(uint64_t taskId);
 
     class ExceptionScope {
     public:

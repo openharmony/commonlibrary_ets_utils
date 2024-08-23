@@ -416,4 +416,25 @@ void NativeEngineTest::RestoreWorker(napi_env env)
     taskManager.RestoreWorker(worker);
 }
 
+void NativeEngineTest::StoreDependentId(uint64_t taskId, uint64_t dependentId)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    std::set<uint64_t> set{ dependentId };
+    taskManager.dependTaskInfos_.emplace(taskId, std::move(set));
+}
+
+void NativeEngineTest::StoreDependentTaskId(uint64_t taskId, uint64_t dependentId)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    std::set<uint64_t> set{ dependentId };
+    taskManager.dependentTaskInfos_.emplace(taskId, std::move(set));
+}
+
+void NativeEngineTest::StoreTaskDuration(uint64_t taskId)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    uint64_t durationId = taskId + MAX_TIMEOUT_TIME;
+    std::pair<uint64_t, uint64_t> durationData = std::make_pair(taskId, durationId);
+    taskManager.taskDurationInfos_.emplace(taskId, std::move(durationData));
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

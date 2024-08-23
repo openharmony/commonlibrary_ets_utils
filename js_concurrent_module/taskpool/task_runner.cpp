@@ -28,18 +28,14 @@ TaskRunner::~TaskRunner()
 
 void TaskRunner::TaskInnerRunner::Run()
 {
-    if (runner_ != nullptr) {
-        runner_->Run();
-    }
+    runner_->Run();
 }
 
 TaskRunner::TaskInnerRunner::TaskInnerRunner(const TaskRunner* runner) : runner_(runner) {}
 
 void TaskRunner::Run() const
 {
-    if (callback_.callback != nullptr) {
-        callback_.callback(callback_.data);
-    }
+    callback_.callback(callback_.data);
 }
 
 bool TaskRunner::Execute()
