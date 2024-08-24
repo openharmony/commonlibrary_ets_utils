@@ -97,6 +97,9 @@ namespace OHOS::Url {
                              std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
     void AnalysisFile(std::string& input, UrlData& urlinfo,
                       std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void ParsingHostAndPath(std::string& input, UrlData& urlinfo, size_t& pos,
+                            std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    void ShorteningPath(UrlData& urlData, UrlData& baseData, bool isFile);
 
     class URL {
     public:
