@@ -861,8 +861,16 @@ static napi_value Compare(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[3], &length));
     Buffer *targetBuf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&targetBuf)));
+    if (targetBuf == nullptr) {
+        HILOG_FATAL("buffer:: targetBuf is NULL");
+        return nullptr;
+    }
     Buffer *sBuf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&sBuf)));
+    if (sBuf == nullptr) {
+        HILOG_FATAL("buffer:: sBuf is NULL");
+        return nullptr;
+    }
     int res = sBuf->Compare(targetBuf, targetStart, sourceStart, length);
     napi_value result = nullptr;
     napi_create_int32(env, res, &result);

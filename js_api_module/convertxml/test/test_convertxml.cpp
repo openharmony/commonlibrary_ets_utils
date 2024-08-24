@@ -120,6 +120,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest001, testing::ext::TestSize.Level0)
     convertXml->DealNapiStrValue(env, encodingVal, encodingStr);
     EXPECT_STREQ(verisonStr.c_str(), "1.0");
     EXPECT_STREQ(encodingStr.c_str(), "utf-8");
+    delete convertXml;
 }
 
 /* @tc.name: ConvertXmlTest002
