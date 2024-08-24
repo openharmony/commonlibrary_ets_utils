@@ -138,6 +138,9 @@ namespace OHOS::Xml {
 
     void ConvertXml::SetAttributes(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const
     {
+        if (curNode->type == XML_ENTITY_DECL) {
+            return;
+        }
         xmlAttr *attr = curNode->properties;
         if (attr && !options_.ignoreAttributes) {
             napi_value attrTitleObj = nullptr;
