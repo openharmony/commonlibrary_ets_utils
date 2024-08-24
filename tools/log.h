@@ -24,8 +24,6 @@
 
 #include "utils/macros.h"
 
-#define __FILENAME__ strrchr(__FILE__, '/') + 1
-
 #include "hilog/log.h"
 
 #undef LOG_DOMAIN
@@ -41,18 +39,18 @@
 
 #define HILOG_FATAL(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
 #define HILOG_ERROR(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
 #define HILOG_WARN(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
 #define HILOG_INFO(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
 #define HILOG_DEBUG(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
 
 #endif /* COMMONLIBRARY_ETS_UTILS_TOOLS_LOG_H */
