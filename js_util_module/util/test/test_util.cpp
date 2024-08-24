@@ -155,6 +155,29 @@ HWTEST_F(NativeEngineTest, DoParseUUIDTest003, testing::ext::TestSize.Level0)
     ASSERT_EQ(length, 16);
 }
 
+/* @tc.name: DoParseUUIDTest004
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    ASSERT_EQ(arr, nullptr);
+}
+
+/* @tc.name: HexToCharUUIDTest001
+ * @tc.desc: Hex to char with g convert to x.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, HexToCharUUIDTest001, testing::ext::TestSize.Level0)
+{
+    unsigned char input = 'g';
+    unsigned char res = OHOS::Util::HexToChar(input);
+    ASSERT_EQ(res, 'x');
+}
+
 /* @tc.name: getEncodingTest001
  * @tc.desc: Test acquire encoding mode.
  * @tc.type: FUNC
@@ -1764,6 +1787,50 @@ HWTEST_F(NativeEngineTest, decoderUtf8BOM004, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: decoderUtf8-BOM005
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM005, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM001 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int>  inputVec;
+    int fatal = 0;
+    int ignoreBOM = 1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-16";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = true;
+    size_t byteLength = 6;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[8] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_TRUE(str != "");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
  * @tc.name: getMinByteSizeTest001 utf-8
  * @tc.desc: get minbyte size with tranTool nullptr.
  * @tc.type: FUNC
@@ -2414,6 +2481,18 @@ HWTEST_F(NativeEngineTest, decodeTest007, testing::ext::TestSize.Level0)
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
     napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC_URL_SAFE);
     ASSERT_EQ(nullptr, result);
+
+    std::string input1 = "qK6b/w";
+    napi_value src1 = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &src1);
+    napi_value result1 = base64.DecodeSync(env, src1, OHOS::Util::Type::BASIC_URL_SAFE);
+    ASSERT_EQ(nullptr, result1);
+
+    std::string input2 = "qK6b/w=";
+    napi_value src2 = nullptr;
+    napi_create_string_utf8(env, input2.c_str(), input2.size(), &src2);
+    napi_value result2 = base64.DecodeSync(env, src2, OHOS::Util::Type::BASIC_URL_SAFE);
+    ASSERT_EQ(nullptr, result2);
 
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
