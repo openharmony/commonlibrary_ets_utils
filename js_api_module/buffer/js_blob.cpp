@@ -35,11 +35,15 @@ void Blob::Init(uint8_t *blob, unsigned int length)
 
 void Blob::Init(Blob *blob, int start)
 {
-    if (blob != nullptr && blob->raw_ != nullptr) {
+    if (blob != nullptr) {
         this->raw_ = reinterpret_cast<uint8_t *>(malloc(blob->length_));
         if (raw_ == nullptr) {
             HILOG_FATAL("Blob constructor malloc failed");
         } else {
+            if ((blob->raw_ + start) == nullptr) {
+                HILOG_FATAL("Blob constructor(start) memcpy_s failed");
+                return;
+            }
             this->length_ = blob->length_;
             if (memcpy_s(raw_, blob->length_ - start, blob->raw_ + start, blob->length_ - start) != EOK) {
                 HILOG_FATAL("Blob constructor(start) memcpy_s failed");
@@ -56,7 +60,7 @@ void Blob::Init(Blob *blob, int start, int end)
     if ((start > 0 && end < 0) || (start < 0 && end > 0)) {
         return;
     }
-    if (blob == nullptr || blob->raw_ == nullptr) {
+    if (blob == nullptr) {
         return;
     }
     unsigned int length = static_cast<unsigned int>(end - start);
@@ -67,10 +71,18 @@ void Blob::Init(Blob *blob, int start, int end)
     } else {
         this->length_ = length;
         if (start >= 0) {
+            if ((blob->raw_ + start) == nullptr) {
+                HILOG_FATAL("Blob constructor(start >= 0, end) memcpy_s failed");
+                return;
+            }
             if (memcpy_s(this->raw_, length, blob->raw_ + start, length) != EOK) {
                 HILOG_FATAL("Blob constructor(start >= 0, end) memcpy_s failed");
             }
         } else {
+            if ((blob->raw_ + blob->length_ + start) == nullptr) {
+                HILOG_FATAL("Blob constructor(start, end) memcpy_s failed");
+                return;
+            }
             if (memcpy_s(raw_, length, blob->raw_ + blob->length_ + start, length) != EOK) {
                 HILOG_FATAL("Blob constructor(start, end) memcpy_s failed");
             }
@@ -103,7 +115,11 @@ unsigned int Blob::GetLength()
 
 void Blob::ReadBytes(uint8_t *data, int length)
 {
-    if (raw_ != nullptr && memcpy_s(data, length, raw_, length) != EOK) {
+    if (raw_ == nullptr) {
+        HILOG_FATAL("blob is null");
+        return;
+    }
+    if (memcpy_s(data, length, raw_, length) != EOK) {
         HILOG_FATAL("read bytes from blob error");
     }
 }
