@@ -181,7 +181,9 @@ std::string GetFormatUUID(const UUID &uuid)
 napi_value GetBinaryUUID(napi_env env, bool entropyCache)
 {
     UUID uuid;
-    GetUUID(env, entropyCache, uuid);
+    if (!GetUUID(env, entropyCache, uuid)) {
+        return nullptr;
+    }
     void *data = nullptr;
     napi_value arrayBuffer = nullptr;
     size_t bufferSize = sizeof(uuid.elements);

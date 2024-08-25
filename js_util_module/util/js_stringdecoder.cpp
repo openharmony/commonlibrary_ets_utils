@@ -101,7 +101,7 @@ napi_value StringDecoder::End(napi_env env)
     return resultStr;
 }
 
-void StringDecoder::FreedMemory(UChar *pData)
+void StringDecoder::FreedMemory(UChar *&pData)
 {
     if (pData != nullptr) {
         delete[] pData;

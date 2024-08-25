@@ -232,7 +232,7 @@ static void freeBolbMemory(Blob *&blob)
 static napi_value BlobConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    Blob *blob = new Blob();
+    Blob *blob = new (std::nothrow) Blob();
     if (blob == nullptr) {
         return nullptr;
     }
@@ -350,7 +350,11 @@ static bool InitAnyArrayBuffer(napi_env env, napi_value* argv, Buffer *&buffer)
 
 static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* argv, ParaType paraType)
 {
-    Buffer *buffer = new Buffer();
+    Buffer *buffer = new (std::nothrow) Buffer();
+    if (buffer == nullptr) {
+        HILOG_ERROR("BufferStructor:: buffer is nullptr");
+        return nullptr;
+    }
     uint32_t length = 0;
     if (paraType == ParaType::NUMBER) {
         if (napi_get_value_uint32(env, argv[1], &length) != napi_ok) {
@@ -642,9 +646,9 @@ static napi_value GetBufferData(napi_env env, napi_callback_info info)
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
     uint32_t length = buf->GetLength();
-    uint8_t* data = new uint8_t[length];
+    uint8_t* data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
-        HILOG_ERROR("buffer:: data is NULL");
+        HILOG_ERROR("buffer:: data is nullptr");
         return result;
     }
     buf->ReadBytes(data, 0, length);
@@ -1050,7 +1054,6 @@ static void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data
 static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    PromiseInfo *promiseInfo = new PromiseInfo();
     napi_value resourceName = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
@@ -1059,6 +1062,11 @@ static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
     void *bufdata = nullptr;
     napi_value arrayBuffer = nullptr;
     napi_value bufferPromise = nullptr;
+    PromiseInfo *promiseInfo = new (std::nothrow) PromiseInfo();
+    if (promiseInfo == nullptr) {
+        HILOG_ERROR("buffer:: promiseInfo is nullptr");
+        return nullptr;
+    }
     napi_create_arraybuffer(env, bufferSize, &bufdata, &arrayBuffer);
     blob->ReadBytes(reinterpret_cast<uint8_t *>(bufdata), bufferSize);
     napi_create_reference(env, arrayBuffer, 1, &promiseInfo->blobDataRef);
@@ -1073,12 +1081,16 @@ static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
 static napi_value TextAsync(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    PromiseInfo *promiseInfo = new PromiseInfo();
     napi_value resourceName = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
     napi_value string = nullptr;
+    PromiseInfo *promiseInfo = new (std::nothrow) PromiseInfo();
+    if (promiseInfo == nullptr) {
+        HILOG_ERROR("buffer:: promiseInfo is nullptr");
+        return nullptr;
+    }
     napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &string);
     napi_create_reference(env, string, 1, &promiseInfo->blobDataRef);
     napi_value textPromise = nullptr;
