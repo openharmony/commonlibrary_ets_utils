@@ -146,6 +146,7 @@ namespace OHOS::xml {
         friend class XmlTest;
 
     private:
+        std::string Replace(std::string str, const std::string &subStr, const std::string &repStr);
         char *pStart_ {nullptr};
         size_t iPos_ {};
         size_t iLength_ {};
