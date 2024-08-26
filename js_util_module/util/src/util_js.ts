@@ -1256,10 +1256,7 @@ class RationalNumber {
   public constructor();
   public constructor(num: number, den: number);
   public constructor(num?: number, den?: number) {
-    if (!num && !den) {
-
-    }
-    else {
+    if (num || den) {
       num = den < 0 ? num * (-1) : num;
       den = den < 0 ? den * (-1) : den;
       if (den === 0) {
