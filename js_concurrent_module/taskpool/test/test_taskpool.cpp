@@ -2784,7 +2784,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest154, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest155, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    HILOG_INFO("run 1");
     Task* task = new Task();
     napi_value result = CreateTaskObject(env);
     std::string func = "func";
@@ -2807,7 +2806,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest155, testing::ext::TestSize.Level0)
     napi_set_named_property(env, result, TRANSFERLIST_STR, nameValue);
     TaskInfo* info = task->GetTaskInfo(env, result, Priority::DEFAULT);
     ASSERT_TRUE(info == nullptr);
-    HILOG_INFO("run 2");
     delete task;
 }
 
@@ -4141,4 +4139,21 @@ HWTEST_F(NativeEngineTest, TaskpoolTest213, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest214, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    NativeEngineTest::InitTaskManager(env);
+    NativeEngineTest::NotifyDependencyTaskInfo(env);
+    NativeEngineTest::StoreTaskDependency(env);
+    NativeEngineTest::RemoveTaskDependency(env);
+    NativeEngineTest::ReleaseTaskData(env);
+    NativeEngineTest::CheckTask(env);
+    NativeEngineTest::CancelGroupTask(env);
+    NativeEngineTest::TriggerSeqRunner(env);
+    NativeEngineTest::UpdateGroupState(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
 }

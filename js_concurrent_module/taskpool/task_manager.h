@@ -278,6 +278,7 @@ private:
     // <seqRunnerId, SequenceRunner>
     std::unordered_map<uint64_t, SequenceRunner*> seqRunners_ {};
     std::mutex seqRunnersMutex_;
+    friend class NativeEngineTest;
 };
 
 class SequenceRunnerManager {
