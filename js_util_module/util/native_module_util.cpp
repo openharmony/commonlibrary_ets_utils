@@ -186,14 +186,10 @@ namespace OHOS::Util {
     static napi_value DealWithFormatString(napi_env env, napi_callback_info info)
     {
         size_t argc = 1;
-        size_t requireArgc = 1; // 1:The number of parameters is 1
         napi_value argv = nullptr;
         napi_get_cb_info(env, info, &argc, 0, nullptr, nullptr);
 
         napi_get_cb_info(env, info, &argc, &argv, nullptr, nullptr);
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         std::string format = "";
         size_t formatsize = 0;
         if (napi_get_value_string_utf8(env, argv, nullptr, 0, &formatsize) != napi_ok) {
@@ -766,13 +762,9 @@ namespace OHOS::Util {
     static napi_value EncodeIntoUint8Array(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        size_t requireArgc = 2; // 2:The number of parameters is 2
         size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         napi_valuetype valuetype0;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype0));
         napi_typedarray_type valuetype1;
@@ -1026,13 +1018,9 @@ namespace OHOS::Util {
     static napi_value EncodeToStringHelper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2; // 2:The number of parameters is 2
-        size_t requireArgc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
@@ -1048,13 +1036,9 @@ namespace OHOS::Util {
     static napi_value EncodeBase64Helper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2; // 2:The number of parameters is 2
-        size_t requireArgc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
@@ -1069,13 +1053,9 @@ namespace OHOS::Util {
     static napi_value EncodeAsyncHelper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2; // 2:The number of parameters is 2
-        size_t requireArgc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
@@ -1087,13 +1067,9 @@ namespace OHOS::Util {
     static napi_value EncodeToStringAsyncHelper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2; // 2:The number of parameters is 2
-        size_t requireArgc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
@@ -1106,13 +1082,9 @@ namespace OHOS::Util {
     static napi_value DecodeBase64Helper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2; // 2:The number of parameters is 2
-        size_t requireArgc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
@@ -1128,13 +1100,9 @@ namespace OHOS::Util {
     static napi_value DecodeAsyncHelper(napi_env env, napi_callback_info info)
     {
         size_t argc = 2; // 2:The number of parameters is 2
-        size_t requireArgc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        if (argc < requireArgc) {
-            return ThrowError(env, "Parameter error. Wrong number of arguments.");
-        }
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
