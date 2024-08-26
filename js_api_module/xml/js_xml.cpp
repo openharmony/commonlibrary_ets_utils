@@ -40,6 +40,7 @@ namespace OHOS::xml {
         }
         return status;
     }
+
     void XmlSerializer::SplicNsp()
     {
         elementStack[depth_ * 3] = elementStack[(depth_ - 1) * 3]; // 3: number of args
@@ -67,14 +68,19 @@ namespace OHOS::xml {
             out_.append("  ");
         }
     }
-    std::string Replace(std::string str, const std::string &str1, const std::string &str2)
+
+    std::string XmlSerializer::Replace(std::string str, const std::string &subStr, const std::string &repStr)
     {
         size_t iPos = 0;
-        while ((iPos = str.find(str1)) != std::string::npos) {
-            str = str.substr(0, iPos) + str2 + str.substr(iPos + str1.size());
+        size_t subLen = subStr.length();
+        size_t step = repStr.length();
+        while ((iPos = str.find(subStr, iPos)) != std::string::npos) {
+            str = str.substr(0, iPos) + repStr + str.substr(iPos + subLen);
+            iPos += step;
         }
         return str;
     }
+
     void XmlSerializer::SetDeclaration()
     {
         if (isHasDecl) {
@@ -97,6 +103,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::SetNamespace(std::string prefix, const std::string &nsTemp)
     {
         out_ = "";
@@ -119,6 +126,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::StartElement(const std::string &name)
     {
         out_ = "";
@@ -156,6 +164,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::SetAttributes(const std::string &name, const std::string &value)
     {
         out_ = "";
@@ -177,6 +186,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::EndElement()
     {
         out_ = "";
@@ -219,6 +229,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::AddEmptyElement(std::string name)
     {
         out_ = "";
@@ -242,6 +253,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::SetText(const std::string &text)
     {
         out_ = "";
@@ -260,6 +272,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::SetComment(const std::string &comment)
     {
         out_ = "";
@@ -281,6 +294,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::SetCData(std::string data)
     {
         out_ = "";
@@ -303,6 +317,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlSerializer::SetDocType(const std::string &text)
     {
         out_ = "";
@@ -689,6 +704,7 @@ namespace OHOS::xml {
         }
         return -1;
     }
+
     void XmlPullParser::SkipChar(char expected)
     {
         int c = PriorDealChar();
@@ -961,6 +977,7 @@ namespace OHOS::xml {
             strTemp.replace(iPos, strSrc.size(), strDes);
         }
     }
+
     void XmlPullParser::ParseNspFunc(size_t &i, const std::string &attrName, bool &any)
     {
         size_t j = (nspCounts_[depth]++) << 1;
@@ -983,6 +1000,7 @@ namespace OHOS::xml {
             i -= 4; // 4:
         }
     }
+
     void XmlPullParser::ParseNspFunction()
     {
         int i = (attriCount_ << 2) - 4; // 4: number of args 2: number of args
@@ -1004,6 +1022,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     bool XmlPullParser::ParseNsp()
     {
         bool any = false;
@@ -1256,6 +1275,7 @@ namespace OHOS::xml {
             return result;
         }
     }
+
     std::string XmlPullParser::ParseDelimiter(bool returnText)
     {
         int quote = PriorDealChar();
@@ -1321,6 +1341,7 @@ namespace OHOS::xml {
             text_ = commentText;
         }
     }
+
     void XmlPullParser::ParseSpecText()
     {
         SkipInvalidChar();
@@ -1349,6 +1370,7 @@ namespace OHOS::xml {
             xmlPullParserError_ = "Expected element content spec ";
         }
     }
+
     void XmlPullParser::ParseInnerEleDec()
     {
         SkipText(tagText_.START_ELEMENT);
@@ -1469,6 +1491,7 @@ namespace OHOS::xml {
         SkipInvalidChar();
         SkipChar('>');
     }
+
     void XmlPullParser::ParseInneNotaDecl()
     {
         SkipText(tagText_.START_NOTATION);
@@ -1480,6 +1503,7 @@ namespace OHOS::xml {
         SkipInvalidChar();
         SkipChar('>');
     }
+
     void XmlPullParser::ReadInternalSubset()
     {
         SkipChar('[');
@@ -1519,6 +1543,7 @@ namespace OHOS::xml {
             }
         }
     }
+
     void XmlPullParser::ParseDoctype(bool saveDtdText)
     {
         SkipText(tagText_.START_DOCTYPE);
@@ -1669,10 +1694,12 @@ namespace OHOS::xml {
         }
         return result + 1;
     }
+
     int XmlPullParser::GetDepth() const
     {
         return depth;
     }
+
     int XmlPullParser::GetLineNumber() const
     {
         int result = bufferStartLine_;
@@ -1683,6 +1710,7 @@ namespace OHOS::xml {
         }
         return result + 1;
     }
+
     std::string XmlPullParser::GetName() const
     {
         return name_;
@@ -1692,6 +1720,7 @@ namespace OHOS::xml {
     {
         return prefix_;
     }
+
     std::string XmlPullParser::GetText() const
     {
         if (type < TagEnum::TEXT || (type == TagEnum::ENTITY_REFERENCE && bUnresolved_)) {
@@ -1700,6 +1729,7 @@ namespace OHOS::xml {
             return text_;
         }
     }
+
     bool XmlPullParser::IsEmptyElementTag() const
     {
         return bEndFlag_;
