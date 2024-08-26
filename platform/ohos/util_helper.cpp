@@ -259,7 +259,10 @@ namespace Commonlibrary::Platform {
         outLen = static_cast<size_t>(maxByteSize) * inputSize;
         napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
         char *writeResult = static_cast<char*>(data);
-
+        if (writeResult == nullptr) {
+            HILOG_ERROR("textencoder::writeResult is nullptr");
+            return;
+        }
         std::string buffer = "";
         std::u16string originalStr(originalBuffer, inputSize);
         size_t shifting = 0;
@@ -322,6 +325,10 @@ namespace Commonlibrary::Platform {
         size_t inputSize = 0;
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
         char16_t *originalBuffer = ApplyMemory(inputSize);
+        if (originalBuffer == nullptr) {
+            HILOG_ERROR("textencoder::originalBuffer is nullptr");
+            return;
+        }
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
 
         std::vector<char16_t> targetBuffer(inputSize + 1, u'\0');
@@ -354,6 +361,10 @@ namespace Commonlibrary::Platform {
         size_t inputSize = 0;
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
         char16_t *originalBuffer = ApplyMemory(inputSize);
+        if (originalBuffer == nullptr) {
+            HILOG_ERROR("textencoder::originalBuffer is nullptr");
+            return;
+        }
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
 
         size_t writableSize = length;

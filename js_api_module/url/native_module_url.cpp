@@ -67,11 +67,23 @@ namespace OHOS::Url {
                     return;
                 }
                 std::string base = tempType;
-                object = new URL(input, base);
+                object = new (std::nothrow) URL(input, base);
+                if (object == nullptr) {
+                    HILOG_ERROR("UrlStructor:: object is nullptr");
+                    return;
+                }
             } else if (valuetype2 == napi_object) {
                 URL *tempUrl = nullptr;
                 napi_unwrap(env, argv[1], reinterpret_cast<void**>(&tempUrl));
-                object = new URL(input, *tempUrl);
+                if (tempUrl == nullptr) {
+                    HILOG_ERROR("UrlStructor:: tempUrl is nullptr");
+                    return;
+                }
+                object = new (std::nothrow) URL(input, *tempUrl);
+                if (object == nullptr) {
+                    HILOG_ERROR("UrlStructor:: object is nullptr");
+                    return;
+                }
             } else {
                 HILOG_INFO("secondParameter error");
             }
@@ -563,6 +575,9 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         napi_value result = object->Get(env, args);
         return result;
     }
@@ -579,6 +594,9 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         napi_value result = object->GetAll(env, args);
         return result;
     }
@@ -596,6 +614,9 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         object->Append(env, args[0], args[1]);
         return nullptr;
     }
@@ -612,6 +633,9 @@ namespace OHOS::Url {
         }
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         object->Delete(env, args);
         return nullptr;
     }
@@ -624,6 +648,9 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         napi_value result = object->Entries(env);
         return result;
     }
@@ -648,6 +675,9 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         object->Set(env, args[0], args[1]);
         return nullptr;
     }
@@ -660,6 +690,9 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         object->Sort();
         return nullptr;
     }
@@ -672,6 +705,9 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         napi_value result = object->IterByKeys(env);
         return result;
     }
@@ -684,6 +720,9 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (object == nullptr) {
+            return nullptr;
+        }
         napi_value result = object->IterByValues(env);
         return result;
     }

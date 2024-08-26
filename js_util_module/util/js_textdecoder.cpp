@@ -72,7 +72,11 @@ namespace OHOS::Util {
         size_t len = limit * sizeof(UChar);
         UChar *arr = nullptr;
         if (limit > 0) {
-            arr = new UChar[limit + 1];
+            arr = new (std::nothrow) UChar[limit + 1];
+            if (arr == nullptr) {
+                HILOG_ERROR("decode arr is nullptr");
+                return nullptr;
+            }
             if (memset_s(arr, len + sizeof(UChar), 0, len + sizeof(UChar)) != EOK) {
                 HILOG_ERROR("decode arr memset_s failed");
                 FreedMemory(arr);
@@ -125,7 +129,11 @@ namespace OHOS::Util {
         size_t len = limit * sizeof(UChar);
         UChar *arr = nullptr;
         if (limit > 0) {
-            arr = new UChar[limit + 1]{0};
+            arr = new (std::nothrow) UChar[limit + 1]{0};
+            if (arr == nullptr) {
+                HILOG_DEBUG("arr is nullptr");
+                return nullptr;
+            }
         } else {
             HILOG_DEBUG("limit is error");
             return nullptr;
@@ -159,7 +167,7 @@ namespace OHOS::Util {
 
     napi_value TextDecoder::GetEncoding(napi_env env) const
     {
-        size_t length = strlen(encStr_.c_str());
+        size_t length = encStr_.length();
         napi_value result = nullptr;
         NAPI_CALL(env, napi_create_string_utf8(env, encStr_.c_str(), length, &result));
         return result;
@@ -210,7 +218,7 @@ namespace OHOS::Util {
         ucnv_reset(tranTool_.get());
     }
 
-    void TextDecoder::FreedMemory(UChar *pData)
+    void TextDecoder::FreedMemory(UChar *&pData)
     {
         if (pData != nullptr) {
             delete[] pData;

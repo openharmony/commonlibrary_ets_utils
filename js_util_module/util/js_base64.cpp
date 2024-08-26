@@ -111,7 +111,11 @@ namespace OHOS::Util {
             outputLen += TRAGET_FOUR;
         }
         if (outputLen > 0) {
-            ret = new unsigned char[outputLen + 1];
+            ret = new (std::nothrow) unsigned char[outputLen + 1];
+            if (ret == nullptr) {
+                HILOG_ERROR("Base64:: ret is nullptr");
+                return nullptr;
+            }
             if (memset_s(ret, outputLen + 1, '\0', outputLen + 1) != EOK) {
                 HILOG_ERROR("encode ret memset_s failed");
                 FreeMemory(ret);
@@ -130,9 +134,7 @@ namespace OHOS::Util {
             flag = true;
         }
         const char *searchArray = flag ? BASEURL : BASE;
-        unsigned char *result = nullptr;
-        result = EncodeAchieveInner(input, ret, searchArray, inputLen, valueType);
-
+        unsigned char *result = EncodeAchieveInner(input, ret, searchArray, inputLen, valueType);
         return result;
     }
 
@@ -207,7 +209,11 @@ namespace OHOS::Util {
             size_t prolen = 0;
             napi_get_value_string_utf8(env, src, nullptr, 0, &prolen);
             if (prolen > 0) {
-                inputString = new char[prolen + 1];
+                inputString = new (std::nothrow) char[prolen + 1];
+                if (inputString == nullptr) {
+                    HILOG_ERROR("inputString is nullptr");
+                    return false;
+                }
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
                     FreeMemory(inputString);
                     napi_throw_error(env, "-1", "decode inputString memset_s failed");
@@ -248,7 +254,11 @@ namespace OHOS::Util {
         }
         retLen = DecodeOut(equalCount, retLen);
         if (retLen > 0) {
-            retDecode = new unsigned char[retLen + 1];
+            retDecode = new (std::nothrow) unsigned char[retLen + 1];
+            if (retDecode == nullptr) {
+                HILOG_ERROR("retDecode is nullptr");
+                return nullptr;
+            }
             if (memset_s(retDecode, retLen + 1, '\0', retLen + 1) != EOK) {
                 FreeMemory(retDecode);
                 napi_throw_error(env, "-1", "decode retDecode memset_s failed");
@@ -388,7 +398,11 @@ namespace OHOS::Util {
     void Base64::CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType)
     {
         napi_value resourceName = nullptr;
-        stdEncodeInfo_ = new EncodeInfo();
+        stdEncodeInfo_ = new (std::nothrow) EncodeInfo();
+        if (stdEncodeInfo_ == nullptr) {
+            HILOG_ERROR("stdEncodeInfo_ is nullptr");
+            return;
+        }
         stdEncodeInfo_->sinputEncode = inputDecode;
         stdEncodeInfo_->slength = length;
         stdEncodeInfo_->env = env;

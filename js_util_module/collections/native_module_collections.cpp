@@ -36,7 +36,7 @@ const std::string SENDABLE_UINT8_CLAMPED_ARRAY = "SendableUint8ClampedArray";
 const std::string SENDABLE_FLOAT32_ARRAY = "SendableFloat32Array";
 }  // namespace
 
-static bool GetCollectionFunction(napi_env env, napi_value global, std::string collectionName,
+static bool GetCollectionFunction(napi_env env, napi_value global, const std::string collectionName,
                                   napi_value &collectionFunction)
 {
     napi_value collectionKey;

@@ -66,7 +66,11 @@ namespace OHOS::Util {
         if (length == 0) {
             return nullptr;
         }
-        char *type = new char[length + 1];
+        char *type = new (std::nothrow) char[length + 1];
+        if (type == nullptr) {
+            HILOG_ERROR("type is nullptr");
+            return nullptr;
+        }
         if (memset_s(type, length + 1, '\0', length + 1) != EOK) {
             HILOG_ERROR("type memset_s failed");
             delete[] type;
@@ -165,7 +169,9 @@ namespace OHOS::Util {
                 i++;
             }
         }
-        res = res.substr(0, res.size() - 1);
+        if (!res.empty()) {
+            res = res.substr(0, res.size() - 1);
+        }
         napi_value result = nullptr;
         napi_create_string_utf8(env, res.c_str(), res.size(), &result);
         return result;
@@ -201,8 +207,7 @@ namespace OHOS::Util {
 
     static std::string PrintfString(const std::string &format, const std::vector<std::string> &value)
     {
-        std::string printInfo = DealWithPrintf(format, value);
-        return printInfo;
+        return DealWithPrintf(format, value);
     }
 
     static napi_value Printf(napi_env env, napi_callback_info info)
@@ -212,7 +217,11 @@ namespace OHOS::Util {
         napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
         napi_value *argv = nullptr;
         if (argc > 0) {
-            argv = new napi_value[argc];
+            argv = new (std::nothrow) napi_value[argc];
+            if (argv == nullptr) {
+                HILOG_ERROR("Printf:: argv is nullptr");
+                return nullptr;
+            }
             napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
             std::string format = "";
             size_t formatsize = 0;
@@ -427,7 +436,11 @@ namespace OHOS::Util {
         }
         delete []type;
         type = nullptr;
-        auto objectInfo = new TextDecoder(enconding, paraVec);
+        auto objectInfo = new (std::nothrow) TextDecoder(enconding, paraVec);
+        if (objectInfo == nullptr) {
+            HILOG_ERROR("TextDecoder objectInfo is nullptr");
+            return nullptr;
+        }
         NAPI_CALL(env, napi_wrap(
             env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
@@ -455,6 +468,10 @@ namespace OHOS::Util {
         bool iStream = false;
         TextDecoder *textDecoder = nullptr;
         napi_unwrap(env, thisVar, (void**)&textDecoder);
+        if (textDecoder == nullptr) {
+            HILOG_ERROR("DecodeToString::textDecoder is nullptr");
+            return nullptr;
+        }
         napi_value valStr = nullptr;
         if (tempArgc == 1) {
             argc = 1;
@@ -504,6 +521,9 @@ namespace OHOS::Util {
         bool iStream = false;
         TextDecoder *textDecoder = nullptr;
         napi_unwrap(env, thisVar, (void**)&textDecoder);
+        if (textDecoder == nullptr) {
+            return nullptr;
+        }
         napi_value valStr = nullptr;
         if (tempArgc == 1) {
             argc = 1;
@@ -621,7 +641,11 @@ namespace OHOS::Util {
                 encoding = buffer;
             }
         }
-        auto object = new TextEncoder(encoding);
+        auto object = new (std::nothrow) TextEncoder(encoding);
+        if (object == nullptr) {
+            HILOG_ERROR("TextEncoder:: object is nullptr");
+            return nullptr;
+        }
         object->SetOrgEncoding(orgEncoding);
         object->SetApiIsolated(env);
         napi_wrap(
@@ -767,7 +791,7 @@ namespace OHOS::Util {
         size_t argc = 0;
         napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
         napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
-        if (argc == 2 || argc >= 2) { // 2:The number of parameters is 2
+        if (argc >= 2) { // 2:The number of parameters is 2
             return EncodeIntoTwo(env, info);
         }
         return EncodeIntoOne(env, info);
@@ -978,7 +1002,7 @@ namespace OHOS::Util {
 
     static napi_value EncodeToStringHelper(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
@@ -996,7 +1020,7 @@ namespace OHOS::Util {
 
     static napi_value EncodeBase64Helper(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
@@ -1013,11 +1037,10 @@ namespace OHOS::Util {
 
     static napi_value EncodeAsyncHelper(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
@@ -1028,7 +1051,7 @@ namespace OHOS::Util {
 
     static napi_value EncodeToStringAsyncHelper(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
@@ -1043,11 +1066,10 @@ namespace OHOS::Util {
 
     static napi_value DecodeBase64Helper(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-
         int32_t encode = 0;
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
@@ -1062,7 +1084,7 @@ namespace OHOS::Util {
 
     static napi_value DecodeAsyncHelper(napi_env env, napi_callback_info info)
     {
-        size_t argc = 2;
+        size_t argc = 2; // 2:The number of parameters is 2
         napi_value args[2] = { nullptr };
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
