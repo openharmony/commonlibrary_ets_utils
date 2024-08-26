@@ -1283,9 +1283,6 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
     }
     DecreaseRefCount(env, taskId);
     RemoveTaskDuration(taskId);
-    if (task->IsFunctionTask()) {
-        return;
-    }
     RemovePendingTaskInfo(taskId);
     ReleaseCallBackInfo(task);
     {

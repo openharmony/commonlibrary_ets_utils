@@ -61,6 +61,15 @@ public:
     static void StoreDependentId(uint64_t taskId, uint64_t dependentId);
     static void StoreDependentTaskId(uint64_t taskId, uint64_t dependentId);
     static void StoreTaskDuration(uint64_t taskId);
+    static void InitTaskManager(napi_env env);
+    static void NotifyDependencyTaskInfo(napi_env env);
+    static void StoreTaskDependency(napi_env env);
+    static void RemoveTaskDependency(napi_env env);
+    static void ReleaseTaskData(napi_env env);
+    static void CheckTask(napi_env env);
+    static void CancelGroupTask(napi_env env);
+    static void TriggerSeqRunner(napi_env env);
+    static void UpdateGroupState(napi_env env);
 
     class ExceptionScope {
     public:
