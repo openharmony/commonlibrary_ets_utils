@@ -1995,6 +1995,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest129, testing::ext::TestSize.Level0)
     SequenceRunner* seqRunner2 = new SequenceRunner();
     seqRunner2->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner2);
     seqRunner2->seqName_ = "seq02";
+    seqRunner2->isGlobalRunner_ = true;
+    seqRunner2->count_ = 0;
     void* data2 = static_cast<void*>(seqRunner2);
     NativeEngineTest::SequenceRunnerDestructor(env, data2);
 
@@ -4156,4 +4158,102 @@ HWTEST_F(NativeEngineTest, TaskpoolTest214, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest215, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string func = "SeqRunnerConstructor";
+    napi_value callback = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &callback);
+    napi_value argv[2] = {nullptr};
+    napi_create_string_utf8(env, "seq04", NAPI_AUTO_LENGTH, &argv[0]);
+    napi_create_uint32(env, 5, &argv[1]);
+    result = nullptr;
+    napi_call_function(env, nullptr, callback, 2, argv, &result);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value argv1[1] = {nullptr};
+    napi_create_string_utf8(env, "seq05", NAPI_AUTO_LENGTH, &argv1[0]);
+
+    result = nullptr;
+    napi_call_function(env, nullptr, callback, 1, argv1, &result);
+    ASSERT_NE(result, nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value argv2[1] = {nullptr};
+    napi_create_uint32(env, 5, &argv2[0]);
+    result = nullptr;
+    napi_call_function(env, nullptr, callback, 1, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value argv3[1] = {nullptr};
+    result = nullptr;
+    napi_call_function(env, nullptr, callback, 1, argv3, &result);
+    ASSERT_EQ(result, nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value argv4[1] = {nullptr};
+    napi_create_string_utf8(env, "seq05", NAPI_AUTO_LENGTH, &argv4[0]);
+    result = nullptr;
+    napi_call_function(env, nullptr, callback, 1, argv4, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string func = "SeqRunnerConstructor";
+    napi_value SeqCallback = nullptr;
+    napi_value SeqResult = nullptr;
+    napi_create_function(env, func.c_str(), func.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &SeqCallback);
+    napi_value SeqArgv[1] = {nullptr};
+    napi_create_string_utf8(env, "seq06", NAPI_AUTO_LENGTH, &SeqArgv[0]);
+    napi_call_function(env, nullptr, SeqCallback, 1, SeqArgv, &SeqResult);
+
+    std::string funcName = "Execute";
+    napi_value callback = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), SequenceRunner::Execute, nullptr, &callback);
+
+    napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, SeqResult, "seqRunnerId");
+    uint64_t seqId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
+    SequenceRunner seq;
+    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
+    taskGroupManager.StoreSequenceRunner(seqId, &seq);
+
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_value num = nullptr;
+    napi_create_uint32(env, 1, &num);
+    napi_set_named_property(env, thisValue, "taskId", num);
+    napi_value argv[] = {thisValue};
+    napi_call_function(env, nullptr, callback, 1, argv, &result);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    thisValue = CreateTaskObject(env, TaskType::COMMON_TASK);
+    napi_value argv1[] = {thisValue};
+    napi_call_function(env, nullptr, callback, 1, argv1, &result);
+    ASSERT_EQ(result, nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    SequenceRunner seq1;
+    seq1.currentTaskId_ = 1;
+    taskGroupManager.RemoveSequenceRunner(seqId);
+    taskGroupManager.StoreSequenceRunner(seqId, &seq1);
+    thisValue = CreateTaskObject(env);
+    napi_value argv2[] = {thisValue};
+    napi_call_function(env, nullptr, callback, 1, argv2, &result);
+    ASSERT_NE(result, nullptr);
 }
