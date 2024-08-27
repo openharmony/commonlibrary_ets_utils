@@ -15,7 +15,9 @@
 
 #include "task_runner.h"
 
+#include "helper/concurrent_helper.h"
 #include "helper/object_helper.h"
+#include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -28,14 +30,22 @@ TaskRunner::~TaskRunner()
 
 void TaskRunner::TaskInnerRunner::Run()
 {
-    runner_->Run();
+    if (LIKELY(runner_ != nullptr)) {
+        runner_->Run();
+    } else { // LCOV_EXCL_BR_LINE
+        HILOG_FATAL("taskpool:: runner_ is null");
+    }
 }
 
 TaskRunner::TaskInnerRunner::TaskInnerRunner(const TaskRunner* runner) : runner_(runner) {}
 
 void TaskRunner::Run() const
 {
-    callback_.callback(callback_.data);
+    if (LIKELY(callback_.callback != nullptr)) {
+        callback_.callback(callback_.data);
+    } else { // LCOV_EXCL_BR_LINE
+        HILOG_FATAL("taskpool:: callback_.callback is null");
+    }
 }
 
 bool TaskRunner::Execute()
