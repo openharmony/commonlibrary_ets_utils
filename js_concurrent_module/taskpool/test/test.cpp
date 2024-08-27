@@ -739,6 +739,7 @@ void NativeEngineTest::UpdateGroupState(napi_env env)
 
 void NativeEngineTest::ReleaseWorkerHandles(napi_env env)
 {
+    ExceptionScope scope(env);
     Worker* worker = Worker::WorkerConstructor(env);
     napi_env workerEnv;
     napi_create_runtime(env, &workerEnv);
@@ -766,6 +767,7 @@ void NativeEngineTest::ReleaseWorkerHandles(napi_env env)
 
 void NativeEngineTest::DebuggerOnPostTask(napi_env env)
 {
+    ExceptionScope scope(env);
     Worker* worker = Worker::WorkerConstructor(env);
     worker->workerEnv_ = env;
     uv_loop_t* loop = worker->GetWorkerLoop();
@@ -783,24 +785,25 @@ void NativeEngineTest::DebuggerOnPostTask(napi_env env)
     req->data = worker;
     worker->debuggerMutex_.unlock();
     Worker::HandleDebuggerTask(req);
-    Worker* worker1 = Worker::WorkerConstructor(env);
-    worker1->ReleaseWorkerThreadContent();
+    worker->workerEnv_ = nullptr;
+    worker->ReleaseWorkerThreadContent();
     napi_env workerEnv;
     napi_create_runtime(env, &workerEnv);
-    worker1->workerEnv_ = workerEnv;
-    worker1->hostEnv_ = nullptr;
-    worker1->state_ = WorkerState::BLOCKED;
-    worker1->ReleaseWorkerThreadContent();
+    worker->workerEnv_ = workerEnv;
+    worker->hostEnv_ = nullptr;
+    worker->state_ = WorkerState::BLOCKED;
+    worker->ReleaseWorkerThreadContent();
     napi_env workerEnv1;
     napi_create_runtime(env, &workerEnv1);
-    worker1->hostEnv_ = env;
-    worker1->workerEnv_ = workerEnv1;
-    worker1->state_ = WorkerState::IDLE;
-    worker1->ReleaseWorkerThreadContent();
+    worker->hostEnv_ = env;
+    worker->workerEnv_ = workerEnv1;
+    worker->state_ = WorkerState::IDLE;
+    worker->ReleaseWorkerThreadContent();
 }
 
 void NativeEngineTest::PerformTask(napi_env env)
 {
+    ExceptionScope scope(env);
     TaskManager& taskManager = TaskManager::GetInstance();
     Worker* worker = Worker::WorkerConstructor(env);
     napi_env workerEnv;
@@ -838,6 +841,7 @@ void NativeEngineTest::PerformTask(napi_env env)
 
 void NativeEngineTest::NotifyHandleTaskResult(napi_env env)
 {
+    ExceptionScope scope(env);
     Worker* worker = Worker::WorkerConstructor(env);
     napi_env workerEnv;
     napi_create_runtime(env, &workerEnv);
@@ -862,6 +866,7 @@ void NativeEngineTest::NotifyHandleTaskResult(napi_env env)
 
 void NativeEngineTest::TaskResultCallback(napi_env env)
 {
+    ExceptionScope scope(env);
     Worker* worker = Worker::WorkerConstructor(env);
     napi_env workerEnv;
     napi_create_runtime(env, &workerEnv);
@@ -897,6 +902,7 @@ void NativeEngineTest::TaskResultCallback(napi_env env)
 
 void NativeEngineTest::HandleFunctionException(napi_env env)
 {
+    ExceptionScope scope(env);
     Worker* worker = Worker::WorkerConstructor(env);
     napi_env workerEnv;
     napi_create_runtime(env, &workerEnv);

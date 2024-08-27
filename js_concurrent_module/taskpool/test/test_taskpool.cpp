@@ -4261,13 +4261,332 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest217, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    NativeEngineTest::ReleaseWorkerHandles(env);
-    NativeEngineTest::DebuggerOnPostTask(env);
     NativeEngineTest::PerformTask(env);
     NativeEngineTest::NotifyHandleTaskResult(env);
     NativeEngineTest::TaskResultCallback(env);
     NativeEngineTest::HandleFunctionException(env);
+    NativeEngineTest::DebuggerOnPostTask(env);
+    NativeEngineTest::ReleaseWorkerHandles(env);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest218, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value exception = nullptr;
+    napi_value thisVar = NapiHelper::CreateObject(env);
+    napi_value taskGroupResult = GeneratorTaskGroup(env, thisVar);
+    napi_value napiGroupId = NapiHelper::GetNameProperty(env, taskGroupResult, "groupId");
+    uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
+
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup* group = taskGroupManager.GetTaskGroup(groupId);
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->priority = Priority::DEFAULT;
+    group->currentGroupInfo_ = groupInfo;
+    group->groupState_ = ExecuteState::FINISHED;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    napi_value result = NativeEngineTest::ExecuteGroup(env, taskGroupResult);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest219, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value exception = nullptr;
+    napi_value thisVar = NapiHelper::CreateObject(env);
+    napi_value taskGroupResult = GeneratorTaskGroup(env, thisVar);
+    napi_value napiGroupId = NapiHelper::GetNameProperty(env, taskGroupResult, "groupId");
+    uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
+
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup* group = taskGroupManager.GetTaskGroup(groupId);
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->priority = Priority::DEFAULT;
+    group->currentGroupInfo_ = groupInfo;
+    group->groupState_ = ExecuteState::CANCELED;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    napi_value result = NativeEngineTest::ExecuteGroup(env, taskGroupResult);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest220, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    size_t delayTime = 1000;
+    napi_value result = nullptr;
+    napi_value num = nullptr;
+    napi_value priority = nullptr;
+    napi_value exception = nullptr;
+    napi_create_uint32(env, delayTime, &num);
+    napi_create_uint32(env, 1, &priority);
+
+    napi_value obj = CreateTaskObject(env, TaskType::TASK, ExecuteState::FINISHED);
+    napi_value argv[] = { num, obj, priority };
+    result = NativeEngineTest::ExecuteDelayed(env, argv, 3);
+    ASSERT_TRUE(result != nullptr);
+
+    obj = CreateTaskObject(env);
+    napi_value argv1[] = { num, obj, priority };
+    result = NativeEngineTest::ExecuteDelayed(env, argv1, 3);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest221, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    size_t delayTime = 1000;
+    napi_value result = nullptr;
+    napi_value num = nullptr;
+    napi_value priority = nullptr;
+    napi_value exception = nullptr;
+    napi_create_uint32(env, delayTime, &num);
+    napi_create_uint32(env, 1, &priority);
+
+    napi_value obj = CreateTaskObject(env, TaskType::TASK, ExecuteState::FINISHED);
+    napi_value argv[] = { num, obj, priority };
+    result = NativeEngineTest::ExecuteDelayed(env, argv, 3);
+    ASSERT_TRUE(result != nullptr);
+
+    obj = CreateTaskObject(env);
+    napi_value argv1[] = { num, obj, priority };
+    result = NativeEngineTest::ExecuteDelayed(env, argv1, 3);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest222, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value thisValue = CreateTaskObject(env, TaskType::SEQRUNNER_TASK);
+    napi_value argv[] = {thisValue};
+    napi_value result = NativeEngineTest::Execute(env, argv, 1);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value obj = NapiHelper::CreateObject(env);
+    auto group = GeneratorTaskGroup(env, obj);
+    napi_value argv1[] = {group};
+    result = NativeEngineTest::Execute(env, argv1, 1);
+    ASSERT_TRUE(result != nullptr);
+
+    napi_value value = nullptr;
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &value);
+    napi_value argv2[] = {value};
+    result = NativeEngineTest::Execute(env, argv2, 1);
+    ASSERT_TRUE(result == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest223, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    napi_value exception = nullptr;
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+    uv_timer_t* handle = new uv_timer_t;
+    uv_timer_init(loop, handle);
+    TaskMessage *taskMessage = new TaskMessage();
+
+    napi_value global;
+    napi_get_global(env, &global);
+    auto napiTask = GeneratorTask(env, global);
+    Task* task = nullptr;
+    napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    task->taskState_ = ExecuteState::CANCELED;
+    
+    taskMessage->taskId = task->taskId_;
+    handle->data = taskMessage;
+    taskManager.StoreTask(task->taskId_, task);
+    NativeEngineTest::DelayTask(handle);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest224, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    napi_value exception = nullptr;
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+    uv_timer_t* handle = new uv_timer_t;
+    uv_timer_init(loop, handle);
+    TaskMessage *taskMessage = new TaskMessage();
+
+    napi_value global;
+    napi_get_global(env, &global);
+    auto napiTask = GeneratorTask(env, global);
+    Task* task = nullptr;
+    napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    task->taskState_ = ExecuteState::DELAYED;
+    taskMessage->taskId = task->taskId_;
+    handle->data = taskMessage;
+    taskManager.StoreTask(task->taskId_, task);
+    NativeEngineTest::DelayTask(handle);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest225, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    napi_value exception = nullptr;
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+    uv_timer_t* handle = new uv_timer_t;
+    uv_timer_init(loop, handle);
+    TaskMessage *taskMessage = new TaskMessage();
+
+    napi_value global;
+    napi_get_global(env, &global);
+    auto napiTask = GeneratorTask(env, global);
+    Task* task = nullptr;
+    napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    task->taskState_ = ExecuteState::FINISHED;
+    taskMessage->taskId = task->taskId_;
+    handle->data = taskMessage;
+    taskManager.StoreTask(task->taskId_, task);
+    NativeEngineTest::DelayTask(handle);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest226, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value global;
+    napi_get_global(env, &global);
+    auto napiTask = GeneratorTask(env, global);
+    Task* task = nullptr;
+    napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    task->taskType_ = TaskType::GROUP_COMMON_TASK;
+    TaskPool::HandleTaskResultCallback(task);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest227, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value thisValue = CreateTaskObject(env, TaskType::SEQRUNNER_TASK, ExecuteState::CANCELED);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    task->seqRunnerId_ = 1;
+    napi_value num = nullptr;
+    napi_create_uint32(env, 1, &num);
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, num, 1);
+    task->onExecutionFailedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    TaskPool::HandleTaskResultCallback(task);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest228, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value thisValue = CreateTaskObject(env);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    task->success_ = true;
+    napi_value num = nullptr;
+    napi_create_uint32(env, 1, &num);
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, num, 1);
+    task->onExecutionSucceededCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    void* resultData = nullptr;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_status status = napi_serialize_inner(env, num, undefined, undefined,
+                                              true, false, &resultData);
+    task->result_ = resultData;
+    TaskPool::HandleTaskResultCallback(task);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = taskId;
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
+    
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+
+    Worker* worker = Worker::WorkerConstructor(env);
+    void* args = nullptr;
+    TaskResultInfo* resultInfo = new TaskResultInfo(nullptr, env, taskId, args);
+    worker->Enqueue(env, resultInfo);
+    cbInfo->worker = worker;
+    TaskPool::ExecuteCallbackTask(cbInfo);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest230, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    uv_timer_t* handle = new uv_timer_t;
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    Task* task = new Task();
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = taskId;
+    task->groupId_ = groupId;
+
+    group->taskIds_.push_back(taskId);
+    handle->data = task;
+
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->priority = Priority::DEFAULT;
+    napi_value resArr;
+    napi_create_array_with_length(env, group->taskIds_.size(), &resArr);
+    napi_ref arrRef = NapiHelper::CreateReference(env, resArr, 1);
+    groupInfo->resArr = arrRef;
+    NapiHelper::CreatePromise(env, &groupInfo->deferred);
+    group->currentGroupInfo_ = groupInfo;
+    group->taskNum_ = 2;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    napi_value value = NapiHelper::CreateUint64(env, groupId);
+    napi_ref reference = NapiHelper::CreateReference(env, value, 0);
+    taskGroupManager.AddTask(groupId, reference, taskId);
+    
+    napi_value res = nullptr;
+    napi_create_uint32(env, 1, &res);
+    NativeEngineTest::UpdateGroupInfoByResult(env, handle, res, true);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest231, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value thisVar = NapiHelper::CreateObject(env);
+    napi_value taskGroup = GeneratorTaskGroup(env, thisVar);
+    napi_value argv[] = {taskGroup};
+    NativeEngineTest::Cancel(env, argv, 1);
+    ASSERT_TRUE(true);
 }
