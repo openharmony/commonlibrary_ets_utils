@@ -289,7 +289,11 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
     std::string nameStr(name);
     CloseHelp::DeletePointer(name, true);
     AsyncLockIdentity identity{false, 0, nameStr};
-    AsyncLock *lock = FindAsyncLock(&identity);
+    AsyncLock *lock = nullptr;
+    {
+        std::unique_lock<std::mutex> guard(lockMutex);
+        lock = FindAsyncLock(&identity);
+    }
     if (lock == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK);
         return undefined;
