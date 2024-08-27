@@ -464,6 +464,9 @@ void Worker::NotifyHandleTaskResult(Task* task)
         if (iter != worker->currentTaskId_.end()) {
             worker->currentTaskId_.erase(iter);
         }
+    } else {
+        HILOG_FATAL("taskpool:: worker is nullptr");
+        return;
     }
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (task->IsMainThreadTask()) {
@@ -492,10 +495,15 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         return;
     }
     if (data == nullptr) { // LCOV_EXCL_BR_LINE
-        HILOG_FATAL("taskpool:: task is nullptr");
+        HILOG_FATAL("taskpool:: data is nullptr");
         return;
     }
     Task* task = static_cast<Task*>(data);
+    auto taskId = reinterpret_cast<uint64_t>(task);
+    if (TaskManager::GetInstance().GetTask(taskId) == nullptr) {
+        HILOG_FATAL("taskpool:: task is nullptr");
+        return;
+    }
     auto worker = static_cast<Worker*>(task->worker_);
     worker->isExecutingLongTask_ = task->IsLongTask();
     task->DecreaseRefCount();
