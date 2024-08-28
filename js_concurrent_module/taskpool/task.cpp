@@ -537,6 +537,11 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, &napiTask, nullptr);
     Task* task = nullptr;
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: the task is nullptr");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the task is nullptr");
+        return nullptr;
+    }
     if (!task->HasDependency()) {
         ThrowNoDependencyError(env);
         return nullptr;
@@ -562,6 +567,11 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         }
         Task* dependentTask = nullptr;
         napi_unwrap(env, args[i], reinterpret_cast<void**>(&dependentTask));
+        if (dependentTask == nullptr) {
+            HILOG_ERROR("taskpool:: the dependent task is nullptr");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the dependent task is nullptr");
+            return nullptr;
+        }
         if (!dependentTask->HasDependency()) {
             ThrowNoDependencyError(env);
             return nullptr;
