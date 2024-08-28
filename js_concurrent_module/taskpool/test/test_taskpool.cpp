@@ -1604,6 +1604,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest107, testing::ext::TestSize.Level0)
     auto task = GeneratorTask(env, obj);
     Task* pointer = nullptr;
     napi_unwrap(env, task, reinterpret_cast<void**>(&pointer));
+    ASSERT_TRUE(pointer != nullptr);
     pointer->isLongTask_ = true;
     napi_value argv[] = { task };
     NativeEngineTest::TerminateTask(env, argv, 1);

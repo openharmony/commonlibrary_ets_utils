@@ -23,7 +23,9 @@ TaskRunner::TaskRunner(TaskStartCallback callback) : callback_(callback), selfTh
 
 TaskRunner::~TaskRunner()
 {
-    CloseHelp::DeletePointer(taskInnerRunner_, false);
+    if (taskInnerRunner_ != nullptr) {
+        CloseHelp::DeletePointer(taskInnerRunner_, false);
+    }
 }
 
 void TaskRunner::TaskInnerRunner::Run()
