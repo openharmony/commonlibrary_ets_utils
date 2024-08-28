@@ -100,7 +100,10 @@ namespace OHOS::Url {
     void ParsingHostAndPath(std::string& input, UrlData& urlinfo, size_t& pos,
                             std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
     void ShorteningPath(UrlData& urlData, UrlData& baseData, bool isFile);
-
+    void RemoveLeadingZeros(std::vector<std::string> &ipv6);
+    void IPv6Host(std::string& input, std::string& host,
+                  std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
+    std::string BasePathToStr(UrlData& urlData);
     class URL {
     public:
         /**

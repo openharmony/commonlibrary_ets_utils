@@ -2453,3 +2453,83 @@ HWTEST_F(NativeEngineTest, testUrlutilities038, testing::ext::TestSize.Level0)
     OHOS::Url::ShorteningPath(urlData, baseData, isFile);
     ASSERT_TRUE(isFile);
 }
+
+HWTEST_F(NativeEngineTest, testUrlutilities040, testing::ext::TestSize.Level0)
+{
+    std::string input = ".%2E";
+    std::vector<std::string> path;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    bool isSpecial = true;
+    OHOS::Url::AnalysisPath(input, path, flags, isSpecial);
+    ASSERT_STREQ(input.c_str(), ".%2E");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities041, testing::ext::TestSize.Level0)
+{
+    std::string input = "%2E";
+    std::vector<std::string> path;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    bool isSpecial = true;
+    OHOS::Url::AnalysisPath(input, path, flags, isSpecial);
+    ASSERT_STREQ(input.c_str(), "%2E");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities042, testing::ext::TestSize.Level0)
+{
+    std::string input = "99::1080:800:200C:417A";
+    OHOS::Url::FormatIpv6(input);
+    ASSERT_STREQ(input.c_str(), "99:0:0:0:1080:800:200C:417A");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities043, testing::ext::TestSize.Level0)
+{
+    std::string input = "000:1080:800:200C:417A";
+    std::vector<std::string> ipv6;
+    ipv6.push_back(input);
+    OHOS::Url::RemoveLeadingZeros(ipv6);
+    ASSERT_STREQ(input.c_str(), "000:1080:800:200C:417A");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities044, testing::ext::TestSize.Level0)
+{
+    std::string input = "::ffff:192.168.1.1";
+    std::string host = "";
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::IPv6Host(input, host, flags);
+    ASSERT_STREQ(input.c_str(), "::ffff:c0a8:101");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities045, testing::ext::TestSize.Level0)
+{
+    std::string input = "w";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisNoDefaultProtocol(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "w");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities046, testing::ext::TestSize.Level0)
+{
+    std::string input = "ww:w]wa:b]c/www";
+    OHOS::Url::UrlData urlinfo;
+    size_t pos;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
+    OHOS::Url::ParsingHostAndPath(input, urlinfo, pos, flags);
+    ASSERT_STREQ(input.c_str(), "ww:w]wa:b]c/www");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities047, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::UrlData urlData;
+    std::string s1 = "www";
+    std::string s2 = "aaa";
+    std::string s3 = "bbb";
+    std::string s4 = "ccc";
+    urlData.path.push_back(s1);
+    urlData.path.push_back(s2);
+    urlData.path.push_back(s3);
+    urlData.path.push_back(s4);
+    std::string rst = OHOS::Url::BasePathToStr(urlData);
+    ASSERT_STREQ(rst.c_str(), "www/aaa/bbb/ccc");
+}
