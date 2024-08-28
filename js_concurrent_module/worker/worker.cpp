@@ -1208,6 +1208,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     // check the path is vaild.
     if (!isBundle) {
         if (!PathHelper::CheckWorkerPath(env, script_, fileName_, isRelativePath_)) {
+            EraseWorker();
             HILOG_ERROR("worker:: the file path is invaild, can't find the file : %{public}s.", script);
             CloseHelp::DeletePointer(script, true);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH,
@@ -1645,19 +1646,7 @@ void Worker::CloseHostCallback()
         // handle listeners
         HandleEventListeners(hostEnv_, obj, 1, argv, "exit");
     }
-    if (!isLimitedWorker_) {
-        std::lock_guard<std::mutex> lock(g_workersMutex);
-        std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
-        if (it != g_workers.end()) {
-            g_workers.erase(it);
-        }
-    } else {
-        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-        std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
-        if (it != g_limitedworkers.end()) {
-            g_limitedworkers.erase(it);
-        }
-    }
+    EraseWorker();
     CloseHelp::DeletePointer(this, false);
 }
 
@@ -2427,5 +2416,22 @@ void Worker::ClosePartHostHandle()
             handle = nullptr;
         }
     });
+}
+
+void Worker::EraseWorker()
+{
+    if (!isLimitedWorker_) {
+        std::lock_guard<std::mutex> lock(g_workersMutex);
+        std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
+        if (it != g_workers.end()) {
+            g_workers.erase(it);
+        }
+    } else {
+        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+        std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
+        if (it != g_limitedworkers.end()) {
+            g_limitedworkers.erase(it);
+        }
+    }
 }
 } // namespace Commonlibrary::Concurrent::WorkerModule
