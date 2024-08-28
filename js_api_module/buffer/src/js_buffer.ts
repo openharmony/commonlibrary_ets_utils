@@ -1605,7 +1605,7 @@ class Buffer {
     typeErrorCheck(sourceStart, ['number'], 'sourceStart');
     typeErrorCheck(sourceEnd, ['number'], 'sourceEnd');
     rangeErrorCheck(targetStart, 'targetStart', 0, UINT32MAX);
-    rangeErrorCheck(targetEnd, 'targetEnd', 0, UINT32MAX);
+    rangeErrorCheck(sourceStart, 'sourceStart', 0, UINT32MAX);
     rangeErrorCheck(targetEnd, 'targetEnd', 0, target.length);
     rangeErrorCheck(sourceEnd, 'sourceEnd', 0, this.length);
     if (sourceStart >= sourceEnd) {
@@ -1735,21 +1735,20 @@ class Buffer {
     }
   }
 
-  lastIndexOf(value: string | number | Buffer | Uint8Array, byteOffset: number = 0,
+  lastIndexOf(value: string | number | Buffer | Uint8Array, byteOffset: number = this.length,
     encoding: string = 'utf8'): number {
     typeErrorCheck(value, ['string', 'number', 'Buffer', 'Uint8Array'], 'value');
     if (typeof value === 'string') {
-      if (typeof byteOffset === 'string') {
-        encoding = byteOffset;
-      }
-      if (typeof byteOffset !== 'number' || byteOffset > this[lengthSymbol]) {
+      if (typeof byteOffset === null) {
         byteOffset = 0;
       }
       if (encoding === null) {
         encoding = 'utf8';
       }
       encoding = encodingTypeErrorCheck(encoding);
-      return this[bufferSymbol].indexOf(value, byteOffset, encoding, true);
+      let str = this.toString(encoding);
+      byteOffset = byteOffset < 0 ? str.length + byteOffset : byteOffset;
+      return str.lastIndexOf(value, byteOffset);
     } else if (typeof value === 'number') {
       value = +value;
       if (value < 0 || value > utils.eightBits) {
