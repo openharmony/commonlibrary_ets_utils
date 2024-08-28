@@ -3283,3 +3283,93 @@ HWTEST_F(NativeEngineTest, charDencodeAchieves001, testing::ext::TestSize.Level0
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
 }
+
+/**
+ * @tc.name: DecodeToStringNoStream001
+ * @tc.desc: Testing the ignoreBOM of TextDecoder.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DecodeToStringNoStream001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("DecodeToStringNoStream start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int>  inputVec;
+    int fatal = 1;
+    int ignoreBOM = 1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool res = false;
+    napi_value bomFlag = textDecoder.GetIgnoreBOM(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+    res = false;
+    napi_value fatalFlag = textDecoder.GetFatal(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+    bool iflag = false;
+    size_t byteLength = 6;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[8] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    textDecoder.DecodeToString(env, result, iflag);
+    res = false;
+    bomFlag = textDecoder.GetIgnoreBOM(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+    res = false;
+    fatalFlag = textDecoder.GetFatal(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: DecodeToStringWithStream001
+ * @tc.desc: Testing the ignoreBOM of TextDecoder.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DecodeToStringWithStream001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("DecodeToStringWithStream start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int>  inputVec;
+    int fatal = 1;
+    int ignoreBOM = 1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool res = false;
+    napi_value bomFlag = textDecoder.GetIgnoreBOM(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+    res = false;
+    napi_value fatalFlag = textDecoder.GetFatal(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+    bool iflag = true;
+    size_t byteLength = 6;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[8] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    textDecoder.DecodeToString(env, result, iflag);
+    res = false;
+    bomFlag = textDecoder.GetIgnoreBOM(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+    res = false;
+    fatalFlag = textDecoder.GetFatal(env);
+    napi_get_value_bool(env, bomFlag, &res);
+    ASSERT_TRUE(res);
+}
