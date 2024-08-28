@@ -70,6 +70,12 @@ public:
     static void CancelGroupTask(napi_env env);
     static void TriggerSeqRunner(napi_env env);
     static void UpdateGroupState(napi_env env);
+    static void ReleaseWorkerHandles(napi_env env);
+    static void DebuggerOnPostTask(napi_env env);
+    static void PerformTask(napi_env env);
+    static void NotifyHandleTaskResult(napi_env env);
+    static void TaskResultCallback(napi_env env);
+    static void HandleFunctionException(napi_env env);
 
     class ExceptionScope {
     public:

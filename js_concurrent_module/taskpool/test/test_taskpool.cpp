@@ -4257,3 +4257,17 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, callback, 1, argv2, &result);
     ASSERT_NE(result, nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest217, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    NativeEngineTest::ReleaseWorkerHandles(env);
+    NativeEngineTest::DebuggerOnPostTask(env);
+    NativeEngineTest::PerformTask(env);
+    NativeEngineTest::NotifyHandleTaskResult(env);
+    NativeEngineTest::TaskResultCallback(env);
+    NativeEngineTest::HandleFunctionException(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
