@@ -592,6 +592,8 @@ private:
 
     bool isMainThreadWorker_ = true;
 
+    std::atomic<bool> isTerminated_ = false;
+
     friend class WorkersTest;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule

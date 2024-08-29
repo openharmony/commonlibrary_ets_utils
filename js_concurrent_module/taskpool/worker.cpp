@@ -146,7 +146,7 @@ void Worker::HandleDebuggerTask(const uv_async_t* req)
 
 void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 {
-    if (uv_is_active(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
+    if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
         uv_async_send(debuggerOnPostTaskSignal_);
@@ -305,7 +305,7 @@ void Worker::ReleaseWorkerThreadContent()
 
 void Worker::NotifyExecuteTask()
 {
-    if (LIKELY(uv_is_active(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
+    if (LIKELY(performTaskSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
         uv_async_send(performTaskSignal_);
     }
 }
