@@ -203,7 +203,6 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
         argv[0] = buffer;
     }
     std::string name = Helper::NapiHelper::GetPrintString(env, argv[0]);
-    delete[] argv;
     if (name.empty()) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
                                         "Timer or Counter name must be not null.");
