@@ -52,10 +52,12 @@ public:
     static bool ReadInternalSubset();
     static bool ParseStartTag(napi_env env, std::string str);
     static bool ParseEndTagFunction(napi_env env, std::string str);
+    static bool ParseTagValueFunc(napi_env env, std::string str, char &c, size_t &start, std::string &result);
     static std::string DealNapiStrValueFunction(napi_env env, std::string pushStr);
     static int SplicNspFunction(napi_env env, std::string pushStr);
     static std::string SetNamespaceFunction(napi_env env, std::string prefix, const std::string &nsTemp);
     static std::string XmlSerializerErrorFunction(napi_env env);
+    static std::string DealLengthFuc(napi_env env, std::string str, size_t minimum, std::string pushStr);
     int TestGetColumnNumber(napi_env env);
     int TestGetLineNumber(napi_env env);
     std::string TestGetText(napi_env env);
@@ -65,6 +67,7 @@ public:
     bool TestParseEndTag(napi_env env);
     bool TestParseComment(napi_env env);
     TagEnum TestParseOneTagFunc(napi_env env);
+    static TagEnum ParseStartTagFuncTest(napi_env env, std::string str, bool xmldecl, bool throwOnResolveFailure);
     void TestParseEntityDecl(napi_env env);
 };
 
@@ -464,6 +467,7 @@ bool XmlTest::ParseStartTag(napi_env env, std::string str)
     xmlPullParser.defaultAttributes["lt;"]["<"] = "<";
     xmlPullParser.defaultAttributes["gt;"]["<"] = "gt;";
     xmlPullParser.defaultAttributes["gt;"]["<"] = ">";
+    xmlPullParser.ParseStartTag(false, false);
     xmlPullParser.ParseDeclaration();
     return true;
 }
@@ -479,6 +483,32 @@ bool XmlTest::ParseEndTagFunction(napi_env env, std::string str)
     xml.depth = 0;
     xml.ParseEndTag();
     return true;
+}
+
+bool XmlTest::ParseTagValueFunc(napi_env env, std::string str, char &c, size_t &start, std::string &result)
+{
+    OHOS::xml::XmlPullParser xml(env, str, "utf8");
+    xml.max_ = 100; // 100: max_ size
+    return xml.ParseTagValueFunc(c, true, TextEnum::ATTRI, start, result);
+}
+
+std::string XmlTest::DealLengthFuc(napi_env env, std::string str, size_t minimum, std::string pushStr)
+{
+    OHOS::xml::XmlPullParser xmlPullParser(env, str, "utf-8");
+    xmlPullParser.keyInfo_ = pushStr;
+    xmlPullParser.position_ = 10; // 10: position_ size
+    xmlPullParser.DealLength(minimum);
+    return xmlPullParser.keyInfo_;
+}
+
+TagEnum XmlTest::ParseStartTagFuncTest(napi_env env, std::string str, bool xmldecl, bool throwOnResolveFailure)
+{
+    OHOS::xml::XmlPullParser xmlPullParser(env, str, "utf-8");
+    size_t minimum = 10; // 10: minimum size
+    xmlPullParser.position_ = 100; // 100: position_ size
+    xmlPullParser.DealLength(minimum);
+    TagEnum res = xmlPullParser.ParseStartTagFunc(xmldecl, throwOnResolveFailure);
+    return res;
 }
 }
 #endif // TEST_XML_Hs

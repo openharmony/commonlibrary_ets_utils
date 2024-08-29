@@ -2186,11 +2186,29 @@ HWTEST_F(NativeEngineTest, ParseStartTagFuncDeal002, testing::ext::TestSize.Leve
  * @tc.desc: Test ParseStartTagFunc Func
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, ParseStartTagFunc, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, ParseStartTagFunc001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     OHOS::xml::XmlPullParser xmlPullParser(env, "", "utf-8");
     TagEnum res = xmlPullParser.ParseStartTagFunc(false, false);
+    ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR);
+}
+
+/* @tc.name: ParseStartTagFunc
+ * @tc.desc: Test ParseStartTagFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseStartTagFunc002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <title>Hello\rWorld\n</title>";
+    std::string str4 = "    <todo>Work\r\n</todo>";
+    std::string str5 = "    <mess><![CDATA[This is a \r\n CDATA section]]></mess>";
+    std::string str6 = "</note>";
+    std::string strXml = str1 + str2 + str3 + str4 + str5 + str6;
+    TagEnum res = XmlTest::ParseStartTagFuncTest(env, strXml, false, true);
     ASSERT_EQ(res, OHOS::xml::TagEnum::ERROR);
 }
 
@@ -2540,8 +2558,8 @@ HWTEST_F(NativeEngineTest, SetCDataFunction001, testing::ext::TestSize.Level0)
     size_t size = 2048;
     napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
     OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
-    xmlSerializer.SetCData("root SYSTEM");
-    std::string result = "<![CDATA[root SYSTEM]]>";
+    xmlSerializer.SetCData("root ]]> SYSTEM");
+    std::string result = "<![CDATA[root ]]]]><![CDATA[> SYSTEM]]>";
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), result.c_str());
 }
 
@@ -2683,6 +2701,121 @@ HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction001, testing::ext::TestSi
 {
     napi_env env = (napi_env)engine_;
     std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    std::string str3 = "    <title>Hello\rWorld\n</title>";
+    std::string str4 = "    <todo>Work\r\n</todo>";
+    std::string strXml = str1 + str3 + str4;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    std::string result = "";
+    ASSERT_STREQ(g_testStr.c_str(), result.c_str());
+}
+
+/* @tc.name: XmlParseTagValueFuncFunction002
+ * @tc.desc: Test ParseTagValueFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    char cRecv = static_cast<char>(10);
+    size_t intPut = 49;
+    std::string str2 = "Hello";
+    bool res = XmlTest::ParseTagValueFunc(env, str1, cRecv, intPut, str2);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: XmlParseTagValueFuncFunction003
+ * @tc.desc: Test ParseTagValueFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
+    char cRecv = static_cast<char>(60);
+    size_t intPut = 49;
+    std::string str2 = "World";
+    bool res = XmlTest::ParseTagValueFunc(env, str1, cRecv, intPut, str2);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: XmlParseTagValueFuncFunction004
+ * @tc.desc: Test ParseTagValueFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<]>ml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    std::string str2 = "<note importance=\"high\" logged=\"true\">";
+    std::string str3 = "    <title>Hello\rWorld\n</title>";
+    std::string str4 = "    <todo>Work\r\n</todo>";
+    std::string strXml = str1 + str2 + str3 + str4;
+    char cRecv = static_cast<char>(93);
+    size_t intPut = 60;
+    std::string str = "work";
+    bool res = XmlTest::ParseTagValueFunc(env, strXml, cRecv, intPut, str);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: XmlParseTagValueFuncFunction005
+ * @tc.desc: Test ParseTagValueFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    char cRecv = static_cast<char>(37);
+    size_t intPut = 60;
+    std::string str2 = "work";
+    bool res = XmlTest::ParseTagValueFunc(env, str1, cRecv, intPut, str2);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: XmlParseTagValueFuncFunction006
+ * @tc.desc: Test ParseTagValueFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>";
+    char cRecv = static_cast<char>(100);
+    size_t intPut = 70;
+    std::string str2 = "work";
+    bool res = XmlTest::ParseTagValueFunc(env, str1, cRecv, intPut, str2);
+    ASSERT_TRUE(res);
+}
+
+/* @tc.name: XmlParseTagValueFuncFunction007
+ * @tc.desc: Test ParseTagValueFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
     std::string str2 = "<note importance=\"high\" logged=\"true\">";
     std::string str3 = "    <title>Hello\rWorld\n</title>";
     std::string str4 = "    <todo>Work\r\n</todo>";
@@ -2736,4 +2869,225 @@ HWTEST_F(NativeEngineTest, ParseEndTagFunction001, testing::ext::TestSize.Level0
     std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
     bool res = XmlTest::ParseEndTagFunction(env, xml);
     ASSERT_TRUE(res);
+}
+
+/* @tc.name: ParseInnerAttriDeclFunction001
+ * @tc.desc: Test ParseInnerAttriDecl Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note";
+    std::string str2 = " [\n<!ATTLIST operand type src # \"dest\">]><note importance=\"high\" logged=\"true\">";
+    std::string strXml = str1 + str2;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(g_testStr.c_str(), "");
+}
+
+/* @tc.name: ParseInnerAttriDeclFunction002
+ * @tc.desc: Test ParseInnerAttriDecl Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note";
+    std::string str2 = " [\n<!ATTLIST operand type src #R \"dest\">]><note importance=\"high\" logged=\"true\">";
+    std::string strXml = str1 + str2;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(g_testStr.c_str(), "");
+}
+
+/* @tc.name: ParseInnerAttriDeclFunction003
+ * @tc.desc: Test ParseInnerAttriDecl Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note";
+    std::string str2 = " [\n<!ATTLIST operand type src #F>>>>\"dest\">]><note importance=\"high\" logged=\"true\">";
+    std::string strXml = str1 + str2;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(g_testStr.c_str(), "");
+}
+
+/* @tc.name: ParseInnerAttriDeclFunction004
+ * @tc.desc: Test ParseInnerAttriDecl Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note";
+    std::string str2 = " [\n<!ATTLIST operand type src #III>>>>\"dest\">]><note importance=\"high\" logged=\"true\">";
+    std::string strXml = str1 + str2;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(g_testStr.c_str(), "");
+}
+
+/* @tc.name: ParseInnerAttriDeclFuncFunction001
+ * @tc.desc: Test ParseInnerAttriDeclFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFuncFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note";
+    std::string str2 = " [\n<!ATTLIST operand type src #III>>>>()\"dest\">]>";
+    std::string str3 = "<note importance=\"high\" logged=\"true\">";
+    std::string strXml = str1 + str2 + str3;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(g_testStr.c_str(), "");
+}
+
+/* @tc.name: ParseInnerAttriDeclFuncFunction002
+ * @tc.desc: Test ParseInnerAttriDeclFunc Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFuncFunction002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string str1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note";
+    std::string str2 = " [\n<!ATTLIST operand type src #III>>>>(|)\"dest\">]>";
+    std::string str3 = "<note importance=\"high\" logged=\"true\">";
+    std::string strXml = str1 + str2 + str3;
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* key1 = "supportDoctype";
+    const char* key2 = "ignoreNameSpace";
+    const char* key3 = "tokenValueCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value value1 = nullptr;
+    napi_value value2 = nullptr;
+    napi_get_boolean(env, true, &value1);
+    napi_get_boolean(env, true, &value2);
+    napi_value value3 = nullptr;
+    std::string cbName = "Method";
+    napi_create_function(env, cbName.c_str(), cbName.size(), Method, nullptr, &value3);
+    napi_set_named_property(env, object, key1, value1);
+    napi_set_named_property(env, object, key2, value2);
+    napi_set_named_property(env, object, key3, value3);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options);
+    ASSERT_STREQ(g_testStr.c_str(), "");
+}
+
+/* @tc.name: DealLengthFunction001
+ * @tc.desc: Test DealLength Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealLengthFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    size_t minimum = 10;
+    std::string pushStr = "<note importance=\"high\" logged=\"true\">";
+    std::string result = XmlTest::DealLengthFuc(env, xml, minimum, pushStr);
+    std::string outPut = "<note importance=\"high\" logged=\"true\"><?xml vers";
+    ASSERT_STREQ(result.c_str(), outPut.c_str());
 }
