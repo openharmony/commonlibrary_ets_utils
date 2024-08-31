@@ -107,10 +107,7 @@ bool GenerateUuid(unsigned char *data, int32_t size)
     if (memcpy_s(data, size, buf, size) != EOK) {
         return false;
     }
-    int32_t len = 0;
-    while (len < size) {
-        len += RAND_priv_bytes(data + len, 1);
-    }
+    RAND_priv_bytes(data, size);
     data[HEX_SIX_FLG] = (data[HEX_SIX_FLG] & 0x0F) | 0x40; // 0x0F,0x40 Operate the mark
     int m = 0x8;    // Upper of numerical range
     int n = 0xb;    // down of numerical range
