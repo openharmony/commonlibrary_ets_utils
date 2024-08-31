@@ -1743,7 +1743,11 @@ namespace OHOS::Url {
         std::string reStr = "";
         size_t reSize = wcstombs(rePtr, winput.c_str(), 0) + 1;
         if (reSize > 0) {
-            rePtr = new char[reSize];
+            rePtr = new (std::nothrow) char[reSize];
+            if (rePtr == nullptr) {
+                HILOG_ERROR("URLSearchParams:: rePtr is nullptr");
+                return reStr;
+            }
             if (memset_s(rePtr, reSize, 0, reSize) != EOK) {
                 HILOG_ERROR("ToUSVString memset_s failed");
                 delete[] rePtr;

@@ -119,7 +119,11 @@ namespace OHOS::Url {
                     return nullptr;
                 }
                 std::string input = type;
-                object = new URL(input);
+                object = new (std::nothrow) URL(input);
+                if (object == nullptr) {
+                    HILOG_ERROR("UrlStructor:: object is nullptr");
+                    return nullptr;
+                }
             } else {
                 HILOG_INFO("Parameter error");
             }
@@ -503,7 +507,11 @@ namespace OHOS::Url {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
-        auto object = new URLSearchParams();
+        auto object = new (std::nothrow) URLSearchParams();
+        if (object == nullptr) {
+            HILOG_ERROR("SeachParamsConstructor:: object is nullptr");
+            return nullptr;
+        }
         napi_wrap(
             env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {

@@ -493,7 +493,7 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
         HILOG_ERROR("buffer::length is illegal");
         return "";
     }
-    uint8_t *data = new uint8_t[length];
+    uint8_t *data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
         HILOG_ERROR("buffer::data is NULL");
         return "";

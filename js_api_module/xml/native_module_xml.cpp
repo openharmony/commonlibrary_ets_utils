@@ -50,7 +50,11 @@ namespace OHOS::xml {
         }
 
         if (argc == 1) {
-            object = new XmlSerializer(reinterpret_cast<char*>(data), iLength);
+            object = new (std::nothrow) XmlSerializer(reinterpret_cast<char*>(data), iLength);
+            if (object == nullptr) {
+                HILOG_ERROR("XmlSerializerConstructor:: object is nullptr");
+                return nullptr;
+            }
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             std::string encoding = "";
             napi_valuetype valuetype;
@@ -59,7 +63,11 @@ namespace OHOS::xml {
             napi_status status = napi_ok;
             status = XmlSerializer::DealNapiStrValue(env, args[1], encoding);
             if (status == napi_ok) {
-                object = new XmlSerializer(reinterpret_cast<char*>(data), iLength, encoding);
+                object = new (std::nothrow) XmlSerializer(reinterpret_cast<char*>(data), iLength, encoding);
+                if (object == nullptr) {
+                    HILOG_ERROR("XmlSerializerConstructor:: object is nullptr");
+                    return nullptr;
+                }
             }
         }
         napi_wrap(
@@ -137,13 +145,21 @@ namespace OHOS::xml {
         if (data) {
             std::string strEnd = DealCdata(data, len);
             if (argc == 1) {
-                object = new XmlPullParser(env, strEnd, "utf-8");
+                object = new (std::nothrow) XmlPullParser(env, strEnd, "utf-8");
+                if (object == nullptr) {
+                    HILOG_ERROR("XmlPullParserConstructor:: object is nullptr");
+                    return nullptr;
+                }
             } else if (argc == 2) { // 2:When the input parameter is set to 2
                 NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
                 NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
                 std::string strEncoding = "";
                 XmlSerializer::DealNapiStrValue(env, args[1], strEncoding);
-                object = new XmlPullParser(env, strEnd, strEncoding);
+                object = new (std::nothrow) XmlPullParser(env, strEnd, strEncoding);
+                if (object == nullptr) {
+                    HILOG_ERROR("XmlPullParserConstructor:: object is nullptr");
+                    return nullptr;
+                }
             }
         }
         napi_wrap(
