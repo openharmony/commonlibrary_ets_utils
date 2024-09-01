@@ -80,6 +80,7 @@ private:
     static napi_value FinallyCallback(napi_env env, napi_callback_info info);
     static void TimeoutCallback(uv_timer_t *handle);
     static void DeallocateTimeoutTimerCallback(uv_handle_t* handle);
+    static void EnvCleanUp(void* arg);
 
     AsyncLock* lock_;
     tid_t tid_;
@@ -92,6 +93,7 @@ private:
     napi_async_work work_;
     uv_timer_t *timeoutTimer_;
     bool timeoutActive_;
+    std::mutex lockRequestMutex_;
 };
 
 struct RequestTimeoutData {
