@@ -1723,6 +1723,7 @@ HWTEST_F(NativeEngineTest, decoderUtf8BOM002, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, decoderUtf8BOM003, testing::ext::TestSize.Level0)
 {
+    HILOG_INFO("decoderUtf8BOM003 start");
     napi_env env = (napi_env)engine_;
     std::vector<int> inputVec;
     int fatal = -1;
@@ -1749,7 +1750,7 @@ HWTEST_F(NativeEngineTest, decoderUtf8BOM003, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, decoderUtf8BOM004, testing::ext::TestSize.Level0)
 {
-    HILOG_INFO("decoderUtf8BOM001 start");
+    HILOG_INFO("decoderUtf8BOM004 start");
     napi_env env = (napi_env)engine_;
     std::vector<int>  inputVec;
     int fatal = 0;
@@ -1793,7 +1794,190 @@ HWTEST_F(NativeEngineTest, decoderUtf8BOM004, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, decoderUtf8BOM005, testing::ext::TestSize.Level0)
 {
-    HILOG_INFO("decoderUtf8BOM001 start");
+    HILOG_INFO("decoderUtf8BOM005 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = 0;
+    int ignoreBOM = 0;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = true;
+    size_t byteLength = 11;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[11] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43, 0x31, 0x32, 0x33, 0x34, 0x35};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "\uFEFFABC12345");
+    if (ch != nullptr) {
+        delete[] ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderUtf8-BOM006
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM006 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = 0;
+    int ignoreBOM = 0;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = true;
+    size_t byteLength = 12;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[12] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43, 0x61, 0x62, 0x63, 0x31, 0x32, 0x33};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "\uFEFFABCabc123");
+    if (ch != nullptr) {
+        delete[] ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderUtf8-BOM007
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM007, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM007 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int> inputVec;
+    int fatal = 0;
+    int ignoreBOM = 0;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = true;
+    size_t byteLength = 13;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[13] = {0xEF, 0xBB, 0xBF, 0x41, 0x42, 0x43, 0x61, 0x62, 0x63, 0x31, 0x32, 0x33, 0x33};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "\uFEFFABCabc1233");
+    if (ch != nullptr) {
+        delete[] ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderUtf8-BOM008
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM008, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM008 start");
+    napi_env env = (napi_env)engine_;
+    std::vector<int>  inputVec;
+    int fatal = 0;
+    int ignoreBOM = 1;
+    inputVec.push_back(fatal);
+    inputVec.push_back(ignoreBOM);
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, inputVec);
+    bool iflag = false;
+    size_t byteLength = 200;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[200] = {0xEF, 0xBB, 0xBF};
+    for (size_t i = 3; i < 200; ++i) {
+        arr[i] = static_cast<char>('A' + (i - 3) % 26);
+    }
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    std::string expectedStr;
+    for (size_t i = 3; i < 200; ++i) {
+        expectedStr += static_cast<char>('A' + (i - 3) % 26);
+    }
+    ASSERT_EQ(str, expectedStr);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderUtf8-BOM009
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM009, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8BOM009 start");
     napi_env env = (napi_env)engine_;
     std::vector<int>  inputVec;
     int fatal = 0;
