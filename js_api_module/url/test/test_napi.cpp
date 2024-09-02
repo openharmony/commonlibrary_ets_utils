@@ -2406,7 +2406,7 @@ HWTEST_F(NativeEngineTest, testUrlutilities034, testing::ext::TestSize.Level0)
     flags.set(static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT0));
     std::string input = "//::/";
     OHOS::Url::UrlData urlinfo;
-    AnalysisNoDefaultProtocol(input, urlinfo, flags);
+    OHOS::Url::AnalysisNoDefaultProtocol(input, urlinfo, flags);
     ASSERT_STREQ(input.c_str(), "//::/");
 }
 
@@ -2532,4 +2532,29 @@ HWTEST_F(NativeEngineTest, testUrlutilities047, testing::ext::TestSize.Level0)
     urlData.path.push_back(s4);
     std::string rst = OHOS::Url::BasePathToStr(urlData);
     ASSERT_STREQ(rst.c_str(), "www/aaa/bbb/ccc");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities048, testing::ext::TestSize.Level0)
+{
+    std::vector<std::string> ipv6;
+    std::string str = "00ccccc";
+    ipv6.push_back(str);
+    OHOS::Url::RemoveLeadingZeros(ipv6);
+    ASSERT_STREQ(str.c_str(), "00ccccc");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities049, testing::ext::TestSize.Level0)
+{
+    std::string input = "//@/aabab";
+    OHOS::Url::UrlData urlinfo;
+    std::bitset<static_cast<size_t>(OHOS::Url::BitsetStatusFlag::BIT_STATUS_11)> flags;
+    OHOS::Url::AnalysisNoDefaultProtocol(input, urlinfo, flags);
+    ASSERT_STREQ(input.c_str(), "//@/aabab");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities050, testing::ext::TestSize.Level0)
+{
+    std::string input = "99::1080:8:800:200C:417A";
+    OHOS::Url::FormatIpv6(input);
+    ASSERT_STREQ(input.c_str(), "99:0:0:1080:8:800:200C:417A");
 }
