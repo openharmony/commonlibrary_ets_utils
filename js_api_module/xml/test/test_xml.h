@@ -34,12 +34,12 @@ public:
     static std::string XmlPullParserError(napi_env env);
     static TagEnum DealExclamationGroup(napi_env env, std::string xml);
     static TagEnum DealLtGroup(napi_env env);
-    static TagEnum ParseTagType(napi_env env);
+    static TagEnum ParseTagType(napi_env env, std::string str, int apiVersion);
     static std::string SkipText(napi_env env, std::string strXml, std::string str);
     static std::string ParseNameInner(napi_env env, size_t start);
     static std::string ParseName(napi_env env);
     static void ParseEntityFunc(napi_env env, std::string out, std::string sysInfo, bool flag, TextEnum textEnum);
-    static std::string ParseEntity(napi_env env);
+    static std::string ParseEntity(napi_env env, bool relaxed);
     static size_t ParseTagValueInner(napi_env env, size_t &start,
                                      std::string &result, size_t position, std::string xmlStr);
     static std::string ParseTagValue(napi_env env, char delimiter, bool resolveEntities, TextEnum textEnum, size_t max);
@@ -58,6 +58,7 @@ public:
     static std::string SetNamespaceFunction(napi_env env, std::string prefix, const std::string &nsTemp);
     static std::string XmlSerializerErrorFunction(napi_env env);
     static std::string DealLengthFuc(napi_env env, std::string str, size_t minimum, std::string pushStr);
+    int SkipCharFunction(napi_env env, std::string str, char expected);
     int TestGetColumnNumber(napi_env env);
     int TestGetLineNumber(napi_env env);
     std::string TestGetText(napi_env env);
@@ -162,13 +163,14 @@ TagEnum XmlTest::DealLtGroup(napi_env env)
     return xmlPullParser.DealLtGroup();
 }
 
-TagEnum XmlTest::ParseTagType(napi_env env)
+TagEnum XmlTest::ParseTagType(napi_env env, std::string str, int apiVersion)
 {
     std::string strXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><todo>Work</todo>";
     OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     xmlPullParser.bStartDoc_ = false;
     xmlPullParser.max_ = 0;
-    xmlPullParser.strXml_ = "%";
+    xmlPullParser.strXml_ = str;
+    xmlPullParser.apiVersion_ = apiVersion;
     return xmlPullParser.ParseTagType(false);
 }
 
@@ -304,14 +306,14 @@ void XmlTest::ParseEntityFunc(napi_env env, std::string out, std::string sysInfo
     xmlPullParser.ParseEntityFunc(0, out, true, textEnum);
 }
 
-std::string XmlTest::ParseEntity(napi_env env)
+std::string XmlTest::ParseEntity(napi_env env, bool relaxed)
 {
     std::string strXml = "Wor";
     std::string out = "W#13434";
     OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
     xmlPullParser.position_ = 0;
     xmlPullParser.max_ = 1;
-    xmlPullParser.relaxed = true;
+    xmlPullParser.relaxed = relaxed;
     xmlPullParser.ParseEntity(out, true, true, TextEnum::ENTITY_DECL);
     return xmlPullParser.XmlPullParserError();
 }
@@ -509,6 +511,15 @@ TagEnum XmlTest::ParseStartTagFuncTest(napi_env env, std::string str, bool xmlde
     xmlPullParser.DealLength(minimum);
     TagEnum res = xmlPullParser.ParseStartTagFunc(xmldecl, throwOnResolveFailure);
     return res;
+}
+
+int XmlTest::SkipCharFunction(napi_env env, std::string str, char expected)
+{
+    OHOS::xml::XmlPullParser xmlPullParser(env, str, "utf-8");
+    xmlPullParser.DealLength(666); // 666: minimum size
+    xmlPullParser.position_ = 666; // 666: position_ size
+    xmlPullParser.SkipChar(expected);
+    return xmlPullParser.PriorDealChar();
 }
 }
 #endif // TEST_XML_Hs
