@@ -605,7 +605,7 @@ void NativeEngineTest::CheckTask(napi_env env)
     Task* task1 = new Task();
     task1->taskId_ = reinterpret_cast<uint64_t>(task1);
     taskManager.StoreTask(task->taskId_, task);
-    taskManager.CheckTask(task1);
+    taskManager.CheckTask(task1->taskId_);
 
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     TaskGroup* group = new TaskGroup();

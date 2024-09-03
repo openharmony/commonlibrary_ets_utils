@@ -1390,16 +1390,15 @@ bool TaskManager::PostTask(std::function<void()> task, const char* taskName)
 }
 #endif
 
-bool TaskManager::CheckTask(Task* task)
+bool TaskManager::CheckTask(uint64_t taskId)
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
-    for (auto& it: tasks_) {
-        if (it.second == task) {
-            return true;
-        }
+    auto item = tasks_.find(taskId);
+    if (item == tasks_.end()) {
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 // ----------------------------------- TaskGroupManager ----------------------------------------
