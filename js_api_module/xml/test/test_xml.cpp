@@ -1795,7 +1795,7 @@ HWTEST_F(NativeEngineTest, DealExclamationGroup001, testing::ext::TestSize.Level
     ASSERT_EQ(tEnum, TagEnum::ERROR);
 }
 
-/* @tc.name: DealLtGroup
+/* @tc.name: DealLtGroup001
  * @tc.desc: Test DealLtGroup Func
  * @tc.type: FUNC
  */
@@ -1804,8 +1804,39 @@ HWTEST_F(NativeEngineTest, DealLtGroup001, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     TagEnum tEnum = XmlTest::DealLtGroup(env);
     ASSERT_EQ(tEnum, TagEnum::END_TAG);
+    std::string str1 = "%";
+    int apiVersion = 13; // 13: apiVersion
+    tEnum = XmlTest::ParseTagType(env, str1, apiVersion);
+    ASSERT_EQ(tEnum, TagEnum::TEXT);
+}
 
-    tEnum = XmlTest::ParseTagType(env);
+/* @tc.name: DealLtGroup002
+ * @tc.desc: Test DealLtGroup Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealLtGroup002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TagEnum tEnum = XmlTest::DealLtGroup(env);
+    ASSERT_EQ(tEnum, TagEnum::END_TAG);
+    std::string str1 = "&";
+    int apiVersion = 13; // 13: apiVersion
+    tEnum = XmlTest::ParseTagType(env, str1, apiVersion);
+    ASSERT_EQ(tEnum, TagEnum::ENTITY_REFERENCE);
+}
+
+/* @tc.name: DealLtGroup003
+ * @tc.desc: Test DealLtGroup Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealLtGroup003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TagEnum tEnum = XmlTest::DealLtGroup(env);
+    ASSERT_EQ(tEnum, TagEnum::END_TAG);
+    std::string str1 = "&";
+    int apiVersion = 11; // 11: apiVersion
+    tEnum = XmlTest::ParseTagType(env, str1, apiVersion);
     ASSERT_EQ(tEnum, TagEnum::TEXT);
 }
 
@@ -2062,15 +2093,28 @@ HWTEST_F(NativeEngineTest, ParseEntityFunc, testing::ext::TestSize.Level0)
     XmlTest::ParseEntityFunc(env, out, "info", true, TextEnum::TEXT);
 }
 
-/* @tc.name: ParseEntity
+/* @tc.name: ParseEntity001
  * @tc.desc: Test ParseEntity Func
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, ParseEntity, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, ParseEntity001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    std::string res = XmlTest::ParseEntity(env);
+    bool relaxed = true;
+    std::string res = XmlTest::ParseEntity(env, relaxed);
     ASSERT_STREQ(res.c_str(), "Should not be reached");
+}
+
+/* @tc.name: ParseEntity002
+ * @tc.desc: Test ParseEntity Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ParseEntity002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    bool relaxed = false;
+    std::string res = XmlTest::ParseEntity(env, relaxed);
+    ASSERT_STREQ(res.c_str(), "unterminated entity ref");
 }
 
 /* @tc.name: ParseTagValueInner
@@ -3090,4 +3134,18 @@ HWTEST_F(NativeEngineTest, DealLengthFunction001, testing::ext::TestSize.Level0)
     std::string result = XmlTest::DealLengthFuc(env, xml, minimum, pushStr);
     std::string outPut = "<note importance=\"high\" logged=\"true\"><?xml vers";
     ASSERT_STREQ(result.c_str(), outPut.c_str());
+}
+
+/* @tc.name: SkipCharFunction001
+ * @tc.desc: Test SkipCharFunction Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SkipCharFunction001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    char expected = static_cast<char>(10);
+    OHOS::xml::XmlTest testXml;
+    int output = testXml.SkipCharFunction(env, xml, expected);
+    ASSERT_EQ(output, 63);
 }
