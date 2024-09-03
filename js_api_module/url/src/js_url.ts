@@ -736,7 +736,8 @@ class URL {
     return this.search_;
   }
   set search(query) {
-    const query_ = encodeURI(query);
+    const query_ = customEncodeURI(query,
+      {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%5E': '^', '%25': '%'});
     this.c_info.search = query_;
     this.search_ = this.c_info.search;
     this.searchParamsClass_.updateParams(this.search_);
