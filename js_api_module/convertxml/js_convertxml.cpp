@@ -258,8 +258,8 @@ namespace OHOS::Xml {
             if (curContent != nullptr) {
                 if (pNode->children != nullptr) {
                     curNode = pNode->children;
-                    const std::string parentName = apiFlag_ ? reinterpret_cast<const char*>(pNode->name): "";
-                    GetXMLInfo(env, curNode, elementsObject, 1, parentName);
+                    const std::string parentNameTemp = apiFlag_ ? reinterpret_cast<const char*>(pNode->name) : "";
+                    GetXMLInfo(env, curNode, elementsObject, 1, parentNameTemp);
                     bFlag = true;
                 } else {
                     SetXmlElementType(env, pNode, elementsObject, bFlag);
