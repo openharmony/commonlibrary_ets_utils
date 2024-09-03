@@ -213,6 +213,7 @@ void XmlTest::TestParseDeclaration(napi_env env)
     xml.attributes.push_back("");
     xml.attributes.push_back("");
     xml.attributes.push_back("");
+    xml.attributes.push_back("1.0");
     xml.ParseDeclaration();
 }
 
