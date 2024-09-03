@@ -237,8 +237,8 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
-            HILOG_ERROR("worker:: creat worker error");
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "creat worker error");
+            HILOG_ERROR("worker:: create worker error");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
             return nullptr;
         }
         g_limitedworkers.push_back(worker);
@@ -259,8 +259,8 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
-            HILOG_ERROR("worker:: creat worker error");
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "creat worker error");
+            HILOG_ERROR("worker:: create worker error");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
             return nullptr;
         }
         g_workers.push_back(worker);
