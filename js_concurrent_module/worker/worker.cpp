@@ -2302,7 +2302,7 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
     std::string listener(type);
     auto iter = parentPortEventListeners_.find(listener);
     if (iter == parentPortEventListeners_.end()) {
-        HILOG_INFO("worker:: there is no listener for type %{public}s in worker thread", type);
+        HILOG_DEBUG("worker:: there is no listener for type %{public}s in worker thread", type);
         return;
     }
 
