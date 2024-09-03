@@ -591,15 +591,15 @@ class URL {
           this.host_ = encodeURI(nativeUrl.host);
         }
         this.hash_ = customEncodeURI(nativeUrl.hash, 
-            {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
+          {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
         this.protocol_ = nativeUrl.protocol;
-        this.pathname_ = customEncodeURI(nativeUrl.pathname, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
+        this.pathname_ = customEncodeURI(nativeUrl.pathname, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
         this.port_ = nativeUrl.port;
         this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
         this.searchParamsClass_ = new URLSearchParams(customEncodeURI(this.search_,
-            {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
+          {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
         this.URLParamsClass_ = new URLParams(customEncodeURI(this.search_,
-            {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
+          {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
         this.URLParamsClass_.parentUrl = this;
         this.searchParamsClass_.parentUrl = this;
         this.setHref();
@@ -644,15 +644,15 @@ class URL {
         urlHelper.host_ = encodeURI(nativeUrl.host);
       }
       urlHelper.hash_ = customEncodeURI(nativeUrl.hash,
-        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
+        {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
       urlHelper.protocol_ = nativeUrl.protocol;
-      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
+      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
       urlHelper.port_ = nativeUrl.port;
       urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
       urlHelper.searchParamsClass_ = new URLSearchParams(customEncodeURI(urlHelper.search_,
-        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
+        {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
       urlHelper.URLParamsClass_ = new URLParams(customEncodeURI(urlHelper.search_,
-        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%5E': '^',}));
+        {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
       urlHelper.URLParamsClass_.parentUrl = urlHelper;
       urlHelper.searchParamsClass_.parentUrl = urlHelper;
       urlHelper.setHref();
@@ -727,7 +727,7 @@ class URL {
   }
   set hash(fragment) {
     const fragment_ = customEncodeURI(fragment,
-      {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
+      {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
     this.c_info.hash = fragment_;
     this.hash_ = this.c_info.hash;
     this.setHref();
@@ -799,9 +799,9 @@ class URL {
         this.host_ = encodeURI(this.c_info.host);
       }
       this.hash_ = customEncodeURI(this.c_info.hash,
-        {'%25': '%', '%7C': '|','%5B': '[','%5D': ']', '%7B': '{', '%7D': '}', '%60': '`',});
+        {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
       this.protocol_ = this.c_info.protocol;
-      this.pathname_ = customEncodeURI(this.c_info.pathname, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
+      this.pathname_ = customEncodeURI(this.c_info.pathname, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
       this.port_ = this.c_info.port;
       this.origin_ = this.protocol_ + '//' + this.host_;
       this.searchParamsClass_.updateParams(this.search_);
@@ -814,7 +814,7 @@ class URL {
     return this.pathname_;
   }
   set pathname(path) {
-    const path_ = customEncodeURI(path, {'%25': '%', '%7C': '|','%5B': '[','%5D': ']',});
+    const path_ = customEncodeURI(path, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
     this.c_info.pathname = path_;
     this.pathname_ = this.c_info.pathname;
     this.setHref();
