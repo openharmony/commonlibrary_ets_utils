@@ -647,7 +647,6 @@ namespace OHOS::Util {
             return nullptr;
         }
         object->SetOrgEncoding(orgEncoding);
-        object->SetApiIsolated(env);
         napi_wrap(
             env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {

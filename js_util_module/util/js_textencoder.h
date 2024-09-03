@@ -25,7 +25,6 @@
 
 namespace OHOS::Util {
     constexpr const int32_t API_VERSION_MOD = 100; // 100: api version mod
-    constexpr const int32_t API13 = 13; // 13: api version
     class TextEncoder {
     public:
         /**
@@ -67,20 +66,6 @@ namespace OHOS::Util {
         void SetOrgEncoding(std::string orgEncoding)
         {
             orgEncoding_ = orgEncoding;
-        }
-
-        void SetApiIsolated(napi_env env)
-        {
-            if (encoding_ != "utf-16be" && encoding_ != "utf-16le") {
-                return;
-            }
-            NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
-            if (engine != nullptr) {
-                int32_t currentApi = engine->GetApiVersion() % API_VERSION_MOD;
-                if (currentApi >= API13) {
-                    encoding_ = encoding_ == "utf-16be" ? "utf-16le" : "utf-16be";
-                }
-            }
         }
     private:
         std::string encoding_ {};

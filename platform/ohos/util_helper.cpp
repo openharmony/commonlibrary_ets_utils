@@ -116,7 +116,7 @@ namespace Commonlibrary::Platform {
 
     void EncodeConversion(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens, std::string encoding)
     {
-        if (encoding == "utf-16be") {
+        if (encoding == "utf-16le") {
             size_t  outLen = 0;
             void *data = nullptr;
             std::u16string u16Str = EncodeUtf16BE(env, src);
@@ -127,7 +127,7 @@ namespace Commonlibrary::Platform {
                 HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
                 return;
             }
-        } else if (encoding == "utf-16le") {
+        } else if (encoding == "utf-16be") {
             size_t  outLen = 0;
             void *data = nullptr;
             std::u16string u16BEStr = EncodeUtf16BE(env, src);
