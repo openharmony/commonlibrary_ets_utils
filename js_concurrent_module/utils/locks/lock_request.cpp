@@ -48,6 +48,7 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
     NativeEngine *engine = reinterpret_cast<NativeEngine *>(env);
     engine->BuildJsStackTrace(creationStacktrace_);
 
+    napi_add_env_cleanup_hook(env_, EnvCleanUp, this);
     napi_value resourceName;
     napi_create_string_utf8(env, "AsyncLock::AsyncCallback", NAPI_AUTO_LENGTH, &resourceName);
     napi_status status = napi_create_async_work(
@@ -55,6 +56,18 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
     if (status != napi_ok) {
         HILOG_FATAL("Internal error: cannot create async work");
     }
+}
+
+void LockRequest::EnvCleanUp(void *arg)
+{
+    LockRequest *lockRequest = reinterpret_cast<LockRequest *>(arg);
+    std::unique_lock<std::mutex> guard(lockRequest->lockRequestMutex_);
+    napi_cancel_async_work(lockRequest->env_, lockRequest->work_);
+    napi_delete_async_work(lockRequest->env_, lockRequest->work_);
+    napi_delete_reference(lockRequest->env_, lockRequest->callback_);
+    lockRequest->env_ = nullptr;
+    lockRequest->work_ = nullptr;
+    lockRequest->callback_ = nullptr;
 }
 
 void LockRequest::DeallocateTimeoutTimerCallback(uv_handle_t* handle)
@@ -73,6 +86,8 @@ void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_sta
 {
     LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
     napi_delete_async_work(env, lockRequest->work_);
+    napi_remove_env_cleanup_hook(env, EnvCleanUp, lockRequest);
+    lockRequest->work_ = nullptr;
     lockRequest->CallCallback();
 }
 
@@ -91,7 +106,15 @@ napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
 
 void LockRequest::CallCallbackAsync()
 {
+    lockRequestMutex_.lock();
+    if (work_ == nullptr) {
+        lockRequestMutex_.unlock();
+        HILOG_ERROR("Callback is called after env cleaned up");
+        lock_->CleanUpLockRequestOnCompletion(this);
+        return;
+    }
     napi_status status = napi_queue_async_work(env_, work_);
+    lockRequestMutex_.unlock();
     if (status != napi_ok) {
         HILOG_FATAL("Internal error: cannot queue async work");
     }
