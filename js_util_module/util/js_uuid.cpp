@@ -196,7 +196,7 @@ napi_value GetBinaryUUID(napi_env env, bool entropyCache)
 
 napi_value DoParseUUID(napi_env env, napi_value src)
 {
-    UUID uuid;
+    size_t outLen = 16; // 16: the length of UUID
     std::string buffer = "";
     size_t bufferSize = 0;  // 0: initialization
     napi_status status = napi_ok;
@@ -211,12 +211,11 @@ napi_value DoParseUUID(napi_env env, napi_value src)
         HILOG_ERROR("can not get src value");
         return nullptr;
     }
-    void *data = reinterpret_cast<void*>(uuid.elements);
+    void *data = nullptr;
     napi_value arrayBuffer = nullptr;
-    size_t outLen = sizeof(uuid.elements);
     napi_create_arraybuffer(env, outLen, &data, &arrayBuffer);
     unsigned char *count = static_cast<unsigned char*>(data);
-    while (!buffer.empty()) {
+    for (size_t i = 0; !buffer.empty() && i < outLen; i++) {
         *count = ConvertBits(buffer);
         count++;
     }
