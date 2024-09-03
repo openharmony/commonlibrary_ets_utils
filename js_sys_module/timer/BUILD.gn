@@ -53,7 +53,7 @@ ohos_shared_library("timer") {
   }
 
   if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {
-    external_deps += [ "ace_engine:ace_container_scope" ]
+    external_deps += [ "napi:ace_container_scope" ]
     defines += [ "ENABLE_CONTAINER_SCOPE" ]
   }
 
@@ -93,7 +93,7 @@ ohos_source_set("timer_static") {
   defines = []
 
   configs = [ "$napi_root:ace_napi_config" ]
-  external_deps = []
+
   if (is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",
@@ -115,11 +115,7 @@ ohos_source_set("timer_static") {
   }
 
   if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {
-    if (is_arkui_x) {
-      deps += [ "$ace_root/frameworks/core:ace_container_scope_static" ]
-    } else {
-      external_deps += [ "ace_engine:ace_container_scope" ]
-    }
+    deps += [ "$napi_root:ace_container_scope_static" ]
     defines += [ "ENABLE_CONTAINER_SCOPE" ]
   }
 
