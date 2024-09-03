@@ -54,6 +54,15 @@ static constexpr uint32_t TRIGGER_INTERVAL = 30000; // 30000: 30s
 static constexpr uint32_t SHRINK_STEP = 4; // 4: try to release 4 threads every time
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
 
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
+    {Priority::IDLE, OHOS::AppExecFwk::EventQueue::Priority::IDLE},
+    {Priority::LOW, OHOS::AppExecFwk::EventQueue::Priority::LOW},
+    {Priority::MEDIUM, OHOS::AppExecFwk::EventQueue::Priority::HIGH},
+    {Priority::HIGH, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE},
+};
+#endif
+
 // ----------------------------------- TaskManager ----------------------------------------
 TaskManager& TaskManager::GetInstance()
 {
@@ -936,7 +945,7 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
         auto onCallbackTask = [callbackInfo]() {
             TaskPool::ExecuteCallbackTask(callbackInfo.get());
         };
-        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask");
+        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask", worker->priority_);
     } else {
         callbackInfo->onCallbackSignal->data = callbackInfo.get();
         uv_async_send(callbackInfo->onCallbackSignal);
@@ -1384,9 +1393,9 @@ void TaskManager::UpdateSystemAppFlag()
 #endif
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-bool TaskManager::PostTask(std::function<void()> task, const char* taskName)
+bool TaskManager::PostTask(std::function<void()> task, const char* taskName, Priority priority)
 {
-    return mainThreadHandler_->PostTask(task, taskName, 0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+    return mainThreadHandler_->PostTask(task, taskName, 0, TASK_EVENTHANDLER_PRIORITY_MAP.at(priority));
 }
 #endif
 
