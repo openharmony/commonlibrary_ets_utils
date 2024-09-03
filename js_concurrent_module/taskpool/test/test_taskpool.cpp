@@ -1019,7 +1019,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest073, testing::ext::TestSize.Level0)
     Task* task = new Task();
     auto id = reinterpret_cast<uint64_t>(task);
     taskManager.StoreTask(id, task);
-    bool res = taskManager.CheckTask(task);
+    bool res = taskManager.CheckTask(id);
     ASSERT_TRUE(res == true);
 }
 

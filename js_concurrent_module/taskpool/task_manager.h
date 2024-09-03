@@ -147,7 +147,7 @@ public:
         return globalEnableFfrtFlag_ || (isSystemApp_ && !disableFfrtFlag_);
     }
 
-    bool CheckTask(Task* task);
+    bool CheckTask(uint64_t taskId);
 
 private:
     TaskManager();
