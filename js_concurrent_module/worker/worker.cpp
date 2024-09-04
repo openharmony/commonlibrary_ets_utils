@@ -42,6 +42,7 @@ static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
 static constexpr size_t GLOBAL_CALL_MAX_COUNT = 65535;
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 static std::shared_ptr<OHOS::AppExecFwk::EventHandler> g_mainThreadHandler = nullptr;
+static std::atomic<bool> g_isHandlerInitialized = false;
 #endif
 
 Worker::Worker(napi_env env, napi_ref thisVar)
@@ -152,7 +153,8 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
     // register worker Port.
     napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-    if (g_mainThreadHandler == nullptr) {
+    bool expected = false;
+    if (g_isHandlerInitialized.compare_exchange_weak(expected, true)) {
         g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
     }
@@ -1836,7 +1838,8 @@ void Worker::PostWorkerOverTask()
             this->HostOnMessageInner();
         }
     };
-    if (!g_mainThreadHandler) {
+    bool expected = false;
+    if (g_isHandlerInitialized.compare_exchange_weak(expected, true)) {
         HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
         g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
@@ -1855,7 +1858,8 @@ void Worker::PostWorkerErrorTask()
             this->TerminateInner();
         }
     };
-    if (!g_mainThreadHandler) {
+    bool expected = false;
+    if (g_isHandlerInitialized.compare_exchange_weak(expected, true)) {
         HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
         g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
@@ -1873,7 +1877,8 @@ void Worker::PostWorkerMessageTask()
             this->HostOnMessageInner();
         }
     };
-    if (!g_mainThreadHandler) {
+    bool expected = false;
+    if (g_isHandlerInitialized.compare_exchange_weak(expected, true)) {
         HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
         g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
@@ -1891,7 +1896,8 @@ void Worker::PostWorkerGlobalCallTask()
             this->HostOnGlobalCallInner();
         }
     };
-    if (!g_mainThreadHandler) {
+    bool expected = false;
+    if (g_isHandlerInitialized.compare_exchange_weak(expected, true)) {
         HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
         g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
