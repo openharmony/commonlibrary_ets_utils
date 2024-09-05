@@ -433,6 +433,13 @@ napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
         WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr when Terminate");
         return nullptr;
     }
+    bool expected = false;
+    if (worker->isTerminated_.compare_exchange_weak(expected, true)) {
+        HILOG_INFO("worker:: Terminate worker");
+    } else {
+        HILOG_DEBUG("worker:: worker is terminated when Terminate");
+        return nullptr;
+    }
     if (worker->IsTerminated() || worker->IsTerminating()) {
         HILOG_DEBUG("worker:: worker is not in running when Terminate");
         return nullptr;
@@ -1708,7 +1715,7 @@ void Worker::PostMessageInner(MessageDataType data)
     }
     workerMessageQueue_.EnQueue(data);
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
-    if (workerOnMessageSignal_ != nullptr && uv_is_active((uv_handle_t*)workerOnMessageSignal_)) {
+    if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
         uv_async_send(workerOnMessageSignal_);
     }
 }
@@ -1739,6 +1746,13 @@ void Worker::TerminateInner()
 
 void Worker::CloseInner()
 {
+    bool expected = false;
+    if (isTerminated_.compare_exchange_weak(expected, true)) {
+        HILOG_INFO("worker:: Close worker");
+    } else {
+        HILOG_DEBUG("worker:: worker is terminated when Close");
+        return;
+    }
     UpdateWorkerState(TERMINATEING);
     TerminateWorker();
 }
@@ -2361,7 +2375,7 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
         HILOG_ERROR("worker:: worker has been terminated.");
         return;
     }
-    if (uv_is_active((uv_handle_t*)&debuggerOnPostTaskSignal_)) {
+    if (!uv_is_closing((uv_handle_t*)&debuggerOnPostTaskSignal_)) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
         uv_async_send(&debuggerOnPostTaskSignal_);
