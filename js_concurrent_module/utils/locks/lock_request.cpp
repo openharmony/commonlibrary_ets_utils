@@ -82,7 +82,7 @@ LockRequest::~LockRequest()
 
 void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_status status, void *data)
 {
-    LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
+    LockRequest *lockRequest = static_cast<LockRequest *>(data);
     napi_delete_async_work(env, lockRequest->work_);
     napi_remove_env_cleanup_hook(env, EnvCleanUp, lockRequest);
     lockRequest->work_ = nullptr;

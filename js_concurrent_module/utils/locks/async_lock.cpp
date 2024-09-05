@@ -112,7 +112,9 @@ void AsyncLock::ProcessPendingLockRequest()
         lockRequest->OnSatisfied();
         heldList_.push_back(lockRequest);
         pendingList_.pop_front();
+        asyncLockMutex_.unlock();
         lockRequest->CallCallbackAsync();
+        asyncLockMutex_.lock();
     }
 }
 
