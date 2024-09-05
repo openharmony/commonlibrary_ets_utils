@@ -678,6 +678,28 @@ HWTEST_F(NativeEngineTest, CopyTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: CopyTest003
+ * @tc.desc: Buffer Copy.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, CopyTest003, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    buf->Init(data, 0, 10);
+    uint32_t res = buf->Copy(buf, 0, 4, 10);
+    ASSERT_EQ(res, 6);
+    res = buf->Copy(buf, 0, 0, 0);
+    ASSERT_EQ(res, 0);
+    delete buf;
+    OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
+    res = buf1->Copy(buf1, 0, 4, 10);
+    delete buf1;
+    ASSERT_EQ(res, 0);
+}
+
+/**
  * @tc.name: CompareTest001
  * @tc.desc: Compares buf with target and returns a number indicating whether buf comes before, after,
  *           or is the same as target in sort order. Comparison is based on the actual sequence of bytes in each Buffer
@@ -1227,28 +1249,6 @@ HWTEST_F(NativeEngineTest, HexDecodeTest001, testing::ext::TestSize.Level0)
 {
     std::string ret = OHOS::buffer::HexDecode("313g");
     ASSERT_EQ(ret, "1");
-}
-
-/**
- * @tc.name: CopyTest002
- * @tc.desc: Buffer Copy.
- * @tc.type: FUNC
- * @tc.require:issueI5J5Z3
- */
-HWTEST_F(NativeEngineTest, CopyTest002, testing::ext::TestSize.Level0)
-{
-    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
-    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    buf->Init(data, 0, 10);
-    uint32_t res = buf->Copy(buf, 0, 4, 10);
-    ASSERT_EQ(res, 6);
-    res = buf->Copy(buf, 0, 0, 0);
-    ASSERT_EQ(res, 0);
-    delete buf;
-    OHOS::buffer::Buffer *buf1 = new OHOS::buffer::Buffer();
-    res = buf1->Copy(buf1, 0, 4, 10);
-    delete buf1;
-    ASSERT_EQ(res, 0);
 }
 
 /**
