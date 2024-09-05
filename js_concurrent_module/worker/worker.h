@@ -591,6 +591,8 @@ private:
     std::function<void(napi_env)> workerEnvCallback_;
 
     bool isMainThreadWorker_ = true;
+
+    std::atomic<bool> isTerminated_ = false;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H
