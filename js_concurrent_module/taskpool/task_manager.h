@@ -155,7 +155,7 @@ public:
     }
 #endif
 
-    bool CheckTask(Task* task);
+    bool CheckTask(uint64_t taskId);
 
 private:
     TaskManager();
