@@ -84,6 +84,7 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
     ConcurrentHelper::UvHandleClose(worker->debuggerOnPostTaskSignal_);
 #endif
     ConcurrentHelper::UvHandleClose(worker->clearWorkerSignal_);
+    ConcurrentHelper::UvHandleClose(worker->triggerGCCheckSignal_);
 
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop != nullptr) {
@@ -227,6 +228,7 @@ void Worker::ExecuteInThread(const void* data)
     // Init worker task execute signal
     ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, Worker::PerformTask, worker);
     ConcurrentHelper::UvHandleInit(loop, worker->clearWorkerSignal_, Worker::ReleaseWorkerHandles, worker);
+    ConcurrentHelper::UvHandleInit(loop, worker->triggerGCCheckSignal_, Worker::TriggerGCCheck, worker);
 
     HITRACE_HELPER_FINISH_TRACE;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
@@ -326,10 +328,25 @@ void Worker::NotifyTaskBegin()
     workerEngine->NotifyTaskBegin();
 }
 
+void Worker::TriggerGCCheck(const uv_async_t* req)
+{
+    if (req == nullptr || req->data == nullptr) {
+        HILOG_ERROR("taskpool:: req handle is invalid");
+        return;
+    }
+    auto worker = reinterpret_cast<Worker*>(req->data);
+    auto workerEngine = reinterpret_cast<NativeEngine*>(worker->workerEnv_);
+    workerEngine->NotifyTaskFinished();
+}
+
 void Worker::NotifyTaskFinished()
 {
+    // trigger gc check by uv
+    if (triggerGCCheckSignal_ != nullptr && !uv_is_closing((uv_handle_t*)&triggerGCCheckSignal_)) {
+        uv_async_send(triggerGCCheckSignal_);
+    }
+
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
-    workerEngine->NotifyTaskFinished();
     if (--runningCount_ != 0 || workerEngine->HasPendingJob()) {
         // the worker state is still RUNNING and the start time will be updated
         startTime_ = ConcurrentHelper::GetMilliseconds();
