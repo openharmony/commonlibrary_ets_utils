@@ -612,6 +612,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     task->CancelPendingTask(env);
     if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+        EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
         napi_reference_unref(env, task->taskRef_, nullptr);
@@ -725,6 +726,14 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
     Task* task = GetTask(taskId);
     if (task != nullptr && task->onEnqueuedCallBackInfo_ != nullptr) {
         task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_);
+    }
+}
+
+void TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
+{
+    std::lock_guard<std::mutex> lock(taskQueuesMutex_);
+    if (!taskQueues_[priority]->EraseWaitingTaskId(taskId)) {
+        HILOG_WARN("taskpool:: taskId is not in executeQueue when cancel");
     }
 }
 

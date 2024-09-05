@@ -18,14 +18,24 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 void ExecuteQueue::EnqueueTaskId(uint64_t taskId)
 {
-    tasks_.push(taskId);
+    tasks_.emplace_back(taskId);
+}
+
+bool ExecuteQueue::EraseWaitingTaskId(uint64_t taskId)
+{
+    auto it = std::find(tasks_.begin(), tasks_.end(), taskId);
+    if (it != tasks_.end()) {
+        tasks_.erase(it);
+        return true;
+    }
+    return false;
 }
 
 uint64_t ExecuteQueue::DequeueTaskId()
 {
     if (!tasks_.empty()) {
         uint64_t taskId = tasks_.front();
-        tasks_.pop();
+        tasks_.pop_front();
         return taskId;
     }
     return 0;
