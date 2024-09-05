@@ -1003,7 +1003,6 @@ void Task::NotifyPendingTask()
     HILOG_DEBUG("taskpool:: task:%{public}s NotifyPendingTask", std::to_string(taskId_).c_str());
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    napi_reference_unref(env_, taskRef_, nullptr);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
         currentTaskInfo_ = nullptr;

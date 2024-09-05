@@ -489,6 +489,9 @@ void TaskPool::TriggerTask(Task* task)
     } else if (task->IsCommonTask()) {
         task->NotifyPendingTask();
     }
+    if (task->IsPeriodicTask()) {
+        return;
+    }
     if (!task->IsFunctionTask()) {
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
         return;
