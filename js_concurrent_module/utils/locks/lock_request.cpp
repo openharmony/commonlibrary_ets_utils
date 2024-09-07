@@ -60,7 +60,7 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
 
 void LockRequest::EnvCleanUp(void *arg)
 {
-    LockRequest *lockRequest = reinterpret_cast<LockRequest *>(arg);
+    LockRequest *lockRequest = static_cast<LockRequest *>(arg);
     std::unique_lock<std::mutex> guard(lockRequest->lockRequestMutex_);
     napi_cancel_async_work(lockRequest->env_, lockRequest->work_);
     napi_delete_async_work(lockRequest->env_, lockRequest->work_);
@@ -84,7 +84,7 @@ LockRequest::~LockRequest()
 
 void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_status status, void *data)
 {
-    LockRequest *lockRequest = static_cast<LockRequest *>(data);
+    LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
     napi_delete_async_work(env, lockRequest->work_);
     napi_remove_env_cleanup_hook(env, EnvCleanUp, lockRequest);
     lockRequest->work_ = nullptr;
