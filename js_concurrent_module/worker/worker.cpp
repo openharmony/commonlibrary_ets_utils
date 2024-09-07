@@ -225,7 +225,6 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             return nullptr;
         }
     }
-    HILOG_INFO("worker:: Worker start constructor");
     Worker* worker = nullptr;
     if (limitSign) {
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
@@ -1206,8 +1205,8 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     if ((isHar && script_.find(PathHelper::PREFIX_BUNDLE) == std::string::npos) ||
         (!isBundle && script_.find_first_of(PathHelper::POINT_TAG) == 0)) {
         PathHelper::ConcatFileNameForWorker(env, script_, fileName_, isRelativePath_);
-        HILOG_DEBUG("worker:: Concated worker recordName: %{public}s, fileName: %{public}s",
-                    script_.c_str(), fileName_.c_str());
+        HILOG_INFO("worker:: Concated worker recordName: %{public}s, fileName: %{public}s",
+                   script_.c_str(), fileName_.c_str());
     }
     // check the path is vaild.
     if (!isBundle) {
@@ -1216,7 +1215,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
             HILOG_ERROR("worker:: the file path is invaild, can't find the file : %{public}s.", script);
             CloseHelp::DeletePointer(script, true);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH,
-                "the file path is invaild, can't find the file.");
+                                    "the file path is invaild, can't find the file.");
             return;
         }
     }
@@ -1236,7 +1235,6 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
 void Worker::ExecuteInThread(const void* data)
 {
     HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
-    HILOG_INFO("worker:: Execute in the thread!");
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
