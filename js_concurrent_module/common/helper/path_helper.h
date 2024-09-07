@@ -30,10 +30,10 @@ public:
     static constexpr char NAME_SPACE_TAG = '@';
     static constexpr char POINT_TAG[] = ".";
     static constexpr char SLASH_TAG = '/';
-    static constexpr char PAG_TAG[] = "pkg_modules";
     static constexpr char EXT_NAME_ETS[] = ".ets";
     static constexpr char EXT_NAME_TS[] = ".ts";
     static constexpr char EXT_NAME_JS[] = ".js";
+    static constexpr char PAG_TAG[] = "pkg_modules";
     static constexpr char NORMALIZED_OHMURL_TAG = '&';
     static constexpr char PHYCICAL_FILE_PATH[] = "src/main";
     static constexpr size_t NORMALIZED_OHMURL_ARGS_NUM = 5;
