@@ -181,6 +181,7 @@ private:
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(napi_env env, napi_value result, bool success, void* data);
     static void ReleaseWorkerHandles(const uv_async_t* req);
+    static void TriggerGCCheck(const uv_async_t* req);
 
 #if defined(ENABLE_TASKPOOL_FFRT)
     void InitFfrtInfo();
@@ -191,6 +192,7 @@ private:
     napi_env workerEnv_ {nullptr};
     uv_async_t* performTaskSignal_ {nullptr};
     uv_async_t* clearWorkerSignal_ {nullptr};
+    uv_async_t* triggerGCCheckSignal_ {nullptr};
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t* debuggerOnPostTaskSignal_ {nullptr};
     std::mutex debuggerMutex_;
