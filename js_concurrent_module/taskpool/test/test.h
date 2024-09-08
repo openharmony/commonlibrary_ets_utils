@@ -76,6 +76,7 @@ public:
     static void NotifyHandleTaskResult(napi_env env);
     static void TaskResultCallback(napi_env env);
     static void HandleFunctionException(napi_env env);
+    static void* WorkerConstructor(napi_env env);
 
     class ExceptionScope {
     public:
