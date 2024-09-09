@@ -2076,21 +2076,28 @@ HWTEST_F(NativeEngineTest, ParseEntityFunc, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     OHOS::xml::XmlPullParser xmlPullParser(env, "xml", "utf8");
     std::string out = "W#x2";
-    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
+    bool res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
+    ASSERT_FALSE(res);
 
     out = "W#1";
-    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
+    res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
+    ASSERT_FALSE(res);
 
     out = "Work1";
-    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
+    res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
+    ASSERT_FALSE(res);
 
     out = "Work";
-    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::TEXT);
-    XmlTest::ParseEntityFunc(env, out, "", false, TextEnum::TEXT);
+    res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::TEXT);
+    ASSERT_FALSE(res);
+    res = XmlTest::ParseEntityFunc(env, out, "", false, TextEnum::TEXT);
+    ASSERT_FALSE(res);
 
     out = "W";
-    XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::TEXT);
-    XmlTest::ParseEntityFunc(env, out, "info", true, TextEnum::TEXT);
+    res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::TEXT);
+    ASSERT_TRUE(res);
+    res = XmlTest::ParseEntityFunc(env, out, "info", true, TextEnum::TEXT);
+    ASSERT_FALSE(res);
 }
 
 /* @tc.name: ParseEntity001

@@ -38,7 +38,7 @@ public:
     static std::string SkipText(napi_env env, std::string strXml, std::string str);
     static std::string ParseNameInner(napi_env env, size_t start);
     static std::string ParseName(napi_env env);
-    static void ParseEntityFunc(napi_env env, std::string out, std::string sysInfo, bool flag, TextEnum textEnum);
+    static bool ParseEntityFunc(napi_env env, std::string out, std::string sysInfo, bool flag, TextEnum textEnum);
     static std::string ParseEntity(napi_env env, bool relaxed);
     static size_t ParseTagValueInner(napi_env env, size_t &start,
                                      std::string &result, size_t position, std::string xmlStr);
@@ -295,7 +295,7 @@ std::string XmlTest::ParseName(napi_env env)
     return xmlPullParser.ParseName();
 }
 
-void XmlTest::ParseEntityFunc(napi_env env, std::string out, std::string sysInfo, bool flag, TextEnum textEnum)
+bool XmlTest::ParseEntityFunc(napi_env env, std::string out, std::string sysInfo, bool flag, TextEnum textEnum)
 {
     std::string strXml = "<todo>Work</todo>";
     OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
@@ -304,6 +304,7 @@ void XmlTest::ParseEntityFunc(napi_env env, std::string out, std::string sysInfo
     xmlPullParser.bDocDecl = flag;
     xmlPullParser.sysInfo_ = sysInfo;
     xmlPullParser.ParseEntityFunc(0, out, true, textEnum);
+    return xmlPullParser.bUnresolved_;
 }
 
 std::string XmlTest::ParseEntity(napi_env env, bool relaxed)
