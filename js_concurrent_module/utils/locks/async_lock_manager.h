@@ -72,8 +72,8 @@ private:
     static void CheckDeadlocksAndLogWarning();
 
     static std::mutex lockMutex;
-    static std::unordered_map<std::string, std::shared_ptr<AsyncLock>> lockMap;
-    static std::unordered_map<uint32_t, std::shared_ptr<AsyncLock>> anonymousLockMap;
+    static std::unordered_map<std::string, AsyncLock *> lockMap;
+    static std::unordered_map<uint32_t, AsyncLock *> anonymousLockMap;
     static std::atomic<uint32_t> nextId;
 };
 

@@ -65,6 +65,11 @@ public:
         return options_;
     }
 
+    napi_env GetEnv()
+    {
+        return env_;
+    }
+
     void CallCallbackAsync();
     void CallCallback();
 

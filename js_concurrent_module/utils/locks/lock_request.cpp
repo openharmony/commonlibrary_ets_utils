@@ -228,8 +228,11 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
         return;
     }
     data->request->HandleRequestTimeout(std::move(error));
+    AsyncLock *lock = data->lock;
+    napi_env env = data->request->env_;
     // will delete 'data' too
     delete data->request;
+    lock->ProcessPendingLockRequest(env);
 }
 
 void LockRequest::HandleRequestTimeout(std::string &&errorMessage)
