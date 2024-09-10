@@ -64,7 +64,7 @@ private:
     static napi_value CreateLockState(napi_env env, AsyncLock *asyncLock);
     static void Request(uint32_t id);
     static void Request(const std::string &name);
-    static AsyncLock *FindAsyncLock(AsyncLockIdentity *id);
+    static AsyncLock *FindAsyncLockUnsafe(AsyncLockIdentity *id);
     static bool GetLockMode(napi_env env, napi_value val, LockMode &mode);
     static bool GetLockOptions(napi_env env, napi_value val, LockOptions &options);
 
