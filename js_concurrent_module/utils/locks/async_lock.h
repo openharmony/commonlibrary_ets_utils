@@ -61,15 +61,13 @@ private:
     void ProcessPendingLockRequest();
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
-    static void Destructor(napi_env env, void *data, [[maybe_unused]] void *hint);
 
     std::list<LockRequest *> pendingList_ {};
     std::list<LockRequest *> heldList_ {};
     LockMode lockStatus_ = LOCK_MODE_UNLOCK;
     std::string lockName_ = "";    // "" for anonymous lock
     uint32_t anonymousLockId_ {};  // 0 for Non-anonymous lock
-    uv_work_t work_ = {};
-    std::shared_mutex asyncLockMutex_;
+    std::mutex asyncLockMutex_;
     uint32_t refCount_ = 1;
 };
 
