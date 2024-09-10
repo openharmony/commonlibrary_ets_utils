@@ -41,17 +41,23 @@ public:
     void CleanUpLockRequestOnCompletion(LockRequest* lockRequest);
     bool CleanUpLockRequestOnTimeout(LockRequest* lockRequest);
     napi_status FillLockState(napi_env env, napi_value held, napi_value pending);
+    void ProcessPendingLockRequest(napi_env env);
 
+    // Increment the reference counter
     uint32_t IncRefCount();
+    // Decrement the reference counter.
+    // When the counter gets 0 the method deletes the instance if possible.
+    // Any way you cannot use the instance if the method returns 0.
     uint32_t DecRefCount();
 
     std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
     std::vector<RequestCreationInfo> GetPendingRequestInfos();
 
 private:
-    void ProcessPendingLockRequest();
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
+    void AsyncDestroy(napi_env env);
+    static void AsyncDestroyCallback(napi_env env, napi_status status, void *data);
 
     std::list<LockRequest *> pendingList_ {};
     std::list<LockRequest *> heldList_ {};
