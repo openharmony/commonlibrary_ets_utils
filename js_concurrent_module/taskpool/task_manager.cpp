@@ -1464,11 +1464,7 @@ bool TaskManager::CheckTask(uint64_t taskId)
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     auto item = tasks_.find(taskId);
-    if (item == tasks_.end()) {
-        return false;
-    }
-
-    return true;
+    return item != tasks_.end();
 }
 
 // ----------------------------------- TaskGroupManager ----------------------------------------

@@ -549,8 +549,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
             }
         }
     } else {
-        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has exception or has been canceled");
-        napi_reject_deferred(env, groupInfo->deferred, error);
+        napi_reject_deferred(env, groupInfo->deferred, res);
         if (task->onExecutionFailedCallBackInfo_ != nullptr) {
             task->onExecutionFailedCallBackInfo_->taskError_ = res;
             task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_);
