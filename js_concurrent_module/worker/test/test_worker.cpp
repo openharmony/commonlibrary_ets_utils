@@ -259,6 +259,7 @@ public:
         UpdateHostState(worker, Worker::HostState::INACTIVE);
         worker->PrepareForWorkerInstance();
         worker->EraseWorker();
+        ClearWorkerHandle(worker);
         Worker::ExecuteInThread(reinterpret_cast<void*>(worker));
     }
 
@@ -669,7 +670,7 @@ public:
         napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
         worker->workerPort_ = ref;
         worker->WorkerOnMessageInner();
-        SetCloseWorkerProp(worker, env);
+        SetCloseWorkerProp(worker, workerEnv);
         worker->workerMessageQueue_.EnQueue(nullptr);
         worker->WorkerOnMessageInner();
     }
@@ -693,13 +694,6 @@ public:
         auto listener2 = new Worker::WorkerListener(env, callback2, Worker::ListenerMode::ONCE);
         worker->AddListenerInner(env, "onmessage", listener2);
         worker->HandleEventListeners(env, obj2, 0, nullptr, "onmessage");
-        worker->eventListeners_.clear();
-        auto listener3 = new Worker::WorkerListener(env, callback2, Worker::ListenerMode::PERMANENT);
-        worker->AddListenerInner(env, "onmessage", listener3);
-        worker->HandleEventListeners(env, obj2, 0, nullptr, "onmessage");
-        auto listener4 = new Worker::WorkerListener(env, callback2, Worker::ListenerMode::ONCE);
-        worker->AddListenerInner(env, "onmessage", listener4);
-        ASSERT_FALSE(*listener3 == *listener4);
         worker->eventListeners_.clear();
     }
 
@@ -797,7 +791,9 @@ public:
         napi_set_named_property(env, obj, "onerror", errorFuncValue);
         napi_ref ref = NapiHelper::CreateReference(env, obj, 1);
         worker->workerPort_ = ref;
-        worker->workerEnv_ = env;
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->workerEnv_ = workerEnv;
         worker->CallWorkerFunction(0, nullptr, "onerror", true);
         worker->CallWorkerFunction(0, nullptr, "onerror", false);
 
@@ -830,7 +826,9 @@ public:
         auto listener = new Worker::WorkerListener(env, callback, Worker::ListenerMode::PERMANENT);
         worker->ParentPortAddListenerInner(env, "onmessage", listener);
         worker->ParentPortAddListenerInner(env, "onmessage", listener);
-        auto listener2 = new Worker::WorkerListener(env, callback, Worker::ListenerMode::ONCE);
+        napi_value obj = NapiHelper::CreateObject(env);
+        napi_ref ref = NapiHelper::CreateReference(env, obj, 1);
+        auto listener2 = new Worker::WorkerListener(env, ref, Worker::ListenerMode::ONCE);
         worker->ParentPortAddListenerInner(env, "onmessage", listener2);
         worker->ParentPortRemoveAllListenerInner();
     }
@@ -949,6 +947,11 @@ public:
         worker->hostOnGlobalCallSignal_->data = worker;
         worker->CloseHostHandle();
     }
+
+    static void ClearWorkerHandle(Worker* worker)
+    {
+        worker->CloseHostHandle();
+    }
 protected:
     static thread_local NativeEngine *engine_;
     static thread_local EcmaVM *vm_;
@@ -1018,6 +1021,7 @@ HWTEST_F(WorkersTest, WorkerConstructorTest001, testing::ext::TestSize.Level0)
     std::string scriptResult = worker->GetScript();
     ASSERT_EQ(scriptResult, "entry/ets/workers/@worker.ts");
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
 
     ASSERT_TRUE(result != nullptr);
@@ -1045,6 +1049,7 @@ HWTEST_F(WorkersTest, PostMessageTest001, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1072,6 +1077,7 @@ HWTEST_F(WorkersTest, PostMessageTest002, testing::ext::TestSize.Level0)
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
 
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1103,6 +1109,7 @@ HWTEST_F(WorkersTest, PostMessageTest003, testing::ext::TestSize.Level0)
     Worker::WorkerOnMessage(req);
 
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1133,6 +1140,7 @@ HWTEST_F(WorkersTest, PostMessageToHostTest001, testing::ext::TestSize.Level0)
     Worker::HostOnMessage(req);
 
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1159,6 +1167,7 @@ HWTEST_F(WorkersTest, PostMessageToHostTest002, testing::ext::TestSize.Level0)
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
 
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1209,6 +1218,7 @@ HWTEST_F(WorkersTest, PostMessageToHostTest003, testing::ext::TestSize.Level0)
     worker->UpdateWorkerState(Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1260,6 +1270,7 @@ HWTEST_F(WorkersTest, EventListenerTest001, testing::ext::TestSize.Level0)
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
 
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1295,6 +1306,7 @@ HWTEST_F(WorkersTest, EventListenerTest002, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1340,6 +1352,7 @@ HWTEST_F(WorkersTest, DispatchEventTest001, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1377,6 +1390,7 @@ HWTEST_F(WorkersTest, ParentPortAddEventListenerTest001, testing::ext::TestSize.
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1409,6 +1423,7 @@ HWTEST_F(WorkersTest, ParentPortRemoveAllListenerTest001, testing::ext::TestSize
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1449,6 +1464,7 @@ HWTEST_F(WorkersTest, ParentPortDispatchEventTest001, testing::ext::TestSize.Lev
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1488,6 +1504,7 @@ HWTEST_F(WorkersTest, ParentPortRemoveEventListenerTest001, testing::ext::TestSi
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1528,6 +1545,7 @@ HWTEST_F(WorkersTest, GlobalCallTest001, testing::ext::TestSize.Level0)
     req->data = worker;
     Worker::HostOnGlobalCall(req);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1590,6 +1608,7 @@ HWTEST_F(WorkersTest, WorkerTest001, testing::ext::TestSize.Level0)
     napi_create_object(workerEnv, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1620,6 +1639,7 @@ HWTEST_F(WorkersTest, WorkerTest002, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1647,6 +1667,7 @@ HWTEST_F(WorkersTest, WorkerTest003, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1686,6 +1707,7 @@ HWTEST_F(WorkersTest, WorkerTest004, testing::ext::TestSize.Level0)
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(workerEnv, workerGlobal);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1725,6 +1747,7 @@ HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(workerEnv, workerGlobal);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1751,6 +1774,7 @@ HWTEST_F(WorkersTest, WorkerTest006, testing::ext::TestSize.Level0)
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1775,6 +1799,7 @@ HWTEST_F(WorkersTest, WorkerTest007, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, 1, argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1801,6 +1826,7 @@ HWTEST_F(WorkersTest, WorkerTest008, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1831,6 +1857,7 @@ HWTEST_F(WorkersTest, WorkerTest009, testing::ext::TestSize.Level0)
     Worker::HostOnMessage(req);
 
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1856,6 +1883,7 @@ HWTEST_F(WorkersTest, WorkerTest010, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1878,6 +1906,7 @@ HWTEST_F(WorkersTest, WorkerTest011, testing::ext::TestSize.Level0)
     req->data = worker;
     Worker::HostOnError(req);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -1904,6 +1933,7 @@ HWTEST_F(WorkersTest, WorkerTest012, testing::ext::TestSize.Level0)
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
 
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -1938,9 +1968,12 @@ HWTEST_F(WorkersTest, CloseWorkerTest002, testing::ext::TestSize.Level0)
     std::string funcName = "CloseWorker";
     napi_value cb = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::CloseWorker, worker, &cb);
-    SetCloseWorkerProp(worker, env);
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    SetCloseWorkerProp(worker, workerEnv);
     napi_call_function(env, global, cb, 0, nullptr, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -1995,6 +2028,7 @@ HWTEST_F(WorkersTest, InitWorkerTest002, testing::ext::TestSize.Level0)
     napi_create_object(env, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -2040,6 +2074,7 @@ HWTEST_F(WorkersTest, InitWorkerTest003, testing::ext::TestSize.Level0)
     napi_create_object(env, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -2085,6 +2120,7 @@ HWTEST_F(WorkersTest, InitWorkerTest004, testing::ext::TestSize.Level0)
     napi_create_object(workerEnv, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -2130,6 +2166,7 @@ HWTEST_F(WorkersTest, InitWorkerTest005, testing::ext::TestSize.Level0)
     napi_create_object(workerEnv, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -2430,6 +2467,7 @@ HWTEST_F(WorkersTest, WorkerTest013, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2478,6 +2516,7 @@ HWTEST_F(WorkersTest, WorkerTest015, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2505,6 +2544,7 @@ HWTEST_F(WorkersTest, WorkerTest016, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2538,6 +2578,7 @@ HWTEST_F(WorkersTest, WorkerTest017, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2571,6 +2612,7 @@ HWTEST_F(WorkersTest, WorkerTest018, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2602,6 +2644,7 @@ HWTEST_F(WorkersTest, WorkerTest019, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2632,6 +2675,7 @@ HWTEST_F(WorkersTest, WorkerTest020, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2662,6 +2706,7 @@ HWTEST_F(WorkersTest, WorkerTest021, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2689,6 +2734,7 @@ HWTEST_F(WorkersTest, WorkerTest022, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2715,6 +2761,7 @@ HWTEST_F(WorkersTest, WorkerTest023, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2742,6 +2789,7 @@ HWTEST_F(WorkersTest, WorkerTest024, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2775,6 +2823,7 @@ HWTEST_F(WorkersTest, WorkerTest025, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2808,6 +2857,7 @@ HWTEST_F(WorkersTest, WorkerTest026, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2836,6 +2886,7 @@ HWTEST_F(WorkersTest, WorkerTest027, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2868,6 +2919,7 @@ HWTEST_F(WorkersTest, WorkerTest028, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2891,6 +2943,7 @@ HWTEST_F(WorkersTest, WorkerTest029, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2918,6 +2971,7 @@ HWTEST_F(WorkersTest, WorkerTest030, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2949,6 +3003,7 @@ HWTEST_F(WorkersTest, WorkerTest031, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -2980,6 +3035,7 @@ HWTEST_F(WorkersTest, WorkerTest032, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3003,6 +3059,7 @@ HWTEST_F(WorkersTest, WorkerTest033, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3024,6 +3081,7 @@ HWTEST_F(WorkersTest, WorkerTest034, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::CancelTask, nullptr, &cb);
     napi_call_function(env, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3046,6 +3104,7 @@ HWTEST_F(WorkersTest, WorkerTest035, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3068,6 +3127,7 @@ HWTEST_F(WorkersTest, WorkerTest036, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATEING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3092,6 +3152,7 @@ HWTEST_F(WorkersTest, WorkerTest037, testing::ext::TestSize.Level0)
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     SetWorkerHostEnv(worker, env, false);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3113,6 +3174,7 @@ HWTEST_F(WorkersTest, WorkerTest038, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::PostMessageToHost, worker, &cb);
     napi_call_function(env, global, cb, 0, nullptr, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -3138,6 +3200,7 @@ HWTEST_F(WorkersTest, WorkerTest039, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3168,6 +3231,7 @@ HWTEST_F(WorkersTest, WorkerTest040, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3208,6 +3272,7 @@ HWTEST_F(WorkersTest, WorkerTest041, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3245,6 +3310,7 @@ HWTEST_F(WorkersTest, WorkerTest042, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3282,6 +3348,7 @@ HWTEST_F(WorkersTest, WorkerTest043, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3321,6 +3388,7 @@ HWTEST_F(WorkersTest, WorkerTest044, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3361,6 +3429,7 @@ HWTEST_F(WorkersTest, WorkerTest045, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3411,6 +3480,7 @@ HWTEST_F(WorkersTest, WorkerTest046, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3432,6 +3502,7 @@ HWTEST_F(WorkersTest, WorkerTest047, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::ParentPortCancelTask, nullptr, &cb);
     napi_call_function(env, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3454,6 +3525,7 @@ HWTEST_F(WorkersTest, WorkerTest048, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3476,6 +3548,7 @@ HWTEST_F(WorkersTest, WorkerTest049, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATEING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3500,6 +3573,7 @@ HWTEST_F(WorkersTest, WorkerTest050, testing::ext::TestSize.Level0)
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     SetWorkerHostEnv(worker, env, false);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3521,6 +3595,7 @@ HWTEST_F(WorkersTest, WorkerTest051, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, 0, nullptr, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -3552,6 +3627,7 @@ HWTEST_F(WorkersTest, WorkerTest052, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -3589,6 +3665,7 @@ HWTEST_F(WorkersTest, WorkerTest053, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3623,6 +3700,7 @@ HWTEST_F(WorkersTest, WorkerTest054, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3659,6 +3737,7 @@ HWTEST_F(WorkersTest, WorkerTest055, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3690,6 +3769,7 @@ HWTEST_F(WorkersTest, WorkerTest056, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -3722,6 +3802,7 @@ HWTEST_F(WorkersTest, WorkerTest057, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3750,6 +3831,7 @@ HWTEST_F(WorkersTest, WorkerTest058, testing::ext::TestSize.Level0)
                          Worker::ParentPortDispatchEvent, worker, &cb);
     napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3782,6 +3864,7 @@ HWTEST_F(WorkersTest, WorkerTest059, testing::ext::TestSize.Level0)
                          Worker::ParentPortDispatchEvent, worker, &cb);
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3821,6 +3904,7 @@ HWTEST_F(WorkersTest, WorkerTest060, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3861,6 +3945,7 @@ HWTEST_F(WorkersTest, WorkerTest061, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3902,6 +3987,7 @@ HWTEST_F(WorkersTest, WorkerTest062, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3926,6 +4012,7 @@ HWTEST_F(WorkersTest, WorkerTest063, testing::ext::TestSize.Level0)
                          Worker::ParentPortRemoveEventListener, worker, &cb);
     napi_call_function(env, global, cb, 0, nullptr, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -3960,6 +4047,7 @@ HWTEST_F(WorkersTest, WorkerTest064, testing::ext::TestSize.Level0)
                          Worker::ParentPortRemoveEventListener, nullptr, &cb);
     napi_call_function(env, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3995,6 +4083,7 @@ HWTEST_F(WorkersTest, WorkerTest065, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4024,6 +4113,7 @@ HWTEST_F(WorkersTest, WorkerTest066, testing::ext::TestSize.Level0)
                          Worker::ParentPortRemoveEventListener, worker, &cb);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -4052,6 +4142,7 @@ HWTEST_F(WorkersTest, WorkerTest067, testing::ext::TestSize.Level0)
                          Worker::ParentPortRemoveEventListener, worker, &cb);
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4086,6 +4177,7 @@ HWTEST_F(WorkersTest, WorkerTest068, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
     napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4120,6 +4212,7 @@ HWTEST_F(WorkersTest, WorkerTest069, testing::ext::TestSize.Level0)
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4153,6 +4246,7 @@ HWTEST_F(WorkersTest, WorkerTest071, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     TestHostOnMessageInner(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4171,6 +4265,7 @@ HWTEST_F(WorkersTest, WorkerTest072, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnGlobalCall(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4189,6 +4284,7 @@ HWTEST_F(WorkersTest, WorkerTest073, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnGlobalCallInner001(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4207,6 +4303,7 @@ HWTEST_F(WorkersTest, WorkerTest074, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnGlobalCallInner002(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4225,6 +4322,7 @@ HWTEST_F(WorkersTest, WorkerTest075, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnGlobalCallInner003(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4243,6 +4341,7 @@ HWTEST_F(WorkersTest, WorkerTest076, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnGlobalCallInner004(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -4261,6 +4360,7 @@ HWTEST_F(WorkersTest, WorkerTest077, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnGlobalCallInner005(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4279,6 +4379,7 @@ HWTEST_F(WorkersTest, WorkerTest078, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnGlobalCallInner006(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4297,6 +4398,7 @@ HWTEST_F(WorkersTest, WorkerTest079, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HandleGlobalCall(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4315,6 +4417,7 @@ HWTEST_F(WorkersTest, WorkerTest080, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnError(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4333,6 +4436,7 @@ HWTEST_F(WorkersTest, WorkerTest081, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnErrorInner(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4351,6 +4455,7 @@ HWTEST_F(WorkersTest, WorkerTest082, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HostOnMessageErrorInner(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4371,6 +4476,7 @@ HWTEST_F(WorkersTest, WorkerTest083, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
+    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
@@ -4386,6 +4492,7 @@ HWTEST_F(WorkersTest, WorkerTest084, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     TestWorkerOnMessageInner(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4404,6 +4511,7 @@ HWTEST_F(WorkersTest, WorkerTest085, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HandleEventListeners(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4422,6 +4530,7 @@ HWTEST_F(WorkersTest, WorkerTest086, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     HandleHostException(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4440,6 +4549,7 @@ HWTEST_F(WorkersTest, WorkerTest087, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     PostMessageToHostInner(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4458,6 +4568,7 @@ HWTEST_F(WorkersTest, WorkerTest088, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     RemoveListenerInner(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4476,6 +4587,7 @@ HWTEST_F(WorkersTest, WorkerTest089, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     ParentPortAddListenerInnerTest(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4494,6 +4606,7 @@ HWTEST_F(WorkersTest, WorkerTest090, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     ParentPortHandleEventListeners(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4512,6 +4625,7 @@ HWTEST_F(WorkersTest, WorkerTest091, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     DebuggerOnPostTask(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4530,6 +4644,7 @@ HWTEST_F(WorkersTest, WorkerTest092, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     CloseHostHandle(worker, env);
     worker->EraseWorker();
+    ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);

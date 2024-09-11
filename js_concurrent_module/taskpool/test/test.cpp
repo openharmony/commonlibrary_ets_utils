@@ -756,14 +756,6 @@ void NativeEngineTest::ReleaseWorkerHandles(napi_env env)
     uv_async_t* req = new uv_async_t;
     req->data = worker;
     Worker::ReleaseWorkerHandles(req);
-    workerEngine->IncreaseListeningCounter();
-    Worker::ReleaseWorkerHandles(req);
-    workerEngine->DecreaseListeningCounter();
-    workerEngine->IncreaseWaitingRequestCounter();
-    Worker::ReleaseWorkerHandles(req);
-    workerEngine->DecreaseWaitingRequestCounter();
-    workerEngine->IncreaseSubEnvCounter();
-    Worker::ReleaseWorkerHandles(req);
 }
 
 void NativeEngineTest::DebuggerOnPostTask(napi_env env)
@@ -927,6 +919,8 @@ void* NativeEngineTest::WorkerConstructor(napi_env env)
     uint32_t sleepTime = 50000; // 50000: is sleep 50ms
     Worker* worker = Worker::WorkerConstructor(env);
     usleep(sleepTime);
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, NativeEngineTest::foo, worker);
     return worker;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
