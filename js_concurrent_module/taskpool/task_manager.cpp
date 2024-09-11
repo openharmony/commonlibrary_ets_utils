@@ -363,7 +363,8 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
                 freeList_.emplace_back(worker);
                 HILOG_INFO("taskpool:: worker in ffrt epoll wait more than 2 intervals, force to free.");
             } else {
-                HILOG_INFO("taskpool:: worker uv alive, and will be free in 2 intervals if not wake.");
+                // worker uv alive, and will be free in 2 intervals if not wake
+                HILOG_INFO("taskpool:: worker will be free if not wake.");
             }
             continue;
         }
