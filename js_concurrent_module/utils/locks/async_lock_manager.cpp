@@ -298,9 +298,7 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
         return undefined;
     }
 
-    char* name = NapiHelper::GetString(env, arg);
-    std::string nameStr(name);
-    CloseHelp::DeletePointer(name, true);
+    std::string nameStr = NapiHelper::GetString(env, arg);
     AsyncLockIdentity identity{false, 0, nameStr};
     AsyncLock *lock = nullptr;
     {

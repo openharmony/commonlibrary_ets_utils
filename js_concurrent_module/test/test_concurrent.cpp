@@ -358,9 +358,7 @@ HWTEST_F(NativeEngineTest, GetString001, testing::ext::TestSize.Level0)
     res = NapiHelper::IsString(env, value);
     ASSERT_TRUE(res);
 
-    char* script = NapiHelper::GetString(env, value);
-    std::string s(script);
-    delete[] script;
+    std::string s = NapiHelper::GetString(env, value);
     ASSERT_EQ(str, s);
 }
 
@@ -374,7 +372,7 @@ HWTEST_F(NativeEngineTest, GetString002, testing::ext::TestSize.Level0)
     memset_s(buffer, MAX_CHAR_LENGTH, 1, MAX_CHAR_LENGTH);
     napi_create_string_utf8(env, buffer, MAX_CHAR_LENGTH, &value);
 
-    char* script = NapiHelper::GetString(env, value);
+    char* script = NapiHelper::GetChars(env, value);
     size_t len = strlen(script);
     delete[] script;
     delete[] buffer;

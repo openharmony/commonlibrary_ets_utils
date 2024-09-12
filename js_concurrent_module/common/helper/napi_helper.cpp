@@ -16,6 +16,7 @@
 #include "napi_helper.h"
 
 #include "native_engine/native_value.h"
+#include "object_helper.h"
 
 namespace Commonlibrary::Concurrent::Common::Helper {
 static constexpr uint32_t MAX_CHAR_LENGTH = 1024;
@@ -176,7 +177,7 @@ bool NapiHelper::IsObject(napi_env env, napi_value value)
     return IsTypeForNapiValue(env, value, napi_object);
 }
 
-char* NapiHelper::GetString(napi_env env, napi_value value)
+char* NapiHelper::GetChars(napi_env env, napi_value value)
 {
     size_t bufferSize = 0;
     size_t strLength = 0;
@@ -187,6 +188,18 @@ char* NapiHelper::GetString(napi_env env, napi_value value)
     char* buffer = new char[bufferSize + 1] { 0 };
     napi_get_value_string_utf8(env, value, buffer, bufferSize + 1, &strLength);
     return buffer;
+}
+
+std::string NapiHelper::GetString(napi_env env, napi_value value)
+{
+    std::string str = "";
+    char* buffer = GetChars(env, value);
+    if (buffer == nullptr) {
+        return str;
+    }
+    str = std::string(buffer);
+    CloseHelp::DeletePointer(buffer, true);
+    return str;
 }
 
 napi_value NapiHelper::CreateBooleanValue(napi_env env, bool value)

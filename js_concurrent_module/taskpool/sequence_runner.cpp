@@ -57,9 +57,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
     std::string name = "";
     if (argc == 2) { // 2: The number of parameters is 2, if the first is seqRunner name, the second must be priority
         if (NapiHelper::IsString(env, args[0]) && NapiHelper::IsNumber(env, args[1])) {
-            char* nameValue = NapiHelper::GetString(env, args[0]);
-            name = std::string(nameValue);
-            CloseHelp::DeletePointer(nameValue, true);
+            name = NapiHelper::GetString(env, args[0]);
             priority = NapiHelper::GetUint32Value(env, args[1]);
             if (priority >= Priority::NUMBER) {
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value unvalied.");
@@ -72,9 +70,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         }
     } else if (argc == 1) {
         if (NapiHelper::IsString(env, args[0])) {
-            char* nameValue = NapiHelper::GetString(env, args[0]);
-            name = std::string(nameValue);
-            CloseHelp::DeletePointer(nameValue, true);
+            name = NapiHelper::GetString(env, args[0]);
         } else if (NapiHelper::IsNumber(env, args[0])) {
             priority = NapiHelper::GetUint32Value(env, args[0]);
             if (priority >= Priority::NUMBER) {
