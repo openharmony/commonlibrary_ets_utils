@@ -23,7 +23,8 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS::Util {
-static thread_local std::queue<UUID> g_uuidCache;
+static thread_local unsigned char g_uuidCache[MAX_CACHE_MASK * UUID_SIZE];
+static thread_local uint32_t uuidCachedIndex = 0;
 
 unsigned char CharToHex(char in)
 {
@@ -101,47 +102,52 @@ unsigned char ConvertBits(std::string &input)
     return temp;
 }
 
-bool GenerateUuid(unsigned char *data, int32_t size)
+bool GenerateUUID(unsigned char *data, int32_t size)
 {
-    unsigned char buf[UUID_SIZE] = { 0 };  // 0: initialization
-    if (memcpy_s(data, size, buf, size) != EOK) {
-        return false;
-    }
     RAND_priv_bytes(data, size);
+    return true;
+}
+
+void ProcessUUID(unsigned char *data)
+{
     data[HEX_SIX_FLG] = (data[HEX_SIX_FLG] & 0x0F) | 0x40; // 0x0F,0x40 Operate the mark
     int m = 0x8;    // Upper of numerical range
     int n = 0xb;    // down of numerical range
     int r = static_cast<int>(data[HEX_EIGHT_FLG]);
     unsigned char num = static_cast<unsigned char>(r % (n - m + 1) + m);
     data[HEX_EIGHT_FLG] = (data[HEX_EIGHT_FLG] & 0x0F) | (num << 4);  // 0x0F,4 Operate the mark
+}
+
+bool GetBufferedUUID(napi_env env, UUID &uuid)
+{
+    if (uuidCachedIndex == 0) {
+        if (!GenerateUUID(g_uuidCache, MAX_CACHE_MASK * UUID_SIZE)) {
+            napi_throw_error(env, "-1", "uuid generate failed");
+            return false;
+        }
+    }
+    if (memcpy_s(uuid.elements, UUID_SIZE, g_uuidCache + uuidCachedIndex * UUID_SIZE, UUID_SIZE) != EOK) {
+        napi_throw_error(env, "-1", "uuid generate failed");
+        return false;
+    }
+    ProcessUUID(uuid.elements);
+    uuidCachedIndex = (uuidCachedIndex + 1) % MAX_CACHE_MASK;
+    return true;
+}
+
+bool GetUnBufferedUUID(napi_env env, UUID &uuid)
+{
+    if (!GenerateUUID(uuid.elements, UUID_SIZE)) {
+        napi_throw_error(env, "-1", "uuid generate failed");
+        return false;
+    }
+    ProcessUUID(uuid.elements);
     return true;
 }
 
 bool GetUUID(napi_env env, bool entropyCache, UUID &uuid)
 {
-    uint32_t size = g_uuidCache.size();
-    if ((entropyCache == true) && (size != 0)) {
-        uuid = g_uuidCache.front();
-        g_uuidCache.pop();
-    } else {
-        if (size > MAX_CACHE_MASK) {
-            for (uint32_t i = 0; i < size; i++) {
-                g_uuidCache.pop();
-            }
-        }
-        bool res = GenerateUuid(uuid.elements, sizeof(uuid.elements));
-        if (!res) {
-            napi_throw_error(env, "-1", "uuid generate failed");
-            return false;
-        }
-        g_uuidCache.push(uuid);
-        res = GenerateUuid(uuid.elements, sizeof(uuid.elements));
-        if (!res) {
-            napi_throw_error(env, "-1", "uuid generate failed");
-            return false;
-        }
-    }
-    return true;
+    return entropyCache ? GetBufferedUUID(env, uuid) : GetUnBufferedUUID(env, uuid);
 }
 
 std::string GetStringUUID(napi_env env, bool entropyCache)
