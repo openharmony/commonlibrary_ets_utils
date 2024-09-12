@@ -430,7 +430,7 @@ void Worker::PerformTask(const uv_async_t* req)
             }
             Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
         };
-        TaskManager::GetInstance().PostTask(onStartExecutionTask, "TaskPoolOnStartExecutionTask");
+        TaskManager::GetInstance().PostTask(onStartExecutionTask, "TaskPoolOnStartExecutionTask", taskInfo.second);
     } else if (task->onStartExecutionSignal_ != nullptr) {
         uv_async_send(task->onStartExecutionSignal_);
     }
@@ -496,7 +496,7 @@ void Worker::NotifyHandleTaskResult(Task* task)
             }
             TaskPool::HandleTaskResultCallback(task);
         };
-        TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask");
+        TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask", worker->priority_);
     } else {
         uv_async_send(task->onResultSignal_);
     }

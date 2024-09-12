@@ -1842,7 +1842,7 @@ void Worker::PostWorkerOverTask()
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
     }
     g_mainThreadHandler->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
 void Worker::PostWorkerErrorTask()
@@ -1861,7 +1861,7 @@ void Worker::PostWorkerErrorTask()
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
     }
     g_mainThreadHandler->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
 void Worker::PostWorkerMessageTask()
@@ -1879,7 +1879,7 @@ void Worker::PostWorkerMessageTask()
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
     }
     g_mainThreadHandler->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
 void Worker::PostWorkerGlobalCallTask()
@@ -1897,7 +1897,7 @@ void Worker::PostWorkerGlobalCallTask()
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
     }
     g_mainThreadHandler->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
 bool Worker::IsValidWorker(Worker* worker)

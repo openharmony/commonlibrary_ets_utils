@@ -124,7 +124,7 @@ public:
     void RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId);
     std::string GetTaskDependInfoToString(uint64_t taskId);
 
-    bool PostTask(std::function<void()> task, const char* taskName);
+    bool PostTask(std::function<void()> task, const char* taskName, Priority priority = Priority::DEFAULT);
 
     // for duration
     void StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration);
