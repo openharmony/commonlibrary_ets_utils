@@ -42,7 +42,11 @@ namespace OHOS::Uri {
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
             type.resize(typelen);
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type.data(), typelen + 1, &typelen));
-            object = new Uri(type);
+            object = new (std::nothrow) Uri(type);
+            if (object == nullptr) {
+                HILOG_ERROR("UriConstructor:: object is nullptr");
+                return nullptr;
+            }
         }
         NAPI_CALL(env, napi_wrap(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {

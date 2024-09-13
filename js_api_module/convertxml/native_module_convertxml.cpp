@@ -28,7 +28,11 @@ namespace OHOS::Xml {
         napi_value thisVar = nullptr;
         void *data = nullptr;
         napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
-        auto objectInfo = new ConvertXml(env);
+        auto objectInfo = new (std::nothrow) ConvertXml(env);
+        if (objectInfo == nullptr) {
+            HILOG_ERROR("ConvertXmlConstructor::objectInfo is nullptr");
+            return nullptr;
+        }
         napi_wrap(
             env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
