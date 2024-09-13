@@ -374,7 +374,7 @@ namespace Commonlibrary::Platform {
             std::string strBuff = "";
             std::u16string buffer = u"";
             strBuff = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(originalBuffer[i]);
-            if (encodeInfo.encoding == "utf-16be") {
+            if (encodeInfo.encoding == "utf-16le") {
                 buffer = Utf8ToUtf16BE(strBuff);
             } else {
                 std::u16string u16Str = Utf8ToUtf16BE(strBuff);
