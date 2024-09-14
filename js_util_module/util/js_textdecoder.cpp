@@ -112,7 +112,35 @@ namespace OHOS::Util {
         return resultStr;
     }
 
-    napi_value TextDecoder::DecodeToString(napi_env env, napi_value src, bool iflag)
+    napi_value TextDecoder::GetResultStr(napi_env env, UChar *arrDat,
+                                         size_t length)
+    {
+        napi_value resultStr = nullptr;
+        if (length <= TEMP_CHAR_LENGTH) {
+            char tempCharArray[TEMP_CHAR_LENGTH];
+            std::pair<char *, bool> tempPair = ConvertToChar(arrDat, length, tempCharArray);
+            if (tempPair.second == true) {
+                char *utf8Str = tempPair.first;
+                napi_create_string_utf8(env, utf8Str, length, &resultStr);
+            } else {
+                napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arrDat), length, &resultStr);
+            }
+        } else {
+            std::pair<char *, bool> tempPair = ConvertToChar(arrDat, length, nullptr);
+            if (tempPair.second == true) {
+                char *utf8Str = tempPair.first;
+                napi_create_string_utf8(env, utf8Str, length, &resultStr);
+                NAPI_ASSERT(env, utf8Str != nullptr, "Data allocation failed");
+                delete[] utf8Str;
+            } else {
+                napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arrDat), length, &resultStr);
+            }
+        }
+        return resultStr;
+    }
+
+    napi_value TextDecoder::DecodeToString(napi_env env,
+                                           napi_value src, bool iflag)
     {
         uint8_t flags = 0;
         flags |= (iflag ? 0 : static_cast<uint8_t>(ConverterFlags::FLUSH_FLG));
@@ -155,8 +183,7 @@ namespace OHOS::Util {
             arrDat = &arr[1];
             resultLen--;
         }
-        napi_value resultStr = nullptr;
-        napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arrDat), resultLen, &resultStr);
+        napi_value resultStr = GetResultStr(env, arrDat, resultLen);
         FreedMemory(arr);
         if (flush) {
             label_ &= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);

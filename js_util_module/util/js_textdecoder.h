@@ -147,6 +147,7 @@ namespace OHOS::Util {
         }
 
     private:
+        napi_value GetResultStr(napi_env env, UChar *arrDat, size_t length);
         void SetBomFlag(const UChar *arr, const UErrorCode codeFlag, const DecodeArr decArr,
                         size_t& rstLen, bool& bomFlag);
         void SetIgnoreBOM(const UChar *arr, size_t resultLen, bool& bomFlag);
