@@ -95,9 +95,6 @@ public:
     // for get task info
     napi_value GetTaskInfos(napi_env env);
 
-    // for get task name
-    std::string GetTaskName(uint64_t taskId);
-
     // for countTrace for worker
     void CountTraceForWorker();
 

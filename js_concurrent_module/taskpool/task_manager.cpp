@@ -1248,16 +1248,6 @@ uint64_t TaskManager::GetTaskDuration(uint64_t taskId, std::string durationType)
     return iter->second.first - iter->second.second;
 }
 
-std::string TaskManager::GetTaskName(uint64_t taskId)
-{
-    std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
-    auto iter = tasks_.find(taskId);
-    if (iter == tasks_.end()) {
-        return "";
-    }
-    return iter->second->name_;
-}
-
 void TaskManager::RemoveTaskDuration(uint64_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s RemoveTaskDuration", std::to_string(taskId).c_str());

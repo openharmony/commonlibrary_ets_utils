@@ -180,6 +180,8 @@ public:
     RECURSIVE_MUTEX taskMutex_ {};
     bool hasDependency_ {false};
     bool isLongTask_ {false};
+    bool defaultTransfer_ {true};
+    bool defaultCloneSendable_ {false};
     std::atomic<bool> isValid_ {true};
     std::atomic<uint32_t> refCount_ {false}; // when refCount_ is 0, the task pointer can be deleted
     uv_async_t* onStartExecutionSignal_ = nullptr;

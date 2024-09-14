@@ -1063,7 +1063,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest077, testing::ext::TestSize.Level0)
     Task* task = new Task(env, TaskType::COMMON_TASK, "test");
     auto id = reinterpret_cast<uint64_t>(task);
     taskManager.StoreTask(id, task);
-    auto res = taskManager.GetTaskName(id);
+    auto res = task->name_;
     ASSERT_TRUE(strcmp(res.c_str(), "test") == 0);
 }
 
@@ -4605,4 +4605,51 @@ HWTEST_F(NativeEngineTest, TaskpoolTest233, testing::ext::TestSize.Level0)
     res = task->ShouldDeleteTask();
     ASSERT_TRUE(res == false);
     ASSERT_TRUE(task->refCount_ == 0);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest234, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string funcName = "GetName";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::GetName, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, nullptr, &result);
+    std::string taskName = NapiHelper::GetString(env, result);
+    ASSERT_STREQ(taskName.c_str(), "");
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest235, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string funcName = "GetTotalDuration";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::GetTotalDuration, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, nullptr, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest236, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value thisValue = CreateTaskObject(env);
+    
+    std::string funcName = "GetName";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::GetName, nullptr, &cb);
+    napi_call_function(env, thisValue, cb, 0, nullptr, &result);
+    std::string taskName = NapiHelper::GetString(env, result);
+    ASSERT_STREQ(taskName.c_str(), "");
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }
