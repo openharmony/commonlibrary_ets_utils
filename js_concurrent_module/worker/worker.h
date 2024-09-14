@@ -370,6 +370,10 @@ public:
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
 
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+    static std::shared_ptr<OHOS::AppExecFwk::EventHandler> GetMainThreadHandler();
+#endif
+
     void StartExecuteInThread(napi_env env, const char* script);
 
     bool UpdateWorkerState(RunnerState state);
