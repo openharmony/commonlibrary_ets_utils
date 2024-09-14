@@ -444,7 +444,7 @@ napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
     }
     bool expected = false;
     if (worker->isTerminated_.compare_exchange_weak(expected, true)) {
-        HILOG_INFO("worker:: Terminate worker");
+        HILOG_DEBUG("worker:: Terminate worker");
     } else {
         HILOG_DEBUG("worker:: worker is terminated when Terminate");
         return nullptr;
