@@ -27,6 +27,9 @@
 #include "tools/log.h"
 
 namespace Commonlibrary::Platform {
+    constexpr uint32_t STATE_BREAK_ZERO = 0;
+    constexpr uint32_t STATE_CONTINUE_ONE = 1;
+    constexpr uint32_t STATE_OTHER_TWO = 2;
     constexpr uint8_t HIGER_4_BITS_MASK = 0xF0;
     constexpr uint8_t FOUR_BYTES_STYLE = 0xF0;
     constexpr uint8_t THREE_BYTES_STYLE = 0xE0;
@@ -50,6 +53,27 @@ namespace Commonlibrary::Platform {
         napi_env env;
         napi_value src;
         std::string encoding;
+    };
+    struct OutBufferInfo {
+        OutBufferInfo(size_t length, std::string inputStr, size_t bufferLength, size_t cnt, std::string bufferRst)
+            : writedSize(length),
+              rstBuffer(inputStr),
+              rstBufferLength(bufferLength),
+              cntSize(cnt),
+              bufferResult(bufferRst)
+        {}
+        size_t writedSize;
+        std::string rstBuffer;
+        size_t rstBufferLength;
+        size_t cntSize;
+        std::string bufferResult;
+    };
+    struct InputBufferInfo {
+        InputBufferInfo(std::string InputEncoding, size_t charSize): encoding(InputEncoding),
+                                                                     inputSize(charSize)
+        {}
+        std::string encoding;
+        size_t inputSize;
     };
     UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag);
     std::string ConvertToString(UChar* uchar, size_t length);
