@@ -780,20 +780,20 @@ public:
         worker->AddListenerInner(env, "onmessage", listener);
         worker->RemoveListenerInner(env, "onmessage", nullptr);
 
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->workerEnv_ = workerEnv;
         std::string errorFuncName = "onerror";
         auto errorFunc = [](napi_env env, napi_callback_info info) -> napi_value {
             return nullptr;
         };
         napi_value errorFuncValue = nullptr;
-        napi_create_function(env, errorFuncName.c_str(), NAPI_AUTO_LENGTH,
+        napi_create_function(workerEnv, errorFuncName.c_str(), NAPI_AUTO_LENGTH,
                              errorFunc, nullptr, &errorFuncValue);
-        napi_value obj = NapiHelper::CreateObject(env);
-        napi_set_named_property(env, obj, "onerror", errorFuncValue);
-        napi_ref ref = NapiHelper::CreateReference(env, obj, 1);
+        napi_value obj = NapiHelper::CreateObject(workerEnv);
+        napi_set_named_property(workerEnv, obj, "onerror", errorFuncValue);
+        napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
         worker->workerPort_ = ref;
-        napi_env workerEnv = nullptr;
-        napi_create_runtime(env, &workerEnv);
-        worker->workerEnv_ = workerEnv;
         worker->CallWorkerFunction(0, nullptr, "onerror", true);
         worker->CallWorkerFunction(0, nullptr, "onerror", false);
 
@@ -802,11 +802,11 @@ public:
             return NapiHelper::GetUndefinedValue(env);
         };
         napi_value undefinedFuncValue = nullptr;
-        napi_create_function(env, undefinedFuncName.c_str(), NAPI_AUTO_LENGTH,
+        napi_create_function(workerEnv, undefinedFuncName.c_str(), NAPI_AUTO_LENGTH,
                              undefinedFunc, nullptr, &undefinedFuncValue);
-        napi_value obj2 = NapiHelper::CreateObject(env);
-        napi_set_named_property(env, obj2, "OnMessageError", undefinedFuncValue);
-        napi_ref ref2 = NapiHelper::CreateReference(env, obj2, 1);
+        napi_value obj2 = NapiHelper::CreateObject(workerEnv);
+        napi_set_named_property(workerEnv, obj2, "OnMessageError", undefinedFuncValue);
+        napi_ref ref2 = NapiHelper::CreateReference(workerEnv, obj2, 1);
         worker->workerPort_ = ref2;
         worker->CallWorkerFunction(0, nullptr, "OnMessageError", true);
     }

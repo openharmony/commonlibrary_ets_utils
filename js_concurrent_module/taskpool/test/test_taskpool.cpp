@@ -4261,7 +4261,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest217, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    NativeEngineTest::PerformTask(env);
     NativeEngineTest::NotifyHandleTaskResult(env);
     NativeEngineTest::TaskResultCallback(env);
     NativeEngineTest::HandleFunctionException(env);
@@ -4589,4 +4588,13 @@ HWTEST_F(NativeEngineTest, TaskpoolTest231, testing::ext::TestSize.Level0)
     napi_value argv[] = {taskGroup};
     NativeEngineTest::Cancel(env, argv, 1);
     ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest232, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    NativeEngineTest::PerformTask(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }
