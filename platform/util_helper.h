@@ -41,7 +41,6 @@ namespace Commonlibrary::Platform {
     constexpr uint32_t LOW_AGENT_MASK = 0xDC00U;
     constexpr uint32_t UTF8_VALID_BITS = 6;
     constexpr uint32_t UTF16_SPECIAL_VALUE = 0x10000;
-    constexpr uint32_t TEMP_CHAR_LENGTH = 128;
     struct TextEcodeInfo {
         TextEcodeInfo(napi_env napiEnv, napi_value srcValue, std::string encodingStr): env(napiEnv),
                                                                                        src(srcValue),
@@ -53,7 +52,6 @@ namespace Commonlibrary::Platform {
     };
     UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag);
     std::string ConvertToString(UChar* uchar, size_t length);
-    std::pair<char *, bool> ConvertToChar(UChar* uchar, size_t length, char* tempCharArray);
     void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer);
     std::string UnicodeConversion(std::string encoding, char16_t* originalBuffer, size_t inputSize);
     void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars);
