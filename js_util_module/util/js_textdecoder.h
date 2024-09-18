@@ -147,6 +147,13 @@ namespace OHOS::Util {
         }
 
     private:
+        static constexpr uint32_t TEMP_CHAR_LENGTH = 128;
+        static bool IsASCIICharacter(uint16_t data)
+        {
+            return data > 0 && data <= 0x7F;
+        }
+        static bool CanBeCompressed(const uint16_t *utf16Data, uint32_t utf16Len);
+        std::pair<char *, bool> ConvertToChar(UChar* uchar, size_t length, char* tempCharArray);
         napi_value GetResultStr(napi_env env, UChar *arrDat, size_t length);
         void SetBomFlag(const UChar *arr, const UErrorCode codeFlag, const DecodeArr decArr,
                         size_t& rstLen, bool& bomFlag);

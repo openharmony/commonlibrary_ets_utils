@@ -42,32 +42,6 @@ namespace Commonlibrary::Platform {
         return conv;
     }
 
-    static bool IsASCIICharacter(uint16_t data)
-    {
-        return data > 0 && data <= 0x7F;
-    }
-
-    static bool CanBeCompressed(const uint16_t *utf16Data, uint32_t utf16Len)
-    {
-        uint32_t index = 0;
-        for (; index + 4 <= utf16Len; index += 4) { // 4: process the data in chunks of 4 elements to improve speed
-            // Check if all four characters in the current block are ASCII characters
-            if (!IsASCIICharacter(utf16Data[index]) ||
-                !IsASCIICharacter(utf16Data[index + 1]) || // 1: the second element of the block
-                !IsASCIICharacter(utf16Data[index + 2]) || // 2: the third element of the block
-                !IsASCIICharacter(utf16Data[index + 3])) { // 3: the fourth element of the block
-                return false;
-            }
-        }
-        // Check remaining characters if they are ASCII
-        for (; index < utf16Len; ++index) {
-            if (!IsASCIICharacter(utf16Data[index])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     std::string ConvertToString(UChar * uchar, size_t length)
     {
         std::u16string tempStr16(uchar);
@@ -75,31 +49,6 @@ namespace Commonlibrary::Platform {
         return tepStr;
     }
 
-    std::pair<char *, bool> ConvertToChar(UChar *uchar, size_t length, char *tempCharArray)
-    {
-        uint16_t *uint16Data = reinterpret_cast<uint16_t *>(uchar);
-        if (CanBeCompressed(uint16Data, length)) {
-            if (length <= 0) {
-                HILOG_ERROR("textencoder:: length is error");
-                return std::make_pair(nullptr, false);
-            }
-            char *strUtf8;
-            if (length <= TEMP_CHAR_LENGTH) {
-                strUtf8 = tempCharArray;
-            } else {
-                strUtf8 = new (std::nothrow) char[length];
-                if (strUtf8 == nullptr) {
-                    HILOG_ERROR("textencoder:: data allocation failed");
-                    return std::make_pair(nullptr, false);
-                }
-            }
-            for (size_t i = 0; i < length; ++i) {
-                strUtf8[i] = static_cast<char>(uchar[i]);
-            }
-            return std::make_pair(strUtf8, true);
-        }
-        return std::make_pair(nullptr, false);
-    }
     void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
