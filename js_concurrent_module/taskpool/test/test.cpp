@@ -923,4 +923,10 @@ void* NativeEngineTest::WorkerConstructor(napi_env env)
     ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, NativeEngineTest::foo, worker);
     return worker;
 }
+
+pid_t NativeEngineTest::GetWorkerTid(uv_timer_t* handle)
+{
+    Worker* worker = reinterpret_cast<Worker*>(handle->data);
+    return worker->tid_;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

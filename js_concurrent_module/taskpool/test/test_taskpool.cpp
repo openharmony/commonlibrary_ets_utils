@@ -994,7 +994,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest071, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     char buf[4096]; // 4096: buffer length for thread state
     auto worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
-    bool res = taskManager.ReadThreadInfo(worker, buf, sizeof(buf));
+    uv_timer_t* handle = new uv_timer_t;
+    handle->data = worker;
+    auto tid = NativeEngineTest::GetWorkerTid(handle);
+    bool res = taskManager.ReadThreadInfo(tid, buf, sizeof(buf));
     ASSERT_TRUE(res == true);
 }
 
