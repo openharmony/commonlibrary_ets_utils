@@ -762,7 +762,6 @@ void NativeEngineTest::DebuggerOnPostTask(napi_env env)
 {
     ExceptionScope scope(env);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
-    worker->workerEnv_ = env;
     uv_loop_t* loop = worker->GetWorkerLoop();
     ConcurrentHelper::UvHandleInit(loop, worker->debuggerOnPostTaskSignal_,
                                    NativeEngineTest::foo, worker);
@@ -822,37 +821,27 @@ void NativeEngineTest::PerformTask(napi_env env)
 
     uv_async_t* req = new uv_async_t;
     req->data = worker;
-    task->taskState_ = ExecuteState::CANCELED;
-    Worker::PerformTask(req);
     task->taskState_ = ExecuteState::WAITING;
     task->taskType_ = TaskType::GROUP_COMMON_TASK;
-    task->groupId_ = task->taskId_;
-    Worker::PerformTask(req);
     task->groupId_ = groupId;
     Worker::PerformTask(req);
+    usleep(100000); // 100000: is sleep 100ms
 }
 
 void NativeEngineTest::NotifyHandleTaskResult(napi_env env)
 {
     ExceptionScope scope(env);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->workerEnv_ = workerEnv;
     Task* task = new Task();
     task->taskId_ = reinterpret_cast<uint64_t>(task);
-    task->env_ = workerEnv;
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    task->env_ = worker->workerEnv_;
+    uv_loop_t* loop = worker->GetWorkerLoop();
     ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, NativeEngineTest::foo, task);
     Task* task1 = new Task();
     task1->taskId_ = reinterpret_cast<uint64_t>(task1);
     worker->currentTaskId_.push_back(task1->taskId_);
     task->worker_ = worker;
-    task->IncreaseRefCount();
-    Worker::NotifyHandleTaskResult(task);
-    task->DecreaseRefCount();
     task->isMainThreadTask_ = true;
-    Worker::NotifyHandleTaskResult(task);
     TaskManager::GetInstance().StoreTask(task->taskId_, task);
     Worker::NotifyHandleTaskResult(task);
 }
@@ -861,19 +850,16 @@ void NativeEngineTest::TaskResultCallback(napi_env env)
 {
     ExceptionScope scope(env);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->workerEnv_ = workerEnv;
     Task* task = new Task();
     task->taskId_ = reinterpret_cast<uint64_t>(task);
-    task->env_ = workerEnv;
+    task->env_ = worker->workerEnv_;
     task->taskRefCount_.fetch_add(1);
     task->worker_ = worker;
     task->cpuTime_ = UINT64_ZERO_;
-    Worker::TaskResultCallback(env, nullptr, false, reinterpret_cast<void*>(task));
+    Worker::TaskResultCallback(worker->workerEnv_, nullptr, false, reinterpret_cast<void*>(task));
     task->taskRefCount_.fetch_add(1);
     task->cpuTime_ = task->taskId_;
-    Worker::TaskResultCallback(env, nullptr, true, reinterpret_cast<void*>(task));
+    Worker::TaskResultCallback(worker->workerEnv_, nullptr, true, reinterpret_cast<void*>(task));
 
     worker->priority_ = Priority::LOW;
     worker->ResetWorkerPriority();
@@ -919,7 +905,7 @@ void* NativeEngineTest::WorkerConstructor(napi_env env)
     uint32_t sleepTime = 50000; // 50000: is sleep 50ms
     Worker* worker = Worker::WorkerConstructor(env);
     usleep(sleepTime);
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_loop_t* loop = worker->GetWorkerLoop();
     ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, NativeEngineTest::foo, worker);
     return worker;
 }
