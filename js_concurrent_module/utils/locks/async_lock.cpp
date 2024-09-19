@@ -202,6 +202,7 @@ void AsyncLock::AsyncDestroy(napi_env env)
     napi_value resourceName;
     napi_create_string_utf8(env, "AsyncLock::AsyncDestroyCallback", NAPI_AUTO_LENGTH, &resourceName);
     auto *data = new std::pair<AsyncLock *, napi_async_work>();
+    data->first = this;
     napi_async_work &work = data->second;
     napi_status status = napi_create_async_work(
         env, nullptr, resourceName, [](napi_env, void *) {}, AsyncDestroyCallback, data, &work);
