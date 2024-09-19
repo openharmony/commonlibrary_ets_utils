@@ -465,7 +465,7 @@ napi_value GetValueArray(napi_env env, napi_value map, const size_t& length, nap
     for (size_t i = 0; i < maplen ; ++i) {
         napi_value keyNumber = nullptr;
         napi_get_element(env, mapKeys, i, &keyNumber);
-        char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
+        char* innerKey = Helper::NapiHelper::GetChars(env, keyNumber);
         if (innerKey == nullptr) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
                                             "property key must not be null.");
@@ -513,7 +513,7 @@ void ProcessNestedObject(napi_env env, napi_value item, napi_value& map, std::ma
     for (size_t j = 0; j < innerLength; ++j) {
         napi_value keyNumber = nullptr;
         napi_get_element(env, keys, j, &keyNumber);
-        char* innerKey = Helper::NapiHelper::GetString(env, keyNumber);
+        char* innerKey = Helper::NapiHelper::GetChars(env, keyNumber);
         if (innerKey == nullptr) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
                                             "property key must not be null.");
@@ -564,7 +564,7 @@ napi_value Console::ProcessTabularData(napi_env env, napi_value tabularData)
     for (size_t i = 0; i < length; i++) {
         napi_value keyItem = nullptr;
         napi_get_element(env, keyArray, i, &keyItem);
-        char* key = Helper::NapiHelper::GetString(env, keyItem);
+        char* key = Helper::NapiHelper::GetChars(env, keyItem);
         if (key == nullptr) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
                                             "property key must not be null.");
