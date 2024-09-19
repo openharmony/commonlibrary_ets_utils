@@ -289,11 +289,10 @@ void TaskManager::TryTriggerExpand()
 
 #if defined(OHOS_PLATFORM)
 // read /proc/[pid]/task/[tid]/stat to get the number of idle threads.
-bool TaskManager::ReadThreadInfo(Worker* worker, char* buf, uint32_t size)
+bool TaskManager::ReadThreadInfo(pid_t tid, char* buf, uint32_t size)
 {
     char path[128]; // 128: buffer for path
     pid_t pid = getpid();
-    pid_t tid = worker->tid_;
     ssize_t bytesLen = -1;
     int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/stat", pid, tid);
     if (ret < 0) {
@@ -318,17 +317,24 @@ uint32_t TaskManager::GetIdleWorkers()
 {
     char buf[4096]; // 4096: buffer for thread info
     uint32_t idleCount = 0;
-    std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
-    for (auto& worker : idleWorkers_) {
+    std::unordered_set<pid_t> tids {};
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
+        for (auto& worker : idleWorkers_) {
 #if defined(ENABLE_TASKPOOL_FFRT)
-        if (worker->ffrtTaskHandle_ != nullptr) {
-            if (worker->GetWaitTime() > 0) {
-                idleCount++;
+            if (worker->ffrtTaskHandle_ != nullptr) {
+                if (worker->GetWaitTime() > 0) {
+                    idleCount++;
+                }
+                continue;
             }
-            continue;
-        }
 #endif
-        if (!ReadThreadInfo(worker, buf, sizeof(buf))) {
+            tids.emplace(worker->tid_);
+        }
+    }
+    // The ffrt thread does not read thread info
+    for (auto tid : tids) {
+        if (!ReadThreadInfo(tid, buf, sizeof(buf))) {
             continue;
         }
         char state;
@@ -367,7 +373,7 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
             continue;
         }
 #endif
-        if (!ReadThreadInfo(worker, buf, sizeof(buf))) {
+        if (!ReadThreadInfo(worker->tid_, buf, sizeof(buf))) {
             continue;
         }
         char state;
@@ -504,7 +510,8 @@ void TaskManager::TryExpand()
     // dispatch task in the TaskPoolManager thread
     NotifyExecuteTask();
     // do not trigger when there are more idleWorkers than tasks
-    if (GetIdleWorkers() > GetNonIdleTaskNum()) {
+    uint32_t idleNum = GetIdleWorkers();
+    if (idleNum > GetNonIdleTaskNum()) {
         return;
     }
     needChecking_ = false; // do not need to check
@@ -515,7 +522,6 @@ void TaskManager::TryExpand()
     maxThreads = (timeoutWorkers == 0) ? maxThreads : maxThreads + 2; // 2: extra threads
     if (workerCount < maxThreads && workerCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - workerCount;
-        uint32_t idleNum = GetIdleWorkers();
         if (step <= idleNum) {
             return;
         }
