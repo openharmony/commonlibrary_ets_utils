@@ -109,7 +109,7 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
     if (name == nullptr) {
         name = NapiHelper::GetNameProperty(env, func, NAME);
     }
-    char* nameStr = NapiHelper::GetString(env, name);
+    char* nameStr = NapiHelper::GetChars(env, name);
     Task* task = new Task(env, TaskType::TASK, nameStr);
     delete[] nameStr;
     task->taskId_ = reinterpret_cast<uint64_t>(task);
@@ -158,7 +158,7 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
         return nullptr;
     }
     napi_value napiFuncName = NapiHelper::GetNameProperty(env, func, NAME);
-    char* nameStr = NapiHelper::GetString(env, napiFuncName);
+    char* nameStr = NapiHelper::GetChars(env, napiFuncName);
     Task* task = new Task(env, type, nameStr);
     delete[] nameStr;
     task->taskId_ = reinterpret_cast<uint64_t>(task);
@@ -213,10 +213,10 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
             pendingTaskInfos_.push_back(pendingInfo);
         }
     }
-    char* name = NapiHelper::GetString(env, taskName);
+    char* name = NapiHelper::GetChars(env, taskName);
     if (strlen(name) == 0) {
         napi_value funcName = NapiHelper::GetNameProperty(env, func, NAME);
-        name = NapiHelper::GetString(env, funcName);
+        name = NapiHelper::GetChars(env, funcName);
     }
     name_ = std::string(name);
     delete[] name;
