@@ -42,7 +42,8 @@ public:
     static void SetNamePropertyInGlobal(napi_env env, const char* name, napi_value value);
     static napi_value GetUndefinedValue(napi_env env);
     static bool IsObject(napi_env env, napi_value value);
-    static char* GetString(napi_env env, napi_value value);
+    static char* GetChars(napi_env env, napi_value value);
+    static std::string GetString(napi_env env, napi_value value);
     static napi_value CreateBooleanValue(napi_env env, bool value);
     static napi_value GetGlobalObject(napi_env env);
     static napi_ref CreateReference(napi_env env, napi_value value, uint32_t refcount);

@@ -301,8 +301,7 @@ HWTEST_F(NativeEngineTest, GetString001, testing::ext::TestSize.Level0)
     res = NapiHelper::IsString(env, value);
     ASSERT_TRUE(res);
 
-    char* script = NapiHelper::GetString(env, value);
-    std::string s(script);
+    std::string s = NapiHelper::GetString(env, value);
     ASSERT_EQ(str, s);
 }
 

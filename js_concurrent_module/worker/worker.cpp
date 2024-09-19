@@ -278,7 +278,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     worker->isLimitedWorker_ = limitSign;
 
     // 3. execute in thread
-    char* script = NapiHelper::GetString(env, args[0]);
+    char* script = NapiHelper::GetChars(env, args[0]);
     if (script == nullptr) {
         HILOG_ERROR("worker:: the file path is invaild, maybe path is null");
         ErrorHelper::ThrowError(env,
@@ -325,7 +325,7 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
                 WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of name must be string.");
                 return nullptr;
             }
-            char* nameStr = NapiHelper::GetString(env, nameValue);
+            char* nameStr = NapiHelper::GetChars(env, nameValue);
             if (nameStr == nullptr) {
                 CloseHelp::DeletePointer(workerParams, false);
                 ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "the name of worker is null.");
@@ -342,7 +342,7 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
                     "the type of type's value must be string.");
                 return nullptr;
             }
-            char* typeStr = NapiHelper::GetString(env, typeValue);
+            char* typeStr = NapiHelper::GetChars(env, typeValue);
             if (typeStr == nullptr) {
                 CloseHelp::DeletePointer(workerParams, false);
                 ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "the type of worker is null.");
@@ -476,9 +476,7 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
             "the type of instanceName must be string.");
         return nullptr;
     }
-    char* nameValue = NapiHelper::GetString(env, args[0]);
-    std::string instanceName = std::string(nameValue);
-    CloseHelp::DeletePointer(nameValue, true);
+    std::string instanceName = NapiHelper::GetString(env, args[0]);
 
     Worker* worker = nullptr;
     napi_unwrap(env, thisVar, (void**)&worker);
@@ -521,9 +519,7 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
             "the type of instanceName must be string.");
         return nullptr;
     }
-    char* nameValue = NapiHelper::GetString(env, args[0]);
-    std::string instanceName = std::string(nameValue);
-    CloseHelp::DeletePointer(nameValue, true);
+    std::string instanceName = NapiHelper::GetString(env, args[0]);
     if (!worker->RemoveGlobalCallObject(instanceName)) {
         HILOG_ERROR("worker:: unregister unexist globalCallObject");
     }
@@ -588,7 +584,7 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
             }
         }
     }
-    char* typeStr = NapiHelper::GetString(env, args[0]);
+    char* typeStr = NapiHelper::GetChars(env, args[0]);
     worker->AddListenerInner(env, typeStr, listener);
     CloseHelp::DeletePointer(typeStr, true);
     return NapiHelper::GetUndefinedValue(env);
@@ -628,7 +624,7 @@ napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    char* typeStr = NapiHelper::GetString(env, args[0]);
+    char* typeStr = NapiHelper::GetChars(env, args[0]);
     if (typeStr == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of remove listener type must be not null");
         return nullptr;
@@ -690,7 +686,7 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
 
     napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerRef_);
 
-    char* typeStr = NapiHelper::GetString(env, typeValue);
+    char* typeStr = NapiHelper::GetChars(env, typeValue);
     if (typeStr == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "dispatchEvent event type must be not null");
         return NapiHelper::CreateBooleanValue(env, false);
@@ -1020,7 +1016,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
             listener->SetMode(ONCE);
         }
     }
-    char* typeStr = NapiHelper::GetString(env, args[0]);
+    char* typeStr = NapiHelper::GetChars(env, args[0]);
     worker->ParentPortAddListenerInner(env, typeStr, listener);
     CloseHelp::DeletePointer(typeStr, true);
     return NapiHelper::GetUndefinedValue(env);
@@ -1056,7 +1052,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
-    char* typeStr = NapiHelper::GetString(env, typeValue);
+    char* typeStr = NapiHelper::GetChars(env, typeValue);
     if (typeStr == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener type must be not null.");
         return NapiHelper::CreateBooleanValue(env, false);
@@ -1113,7 +1109,7 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
         napi_create_reference(env, args[1], 1, &callback);
     }
 
-    char* typeStr = NapiHelper::GetString(env, args[0]);
+    char* typeStr = NapiHelper::GetChars(env, args[0]);
     if (typeStr == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener type must be not null.");
         return nullptr;
@@ -1495,9 +1491,7 @@ void Worker::HostOnGlobalCallInner()
     napi_value methodName = nullptr;
     napi_get_element(hostEnv_, argsArray, 1, &methodName);
 
-    char* nameValue = NapiHelper::GetString(hostEnv_, instanceName);
-    std::string instanceNameStr = std::string(nameValue);
-    CloseHelp::DeletePointer(nameValue, true);
+    std::string instanceNameStr = NapiHelper::GetString(hostEnv_, instanceName);
     auto iter = globalCallObjects_.find(instanceNameStr);
     if (iter == globalCallObjects_.end()) {
         HILOG_ERROR("worker:: there is no instance: %{public}s registered for global call", instanceNameStr.c_str());
@@ -1511,9 +1505,8 @@ void Worker::HostOnGlobalCallInner()
     bool hasProperty = false;
     napi_has_property(hostEnv_, obj, methodName, &hasProperty);
     if (!hasProperty) {
-        const char* methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
-        HILOG_ERROR("worker:: registered obj for global call has no method: %{public}s", methodNameStr);
-        CloseHelp::DeletePointer(methodNameStr, true);
+        std::string methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
+        HILOG_ERROR("worker:: registered obj for global call has no method: %{public}s", methodNameStr.c_str());
         AddGlobalCallError(ErrorHelper::ERR_CALL_METHOD_ON_BINDING_OBJ);
         globalCallSuccess_ = false;
         cv_.notify_one();
@@ -1525,9 +1518,9 @@ void Worker::HostOnGlobalCallInner()
     bool validMethod = NapiHelper::IsCallable(hostEnv_, method) && !NapiHelper::IsAsyncFunction(hostEnv_, method) &&
         !NapiHelper::IsGeneratorFunction(hostEnv_, method);
     if (!validMethod) {
-        const char* methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
-        HILOG_ERROR("worker:: method %{public}s shall be callable and not async or generator method", methodNameStr);
-        CloseHelp::DeletePointer(methodNameStr, true);
+        std::string methodNameStr = NapiHelper::GetString(hostEnv_, methodName);
+        HILOG_ERROR("worker:: method %{public}s shall be callable and not async or generator method",
+            methodNameStr.c_str());
         AddGlobalCallError(ErrorHelper::ERR_CALL_METHOD_ON_BINDING_OBJ);
         globalCallSuccess_ = false;
         cv_.notify_one();
