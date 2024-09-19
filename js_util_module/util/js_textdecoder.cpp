@@ -34,13 +34,13 @@ namespace OHOS::Util {
     TextDecoder::TextDecoder(const std::string &buff, std::vector<int> optionVec)
         : label_(0), encStr_(buff), tranTool_(nullptr, nullptr)
     {
-        label_ |= optionVec[0] ? static_cast<uint32_t>(ConverterFlags::FATAL_FLG) : 0;
-        label_ |= optionVec[1] ? static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG) : 0;
+        label_ |= optionVec[0] ? static_cast<int32_t>(ConverterFlags::FATAL_FLG) : 0;
+        label_ |= optionVec[1] ? static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG) : 0;
 #if !defined(__ARKUI_CROSS__)
         SetHwIcuDirectory();
 #endif
-        bool fatal = (label_ & static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) ==
-             static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
+        bool fatal = (label_ & static_cast<int32_t>(ConverterFlags::FATAL_FLG)) ==
+             static_cast<int32_t>(ConverterFlags::FATAL_FLG);
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter *conv = CreateConverter(encStr_, codeflag);
         if (U_FAILURE(codeflag)) {
@@ -106,7 +106,7 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_create_string_utf8(env, tepStr.c_str(), tepStr.size(), &resultStr));
         FreedMemory(arr);
         if (flush) {
-            label_ &= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
+            label_ &= static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
             Reset();
         }
         return resultStr;
@@ -159,7 +159,7 @@ namespace OHOS::Util {
         napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arrDat), resultLen, &resultStr);
         FreedMemory(arr);
         if (flush) {
-            label_ &= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
+            label_ &= ~static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
             Reset();
         }
         return resultStr;
@@ -175,9 +175,9 @@ namespace OHOS::Util {
 
     napi_value TextDecoder::GetFatal(napi_env env) const
     {
-        uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::FATAL_FLG);
+        int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::FATAL_FLG);
         bool comRst = false;
-        if (temp == static_cast<uint32_t>(ConverterFlags::FATAL_FLG)) {
+        if (temp == static_cast<int32_t>(ConverterFlags::FATAL_FLG)) {
             comRst = true;
         } else {
             comRst = false;
@@ -189,9 +189,9 @@ namespace OHOS::Util {
 
     napi_value TextDecoder::GetIgnoreBOM(napi_env env) const
     {
-        uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG);
+        int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG);
         bool comRst = false;
-        if (temp == static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG)) {
+        if (temp == static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG)) {
             comRst = true;
         } else {
             comRst = false;
@@ -237,7 +237,7 @@ namespace OHOS::Util {
                 rstLen = reinterpret_cast<uintptr_t>(decArr.target) - decArr.tarStartPos;
                 if (rstLen > 0 && IsUnicode() && !IsIgnoreBom() && !IsBomFlag()) {
                     bomFlag = (arr[0] == 0xFEFF) ? true : false;
-                    label_ |= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
+                    label_ |= static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
                 }
             }
         }
@@ -249,15 +249,15 @@ namespace OHOS::Util {
             case UCNV_UTF8:
             case UCNV_UTF16_BigEndian:
             case UCNV_UTF16_LittleEndian:
-                label_ |= static_cast<uint32_t>(ConverterFlags::UNICODE_FLG);
+                label_ |= static_cast<int32_t>(ConverterFlags::UNICODE_FLG);
                 break;
             default:
                 break;
         }
         if (resultLen > 0 && IsUnicode() && IsIgnoreBom()) {
             bomFlag = (arr[0] == 0xFEFF) ? true : false;
-            label_ |= static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
         }
+        label_ |= static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
     }
 
     napi_value TextDecoder::ThrowError(napi_env env, const char* errMessage)
