@@ -87,7 +87,7 @@ public:
     uint32_t GetRunningWorkers();
     uint32_t GetTimeoutWorkers();
     void GetIdleWorkersList(uint32_t step);
-    bool ReadThreadInfo(Worker* worker, char* buf, uint32_t size);
+    bool ReadThreadInfo(pid_t tid, char* buf, uint32_t size);
 
     // for get thread info
     napi_value GetThreadInfos(napi_env env);
