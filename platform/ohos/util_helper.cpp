@@ -320,6 +320,42 @@ namespace Commonlibrary::Platform {
         return u16Str;
     }
 
+    bool IsValidLowSurrogate(char16_t high)
+    {
+        // 0xD800: minimum value of low proxy term. 0xDBFF: Maximum value of low proxy term.
+        return (high >= 0xD800 && high <= 0xDBFF);
+    }
+
+    bool IsValidHighSurrogate(char16_t low)
+    {
+        // 0xDC00: minimum value of high proxy item. 0xDFFF: maximum value of high proxy item.
+        return (low >= 0xDC00 && low <= 0xDFFF);
+    }
+
+    uint32_t OtherEncodeUtf8Inner(char16_t *originalBuffer, InputBufferInfo inputInfo, size_t &index,
+        OutBufferInfo &outInfo)
+    {
+        if (IsValidLowSurrogate(originalBuffer[index]) && inputInfo.encoding == "utf-8") {
+            size_t tempIndex = index + 1;
+            if (tempIndex < inputInfo.inputSize && IsValidHighSurrogate(originalBuffer[index + 1])) {
+                // 2: move the pointer forward to the position of two elements.
+                std::u16string utf16String(&originalBuffer[index], &originalBuffer[index] + 2);
+                std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+                outInfo.rstBuffer = converter.to_bytes(utf16String);
+                outInfo.rstBufferLength = outInfo.rstBuffer.length();
+                if (outInfo.rstBufferLength > outInfo.writedSize) {
+                    return STATE_BREAK_ZERO;
+                }
+                index++;
+                outInfo.cntSize += 2; // 2: two bytes
+                outInfo.bufferResult += outInfo.rstBuffer;
+                outInfo.writedSize -= outInfo.rstBufferLength;
+                return STATE_CONTINUE_ONE;
+            }
+        }
+        return STATE_OTHER_TWO;
+    }
+
     void OtherEncodeUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchar)
     {
         size_t inputSize = 0;
@@ -330,28 +366,32 @@ namespace Commonlibrary::Platform {
             return;
         }
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
-
         std::vector<char16_t> targetBuffer(inputSize + 1, u'\0');
-        size_t writableSize = length;
-        std::string bufferResult = "";
-        size_t i = 0;
-        for (; i < inputSize; i++) {
+        InputBufferInfo inputInfo(encodeInfo.encoding, inputSize);
+        OutBufferInfo outInfo(length, "", 0, 0, "");
+        for (size_t i = 0; i < inputSize; i++) {
             targetBuffer[i] = originalBuffer[i];
-            std::string buffer = UnicodeConversion(encodeInfo.encoding, &targetBuffer[i], inputSize);
-            size_t bufferLength = buffer.length();
-            if (bufferLength > writableSize) {
+            uint32_t rstState = OtherEncodeUtf8Inner(originalBuffer, inputInfo, i, outInfo);
+            if (rstState == STATE_BREAK_ZERO) {
+                break;
+            } else if (rstState == STATE_CONTINUE_ONE) {
+                continue;
+            }
+            outInfo.rstBuffer = UnicodeConversion(encodeInfo.encoding, &targetBuffer[i], inputSize);
+            outInfo.rstBufferLength = outInfo.rstBuffer.length();
+            if (outInfo.rstBufferLength > outInfo.writedSize) {
                 break;
             }
-            bufferResult += buffer;
-            writableSize -= bufferLength;
+            outInfo.cntSize++;
+            outInfo.bufferResult += outInfo.rstBuffer;
+            outInfo.writedSize -= outInfo.rstBufferLength;
         }
-
-        size_t writeLength = bufferResult.length();
+        size_t writeLength = outInfo.bufferResult.length();
         for (size_t j = 0; j < writeLength; j++) {
-            *writeResult = bufferResult[j];
+            *writeResult = outInfo.bufferResult[j];
             writeResult++;
         }
-        *nchar = static_cast<int32_t>(i);
+        *nchar = static_cast<int32_t>(outInfo.cntSize);
         *written = static_cast<int32_t>(writeLength);
         FreedMemory(originalBuffer);
     }
