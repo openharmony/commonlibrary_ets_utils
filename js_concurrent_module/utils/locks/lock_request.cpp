@@ -84,7 +84,6 @@ void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_sta
 {
     LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
     napi_delete_async_work(env, lockRequest->work_);
-    napi_remove_env_cleanup_hook(env, EnvCleanUp, lockRequest);
     lockRequest->work_ = nullptr;
     lockRequest->CallCallback();
 }
@@ -119,6 +118,7 @@ void LockRequest::CallCallbackAsync()
 
 void LockRequest::CallCallback()
 {
+    napi_remove_env_cleanup_hook(env_, EnvCleanUp, this);
     if (AbortIfNeeded()) {
         napi_delete_reference(env_, callback_);
         lock_->CleanUpLockRequestOnCompletion(this);
