@@ -30,8 +30,8 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 static thread_local napi_ref asyncLockClassRef = nullptr;
 
 std::mutex AsyncLockManager::lockMutex;
-std::unordered_map<std::string, std::shared_ptr<AsyncLock>> AsyncLockManager::lockMap = {};
-std::unordered_map<uint32_t, std::shared_ptr<AsyncLock>> AsyncLockManager::anonymousLockMap = {};
+std::unordered_map<std::string, AsyncLock *> AsyncLockManager::lockMap = {};
+std::unordered_map<uint32_t, AsyncLock *> AsyncLockManager::anonymousLockMap = {};
 std::atomic<uint32_t> AsyncLockManager::nextId = 1;
 
 static napi_value AsyncLockOptionsCtor(napi_env env, napi_callback_info cbinfo)
@@ -74,11 +74,11 @@ void AsyncLockManager::CollectLockDependencies(std::vector<AsyncLockDependency> 
     };
     std::unique_lock<std::mutex> guard(lockMutex);
     for (auto [name, lock] : lockMap) {
-        lockProcessor(name, lock.get());
+        lockProcessor(name, lock);
     }
     for (auto [id, lock] : anonymousLockMap) {
         std::string lockName = "anonymous #" + std::to_string(id);
-        lockProcessor(lockName, lock.get());
+        lockProcessor(lockName, lock);
     }
 }
 
@@ -215,11 +215,14 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
     std::unique_lock<std::mutex> guard(lockMutex);
     if (identity->isAnonymous) {
         // no way to have >1 reference to an anonymous lock
-        anonymousLockMap.erase(identity->id);
+        auto it = anonymousLockMap.find(identity->id);
+        if ((it != anonymousLockMap.end()) && (it->second->DecRefCount() == 0)) {
+            anonymousLockMap.erase(it);
+        }
     } else {
         auto it = lockMap.find(identity->name);
         if ((it != lockMap.end()) && (it->second->DecRefCount() == 0)) {
-            lockMap.erase(identity->name);
+            lockMap.erase(it);
         }
     }
     delete identity;
@@ -240,7 +243,7 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
     AsyncLock *asyncLock = nullptr;
     {
         std::unique_lock<std::mutex> guard(lockMutex);
-        asyncLock = FindAsyncLock(id);
+        asyncLock = FindAsyncLockUnsafe(id);
     }
     if (asyncLock == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK);
@@ -290,7 +293,7 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
     AsyncLock *lock = nullptr;
     {
         std::unique_lock<std::mutex> guard(lockMutex);
-        lock = FindAsyncLock(&identity);
+        lock = FindAsyncLockUnsafe(&identity);
     }
     if (lock == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_NO_SUCH_ASYNCLOCK);
@@ -362,7 +365,7 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     for (auto &entry : anonymousLockMap) {
         AsyncLockIdentity identity = {true, entry.first, ""};
         if (pred(identity)) {
-            napi_value v = CreateLockState(env, entry.second.get());
+            napi_value v = CreateLockState(env, entry.second);
             napi_is_exception_pending(env, &pendingException);
             if (pendingException) {
                 return undefined;
@@ -376,7 +379,7 @@ napi_value AsyncLockManager::CreateLockStates(napi_env env,
     for (auto &entry : lockMap) {
         AsyncLockIdentity identity = {false, 0, entry.first};
         if (pred(identity)) {
-            napi_value v = CreateLockState(env, entry.second.get());
+            napi_value v = CreateLockState(env, entry.second);
             napi_is_exception_pending(env, &pendingException);
             if (pendingException) {
                 return undefined;
@@ -394,9 +397,9 @@ void AsyncLockManager::Request(uint32_t id)
 {
     std::unique_lock<std::mutex> guard(lockMutex);
     AsyncLockIdentity identity{true, id, ""};
-    AsyncLock *lock = FindAsyncLock(&identity);
+    AsyncLock *lock = FindAsyncLockUnsafe(&identity);
     if (lock == nullptr) {
-        anonymousLockMap.emplace(id, std::make_shared<AsyncLock>(id));
+        anonymousLockMap.emplace(id, new AsyncLock(id));
     }
 }
 
@@ -404,28 +407,28 @@ void AsyncLockManager::Request(const std::string &name)
 {
     std::unique_lock<std::mutex> guard(lockMutex);
     AsyncLockIdentity identity{false, 0, name};
-    AsyncLock *lock = FindAsyncLock(&identity);
+    AsyncLock *lock = FindAsyncLockUnsafe(&identity);
     if (lock == nullptr) {
-        lockMap.emplace(name, std::make_shared<AsyncLock>(name));
+        lockMap.emplace(name, new AsyncLock(name));
     } else {
         lock->IncRefCount();
     }
 }
 
-AsyncLock* AsyncLockManager::FindAsyncLock(AsyncLockIdentity *id)
+AsyncLock* AsyncLockManager::FindAsyncLockUnsafe(AsyncLockIdentity *id)
 {
     if (id->isAnonymous) {
         auto it = anonymousLockMap.find(id->id);
         if (it == anonymousLockMap.end()) {
             return nullptr;
         }
-        return it->second.get();
+        return it->second;
     } else {
         auto it = lockMap.find(id->name);
         if (it == lockMap.end()) {
             return nullptr;
         }
-        return it->second.get();
+        return it->second;
     }
 }
 
