@@ -65,7 +65,11 @@ void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
         return;
     }
     heldList_.erase(it);
-    lockStatus_ = LOCK_MODE_UNLOCK;
+    if (heldList_.empty()) {
+        // There are may be other shared lock requests in the heldList_.
+        // IF so, we mustn't change the status.
+        lockStatus_ = LOCK_MODE_UNLOCK;
+    }
     napi_env env = lockRequest->GetEnv();
     delete lockRequest;
     ProcessPendingLockRequest(env);
