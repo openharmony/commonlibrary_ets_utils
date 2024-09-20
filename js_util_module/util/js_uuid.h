@@ -34,7 +34,7 @@
 namespace OHOS::Util {
 constexpr const int UUID_SIZE = 16;
 struct UUID {
-    unsigned char elements[16] = {0};
+    unsigned char elements[UUID_SIZE] = {0};
 };
 
 enum ConvertFlags {
@@ -61,7 +61,10 @@ enum ConvertFlags {
 napi_value DoParseUUID(napi_env env, napi_value src);
 napi_value GetBinaryUUID(napi_env env, bool entropyCache);
 std::string GetStringUUID(napi_env env, bool entropyCache);
-bool GenerateUuid(unsigned char *data, int32_t size);
+bool GenerateUUID(unsigned char *data, int32_t size);
+void ProcessUUID(unsigned char *data);
+bool GetBufferedUUID(napi_env env, UUID &uuid);
+bool GetUnBufferedUUID(napi_env env, UUID &uuid);
 bool GetUUID(napi_env env, bool entropyCache, UUID &uuid);
 std::string GetFormatUUID(const UUID &uuid);
 unsigned char CharToHex(char in);
