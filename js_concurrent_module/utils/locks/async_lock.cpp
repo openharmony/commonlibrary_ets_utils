@@ -42,7 +42,7 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     napi_deferred deferred;
     napi_create_promise(env, &deferred, &promise);
     LockRequest *lockRequest =
-        new LockRequest(this, AsyncLockManager::GetCurrentTid(), env, cb, mode, options, deferred);
+        new LockRequest(this, AsyncLockManager::GetCurrentTid(env), env, cb, mode, options, deferred);
     std::unique_lock<std::mutex> lock(asyncLockMutex_);
     if (!CanAcquireLock(lockRequest) && options.isAvailable) {
         napi_value err;
@@ -98,9 +98,9 @@ void AsyncLock::ProcessPendingLockRequest(napi_env env)
     if (!CanAcquireLock(lockRequest)) {
         return;
     }
-    if (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid() && lockRequest->GetMode() == LOCK_MODE_SHARED) {
+    if (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid(env) && lockRequest->GetMode() == LOCK_MODE_SHARED) {
         lockStatus_ = LOCK_MODE_SHARED;
-        while (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid() &&
+        while (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid(env) &&
                lockRequest->GetMode() == LOCK_MODE_SHARED) {
             lockRequest->OnSatisfied();
             heldList_.push_back(lockRequest);

@@ -18,7 +18,7 @@
 
 namespace Commonlibrary::Concurrent::LocksModule {
 
-using tid_t = int;
+using tid_t = uint32_t;
 inline constexpr tid_t INVALID_TID = std::numeric_limits<tid_t>::max();
 
 }  // namespace Commonlibrary::Concurrent::LocksModule
