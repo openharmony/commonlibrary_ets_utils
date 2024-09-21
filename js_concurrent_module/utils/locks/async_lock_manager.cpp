@@ -459,8 +459,9 @@ bool AsyncLockManager::GetLockOptions(napi_env env, napi_value val, LockOptions 
     return true;
 }
 
-tid_t AsyncLockManager::GetCurrentTid()
+tid_t AsyncLockManager::GetCurrentTid(napi_env env)
 {
-    return static_cast<tid_t>(gettid());
+    NativeEngine *engine = reinterpret_cast<NativeEngine *>(env);
+    return engine->GetCurSysTid();
 }
 }  // namespace Commonlibrary::Concurrent::LocksModule

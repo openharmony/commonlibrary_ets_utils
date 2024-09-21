@@ -49,7 +49,7 @@ public:
     static napi_value Query(napi_env env, napi_callback_info cbinfo);
     static napi_value QueryAll(napi_env env, napi_callback_info cbinfo);
 
-    static tid_t GetCurrentTid();
+    static tid_t GetCurrentTid(napi_env env);
     static void DumpLocksInfoForThread(tid_t targetTid, std::string &result);
 
     AsyncLockManager() = delete;
