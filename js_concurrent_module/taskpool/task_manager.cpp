@@ -1720,7 +1720,11 @@ uint64_t SequenceRunnerManager::DecreaseSeqCount(SequenceRunner* seqRunner)
 void SequenceRunnerManager::RemoveGlobalSeqRunnerRef(napi_env env, SequenceRunner* seqRunner)
 {
     std::lock_guard<std::mutex> lock(globalSeqRunnerMutex_);
-    seqRunner->globalSeqRunnerRef_.erase(env);
+    auto iter = seqRunner->globalSeqRunnerRef_.find(env);
+    if (iter != seqRunner->globalSeqRunnerRef_.end()) {
+        napi_delete_reference(env, iter->second);
+        seqRunner->globalSeqRunnerRef_.erase(iter);
+    }
 }
 
 void SequenceRunnerManager::RemoveSequenceRunner(const std::string &name)
