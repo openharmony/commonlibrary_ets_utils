@@ -42,8 +42,8 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     napi_deferred deferred;
     napi_create_promise(env, &deferred, &promise);
     LockRequest *lockRequest =
-        new LockRequest(this, AsyncLockManager::GetCurrentTid(), env, cb, mode, options, deferred);
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+        new LockRequest(this, AsyncLockManager::GetCurrentTid(env), env, cb, mode, options, deferred);
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
     if (!CanAcquireLock(lockRequest) && options.isAvailable) {
         napi_value err;
         NAPI_CALL(env, napi_create_string_utf8(env, "The lock is acquired", NAPI_AUTO_LENGTH, &err));
@@ -51,14 +51,14 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     } else {
         lockRequest->OnQueued(options.timeoutMillis);
         pendingList_.push_back(lockRequest);
-        ProcessPendingLockRequest();
+        ProcessPendingLockRequest(env);
     }
     return promise;
 }
 
 void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
 {
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
     auto it = std::find(heldList_.begin(), heldList_.end(), lockRequest);
     if (it == heldList_.end()) {
         HILOG_FATAL("Lock is not found");
@@ -66,13 +66,14 @@ void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
     }
     heldList_.erase(it);
     lockStatus_ = LOCK_MODE_UNLOCK;
+    napi_env env = lockRequest->GetEnv();
     delete lockRequest;
-    ProcessPendingLockRequest();
+    ProcessPendingLockRequest(env);
 }
 
 bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
 {
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
     auto it = std::find(pendingList_.begin(), pendingList_.end(), lockRequest);
     if (it == pendingList_.end()) {
         // the lock got held while we were waiting on the mutex, no-op
@@ -83,18 +84,23 @@ bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
     return true;
 }
 
-void AsyncLock::ProcessPendingLockRequest()
+void AsyncLock::ProcessPendingLockRequest(napi_env env)
 {
     if (pendingList_.empty()) {
+        if (refCount_ == 0) {
+            // No more refs to the lock. We need to delete the instance but we cannot do it right now
+            // because asyncLockMutex_ is acquired. Do it asynchronously.
+            AsyncDestroy(env);
+        }
         return;
     }
     LockRequest *lockRequest = pendingList_.front();
     if (!CanAcquireLock(lockRequest)) {
         return;
     }
-    if (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid() && lockRequest->GetMode() == LOCK_MODE_SHARED) {
+    if (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid(env) && lockRequest->GetMode() == LOCK_MODE_SHARED) {
         lockStatus_ = LOCK_MODE_SHARED;
-        while (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid() &&
+        while (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid(env) &&
                lockRequest->GetMode() == LOCK_MODE_SHARED) {
             lockRequest->OnSatisfied();
             heldList_.push_back(lockRequest);
@@ -135,7 +141,7 @@ bool AsyncLock::CanAcquireLock(LockRequest *lockRequest)
 
 napi_status AsyncLock::FillLockState(napi_env env, napi_value held, napi_value pending)
 {
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
     uint32_t idx = 0;
     for (LockRequest *rq : heldList_) {
         napi_value info = CreateLockInfo(env, rq);
@@ -191,22 +197,59 @@ napi_value AsyncLock::CreateLockInfo(napi_env env, const LockRequest *rq)
     return info;
 }
 
+void AsyncLock::AsyncDestroy(napi_env env)
+{
+    napi_value resourceName;
+    napi_create_string_utf8(env, "AsyncLock::AsyncDestroyCallback", NAPI_AUTO_LENGTH, &resourceName);
+    auto *data = new std::pair<AsyncLock *, napi_async_work>();
+    data->first = this;
+    napi_async_work &work = data->second;
+    napi_status status = napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env, void *) {}, AsyncDestroyCallback, data, &work);
+    if (status != napi_ok) {
+        HILOG_FATAL("Internal error: cannot create async work");
+    }
+    status = napi_queue_async_work(env, work);
+    if (status != napi_ok) {
+        HILOG_FATAL("Internal error: cannot queue async work");
+    }
+}
+
+void AsyncLock::AsyncDestroyCallback(napi_env env, napi_status, void *data)
+{
+    auto *lockAndWork = reinterpret_cast<std::pair<AsyncLock *, napi_async_work> *>(data);
+    delete lockAndWork->first;
+    napi_delete_async_work(env, lockAndWork->second);
+    delete lockAndWork;
+}
+
 uint32_t AsyncLock::IncRefCount()
 {
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
     return ++refCount_;
 }
 
 uint32_t AsyncLock::DecRefCount()
 {
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
-    return --refCount_;
+    asyncLockMutex_.lock();
+    uint32_t count = --refCount_;
+    if (count == 0) {
+        // No refs to the instance. We can delete it right now if there are no more lock requests.
+        // In case there are some lock requests, the last processed lock request will delete the instance.
+        if (pendingList_.size() == 0 && heldList_.size() == 0) {
+            asyncLockMutex_.unlock();
+            delete this;
+            return 0;
+        }
+    }
+    asyncLockMutex_.unlock();
+    return count;
 }
 
 std::vector<RequestCreationInfo> AsyncLock::GetSatisfiedRequestInfos()
 {
     std::vector<RequestCreationInfo> result;
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
     for (auto *request : heldList_) {
         result.push_back(RequestCreationInfo { request->GetTid(), request->GetCreationStacktrace() });
     }
@@ -216,7 +259,7 @@ std::vector<RequestCreationInfo> AsyncLock::GetSatisfiedRequestInfos()
 std::vector<RequestCreationInfo> AsyncLock::GetPendingRequestInfos()
 {
     std::vector<RequestCreationInfo> result;
-    std::unique_lock<std::shared_mutex> lock(asyncLockMutex_);
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
     for (auto *request : pendingList_) {
         result.push_back(RequestCreationInfo { request->GetTid(), request->GetCreationStacktrace() });
     }

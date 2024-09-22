@@ -209,7 +209,7 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
     // Check deadlocks and form the rejector value with or w/o the warning. It is required to be done
     // first in order to obtain the actual data.
     std::string error;
-    AsyncLockManager::DumpLocksInfoForThread(AsyncLockManager::GetCurrentTid(), error);
+    AsyncLockManager::DumpLocksInfoForThread(AsyncLockManager::GetCurrentTid(data->request->env_), error);
 
     // NOTE: both AsyncLock and LockRequest might be deleted here, but at this point we imply that
     // AsyncLock exists, later on we we will handle the case when it does not
@@ -224,8 +224,11 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
         return;
     }
     data->request->HandleRequestTimeout(std::move(error));
+    AsyncLock *lock = data->lock;
+    napi_env env = data->request->env_;
     // will delete 'data' too
     delete data->request;
+    lock->ProcessPendingLockRequest(env);
 }
 
 void LockRequest::HandleRequestTimeout(std::string &&errorMessage)

@@ -41,26 +41,30 @@ public:
     void CleanUpLockRequestOnCompletion(LockRequest* lockRequest);
     bool CleanUpLockRequestOnTimeout(LockRequest* lockRequest);
     napi_status FillLockState(napi_env env, napi_value held, napi_value pending);
+    void ProcessPendingLockRequest(napi_env env);
 
+    // Increment the reference counter
     uint32_t IncRefCount();
+    // Decrement the reference counter.
+    // When the counter gets 0 the method deletes the instance if possible.
+    // Any way you cannot use the instance if the method returns 0.
     uint32_t DecRefCount();
 
     std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
     std::vector<RequestCreationInfo> GetPendingRequestInfos();
 
 private:
-    void ProcessPendingLockRequest();
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
-    static void Destructor(napi_env env, void *data, [[maybe_unused]] void *hint);
+    void AsyncDestroy(napi_env env);
+    static void AsyncDestroyCallback(napi_env env, napi_status status, void *data);
 
     std::list<LockRequest *> pendingList_ {};
     std::list<LockRequest *> heldList_ {};
     LockMode lockStatus_ = LOCK_MODE_UNLOCK;
     std::string lockName_ = "";    // "" for anonymous lock
     uint32_t anonymousLockId_ {};  // 0 for Non-anonymous lock
-    uv_work_t work_ = {};
-    std::shared_mutex asyncLockMutex_;
+    std::mutex asyncLockMutex_;
     uint32_t refCount_ = 1;
 };
 
