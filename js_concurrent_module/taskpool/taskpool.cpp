@@ -418,6 +418,16 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
         HILOG_FATAL("taskpool:: HandleTaskResult task is null");
         return;
     }
+    if (!task->IsMainThreadTask()) {
+        if (task->ShouldDeleteTask(false)) {
+            delete task;
+            return;
+        }
+        if (task->IsFunctionTask()) {
+            napi_remove_env_cleanup_hook(task->env_, Task::CleanupHookFunc, task);
+        }
+    }
+    task->DecreaseTaskRefCount();
     HandleTaskResultCallback(task);
 }
 

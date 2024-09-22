@@ -108,6 +108,7 @@ public:
     static void StartExecutionCallback(const uv_async_t* req);
     static void StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo);
     static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
+    static void CleanupHookFunc(void* arg);
 
     void StoreTaskId(uint64_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
@@ -132,7 +133,7 @@ public:
     void NotifyPendingTask();
     void CancelPendingTask(napi_env env);
     bool UpdateTask(uint64_t startTime, void* worker);
-    napi_value DeserializeValue(napi_env env, bool isFunc, bool isArgs);
+    napi_value DeserializeValue(napi_env env, napi_value* func, napi_value* args);
     void StoreTaskDuration();
     bool CanForSequenceRunner(napi_env env);
     bool CanForTaskGroup(napi_env env);
@@ -143,6 +144,11 @@ public:
     bool HasDependency() const;
     void TryClearHasDependency();
     void ClearDelayedTimers();
+    void IncreaseTaskRefCount();
+    void DecreaseTaskRefCount();
+    bool ShouldDeleteTask(bool needUnref = true);
+    bool VerifyAndPostResult(Priority priority);
+    bool CheckStartExecution(Priority priority);
 
 private:
     Task(const Task &) = delete;
@@ -173,7 +179,9 @@ public:
     std::atomic<uint32_t> taskRefCount_ {};
     RECURSIVE_MUTEX taskMutex_ {};
     bool hasDependency_ {false};
-    bool isLongTask_ = {false};
+    bool isLongTask_ {false};
+    std::atomic<bool> isValid_ {true};
+    std::atomic<uint32_t> refCount_ {false}; // when refCount_ is 0, the task pointer can be deleted
     uv_async_t* onStartExecutionSignal_ = nullptr;
     ListenerCallBackInfo* onEnqueuedCallBackInfo_ = nullptr;
     ListenerCallBackInfo* onStartExecutionCallBackInfo_ = nullptr;
@@ -189,7 +197,7 @@ public:
 
     std::set<uv_timer_t*> delayedTimers_ {}; // task delayed timer
 
-    bool isMainThreadTask_ {true};
+    bool isMainThreadTask_ {false};
 };
 
 struct CallbackInfo {

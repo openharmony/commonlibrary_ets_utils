@@ -66,7 +66,7 @@ public:
     std::pair<uint64_t, Priority> DequeueTaskId();
     void CancelTask(napi_env env, uint64_t taskId);
     void CancelSeqRunnerTask(napi_env env, Task* task);
-    void ReleaseTaskData(napi_env env, Task* task);
+    void ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTask = true);
 
     // for worker state
     void NotifyWorkerIdle(Worker* worker);
