@@ -1352,7 +1352,7 @@ void Task::InitHandle(napi_env env)
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    isMainThreadTask_ = engine->isMainThread();
+    isMainThreadTask_ = engine->IsMainThread();
 #endif
 }
 
