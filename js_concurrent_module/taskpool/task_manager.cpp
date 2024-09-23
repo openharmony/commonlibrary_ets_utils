@@ -613,12 +613,11 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     }
     
     task->ClearDelayedTimers();
-
-    ExecuteState state = task->taskState_;
-    task->taskState_ = ExecuteState::CANCELED;
+    ExecuteState state = task->taskState_.exchange(ExecuteState::CANCELED);
     task->CancelPendingTask(env);
     if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+        task->DecreaseTaskRefCount();
         EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
@@ -731,7 +730,12 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
     }
     TryTriggerExpand();
     Task* task = GetTask(taskId);
-    if (task != nullptr && task->onEnqueuedCallBackInfo_ != nullptr) {
+    if (task == nullptr) {
+        HILOG_FATAL("taskpool:: task is nullptr");
+        return;
+    }
+    task->IncreaseTaskRefCount();
+    if (task->onEnqueuedCallBackInfo_ != nullptr) {
         task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_);
     }
 }
@@ -931,6 +935,13 @@ void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
     if (iter == callbackTable_.end() || iter->second == nullptr) {
         return;
     }
+
+    auto task = reinterpret_cast<Task*>(taskId);
+    if (!task->isValid_) {
+        callbackTable_.erase(iter);
+        return;
+    }
+
     iter->second->refCount--;
     if (iter->second->refCount == 0) {
         callbackTable_.erase(iter);
@@ -1287,16 +1298,24 @@ void TaskManager::TerminateTask(uint64_t taskId)
     RemoveLongTaskInfo(taskId);
 }
 
-void TaskManager::ReleaseTaskData(napi_env env, Task* task)
+void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTask)
 {
     uint64_t taskId = task->taskId_;
-    RemoveTask(taskId);
+    if (shouldDeleteTask) {
+        RemoveTask(taskId);
+    }
     if (task->onResultSignal_ != nullptr) {
-        ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+        if (!uv_is_closing((uv_handle_t*)task->onResultSignal_)) {
+            ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+        } else {
+            delete task->onResultSignal_;
+        }
+        task->onResultSignal_ = nullptr;
     }
 
     if (task->currentTaskInfo_ != nullptr) {
         delete task->currentTaskInfo_;
+        task->currentTaskInfo_ = nullptr;
     }
 
     task->CancelPendingTask(env);
@@ -1332,27 +1351,41 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
     HILOG_DEBUG("taskpool:: ReleaseCallBackInfo task:%{public}s", std::to_string(task->taskId_).c_str());
     if (task->onEnqueuedCallBackInfo_ != nullptr) {
         delete task->onEnqueuedCallBackInfo_;
+        task->onEnqueuedCallBackInfo_ = nullptr;
     }
 
     if (task->onStartExecutionCallBackInfo_ != nullptr) {
         delete task->onStartExecutionCallBackInfo_;
+        task->onStartExecutionCallBackInfo_ = nullptr;
     }
 
     if (task->onExecutionFailedCallBackInfo_ != nullptr) {
         delete task->onExecutionFailedCallBackInfo_;
+        task->onExecutionFailedCallBackInfo_ = nullptr;
     }
 
     if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
         delete task->onExecutionSucceededCallBackInfo_;
+        task->onExecutionSucceededCallBackInfo_ = nullptr;
     }
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!task->IsMainThreadTask() && task->onStartExecutionSignal_ != nullptr) {
-        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        if (!uv_is_closing((uv_handle_t*)task->onStartExecutionSignal_)) {
+            ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        } else {
+            delete task->onStartExecutionSignal_;
+        }
+        task->onStartExecutionSignal_ = nullptr;
     }
 #else
     if (task->onStartExecutionSignal_ != nullptr) {
-        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        if (!uv_is_closing((uv_handle_t*)task->onStartExecutionSignal_)) {
+            ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        } else {
+            delete task->onStartExecutionSignal_;
+        }
+        task->onStartExecutionSignal_ = nullptr;
     }
 #endif
 }
@@ -1519,6 +1552,8 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
     std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+        task->DecreaseTaskRefCount();
+        TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
     }

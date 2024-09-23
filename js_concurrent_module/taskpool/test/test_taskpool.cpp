@@ -3938,16 +3938,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest206, testing::ext::TestSize.Level0)
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     task->worker_ = worker;
 
-    task->DeserializeValue(env, true, false);
+    napi_value func = nullptr;
+    napi_value args = nullptr;
+    task->DeserializeValue(env, &func, &args);
     napi_value exception = nullptr;
-    napi_get_and_clear_last_exception(env, &exception);
-    ASSERT_TRUE(exception == nullptr);
-
-    task->DeserializeValue(env, false, true);
-    napi_get_and_clear_last_exception(env, &exception);
-    ASSERT_TRUE(exception == nullptr);
-
-    task->DeserializeValue(env, false, false);
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 
@@ -4597,4 +4591,18 @@ HWTEST_F(NativeEngineTest, TaskpoolTest232, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest233, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    task->isValid_ = false;
+    bool res = task->ShouldDeleteTask();
+    ASSERT_TRUE(res);
+    task->isValid_ = true;
+    task->refCount_ = 1;
+    res = task->ShouldDeleteTask();
+    ASSERT_TRUE(res == false);
+    ASSERT_TRUE(task->refCount_ == 0);
 }
