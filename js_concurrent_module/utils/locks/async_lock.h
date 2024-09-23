@@ -63,6 +63,7 @@ public:
     }
 
 private:
+    void ProcessPendingLockRequestUnsafe(napi_env env);
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
     void AsyncDestroy(napi_env env);

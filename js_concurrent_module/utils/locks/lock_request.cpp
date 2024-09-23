@@ -155,12 +155,20 @@ void LockRequest::CallCallback()
         bool isPromise = false;
         napi_is_promise(env_, result, &isPromise);
         if (isPromise) {
+            // Save lock_ and env_ into locals. If the callback returns fulfilled promise,
+            // the lock request will be destroyed during napi_call_function(finallyFn).
+            AsyncLock *lock = lock_;
+            napi_env env = env_;
+            // Increament reference counter for the lock. Do it to prevent lock destruction.
+            lock->IncRefCount();
             napi_value finallyFn;
-            napi_get_named_property(env_, result, "finally", &finallyFn);
+            napi_get_named_property(env, result, "finally", &finallyFn);
             napi_value finallyCallback;
-            napi_create_function(env_, nullptr, 0, FinallyCallback, this, &finallyCallback);
+            napi_create_function(env, nullptr, 0, FinallyCallback, this, &finallyCallback);
             napi_value finallyPromise;
-            napi_call_function(env_, result, finallyFn, 1, &finallyCallback, &finallyPromise);
+            napi_call_function(env, result, finallyFn, 1, &finallyCallback, &finallyPromise);
+            lock->ProcessPendingLockRequest(env);
+            lock->DecRefCount();
             return;
         }
     } else {

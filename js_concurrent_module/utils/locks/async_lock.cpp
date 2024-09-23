@@ -51,7 +51,7 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     } else {
         lockRequest->OnQueued(options.timeoutMillis);
         pendingList_.push_back(lockRequest);
-        ProcessPendingLockRequest(env);
+        ProcessPendingLockRequestUnsafe(env);
     }
     return promise;
 }
@@ -72,7 +72,7 @@ void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
     }
     napi_env env = lockRequest->GetEnv();
     delete lockRequest;
-    ProcessPendingLockRequest(env);
+    ProcessPendingLockRequestUnsafe(env);
 }
 
 bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
@@ -89,6 +89,12 @@ bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
 }
 
 void AsyncLock::ProcessPendingLockRequest(napi_env env)
+{
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
+    ProcessPendingLockRequestUnsafe(env);
+}
+
+void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env)
 {
     if (pendingList_.empty()) {
         if (refCount_ == 0) {
@@ -117,7 +123,7 @@ void AsyncLock::ProcessPendingLockRequest(napi_env env)
             lockRequest = pendingList_.front();
         }
     } else {
-        lockStatus_ = LOCK_MODE_EXCLUSIVE;
+        lockStatus_ = lockRequest->GetMode();
         lockRequest->OnSatisfied();
         heldList_.push_back(lockRequest);
         pendingList_.pop_front();
