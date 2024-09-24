@@ -1284,6 +1284,10 @@ class RationalNumber {
     }
   }
 
+  static isNumeric(str: string): boolean {
+    return !isNaN(parseFloat(str)) && isFinite(+str);
+  }
+
   static parseRationalNumber(num: number, den: number): RationalNumber {
     if (typeof num !== 'number') {
       let error = new BusinessError(`Parameter error. The type of ${num} must be number`);
@@ -1293,7 +1297,9 @@ class RationalNumber {
       let error = new BusinessError(`Parameter error. The type of ${den} must be number`);
       throw error;
     }
-
+    if (!Number.isInteger(num) || !Number.isInteger(den)) {
+      console.error('parseRationalNumber: The type of Parameter must be integer');
+    }
     num = den < 0 ? num * (-1) : num;
     den = den < 0 ? den * (-1) : den;
     let ratNum = new RationalNumber();
@@ -1323,24 +1329,30 @@ class RationalNumber {
   }
 
   static createRationalFromString(str: string): RationalNumber {
-    if (typeof str !== 'string') {
+    if (typeof str !== 'string' || str === null) {
       let error = new BusinessError(`Parameter error. The type of ${str} must be string`);
       throw error;
-    }
-    if (str === null) {
-      throw new Error('string invalid!');
     }
     let colon: number = str.indexOf(':');
     let semicolon: number = str.indexOf('/');
     if ((colon < 0 && semicolon < 0) || (colon > 0 && semicolon > 0)) {
-      throw new Error('string invalid!');
+      let error = new BusinessError(`Parameter error. The type of ${str} must be effective string`);
+      throw error;
     }
     let index: number = (colon > 0) ? colon : semicolon;
-    let s1: string = str.substr(0, index);
-    let s2: string = str.substr(index + 1, str.length);
-    let num1: number = Number(s1);
-    let num2: number = Number(s2);
-    return RationalNumber.parseRationalNumber(num1, num2);
+    let str1: string = str.substr(0, index);
+    let str2: string = str.substr(index + 1, str.length);
+    if (RationalNumber.isNumeric(str1) && RationalNumber.isNumeric(str2)) {
+      let num1: number = Number(str1);
+      let num2: number = Number(str2);
+      if (!Number.isInteger(num1) || !Number.isInteger(num2)) {
+        console.error('createRationalFromString: The type of Parameter must be integer string');
+      }
+      return RationalNumber.parseRationalNumber(num1, num2);
+    } else {
+      let error = new BusinessError(`Parameter error. The type of ${str} must be character string`);
+      throw error;
+    }
   }
 
   public compareTo(other: RationalNumber): number {
@@ -1454,8 +1466,13 @@ class RationalNumber {
       throw error;
     }
     if (firNum === 0 || SecNum === 0) {
-      throw new Error('Parameter cannot be zero!');
+      let error = new BusinessError(`Parameter error. The Parameter cannot be zero`);
+      throw error;
     }
+    if (!Number.isInteger(firNum) || !Number.isInteger(SecNum) ) {
+      console.error('getCommonFactor: The type of Parameter must be integer');
+    }
+
     let temp: number = 0;
     if (firNum < SecNum) {
       temp = firNum;
