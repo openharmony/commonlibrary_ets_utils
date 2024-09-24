@@ -159,13 +159,9 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
     task->InitHandle(env);
 
     napi_value taskId = NapiHelper::CreateUint64(env, task->taskId_);
-    napi_value napiTrue = NapiHelper::CreateBooleanValue(env, true);
-    napi_value napiFalse = NapiHelper::CreateBooleanValue(env, false);
     napi_set_named_property(env, napiTask, FUNCTION_STR, func);
     napi_set_named_property(env, napiTask, TASKID_STR, taskId);
     napi_set_named_property(env, napiTask, ARGUMENTS_STR, argsArray);
-    napi_set_named_property(env, napiTask, DEFAULT_TRANSFER_STR, napiTrue);
-    napi_set_named_property(env, napiTask, DEFAULT_CLONE_SENDABLE_STR, napiFalse);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION(SETTRANSFERLIST_STR, SetTransferList),
         DECLARE_NAPI_FUNCTION(SET_CLONE_LIST_STR, SetCloneList),
@@ -223,31 +219,26 @@ napi_value Task::GetTaskInfoPromise(napi_env env, napi_value task, TaskType task
     return NapiHelper::CreatePromise(env, &taskInfo->deferred);
 }
 
-TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
+TaskInfo* Task::GetTaskInfo(napi_env env, napi_value napiTask, Priority priority)
 {
-    napi_value func = NapiHelper::GetNameProperty(env, task, FUNCTION_STR);
-    napi_value args = NapiHelper::GetNameProperty(env, task, ARGUMENTS_STR);
-    napi_value taskName = NapiHelper::GetNameProperty(env, task, NAME);
-    napi_value napiDefaultTransfer = NapiHelper::GetNameProperty(env, task, DEFAULT_TRANSFER_STR);
-    napi_value napiDefaultClone = NapiHelper::GetNameProperty(env, task, DEFAULT_CLONE_SENDABLE_STR);
-    if (func == nullptr || args == nullptr || napiDefaultTransfer == nullptr || napiDefaultClone == nullptr) {
+    napi_value func = NapiHelper::GetNameProperty(env, napiTask, FUNCTION_STR);
+    napi_value args = NapiHelper::GetNameProperty(env, napiTask, ARGUMENTS_STR);
+    if (func == nullptr || args == nullptr) {
         std::string errMessage = "taskpool:: task value is error";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
     napi_value transferList = NapiHelper::GetUndefinedValue(env);
-    if (NapiHelper::HasNameProperty(env, task, TRANSFERLIST_STR)) {
-        transferList = NapiHelper::GetNameProperty(env, task, TRANSFERLIST_STR);
+    if (NapiHelper::HasNameProperty(env, napiTask, TRANSFERLIST_STR)) {
+        transferList = NapiHelper::GetNameProperty(env, napiTask, TRANSFERLIST_STR);
     }
     napi_value cloneList = NapiHelper::GetUndefinedValue(env);
-    if (NapiHelper::HasNameProperty(env, task, CLONE_LIST_STR)) {
-        cloneList = NapiHelper::GetNameProperty(env, task, CLONE_LIST_STR);
+    if (NapiHelper::HasNameProperty(env, napiTask, CLONE_LIST_STR)) {
+        cloneList = NapiHelper::GetNameProperty(env, napiTask, CLONE_LIST_STR);
     }
-    bool defaultTransfer = NapiHelper::GetBooleanValue(env, napiDefaultTransfer);
-    bool defaultCloneSendable = NapiHelper::GetBooleanValue(env, napiDefaultClone);
     TaskInfo* pendingInfo = GenerateTaskInfo(env, func, args, transferList, cloneList, priority,
-                                             defaultTransfer, defaultCloneSendable);
+                                             defaultTransfer_, defaultCloneSendable_);
     if (pendingInfo == nullptr) {
         return nullptr;
     }
@@ -259,13 +250,10 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value task, Priority priority)
             pendingTaskInfos_.push_back(pendingInfo);
         }
     }
-    char* name = NapiHelper::GetChars(env, taskName);
-    if (strlen(name) == 0) {
+    if (name_.empty()) {
         napi_value funcName = NapiHelper::GetNameProperty(env, func, NAME);
-        name = NapiHelper::GetChars(env, funcName);
+        name_ = NapiHelper::GetString(env, funcName);
     }
-    name_ = std::string(name);
-    delete[] name;
     return pendingInfo;
 }
 
@@ -297,7 +285,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
         HILOG_DEBUG("taskpool:: set task params not transfer");
         napi_set_named_property(env, thisVar, TRANSFERLIST_STR, undefined);
         // set task.defaultTransfer false
-        napi_set_named_property(env, thisVar, DEFAULT_TRANSFER_STR, falseVal);
+        task->defaultTransfer_ = false;
         return nullptr;
     }
     if (!NapiHelper::IsArray(env, args[0])) {
@@ -306,7 +294,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     // set task.defaultTransfer false
-    napi_set_named_property(env, thisVar, DEFAULT_TRANSFER_STR, falseVal);
+    task->defaultTransfer_ = false;
     uint32_t arrayLength = NapiHelper::GetArrayLength(env, args[0]);
     if (arrayLength == 0) {
         HILOG_DEBUG("taskpool:: set task params not transfer");
@@ -338,13 +326,11 @@ napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (argc != 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of setCloneList parma must be 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of setCloneList parma must be 1.");
         return nullptr;
     }
     if (!NapiHelper::IsArray(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of setCloneList first param must be array.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of setCloneList first param must be array.");
         return nullptr;
     }
     Task* task = nullptr;
@@ -530,8 +516,7 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             errMessage = "taskpool:: addDependency param is not task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "the type of the addDependency param must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the addDependency param must be task.");
             return nullptr;
         } else {
             Task* dependentTask = nullptr;
@@ -615,15 +600,14 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             std::string errMessage = "taskpool:: removeDependency param is not task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "the type of removeDependency param must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of removeDependency param must be task.");
             return nullptr;
         }
         Task* dependentTask = nullptr;
         napi_unwrap(env, args[i], reinterpret_cast<void**>(&dependentTask));
         if (dependentTask == nullptr) {
             HILOG_ERROR("taskpool:: the dependent task is nullptr");
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the dependent task is nullptr");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,  "the dependent task is nullptr");
             return nullptr;
         }
         if (!dependentTask->HasDependency()) {
@@ -730,8 +714,7 @@ napi_value Task::OnEnqueued(napi_env env, napi_callback_info cbinfo)
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnEnqueued's parameter should be function");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of OnEnqueued's parameter must be function.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of OnEnqueued's parameter must be function.");
         return nullptr;
     }
 
@@ -899,10 +882,14 @@ napi_value Task::IsDone(napi_env env, napi_callback_info cbinfo)
 napi_value Task::GetTaskDuration(napi_env env, napi_callback_info& cbinfo, std::string durationType)
 {
     napi_value thisVar = nullptr;
+    Task* task = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
-    napi_value napiTaskId = NapiHelper::GetNameProperty(env, thisVar, TASKID_STR);
-    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
-    uint64_t totalDuration = TaskManager::GetInstance().GetTaskDuration(taskId, durationType);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        uint64_t totalDuration = 0;
+        return NapiHelper::CreateUint32(env, totalDuration);
+    }
+    uint64_t totalDuration = TaskManager::GetInstance().GetTaskDuration(task->taskId_, durationType);
     return NapiHelper::CreateUint32(env, totalDuration);
 }
 
@@ -924,12 +911,14 @@ napi_value Task::GetIODuration(napi_env env, napi_callback_info cbinfo)
 napi_value Task::GetName(napi_env env, [[maybe_unused]] napi_callback_info cbinfo)
 {
     napi_value thisVar = nullptr;
+    Task* task = nullptr;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
-    napi_value napiTaskId = NapiHelper::GetNameProperty(env, thisVar, TASKID_STR);
-    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        return NapiHelper::CreateEmptyString(env);
+    }
     napi_value name = nullptr;
-    std::string taskName = TaskManager::GetInstance().GetTaskName(taskId);
-    napi_create_string_utf8(env, taskName.c_str(), NAPI_AUTO_LENGTH, &name);
+    napi_create_string_utf8(env, task->name_.c_str(), NAPI_AUTO_LENGTH, &name);
     return name;
 }
 

@@ -78,8 +78,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
                 return nullptr;
             }
         } else {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "the type of first param must be string or number.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of first param must be string or number.");
             return nullptr;
         }
     }

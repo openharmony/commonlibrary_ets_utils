@@ -842,6 +842,7 @@ void NativeEngineTest::NotifyHandleTaskResult(napi_env env)
     worker->currentTaskId_.push_back(task1->taskId_);
     task->worker_ = worker;
     task->isMainThreadTask_ = true;
+    task->taskRefCount_.fetch_add(1);
     TaskManager::GetInstance().StoreTask(task->taskId_, task);
     Worker::NotifyHandleTaskResult(task);
 }
