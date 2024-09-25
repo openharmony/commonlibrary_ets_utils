@@ -214,6 +214,12 @@ void TaskManager::UpdateExecutedInfo(uint64_t duration)
 
 uint32_t TaskManager::ComputeSuitableThreadNum()
 {
+    uint32_t targetNum = ComputeSuitableIdleNum() + GetRunningWorkers();
+    return targetNum;
+}
+
+uint32_t TaskManager::ComputeSuitableIdleNum()
+{
     uint32_t targetNum = 0;
     if (GetNonIdleTaskNum() != 0 && totalExecCount_ == 0) {
         // this branch is used for avoiding time-consuming tasks that may block the taskpool
@@ -223,7 +229,6 @@ uint32_t TaskManager::ComputeSuitableThreadNum()
         uint32_t result = std::ceil(durationPerTask * GetNonIdleTaskNum() / MAX_TASK_DURATION);
         targetNum = std::min(result, GetNonIdleTaskNum());
     }
-    targetNum += GetRunningWorkers();
     return targetNum;
 }
 
@@ -515,13 +520,20 @@ void TaskManager::TryExpand()
         return;
     }
     needChecking_ = false; // do not need to check
-    uint32_t targetNum = ComputeSuitableThreadNum();
-    uint32_t workerCount = GetThreadNum();
-    uint32_t timeoutWorkers = GetTimeoutWorkers();
+    uint32_t targetNum = ComputeSuitableIdleNum();
+    uint32_t workerCount = 0;
+    uint32_t idleCount = 0;
+    uint32_t timeoutWorkers = 0;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
+        idleCount = idleWorkers_.size();
+        workerCount = workers_.size();
+        timeoutWorkers = timeoutWorkers_.size();
+    }
     uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     maxThreads = (timeoutWorkers == 0) ? maxThreads : maxThreads + 2; // 2: extra threads
-    if (workerCount < maxThreads && workerCount < targetNum) {
-        uint32_t step = std::min(maxThreads, targetNum) - workerCount;
+    if (workerCount < maxThreads && idleCount < targetNum) {
+        uint32_t step = std::min(maxThreads, targetNum) - idleCount;
         if (step <= idleNum) {
             return;
         }
