@@ -166,6 +166,7 @@ private:
     void NotifyShrink(uint32_t targetNum);
     void TriggerShrink(uint32_t step);
     uint32_t ComputeSuitableThreadNum();
+    uint32_t ComputeSuitableIdleNum();
     static void NotifyExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
