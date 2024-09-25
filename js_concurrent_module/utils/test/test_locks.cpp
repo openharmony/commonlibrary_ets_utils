@@ -199,6 +199,7 @@ TEST_F(LocksTest, SharedLockSingle)
 
     LockOptions options;
     lock->LockAsync(env, callback_ref, LOCK_MODE_SHARED, options);
+    Loop(LOOP_ONCE);
     ASSERT_TRUE(isCalled);
 }
 
@@ -232,6 +233,27 @@ static napi_value MainSharedLockMultiCb(napi_env env, napi_callback_info info)
     return undefined;
 }
 
+static napi_value SharedLockMultiCb(napi_env env, napi_callback_info info)
+{
+    napi_value undefined;
+    napi_get_undefined(env, &undefined);
+    CallbackData *data = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, nullptr, reinterpret_cast<void **>(&data));
+    data->callCount += 1;
+    bool prev = data->executing.exchange(true);
+    if (!prev) {
+        // executing should already changed to true by main thread.
+        // if not, fail the test
+        data->fail = true;
+        return undefined;
+    }
+
+    LocksTest::Sleep();
+
+    data->executing = false;
+    return undefined;
+}
+
 TEST_F(LocksTest, SharedLockMulti)
 {
     std::unique_ptr<AsyncLock> lock = std::make_unique<AsyncLock>(1);
@@ -241,7 +263,7 @@ TEST_F(LocksTest, SharedLockMulti)
     std::thread t([lockPtr, &callbackData, &barrier] () {
         LocksTest::InitializeEngine();
         napi_env env = GetEnv();
-        napi_value callback = CreateFunction("sharedlockmulti", ExclusiveLockMultiCb, &callbackData);
+        napi_value callback = CreateFunction("sharedlockmulti", SharedLockMultiCb, &callbackData);
         napi_ref callback_ref;
         napi_create_reference(env, callback, 1, &callback_ref);
         LockOptions options;
@@ -257,6 +279,7 @@ TEST_F(LocksTest, SharedLockMulti)
 
     LockOptions options;
     lock->LockAsync(env, callback_ref, LOCK_MODE_SHARED, options);
+    Loop(LOOP_ONCE);
     t.join();
     ASSERT_FALSE(callbackData.fail);
     ASSERT_EQ(callbackData.callCount, 2U);
