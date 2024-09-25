@@ -102,15 +102,14 @@ void AsyncLock::ProcessPendingLockRequest(napi_env env)
     if (!CanAcquireLock(lockRequest)) {
         return;
     }
-    if (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid(env) && lockRequest->GetMode() == LOCK_MODE_SHARED) {
+    if (lockRequest->GetMode() == LOCK_MODE_SHARED) {
         lockStatus_ = LOCK_MODE_SHARED;
-        while (lockRequest->GetTid() == AsyncLockManager::GetCurrentTid(env) &&
-               lockRequest->GetMode() == LOCK_MODE_SHARED) {
+        while (lockRequest->GetMode() == LOCK_MODE_SHARED) {
             lockRequest->OnSatisfied();
             heldList_.push_back(lockRequest);
             pendingList_.pop_front();
             asyncLockMutex_.unlock();
-            lockRequest->CallCallback();
+            lockRequest->CallCallbackAsync();
             asyncLockMutex_.lock();
             if (pendingList_.empty()) {
                 break;
@@ -133,8 +132,7 @@ bool AsyncLock::CanAcquireLock(LockRequest *lockRequest)
     if (heldList_.empty()) {
         return true;
     }
-    if (lockRequest->GetMode() == LOCK_MODE_SHARED && lockStatus_ == LOCK_MODE_SHARED &&
-            heldList_.front()->GetTid() == lockRequest->GetTid()) {
+    if (lockRequest->GetMode() == LOCK_MODE_SHARED && lockStatus_ == LOCK_MODE_SHARED) {
         return true;
     }
     if (lockStatus_ == LOCK_MODE_UNLOCK) {
