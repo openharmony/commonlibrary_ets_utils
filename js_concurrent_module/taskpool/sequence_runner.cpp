@@ -173,6 +173,7 @@ void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_
         }
     } else {
         TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
+        napi_delete_reference(env, seqRunner->seqRunnerRef_);
         delete seqRunner;
     }
 }
