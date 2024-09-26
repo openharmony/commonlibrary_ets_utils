@@ -85,6 +85,14 @@ LockRequest::~LockRequest()
 void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_status status, void *data)
 {
     LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
+    lockRequest->lockRequestMutex_.lock();
+    if (lockRequest->work_ == nullptr) {
+        lockRequest->lockRequestMutex_.unlock();
+        HILOG_ERROR("AsyncCallback is called after env cleaned up");
+        lockRequest->lock_->CleanUpLockRequestOnCompletion(lockRequest);
+        return;
+    }
+    lockRequest->lockRequestMutex_.unlock();
     napi_delete_async_work(env, lockRequest->work_);
     lockRequest->work_ = nullptr;
     lockRequest->CallCallback();
