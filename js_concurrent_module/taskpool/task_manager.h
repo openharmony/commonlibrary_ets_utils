@@ -88,7 +88,7 @@ public:
     uint32_t GetRunningWorkers();
     uint32_t GetTimeoutWorkers();
     void GetIdleWorkersList(uint32_t step);
-    bool ReadThreadInfo(Worker* worker, char* buf, uint32_t size);
+    bool ReadThreadInfo(pid_t tid, char* buf, uint32_t size);
 
     // for get thread info
     napi_value GetThreadInfos(napi_env env);
@@ -177,6 +177,7 @@ private:
     void NotifyShrink(uint32_t targetNum);
     void TriggerShrink(uint32_t step);
     uint32_t ComputeSuitableThreadNum();
+    uint32_t ComputeSuitableIdleNum();
     static void NotifyExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
 
