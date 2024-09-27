@@ -1606,15 +1606,9 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         HILOG_ERROR("seqRunner:: trigger seqRunner not exist.");
         return false;
     }
-    if (seqRunner->isGlobalRunner_) {
-        auto iter = seqRunner->globalSeqRunnerRef_.find(env);
-        if (iter == seqRunner->globalSeqRunnerRef_.end()) {
-            HILOG_ERROR("seqRunner:: trigger globalSeqRunner not exist.");
-            return false;
-        }
-        napi_reference_unref(env, iter->second, nullptr);
-    } else {
-        napi_reference_unref(env, seqRunner->seqRunnerRef_, nullptr);
+    if (!SequenceRunnerManager::GetInstance().TriggerGlobalSeqRunner(env, seqRunner)) {
+        HILOG_ERROR("seqRunner:: trigger globalSeqRunner not exist.");
+        return false;
     }
     if (seqRunner->currentTaskId_ != lastTask->taskId_) {
         HILOG_ERROR("seqRunner:: only front task can trigger seqRunner.");
@@ -1736,6 +1730,21 @@ SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, nap
     }
 
     return seqRunner;
+}
+
+bool SequenceRunnerManager::TriggerGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner)
+{
+    std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
+    if (seqRunner->isGlobalRunner_) {
+        auto iter = seqRunner->globalSeqRunnerRef_.find(env);
+        if (iter == seqRunner->globalSeqRunnerRef_.end()) {
+            return false;
+        }
+        napi_reference_unref(env, iter->second, nullptr);
+    } else {
+        napi_reference_unref(env, seqRunner->seqRunnerRef_, nullptr);
+    }
+    return true;
 }
 
 uint64_t SequenceRunnerManager::DecreaseSeqCount(SequenceRunner* seqRunner)

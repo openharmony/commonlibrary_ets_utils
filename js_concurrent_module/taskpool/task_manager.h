@@ -291,6 +291,7 @@ public:
     uint64_t DecreaseSeqCount(SequenceRunner* seqRunner);
     void RemoveGlobalSeqRunnerRef(napi_env env, SequenceRunner* seqRunner);
     void RemoveSequenceRunner(const std::string &name);
+    bool TriggerGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner);
 
 private:
     SequenceRunnerManager(const SequenceRunnerManager &) = delete;
