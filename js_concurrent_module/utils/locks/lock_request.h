@@ -80,6 +80,7 @@ private:
     void ArmTimeoutTimer(uint32_t timeoutMillis);
     void DisarmTimeoutTimer();
     void HandleRequestTimeout(std::string &&errorMessage);
+    void CleanTimer();
     static void AsyncAfterWorkCallback(napi_env env, napi_status status, void *data);
     static napi_value FinallyCallback(napi_env env, napi_callback_info info);
     static void TimeoutCallback(uv_timer_t *handle);
