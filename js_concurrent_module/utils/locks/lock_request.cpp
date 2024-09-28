@@ -62,7 +62,6 @@ void LockRequest::EnvCleanUp(void *arg)
 {
     LockRequest *lockRequest = static_cast<LockRequest *>(arg);
     std::unique_lock<std::mutex> guard(lockRequest->lockRequestMutex_);
-    napi_cancel_async_work(lockRequest->env_, lockRequest->work_);
     napi_delete_reference(lockRequest->env_, lockRequest->callback_);
     lockRequest->callback_ = nullptr;
     lockRequest->env_ = nullptr;
@@ -140,14 +139,16 @@ void LockRequest::CallCallback()
     napi_remove_env_cleanup_hook(env_, EnvCleanUp, this);
     if (AbortIfNeeded()) {
         napi_delete_reference(env_, callback_);
+        callback_ = nullptr;
         lock_->CleanUpLockRequestOnCompletion(this);
         return;
     }
-    napi_value cb;
+    napi_value cb = nullptr;
     napi_get_reference_value(env_, callback_, &cb);
     napi_value result;
     napi_status status = napi_call_function(env_, nullptr, cb, 0, nullptr, &result);
     napi_delete_reference(env_, callback_);
+    callback_ = nullptr;
     if (status == napi_ok) {
         napi_resolve_deferred(env_, deferred_, result);
 
@@ -219,12 +220,12 @@ void LockRequest::DisarmTimeoutTimer()
 void LockRequest::TimeoutCallback(uv_timer_t *handle)
 {
     RequestTimeoutData *data = static_cast<RequestTimeoutData*>(handle->data);
-    uv_timer_stop(handle);
     if (data == nullptr) {
         // fail! something terribly bad happened!
         HILOG_FATAL("Internal error: unable to handle the AsyncLock timeout");
         return;
     }
+    uv_timer_stop(handle);
     // Check deadlocks and form the rejector value with or w/o the warning. It is required to be done
     // first in order to obtain the actual data.
     std::string error;
@@ -245,6 +246,7 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
     data->request->HandleRequestTimeout(std::move(error));
     AsyncLock *lock = data->lock;
     napi_env env = data->request->env_;
+    napi_remove_env_cleanup_hook(env, EnvCleanUp, data->request);
     // will delete 'data' too
     delete data->request;
     lock->ProcessPendingLockRequest(env);
@@ -256,6 +258,7 @@ void LockRequest::HandleRequestTimeout(std::string &&errorMessage)
     // here we imply that there are no races already and the timeout function should do its job
     // by rejecting the associated promise with an BusinessError instance.
     napi_delete_reference(env_, callback_);
+    callback_ = nullptr;
 
     napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env_, &scope);
