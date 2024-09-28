@@ -154,10 +154,7 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
 
     napi_set_named_property(env, workerPortObj, "self", workerPortObj);
 
-    while (!engine->IsMainThread()) {
-        engine = engine->GetHostEngine();
-    }
-    if (engine->IsTargetWorkerVersion(WorkerVersion::NEW)) {
+    if (worker->isNewVersion_) {
         napi_set_named_property(env, exports, "workerPort", workerPortObj);
     } else {
         napi_set_named_property(env, exports, "parentPort", workerPortObj);
@@ -286,6 +283,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         workerParams = nullptr;
     }
     worker->isLimitedWorker_ = limitSign;
+    worker->isNewVersion_ = (version != WorkerVersion::OLD) ? true : false;
 
     // 3. execute in thread
     char* script = NapiHelper::GetChars(env, args[0]);
@@ -295,32 +293,61 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             ErrorHelper::ERR_WORKER_INVALID_FILEPATH, "the file path is invaild, maybe path is null.");
         return nullptr;
     }
-    napi_wrap(
-        env, thisVar, worker,
-        [](napi_env env, void* data, void* hint) {
-            Worker* worker = reinterpret_cast<Worker*>(data);
-            {
-                std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-                if (worker->UpdateHostState(INACTIVE)) {
-#if defined(ENABLE_WORKER_EVENTHANDLER)
-                    if (!worker->isMainThreadWorker_ || worker->isLimitedWorker_) {
-                        worker->CloseHostHandle();
-                    }
-#else
-                    worker->CloseHostHandle();
-#endif
-                    worker->ReleaseHostThreadContent();
-                }
-                if (!worker->IsRunning()) {
-                    HILOG_DEBUG("worker:: worker is not in running");
-                    return;
-                }
-                worker->TerminateInner();
-            }
-        },
-        nullptr, &worker->workerRef_);
+    napi_add_env_cleanup_hook(env, HostEnvCleanCallback, worker);
+    napi_wrap(env, thisVar, worker, WorkerDestructor, nullptr, &worker->workerRef_);
     worker->StartExecuteInThread(env, script);
     return thisVar;
+}
+
+void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
+{
+    Worker* worker = reinterpret_cast<Worker*>(data);
+    napi_remove_env_cleanup_hook(env, HostEnvCleanCallback, worker);
+    std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+    if (worker->isHostEnvExited_) {
+        HILOG_INFO("worker:: host env exit.");
+        return;
+    }
+    if (worker->UpdateHostState(INACTIVE)) {
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (!worker->isMainThreadWorker_ || worker->isLimitedWorker_) {
+            worker->CloseHostHandle();
+        }
+#else
+        worker->CloseHostHandle();
+#endif
+        worker->ReleaseHostThreadContent();
+    }
+    if (!worker->IsRunning()) {
+        HILOG_DEBUG("worker:: worker is not running");
+        return;
+    }
+    worker->TerminateInner();
+}
+
+void Worker::HostEnvCleanCallback(void *data)
+{
+    Worker* worker = reinterpret_cast<Worker*>(data);
+    if (worker == nullptr) {
+        HILOG_INFO("worker:: worker is nullptr when host env exit.");
+        return;
+    }
+    if (!IsValidWorker(worker)) {
+        HILOG_INFO("worker:: worker is terminated when host env exit.");
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+    worker->isHostEnvExited_ = true;
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+    if (!worker->isMainThreadWorker_ || worker->isLimitedWorker_) {
+        worker->CloseHostHandle();
+    }
+#else
+    worker->CloseHostHandle();
+#endif
+    worker->ReleaseHostThreadContent();
+    worker->RemoveAllListenerInner();
+    worker->ClearGlobalCallObject();
 }
 
 Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue)
@@ -887,7 +914,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     worker->hostGlobalCallQueue_.Push(worker->globalCallId_, data);
 
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-    if (env != nullptr && !worker->HostIsStop()) {
+    if (env != nullptr && !worker->HostIsStop() && !worker->isHostEnvExited_) {
         worker->InitGlobalCallStatus(env);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (worker->isMainThreadWorker_ && !worker->isLimitedWorker_) {
@@ -1244,7 +1271,7 @@ void Worker::ExecuteInThread(const void* data)
     napi_env workerEnv = nullptr;
     {
         std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-        if (worker->HostIsStop()) {
+        if (worker->HostIsStop() || worker->isHostEnvExited_) {
             HILOG_ERROR("worker:: host thread is stop");
             CloseHelp::DeletePointer(worker, false);
             return;
@@ -1300,7 +1327,7 @@ void Worker::ExecuteInThread(const void* data)
     }
     worker->ReleaseWorkerThreadContent();
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-    if (worker->HostIsStop()) {
+    if (worker->HostIsStop() || worker->isHostEnvExited_) {
         HILOG_INFO("worker:: host is stopped");
         CloseHelp::DeletePointer(worker, false);
     } else {
@@ -1317,15 +1344,13 @@ bool Worker::PrepareForWorkerInstance()
     std::string workerAmi;
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-        if (HostIsStop()) {
+        if (HostIsStop() || isHostEnvExited_) {
             HILOG_INFO("worker:: host is stopped");
             return false;
         }
-        // 1. init worker async func
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
-
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-        // 2. init worker environment
+        // 1. init worker environment
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         workerEngine->SetDebuggerPostTaskFunc([this](std::function<void()>&& task) {
             this->DebuggerOnPostTask(std::move(task));
@@ -1335,7 +1360,7 @@ bool Worker::PrepareForWorkerInstance()
             HILOG_ERROR("worker:: CallInitWorkerFunc error");
             return false;
         }
-        // 3. get uril content
+        // 2. get uril content
         if (isRelativePath_) {
             rawFileName = fileName_;
         }
@@ -1399,11 +1424,13 @@ void Worker::HostOnMessageInner()
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker received close signal");
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-            if (!isMainThreadWorker_ || isLimitedWorker_) {
-                ClosePartHostHandle();
+            if ((!isMainThreadWorker_ || isLimitedWorker_) && !isHostEnvExited_) {
+                CloseHostHandle();
             }
 #else
-            ClosePartHostHandle();
+            if (!isHostEnvExited_) {
+                CloseHostHandle();
+            }
 #endif
             CloseHostCallback();
             return;
@@ -2015,7 +2042,7 @@ void Worker::HandleUncaughtException(napi_value exception)
     napi_serialize_inner(workerEnv_, obj, undefined, undefined, false, true, &data);
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-        if (HostIsStop()) {
+        if (HostIsStop() || isHostEnvExited_) {
             return;
         }
         errorQueue_.EnQueue(data);
@@ -2042,7 +2069,7 @@ void Worker::WorkerOnMessageErrorInner()
 void Worker::PostMessageToHostInner(MessageDataType data)
 {
     std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-    if (hostEnv_ != nullptr && !HostIsStop()) {
+    if (hostEnv_ != nullptr && !HostIsStop() && !isHostEnvExited_) {
         hostMessageQueue_.EnQueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
@@ -2110,11 +2137,12 @@ void Worker::RemoveListenerInner(napi_env env, const char* type, napi_ref callba
 
 Worker::~Worker()
 {
-    if (!HostIsStop()) {
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+    if (!HostIsStop() && !isHostEnvExited_) {
         ReleaseHostThreadContent();
+        RemoveAllListenerInner();
+        ClearGlobalCallObject();
     }
-    RemoveAllListenerInner();
-    ClearGlobalCallObject();
 }
 
 void Worker::RemoveAllListenerInner()
@@ -2131,11 +2159,7 @@ void Worker::RemoveAllListenerInner()
 
 void Worker::ReleaseHostThreadContent()
 {
-    // 1. clear message send to host thread
-    hostMessageQueue_.Clear(hostEnv_);
-    hostGlobalCallQueue_.Clear(hostEnv_);
-    // 2. clear error queue send to host thread
-    errorQueue_.Clear(hostEnv_);
+    ClearHostMessage(hostEnv_);
     if (!HostIsStop()) {
         napi_status status = napi_ok;
         HandleScope scope(hostEnv_, status);
@@ -2188,7 +2212,7 @@ void Worker::CloseWorkerCallback()
     // off worker inited environment
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-        if (HostIsStop()) {
+        if (HostIsStop() || isHostEnvExited_) {
             return;
         }
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
@@ -2201,13 +2225,21 @@ void Worker::CloseWorkerCallback()
 void Worker::ReleaseWorkerThreadContent()
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
-    if (hostEngine != nullptr && workerEngine != nullptr) {
-        if (!hostEngine->DeleteWorker(workerEngine)) {
-            HILOG_ERROR("worker:: DeleteWorker error");
+    {
+        std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+        if (!HostIsStop() && !isHostEnvExited_) {
+            auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+            auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+            if (hostEngine != nullptr && workerEngine != nullptr) {
+                if (!hostEngine->DeleteWorker(workerEngine)) {
+                    HILOG_ERROR("worker:: DeleteWorker error");
+                }
+                hostEngine->DecreaseSubEnvCounter();
+            }
         }
-        hostEngine->DecreaseSubEnvCounter();
+        if (isHostEnvExited_) {
+            EraseWorker();
+        }
     }
     // 1. delete worker listener
     ParentPortRemoveAllListenerInner();
@@ -2397,22 +2429,6 @@ void Worker::CloseHostHandle()
     }
 }
 
-void Worker::ClosePartHostHandle()
-{
-    uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-        delete reinterpret_cast<uv_async_t*>(handle);
-        handle = nullptr;
-    });
-    uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-        delete reinterpret_cast<uv_async_t*>(handle);
-        handle = nullptr;
-    });
-    uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
-        delete reinterpret_cast<uv_async_t*>(handle);
-        handle = nullptr;
-    });
-}
-
 void Worker::EraseWorker()
 {
     if (!isLimitedWorker_) {
@@ -2428,5 +2444,12 @@ void Worker::EraseWorker()
             g_limitedworkers.erase(it);
         }
     }
+}
+
+void Worker::ClearHostMessage(napi_env env)
+{
+    hostMessageQueue_.Clear(env);
+    hostGlobalCallQueue_.Clear(env);
+    errorQueue_.Clear(env);
 }
 } // namespace Commonlibrary::Concurrent::WorkerModule
