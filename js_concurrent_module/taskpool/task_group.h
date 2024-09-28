@@ -49,6 +49,7 @@ private:
 
     static void TaskGroupDestructor(napi_env env, void* data, void* hint);
 
+    friend class NativeEngineTest;
 public:
     uint64_t groupId_ {};
     GroupInfo* currentGroupInfo_ {};

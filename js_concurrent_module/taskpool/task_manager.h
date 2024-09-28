@@ -33,7 +33,6 @@
 #include "task_group.h"
 #include "worker.h"
 
-
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
@@ -63,10 +62,11 @@ public:
     void RemoveTask(uint64_t taskId);
     Task* GetTask(uint64_t taskId);
     void EnqueueTaskId(uint64_t taskId, Priority priority = Priority::DEFAULT);
+    void EraseWaitingTaskId(uint64_t taskId, Priority priority);
     std::pair<uint64_t, Priority> DequeueTaskId();
     void CancelTask(napi_env env, uint64_t taskId);
     void CancelSeqRunnerTask(napi_env env, Task* task);
-    void ReleaseTaskData(napi_env env, Task* task);
+    void ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTask = true);
 
     // for worker state
     void NotifyWorkerIdle(Worker* worker);
@@ -147,13 +147,6 @@ public:
     {
         return globalEnableFfrtFlag_ || (isSystemApp_ && !disableFfrtFlag_);
     }
-
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> GetMainThreadRunner() const
-    {
-        return mainThreadRunner_;
-    }
-#endif
 
     bool CheckTask(uint64_t taskId);
 
@@ -244,11 +237,11 @@ private:
     std::vector<Worker*> freeList_ {};
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner_ {};
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
 #endif
 
     friend class TaskGroupManager;
+    friend class NativeEngineTest;
 };
 
 class TaskGroupManager {
@@ -287,6 +280,7 @@ private:
     // <seqRunnerId, SequenceRunner>
     std::unordered_map<uint64_t, SequenceRunner*> seqRunners_ {};
     std::mutex seqRunnersMutex_;
+    friend class NativeEngineTest;
 };
 
 class SequenceRunnerManager {

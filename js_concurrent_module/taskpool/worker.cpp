@@ -378,11 +378,16 @@ void Worker::PerformTask(const uv_async_t* req)
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: task has been released");
         return;
+    } else if (!task->isValid_ && task->ShouldDeleteTask(false)) {
+        HILOG_WARN("taskpool:: task is invalid");
+        delete task;
+        return;
     }
     // try to record the memory data for gc
     worker->NotifyTaskBegin();
 
     if (!task->UpdateTask(startTime, worker)) {
+        worker->NotifyTaskFinished();
         return;
     }
     if (task->IsGroupTask() && (!TaskGroupManager::GetInstance().UpdateGroupState(task->groupId_))) {
@@ -398,14 +403,13 @@ void Worker::PerformTask(const uv_async_t* req)
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
 
-    napi_value func = task->DeserializeValue(env, true, false);
-    if (func == nullptr) {
-        HILOG_DEBUG("taskpool:: task:%{public}s func is nullptr", std::to_string(task->taskId_).c_str());
-        return;
-    }
-    napi_value args = task->DeserializeValue(env, false, true);
-    if (args == nullptr) {
-        HILOG_DEBUG("taskpool:: task:%{public}s args is nullptr", std::to_string(task->taskId_).c_str());
+    napi_value func = nullptr;
+    napi_value args = nullptr;
+    napi_value errorInfo = task->DeserializeValue(env, &func, &args);
+    if (UNLIKELY(func == nullptr || args == nullptr)) {
+        if (errorInfo != nullptr) {
+            worker->NotifyTaskResult(env, task, errorInfo);
+        }
         return;
     }
     if (!worker->InitTaskPoolFunc(env, func, task)) {
@@ -417,28 +421,13 @@ void Worker::PerformTask(const uv_async_t* req)
     for (size_t i = 0; i < argsNum; i++) {
         argsArray[i] = NapiHelper::GetElement(env, args, i);
     }
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (task->IsMainThreadTask()) {
-        HITRACE_HELPER_METER_NAME("PerformTask: PostTask");
-        uint64_t taskId = task->taskId_;
-        auto onStartExecutionTask = [task, taskId]() {
-            if (!TaskManager::GetInstance().CheckTask(taskId)) {
-                return;
-            }
-            if (task->onStartExecutionCallBackInfo_ == nullptr) {
-                return;
-            }
-            Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
-        };
-        TaskManager::GetInstance().PostTask(onStartExecutionTask, "TaskPoolOnStartExecutionTask", taskInfo.second);
-    } else if (task->onStartExecutionSignal_ != nullptr) {
-        uv_async_send(task->onStartExecutionSignal_);
+
+    if (!task->CheckStartExecution(taskInfo.second)) {
+        if (task->ShouldDeleteTask()) {
+            delete task;
+        }
+        return;
     }
-#else
-    if (task->onStartExecutionSignal_ != nullptr) {
-        uv_async_send(task->onStartExecutionSignal_);
-    }
-#endif
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, nullptr);
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->ClearCurrentTaskInfo();
@@ -486,34 +475,22 @@ void Worker::NotifyHandleTaskResult(Task* task)
         HILOG_FATAL("taskpool:: worker is nullptr");
         return;
     }
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (task->IsMainThreadTask()) {
-        HITRACE_HELPER_METER_NAME("NotifyHandleTaskResult: PostTask");
-        uint64_t taskId = task->taskId_;
-        auto onResultTask = [task, taskId]() {
-            if (!TaskManager::GetInstance().CheckTask(taskId)) {
-                return;
-            }
-            TaskPool::HandleTaskResultCallback(task);
-        };
-        TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask", worker->priority_);
-    } else {
-        uv_async_send(task->onResultSignal_);
+    if (!task->VerifyAndPostResult(worker->priority_)) {
+        if (task->ShouldDeleteTask()) {
+            delete task;
+        }
     }
-#else
-    uv_async_send(task->onResultSignal_);
-#endif
     worker->NotifyTaskFinished();
 }
 
 void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, void* data)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    if (env == nullptr) {
+    if (env == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: TaskResultCallback engine is null");
         return;
     }
-    if (data == nullptr) {
+    if (data == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: data is nullptr");
         return;
     }

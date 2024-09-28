@@ -311,10 +311,8 @@ void TaskPool::DelayTask(uv_timer_t* handle)
     }
     uv_timer_stop(handle);
     uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_timer_t*>(handle);
-            handle = nullptr;
-        }
+        delete reinterpret_cast<uv_timer_t*>(handle);
+        handle = nullptr;
     });
     delete taskMessage;
     taskMessage = nullptr;
@@ -416,10 +414,20 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
     HILOG_DEBUG("taskpool:: HandleTaskResult task");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto task = static_cast<Task*>(req->data);
-    if (task == nullptr) {
+    if (task == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: HandleTaskResult task is null");
         return;
     }
+    if (!task->IsMainThreadTask()) {
+        if (task->ShouldDeleteTask(false)) {
+            delete task;
+            return;
+        }
+        if (task->IsFunctionTask()) {
+            napi_remove_env_cleanup_hook(task->env_, Task::CleanupHookFunc, task);
+        }
+    }
+    task->DecreaseTaskRefCount();
     HandleTaskResultCallback(task);
 }
 
