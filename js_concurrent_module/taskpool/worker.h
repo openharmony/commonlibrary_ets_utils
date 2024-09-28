@@ -220,6 +220,7 @@ private:
     std::mutex queueMutex_; // for sendData
     std::unordered_map<napi_env, MsgQueue> msgQueueMap_ {};
     friend class TaskManager;
+    friend class NativeEngineTest;
 
 #if defined(ENABLE_TASKPOOL_FFRT)
     void* ffrtTaskHandle_ = nullptr;

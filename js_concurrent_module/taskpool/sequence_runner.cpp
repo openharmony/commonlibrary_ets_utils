@@ -38,8 +38,8 @@ void SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar
         DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
     };
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    HILOG_DEBUG("seqRunner:: construct seqRunner name is %{public}s, seqRunnerid %{public}s.",
-                seqRunner->seqName_.c_str(), std::to_string(seqRunnerId).c_str());
+    HILOG_INFO("taskpool:: construct seqRunner name is %{public}s, seqRunnerid %{public}s.",
+               seqRunner->seqName_.c_str(), std::to_string(seqRunnerId).c_str());
 
     seqRunner->seqRunnerId_ = seqRunnerId;
     napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
@@ -88,7 +88,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
     if (name != "") {
         seqRunner = SequenceRunnerManager::GetInstance().CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
         if (seqRunner == nullptr) {
-            HILOG_ERROR("seqRunner:: create or get globalRunner failed");
+            HILOG_ERROR("taskpool:: create or get globalRunner failed");
             return nullptr;
         }
     } else {
@@ -110,13 +110,13 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     std::string errMessage = "";
     if (argc < 1) {
         errMessage = "seqRunner:: number of params at least one";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
+        HILOG_ERROR("taskpool::%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of param at least one.");
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[0]) || !NapiHelper::HasNameProperty(env, args[0], TASKID_STR)) {
         errMessage = "seqRunner:: first param must be task.";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
+        HILOG_ERROR("taskpool::%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be task.");
         return nullptr;
     }
@@ -142,15 +142,15 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (seqRunner->currentTaskId_ == 0) {
-        HILOG_INFO("seqRunner:: task %{public}s in seqRunner %{public}s immediately.",
+        HILOG_INFO("taskpool:: taskId %{public}s in seqRunner %{public}s immediately.",
                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
         task->taskState_ = ExecuteState::WAITING;
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
-        HILOG_DEBUG("seqRunner:: add %{public}s to seqRunner %{public}s.",
-                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
+        HILOG_INFO("taskpool:: add taskId: %{public}s to seqRunner %{public}s.",
+                   std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
         TaskGroupManager::GetInstance().AddTaskToSeqRunner(seqRunnerId, task);
     }
     return promise;
@@ -173,6 +173,7 @@ void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_
         }
     } else {
         TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
+        napi_delete_reference(env, seqRunner->seqRunnerRef_);
         delete seqRunner;
     }
 }

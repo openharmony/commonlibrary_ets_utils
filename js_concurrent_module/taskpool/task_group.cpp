@@ -68,6 +68,7 @@ void TaskGroup::TaskGroupDestructor(napi_env env, void* data, [[maybe_unused]] v
     HILOG_DEBUG("taskpool::TaskGroupDestructor");
     TaskGroup* group = static_cast<TaskGroup*>(data);
     TaskGroupManager::GetInstance().ReleaseTaskGroupData(env, group);
+    napi_delete_reference(env, group->groupRef_);
     delete group;
 }
 

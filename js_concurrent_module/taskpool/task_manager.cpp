@@ -80,6 +80,7 @@ TaskManager::TaskManager()
 
 TaskManager::~TaskManager()
 {
+    HILOG_INFO("taskpool:: ~TaskManager");
     if (timer_ == nullptr) {
         HILOG_ERROR("taskpool:: timer_ is nullptr");
     } else {
@@ -557,7 +558,7 @@ void TaskManager::NotifyExpand(const uv_async_t* req)
 void TaskManager::RunTaskManager()
 {
     loop_ = uv_loop_new();
-    if (loop_ == nullptr) {
+    if (loop_ == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: new loop failed.");
         return;
     }
@@ -606,10 +607,8 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         task->CancelPendingTask(env);
         uv_timer_stop(task->timer_);
         uv_close(reinterpret_cast<uv_handle_t*>(task->timer_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete (uv_timer_t*)handle;
-                handle = nullptr;
-            }
+            delete (uv_timer_t*)handle;
+            handle = nullptr;
         });
         return;
     } else if (task->IsSeqRunnerTask()) {
@@ -625,12 +624,12 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     }
     
     task->ClearDelayedTimers();
-
-    ExecuteState state = task->taskState_;
-    task->taskState_ = ExecuteState::CANCELED;
+    ExecuteState state = task->taskState_.exchange(ExecuteState::CANCELED);
     task->CancelPendingTask(env);
     if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+        task->DecreaseTaskRefCount();
+        EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
         napi_reference_unref(env, task->taskRef_, nullptr);
@@ -742,8 +741,21 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
     }
     TryTriggerExpand();
     Task* task = GetTask(taskId);
-    if (task != nullptr && task->onEnqueuedCallBackInfo_ != nullptr) {
+    if (task == nullptr) {
+        HILOG_FATAL("taskpool:: task is nullptr");
+        return;
+    }
+    task->IncreaseTaskRefCount();
+    if (task->onEnqueuedCallBackInfo_ != nullptr) {
         task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_);
+    }
+}
+
+void TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
+{
+    std::lock_guard<std::mutex> lock(taskQueuesMutex_);
+    if (!taskQueues_[priority]->EraseWaitingTaskId(taskId)) {
+        HILOG_WARN("taskpool:: taskId is not in executeQueue when cancel");
     }
 }
 
@@ -843,12 +855,8 @@ void TaskManager::InitTaskManager(napi_env env)
         }
 #endif
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-        mainThreadRunner_ = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        if (mainThreadRunner_.get() == nullptr) {
-            HILOG_FATAL("taskpool:: the mainEventRunner is nullptr");
-            return;
-        }
-        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(mainThreadRunner_);
+        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
+            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
 #endif
         hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
         // Add a reserved thread for taskpool
@@ -939,6 +947,13 @@ void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
     if (iter == callbackTable_.end() || iter->second == nullptr) {
         return;
     }
+
+    auto task = reinterpret_cast<Task*>(taskId);
+    if (!task->isValid_) {
+        callbackTable_.erase(iter);
+        return;
+    }
+
     iter->second->refCount--;
     if (iter->second->refCount == 0) {
         callbackTable_.erase(iter);
@@ -969,7 +984,7 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
         auto onCallbackTask = [callbackInfo]() {
             TaskPool::ExecuteCallbackTask(callbackInfo.get());
         };
-        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask", worker->priority_);
+        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask");
     } else {
         callbackInfo->onCallbackSignal->data = callbackInfo.get();
         uv_async_send(callbackInfo->onCallbackSignal);
@@ -1295,16 +1310,24 @@ void TaskManager::TerminateTask(uint64_t taskId)
     RemoveLongTaskInfo(taskId);
 }
 
-void TaskManager::ReleaseTaskData(napi_env env, Task* task)
+void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTask)
 {
     uint64_t taskId = task->taskId_;
-    RemoveTask(taskId);
+    if (shouldDeleteTask) {
+        RemoveTask(taskId);
+    }
     if (task->onResultSignal_ != nullptr) {
-        ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+        if (!uv_is_closing((uv_handle_t*)task->onResultSignal_)) {
+            ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+        } else {
+            delete task->onResultSignal_;
+        }
+        task->onResultSignal_ = nullptr;
     }
 
     if (task->currentTaskInfo_ != nullptr) {
         delete task->currentTaskInfo_;
+        task->currentTaskInfo_ = nullptr;
     }
 
     task->CancelPendingTask(env);
@@ -1316,9 +1339,6 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task)
     }
     DecreaseRefCount(env, taskId);
     RemoveTaskDuration(taskId);
-    if (task->IsFunctionTask()) {
-        return;
-    }
     RemovePendingTaskInfo(taskId);
     ReleaseCallBackInfo(task);
     {
@@ -1343,27 +1363,41 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
     HILOG_DEBUG("taskpool:: ReleaseCallBackInfo task:%{public}s", std::to_string(task->taskId_).c_str());
     if (task->onEnqueuedCallBackInfo_ != nullptr) {
         delete task->onEnqueuedCallBackInfo_;
+        task->onEnqueuedCallBackInfo_ = nullptr;
     }
 
     if (task->onStartExecutionCallBackInfo_ != nullptr) {
         delete task->onStartExecutionCallBackInfo_;
+        task->onStartExecutionCallBackInfo_ = nullptr;
     }
 
     if (task->onExecutionFailedCallBackInfo_ != nullptr) {
         delete task->onExecutionFailedCallBackInfo_;
+        task->onExecutionFailedCallBackInfo_ = nullptr;
     }
 
     if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
         delete task->onExecutionSucceededCallBackInfo_;
+        task->onExecutionSucceededCallBackInfo_ = nullptr;
     }
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!task->IsMainThreadTask() && task->onStartExecutionSignal_ != nullptr) {
-        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        if (!uv_is_closing((uv_handle_t*)task->onStartExecutionSignal_)) {
+            ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        } else {
+            delete task->onStartExecutionSignal_;
+        }
+        task->onStartExecutionSignal_ = nullptr;
     }
 #else
     if (task->onStartExecutionSignal_ != nullptr) {
-        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        if (!uv_is_closing((uv_handle_t*)task->onStartExecutionSignal_)) {
+            ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        } else {
+            delete task->onStartExecutionSignal_;
+        }
+        task->onStartExecutionSignal_ = nullptr;
     }
 #endif
 }
@@ -1422,11 +1456,7 @@ void TaskManager::UpdateSystemAppFlag()
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 bool TaskManager::PostTask(std::function<void()> task, const char* taskName, Priority priority)
 {
-    bool res = mainThreadHandler_->PostTask(task, taskName, 0, TASK_EVENTHANDLER_PRIORITY_MAP.at(priority));
-    if (!res) {
-        HILOG_ERROR("taskpool:: the mainThread EventHandler postTask failed");
-    }
-    return res;
+    return mainThreadHandler_->PostTask(task, taskName, 0, TASK_EVENTHANDLER_PRIORITY_MAP.at(priority));
 }
 #endif
 
@@ -1538,6 +1568,8 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
     std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+        task->DecreaseTaskRefCount();
+        TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
     }
@@ -1729,7 +1761,11 @@ uint64_t SequenceRunnerManager::DecreaseSeqCount(SequenceRunner* seqRunner)
 void SequenceRunnerManager::RemoveGlobalSeqRunnerRef(napi_env env, SequenceRunner* seqRunner)
 {
     std::lock_guard<std::mutex> lock(globalSeqRunnerMutex_);
-    seqRunner->globalSeqRunnerRef_.erase(env);
+    auto iter = seqRunner->globalSeqRunnerRef_.find(env);
+    if (iter != seqRunner->globalSeqRunnerRef_.end()) {
+        napi_delete_reference(env, iter->second);
+        seqRunner->globalSeqRunnerRef_.erase(iter);
+    }
 }
 
 void SequenceRunnerManager::RemoveSequenceRunner(const std::string &name)

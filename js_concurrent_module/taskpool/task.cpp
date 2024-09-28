@@ -78,6 +78,9 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     TaskManager::GetInstance().StoreTask(task->taskId_, task);
     napi_wrap(env, thisVar, task, TaskDestructor, nullptr, nullptr);
     napi_create_reference(env, thisVar, 0, &task->taskRef_);
+    if (!task->IsMainThreadTask()) {
+        napi_add_env_cleanup_hook(env, Task::CleanupHookFunc, task);
+    }
     return thisVar;
 }
 
@@ -93,9 +96,49 @@ napi_value Task::LongTaskConstructor(napi_env env, napi_callback_info cbinfo)
 void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     Task* task = static_cast<Task*>(data);
-    HILOG_DEBUG("taskpool:: task:%{public}s TaskDestructor", std::to_string(task->taskId_).c_str());
-    TaskManager::GetInstance().ReleaseTaskData(env, task);
-    delete task;
+    HILOG_INFO("taskpool:: taskId:%{public}s TaskDestructor", std::to_string(task->taskId_).c_str());
+    if (!task->IsMainThreadTask()) {
+        napi_remove_env_cleanup_hook(env, Task::CleanupHookFunc, task);
+    }
+    // for performance, do not lock first
+    if (task->IsMainThreadTask() || task->refCount_ == 0) {
+        TaskManager::GetInstance().ReleaseTaskData(env, task);
+        napi_delete_reference(env, task->taskRef_);
+        delete task;
+        return;
+    }
+    bool shouldDelete = false;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        task->isValid_ = false;
+        if (task->refCount_ == 0) {
+            shouldDelete = true;
+        }
+        TaskManager::GetInstance().ReleaseTaskData(env, task, shouldDelete);
+        napi_delete_reference(env, task->taskRef_);
+    }
+    if (shouldDelete) {
+        delete task;
+    }
+}
+
+void Task::CleanupHookFunc(void* arg)
+{
+    if (arg == nullptr) {
+        HILOG_ERROR("taskpool:: cleanupHook arg is nullptr");
+        return;
+    }
+    Task* task = static_cast<Task*>(arg);
+    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+    if (task->onResultSignal_ != nullptr) {
+        uv_close(reinterpret_cast<uv_handle_t*>(task->onResultSignal_), nullptr);
+    }
+    if (task->onStartExecutionSignal_ != nullptr) {
+        uv_close(reinterpret_cast<uv_handle_t*>(task->onStartExecutionSignal_), nullptr);
+    }
+    if (task->IsFunctionTask()) {
+        task->isValid_ = false;
+    }
 }
 
 Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
@@ -164,6 +207,9 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
     task->taskId_ = reinterpret_cast<uint64_t>(task);
     task->currentTaskInfo_ = taskInfo;
     task->InitHandle(env);
+    if (!task->IsMainThreadTask()) {
+        napi_add_env_cleanup_hook(env, CleanupHookFunc, task);
+    }
     return task;
 }
 
@@ -612,7 +658,7 @@ void Task::StartExecutionCallback(const uv_async_t* req)
 {
     HILOG_DEBUG("taskpool:: task StartExecutionCallback");
     auto listenerCallBackInfo = static_cast<ListenerCallBackInfo*>(req->data);
-    if (listenerCallBackInfo == nullptr) {
+    if (listenerCallBackInfo == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: StartExecutionCallBackInfo is null");
         return;
     }
@@ -641,7 +687,7 @@ void Task::StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo)
 void Task::ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo)
 {
     HILOG_DEBUG("taskpool:: task ExecuteListenerCallback");
-    if (listenerCallBackInfo == nullptr) {
+    if (listenerCallBackInfo == nullptr) { // LCOV_EXCL_BR_LINE
         HILOG_FATAL("taskpool:: listenerCallBackInfo is null");
         return;
     }
@@ -1043,7 +1089,6 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateTask", std::to_string(taskId_).c_str());
     if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
-        static_cast<Worker*>(worker)->NotifyTaskFinished();
         HILOG_INFO("taskpool:: task has been canceled, taskId %{public}s", std::to_string(taskId_).c_str());
         return false;
     }
@@ -1053,44 +1098,38 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
     return true;
 }
 
-napi_value Task::DeserializeValue(napi_env env, bool isFunc, bool isArgs)
+napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* args)
 {
-    napi_value result = nullptr;
-    napi_status status = napi_ok;
-    std::string errMessage = "";
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
     if (UNLIKELY(currentTaskInfo_ == nullptr)) {
         HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
         return nullptr;
     }
-    if (isFunc) {
-        status = napi_deserialize(env, currentTaskInfo_->serializationFunction, &result);
-        if (!IsGroupFunctionTask()) {
-            napi_delete_serialization_data(env, currentTaskInfo_->serializationFunction);
-        }
-        if (status != napi_ok || result == nullptr) {
-            errMessage = "taskpool:: failed to deserialize function.";
-            HILOG_ERROR("%{public}s", errMessage.c_str());
-            napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
-            success_ = false;
-            static_cast<Worker*>(worker_)->NotifyTaskResult(env, this, err);
-            return nullptr;
-        }
-        return result;
-    } else if (isArgs) {
-        status = napi_deserialize(env, currentTaskInfo_->serializationArguments, &result);
-        if (!IsGroupFunctionTask()) {
-            napi_delete_serialization_data(env, currentTaskInfo_->serializationArguments);
-        }
-        if (status != napi_ok || result == nullptr) {
-            errMessage = "taskpool:: failed to deserialize arguments.";
-            HILOG_ERROR("%{public}s", errMessage.c_str());
-            napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
-            success_ = false;
-            static_cast<Worker*>(worker_)->NotifyTaskResult(env, this, err);
-            return nullptr;
-        }
-        return result;
+
+    napi_status status = napi_ok;
+    std::string errMessage = "";
+    status = napi_deserialize(env, currentTaskInfo_->serializationFunction, func);
+    if (!IsGroupFunctionTask()) {
+        napi_delete_serialization_data(env, currentTaskInfo_->serializationFunction);
+    }
+    if (status != napi_ok || func == nullptr) {
+        errMessage = "taskpool:: failed to deserialize function.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        success_ = false;
+        return err;
+    }
+
+    status = napi_deserialize(env, currentTaskInfo_->serializationArguments, args);
+    if (!IsGroupFunctionTask()) {
+        napi_delete_serialization_data(env, currentTaskInfo_->serializationArguments);
+    }
+    if (status != napi_ok || args == nullptr) {
+        errMessage = "taskpool:: failed to deserialize function.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        success_ = false;
+        return err;
     }
     return nullptr;
 }
@@ -1303,15 +1342,17 @@ void Task::InitHandle(napi_env env)
 {
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!OHOS::AppExecFwk::EventRunner::IsAppMainThread()) {
-        isMainThreadTask_ = false;
         uv_loop_t* loop = NapiHelper::GetLibUV(env);
         ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
     } else {
+        isMainThreadTask_ = true;
         HILOG_DEBUG("taskpool:: eventrunner should be nullptr if the current thread is not the main thread");
     }
 #else
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    isMainThreadTask_ = engine->IsMainThread();
 #endif
 }
 
@@ -1329,14 +1370,114 @@ void Task::ClearDelayedTimers()
         napi_reject_deferred(env_, taskMessage->deferred, error);
         uv_timer_stop(t);
         uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete (uv_timer_t*)handle;
-                handle = nullptr;
-            }
+            delete (uv_timer_t*)handle;
+            handle = nullptr;
         });
         delete taskMessage;
         taskMessage = nullptr;
     }
     delayedTimers_.clear();
+}
+
+bool Task::VerifyAndPostResult(Priority priority)
+{
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (IsMainThreadTask()) {
+        HITRACE_HELPER_METER_NAME("VerifyAndPostResult: PostTask");
+        uint64_t taskId = taskId_;
+        auto onResultTask = [taskId]() {
+            Task* task = TaskManager::GetInstance().GetTask(taskId);
+            if (task == nullptr) {
+                return;
+            }
+            TaskPool::HandleTaskResultCallback(task);
+        };
+        TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask", priority);
+        return true;
+    } else {
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        if (!isValid_ || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+            return false;
+        }
+        uv_async_send(onResultSignal_);
+        return true;
+    }
+#else
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    if (!isValid_ || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+        return false;
+    }
+    uv_async_send(onResultSignal_);
+    return true;
+#endif
+}
+
+void Task::IncreaseTaskRefCount()
+{
+    refCount_++; // when tasks are created or executed, refCount_ will increment
+}
+
+void Task::DecreaseTaskRefCount()
+{
+    refCount_--; // when tasks finished, refCount_ will decrement
+}
+
+bool Task::ShouldDeleteTask(bool needUnref)
+{
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    if (!isValid_) {
+        HILOG_WARN("taskpool:: task is invalid");
+        TaskManager::GetInstance().RemoveTask(taskId_);
+        return true;
+    }
+    if (needUnref) {
+        DecreaseTaskRefCount();
+    }
+    return false;
+}
+
+bool Task::CheckStartExecution(Priority priority)
+{
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (IsMainThreadTask()) {
+        if (onStartExecutionCallBackInfo_ == nullptr) {
+            return true;
+        }
+        HITRACE_HELPER_METER_NAME("PerformTask: PostTask");
+        uint64_t taskId = taskId_;
+        auto onStartExecutionTask = [taskId]() {
+            Task* task = TaskManager::GetInstance().GetTask(taskId);
+            if (task == nullptr || task->onStartExecutionCallBackInfo_ == nullptr) {
+                return;
+            }
+            Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
+        };
+        TaskManager::GetInstance().PostTask(onStartExecutionTask, "TaskPoolOnStartExecutionTask", priority);
+    } else {
+        if (onStartExecutionSignal_ == nullptr) {
+            return true;
+        }
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        if (!isValid_) {
+            return false;
+        }
+        if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
+            uv_async_send(onStartExecutionSignal_);
+        }
+    }
+    return true;
+#else
+    if (onStartExecutionSignal_ == nullptr) {
+        return true;
+    }
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    if (!isValid_) {
+        return false;
+    }
+    if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
+        uv_async_send(onStartExecutionSignal_);
+    }
+    return true;
+#endif
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
