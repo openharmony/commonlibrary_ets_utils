@@ -27,18 +27,14 @@ WorkerRunner::~WorkerRunner()
 
 void WorkerRunner::WorkerInnerRunner::Run()
 {
-    if (runner_ != nullptr) {
-        runner_->Run();
-    }
+    runner_->Run();
 }
 
 WorkerRunner::WorkerInnerRunner::WorkerInnerRunner(const WorkerRunner* runner) : runner_(runner) {}
 
 void WorkerRunner::Run() const
 {
-    if (callback_.callback != nullptr) {
-        callback_.callback(callback_.data);
-    }
+    callback_.callback(callback_.data);
 }
 
 bool WorkerRunner::Execute()

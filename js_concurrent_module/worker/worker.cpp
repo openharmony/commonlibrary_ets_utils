@@ -40,8 +40,21 @@ static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
 static constexpr size_t GLOBAL_CALL_MAX_COUNT = 65535;
+
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-static std::shared_ptr<OHOS::AppExecFwk::EventHandler> g_mainThreadHandler = nullptr;
+std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::GetMainThreadHandler()
+{
+    static std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler;
+    static std::mutex mainThreadHandlerMutex;
+    if (mainThreadHandler == nullptr) {
+        std::lock_guard<std::mutex> lock(mainThreadHandlerMutex);
+        if (mainThreadHandler == nullptr) {
+            mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
+                OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
+        }
+    }
+    return mainThreadHandler;
+}
 #endif
 
 Worker::Worker(napi_env env, napi_ref thisVar)
@@ -152,10 +165,7 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
     // register worker Port.
     napi_create_reference(env, workerPortObj, 1, &worker->workerPort_);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-    if (g_mainThreadHandler == nullptr) {
-        g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
-            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
-    }
+    GetMainThreadHandler();
 #endif
     return exports;
 }
@@ -223,6 +233,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             return nullptr;
         }
     }
+
     Worker* worker = nullptr;
     if (limitSign) {
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
@@ -1783,10 +1794,8 @@ void Worker::TerminateWorker()
     {
         std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
         uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
@@ -1829,12 +1838,7 @@ void Worker::PostWorkerOverTask()
             this->HostOnMessageInner();
         }
     };
-    if (!g_mainThreadHandler) {
-        HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
-        g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
-            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
-    }
-    g_mainThreadHandler->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
+    GetMainThreadHandler()->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
@@ -1848,12 +1852,7 @@ void Worker::PostWorkerErrorTask()
             this->TerminateInner();
         }
     };
-    if (!g_mainThreadHandler) {
-        HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
-        g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
-            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
-    }
-    g_mainThreadHandler->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
+    GetMainThreadHandler()->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
@@ -1866,12 +1865,7 @@ void Worker::PostWorkerMessageTask()
             this->HostOnMessageInner();
         }
     };
-    if (!g_mainThreadHandler) {
-        HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
-        g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
-            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
-    }
-    g_mainThreadHandler->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
+    GetMainThreadHandler()->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
@@ -1884,12 +1878,7 @@ void Worker::PostWorkerGlobalCallTask()
             this->HostOnGlobalCallInner();
         }
     };
-    if (!g_mainThreadHandler) {
-        HILOG_INFO("worker:: eventHandler of the main thread is nullptr, and try again.");
-        g_mainThreadHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
-            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
-    }
-    g_mainThreadHandler->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
+    GetMainThreadHandler()->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
@@ -1971,7 +1960,7 @@ bool Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, co
         WorkerListener* data = *it++;
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
         if (!NapiHelper::IsCallable(env, callbackObj)) {
-            HILOG_DEBUG("worker:: host thread listener %{public}s is not callable", type);
+            HILOG_WARN("worker:: host thread listener %{public}s is not callable", type);
             return false;
         }
         napi_value callbackResult = nullptr;
@@ -2180,14 +2169,14 @@ bool Worker::CallWorkerFunction(size_t argc, const napi_value* argv, const char*
     napi_value callback = NapiHelper::GetNamePropertyInParentPort(workerEnv_, workerPort_, methodName);
     bool isCallable = NapiHelper::IsCallable(workerEnv_, callback);
     if (!isCallable) {
-        HILOG_DEBUG("worker:: workerPort.%{public}s is not Callable", methodName);
+        HILOG_WARN("worker:: workerPort.%{public}s is not Callable", methodName);
         return false;
     }
     napi_value workerPortObj = NapiHelper::GetReferenceValue(workerEnv_, workerPort_);
     napi_value callbackResult = nullptr;
     napi_call_function(workerEnv_, workerPortObj, callback, argc, argv, &callbackResult);
     if (tryCatch && callbackResult == nullptr) {
-        HILOG_DEBUG("worker:: workerPort.%{public}s handle exception", methodName);
+        HILOG_ERROR("worker:: workerPort.%{public}s handle exception", methodName);
         HandleException();
         return false;
     }
@@ -2295,7 +2284,7 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
     std::string listener(type);
     auto iter = parentPortEventListeners_.find(listener);
     if (iter == parentPortEventListeners_.end()) {
-        HILOG_DEBUG("worker:: there is no listener for type %{public}s in worker thread", type);
+        HILOG_INFO("worker:: there is no listener for type %{public}s in worker thread", type);
         return;
     }
 
@@ -2305,7 +2294,7 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
         WorkerListener* data = *it++;
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
         if (!NapiHelper::IsCallable(env, callbackObj)) {
-            HILOG_DEBUG("worker:: workerPort.addEventListener %{public}s is not callable", type);
+            HILOG_WARN("worker:: workerPort.addEventListener %{public}s is not callable", type);
             return;
         }
         napi_value callbackResult = nullptr;
@@ -2391,27 +2380,20 @@ void Worker::CloseHostHandle()
 {
     if (hostOnMessageSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_))) {
         uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
     if (hostOnErrorSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_))) {
         uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
     if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_),
-            [](uv_handle_t* handle) {
-            if (handle != nullptr) {
-                delete reinterpret_cast<uv_async_t*>(handle);
-                handle = nullptr;
-            }
+        uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
+            delete reinterpret_cast<uv_async_t*>(handle);
+            handle = nullptr;
         });
     }
 }
@@ -2419,22 +2401,16 @@ void Worker::CloseHostHandle()
 void Worker::ClosePartHostHandle()
 {
     uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
+        delete reinterpret_cast<uv_async_t*>(handle);
+        handle = nullptr;
     });
     uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
+        delete reinterpret_cast<uv_async_t*>(handle);
+        handle = nullptr;
     });
     uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
-        if (handle != nullptr) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        }
+        delete reinterpret_cast<uv_async_t*>(handle);
+        handle = nullptr;
     });
 }
 

@@ -67,18 +67,19 @@ public:
     explicit Graph(AdjacencyList &&adj)
     {
         std::map<VertexId, size_t> vDataPtrToVidx;
+        size_t size = v_.size() > 0 ? v_.size() - 1 : 0;
         for (auto &edef : adj) {
             // from
             auto fromVertexPtr = std::get<0>(edef);
             if (vDataPtrToVidx.find(fromVertexPtr) == vDataPtrToVidx.end()) {
                 v_.push_back({VColor::WHITE, fromVertexPtr});
-                vDataPtrToVidx[fromVertexPtr] = v_.size() - 1;
+                vDataPtrToVidx[fromVertexPtr] = size;
             }
             // to
             auto toVertexPtr = std::get<1>(edef);
             if (vDataPtrToVidx.find(toVertexPtr) == vDataPtrToVidx.end()) {
                 v_.push_back({VColor::WHITE, toVertexPtr});
-                vDataPtrToVidx[toVertexPtr] = v_.size() - 1;
+                vDataPtrToVidx[toVertexPtr] = size;
             }
         }
         // For now let's use an adjacency matrix as the storage.
@@ -117,7 +118,8 @@ public:
                                      VertexPrinter vertexPrinter = defaultVertexPrinter,
                                      EdgePrinter edgePrinter = DEFAULT_EDGE_PRINTER)
     {
-        if (cycle.vertices.empty() || (cycle.edges.size() != (cycle.vertices.size() - 1))) {
+        if (cycle.vertices.empty() || cycle.vertices.size() < 1 ||
+            (cycle.edges.size() != (cycle.vertices.size() - 1))) {
             return "";
         }
         std::stringstream result;
