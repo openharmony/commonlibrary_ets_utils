@@ -370,6 +370,9 @@ public:
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
 
+    static void WorkerDestructor(napi_env env, void *data, void *hint);
+    static void HostEnvCleanCallback(void *data);
+
 #if defined(ENABLE_WORKER_EVENTHANDLER)
     static std::shared_ptr<OHOS::AppExecFwk::EventHandler> GetMainThreadHandler();
 #endif
@@ -520,7 +523,6 @@ private:
 
     void InitHostHandle(uv_loop_t* loop);
     void CloseHostHandle();
-    void ClosePartHostHandle();
 
     void ReleaseWorkerThreadContent();
     void ReleaseHostThreadContent();
@@ -538,6 +540,8 @@ private:
     void ClearGlobalCallError(napi_env env);
     void InitGlobalCallStatus(napi_env env);
     void IncreaseGlobalCallId();
+
+    void ClearHostMessage(napi_env env);
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -595,8 +599,9 @@ private:
     std::function<void(napi_env)> workerEnvCallback_;
 
     bool isMainThreadWorker_ = true;
-
+    bool isNewVersion_ = true;
     std::atomic<bool> isTerminated_ = false;
+    std::atomic<bool> isHostEnvExited_ = false;
 
     friend class WorkersTest;
 };
