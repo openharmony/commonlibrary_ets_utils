@@ -28,6 +28,12 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
+#ifdef WINDOWS_PLATFORM
+#define TIMER_PUBLIC_API __declspec(dllexport)
+#else
+#define TIMER_PUBLIC_API __attribute__((visibility ("default")))
+#endif
+
 namespace OHOS::JsSysModule {
 struct TimerCallbackInfo {
     napi_env env_ {nullptr};
@@ -60,7 +66,7 @@ class Timer {
 public:
     Timer() = default;
     ~Timer() = default;
-    static bool RegisterTime(napi_env env);
+    TIMER_PUBLIC_API static bool RegisterTime(napi_env env);
     static void ClearEnvironmentTimer(napi_env env);
     static bool HasTimer(napi_env env);
     friend class TimerTest;
