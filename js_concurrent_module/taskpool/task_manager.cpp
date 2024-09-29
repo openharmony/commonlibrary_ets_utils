@@ -984,7 +984,7 @@ napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resu
         auto onCallbackTask = [callbackInfo]() {
             TaskPool::ExecuteCallbackTask(callbackInfo.get());
         };
-        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask");
+        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask", worker->priority_);
     } else {
         callbackInfo->onCallbackSignal->data = callbackInfo.get();
         uv_async_send(callbackInfo->onCallbackSignal);

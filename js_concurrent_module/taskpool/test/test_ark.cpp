@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,12 +20,14 @@
 using panda::RuntimeOption;
 static NativeEngine *g_nativeEngine = nullptr;
 
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 NativeEngineTest::NativeEngineTest()
 {
     engine_ = g_nativeEngine;
 }
 
 NativeEngineTest::~NativeEngineTest() {}
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 
 int main(int argc, char **argv)
 {
@@ -47,6 +49,7 @@ int main(int argc, char **argv)
     }
 
     g_nativeEngine = new ArkNativeEngine(vm, nullptr);
+    g_nativeEngine->SetInitWorkerFunc([](NativeEngine*) {});
 
     int ret = testing::UnitTest::GetInstance()->Run();
 
