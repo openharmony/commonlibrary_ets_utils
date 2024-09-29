@@ -370,6 +370,10 @@ public:
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
 
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+    static std::shared_ptr<OHOS::AppExecFwk::EventHandler> GetMainThreadHandler();
+#endif
+
     void StartExecuteInThread(napi_env env, const char* script);
 
     bool UpdateWorkerState(RunnerState state);
@@ -403,7 +407,7 @@ public:
     void AddListenerInner(napi_env env, const char* type, const WorkerListener* listener);
     void RemoveListenerInner(napi_env env, const char* type, napi_ref callback);
     void RemoveAllListenerInner();
-
+    void EraseWorker();
     uv_loop_t* GetWorkerLoop() const
     {
         if (workerEnv_ != nullptr) {
@@ -501,7 +505,7 @@ private:
     void PostMessageToHostInner(MessageDataType data);
 
     void TerminateWorker();
-    void EraseWorker();
+    
     void CloseInner();
 
     void PublishWorkerOverSignal();
@@ -593,6 +597,8 @@ private:
     bool isMainThreadWorker_ = true;
 
     std::atomic<bool> isTerminated_ = false;
+
+    friend class WorkersTest;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H
