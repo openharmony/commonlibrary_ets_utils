@@ -254,9 +254,7 @@ namespace Commonlibrary::Platform {
             return;
         }
         napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
-
-        int maxByteSize = GetMaxByteSize(encoding);
-        outLen = static_cast<size_t>(maxByteSize) * inputSize;
+        outLen = static_cast<size_t>(GetMaxByteSize(encoding)) * inputSize;
         napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
         char *writeResult = static_cast<char*>(data);
         if (writeResult == nullptr) {
