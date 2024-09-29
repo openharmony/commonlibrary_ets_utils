@@ -25,6 +25,12 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
+#ifdef WINDOWS_PLATFORM
+#define CONSOLE_PUBLIC_API __declspec(dllexport)
+#else
+#define CONSOLE_PUBLIC_API __attribute__((visibility ("default")))
+#endif
+
 namespace OHOS::JsSysModule {
 
 enum class LogLevel : uint32_t {
@@ -39,7 +45,7 @@ class Console {
 public:
     Console() = default;
     ~Console() = default;
-    static void InitConsoleModule(napi_env env);
+    CONSOLE_PUBLIC_API static void InitConsoleModule(napi_env env);
     friend class ConsoleTest;
 
 private:
