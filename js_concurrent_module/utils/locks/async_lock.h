@@ -41,7 +41,7 @@ public:
     void CleanUpLockRequestOnCompletion(LockRequest* lockRequest);
     bool CleanUpLockRequestOnTimeout(LockRequest* lockRequest);
     napi_status FillLockState(napi_env env, napi_value held, napi_value pending);
-    void ProcessPendingLockRequest(napi_env env);
+    void ProcessPendingLockRequest(napi_env env, LockRequest *syncLockRequest = nullptr);
 
     // Increment the reference counter
     uint32_t IncRefCount();
@@ -63,11 +63,13 @@ public:
     }
 
 private:
-    void ProcessPendingLockRequestUnsafe(napi_env env);
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
     void AsyncDestroy(napi_env env);
     static void AsyncDestroyCallback(napi_env env, napi_status status, void *data);
+    template <bool isAsync>
+    void ProcessLockRequest(LockRequest *lockRequest);
+    void ProcessPendingLockRequestUnsafe(napi_env env, LockRequest *syncLockRequest = nullptr);
 
     std::list<LockRequest *> pendingList_ {};
     std::list<LockRequest *> heldList_ {};
