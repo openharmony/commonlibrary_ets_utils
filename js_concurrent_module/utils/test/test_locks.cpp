@@ -219,15 +219,14 @@ static napi_value MainSharedLockMultiCb(napi_env env, napi_callback_info info)
     napi_get_cb_info(env, info, nullptr, nullptr, nullptr, reinterpret_cast<void **>(&data));
     data->barrier.arrive_and_wait();
     data->callCount += 1;
-    bool prev = data->executing.exchange(true);
-    if (prev) {
-        // The callback is executing now by another thread.
-        // Fail the test
+
+    LocksTest::Sleep();
+    data->executing.exchange(true);
+
+    if (data->callCount != 2) {
         data->fail = true;
         return undefined;
     }
-
-    LocksTest::Sleep();
 
     data->executing = false;
     return undefined;
@@ -240,15 +239,13 @@ static napi_value SharedLockMultiCb(napi_env env, napi_callback_info info)
     CallbackData *data = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, nullptr, reinterpret_cast<void **>(&data));
     data->callCount += 1;
-    bool prev = data->executing.exchange(true);
-    if (!prev) {
-        // executing should already changed to true by main thread.
-        // if not, fail the test
+
+    LocksTest::Sleep();
+
+    if (data->callCount != 2) {
         data->fail = true;
         return undefined;
     }
-
-    LocksTest::Sleep();
 
     data->executing = false;
     return undefined;

@@ -51,7 +51,7 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     } else {
         lockRequest->OnQueued(options.timeoutMillis);
         pendingList_.push_back(lockRequest);
-        ProcessPendingLockRequest(env);
+        ProcessPendingLockRequestUnsafe(env, lockRequest);
     }
     return promise;
 }
@@ -72,7 +72,7 @@ void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
     }
     napi_env env = lockRequest->GetEnv();
     delete lockRequest;
-    ProcessPendingLockRequest(env);
+    ProcessPendingLockRequestUnsafe(env);
 }
 
 bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
@@ -88,7 +88,28 @@ bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
     return true;
 }
 
-void AsyncLock::ProcessPendingLockRequest(napi_env env)
+template <bool isAsync>
+void AsyncLock::ProcessLockRequest(LockRequest* lockRequest)
+{
+    lockRequest->OnSatisfied();
+    heldList_.push_back(lockRequest);
+    pendingList_.pop_front();
+    asyncLockMutex_.unlock();
+    if constexpr (isAsync) {
+        lockRequest->CallCallbackAsync();
+    } else {
+        lockRequest->CallCallback();
+    }
+    asyncLockMutex_.lock();
+}
+
+void AsyncLock::ProcessPendingLockRequest(napi_env env, LockRequest* syncLockRequest)
+{
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
+    ProcessPendingLockRequestUnsafe(env);
+}
+
+void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncLockRequest)
 {
     if (pendingList_.empty()) {
         if (refCount_ == 0) {
@@ -102,28 +123,21 @@ void AsyncLock::ProcessPendingLockRequest(napi_env env)
     if (!CanAcquireLock(lockRequest)) {
         return;
     }
-    if (lockRequest->GetMode() == LOCK_MODE_SHARED) {
-        lockStatus_ = LOCK_MODE_SHARED;
-        while (lockRequest->GetMode() == LOCK_MODE_SHARED) {
-            lockRequest->OnSatisfied();
-            heldList_.push_back(lockRequest);
-            pendingList_.pop_front();
-            asyncLockMutex_.unlock();
-            lockRequest->CallCallbackAsync();
-            asyncLockMutex_.lock();
+    lockStatus_ = lockRequest->GetMode();
+    if (lockStatus_ == LOCK_MODE_SHARED) {
+        do {
+            if (syncLockRequest == lockRequest) {
+                ProcessLockRequest<false>(lockRequest);
+            } else {
+                ProcessLockRequest<true>(lockRequest);
+            }
             if (pendingList_.empty()) {
                 break;
             }
             lockRequest = pendingList_.front();
-        }
+        } while (lockRequest->GetMode() == LOCK_MODE_SHARED);
     } else {
-        lockStatus_ = LOCK_MODE_EXCLUSIVE;
-        lockRequest->OnSatisfied();
-        heldList_.push_back(lockRequest);
-        pendingList_.pop_front();
-        asyncLockMutex_.unlock();
-        lockRequest->CallCallbackAsync();
-        asyncLockMutex_.lock();
+        ProcessLockRequest<true>(lockRequest);
     }
 }
 
