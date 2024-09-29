@@ -31,15 +31,14 @@
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;
 
-    TextDecoder::TextDecoder(const std::string &buff, std::vector<int> optionVec)
-        : label_(0), encStr_(buff), tranTool_(nullptr, nullptr)
+    TextDecoder::TextDecoder(const std::string &buff, int32_t flags)
+        : encStr_(buff), tranTool_(nullptr, nullptr)
     {
-        label_ |= optionVec[0] ? static_cast<int32_t>(ConverterFlags::FATAL_FLG) : 0;
-        label_ |= optionVec[1] ? static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG) : 0;
+        label_ |= flags;
 #if !defined(__ARKUI_CROSS__)
         SetHwIcuDirectory();
 #endif
-        bool fatal = (label_ & static_cast<int32_t>(ConverterFlags::FATAL_FLG)) ==
+        bool fatal = (flags & static_cast<int32_t>(ConverterFlags::FATAL_FLG)) ==
              static_cast<int32_t>(ConverterFlags::FATAL_FLG);
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter *conv = CreateConverter(encStr_, codeflag);
@@ -238,42 +237,6 @@ namespace OHOS::Util {
             Reset();
         }
         return resultStr;
-    }
-
-    napi_value TextDecoder::GetEncoding(napi_env env) const
-    {
-        size_t length = encStr_.length();
-        napi_value result = nullptr;
-        NAPI_CALL(env, napi_create_string_utf8(env, encStr_.c_str(), length, &result));
-        return result;
-    }
-
-    napi_value TextDecoder::GetFatal(napi_env env) const
-    {
-        int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::FATAL_FLG);
-        bool comRst = false;
-        if (temp == static_cast<int32_t>(ConverterFlags::FATAL_FLG)) {
-            comRst = true;
-        } else {
-            comRst = false;
-        }
-        napi_value result = nullptr;
-        NAPI_CALL(env, napi_get_boolean(env, comRst, &result));
-        return result;
-    }
-
-    napi_value TextDecoder::GetIgnoreBOM(napi_env env) const
-    {
-        int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG);
-        bool comRst = false;
-        if (temp == static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG)) {
-            comRst = true;
-        } else {
-            comRst = false;
-        }
-        napi_value result;
-        NAPI_CALL(env, napi_get_boolean(env, comRst, &result));
-        return result;
     }
 
     size_t TextDecoder::GetMinByteSize() const

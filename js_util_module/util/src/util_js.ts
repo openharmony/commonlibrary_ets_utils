@@ -41,6 +41,9 @@ let base64 = helpUtil.Base64;
 let types = helpUtil.Types;
 let stringdecoder = helpUtil.StringDecoder;
 
+const CONVERTER_FLAGS_FLUSH = 0x1;
+const CONVERTER_FLAGS_FATAL = 0x2;
+const CONVERTER_FLAGS_IGNORE_BOM = 0x4;
 const typeErrorCode = 401;
 const syntaxErrorCode = 10200002;
 class BusinessError extends Error {
@@ -680,31 +683,43 @@ function promisify(func: Function): Function {
 }
 
 interface TextDecoder {
-  new(encoding?: string, options?: { fatal?: boolean; ignoreBOM?: boolean }): TextDecoder;
+  new(encoding?: string, flags?: number): TextDecoder;
 }
 
 class TextDecoder {
-  static encodeStr: string = '';
+  encodeStr: string = 'utf-8';
+  flags: number = 0;
+  isIgnoreBOM: boolean = false;
+  isFatal: boolean = false;
   textDecoder: TextDecoder;
   constructor(encoding?: string, options?: { fatal?: boolean; ignoreBOM?: boolean }) {
+    if (encoding) {
+      this.encodeStr = encoding;
+    }
+    let flags = 0;
     if (arguments.length === 0) {
       this.textDecoder = new helpUtil.TextDecoder();
     } else if (arguments.length === 1) {
       this.textDecoder = new helpUtil.TextDecoder(encoding);
     } else {
-      this.textDecoder = new helpUtil.TextDecoder(encoding, options);
+      if (options) {
+        flags |= options.fatal ? CONVERTER_FLAGS_FATAL : 0;
+        flags |= options.ignoreBOM ? CONVERTER_FLAGS_IGNORE_BOM : 0;
+      }
+      this.isFatal = options?.fatal;
+      this.isIgnoreBOM = options?.ignoreBOM;
+      this.textDecoder = new helpUtil.TextDecoder(encoding, flags);
     }
+    this.flags = flags;
   }
 
   static create(encoding?: string, options?: { fatal?: boolean; ignoreBOM?: boolean }): TextDecoder {
     if (arguments.length === 0) {
-      TextDecoder.encodeStr = 'utf-8';
       return new TextDecoder();
     } else if (arguments.length === 1) {
       if (typeof encoding !== 'string' && encoding !== undefined && encoding !== null) {
         throw new BusinessError(`Parameter error. The type of ${encoding} must be string`);
       }
-      TextDecoder.encodeStr = encoding;
       return new TextDecoder(encoding);
     } else {
       if (typeof encoding !== 'string' && encoding !== undefined && encoding !== null) {
@@ -713,7 +728,6 @@ class TextDecoder {
       if (typeof options !== 'object' && options !== undefined && options !== null) {
         throw new BusinessError(`Parameter error. The type of ${options} must be object`);
       }
-      TextDecoder.encodeStr = encoding;
       return new TextDecoder(encoding, options);
     }
   }
@@ -747,15 +761,15 @@ class TextDecoder {
   }
 
   get encoding(): string {
-    return this.textDecoder.encoding;
+    return this.encodeStr;
   }
 
   get fatal(): boolean {
-    return this.textDecoder.fatal;
+    return this.isFatal;
   }
 
   get ignoreBOM(): boolean {
-    return this.textDecoder.ignoreBOM;
+    return this.isIgnoreBOM;
   }
 }
 

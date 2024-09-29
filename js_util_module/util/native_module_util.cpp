@@ -350,50 +350,6 @@ namespace OHOS::Util {
         return result;
     }
 
-    static void SetVec(const napi_status fatSta, const napi_status bomSta, const bool fat, const bool bom,
-        std::vector<int> &paraVec)
-    {
-        if (paraVec.size() != 2) { // 2:The number of parameters is 2
-            return;
-        }
-        if (fatSta == napi_ok) {
-            if (fat) {
-                paraVec[0] = 1;
-            } else {
-                paraVec[0] = 0;
-            }
-        }
-        if (bomSta == napi_ok) {
-            if (bom) {
-                paraVec[1] = 1;
-            } else {
-                paraVec[1] = 0;
-            }
-        }
-    }
-
-    static napi_value GetSecPara(napi_env env, napi_value valData, std::vector<int> &paraVec)
-    {
-        napi_value messageKeyFatal = nullptr;
-        const char *messageKeyStrFatal = "fatal";
-        napi_value messageKeyIgnorebom = nullptr;
-        const char *messageKeyStrIgnorebom = "ignoreBOM";
-        napi_value resultFatal = nullptr;
-        napi_value resultIgnorebom = nullptr;
-        bool bResultFat = false;
-        bool bResultIgnbom = false;
-        NAPI_CALL(env, napi_create_string_utf8(env, messageKeyStrFatal, strlen(messageKeyStrFatal),
-            &messageKeyFatal));
-        NAPI_CALL(env, napi_create_string_utf8(env, messageKeyStrIgnorebom, strlen(messageKeyStrIgnorebom),
-            &messageKeyIgnorebom));
-        NAPI_CALL(env, napi_get_property(env, valData, messageKeyFatal, &resultFatal));
-        NAPI_CALL(env, napi_get_property(env, valData, messageKeyIgnorebom, &resultIgnorebom));
-        napi_status naFat = napi_get_value_bool(env, resultFatal, &bResultFat);
-        napi_status naBom = napi_get_value_bool(env, resultIgnorebom, &bResultIgnbom);
-        SetVec(naFat, naBom, bResultFat, bResultIgnbom, paraVec);
-        return nullptr;
-    }
-
     static napi_value TextdecoderConstructor(napi_env env, napi_callback_info info)
     {
         size_t tempArgc = 0;
@@ -403,6 +359,7 @@ namespace OHOS::Util {
         void *data = nullptr;
         char *type = nullptr;
         size_t typeLen = 0;
+        int32_t flags = 0;
         std::vector<int> paraVec(2, 0); // 2: Specifies the size of the container to be applied for.
         if (tempArgc == 1) {
             argc = 1;
@@ -423,12 +380,7 @@ namespace OHOS::Util {
                 type = ApplyMemory(typeLen);
             }
             napi_get_value_string_utf8(env, argvArr[0], type, typeLen + 1, &typeLen);
-            napi_valuetype valueType1;
-            napi_typeof(env, argvArr[1], &valueType1);
-            if (valueType1 != napi_undefined && valueType1 != napi_null) {
-                // second para
-                GetSecPara(env, argvArr[1], paraVec);
-            }
+            napi_get_value_int32(env, argvArr[1], &flags);
         }
         std::string enconding = "utf-8";
         if (type != nullptr) {
@@ -436,7 +388,7 @@ namespace OHOS::Util {
         }
         delete []type;
         type = nullptr;
-        auto objectInfo = new (std::nothrow) TextDecoder(enconding, paraVec);
+        auto objectInfo = new (std::nothrow) TextDecoder(enconding, flags);
         if (objectInfo == nullptr) {
             HILOG_ERROR("TextDecoder objectInfo is nullptr");
             return nullptr;
@@ -563,36 +515,6 @@ namespace OHOS::Util {
             valStr = textDecoder->Decode(env, argvArr[0], iStream);
         }
         return valStr;
-    }
-
-    static napi_value TextdecoderGetEncoding(napi_env env, napi_callback_info info)
-    {
-        napi_value thisVar = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        TextDecoder *textDecoder = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&textDecoder));
-        napi_value retVal = textDecoder->GetEncoding(env);
-        return retVal;
-    }
-
-    static napi_value TextdecoderGetFatal(napi_env env, napi_callback_info info)
-    {
-        napi_value thisVar = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        TextDecoder *textDecoder = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&textDecoder));
-        napi_value retVal = textDecoder->GetFatal(env);
-        return retVal;
-    }
-
-    static napi_value TextdecoderGetIgnoreBOM(napi_env env, napi_callback_info info)
-    {
-        napi_value thisVar = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        TextDecoder *textDecoder = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&textDecoder));
-        napi_value retVal = textDecoder->GetIgnoreBOM(env);
-        return retVal;
     }
 
     static bool CheckEncodingFormat(const std::string &encoding)
@@ -830,9 +752,6 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("decodeToString", DecodeToString),
             DECLARE_NAPI_FUNCTION("decode", TextdecoderDecode),
             DECLARE_NAPI_FUNCTION("decodeWithStream", TextdecoderDecode),
-            DECLARE_NAPI_GETTER("encoding", TextdecoderGetEncoding),
-            DECLARE_NAPI_GETTER("fatal", TextdecoderGetFatal),
-            DECLARE_NAPI_GETTER("ignoreBOM", TextdecoderGetIgnoreBOM),
         };
         NAPI_CALL(env, napi_define_class(env, textDecoderClassName, strlen(textDecoderClassName),
                                          TextdecoderConstructor, nullptr,
