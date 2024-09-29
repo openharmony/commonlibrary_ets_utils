@@ -1459,6 +1459,7 @@ TaskGroupManager& TaskGroupManager::GetInstance()
 
 void TaskGroupManager::AddTask(uint64_t groupId, napi_ref taskRef, uint64_t taskId)
 {
+    std::lock_guard<std::mutex> lock(taskGroupsMutex_);
     auto groupIter = taskGroups_.find(groupId);
     if (groupIter == taskGroups_.end()) {
         HILOG_DEBUG("taskpool:: taskGroup has been released");
