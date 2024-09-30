@@ -157,7 +157,9 @@ HWTEST_F(NativeEngineTest, DestructorTest001, testing::ext::TestSize.Level0)
     OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
     uint8_t data[4] = {1, 2, 3, 4};
     buf->Init(data, 0, 4);
+    ASSERT_EQ(buf->GetLength(), 4);
     delete buf;
+    buf = nullptr;
 }
 
 /**
@@ -1213,7 +1215,10 @@ HWTEST_F(NativeEngineTest, BlobDestructorTest001, testing::ext::TestSize.Level0)
     OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
     uint8_t data[4] = {1, 2, 3, 4};
     blob->Init(data, 4);
+    unsigned int len = blob->GetLength();
+    ASSERT_EQ(len, 4);
     delete blob;
+    blob = nullptr;
 }
 
 /**
