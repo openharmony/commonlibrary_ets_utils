@@ -88,7 +88,7 @@ bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
     return true;
 }
 
-template <bool isAsync>
+template<bool isAsync>
 void AsyncLock::ProcessLockRequest(LockRequest* lockRequest)
 {
     lockRequest->OnSatisfied();
@@ -106,7 +106,7 @@ void AsyncLock::ProcessLockRequest(LockRequest* lockRequest)
 void AsyncLock::ProcessPendingLockRequest(napi_env env, LockRequest* syncLockRequest)
 {
     std::unique_lock<std::mutex> lock(asyncLockMutex_);
-    ProcessPendingLockRequestUnsafe(env);
+    ProcessPendingLockRequestUnsafe(env, syncLockRequest);
 }
 
 void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncLockRequest)
