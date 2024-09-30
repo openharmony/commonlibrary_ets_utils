@@ -478,6 +478,30 @@ HWTEST_F(NativeEngineTest, ConstructorTest040, testing::ext::TestSize.Level0)
     ASSERT_STREQ(uri.IsFailed().c_str(), "ipv6 does not conform to the rule");
 }
 
+HWTEST_F(NativeEngineTest, ConstructorTest041, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http、:/username:password@www.baidu.com:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "scheme does not conform to the rule");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest042, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://[ffff::1]:、99/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "Prot does not conform to the rule");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest043, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://[ffff::1:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "IPv6 is missing a closing bracket");
+}
+
+HWTEST_F(NativeEngineTest, ConstructorTest044, testing::ext::TestSize.Level0)
+{
+    OHOS::Uri::Uri uri("http://ffff::1]:99/path/path?query#fagment");
+    ASSERT_STREQ(uri.IsFailed().c_str(), "host does not conform to the rule");
+}
+
 HWTEST_F(NativeEngineTest, EqualsTest001, testing::ext::TestSize.Level0)
 {
     OHOS::Uri::Uri uri("http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path1?query#fagment");

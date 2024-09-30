@@ -27,11 +27,11 @@ function getTypeName(obj: unknown): string {
 }
 
 class BusinessError extends Error {
-  errorNumber: number;
+  code: number;
   constructor(message: string, errorNumber: number) {
     super(message);
     this.name = 'BusinessError';
-    this.errorNumber = errorNumber;
+    this.code = errorNumber;
   }
 }
 
@@ -1605,7 +1605,7 @@ class Buffer {
     typeErrorCheck(sourceStart, ['number'], 'sourceStart');
     typeErrorCheck(sourceEnd, ['number'], 'sourceEnd');
     rangeErrorCheck(targetStart, 'targetStart', 0, UINT32MAX);
-    rangeErrorCheck(targetEnd, 'targetEnd', 0, UINT32MAX);
+    rangeErrorCheck(sourceStart, 'sourceStart', 0, UINT32MAX);
     rangeErrorCheck(targetEnd, 'targetEnd', 0, target.length);
     rangeErrorCheck(sourceEnd, 'sourceEnd', 0, this.length);
     if (sourceStart >= sourceEnd) {
@@ -1735,21 +1735,20 @@ class Buffer {
     }
   }
 
-  lastIndexOf(value: string | number | Buffer | Uint8Array, byteOffset: number = 0,
+  lastIndexOf(value: string | number | Buffer | Uint8Array, byteOffset: number = this.length,
     encoding: string = 'utf8'): number {
     typeErrorCheck(value, ['string', 'number', 'Buffer', 'Uint8Array'], 'value');
     if (typeof value === 'string') {
-      if (typeof byteOffset === 'string') {
-        encoding = byteOffset;
-      }
-      if (typeof byteOffset !== 'number' || byteOffset > this[lengthSymbol]) {
+      if (typeof byteOffset === null) {
         byteOffset = 0;
       }
       if (encoding === null) {
         encoding = 'utf8';
       }
       encoding = encodingTypeErrorCheck(encoding);
-      return this[bufferSymbol].indexOf(value, byteOffset, encoding, true);
+      let str = this.toString(encoding);
+      byteOffset = byteOffset < 0 ? str.length + byteOffset : byteOffset;
+      return str.lastIndexOf(value, byteOffset);
     } else if (typeof value === 'number') {
       value = +value;
       if (value < 0 || value > utils.eightBits) {
@@ -1923,7 +1922,7 @@ function rangeErrorCheck(param: number | bigint, paramName: string, rangeLeft: b
   let left : bigint | number;
   let right : bigint | number;
   if (Number.isInteger(rangeLeft) && Number.isInteger(rangeRight)) {
-    left= BigInt(rangeLeft);
+    left = BigInt(rangeLeft);
     right = BigInt(rangeRight);
   } else {
     left = rangeLeft;
@@ -2033,6 +2032,9 @@ function normalizeEncoding(enc: string): string | undefined {
 
 function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | string | object | Array<number>,
   offsetOrEncoding?: number | string, length?: number): Buffer {
+  if (value === null || value === undefined) {
+    throw typeError(value, 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object']);
+  }
   if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
     return createBufferFromArrayBuffer(value, offsetOrEncoding, length);
   }
@@ -2042,14 +2044,7 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
   if (value instanceof Array) {
     return createBufferFromArray(value);
   }
-  let encoding = '';
-  if (typeof value === 'string' || typeof value[Symbol.toPrimitive] === 'function') {
-    offsetOrEncoding = offsetOrEncoding ? offsetOrEncoding : 'utf8';
-    if (typeof offsetOrEncoding === 'number') {
-      offsetOrEncoding = 'utf8';
-    }
-    encoding = encodingTypeErrorCheck(offsetOrEncoding);
-  }
+  let encoding = checkEncodeing(value, offsetOrEncoding);
   if (typeof value === 'string') {
     return fromString(value, encoding);
   }
@@ -2066,16 +2061,24 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
       }
     }
   }
-  throw typeError(getTypeName(value), 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like']);
+  throw typeError(value, 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like']);
+}
+
+function checkEncodeing(value: string | object, offsetOrEncoding: string | number | undefined): string {
+  if (typeof value === 'string' || typeof value[Symbol.toPrimitive] === 'function') {
+    offsetOrEncoding = offsetOrEncoding ? offsetOrEncoding : 'utf8';
+    if (typeof offsetOrEncoding === 'number') {
+      offsetOrEncoding = 'utf8';
+    }
+    return encodingTypeErrorCheck(offsetOrEncoding);
+  }
+  return '';
 }
 
 function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
   offsetOrEncoding?: number | string, length?: number): Buffer {
   offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
   const maxLength: number = value.byteLength - offsetOrEncoding;
-  if (offsetOrEncoding < 0) {
-    throw typeError(offsetOrEncoding, 'offset', ['number']);
-  }
   if (length === undefined) {
     length = maxLength;
   } else {
