@@ -1907,6 +1907,7 @@ void Worker::PostWorkerGlobalCallTask()
     GetMainThreadHandler()->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
+#endif
 
 bool Worker::IsValidWorker(Worker* worker)
 {
@@ -1917,7 +1918,6 @@ bool Worker::IsValidWorker(Worker* worker)
     }
     return true;
 }
-#endif
 
 void Worker::WorkerOnMessage(const uv_async_t* req)
 {
