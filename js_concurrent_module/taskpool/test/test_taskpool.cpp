@@ -1067,7 +1067,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest077, testing::ext::TestSize.Level0)
     Task* task = new Task(env, TaskType::COMMON_TASK, "test");
     auto id = reinterpret_cast<uint64_t>(task);
     taskManager.StoreTask(id, task);
-    auto res = task->name_;
+    auto res = taskManager.GetTaskName(id);
     ASSERT_TRUE(strcmp(res.c_str(), "test") == 0);
 }
 
@@ -1249,7 +1249,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest088, testing::ext::TestSize.Level0)
     napi_value cb = nullptr;
     napi_value result = nullptr;
     napi_create_function(env, func.c_str(), func.size(), TaskGroup::AddTask, nullptr, &cb);
-    
+
     napi_value napiGroupId = NapiHelper::GetNameProperty(env, taskGroupResult, "groupId");
     uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
 
@@ -1377,7 +1377,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest093, testing::ext::TestSize.Level0)
     Task* pointer = nullptr;
     napi_unwrap(env, task, reinterpret_cast<void**>(&pointer));
     taskManager.StoreTask(pointer->taskId_, pointer);
-    
+
     funcName = "OnReceiveData";
     cb = nullptr;
     napi_value result = nullptr;
@@ -2037,11 +2037,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     task->taskId_ = taskId;
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
-    
+
     CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
     uv_async_t* req = new uv_async_t;
     req->data = cbInfo;
-    
+
     TaskPool::ExecuteCallback(req);
     ASSERT_TRUE(true);
 
@@ -2051,7 +2051,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     worker->Enqueue(env, resultInfo);
     TaskResultInfo* resultInfo2 = nullptr;
     worker->Enqueue(env, resultInfo2);
-    
+
     TaskManager &taskManager = TaskManager::GetInstance();
     taskManager.RegisterCallback(env, taskId, nullptr);
     cbInfo->worker = worker;
@@ -2068,7 +2068,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
     task->taskId_ = taskId;
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
-    
+
     CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
     uv_async_t* req = new uv_async_t;
     req->data = cbInfo;
@@ -2077,7 +2077,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
     worker->Enqueue(env, resultInfo);
-    
+
     TaskManager &taskManager = TaskManager::GetInstance();
     auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
         return nullptr;
@@ -2102,7 +2102,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     task->taskId_ = taskId;
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
-    
+
     CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
     uv_async_t* req = new uv_async_t;
     req->data = cbInfo;
@@ -2121,7 +2121,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     napi_serialize_inner(env, argsArray, undefined, undefined, true, false, &serializationArgs);
     TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, serializationArgs);
     worker->Enqueue(env, resultInfo);
-    
+
     TaskManager &taskManager = TaskManager::GetInstance();
     auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
         return nullptr;
@@ -2146,7 +2146,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest134, testing::ext::TestSize.Level0)
     task->taskId_ = taskId;
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
-    
+
     CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
     TaskPool::ExecuteCallbackTask(cbInfo);
     ASSERT_TRUE(true);
@@ -2268,7 +2268,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest138, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     size_t delayTime = 1000;
-    
+
     napi_value argv[] = {nullptr};
     napi_value result = NativeEngineTest::ExecuteDelayed(env, argv, 1);
     ASSERT_TRUE(result == nullptr);
@@ -2368,7 +2368,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest140, testing::ext::TestSize.Level0)
     napi_value taskName = NapiHelper::CreateEmptyString(env);
     napi_value obj = NapiHelper::CreateObject(env);
     Task* task = Task::GenerateTask(env, obj, funcValue, taskName, args, argc);
-    
+
     taskMessage->taskId = task->taskId_;
     handle->data = taskMessage;
     taskManager.StoreTask(task->taskId_, task);
@@ -2456,7 +2456,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest144, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     size_t delayTime = 1000;
-    
+
     napi_value argv[] = {nullptr};
     napi_value result = NativeEngineTest::ExecutePeriodically(env, argv, 1);
     ASSERT_TRUE(result == nullptr);
@@ -2570,7 +2570,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest147, testing::ext::TestSize.Level0)
     handle->data = task;
     NativeEngineTest::PeriodicTaskCallback(handle);
     ASSERT_TRUE(true);
-    
+
     task->taskState_ = ExecuteState::CANCELED;
     handle->data = task;
     NativeEngineTest::PeriodicTaskCallback(handle);
@@ -2623,7 +2623,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest149, testing::ext::TestSize.Level0)
     uv_timer_t* handle = new uv_timer_t;
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
     TaskManager& taskManager = TaskManager::GetInstance();
-    
+
     TaskGroup* group = new TaskGroup();
     uint64_t groupId = reinterpret_cast<uint64_t>(group);
     group->groupId_ = groupId;
@@ -2647,12 +2647,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest149, testing::ext::TestSize.Level0)
     groupInfo->resArr = arrRef;
     NapiHelper::CreatePromise(env, &groupInfo->deferred);
     group->currentGroupInfo_ = groupInfo;
-    
+
     taskGroupManager.StoreTaskGroup(groupId, group);
     napi_value value = NapiHelper::CreateUint64(env, groupId);
     napi_ref reference = NapiHelper::CreateReference(env, value, 0);
     taskGroupManager.AddTask(groupId, reference, taskId);
-    
+
     napi_value res = nullptr;
     napi_create_uint32(env, 1, &res);
     NativeEngineTest::UpdateGroupInfoByResult(env, handle, res, true);
@@ -2689,7 +2689,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest151, testing::ext::TestSize.Level0)
     func = "AddTask";
     napi_value cb = nullptr;
     napi_value result = nullptr;
-    
+
     napi_create_function(env, func.c_str(), func.size(), TaskGroup::AddTask, nullptr, &cb);
     napi_value napiGroupId = NapiHelper::GetNameProperty(env, taskGroupResult, "groupId");
     uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
@@ -2800,7 +2800,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest155, testing::ext::TestSize.Level0)
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
     napi_set_named_property(env, result, ARGUMENTS_STR, nameValue);
-    
+
     napi_set_named_property(env, result, FUNCTION_STR, funcValue);
     napi_set_named_property(env, result, NAME, nameValue);
     napi_value trueVal = NapiHelper::CreateBooleanValue(env, true);
@@ -3110,7 +3110,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest170, testing::ext::TestSize.Level0)
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
     ASSERT_TRUE(task != nullptr);
-    
+
     napi_value dependentTask = CreateTaskObject(env);
     napi_value argv[] = { dependentTask };
     std::string funcName = "AddDependency";
@@ -3133,7 +3133,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest171, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    
+
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value dependentTask = CreateTaskObject(env);
     napi_set_named_property(env, dependentTask, TASKID_STR, undefined);
@@ -3158,7 +3158,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest172, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    
+
     napi_value argv[] = { nullptr };
     std::string funcName = "AddDependency";
     napi_value cb = nullptr;
@@ -3180,7 +3180,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest173, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    
+
     napi_value dependentTask = CreateTaskObject(env);
     Task* task1 = nullptr;
     napi_unwrap(env, dependentTask, reinterpret_cast<void**>(&task1));
@@ -3206,7 +3206,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest174, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    
+
     napi_value dependentTask = CreateTaskObject(env);
     Task* task1 = nullptr;
     napi_unwrap(env, dependentTask, reinterpret_cast<void**>(&task1));
@@ -3244,7 +3244,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest175, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    
+
     napi_value dependentTask = CreateTaskObject(env);
     napi_value argv[] = { dependentTask };
     std::string funcName = "AddDependency";
@@ -3279,7 +3279,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest177, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    
+
     napi_value dependentTask = CreateTaskObject(env);
     napi_value argv[] = { dependentTask };
     std::string funcName = "RemoveDependency";
@@ -3298,7 +3298,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest178, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    
+
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value dependentTask = CreateTaskObject(env);
     napi_set_named_property(env, dependentTask, TASKID_STR, undefined);
@@ -4416,7 +4416,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest223, testing::ext::TestSize.Level0)
     Task* task = nullptr;
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
     task->taskState_ = ExecuteState::CANCELED;
-    
+
     taskMessage->taskId = task->taskId_;
     handle->data = taskMessage;
     taskManager.StoreTask(task->taskId_, task);
@@ -4540,7 +4540,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
     task->taskId_ = taskId;
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
-    
+
     CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
 
     Worker* worker = Worker::WorkerConstructor(env);
@@ -4557,7 +4557,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest230, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     uv_timer_t* handle = new uv_timer_t;
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
-    
+
     TaskGroup* group = new TaskGroup();
     uint64_t groupId = reinterpret_cast<uint64_t>(group);
     group->groupId_ = groupId;
@@ -4582,7 +4582,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest230, testing::ext::TestSize.Level0)
     napi_value value = NapiHelper::CreateUint64(env, groupId);
     napi_ref reference = NapiHelper::CreateReference(env, value, 0);
     taskGroupManager.AddTask(groupId, reference, taskId);
-    
+
     napi_value res = nullptr;
     napi_create_uint32(env, 1, &res);
     NativeEngineTest::UpdateGroupInfoByResult(env, handle, res, true);
