@@ -723,7 +723,7 @@ class TextDecoder {
       throw new BusinessError(`Parameter error. The type of Parameter must be Uint8Array.`);
     }
     if (arguments.length === 0 || input === undefined || input.length === 0) {
-      return "";
+      return '';
     }
     if (arguments.length === 1) {
       return this.textDecoder.decodeToString(input);
