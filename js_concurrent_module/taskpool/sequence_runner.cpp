@@ -164,12 +164,7 @@ void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_
 {
     SequenceRunner* seqRunner = static_cast<SequenceRunner*>(data);
     if (seqRunner->isGlobalRunner_) {
-        SequenceRunnerManager::GetInstance().RemoveGlobalSeqRunnerRef(env, seqRunner);
-        if (SequenceRunnerManager::GetInstance().DecreaseSeqCount(seqRunner) == 0) {
-            SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqRunner->seqName_);
-            TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
-            delete seqRunner;
-        }
+        SequenceRunnerManager::GetInstance().GlobalSequenceRunnerDestructor(env, seqRunner);
     } else {
         TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
         napi_delete_reference(env, seqRunner->seqRunnerRef_);
