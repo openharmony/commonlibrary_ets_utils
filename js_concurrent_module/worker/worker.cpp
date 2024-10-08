@@ -332,10 +332,12 @@ void Worker::HostEnvCleanCallback(void *data)
         HILOG_INFO("worker:: worker is nullptr when host env exit.");
         return;
     }
+#if defined(ENABLE_WORKER_EVENTHANDLER)
     if (!IsValidWorker(worker)) {
         HILOG_INFO("worker:: worker is terminated when host env exit.");
         return;
     }
+#endif
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     worker->isHostEnvExited_ = true;
 #if defined(ENABLE_WORKER_EVENTHANDLER)
