@@ -1709,7 +1709,6 @@ SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, nap
             seqRunner->priority_ = static_cast<Priority>(priority);
         }
         seqRunner->isGlobalRunner_ = true;
-        seqRunner->count_++;
         seqRunner->seqName_ = name;
         globalSeqRunner_.emplace(name, seqRunner);
     } else {
@@ -1719,6 +1718,7 @@ SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, nap
             return nullptr;
         }
     }
+    seqRunner->count_++;
     auto tmpIter = seqRunner->globalSeqRunnerRef_.find(env);
     if (tmpIter == seqRunner->globalSeqRunnerRef_.end()) {
         napi_ref gloableSeqRunnerRef = nullptr;
@@ -1751,7 +1751,7 @@ bool SequenceRunnerManager::TriggerGlobalSeqRunner(napi_env env, SequenceRunner*
 uint64_t SequenceRunnerManager::DecreaseSeqCount(SequenceRunner* seqRunner)
 {
     std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
-    return seqRunner->count_--;
+    return --(seqRunner->count_);
 }
 
 void SequenceRunnerManager::RemoveGlobalSeqRunnerRef(napi_env env, SequenceRunner* seqRunner)
@@ -1770,6 +1770,16 @@ void SequenceRunnerManager::RemoveSequenceRunner(const std::string &name)
     auto iter = globalSeqRunner_.find(name.c_str());
     if (iter != globalSeqRunner_.end()) {
         globalSeqRunner_.erase(iter->first);
+    }
+}
+
+void SequenceRunnerManager::GlobalSequenceRunnerDestructor(napi_env env, SequenceRunner *seqRunner)
+{
+    RemoveGlobalSeqRunnerRef(env, seqRunner);
+    if (DecreaseSeqCount(seqRunner) == 0) {
+        RemoveSequenceRunner(seqRunner->seqName_);
+        TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
+        delete seqRunner;
     }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
