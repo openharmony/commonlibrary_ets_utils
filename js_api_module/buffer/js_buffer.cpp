@@ -495,7 +495,7 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
     }
     uint8_t *data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
-        HILOG_ERROR("buffer::data is NULL");
+        HILOG_ERROR("buffer:: memory allocation failed.");
         return "";
     }
     ReadBytes(data, start, length);
@@ -507,34 +507,60 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
 
 std::string Buffer::ToBase64Url(uint32_t start, uint32_t length)
 {
-    uint8_t data[length];
+    if (length == 0 || length >= UINT32_MAX) {
+        HILOG_ERROR("buffer::length is illegal");
+        return "";
+    }
+    uint8_t *data = new (std::nothrow) uint8_t[length];
+    if (data == nullptr) {
+        HILOG_ERROR("buffer:: memory allocation failed.");
+        return "";
+    }
     ReadBytes(data, start, length);
-    return Base64Encode(reinterpret_cast<const unsigned char*>(data), length, BASE64URL);
+    std::string result = Base64Encode(reinterpret_cast<const unsigned char*>(data), length, BASE64URL);
+    delete[] data;
+    data = nullptr;
+    return result;
 }
 
 int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len, uint64_t &resultIndex)
 {
-    if (data == nullptr) {
+    if (data == nullptr || length_ <= offset) {
         return -1;
     }
-    uint8_t sData[length_ - offset];
+    uint8_t *sData = new (std::nothrow) uint8_t[length_ - offset];
+    if (sData == nullptr) {
+        HILOG_ERROR("buffer:: memory allocation failed.");
+        return -1;
+    }
     ReadBytes(sData, offset, length_ - offset);
     int index = FindIndex(sData, reinterpret_cast<uint8_t *>(const_cast<char *>(data)), length_ - offset, len);
     if (index == -1) { // -1:The target to be searched does not exist
+        delete[] sData;
+        sData = nullptr;
         return index;
     } else {
         resultIndex = static_cast<uint64_t>(offset) + static_cast<uint64_t>(index);
+        delete[] sData;
+        sData = nullptr;
         return -2; // -2:The number of invalid data
     }
 }
 
 int Buffer::LastIndexOf(const char *data, uint32_t offset, uint32_t len)
 {
-    if (data == nullptr) {
+    if (data == nullptr || length_ <= offset) {
         return -1;
     }
-    uint8_t sData[length_ - offset];
+    uint8_t *sData = new (std::nothrow) uint8_t[length_ - offset];
+    if (sData == nullptr) {
+        HILOG_ERROR("buffer:: memory allocation failed.");
+        return -1;
+    }
     ReadBytes(sData, offset, length_ - offset);
-    return FindLastIndex(sData, reinterpret_cast<uint8_t *>(const_cast<char *>(data)), length_ - offset, len);
+    int result = FindLastIndex(sData, reinterpret_cast<uint8_t *>(const_cast<char *>(data)), length_ - offset, len);
+    delete[] sData;
+    sData = nullptr;
+    return result;
 }
 } // namespace OHOS::Buffer
