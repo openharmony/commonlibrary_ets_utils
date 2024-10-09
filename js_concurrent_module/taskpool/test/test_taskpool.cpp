@@ -128,8 +128,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest001, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
-    Worker* worker = Worker::WorkerConstructor(env);
-    usleep(50000);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     ASSERT_NE(worker, nullptr);
 }
 
@@ -145,8 +144,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest003, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
-    Worker* worker = Worker::WorkerConstructor(env);
-    usleep(50000);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     ASSERT_NE(worker, nullptr);
     uint32_t workers = TaskManager::GetInstance().GetRunningWorkers();
     ASSERT_TRUE(workers == 0);
@@ -526,8 +524,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest033, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest034, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
-    Worker* worker = Worker::WorkerConstructor(env);
-    usleep(50000);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.InitTaskManager(env);
     taskManager.NotifyWorkerIdle(worker);
@@ -967,7 +964,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest069, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* pointer = new Task();
     auto task = reinterpret_cast<uint64_t>(pointer);
-    auto worker = Worker::WorkerConstructor(env);
+    auto worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     taskManager.StoreLongTaskInfo(task, worker);
     auto res = taskManager.GetLongTaskInfo(task);
     ASSERT_TRUE(worker == res);
@@ -996,8 +993,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest071, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     TaskManager& taskManager = TaskManager::GetInstance();
     char buf[4096]; // 4096: buffer length for thread state
-    auto worker = Worker::WorkerConstructor(env);
-    usleep(50000);
+    auto worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     uv_timer_t* handle = new uv_timer_t;
     handle->data = worker;
     auto tid = NativeEngineTest::GetWorkerTid(handle);
@@ -1067,7 +1063,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest077, testing::ext::TestSize.Level0)
     Task* task = new Task(env, TaskType::COMMON_TASK, "test");
     auto id = reinterpret_cast<uint64_t>(task);
     taskManager.StoreTask(id, task);
-    auto res = taskManager.GetTaskName(id);
+    auto res = task->name_;
     ASSERT_TRUE(strcmp(res.c_str(), "test") == 0);
 }
 
@@ -1607,6 +1603,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest107, testing::ext::TestSize.Level0)
     auto task = GeneratorTask(env, obj);
     Task* pointer = nullptr;
     napi_unwrap(env, task, reinterpret_cast<void**>(&pointer));
+    ASSERT_TRUE(pointer != nullptr);
     pointer->isLongTask_ = true;
     napi_value argv[] = { task };
     NativeEngineTest::TerminateTask(env, argv, 1);
@@ -2045,7 +2042,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     TaskPool::ExecuteCallback(req);
     ASSERT_TRUE(true);
 
-    Worker* worker = Worker::WorkerConstructor(env);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
     worker->Enqueue(env, resultInfo);
@@ -2073,7 +2070,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
     uv_async_t* req = new uv_async_t;
     req->data = cbInfo;
 
-    Worker* worker = Worker::WorkerConstructor(env);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
     worker->Enqueue(env, resultInfo);
@@ -2107,7 +2104,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     uv_async_t* req = new uv_async_t;
     req->data = cbInfo;
 
-    Worker* worker = Worker::WorkerConstructor(env);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     size_t argc = 1;
     napi_value argv[] = {nullptr};
     napi_create_uint32(env, 1, &argv[0]);
@@ -2151,7 +2148,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest134, testing::ext::TestSize.Level0)
     TaskPool::ExecuteCallbackTask(cbInfo);
     ASSERT_TRUE(true);
 
-    Worker* worker = Worker::WorkerConstructor(env);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
     worker->Enqueue(env, resultInfo);
@@ -3938,7 +3935,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest206, testing::ext::TestSize.Level0)
     task->taskType_ = TaskType::GROUP_FUNCTION_TASK;
     task->currentTaskInfo_ = taskInfo;
     task->taskRefCount_ = 1;
-    Worker* worker = Worker::WorkerConstructor(env);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     task->worker_ = worker;
 
     napi_value func = nullptr;
@@ -4258,7 +4255,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest217, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    NativeEngineTest::PerformTask(env);
     NativeEngineTest::NotifyHandleTaskResult(env);
     NativeEngineTest::TaskResultCallback(env);
     NativeEngineTest::HandleFunctionException(env);
@@ -4269,19 +4265,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest217, testing::ext::TestSize.Level0)
     ASSERT_TRUE(exception == nullptr);
 }
 
-HWTEST_F(NativeEngineTest, TaskpoolTest233, testing::ext::TestSize.Level0)
-{
-    napi_env env = (napi_env)engine_;
-    Task* task = new Task();
-    task->isValid_ = false;
-    bool res = task->ShouldDeleteTask();
-    ASSERT_TRUE(res);
-    task->isValid_ = true;
-    task->refCount_ = 1;
-    res = task->ShouldDeleteTask();
-    ASSERT_TRUE(res == false);
-    ASSERT_TRUE(task->refCount_ == 0);
-}
 HWTEST_F(NativeEngineTest, TaskpoolTest218, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -4543,7 +4526,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
 
     CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
 
-    Worker* worker = Worker::WorkerConstructor(env);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(nullptr, env, taskId, args);
     worker->Enqueue(env, resultInfo);
@@ -4599,4 +4582,27 @@ HWTEST_F(NativeEngineTest, TaskpoolTest231, testing::ext::TestSize.Level0)
     napi_value argv[] = {taskGroup};
     NativeEngineTest::Cancel(env, argv, 1);
     ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest232, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    NativeEngineTest::PerformTask(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest233, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    task->isValid_ = false;
+    bool res = task->ShouldDeleteTask();
+    ASSERT_TRUE(res);
+    task->isValid_ = true;
+    task->refCount_ = 1;
+    res = task->ShouldDeleteTask();
+    ASSERT_TRUE(res == false);
+    ASSERT_TRUE(task->refCount_ == 0);
 }
