@@ -14,6 +14,11 @@
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
+config("console_public_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "${sys_module}/console" ]
+}
+
 ohos_shared_library("console") {
   branch_protector_ret = "pac_ret"
   sanitize = {
@@ -21,10 +26,13 @@ ohos_shared_library("console") {
     cfi_cross_dso = true
     debug = false
   }
+
   include_dirs = [
     "../../js_concurrent_module/common",
     "../console",
   ]
+
+ public_configs = [ ":console_public_config" ]
 
   sources = [
     "../../js_concurrent_module/common/helper/napi_helper.cpp",
