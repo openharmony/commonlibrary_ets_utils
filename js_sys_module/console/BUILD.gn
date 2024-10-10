@@ -32,7 +32,7 @@ ohos_shared_library("console") {
     "../console",
   ]
 
- public_configs = [ ":console_public_config" ]
+  public_configs = [ ":console_public_config" ]
 
   sources = [
     "../../js_concurrent_module/common/helper/napi_helper.cpp",
