@@ -60,7 +60,7 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
 
 void LockRequest::EnvCleanUp(void *arg)
 {
-    LockRequest *lockRequest = static_cast<LockRequest *>(arg);
+    LockRequest *lockRequest = reinterpret_cast<LockRequest *>(arg);
     std::unique_lock<std::mutex> guard(lockRequest->lockRequestMutex_);
     napi_delete_reference(lockRequest->env_, lockRequest->callback_);
     lockRequest->callback_ = nullptr;
