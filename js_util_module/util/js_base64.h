@@ -72,8 +72,8 @@ namespace OHOS::Util {
 
     void FreeMemory(unsigned char *&address);
     void FreeMemory(char *&address);
-    unsigned char *EncodeAchieves(EncodeInfo *encodeInfo);
-    unsigned char *DecodeAchieves(DecodeInfo *decodeInfo);
+    unsigned char *EncodeAchieves(napi_env env, EncodeInfo *encodeInfo);
+    unsigned char *DecodeAchieves(napi_env env, DecodeInfo *decodeInfo);
     unsigned char *EncodeAchievesInner(unsigned char *ret, EncodeInfo *encodeInfo,
                                        const char *searchArray, size_t inputLen, const unsigned char *input);
     unsigned char *DecodeAchievesInner(size_t inputLen, size_t equalCount,

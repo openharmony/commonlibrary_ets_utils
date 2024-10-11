@@ -116,8 +116,8 @@ namespace OHOS::Util {
          */
         bool IsBomFlag() const
         {
-            uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
-            return temp == static_cast<uint32_t>(ConverterFlags::BOM_SEEN_FLG);
+            int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
+            return temp == static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
         }
 
         /**
@@ -125,8 +125,8 @@ namespace OHOS::Util {
          */
         bool IsUnicode() const
         {
-            uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::UNICODE_FLG);
-            return temp == static_cast<uint32_t>(ConverterFlags::UNICODE_FLG);
+            int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::UNICODE_FLG);
+            return temp == static_cast<int32_t>(ConverterFlags::UNICODE_FLG);
         }
 
         /**
@@ -134,8 +134,8 @@ namespace OHOS::Util {
          */
         bool IsIgnoreBom() const
         {
-            uint32_t temp = label_ & static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG);
-            return temp == static_cast<uint32_t>(ConverterFlags::IGNORE_BOM_FLG);
+            int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG);
+            return temp == static_cast<int32_t>(ConverterFlags::IGNORE_BOM_FLG);
         }
 
         /**
@@ -153,7 +153,7 @@ namespace OHOS::Util {
         void FreedMemory(UChar *&pData);
         const char* ReplaceNull(void *data, size_t length) const;
         napi_value ThrowError(napi_env env, const char* errMessage);
-        uint32_t label_ {};
+        int32_t label_ {};
         std::string encStr_ {};
         TransformToolPointer tranTool_;
     };
