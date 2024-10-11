@@ -847,6 +847,52 @@ namespace OHOS::Url {
         return arr;
     }
 
+    static napi_value FixUSVstring(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value argv[1] = {0};
+        size_t argc = 1;
+        char16_t* inputStr = nullptr;
+        napi_value resultStr = nullptr;
+        size_t inputSize = 0;
+        napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+        if (napi_get_value_string_utf16(env, argv[0], nullptr, 0, &inputSize) != napi_ok) {
+            HILOG_ERROR("url:: get args failed.");
+            return nullptr;
+        }
+        if (inputSize > 0) {
+            inputStr = new (std::nothrow) char16_t[inputSize + 1]();
+            if (inputStr == nullptr) {
+                HILOG_ERROR("url:: inputStr is nullptr");
+                return resultStr;
+            }
+            napi_get_value_string_utf16(env, argv[0], inputStr, inputSize + 1, &inputSize);
+        }
+        for (size_t i = 0; i < inputSize; i++) {
+            char16_t c = *(inputStr + i);
+            // 0xD800: minimum value of low proxy term. 0xF800: key bit mode for dividing high proxy and low proxy.
+            if (!((c & 0xF800) == 0xD800)) {
+                continue;
+            } else if ((c & 0x400) != 0 || i == inputSize - 1) { // 0x400: Determine is component of low proxy.
+                *(inputStr + i) = 0xFFFD; // 0xFFFD: Invalid character.
+            } else {
+                char16_t d = *(inputStr + i + 1);
+                // 0xDC00: minimum value of high proxy item. 0xFC00: Check if it meets the requirements of high proxy.
+                if ((d & 0xFC00) == 0xDC00) {
+                    i++;
+                } else {
+                    *(inputStr + i) = 0xFFFD; // 0xFFFD: Invalid character.
+                }
+            }
+        }
+        napi_create_string_utf16(env, inputStr, inputSize, &resultStr);
+        if (inputStr != nullptr) {
+            delete[] inputStr;
+            inputStr = nullptr;
+        }
+        return resultStr;
+    }
+
     static napi_value SeachParamsInit(napi_env env, napi_value exports)
     {
         const char *seachParamsClassName = "URLSearchParams";
@@ -932,6 +978,7 @@ namespace OHOS::Url {
     {
         napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("stringParmas", StringParmas),
+            DECLARE_NAPI_FUNCTION("fixUSVstring", FixUSVstring),
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         SeachParamsInit(env, exports);
