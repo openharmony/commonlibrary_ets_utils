@@ -879,6 +879,54 @@ HWTEST_F(NativeEngineTest, SetCDATATest005, testing::ext::TestSize.Level0)
                  "<note>\r\n  <![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>\r\n</note>");
 }
 
+/* @tc.name: SetCDATATest006
+ * @tc.desc: Test whether Writes the CDATA successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDATATest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 1024;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.SetCData("]]>");
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[]]]]><![CDATA[>]]>");
+}
+
+/* @tc.name: SetCDATATest007
+ * @tc.desc: Test whether Writes the CDATA successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDATATest007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 1024;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.SetCData("<![CDATA[]]>");
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[<![CDATA[]]]]><![CDATA[>]]>");
+}
+
+/* @tc.name: SetCDATATest008
+ * @tc.desc: Test whether Writes the CDATA successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDATATest008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* pBuffer = nullptr;
+    size_t size = 1024;
+    napi_create_arraybuffer(env, size, &pBuffer, &arrayBuffer);
+    OHOS::xml::XmlSerializer xmlSerializer(reinterpret_cast<char*>(pBuffer), size, "utf-8");
+    xmlSerializer.SetCData("]]>]]>");
+    ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[]]]]><![CDATA[>]]]]><![CDATA[>]]>");
+}
+
 /* @tc.name: SetTextTest001
  * @tc.desc: Test whether Writes the text successfully.
  * @tc.type: FUNC
