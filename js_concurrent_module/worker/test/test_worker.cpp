@@ -900,7 +900,7 @@ HWTEST_F(WorkersTest, WorkerTest004, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
-
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
     std::string funcName = "LimitedWorkerConstructor";
     napi_value cb = nullptr;
     napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::LimitedWorkerConstructor, nullptr, &cb);
@@ -929,6 +929,7 @@ HWTEST_F(WorkersTest, WorkerTest004, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->EraseWorker();
     result = Worker_Terminate(workerEnv, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -939,7 +940,7 @@ HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
-
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
     std::string funcName = "ThreadWorkerConstructor";
     napi_value cb = nullptr;
     napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
@@ -968,6 +969,7 @@ HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     worker->EraseWorker();
     result = Worker_Terminate(workerEnv, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -1202,7 +1204,7 @@ HWTEST_F(WorkersTest, InitWorkerTest002, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
-
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
     std::string funcName = "ThreadWorkerConstructor";
     napi_value cb = nullptr;
     napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
@@ -1237,6 +1239,7 @@ HWTEST_F(WorkersTest, InitWorkerTest002, testing::ext::TestSize.Level0)
     napi_create_object(env, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -1247,7 +1250,7 @@ HWTEST_F(WorkersTest, InitWorkerTest003, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
-
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
     std::string funcName = "ThreadWorkerConstructor";
     napi_value cb = nullptr;
     napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
@@ -1282,6 +1285,7 @@ HWTEST_F(WorkersTest, InitWorkerTest003, testing::ext::TestSize.Level0)
     napi_create_object(env, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -1292,7 +1296,7 @@ HWTEST_F(WorkersTest, InitWorkerTest004, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
-
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
     std::string funcName = "ThreadWorkerConstructor";
     napi_value cb = nullptr;
     napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
@@ -1327,6 +1331,7 @@ HWTEST_F(WorkersTest, InitWorkerTest004, testing::ext::TestSize.Level0)
     napi_create_object(workerEnv, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -1337,6 +1342,7 @@ HWTEST_F(WorkersTest, InitWorkerTest005, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
 
     std::string funcName = "LimitedWorkerConstructor";
     napi_value cb = nullptr;
@@ -1372,6 +1378,7 @@ HWTEST_F(WorkersTest, InitWorkerTest005, testing::ext::TestSize.Level0)
     napi_create_object(workerEnv, &exports);
     Worker::InitWorker(workerEnv, exports);
     worker->EraseWorker();
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     ASSERT_TRUE(result != nullptr);
 }
 
@@ -1461,7 +1468,7 @@ HWTEST_F(WorkersTest, ConstructorTest004, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
-
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
     std::string funcName = "ThreadWorkerConstructor";
     napi_value cb = nullptr;
     napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
@@ -1469,6 +1476,7 @@ HWTEST_F(WorkersTest, ConstructorTest004, testing::ext::TestSize.Level0)
     napi_value result = nullptr;
     napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &result);
     uv_sleep(200);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     ASSERT_TRUE(result == nullptr);
 }
 
@@ -1479,7 +1487,7 @@ HWTEST_F(WorkersTest, ConstructorTest005, testing::ext::TestSize.Level0)
     napi_create_runtime(env, &workerEnv);
     napi_value workerGlobal = nullptr;
     napi_get_global(workerEnv, &workerGlobal);
-
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
     std::string funcName = "ThreadWorkerConstructor";
     napi_value cb = nullptr;
     napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
@@ -1503,6 +1511,7 @@ HWTEST_F(WorkersTest, ConstructorTest005, testing::ext::TestSize.Level0)
     argv[1] = object;
 
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
     uv_sleep(200);
     ASSERT_TRUE(result == nullptr);
 }
