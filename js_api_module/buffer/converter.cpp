@@ -15,6 +15,7 @@
 
 #include "converter.h"
 
+#include <charconv>
 #include <climits>
 #include <codecvt>
 #include <locale>
@@ -300,6 +301,13 @@ bool IsValidHex(const string &hex)
     return isValid;
 }
 
+bool convertToInt(const std::string& str, int& value)
+{
+    // 16 : the base is 16
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value, 16);
+    return ec == std::errc{} && ptr == str.data() + str.size();
+}
+
 string HexDecode(const string &hexStr)
 {
     string nums = "";
@@ -316,8 +324,10 @@ string HexDecode(const string &hexStr)
         if (!IsValidHex(hexStrTmp)) {
             break;
         }
-        // 16 : the base is 16
-        num = stoi(hexStrTmp, nullptr, 16);
+        if (!convertToInt(hexStrTmp, num)) {
+            HILOG_ERROR("convertToInt fail.");
+            return "";
+        }
         nums.push_back(static_cast<char>(num));
     }
 
