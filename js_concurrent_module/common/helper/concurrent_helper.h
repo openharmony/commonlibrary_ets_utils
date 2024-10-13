@@ -89,6 +89,9 @@ public:
     template<typename T>
     static void UvHandleClose(T* handle)
     {
+        if (handle == nullptr) {
+            return;
+        }
         uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
             if (handle != nullptr) {
                 delete reinterpret_cast<T*>(handle);
