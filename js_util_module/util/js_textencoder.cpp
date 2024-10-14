@@ -58,7 +58,7 @@ namespace OHOS::Util {
         char *writeResult = static_cast<char*>(resultData);
 
         int32_t nchars = 0;
-        int32_t written = 0;
+        uint32_t written = 0;
         TextEcodeInfo encodeInfo(env, src, encoding_);
         EncodeToUtf8(encodeInfo, writeResult, &written, length, &nchars);
 
@@ -71,7 +71,7 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_set_named_property(env, result, "read", read));
 
         napi_value resWritten = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, written, &resWritten));
+        NAPI_CALL(env, napi_create_uint32(env, written, &resWritten));
 
         NAPI_CALL(env, napi_set_named_property(env, result, "written", resWritten));
 
