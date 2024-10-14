@@ -26,6 +26,7 @@ namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
 
 uint32_t Timer::timeCallbackId = 0;
+uint32_t deleteTimerCount = 0;
 std::map<uint32_t, TimerCallbackInfo*> Timer::timerTable;
 std::mutex Timer::timeLock;
 
@@ -103,7 +104,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         } else {
             timerTable.erase(tId);
             Helper::CloseHelp::DeletePointer(callbackInfo, false);
-            HILOG_DEBUG("Timer has been successfully deleted.TimerID:%{public}d", tId);
+            HILOG_INFO("DeleteTimer ID: %{public}d, count: %{public}u", tId, ++deleteTimerCount);
         }
     }
     return Helper::NapiHelper::GetUndefinedValue(env);
