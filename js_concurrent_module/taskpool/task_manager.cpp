@@ -950,7 +950,7 @@ void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
     }
 
     auto task = reinterpret_cast<Task*>(taskId);
-    if (!task->isValid_) {
+    if (!task->IsValid()) {
         callbackTable_.erase(iter);
         return;
     }
@@ -1489,7 +1489,7 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
     TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
     for (uint64_t taskId : group->taskIds_) {
         Task* task = TaskManager::GetInstance().GetTask(taskId);
-        if (task == nullptr) {
+        if (task == nullptr || !task->IsValid()) {
             continue;
         }
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
@@ -1681,7 +1681,14 @@ TaskGroup* TaskGroupManager::GetTaskGroup(uint64_t groupId)
 bool TaskGroupManager::UpdateGroupState(uint64_t groupId)
 {
     HILOG_DEBUG("taskpool:: UpdateGroupState groupId:%{public}s", std::to_string(groupId).c_str());
-    TaskGroup* group = GetTaskGroup(groupId);
+    // During the modification process of the group, prevent other sub threads from performing other
+    // operations on the group pointer, which may cause the modification to fail.
+    std::lock_guard<std::mutex> lock(taskGroupsMutex_);
+    auto groupIter = taskGroups_.find(groupId);
+    if (groupIter == taskGroups_.end()) {
+        return false;
+    }
+    TaskGroup* group = reinterpret_cast<TaskGroup*>(groupIter->second);
     if (group == nullptr || group->groupState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: UpdateGroupState taskGroup has been released or canceled");
         return false;
