@@ -69,6 +69,7 @@ interface UrlInterface {
   Url: NativeUrl;
   URLParams1: NativeURLParams;
   stringParmas(input: string): string[];
+  fixUSVstring(input: string): string;
 }
 
 declare function requireInternal(s: string): UrlInterface;
@@ -116,11 +117,16 @@ function decodeSafelyOut(input: string): string {
   return decodedTemp === '' ? decodedString : decodedString += decodedTemp;
 }
 
-function customEncodeForToString(str: string | number): string {
+function customEncodeForToString(str: string): string {
   const hexStrLen = 2; // 2:String length of hexadecimal encoded values
   const hexAdecimal = 16; // 16:Hexadecimal number system
   const regex = /[!'()~]/g;
-  return encodeURIComponent(str).replace(regex, function (c) {
+  try {
+    str = encodeURIComponent(str);
+  } catch (error) {
+    str = encodeURIComponent(UrlInterface.fixUSVstring(str));
+  }
+  return str.replace(regex, function (c) {
     let hex = c.charCodeAt(0).toString(hexAdecimal);
     return '%' + (hex.length < hexStrLen ? '0' : '') + hex.toUpperCase();
   })
@@ -128,7 +134,12 @@ function customEncodeForToString(str: string | number): string {
 }
 
 function customEncodeURI(str: string, keepCharacters: object): string {
-  let encodedStr = encodeURI(str);
+  let encodedStr = '';
+  try {
+    encodedStr = encodeURI(str);
+  } catch (error) {
+    encodedStr = encodeURI(UrlInterface.fixUSVstring(str));
+  }
   for (let key in keepCharacters) {
     encodedStr = encodedStr.replaceAll(`${key}`, keepCharacters[key]);
   }
@@ -587,8 +598,8 @@ class URL {
           this.hostname_ = nativeUrl.hostname;
           this.host_ = nativeUrl.host;
         } else {
-          this.hostname_ = encodeURI(nativeUrl.hostname);
-          this.host_ = encodeURI(nativeUrl.host);
+          this.hostname_ = customEncodeURI(nativeUrl.hostname, {});
+          this.host_ = customEncodeURI(nativeUrl.host, {});
         }
         this.hash_ = customEncodeURI(nativeUrl.hash, 
           {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
@@ -640,8 +651,8 @@ class URL {
         urlHelper.hostname_ = nativeUrl.hostname;
         urlHelper.host_ = nativeUrl.host;
       } else {
-        urlHelper.hostname_ = encodeURI(nativeUrl.hostname);
-        urlHelper.host_ = encodeURI(nativeUrl.host);
+        urlHelper.hostname_ = customEncodeURI(nativeUrl.hostname, {});
+        urlHelper.host_ = customEncodeURI(nativeUrl.host, {});
       }
       urlHelper.hash_ = customEncodeURI(nativeUrl.hash,
         {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
@@ -752,7 +763,7 @@ class URL {
     if (this.c_info.GetIsIpv6) {
       this.hostname_ = this.c_info.hostname;
     } else {
-      this.hostname_ = encodeURI(this.c_info.hostname);
+      this.hostname_ = customEncodeURI(this.c_info.hostname, {});
     }
     this.setHref();
   }
@@ -766,8 +777,8 @@ class URL {
       this.hostname_ = this.c_info.hostname;
       this.port_ = this.c_info.port;
     } else {
-      this.host_ = encodeURI(this.c_info.host);
-      this.hostname_ = encodeURI(this.c_info.hostname);
+      this.host_ = customEncodeURI(this.c_info.host, {});
+      this.hostname_ = customEncodeURI(this.c_info.hostname, {});
       this.port_ = this.c_info.port;
     }
     this.setHref();
@@ -796,8 +807,8 @@ class URL {
         this.hostname_ = this.c_info.hostname;
         this.host_ = this.c_info.host;
       } else {
-        this.hostname_ = encodeURI(this.c_info.hostname);
-        this.host_ = encodeURI(this.c_info.host);
+        this.hostname_ = customEncodeURI(this.c_info.hostname, {});
+        this.host_ = customEncodeURI(this.c_info.host, {});
       }
       this.hash_ = customEncodeURI(this.c_info.hash,
         {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
