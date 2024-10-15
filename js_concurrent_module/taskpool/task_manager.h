@@ -222,7 +222,7 @@ private:
     uint32_t highPrioExecuteCount_ = 0;
     uint32_t mediumPrioExecuteCount_ = 0;
     std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};
-    std::mutex taskQueuesMutex_;
+    ffrt::mutex taskQueuesMutex_;
 
     std::atomic<bool> isInitialized_ = false;
     std::atomic<bool> isSystemApp_ = false;
