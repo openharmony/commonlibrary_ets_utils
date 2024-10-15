@@ -66,21 +66,6 @@ Worker* Worker::WorkerConstructor(napi_env env)
     return worker;
 }
 
-void Worker::CloseHandles()
-{
-    // set all handles to nullptr so that they can not be used even when the loop is re-running
-    ConcurrentHelper::UvHandleClose(performTaskSignal_);
-    performTaskSignal_ = nullptr;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    ConcurrentHelper::UvHandleClose(debuggerOnPostTaskSignal_);
-    debuggerOnPostTaskSignal_ = nullptr;
-#endif
-    ConcurrentHelper::UvHandleClose(clearWorkerSignal_);
-    clearWorkerSignal_ = nullptr;
-    ConcurrentHelper::UvHandleClose(triggerGCCheckSignal_);
-    triggerGCCheckSignal_ = nullptr;
-}
-
 void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 {
     auto worker = static_cast<Worker*>(req->data);
@@ -94,7 +79,12 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
     HILOG_INFO("taskpool:: the thread is idle and will be released, and the total num is %{public}u now",
         TaskManager::GetInstance().GetThreadNum());
     // when there is no active handle, worker loop will stop automatically.
-    worker->CloseHandles();
+    ConcurrentHelper::UvHandleClose(worker->performTaskSignal_);
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    ConcurrentHelper::UvHandleClose(worker->debuggerOnPostTaskSignal_);
+#endif
+    ConcurrentHelper::UvHandleClose(worker->clearWorkerSignal_);
+    ConcurrentHelper::UvHandleClose(worker->triggerGCCheckSignal_);
 
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop != nullptr) {
@@ -106,9 +96,7 @@ bool Worker::CheckFreeConditions()
 {
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
     // only when all conditions are met can the worker be freed
-    if (HasRunningTasks()) {
-        HILOG_DEBUG("taskpool:: async callbacks may exist, the worker thread will not exit");
-    } else if (workerEngine->HasListeningCounter()) {
+    if (workerEngine->HasListeningCounter()) {
         HILOG_DEBUG("taskpool:: listening operation exists, the worker thread will not exit");
     } else if (Timer::HasTimer(workerEnv_)) {
         HILOG_DEBUG("taskpool:: timer exists, the worker thread will not exit");
@@ -159,8 +147,7 @@ void Worker::HandleDebuggerTask(const uv_async_t* req)
 
 void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 {
-    if (debuggerOnPostTaskSignal_ != nullptr && !uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
+    if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
         uv_async_send(debuggerOnPostTaskSignal_);
@@ -354,12 +341,8 @@ void Worker::TriggerGCCheck(const uv_async_t* req)
 
 void Worker::NotifyTaskFinished()
 {
-    // trigger gc check by uv and return immediately if the handle is invalid
-    if (UNLIKELY(triggerGCCheckSignal_ == nullptr || uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(triggerGCCheckSignal_)))) {
-        HILOG_ERROR("taskpool:: triggerGCCheckSignal_ is nullptr or closed");
-        return;
-    } else {
+    // trigger gc check by uv
+    if (triggerGCCheckSignal_ != nullptr && !uv_is_closing((uv_handle_t*)&triggerGCCheckSignal_)) {
         uv_async_send(triggerGCCheckSignal_);
     }
 
@@ -631,15 +614,5 @@ void Worker::HandleFunctionException(napi_env env, Task* task)
         return;
     }
     NotifyHandleTaskResult(task);
-}
-
-void Worker::PostReleaseSignal()
-{
-    if (UNLIKELY(clearWorkerSignal_ == nullptr || uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(clearWorkerSignal_)))) {
-        HILOG_ERROR("taskpool:: clearWorkerSignal_ is nullptr or closed");
-        return;
-    }
-    uv_async_send(clearWorkerSignal_);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
