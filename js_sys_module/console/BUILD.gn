@@ -16,7 +16,10 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 config("console_public_config") {
   visibility = [ ":*" ]
-  include_dirs = [ "${sys_module}/console" ]
+  include_dirs = [
+    "${sys_module}/console",
+    js_concurrent_module_common,
+  ]
 }
 
 ohos_shared_library("console") {

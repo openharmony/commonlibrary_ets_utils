@@ -93,7 +93,7 @@
                     "name": "//commonlibrary/ets_utils/js_sys_module/timer:timer",
                     "header": {
                       "header_files": [
-                        "timer.h"
+                        "sys_timer.h"
                       ],
                       "header_base": "//commonlibrary/ets_utils/js_sys_module/timer"
                     }

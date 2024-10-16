@@ -18,7 +18,7 @@
 #include "napi/native_node_api.h"
 #include "test.h"
 #include "test_timer.h"
-#include "../timer.h"
+#include "../sys_timer.h"
 #include "tools/log.h"
 
 using namespace Commonlibrary::Concurrent::Common;

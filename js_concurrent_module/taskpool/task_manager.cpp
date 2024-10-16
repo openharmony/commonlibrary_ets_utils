@@ -30,7 +30,7 @@
 #include "status_receiver_interface.h"
 #include "system_ability_definition.h"
 #endif
-#include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
+#include "sys_timer.h"
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"

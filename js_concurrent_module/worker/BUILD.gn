@@ -106,7 +106,7 @@ ohos_source_set("worker_static") {
 
   sources = [
     "$js_concurrent_module_common/helper/napi_helper.cpp",
-    "$sys_module/timer/timer.cpp",
+    "$sys_module/timer/sys_timer.cpp",
     "message_queue.cpp",
     "native_module_worker.cpp",
     "thread.cpp",
@@ -138,7 +138,7 @@ ohos_source_set("worker_static") {
     ]
     sources -= [
       "$js_concurrent_module_common/helper/napi_helper.cpp",
-      "$sys_module/timer/timer.cpp",
+      "$sys_module/timer/sys_timer.cpp",
     ]
     defines += [ "__ARKUI_CROSS__" ]
     deps += [

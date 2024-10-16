@@ -19,7 +19,7 @@
 #include "c/executor_task.h"
 #include "ffrt_inner.h"
 #endif
-#include "commonlibrary/ets_utils/js_sys_module/timer/timer.h"
+#include "sys_timer.h"
 #include "helper/hitrace_helper.h"
 #include "process_helper.h"
 #include "task_group.h"
