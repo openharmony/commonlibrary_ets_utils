@@ -235,10 +235,6 @@ void NativeEngineTest::TriggerShrink(napi_env env)
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     worker->workerEnv_ = env;
     taskManager.idleWorkers_.insert(worker);
-    taskManager.globalEnableFfrtFlag_ = true;
-    worker->InitFfrtInfo();
-    worker->ffrtTaskHandle_ = reinterpret_cast<void*>(env);
-    taskManager.GetIdleWorkers();
 
     taskManager.freeList_.emplace_back(worker);
     worker->state_ = WorkerState::RUNNING;
