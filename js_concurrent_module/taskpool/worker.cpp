@@ -50,7 +50,7 @@ Worker::PriorityScope::PriorityScope(Worker* worker, Priority taskPriority) : wo
 
 Worker::RunningScope::~RunningScope()
 {
-    HILOG_INFO("taskpool:: RunningScope destruction");
+    HILOG_DEBUG("taskpool:: RunningScope destruction");
     if (scope_ != nullptr) {
         napi_close_handle_scope(worker_->workerEnv_, scope_);
     }
