@@ -105,11 +105,6 @@ private:
         runningCount_++;
     }
 
-    bool HasRunningTasks() const
-    {
-        return runningCount_ != 0;
-    }
-
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
     void DebuggerOnPostTask(std::function<void()>&& task);
@@ -181,8 +176,6 @@ private:
     bool IsExecutingLongTask();
     bool HasLongTask();
     void TerminateTask(uint64_t taskId);
-    void CloseHandles();
-    void PostReleaseSignal();
 
     static void HandleFunctionException(napi_env env, Task* task);
     static void PerformTask(const uv_async_t* req);

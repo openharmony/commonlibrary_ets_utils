@@ -411,12 +411,12 @@ void TaskManager::TriggerShrink(uint32_t step)
             continue;
         }
         auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-        if (idleTime < MAX_IDLE_TIME || worker->HasRunningTasks()) {
+        if (idleTime < MAX_IDLE_TIME || worker->runningCount_ != 0) {
             continue;
         }
         idleWorkers_.erase(worker);
         HILOG_DEBUG("taskpool:: try to release idle thread: %{public}d", worker->tid_);
-        worker->PostReleaseSignal();
+        uv_async_send(worker->clearWorkerSignal_);
         if (++count == step) {
             break;
         }
@@ -436,14 +436,14 @@ void TaskManager::TriggerShrink(uint32_t step)
         // try to free the worker that idle time meets the requirement
         auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [](Worker *worker) {
             auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-            return idleTime > MAX_IDLE_TIME && !worker->HasRunningTasks() && !worker->HasLongTask();
+            return idleTime > MAX_IDLE_TIME && worker->runningCount_ == 0 && !worker->HasLongTask();
         });
         // remove it from all sets
         if (iter != idleWorkers_.end()) {
             auto worker = *iter;
             idleWorkers_.erase(worker);
             HILOG_DEBUG("taskpool:: try to release idle thread: %{public}d", worker->tid_);
-            worker->PostReleaseSignal();
+            uv_async_send(worker->clearWorkerSignal_);
         }
     }
 }
@@ -464,25 +464,24 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     }
     // remove all timeout workers
     for (auto iter = timeoutWorkers_.begin(); iter != timeoutWorkers_.end();) {
-        auto worker = *iter;
-        if (workers_.find(worker) == workers_.end()) {
+        if (workers_.find(*iter) == workers_.end()) {
             HILOG_WARN("taskpool:: current worker maybe release");
             iter = timeoutWorkers_.erase(iter);
-        } else if (!worker->HasRunningTasks()) {
-            HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", worker->tid_);
-            worker->PostReleaseSignal();
+        } else {
+            HILOG_DEBUG("taskpool:: try to release timeout thread: %{public}d", (*iter)->tid_);
+            uv_async_send((*iter)->clearWorkerSignal_);
             timeoutWorkers_.erase(iter++);
             return;
-        } else {
-            iter++;
         }
     }
     uint32_t idleNum = idleWorkers_.size();
     // System memory state is moderate and the worker has exeuted tasks, we will try to release it
     if (ConcurrentHelper::IsModerateMemory() && workerCount == idleNum && workerCount == DEFAULT_MIN_THREADS) {
         auto worker = *(idleWorkers_.begin());
-        // worker that has longTask should not be released
-        if (worker == nullptr || worker->HasLongTask()) {
+        if (worker == nullptr || worker->clearWorkerSignal_ == nullptr) {
+            return;
+        }
+        if (worker->HasLongTask()) { // worker that has longTask should not be released
             return;
         }
         if (worker->hasExecuted_) { // worker that hasn't execute any tasks should not be released
@@ -688,7 +687,7 @@ uint32_t TaskManager::GetRunningWorkers()
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     return std::count_if(workers_.begin(), workers_.end(), [](const auto& worker) {
-        return worker->HasRunningTasks();
+        return worker->runningCount_ != 0;
     });
 }
 
