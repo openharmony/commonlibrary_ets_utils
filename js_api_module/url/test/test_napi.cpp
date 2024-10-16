@@ -2558,3 +2558,47 @@ HWTEST_F(NativeEngineTest, testUrlutilities050, testing::ext::TestSize.Level0)
     OHOS::Url::FormatIpv6(input);
     ASSERT_STREQ(input.c_str(), "99:0:0:1080:8:800:200C:417A");
 }
+
+HWTEST_F(NativeEngineTest, testUrlutilities051, testing::ext::TestSize.Level0)
+{
+    std::string num = "123456a";
+    size_t number = 0;
+    std::string rst = OHOS::Url::SplitNum(num, number);
+    ASSERT_STREQ(rst.c_str(), "123456a");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities052, testing::ext::TestSize.Level0)
+{
+    std::string num = "12.34";
+    size_t number = 0;
+    std::string rst = OHOS::Url::SplitNum(num, number);
+    ASSERT_STREQ(rst.c_str(), "12.34");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities053, testing::ext::TestSize.Level0)
+{
+    std::string num = "12.34.56a:123:123abc.4a";
+    std::string rst = OHOS::Url::DealIpv4(num);
+    ASSERT_STREQ(rst.c_str(), "123abc");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities054, testing::ext::TestSize.Level0)
+{
+    std::string num = "56a:123:######.4a";
+    std::string rst = OHOS::Url::DealIpv4(num);
+    ASSERT_STREQ(rst.c_str(), "######");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities055, testing::ext::TestSize.Level0)
+{
+    std::string num = "12.34.56a:123a";
+    std::string rst = OHOS::Url::DealIpv4(num);
+    ASSERT_STREQ(rst.c_str(), "123a");
+}
+
+HWTEST_F(NativeEngineTest, testUrlutilities056, testing::ext::TestSize.Level0)
+{
+    std::string num = "12.34.56a:&&&&&&";
+    std::string rst = OHOS::Url::DealIpv4(num);
+    ASSERT_STREQ(rst.c_str(), "&&&&&&");
+}

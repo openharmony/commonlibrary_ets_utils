@@ -14,6 +14,7 @@
  */
 
 #include "js_url.h"
+#include <charconv>
 #include <regex>
 #include <sstream>
 #include "securec.h"
@@ -42,6 +43,12 @@ namespace OHOS::Url {
     };
 
     std::bitset<static_cast<size_t>(BitsetStatusFlag::MAX_BIT_SIZE)> g_specialCharForBit;
+
+    bool convertToInt(const std::string& str, int& value)
+    {
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+        return ec == std::errc{} && ptr == str.data() + str.size();
+    }
 
     void PreliminaryWork()
     {
@@ -312,7 +319,11 @@ namespace OHOS::Url {
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
             return;
         }
-        int it = stoi(input);
+        int it = 0;
+        if (!convertToInt(input, it)) {
+            HILOG_ERROR("convertToInt fail.");
+            return;
+        }
         const int maxPort = 65535; // 65535:Maximum port number
         if (it > maxPort) {
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
@@ -353,9 +364,14 @@ namespace OHOS::Url {
         size_t left = pos + 1;
         char hexVal[3] = { 0 };
         std::string val = "";
+        int valNum = 0;
         while ((pos = str.find(".", left)) != std::string::npos) {
             val = str.substr(left, pos - left);
-            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
+            if (!convertToInt(val, valNum)) {
+                HILOG_ERROR("convertToInt fail.");
+                return val;
+            }
+            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", valNum) == -1) {
                 HILOG_ERROR("sprintf_s is falie");
                 return val;
             }
@@ -364,7 +380,11 @@ namespace OHOS::Url {
             left = pos + 1;
         }
         val = str.substr(left);
-        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
+        if (!convertToInt(val, valNum)) {
+            HILOG_ERROR("convertToInt fail.");
+            return val;
+        }
+        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", valNum) == -1) {
             HILOG_ERROR("sprintf_s is falie");
             return val;
         }
@@ -633,7 +653,11 @@ namespace OHOS::Url {
             number = num.size();
             return num;
         }
-        int val = stoi(num);
+        int val = 0;
+        if (!convertToInt(num, val)) {
+            HILOG_ERROR("convertToInt fail.");
+            return num;
+        }
         std::vector<std::string> nums;
         std::string res = "";
         while (val > 0) {
