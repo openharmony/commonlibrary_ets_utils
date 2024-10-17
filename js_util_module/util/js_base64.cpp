@@ -524,7 +524,6 @@ namespace OHOS::Util {
             reinterpret_cast<const void*>(stdEncodeInfo->sinputEncoding), bufferSize) != EOK) {
             HILOG_ERROR("copy ret to arraybuffer error");
             napi_delete_async_work(env, stdEncodeInfo->worker);
-            napi_close_handle_scope(env, scope);
             return;
         }
         napi_value result = nullptr;
@@ -759,7 +758,6 @@ namespace OHOS::Util {
             reinterpret_cast<const void*>(stdDecodeInfo->sinputDecoding), bufferSize) != EOK) {
             HILOG_ERROR("copy ret to arraybuffer error");
             napi_delete_async_work(env, stdDecodeInfo->worker);
-            napi_close_handle_scope(env, scope);
             return;
         }
         napi_value result = nullptr;
