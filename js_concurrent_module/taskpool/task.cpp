@@ -110,7 +110,7 @@ void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
     bool shouldDelete = false;
     {
         std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
-        task->isValid_ = false;
+        task->SetValid(false);
         if (task->refCount_ == 0) {
             shouldDelete = true;
         }
@@ -137,7 +137,7 @@ void Task::CleanupHookFunc(void* arg)
         uv_close(reinterpret_cast<uv_handle_t*>(task->onStartExecutionSignal_), nullptr);
     }
     if (task->IsFunctionTask()) {
-        task->isValid_ = false;
+        task->SetValid(false);
     }
 }
 
@@ -1385,7 +1385,7 @@ bool Task::VerifyAndPostResult(Priority priority)
         return true;
     } else {
         std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-        if (!isValid_ || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+        if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
             return false;
         }
         uv_async_send(onResultSignal_);
@@ -1393,7 +1393,7 @@ bool Task::VerifyAndPostResult(Priority priority)
     }
 #else
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    if (!isValid_ || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+    if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
         return false;
     }
     uv_async_send(onResultSignal_);
@@ -1414,7 +1414,7 @@ void Task::DecreaseTaskRefCount()
 bool Task::ShouldDeleteTask(bool needUnref)
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    if (!isValid_) {
+    if (!IsValid()) {
         HILOG_WARN("taskpool:: task is invalid");
         TaskManager::GetInstance().RemoveTask(taskId_);
         return true;
@@ -1447,7 +1447,7 @@ bool Task::CheckStartExecution(Priority priority)
             return true;
         }
         std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-        if (!isValid_) {
+        if (!IsValid()) {
             return false;
         }
         if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
@@ -1460,7 +1460,7 @@ bool Task::CheckStartExecution(Priority priority)
         return true;
     }
     std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    if (!isValid_) {
+    if (!IsValid()) {
         return false;
     }
     if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
@@ -1468,5 +1468,15 @@ bool Task::CheckStartExecution(Priority priority)
     }
     return true;
 #endif
+}
+
+void Task::SetValid(bool isValid)
+{
+    isValid_.store(isValid);
+}
+
+bool Task::IsValid()
+{
+    return isValid_.load();
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

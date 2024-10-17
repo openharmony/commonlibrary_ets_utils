@@ -125,7 +125,6 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (seqRunner == nullptr) {
         return nullptr;
     }
-    napi_reference_ref(env, seqRunner->seqRunnerRef_, nullptr);
     Task* task = nullptr;
     napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
     if (task == nullptr) {
@@ -140,6 +139,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (promise == nullptr) {
         return nullptr;
     }
+    napi_reference_ref(env, seqRunner->seqRunnerRef_, nullptr);
     if (seqRunner->currentTaskId_ == 0) {
         HILOG_INFO("taskpool:: taskId %{public}s in seqRunner %{public}s immediately.",
                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());

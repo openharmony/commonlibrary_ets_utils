@@ -153,6 +153,8 @@ public:
     bool ShouldDeleteTask(bool needUnref = true);
     bool VerifyAndPostResult(Priority priority);
     bool CheckStartExecution(Priority priority);
+    bool IsValid();
+    void SetValid(bool isValid);
 
 private:
     Task(const Task &) = delete;

@@ -395,7 +395,7 @@ void Worker::PerformTask(const uv_async_t* req)
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: task has been released");
         return;
-    } else if (!task->isValid_ && task->ShouldDeleteTask(false)) {
+    } else if (!task->IsValid() && task->ShouldDeleteTask(false)) {
         HILOG_WARN("taskpool:: task is invalid");
         delete task;
         return;
