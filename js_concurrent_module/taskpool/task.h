@@ -54,8 +54,12 @@ struct TaskInfo {
 
 #if defined(ENABLE_TASKPOOL_FFRT)
 #define RECURSIVE_MUTEX ffrt::recursive_mutex
+#define FFRT_MUTEX ffrt::mutex
+#define SHARED_MUTEX ffrt::shared_mutex
 #else
 #define RECURSIVE_MUTEX std::recursive_mutex
+#define FFRT_MUTEX std::mutex
+#define SHARED_MUTEX std::shared_mutex
 #endif
 
 struct ListenerCallBackInfo {
