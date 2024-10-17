@@ -534,10 +534,10 @@ void TaskManager::TryExpand()
     maxThreads = (timeoutWorkers == 0) ? maxThreads : maxThreads + 2; // 2: extra threads
     if (workerCount < maxThreads && idleCount < targetNum) {
         uint32_t step = std::min(maxThreads, targetNum) - idleCount;
-        if (step <= idleNum) {
-            return;
+        // Prevent the total number of expanded threads from exceeding maxThreads
+        if (step + workerCount > maxThreads) {
+            step = maxThreads - workerCount;
         }
-        step -= idleNum;
         CreateWorkers(hostEnv_, step);
         HILOG_INFO("taskpool:: maxThreads: %{public}u, created num: %{public}u, total num: %{public}u",
             maxThreads, step, GetThreadNum());
