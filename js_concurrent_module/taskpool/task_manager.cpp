@@ -701,7 +701,7 @@ uint32_t TaskManager::GetTimeoutWorkers()
 
 uint32_t TaskManager::GetTaskNum()
 {
-    std::lock_guard<ffrt::mutex> lock(taskQueuesMutex_);
+    std::lock_guard<FFRT_MUTEX> lock(taskQueuesMutex_);
     uint32_t sum = 0;
     for (const auto& elements : taskQueues_) {
         sum += elements->GetTaskNum();
@@ -737,7 +737,7 @@ uint32_t TaskManager::GetThreadNum()
 void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
 {
     {
-        std::lock_guard<ffrt::mutex> lock(taskQueuesMutex_);
+        std::lock_guard<FFRT_MUTEX> lock(taskQueuesMutex_);
         IncreaseNumIfNoIdle(priority);
         taskQueues_[priority]->EnqueueTaskId(taskId);
     }
@@ -755,7 +755,7 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
 
 void TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
 {
-    std::lock_guard<ffrt::mutex> lock(taskQueuesMutex_);
+    std::lock_guard<FFRT_MUTEX> lock(taskQueuesMutex_);
     if (!taskQueues_[priority]->EraseWaitingTaskId(taskId)) {
         HILOG_WARN("taskpool:: taskId is not in executeQueue when cancel");
     }
@@ -763,7 +763,7 @@ void TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
 
 std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
 {
-    std::lock_guard<ffrt::mutex> lock(taskQueuesMutex_);
+    std::lock_guard<FFRT_MUTEX> lock(taskQueuesMutex_);
     auto& highTaskQueue = taskQueues_[Priority::HIGH];
     if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
         highPrioExecuteCount_++;
