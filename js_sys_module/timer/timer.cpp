@@ -100,11 +100,11 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         }
         TimerCallbackInfo* callbackInfo = iter->second;
         if (callbackInfo->env_ != env) {
-            HILOG_ERROR("Timer is deleting by another thread, please check js code. TimerID:%{public}d", tId);
+            HILOG_ERROR("Timer is deleting by another thread, please check js code. TimerID:%{public}u", tId);
         } else {
             timerTable.erase(tId);
             Helper::CloseHelp::DeletePointer(callbackInfo, false);
-            HILOG_INFO("DeleteTimer ID: %{public}d, count: %{public}u", tId, ++deleteTimerCount);
+            HILOG_INFO("DeleteTimer ID: %{public}u, count: %{public}u", tId, ++deleteTimerCount);
         }
     }
     return Helper::NapiHelper::GetUndefinedValue(env);
