@@ -101,7 +101,7 @@ void EncodeConversion(napi_env env, napi_value src, napi_value* arrayBuffer, siz
     }
 }
 
-void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
+void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, uint32_t* written, size_t length, int32_t* nchars)
 {
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(encodeInfo.env);
     engine->EncodeToUtf8(encodeInfo.src, writeResult, written, length, nchars);

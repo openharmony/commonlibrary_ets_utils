@@ -105,7 +105,7 @@ namespace Commonlibrary::Platform {
         return buffer;
     }
 
-    void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
+    void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, uint32_t* written, size_t length, int32_t* nchars)
     {
         if (encodeInfo.encoding == "utf-16be" || encodeInfo.encoding == "utf-16le") {
             EncodeTo16BE(encodeInfo, writeResult, written, length, nchars);
@@ -354,7 +354,7 @@ namespace Commonlibrary::Platform {
         return STATE_OTHER_TWO;
     }
 
-    void OtherEncodeUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchar)
+    void OtherEncodeUtf8(TextEcodeInfo encodeInfo, char* writeResult, uint32_t* written, size_t length, int32_t* nchar)
     {
         size_t inputSize = 0;
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
@@ -390,11 +390,11 @@ namespace Commonlibrary::Platform {
             writeResult++;
         }
         *nchar = static_cast<int32_t>(outInfo.cntSize);
-        *written = static_cast<int32_t>(writeLength);
+        *written = static_cast<uint32_t>(writeLength);
         FreedMemory(originalBuffer);
     }
 
-    void EncodeTo16BE(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars)
+    void EncodeTo16BE(TextEcodeInfo encodeInfo, char* writeResult, uint32_t* written, size_t length, int32_t* nchars)
     {
         size_t inputSize = 0;
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
@@ -432,7 +432,7 @@ namespace Commonlibrary::Platform {
             return;
         }
         *nchars = static_cast<int32_t>(i);
-        *written = static_cast<int32_t>(writeLength);
+        *written = static_cast<uint32_t>(writeLength);
         FreedMemory(originalBuffer);
     }
 

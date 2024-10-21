@@ -78,7 +78,7 @@ namespace Commonlibrary::Platform {
     std::string ConvertToString(UChar* uchar, size_t length);
     void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::string& buffer);
     std::string UnicodeConversion(std::string encoding, char16_t* originalBuffer, size_t inputSize);
-    void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars);
+    void EncodeToUtf8(TextEcodeInfo encodeInfo, char* writeResult, uint32_t* written, size_t length, int32_t* nchars);
     void EncodeConversion(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens,
                           std::string encoding);
     void FreedMemory(char *data);
@@ -88,8 +88,9 @@ namespace Commonlibrary::Platform {
     std::u16string Utf16BEToLE(const std::u16string &wstr);
     void OtherEncode(napi_env env, napi_value src, napi_value* arrayBuffer, size_t &outLens, std::string encoding);
     std::u16string EncodeUtf16BE(napi_env env, napi_value src);
-    void OtherEncodeUtf8(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars);
-    void EncodeTo16BE(TextEcodeInfo encodeInfo, char* writeResult, int32_t* written, size_t length, int32_t* nchars);
+    void OtherEncodeUtf8(TextEcodeInfo encodeInfo, char* writeResult, uint32_t* written, size_t length,
+                         int32_t* nchars);
+    void EncodeTo16BE(TextEcodeInfo encodeInfo, char* writeResult, uint32_t* written, size_t length, int32_t* nchars);
     void FreedMemory(char16_t *&data);
     char16_t *ApplyMemory(const size_t &inputSize);
 } // namespace Commonlibrary::Platform
