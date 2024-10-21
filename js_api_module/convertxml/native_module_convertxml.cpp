@@ -30,7 +30,7 @@ namespace OHOS::Xml {
         napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
         auto objectInfo = new (std::nothrow) ConvertXml(env);
         if (objectInfo == nullptr) {
-            HILOG_ERROR("ConvertXmlConstructor::objectInfo is nullptr");
+            HILOG_ERROR("ConvertXmlConstructor:: memory allocation failed, objectInfo is nullptr");
             return nullptr;
         }
         napi_wrap(

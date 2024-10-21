@@ -52,7 +52,7 @@ namespace OHOS::xml {
         if (argc == 1) {
             object = new (std::nothrow) XmlSerializer(reinterpret_cast<char*>(data), iLength);
             if (object == nullptr) {
-                HILOG_ERROR("XmlSerializerConstructor:: object is nullptr");
+                HILOG_ERROR("XmlSerializerConstructor:: memory allocation failed, object is nullptr");
                 return nullptr;
             }
         } else if (argc == 2) { // 2:When the input parameter is set to 2
@@ -65,7 +65,7 @@ namespace OHOS::xml {
             if (status == napi_ok) {
                 object = new (std::nothrow) XmlSerializer(reinterpret_cast<char*>(data), iLength, encoding);
                 if (object == nullptr) {
-                    HILOG_ERROR("XmlSerializerConstructor:: object is nullptr");
+                    HILOG_ERROR("XmlSerializerConstructor:: memory allocation failed, object is nullptr");
                     return nullptr;
                 }
             }
@@ -147,7 +147,7 @@ namespace OHOS::xml {
             if (argc == 1) {
                 object = new (std::nothrow) XmlPullParser(env, strEnd, "utf-8");
                 if (object == nullptr) {
-                    HILOG_ERROR("XmlPullParserConstructor:: object is nullptr");
+                    HILOG_ERROR("XmlPullParserConstructor:: memory allocation failed, object is nullptr");
                     return nullptr;
                 }
             } else if (argc == 2) { // 2:When the input parameter is set to 2
@@ -157,7 +157,7 @@ namespace OHOS::xml {
                 XmlSerializer::DealNapiStrValue(env, args[1], strEncoding);
                 object = new (std::nothrow) XmlPullParser(env, strEnd, strEncoding);
                 if (object == nullptr) {
-                    HILOG_ERROR("XmlPullParserConstructor:: object is nullptr");
+                    HILOG_ERROR("XmlPullParserConstructor:: memory allocation failed, object is nullptr");
                     return nullptr;
                 }
             }

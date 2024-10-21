@@ -27,7 +27,7 @@ void Buffer::Init(uint32_t size)
 {
     raw_ = reinterpret_cast<uint8_t *>(malloc(size));
     if (raw_ == nullptr) {
-        HILOG_FATAL("Buffer constructor malloc failed");
+        HILOG_FATAL("Buffer:: constructor malloc failed");
         length_ = 0;
     } else {
         length_ = size;
@@ -39,11 +39,11 @@ void Buffer::Init(Buffer *buffer)
     if (buffer != nullptr && buffer->length_ > 0) {
         this->raw_ = reinterpret_cast<uint8_t *>(malloc(buffer->length_));
         if (raw_ == nullptr) {
-            HILOG_FATAL("Buffer constructor malloc failed");
+            HILOG_FATAL("Buffer:: constructor malloc failed");
         } else {
             this->length_ = buffer->length_;
             if (memcpy_s(raw_, length_, buffer->raw_ + buffer->byteOffset_, length_) != EOK) {
-                HILOG_FATAL("Buffer constructor memcpy_s failed");
+                HILOG_FATAL("Buffer:: constructor memcpy_s failed");
             }
         }
     }
@@ -121,7 +121,7 @@ unsigned int Buffer::GetByteOffset()
 void Buffer::SubBuffer(Buffer *tBuf, uint32_t start, uint32_t end)
 {
     if (tBuf == nullptr) {
-        HILOG_ERROR("buffer: buffer is nullptr.");
+        HILOG_ERROR("SubBuffer: buffer is nullptr.");
         return;
     }
     this->Init(tBuf->GetRaw(), tBuf->byteOffset_ + start, (end - start));
@@ -142,11 +142,11 @@ uint32_t Buffer::Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t s
             return len;
         }
         if (len == 0) {
-            HILOG_DEBUG("Buffer::WriteBytes size is 0");
+            HILOG_DEBUG("Buffer:: WriteBytes size is 0");
             return len;
         }
         if (memmove_s(dest, len, src, len) != EOK) {
-            HILOG_FATAL("Buffer WriteBytes memmove_s failed");
+            HILOG_FATAL("Buffer:: WriteBytes memmove_s failed");
             return len;
         }
     } else {
@@ -278,7 +278,7 @@ int32_t Buffer::Get(uint32_t index)
     uint8_t value;
     uint32_t count = 1;
     if (memcpy_s(&value, count, raw_ + byteOffset_ + index, count) != EOK) {
-        HILOG_FATAL("Buffer get memcpy_s failed");
+        HILOG_FATAL("Get:: get memcpy_s failed");
     }
     return value;
 }
@@ -295,22 +295,22 @@ void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
     }
 
     if (length == 0) {
-        HILOG_DEBUG("Buffer::ReadBytes size is 0");
+        HILOG_DEBUG("Buffer:: ReadBytes size is 0");
         return;
     }
     if (memcpy_s(data, length, raw_ + byteOffset_ + offset, length) != EOK) {
-        HILOG_FATAL("Buffer ReadBytes memcpy_s failed");
+        HILOG_FATAL("Buffer:: ReadBytes memcpy_s failed");
     }
 }
 
 void Buffer::ReadBytesForArrayBuffer(void *data, uint32_t length)
 {
     if (length == 0) {
-        HILOG_DEBUG("Buffer::ReadBytesForArrayBuffer size is 0");
+        HILOG_DEBUG("Buffer:: ReadBytesForArrayBuffer size is 0");
         return;
     }
     if (memcpy_s(data, length, reinterpret_cast<const void*>(raw_ + byteOffset_), length) != EOK) {
-        HILOG_ERROR("copy raw to arraybuffer error");
+        HILOG_ERROR("Buffer:: copy raw to arraybuffer error");
         return;
     }
 }
@@ -385,11 +385,11 @@ bool Buffer::WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest)
         return false;
     }
     if (size == 0) {
-        HILOG_DEBUG("Buffer::WriteBytes size is 0");
+        HILOG_DEBUG("Buffer:: WriteBytes size is 0");
         return false;
     }
     if (memcpy_s(dest, size, src, size) != EOK) {
-        HILOG_FATAL("Buffer WriteBytes memcpy_s failed");
+        HILOG_FATAL("Buffer:: WriteBytes memcpy_s failed");
         return false;
     }
     return true;
@@ -490,12 +490,12 @@ unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int
 std::string Buffer::ToBase64(uint32_t start, uint32_t length)
 {
     if (length == 0 || length >= UINT32_MAX) {
-        HILOG_ERROR("buffer::length is illegal");
+        HILOG_ERROR("Buffer:: length is illegal");
         return "";
     }
     uint8_t *data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
-        HILOG_ERROR("buffer:: memory allocation failed.");
+        HILOG_ERROR("Buffer:: memory allocation failed.");
         return "";
     }
     ReadBytes(data, start, length);
@@ -508,12 +508,12 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
 std::string Buffer::ToBase64Url(uint32_t start, uint32_t length)
 {
     if (length == 0 || length >= UINT32_MAX) {
-        HILOG_ERROR("buffer::length is illegal");
+        HILOG_ERROR("Buffer:: length is illegal");
         return "";
     }
     uint8_t *data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
-        HILOG_ERROR("buffer:: memory allocation failed.");
+        HILOG_ERROR("Buffer:: memory allocation failed.");
         return "";
     }
     ReadBytes(data, start, length);
@@ -530,7 +530,7 @@ int Buffer::IndexOf(const char *data, uint32_t offset, uint32_t len, uint64_t &r
     }
     uint8_t *sData = new (std::nothrow) uint8_t[length_ - offset];
     if (sData == nullptr) {
-        HILOG_ERROR("buffer:: memory allocation failed.");
+        HILOG_ERROR("Buffer:: memory allocation failed.");
         return -1;
     }
     ReadBytes(sData, offset, length_ - offset);
@@ -554,7 +554,7 @@ int Buffer::LastIndexOf(const char *data, uint32_t offset, uint32_t len)
     }
     uint8_t *sData = new (std::nothrow) uint8_t[length_ - offset];
     if (sData == nullptr) {
-        HILOG_ERROR("buffer:: memory allocation failed.");
+        HILOG_ERROR("Buffer:: memory allocation failed.");
         return -1;
     }
     ReadBytes(sData, offset, length_ - offset);

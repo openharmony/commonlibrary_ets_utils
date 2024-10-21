@@ -192,7 +192,7 @@ napi_value GetBinaryUUID(napi_env env, bool entropyCache)
     size_t bufferSize = sizeof(uuid.elements);
     napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
     if (memcpy_s(data, bufferSize, uuid.elements, bufferSize) != EOK) {
-        HILOG_ERROR("get uuid memcpy_s failed");
+        HILOG_ERROR("GetBinaryUUID:: get uuid memcpy_s failed");
         return nullptr;
     }
     napi_value result = nullptr;
@@ -208,13 +208,13 @@ napi_value DoParseUUID(napi_env env, napi_value src)
     napi_status status = napi_ok;
     status = napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize);
     if (status != napi_ok) {
-        HILOG_ERROR("can not get src size");
+        HILOG_ERROR("DoParseUUID:: can not get src size");
         return nullptr;
     }
     buffer.resize(bufferSize);
     status = napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize);
     if (status != napi_ok) {
-        HILOG_ERROR("can not get src value");
+        HILOG_ERROR("DoParseUUID:: can not get src value");
         return nullptr;
     }
     void *data = nullptr;

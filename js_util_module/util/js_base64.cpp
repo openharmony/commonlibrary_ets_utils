@@ -68,7 +68,7 @@ namespace OHOS::Util {
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(rets), bufferSize) != EOK) {
             FreeMemory(rets);
-            HILOG_ERROR("copy ret to arraybuffer error");
+            HILOG_ERROR("Base64:: copy ret to arraybuffer error");
             return nullptr;
         }
         napi_value result = nullptr;
@@ -113,16 +113,16 @@ namespace OHOS::Util {
         if (outputLen > 0) {
             ret = new (std::nothrow) unsigned char[outputLen + 1];
             if (ret == nullptr) {
-                HILOG_ERROR("Base64:: ret is nullptr");
+                HILOG_ERROR("Base64:: memory allocation failed, ret is nullptr");
                 return nullptr;
             }
             if (memset_s(ret, outputLen + 1, '\0', outputLen + 1) != EOK) {
-                HILOG_ERROR("encode ret memset_s failed");
+                HILOG_ERROR("Base64:: encode ret memset_s failed");
                 FreeMemory(ret);
                 return nullptr;
             }
         } else {
-            HILOG_ERROR("outputLen is error");
+            HILOG_ERROR("Base64:: outputLen is error");
             return nullptr;
         }
         if (ret == nullptr) {
@@ -185,7 +185,7 @@ namespace OHOS::Util {
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(pret), bufferSize) != EOK) {
             FreeMemory(pret);
-            HILOG_ERROR("copy retDecode to arraybuffer error");
+            HILOG_ERROR("Base64:: copy retDecode to arraybuffer error");
             return nullptr;
         }
         napi_value result = nullptr;
@@ -211,7 +211,7 @@ namespace OHOS::Util {
             if (prolen > 0) {
                 inputString = new (std::nothrow) char[prolen + 1];
                 if (inputString == nullptr) {
-                    HILOG_ERROR("inputString is nullptr");
+                    HILOG_ERROR("Base64:: memory allocation failed, inputString is nullptr");
                     return false;
                 }
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
@@ -256,7 +256,7 @@ namespace OHOS::Util {
         if (retLen > 0) {
             retDecode = new (std::nothrow) unsigned char[retLen + 1];
             if (retDecode == nullptr) {
-                HILOG_ERROR("retDecode is nullptr");
+                HILOG_ERROR("Base64:: memory allocation failed, retDecode is nullptr");
                 return nullptr;
             }
             if (memset_s(retDecode, retLen + 1, '\0', retLen + 1) != EOK) {
@@ -400,7 +400,7 @@ namespace OHOS::Util {
         napi_value resourceName = nullptr;
         stdEncodeInfo_ = new (std::nothrow) EncodeInfo();
         if (stdEncodeInfo_ == nullptr) {
-            HILOG_ERROR("stdEncodeInfo_ is nullptr");
+            HILOG_ERROR("Base64:: memory allocation failed, stdEncodeInfo_ is nullptr");
             return;
         }
         stdEncodeInfo_->sinputEncode = inputDecode;
@@ -522,7 +522,7 @@ namespace OHOS::Util {
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
         if (memcpy_s(data, bufferSize,
             reinterpret_cast<const void*>(stdEncodeInfo->sinputEncoding), bufferSize) != EOK) {
-            HILOG_ERROR("copy ret to arraybuffer error");
+            HILOG_ERROR("Base64:: copy ret to arraybuffer error");
             napi_delete_async_work(env, stdEncodeInfo->worker);
             return;
         }
@@ -756,7 +756,7 @@ namespace OHOS::Util {
         napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer);
         if (memcpy_s(data, bufferSize,
             reinterpret_cast<const void*>(stdDecodeInfo->sinputDecoding), bufferSize) != EOK) {
-            HILOG_ERROR("copy ret to arraybuffer error");
+            HILOG_ERROR("Base64:: copy ret to arraybuffer error");
             napi_delete_async_work(env, stdDecodeInfo->worker);
             return;
         }
