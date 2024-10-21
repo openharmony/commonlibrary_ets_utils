@@ -79,6 +79,11 @@ public:
     static void* WorkerConstructor(napi_env env);
     static pid_t GetWorkerTid(uv_timer_t* handle);
     static void WorkerPostTask(napi_env env);
+    static void CheckAndCreateAsyncRunner(napi_env env, napi_value name, napi_value runningCapacity,
+                                          napi_value waitingCapacity);
+    static void AsyncRunnerDestructor(napi_env env, void* data);
+    static void RejectError(uv_timer_t* handle);
+    static void AddTasksToAsyncRunner(void* asyncData, void* taskData);
 
     class ExceptionScope {
     public:

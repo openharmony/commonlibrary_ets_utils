@@ -521,6 +521,12 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
+    if (task->IsAsyncRunnerTask()) {
+        errMessage = "AsyncRunnerTask cannot addDependency.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
     if (task->IsGroupCommonTask()) {
         errMessage = "taskpool:: groupTask cannot addDependency";
         HILOG_ERROR("%{public}s", errMessage.c_str());
@@ -555,6 +561,12 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
             if (dependentTask->IsCommonTask() || dependentTask->IsSeqRunnerTask()) {
                 errMessage = "taskpool:: seqRunnerTask or executedTask cannot be relied on";
                 HILOG_ERROR("%{public}s", errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                return nullptr;
+            }
+            if (dependentTask->IsAsyncRunnerTask()) {
+                errMessage = "AsyncRunnerTask cannot be relied on.";
+                HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
                 return nullptr;
             }
@@ -1192,6 +1204,12 @@ bool Task::CanForSequenceRunner(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "SequenceRunner cannot execute asyncRunnerTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1226,6 +1244,12 @@ bool Task::CanForTaskGroup(napi_env env)
         errMessage = "taskpool:: The interface does not support the long task";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "TaskGroup cannot execute asyncRunnerTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
     taskType_ = TaskType::GROUP_COMMON_TASK;
@@ -1265,6 +1289,12 @@ bool Task::CanExecute(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
         return false;
     }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "AsyncRunnerTask cannot execute outside.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1299,6 +1329,12 @@ bool Task::CanExecuteDelayed(napi_env env)
         errMessage = "taskpool:: the periodicTask cannot executeDelayed";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
+        return false;
+    }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "AsyncRunnerTask cannot executeDelayed.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
     return true;
@@ -1510,5 +1546,46 @@ void Task::SetValid(bool isValid)
 bool Task::IsValid()
 {
     return isValid_.load();
+}
+
+bool Task::CanForAsyncRunner(napi_env env)
+{
+    std::string errMessage = "";
+    if (HasDependency()) {
+        errMessage = "AsyncRunner:: dependent task not allowed.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER, errMessage.c_str());
+        return false;
+    }
+    if (IsPeriodicTask()) {
+        errMessage = "AsyncRunner cannot execute the periodicTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    if (IsCommonTask() || IsSeqRunnerTask()) {
+        errMessage = "AsyncRunner cannot execute seqRunnerTask or executedTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    if (IsGroupCommonTask()) {
+        errMessage = "AsyncRunner cannot execute groupTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "AsyncRunner cannot execute asyncRunnerTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    return true;
+}
+
+bool Task::IsAsyncRunnerTask()
+{
+    return taskType_ == TaskType::ASYNCRUNNER_TASK;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

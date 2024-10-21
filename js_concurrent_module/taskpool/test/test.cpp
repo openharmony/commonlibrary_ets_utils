@@ -15,6 +15,7 @@
 
 #include "test.h"
 
+#include "async_runner.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "sequence_runner.h"
@@ -933,5 +934,30 @@ void NativeEngineTest::WorkerPostTask(napi_env env)
     Worker::TriggerGCCheck(req);
     worker->NotifyTaskFinished();
     worker->PostReleaseSignal();
+}
+
+void NativeEngineTest::CheckAndCreateAsyncRunner(napi_env env, napi_value name, napi_value runningCapacity,
+                                                 napi_value waitingCapacity)
+{
+    napi_value thisVar = nullptr;
+    AsyncRunner::CheckAndCreateAsyncRunner(env, thisVar, name, runningCapacity, waitingCapacity);
+}
+
+void NativeEngineTest::AsyncRunnerDestructor(napi_env env, void* data)
+{
+    void* hint = nullptr;
+    AsyncRunner::AsyncRunnerDestructor(env, data, hint);
+}
+
+void NativeEngineTest::RejectError(uv_timer_t* handle)
+{
+    AsyncRunner::RejectError(handle);
+}
+
+void NativeEngineTest::AddTasksToAsyncRunner(void* asyncData, void* taskData)
+{
+    AsyncRunner* async = reinterpret_cast<AsyncRunner*>(asyncData);
+    Task* task = reinterpret_cast<Task*>(taskData);
+    AsyncRunner::AddTasksToAsyncRunner(async, task);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
