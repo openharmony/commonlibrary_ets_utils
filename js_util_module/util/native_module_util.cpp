@@ -447,6 +447,7 @@ namespace OHOS::Util {
                 auto objInfo = reinterpret_cast<TextDecoder*>(data);
                 if (objInfo != nullptr) {
                     delete objInfo;
+                    objInfo = nullptr;
                 }
             },
             nullptr, nullptr));
