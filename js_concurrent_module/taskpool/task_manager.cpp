@@ -831,10 +831,6 @@ void TaskManager::NotifyExecuteTask()
 void TaskManager::InitTaskManager(napi_env env)
 {
     HITRACE_HELPER_METER_NAME("InitTaskManager");
-    auto hostEngine = reinterpret_cast<NativeEngine*>(env);
-    while (hostEngine != nullptr && !hostEngine->IsMainThread()) {
-        hostEngine = hostEngine->GetHostEngine();
-    }
     if (!isInitialized_.exchange(true, std::memory_order_relaxed)) {
 #if defined(ENABLE_TASKPOOL_FFRT)
         globalEnableFfrtFlag_ = OHOS::system::GetIntParameter<int>("persist.commonlibrary.taskpoolglobalenableffrt", 0);
@@ -858,7 +854,12 @@ void TaskManager::InitTaskManager(napi_env env)
         mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
 #endif
-        hostEnv_ = reinterpret_cast<napi_env>(hostEngine);
+        auto mainThreadEngine = NativeEngine::GetMainThreadEngine();
+        if (mainThreadEngine == nullptr) {
+            HILOG_FATAL("taskpool:: mainThreadEngine is nullptr");
+            return;
+        }
+        hostEnv_ = reinterpret_cast<napi_env>(mainThreadEngine);
         // Add a reserved thread for taskpool
         CreateWorkers(hostEnv_);
         // Create a timer to manage worker threads

@@ -2344,22 +2344,25 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
 
 void Worker::WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage)
 {
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    while (!engine->IsMainThread()) {
-        engine = engine->GetHostEngine();
+    auto mainThreadEngine = NativeEngine::GetMainThreadEngine();
+    if (mainThreadEngine == nullptr) {
+        HILOG_ERROR("worker:: mainThreadEngine is nullptr");
+        return;
     }
-    if (engine->IsTargetWorkerVersion(WorkerVersion::NEW)) {
+    if (mainThreadEngine->IsTargetWorkerVersion(WorkerVersion::NEW)) {
         ErrorHelper::ThrowError(env, errCode, errMessage);
     }
 }
 
 bool Worker::CanCreateWorker(napi_env env, WorkerVersion target)
 {
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    while (!engine->IsMainThread()) {
-        engine = engine->GetHostEngine();
+    auto mainThreadEngine = NativeEngine::GetMainThreadEngine();
+    if (mainThreadEngine == nullptr) {
+        HILOG_ERROR("worker:: mainThreadEngine is nullptr");
+        return false;
     }
-    if (engine->CheckAndSetWorkerVersion(WorkerVersion::NONE, target) || engine->IsTargetWorkerVersion(target)) {
+    if (mainThreadEngine->CheckAndSetWorkerVersion(WorkerVersion::NONE, target) ||
+        mainThreadEngine->IsTargetWorkerVersion(target)) {
         return true;
     }
     return false;
