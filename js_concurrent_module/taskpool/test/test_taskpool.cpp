@@ -4597,10 +4597,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest233, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     Task* task = new Task();
-    task->isValid_ = false;
+    task->SetValid(false);
     bool res = task->ShouldDeleteTask();
     ASSERT_TRUE(res);
-    task->isValid_ = true;
+    task->SetValid(true);
     task->refCount_ = 1;
     res = task->ShouldDeleteTask();
     ASSERT_TRUE(res == false);
