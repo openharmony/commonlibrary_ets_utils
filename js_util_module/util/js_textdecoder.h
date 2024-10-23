@@ -54,7 +54,7 @@ namespace OHOS::Util {
          * @param buff Encoding format.
          * @param optionVec There are two attributes of code related option parameters: fatal and ignorebom.
          */
-        TextDecoder(const std::string &buff, std::vector<int> optionVec);
+        TextDecoder(const std::string &buff, int32_t flags);
 
         /**
          * Destructor of textencoder.
@@ -71,27 +71,6 @@ namespace OHOS::Util {
         napi_value Decode(napi_env env, napi_value src, bool iflag);
 
         napi_value DecodeToString(napi_env env, napi_value src, bool iflag);
-
-        /**
-         * Get encoding format.
-         *
-         * @param env NAPI environment parameters.
-         */
-        napi_value GetEncoding(napi_env env) const;
-
-        /**
-         * Gets the setting of the exception thrown.
-         *
-         * @param env NAPI environment parameters.
-         */
-        napi_value GetFatal(napi_env env) const;
-
-        /**
-         * Gets whether to ignore the setting of BOM flag.
-         *
-         * @param env NAPI environment parameters.
-         */
-        napi_value GetIgnoreBOM(napi_env env) const;
 
         /**
          * Gets the size of minimum byte.
