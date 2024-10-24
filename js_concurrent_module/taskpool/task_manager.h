@@ -108,6 +108,7 @@ public:
     napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task);
     MsgQueue* GetMessageQueue(const uv_async_t* req);
     MsgQueue* GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInfo);
+    void ResetCallbackInfoWorker(const std::shared_ptr<CallbackInfo>& callbackInfo);
 
     // for task dependency
     bool IsDependendByTaskId(uint64_t taskId);

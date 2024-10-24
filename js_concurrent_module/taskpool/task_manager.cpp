@@ -962,6 +962,12 @@ void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
     }
 }
 
+void TaskManager::ResetCallbackInfoWorker(const std::shared_ptr<CallbackInfo>& callbackInfo)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    callbackInfo->worker = nullptr;
+}
+
 napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s NotifyCallbackExecute", std::to_string(task->taskId_).c_str());
@@ -1003,7 +1009,7 @@ MsgQueue* TaskManager::GetMessageQueue(const uv_async_t* req)
     std::lock_guard<std::mutex> lock(callbackMutex_);
     auto info = static_cast<CallbackInfo*>(req->data);
     if (info == nullptr || info->worker == nullptr) {
-        HILOG_ERROR("taskpool:: info or worker is nullptr");
+        HILOG_WARN("taskpool:: info or worker is nullptr");
         return nullptr;
     }
     auto worker = info->worker;
@@ -1016,7 +1022,7 @@ MsgQueue* TaskManager::GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInf
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     if (callbackInfo == nullptr || callbackInfo->worker == nullptr) {
-        HILOG_ERROR("taskpool:: callbackInfo or worker is nullptr");
+        HILOG_WARN("taskpool:: callbackInfo or worker is nullptr");
         return nullptr;
     }
     auto worker = callbackInfo->worker;
