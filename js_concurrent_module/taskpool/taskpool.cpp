@@ -107,7 +107,7 @@ void TaskPool::ExecuteCallback(const uv_async_t* req)
 {
     auto* msgQueue = TaskManager::GetInstance().GetMessageQueue(req);
     if (msgQueue == nullptr) {
-        HILOG_ERROR("taskpool:: msgQueue is nullptr");
+        HILOG_WARN("taskpool:: msgQueue is nullptr");
         return;
     }
     ExecuteCallbackInner(*msgQueue);
@@ -117,7 +117,7 @@ void TaskPool::ExecuteCallbackTask(CallbackInfo* callbackInfo)
 {
     auto* msgQueue = TaskManager::GetInstance().GetMessageQueueFromCallbackInfo(callbackInfo);
     if (msgQueue == nullptr) {
-        HILOG_ERROR("taskpool:: msgQueue is nullptr");
+        HILOG_WARN("taskpool:: msgQueue is nullptr");
         return;
     }
     ExecuteCallbackInner(*msgQueue);
@@ -145,6 +145,7 @@ void TaskPool::ExecuteCallbackInner(MsgQueue& msgQueue)
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_REGISTERED);
             continue;
         }
+        TaskManager::GetInstance().ResetCallbackInfoWorker(callbackInfo);
         auto func = NapiHelper::GetReferenceValue(env, callbackInfo->callbackRef);
         napi_value args;
         napi_value result;
