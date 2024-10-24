@@ -806,6 +806,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest059, testing::ext::TestSize.Level0)
     usleep(50000);
     uint32_t result = taskManager.GetIdleWorkers();
     ASSERT_TRUE(result != 0);
+    NativeEngineTest::TriggerShrink(env);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
@@ -4199,7 +4200,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest215, testing::ext::TestSize.Level0)
     napi_create_string_utf8(env, "seq05", NAPI_AUTO_LENGTH, &argv4[0]);
     result = nullptr;
     napi_call_function(env, nullptr, callback, 1, argv4, &result);
-    ASSERT_EQ(result, nullptr);
+    ASSERT_NE(result, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)

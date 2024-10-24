@@ -1743,10 +1743,6 @@ SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, nap
         napi_ref gloableSeqRunnerRef = nullptr;
         napi_create_reference(env, thisVar, 0, &gloableSeqRunnerRef);
         seqRunner->globalSeqRunnerRef_.emplace(env, gloableSeqRunnerRef);
-    } else {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                                "seqRunner:: the js gloableSeqRunner has been created in the current thread.");
-        return nullptr;
     }
 
     return seqRunner;
