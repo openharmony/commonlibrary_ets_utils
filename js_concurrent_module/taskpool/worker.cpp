@@ -85,6 +85,7 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 #endif
     ConcurrentHelper::UvHandleClose(worker->clearWorkerSignal_);
     ConcurrentHelper::UvHandleClose(worker->triggerGCCheckSignal_);
+    worker->triggerGCCheckSignal_ = nullptr;
 
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop != nullptr) {
@@ -341,8 +342,12 @@ void Worker::TriggerGCCheck(const uv_async_t* req)
 
 void Worker::NotifyTaskFinished()
 {
-    // trigger gc check by uv
-    if (triggerGCCheckSignal_ != nullptr && !uv_is_closing((uv_handle_t*)&triggerGCCheckSignal_)) {
+    // trigger gc check by uv and return immediately if the handle is invalid
+    if (UNLIKELY(triggerGCCheckSignal_ == nullptr || uv_is_closing(
+        reinterpret_cast<uv_handle_t*>(triggerGCCheckSignal_)))) {
+        HILOG_ERROR("taskpool:: triggerGCCheckSignal_ is nullptr or closed");
+        return;
+    } else {
         uv_async_send(triggerGCCheckSignal_);
     }
 
