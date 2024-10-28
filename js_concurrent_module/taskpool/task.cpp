@@ -110,7 +110,7 @@ void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
     bool shouldDelete = false;
     {
         std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
-        task->SetValid(false);;
+        task->SetValid(false);
         if (task->refCount_ == 0) {
             shouldDelete = true;
         }
