@@ -185,7 +185,6 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
                 continue;
             }
             napi_value taskInfoValue = NapiHelper::CreateObject(env);
-            std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
             napi_value taskId = NapiHelper::CreateUint32(env, task->taskId_);
             napi_value name = nullptr;
             napi_create_string_utf8(env, task->name_.c_str(), task->name_.size(), &name);
@@ -1311,18 +1310,21 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
     if (shouldDeleteTask) {
         RemoveTask(taskId);
     }
-    if (task->onResultSignal_ != nullptr) {
-        if (!uv_is_closing((uv_handle_t*)task->onResultSignal_)) {
-            ConcurrentHelper::UvHandleClose(task->onResultSignal_);
-        } else {
-            delete task->onResultSignal_;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        if (task->onResultSignal_ != nullptr) {
+            if (!uv_is_closing((uv_handle_t*)task->onResultSignal_)) {
+                ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+            } else {
+                delete task->onResultSignal_;
+            }
+            task->onResultSignal_ = nullptr;
         }
-        task->onResultSignal_ = nullptr;
-    }
 
-    if (task->currentTaskInfo_ != nullptr) {
-        delete task->currentTaskInfo_;
-        task->currentTaskInfo_ = nullptr;
+        if (task->currentTaskInfo_ != nullptr) {
+            delete task->currentTaskInfo_;
+            task->currentTaskInfo_ = nullptr;
+        }
     }
 
     task->CancelPendingTask(env);
@@ -1491,6 +1493,7 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
 {
     HILOG_DEBUG("taskpool:: ReleaseTaskGroupData group");
     TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
+    std::lock_guard<RECURSIVE_MUTEX> lock(group->taskGroupMutex_);
     for (uint64_t taskId : group->taskIds_) {
         Task* task = TaskManager::GetInstance().GetTask(taskId);
         if (task == nullptr || !task->IsValid()) {
