@@ -279,14 +279,25 @@ void TaskPool::DelayTask(uv_timer_t* handle)
 {
     TaskMessage *taskMessage = static_cast<TaskMessage *>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
+    napi_status status = napi_ok;
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: task is nullptr");
     } else if (task->taskState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: DelayTask task has been canceled");
+        HandleScope scope(task->env_, status);
+        if (status != napi_ok) {
+            HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+            return;
+        }
         napi_value error = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(task->env_, taskMessage->deferred, error);
     } else {
         HILOG_INFO("taskpool:: DelayTask taskId %{public}s", std::to_string(taskMessage->taskId).c_str());
+        HandleScope scope(task->env_, status);
+        if (status != napi_ok) {
+            HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+            return;
+        }
         TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
@@ -310,10 +321,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         task->delayedTimers_.erase(handle);
     }
     uv_timer_stop(handle);
-    uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
-        delete reinterpret_cast<uv_timer_t*>(handle);
-        handle = nullptr;
-    });
+    ConcurrentHelper::UvHandleClose(handle);
     delete taskMessage;
     taskMessage = nullptr;
 }
@@ -657,6 +665,12 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
 
     if (!task->isFirstTaskInfo_) {
+        napi_status status = napi_ok;
+        HandleScope scope(task->env_, status);
+        if (status != napi_ok) {
+            HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+            return;
+        }
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
         TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, task->periodicTaskPriority_);
         if (taskInfo == nullptr) {
