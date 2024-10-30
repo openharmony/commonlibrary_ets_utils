@@ -652,6 +652,12 @@ void Task::StartExecutionCallback(const uv_async_t* req)
 void Task::StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo)
 {
     auto env = listenerCallBackInfo->env_;
+    napi_status status = napi_ok;
+    HandleScope scope(env, status);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+        return;
+    }
     auto func = NapiHelper::GetReferenceValue(env, listenerCallBackInfo->callbackRef_);
     if (func == nullptr) {
         HILOG_INFO("taskpool:: StartExecutionCallback func is null");
