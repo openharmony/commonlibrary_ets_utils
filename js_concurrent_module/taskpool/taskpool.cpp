@@ -316,10 +316,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         task->delayedTimers_.erase(handle);
     }
     uv_timer_stop(handle);
-    uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
-        delete reinterpret_cast<uv_timer_t*>(handle);
-        handle = nullptr;
-    });
+    ConcurrentHelper::UvHandleClose(handle);
     delete taskMessage;
     taskMessage = nullptr;
 }
