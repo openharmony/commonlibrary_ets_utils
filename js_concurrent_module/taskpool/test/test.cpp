@@ -912,4 +912,25 @@ pid_t NativeEngineTest::GetWorkerTid(uv_timer_t* handle)
     Worker* worker = reinterpret_cast<Worker*>(handle->data);
     return worker->tid_;
 }
+
+void NativeEngineTest::WorkerPostTask(napi_env env)
+{
+    ExceptionScope scope(env);
+    Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
+    std::function<void()> myTask = []() {
+        return;
+    };
+    worker->CloseHandles();
+    worker->debuggerOnPostTaskSignal_ = nullptr;
+    worker->DebuggerOnPostTask(std::move(myTask));
+    uv_async_t* req = new uv_async_t;
+    req->data = nullptr;
+    Worker::HandleDebuggerTask(req);
+    worker->IsLoopActive();
+    worker->NotifyExecuteTask();
+    Worker::TriggerGCCheck(nullptr);
+    Worker::TriggerGCCheck(req);
+    worker->NotifyTaskFinished();
+    worker->PostReleaseSignal();
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

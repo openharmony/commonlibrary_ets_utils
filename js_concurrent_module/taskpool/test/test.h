@@ -78,6 +78,7 @@ public:
     static void HandleFunctionException(napi_env env);
     static void* WorkerConstructor(napi_env env);
     static pid_t GetWorkerTid(uv_timer_t* handle);
+    static void WorkerPostTask(napi_env env);
 
     class ExceptionScope {
     public:
