@@ -604,12 +604,10 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     }
     std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->IsPeriodicTask()) {
+        napi_reference_unref(env, task->taskRef_, nullptr);
         task->CancelPendingTask(env);
         uv_timer_stop(task->timer_);
-        uv_close(reinterpret_cast<uv_handle_t*>(task->timer_), [](uv_handle_t* handle) {
-            delete (uv_timer_t*)handle;
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(task->timer_);
         return;
     } else if (task->IsSeqRunnerTask()) {
         CancelSeqRunnerTask(env, task);
