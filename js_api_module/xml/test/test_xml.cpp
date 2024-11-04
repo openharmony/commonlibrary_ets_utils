@@ -1145,7 +1145,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest001, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, false);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
     std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle";
     std::string res3 = " todoWorktodo todoPlaytodo go thereabba table trtdApplestd tdBananastd trtablenote";
@@ -1189,7 +1189,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest002, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
 }
 
@@ -1229,7 +1229,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest003, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, false);
     std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn &";
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
     std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
@@ -1273,7 +1273,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest004, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
 }
 
@@ -1313,7 +1313,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest005, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, false);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
     std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
@@ -1356,7 +1356,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest006, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, false);
     std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
     std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba h:table h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
@@ -1400,7 +1400,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest007, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "importancehighloggedtruexmlns:hhttp://www.w3.org/TR/html4/");
 }
 
@@ -1440,8 +1440,8 @@ HWTEST_F(NativeEngineTest, XmlParseTest008, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
-    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn &";
+    xmlPullParser.Parse(env, options, true);
+    std::string res1 = "note\\r\\nfuncrion matchwo(a,6)\\r\\n{\\r\\nreturn 1;\\r\\n}\\r\\nHello, World! companyJohn &";
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table ";
     std::string res3 = "h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
@@ -1483,8 +1483,8 @@ HWTEST_F(NativeEngineTest, XmlParseTest009, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
-    std::string res1 = "note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\nHello, World! companyJohn &";
+    xmlPullParser.Parse(env, options, true);
+    std::string res1 = "note\\r\\nfuncrion matchwo(a,6)\\r\\n{\\r\\nreturn 1;\\r\\n}\\r\\nHello, World! companyJohn &";
     std::string res2 = " Hanscompany titleHappytitletitleHappytitle todoWorktodo todoPlaytodo go thereabba h:table";
     std::string res3 = " h:trh:tdApplesh:td h:tdBananash:td h:trh:tablenote";
     std::string result = res1 + res2 + res3;
@@ -1527,9 +1527,9 @@ HWTEST_F(NativeEngineTest, XmlParseTest0010, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
-    std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n";
-    std::string res2 = "Hello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
+    xmlPullParser.Parse(env, options, true);
+    std::string res1 = " note [\n<!ENTITY foo \"baa\">]note\\r\\nfuncrion matchwo(a,6)\\r\\n{\\r\\nreturn 1;\\r\\n}";
+    std::string res2 = "\\r\\nHello, World! companyJohn & Hanscompany titleHappytitletitleHappytitle todoWorktodo";
     std::string res3 = " todoPlaytodo go thereabba table trtdApplestd tdBananastd trtablenote";
     std::string result = res1 + res2 + res3;
     ASSERT_STREQ(g_testStr.c_str(), result.c_str());
@@ -1571,7 +1571,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0011, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
@@ -1610,7 +1610,7 @@ HWTEST_F(NativeEngineTest, XmlParseTest0012, testing::ext::TestSize.Level0)
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
@@ -2823,7 +2823,7 @@ HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction001, testing::ext::TestSi
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     std::string result = "";
     ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
@@ -2941,7 +2941,7 @@ HWTEST_F(NativeEngineTest, XmlParseTagValueFuncFunction007, testing::ext::TestSi
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     std::string result = "";
     ASSERT_STREQ(g_testStr.c_str(), result.c_str());
 }
@@ -3000,7 +3000,7 @@ HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction001, testing::ext::TestSiz
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
@@ -3034,7 +3034,7 @@ HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction002, testing::ext::TestSiz
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
@@ -3068,7 +3068,7 @@ HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction003, testing::ext::TestSiz
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
@@ -3102,7 +3102,7 @@ HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFunction004, testing::ext::TestSiz
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
@@ -3137,7 +3137,7 @@ HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFuncFunction001, testing::ext::Tes
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
@@ -3172,7 +3172,7 @@ HWTEST_F(NativeEngineTest, ParseInnerAttriDeclFuncFunction002, testing::ext::Tes
     napi_set_named_property(env, object, key2, value2);
     napi_set_named_property(env, object, key3, value3);
     xmlPullParser.DealOptionInfo(env, object);
-    xmlPullParser.Parse(env, options);
+    xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
 }
 
