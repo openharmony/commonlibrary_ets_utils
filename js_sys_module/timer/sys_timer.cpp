@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "timer.h"
+#include "sys_timer.h"
 
 #include "native_engine/native_engine.h"
 #include "tools/log.h"

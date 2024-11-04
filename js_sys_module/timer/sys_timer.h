@@ -20,8 +20,8 @@
 #include <mutex>
 #include <uv.h>
 
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/napi_helper.h"
-#include "commonlibrary/ets_utils/js_concurrent_module/common/helper/object_helper.h"
+#include "helper/napi_helper.h"
+#include "helper/object_helper.h"
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif

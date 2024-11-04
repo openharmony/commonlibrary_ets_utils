@@ -14,6 +14,13 @@
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
+config("timer_public_config") {
+  include_dirs = [
+    "${sys_module}/timer",
+    js_concurrent_module_common,
+  ]
+}
+
 ohos_shared_library("timer") {
   branch_protector_ret = "pac_ret"
   sanitize = {
@@ -29,10 +36,12 @@ ohos_shared_library("timer") {
 
   sources = [
     "../../js_concurrent_module/common/helper/napi_helper.cpp",
-    "timer.cpp",
+    "sys_timer.cpp",
   ]
 
   deps = []
+
+  public_configs = [ ":timer_public_config" ]
 
   defines = []
 
@@ -85,7 +94,7 @@ ohos_source_set("timer_static") {
 
   sources = [
     "$js_concurrent_module_common/helper/napi_helper.cpp",
-    "timer.cpp",
+    "sys_timer.cpp",
   ]
 
   deps = []
