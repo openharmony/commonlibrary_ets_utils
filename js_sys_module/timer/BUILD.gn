@@ -62,8 +62,14 @@ ohos_shared_library("timer") {
   }
 
   if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {
-    external_deps += [ "ace_engine:ace_container_scope" ]
-    defines += [ "ENABLE_CONTAINER_SCOPE" ]
+    external_deps += [
+      "ace_engine:ace_container_scope",
+      "hitrace:hitrace_meter",
+    ]
+    defines += [
+      "ENABLE_CONTAINER_SCOPE",
+      "ENABLE_HITRACE_HELPER_METER",
+    ]
   }
 
   if (is_mingw) {
@@ -127,9 +133,15 @@ ohos_source_set("timer_static") {
     if (is_arkui_x) {
       deps += [ "$ace_root/frameworks/core:ace_container_scope_static" ]
     } else {
-      external_deps += [ "ace_engine:ace_container_scope" ]
+      external_deps += [
+        "ace_engine:ace_container_scope",
+        "hitrace:hitrace_meter",
+      ]
     }
-    defines += [ "ENABLE_CONTAINER_SCOPE" ]
+    defines += [
+      "ENABLE_CONTAINER_SCOPE",
+      "ENABLE_HITRACE_HELPER_METER",
+    ]
   }
 
   subsystem_name = "commonlibrary"
