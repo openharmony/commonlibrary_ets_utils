@@ -15,11 +15,12 @@
 
 #include "test.h"
 #include <codecvt>
+#include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_uuid.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_stringdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
-#include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
+#include "commonlibrary/ets_utils/js_util_module/util/js_types.h"
 #include "ohos/init_data.h"
 #include "tools/log.h"
 #include "napi/native_api.h"
@@ -3286,4 +3287,589 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest012, testing::ext::TestSize.Level0)
     napi_get_value_uint32(env, written, &resWritten);
     ASSERT_EQ(resRead, static_cast<uint32_t>(3));
     ASSERT_EQ(resWritten, static_cast<uint32_t>(6));
+}
+
+/**
+ * @tc.name: textIsTypedArray001
+ * @tc.desc: Test check whether the entered value is the type of typedarray
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsTypedArray001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsTypedArray001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsTypedArray(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsTypedArray002
+ * @tc.desc: Test check whether the entered value is the type of typedarray
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsTypedArray002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsTypedArray002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value arrayBuffer = nullptr;
+    napi_value src = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 20;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &arrayBufferPtr, &arrayBuffer);
+    napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &src);
+    bool res = false;
+    napi_value result = types.IsTypedArray(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsWeakSet001
+ * @tc.desc: Test check whether the entered value is the type of weakset
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsWeakSet001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsWeakSet001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value src = nullptr;
+    napi_create_object(env, &src);
+    bool res = true;
+    napi_value result = types.IsWeakSet(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsWeakMap001
+ * @tc.desc: Test check whether the entered value is the type of weakmap
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsWeakMap001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsWeakMap001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value src = nullptr;
+    std::string input = "str";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    bool res = true;
+    napi_value result = types.IsWeakMap(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsUint32Array001
+ * @tc.desc: Test check whether the entered value is the type of uint32array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint32Array001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint32Array001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value src = nullptr;
+    std::string input = "str";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    bool res = true;
+    napi_value result = types.IsUint32Array(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsUint32Array002
+ * @tc.desc: Test check whether the entered value is the type of uint32array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint32Array002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint32Array002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsUint32Array(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsUint32Array003
+ * @tc.desc: Test check whether the entered value is the type of uint32array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint32Array003, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint32Array003 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 20;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &data, &arrayBuffer);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &src);
+    bool res = true;
+    napi_value result = types.IsUint32Array(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsUint32Array004
+ * @tc.desc: Test check whether the entered value is the type of uint32array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint32Array004, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint32Array004 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 20;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &data, &arrayBuffer);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint32_array, arrayBufferSize, arrayBuffer, 0, &src);
+    bool res = false;
+    napi_value result = types.IsUint32Array(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsUint16Array001
+ * @tc.desc: Test check whether the entered value is the type of uint16array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint16Array001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint16Array001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsUint16Array(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsUint16Array002
+ * @tc.desc: Test check whether the entered value is the type of uint16array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint16Array002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint16Array002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 20;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &data, &arrayBuffer);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint16_array, arrayBufferSize, arrayBuffer, 0, &src);
+    bool res = false;
+    napi_value result = types.IsUint16Array(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsUint8ClampedArray001
+ * @tc.desc: Test check whether the entered value is the type of uint8clampedarray
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint8ClampedArray001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint8ClampedArray001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsUint8ClampedArray(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsUint8ClampedArray002
+ * @tc.desc: Test check whether the entered value is the type of uint8clampedarray
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint8ClampedArray002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint8ClampedArray002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 20;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &data, &arrayBuffer);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint8_clamped_array, arrayBufferSize, arrayBuffer, 0, &src);
+    bool res = false;
+    napi_value result = types.IsUint8ClampedArray(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsUint8Array001
+ * @tc.desc: Test check whether the entered value is the type of uint8array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint8Array001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint8Array001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsUint8Array(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsUint8Array002
+ * @tc.desc: Test check whether the entered value is the type of uint8array
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, textIsUint8Array002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsUint8Array002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value arrayBuffer = nullptr;
+    size_t arrayBufferSize = 20;
+    void* data = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &data, &arrayBuffer);
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, arrayBufferSize, arrayBuffer, 0, &src);
+    bool res = false;
+    napi_value result = types.IsUint8Array(env, src);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: testIsSymbolObject001
+ * @tc.desc: Test check whether the entered value is the symbol type of object
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsSymbolObject001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsSymbolObject001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsSymbolObject(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsSymbolObject002
+ * @tc.desc: Test check whether the entered value is the symbol type of object
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsSymbolObject002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsSymbolObject002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+
+    std::string input = "testSymbol";
+    napi_value testSymbol = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &testSymbol);
+    napi_value symbolVal = nullptr;
+    napi_create_symbol(env, testSymbol, &symbolVal);
+
+    bool res = true;
+    napi_value result = types.IsSymbolObject(env, symbolVal);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsStringObject001
+ * @tc.desc: Test check whether the entered value is the string type of object
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsStringObject001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsStringObject001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsStringObject(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsSharedArrayBuffer001
+ * @tc.desc: Test check whether the entered value is the type of sharedarraybuffer
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsSharedArrayBuffer001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsSharedArrayBuffer001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsSharedArrayBuffer(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsSharedArrayBuffer002
+ * @tc.desc: Test check whether the entered value is the type of sharedarraybuffer
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsSharedArrayBuffer002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsSharedArrayBuffer002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1024;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &arrayBufferPtr, &arrayBuffer);
+    bool res = true;
+    napi_value result = types.IsSharedArrayBuffer(env, arrayBuffer);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsSetIterator001
+ * @tc.desc: Test check whether the entered value is the iterator type of set
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsSetIterator001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsSetIterator001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsSharedArrayBuffer(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsSet001
+ * @tc.desc: Test check whether the entered value is the type of set
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsSet001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsSet001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsSet(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsRegExp001
+ * @tc.desc: Test check whether the entered value is the type of regexp
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsRegExp001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsRegExp001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsRegExp(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsProxy001
+ * @tc.desc: Test check whether the entered value is the type of proxy
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsProxy001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsProxy001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsProxy(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsPromise001
+ * @tc.desc: Test check whether the entered value is the type of promise
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsPromise001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsPromise001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsPromise(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsPromise002
+ * @tc.desc: Test check whether the entered value is the type of promise
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsPromise002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsPromise002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
+    ASSERT_NE(deferred, nullptr);
+    ASSERT_NE(promise, nullptr);
+    bool res = false;
+    napi_value result = types.IsPromise(env, promise);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: testIsNumberObject001
+ * @tc.desc: Test check whether the entered value is the number type of object
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsNumberObject001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsNumberObject001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsNumberObject(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsNativeError001
+ * @tc.desc: Test check whether the entered value is of type error
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsNativeError001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsNativeError001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsNativeError(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsNativeError002
+ * @tc.desc: Test check whether the entered value is of type error
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsNativeError002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsNativeError002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+
+    napi_value code = nullptr;
+    napi_value message = nullptr;
+    std::string input = "abc123";
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, input.c_str(), NAPI_AUTO_LENGTH, &code));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, input.c_str(), NAPI_AUTO_LENGTH, &message));
+
+    napi_value error = nullptr;
+    ASSERT_CHECK_CALL(napi_create_error(env, code, message, &error));
+    ASSERT_TRUE(error != nullptr);
+
+    bool res = false;
+    napi_value result = types.IsNativeError(env, error);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: testIsModuleNamespaceObject001
+ * @tc.desc: Test check whether the entered value is the module name space type of object
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsModuleNamespaceObject001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsModuleNamespaceObject001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsModuleNamespaceObject(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: testIsMapIterator001
+ * @tc.desc: Test check whether the entered value is the iterator type of map
+ * @tc.type: FUNCs
+ */
+HWTEST_F(NativeEngineTest, testIsMapIterator001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("testIsMapIterator001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types types;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    bool res = true;
+    napi_value result = types.IsMapIterator(env, obj);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
 }
