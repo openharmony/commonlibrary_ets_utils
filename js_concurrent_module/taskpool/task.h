@@ -166,7 +166,7 @@ private:
 
 public:
     napi_env env_ = nullptr;
-    TaskType taskType_ {TaskType::TASK};
+    std::atomic<TaskType> taskType_ {TaskType::TASK};
     std::string name_ {};
     uint64_t taskId_ {};
     std::atomic<ExecuteState> taskState_ {ExecuteState::NOT_FOUND};

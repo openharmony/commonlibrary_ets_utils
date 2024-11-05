@@ -375,6 +375,10 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
     HILOG_INFO("taskpool::ExecuteGroup groupId %{public}s", std::to_string(groupId).c_str());
     auto taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(groupId);
+    if (taskGroup == nullptr) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup is nullptr.");
+        return nullptr;
+    }
     napi_reference_ref(env, taskGroup->groupRef_, nullptr);
     if (taskGroup->groupState_ == ExecuteState::NOT_FOUND || taskGroup->groupState_ == ExecuteState::FINISHED ||
         taskGroup->groupState_ == ExecuteState::CANCELED) {
