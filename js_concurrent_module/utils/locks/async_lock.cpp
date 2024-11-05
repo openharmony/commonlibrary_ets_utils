@@ -49,7 +49,7 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
         NAPI_CALL(env, napi_create_string_utf8(env, "The lock is acquired", NAPI_AUTO_LENGTH, &err));
         napi_reject_deferred(env, deferred, err);
     } else {
-        lockRequest->OnQueued(options.timeoutMillis);
+        lockRequest->OnQueued(env, options.timeoutMillis);
         pendingList_.push_back(lockRequest);
         ProcessPendingLockRequestUnsafe(env, lockRequest);
     }
@@ -88,10 +88,10 @@ bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
     return true;
 }
 
-template<bool isAsync>
-void AsyncLock::ProcessLockRequest(LockRequest* lockRequest)
+template <bool isAsync>
+void AsyncLock::ProcessLockRequest(napi_env env, LockRequest *lockRequest)
 {
-    lockRequest->OnSatisfied();
+    lockRequest->OnSatisfied(env);
     heldList_.push_back(lockRequest);
     pendingList_.pop_front();
     asyncLockMutex_.unlock();
@@ -127,9 +127,9 @@ void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncL
     if (lockStatus_ == LOCK_MODE_SHARED) {
         do {
             if (syncLockRequest == lockRequest) {
-                ProcessLockRequest<false>(lockRequest);
+                ProcessLockRequest<false>(env, lockRequest);
             } else {
-                ProcessLockRequest<true>(lockRequest);
+                ProcessLockRequest<true>(env, lockRequest);
             }
             if (pendingList_.empty()) {
                 break;
@@ -137,7 +137,7 @@ void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncL
             lockRequest = pendingList_.front();
         } while (lockRequest->GetMode() == LOCK_MODE_SHARED);
     } else {
-        ProcessLockRequest<true>(lockRequest);
+        ProcessLockRequest<true>(env, lockRequest);
     }
 }
 

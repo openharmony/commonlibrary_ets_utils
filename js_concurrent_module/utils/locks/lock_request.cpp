@@ -13,7 +13,11 @@
  * limitations under the License.
  */
 
+#include "js_concurrent_module/utils/locks/lock_request.h"
+
 #include <uv.h>
+
+#include <memory>
 
 #include "async_lock.h"
 #include "async_lock_manager.h"
@@ -21,6 +25,7 @@
 #include "helper/hitrace_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
+#include "js_concurrent_module/utils/locks/weap_wrap.h"
 #include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
@@ -70,8 +75,13 @@ void LockRequest::EnvCleanUp(void *arg)
 
 void LockRequest::CleanTimer()
 {
+    if (stopTimerTsfn_ != nullptr) {
+        NAPI_CALL_RETURN_VOID(env_, napi_release_threadsafe_function(stopTimerTsfn_, napi_tsfn_abort));
+        stopTimerTsfn_ = nullptr;
+    }
     RequestTimeoutData *data = static_cast<RequestTimeoutData *>(timeoutTimer_->data);
     delete data;
+    timeoutTimer_->data = nullptr;
     uv_close(reinterpret_cast<uv_handle_t *>(timeoutTimer_), DeallocateTimeoutTimerCallback);
 }
 
@@ -82,6 +92,7 @@ void LockRequest::DeallocateTimeoutTimerCallback(uv_handle_t* handle)
 
 LockRequest::~LockRequest()
 {
+    std::unique_lock<std::mutex> guard(lockRequestMutex_);
     if (env_ == nullptr) {
         return;
     }
@@ -179,17 +190,17 @@ void LockRequest::CallCallback()
     lock_->CleanUpLockRequestOnCompletion(this);
 }
 
-void LockRequest::OnSatisfied()
+void LockRequest::OnSatisfied(napi_env env)
 {
     if (timeoutActive_) {
-        DisarmTimeoutTimer();
+        DisarmTimeoutTimer(env);
     }
 }
 
-void LockRequest::OnQueued(uint32_t timeoutMillis)
+void LockRequest::OnQueued(napi_env env, uint32_t timeoutMillis)
 {
     if (timeoutMillis > 0) {
-        ArmTimeoutTimer(timeoutMillis);
+        ArmTimeoutTimer(env, timeoutMillis);
     }
 }
 
@@ -211,18 +222,39 @@ bool LockRequest::AbortIfNeeded()
     return true;
 }
 
-void LockRequest::ArmTimeoutTimer(uint32_t timeoutMillis)
+void LockRequest::ArmTimeoutTimer(napi_env env, uint32_t timeoutMillis)
 {
     timeoutActive_ = true;
+    uv_update_time(NapiHelper::GetLibUV(env));
     uv_timer_start(timeoutTimer_, TimeoutCallback, timeoutMillis, 0);
+    napi_value resourceName = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, "stopTimerTsfn", NAPI_AUTO_LENGTH, &resourceName));
+    NAPI_CALL_RETURN_VOID(env, napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
+                                                               nullptr, timeoutTimer_, StopTimer, &stopTimerTsfn_));
     // NOTE: handle the abortsignal functionality in the future
     // NOTE: need to check call results for 0
 }
 
-void LockRequest::DisarmTimeoutTimer()
+void LockRequest::DisarmTimeoutTimer(napi_env env)
 {
-    uv_timer_stop(timeoutTimer_);
+    std::unique_lock<std::mutex> guard(lockRequestMutex_);
+    if (stopTimerTsfn_ == nullptr) {
+        return;
+    }
+    NAPI_CALL_RETURN_VOID(env, napi_call_threadsafe_function(stopTimerTsfn_, new WeakWrap<LockRequest>(GetWeakPtr()),
+                                                             napi_tsfn_blocking));
     timeoutActive_ = false;
+}
+
+void LockRequest::StopTimer(napi_env env, napi_value jsCallback, void *context, void *data)
+{
+    WeakWrap<LockRequest> *weakRequest = static_cast<WeakWrap<LockRequest> *>(data);
+    if (weakRequest->GetWeakPtr().expired() || uv_is_closing(static_cast<uv_handle_t *>(context))) {
+        delete weakRequest;
+        return;
+    }
+    uv_timer_stop(static_cast<uv_timer_t *>(context));
+    delete weakRequest;
 }
 
 void LockRequest::TimeoutCallback(uv_timer_t *handle)
@@ -233,7 +265,6 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
         HILOG_FATAL("Internal error: unable to handle the AsyncLock timeout");
         return;
     }
-    uv_timer_stop(handle);
     // Check deadlocks and form the rejector value with or w/o the warning. It is required to be done
     // first in order to obtain the actual data.
     std::string error;
