@@ -171,6 +171,7 @@ ohos_source_set("taskpool_static") {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "$sys_module/timer",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     defines += [ "__ARKUI_CROSS__" ]
