@@ -102,7 +102,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest001, testing::ext::TestSize.Level0)
     Options op;
     ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
-    napi_value jsObj = convertXml->Convert(env, xmlStr);
+    napi_value jsObj = convertXml->Convert(env, xmlStr, true);
 
     // Do not set start tag '<'
     napi_value declarationObj = nullptr;
@@ -141,7 +141,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest002, testing::ext::TestSize.Level0)
     Options op;
     ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
-    napi_value jsObj = convertXml->Convert(env, xmlStr);
+    napi_value jsObj = convertXml->Convert(env, xmlStr, true);
 
     napi_value element = nullptr;
     napi_value elements = nullptr;
@@ -180,7 +180,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest003, testing::ext::TestSize.Level0)
     Options op;
     ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
-    napi_value jsObj = convertXml->Convert(env, xmlStr);
+    napi_value jsObj = convertXml->Convert(env, xmlStr, true);
 
     napi_value elements = nullptr;
     napi_value element = nullptr;
@@ -220,7 +220,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest004, testing::ext::TestSize.Level0)
     Options op;
     ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
-    napi_value jsObj = convertXml->Convert(env, xmlStr);
+    napi_value jsObj = convertXml->Convert(env, xmlStr, true);
 
     napi_value elements = nullptr;
     napi_value element = nullptr;
@@ -258,7 +258,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest005, testing::ext::TestSize.Level0)
     Options op;
     ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
-    napi_value jsObj = convertXml->Convert(env, xmlStr);
+    napi_value jsObj = convertXml->Convert(env, xmlStr, true);
 
     napi_value elements = nullptr;
     napi_value element = nullptr;
@@ -296,7 +296,7 @@ HWTEST_F(NativeEngineTest, ConvertXmlTest006, testing::ext::TestSize.Level0)
     Options op;
     ConvertXml *convertXml = new ConvertXml(env);
     std::string xmlStr(reinterpret_cast<char*>(pBuffer));
-    napi_value jsObj = convertXml->Convert(env, xmlStr);
+    napi_value jsObj = convertXml->Convert(env, xmlStr, true);
 
     napi_value elements = nullptr;
     napi_value element = nullptr;
@@ -328,7 +328,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest001, testing::ext::TestSize.Level0)
     std::string strXml = str1 + str2;
     napi_valuetype valuetype = napi_undefined;
 
-    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    napi_typeof(env, convertXml.Convert(env, strXml, true), &valuetype);
     bool isObj = valuetype == napi_valuetype::napi_object;
     ASSERT_TRUE(isObj);
 }
@@ -349,7 +349,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest002, testing::ext::TestSize.Level0)
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
-    object = convertXml.Convert(env, strXml);
+    object = convertXml.Convert(env, strXml, true);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
 }
@@ -370,7 +370,7 @@ HWTEST_F(NativeEngineTest, ConstructorTest003, testing::ext::TestSize.Level0)
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
-    object = convertXml.Convert(env, strXml);
+    object = convertXml.Convert(env, strXml, true);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
 }
@@ -388,7 +388,7 @@ HWTEST_F(NativeEngineTest, ConvertTest001, testing::ext::TestSize.Level0)
     std::string strXml = str1 + str2;
     napi_valuetype valuetype = napi_undefined;
 
-    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    napi_typeof(env, convertXml.Convert(env, strXml, true), &valuetype);
     bool isObj = valuetype == napi_valuetype::napi_object;
     ASSERT_TRUE(isObj);
 }
@@ -409,7 +409,7 @@ HWTEST_F(NativeEngineTest, ConvertTest002, testing::ext::TestSize.Level0)
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
-    object = convertXml.Convert(env, strXml);
+    object = convertXml.Convert(env, strXml, true);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
 }
@@ -430,7 +430,7 @@ HWTEST_F(NativeEngineTest, ConvertTest003, testing::ext::TestSize.Level0)
     bool isHas = false;
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
 
-    object = convertXml.Convert(env, strXml);
+    object = convertXml.Convert(env, strXml, true);
     napi_has_named_property(env, object, utf8Name, &isHas);
     ASSERT_TRUE(isHas);
 }
@@ -452,7 +452,7 @@ HWTEST_F(NativeEngineTest, ConvertTest004, testing::ext::TestSize.Level0)
         "nameKey", "_name", "elementsKey", "_elements"};
     obj = setPropertyForTrim(env, obj, proVec);
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
-    convertXml.DealOptions(env, obj);
+    convertXml.DealOptions(env, obj, false);
     bool isHas = false;
     napi_has_named_property(env, obj, "textKey", &isHas);
     ASSERT_TRUE(isHas);
@@ -462,7 +462,7 @@ HWTEST_F(NativeEngineTest, ConvertTest004, testing::ext::TestSize.Level0)
     std::string strXml = str1 + str2;
     napi_valuetype valuetype = napi_undefined;
 
-    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    napi_typeof(env, convertXml.Convert(env, strXml, true), &valuetype);
     bool isObj = valuetype == napi_valuetype::napi_object;
     ASSERT_TRUE(isObj);
 }
@@ -484,7 +484,7 @@ HWTEST_F(NativeEngineTest, ConvertTest005, testing::ext::TestSize.Level0)
         "nameKey", "_name", "elementsKey", "_elements"};
     obj = setPropertyForTrim(env, obj, proVec);
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
-    convertXml.DealOptions(env, obj);
+    convertXml.DealOptions(env, obj, false);
     bool isHas = false;
     napi_has_named_property(env, obj, "textKey", &isHas);
     ASSERT_TRUE(isHas);
@@ -494,7 +494,7 @@ HWTEST_F(NativeEngineTest, ConvertTest005, testing::ext::TestSize.Level0)
     std::string strXml = str1 + str2;
     napi_valuetype valuetype = napi_undefined;
 
-    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    napi_typeof(env, convertXml.Convert(env, strXml, true), &valuetype);
     bool isObj = valuetype == napi_valuetype::napi_object;
     ASSERT_TRUE(isObj);
 }
@@ -516,7 +516,7 @@ HWTEST_F(NativeEngineTest, ConvertTest006, testing::ext::TestSize.Level0)
         "nameKey", "_name", "elementsKey", "_elements"};
     obj = setPropertyForTrim(env, obj, proVec);
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
-    convertXml.DealOptions(env, obj);
+    convertXml.DealOptions(env, obj, false);
     bool isHas = false;
     napi_has_named_property(env, obj, "textKey", &isHas);
     ASSERT_TRUE(isHas);
@@ -526,7 +526,7 @@ HWTEST_F(NativeEngineTest, ConvertTest006, testing::ext::TestSize.Level0)
     std::string strXml = str1 + str2;
     napi_valuetype valuetype = napi_undefined;
 
-    napi_typeof(env, convertXml.Convert(env, strXml), &valuetype);
+    napi_typeof(env, convertXml.Convert(env, strXml, true), &valuetype);
     bool isObj = valuetype == napi_valuetype::napi_object;
     ASSERT_TRUE(isObj);
 }
@@ -583,7 +583,7 @@ HWTEST_F(NativeEngineTest, DealOptionsTest001, testing::ext::TestSize.Level0)
 
     obj = setProperty(env, obj, proVec);
     OHOS::Xml::ConvertXml convertXml = OHOS::Xml::ConvertXml(env);
-    convertXml.DealOptions(env, obj);
+    convertXml.DealOptions(env, obj, false);
     bool isHas = false;
     napi_has_named_property(env, obj, "textKey", &isHas);
     ASSERT_TRUE(isHas);
