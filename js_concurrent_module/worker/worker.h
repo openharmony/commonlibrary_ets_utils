@@ -92,6 +92,17 @@ public:
         ScriptMode type_ {CLASSIC};
     };
 
+    struct WorkerWrapper {
+        explicit WorkerWrapper(Worker* worker) : workerPtr_(worker) {}
+
+        Worker* GetWorker() const
+        {
+            return workerPtr_;
+        }
+
+        Worker* workerPtr_ {nullptr};
+    };
+
     /**
     * Creates a worker instance.
     *
@@ -602,6 +613,8 @@ private:
     bool isNewVersion_ = true;
     std::atomic<bool> isTerminated_ = false;
     std::atomic<bool> isHostEnvExited_ = false;
+
+    std::shared_ptr<WorkerWrapper> workerWrapper_ = nullptr;
 
     friend class WorkersTest;
 };
