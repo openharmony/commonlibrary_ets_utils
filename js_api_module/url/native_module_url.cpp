@@ -136,6 +136,7 @@ namespace OHOS::Url {
                 auto obj = reinterpret_cast<URL*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
             },
             nullptr, nullptr);
@@ -518,6 +519,7 @@ namespace OHOS::Url {
                 auto obj = reinterpret_cast<URLSearchParams*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
             },
             nullptr, nullptr);
