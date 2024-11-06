@@ -49,6 +49,7 @@ namespace OHOS::Uri {
             auto obj = reinterpret_cast<Uri*>(data);
             if (obj != nullptr) {
                 delete obj;
+                obj = nullptr;
             }
         }, nullptr, nullptr));
         return thisVar;
