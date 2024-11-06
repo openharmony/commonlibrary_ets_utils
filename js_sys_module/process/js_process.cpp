@@ -136,14 +136,14 @@ namespace OHOS::JsSysModule::Process {
     {
         size_t prolen = 0;
         if (napi_get_value_string_utf8(env, args, nullptr, 0, &prolen) != napi_ok) {
-            HILOG_ERROR("can not get args size");
+            HILOG_ERROR("Process:: can not get args size");
             return;
         }
         std::string result = "";
         result.reserve(prolen + 1);
         result.resize(prolen);
         if (napi_get_value_string_utf8(env, args, result.data(), prolen + 1, &prolen) != napi_ok) {
-            HILOG_ERROR("can not get args value");
+            HILOG_ERROR("Process:: can not get args value");
             return;
         }
         int proerr = 0;
@@ -222,30 +222,30 @@ namespace OHOS::JsSysModule::Process {
         std::string result = "";
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, str, nullptr, NAPI_RETURN_ZERO, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get str size");
+            HILOG_ERROR("Process:: can not get str size");
             return;
         }
         result.reserve(bufferSize + NAPI_RETURN_ONE);
         result.resize(bufferSize);
         if (napi_get_value_string_utf8(env, str, result.data(), bufferSize + NAPI_RETURN_ONE,
                                        &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get str value");
+            HILOG_ERROR("Process:: can not get str value");
             return;
         }
         if (function == nullptr) {
-            HILOG_ERROR("function is nullptr");
+            HILOG_ERROR("Process:: function is nullptr");
             return;
         }
         napi_ref myCallRef = nullptr;
         napi_status status = napi_create_reference(env, function, 1, &myCallRef);
         if (status != napi_ok) {
-            HILOG_ERROR("napi_create_reference is failed");
+            HILOG_ERROR("Process:: napi_create_reference is failed");
             return;
         }
         if (!result.empty()) {
             size_t pos = g_events.find(result);
             if (pos == std::string::npos) {
-                HILOG_ERROR("illegal event");
+                HILOG_ERROR("Process:: illegal event");
                 return;
             }
             std::unique_lock<std::mutex> lock(g_sharedTimedMutex);
@@ -258,14 +258,14 @@ namespace OHOS::JsSysModule::Process {
         size_t bufferSize = 0;
         bool flag = false;
         if (napi_get_value_string_utf8(env, str, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get str size");
+            HILOG_ERROR("Process:: can not get str size");
             return nullptr;
         }
         std::string result = "";
         result.reserve(bufferSize + 1);
         result.resize(bufferSize);
         if (napi_get_value_string_utf8(env, str, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get str value");
+            HILOG_ERROR("Process:: can not get str value");
             return nullptr;
         }
         std::string temp = "";
@@ -341,14 +341,14 @@ namespace OHOS::JsSysModule::Process {
         size_t length = sizeof(buf);
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name size");
+            HILOG_ERROR("Process:: can not get name size");
             return nullptr;
         }
         std::string result = "";
         result.reserve(bufferSize + 1);
         result.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name value");
+            HILOG_ERROR("Process:: can not get name value");
             return nullptr;
         }
         std::string temp = "";
@@ -367,14 +367,14 @@ namespace OHOS::JsSysModule::Process {
         napi_value convertResult = nullptr;
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name size");
+            HILOG_ERROR("Process:: can not get name size");
             return nullptr;
         }
         std::string result = "";
         result.reserve(bufferSize + 1);
         result.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name value");
+            HILOG_ERROR("Process:: can not get name value");
             return nullptr;
         }
         struct passwd user;
@@ -485,14 +485,14 @@ namespace OHOS::JsSysModule::Process {
         napi_value convertResult = nullptr;
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name size");
+            HILOG_ERROR("ProcessManager:: can not get name size");
             return nullptr;
         }
         std::string result = "";
         result.reserve(bufferSize + 1);
         result.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name value");
+            HILOG_ERROR("ProcessManager:: can not get name value");
             return nullptr;
         }
         struct passwd user;
@@ -544,14 +544,14 @@ namespace OHOS::JsSysModule::Process {
     {
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name size");
+            HILOG_ERROR("ProcessManager:: can not get name size");
             return nullptr;
         }
         std::string result = "";
         result.reserve(bufferSize + 1);
         result.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name value");
+            HILOG_ERROR("ProcessManager:: can not get name value");
             return nullptr;
         }
         std::string temp = "";

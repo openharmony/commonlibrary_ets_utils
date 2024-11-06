@@ -112,7 +112,7 @@ namespace OHOS::Url {
                 std::string subStr = temp.substr(pos + 1, 2); // 2:Truncate the last two digits of the %
                 int octNum = 0;
                 if (sscanf_s(subStr.c_str(), "%x", &octNum) == -1) {
-                    HILOG_ERROR("sscanf_s is falie");
+                    HILOG_ERROR("URL:: DecodeSpecialChars sscanf_s is falie");
                     return temp;
                 }
                 std::string convertedChar(1, static_cast<char>(octNum));
@@ -356,7 +356,7 @@ namespace OHOS::Url {
         while ((pos = str.find(".", left)) != std::string::npos) {
             val = str.substr(left, pos - left);
             if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
-                HILOG_ERROR("sprintf_s is falie");
+                HILOG_ERROR("URL:: sprintf_s is falie");
                 return val;
             }
 
@@ -365,7 +365,7 @@ namespace OHOS::Url {
         }
         val = str.substr(left);
         if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) == -1) {
-            HILOG_ERROR("sprintf_s is falie");
+            HILOG_ERROR("URL:: sprintf_s is falie");
             return val;
         }
         temp.push_back(hexVal);
@@ -556,7 +556,7 @@ namespace OHOS::Url {
                 return "0";
             }
             if (sscanf_s(num.c_str(), "%x", &val) == -1) {
-                HILOG_ERROR("sscanf_s is falie");
+                HILOG_ERROR("URL:: BinaryConversion sscanf_s is falie");
                 return num;
             }
             return std::to_string(val);
@@ -565,7 +565,7 @@ namespace OHOS::Url {
                 return "0";
             }
             if (sscanf_s(num.c_str(), "%o", &val) == -1) {
-                HILOG_ERROR("sscanf_s is falie");
+                HILOG_ERROR("URL:: BinaryConversion sscanf_s is falie");
                 return num;
             }
             return std::to_string(val);
@@ -1745,11 +1745,11 @@ namespace OHOS::Url {
         if (reSize > 0) {
             rePtr = new (std::nothrow) char[reSize];
             if (rePtr == nullptr) {
-                HILOG_ERROR("URLSearchParams:: rePtr is nullptr");
+                HILOG_ERROR("URLSearchParams:: memory allocation failed, rePtr is nullptr");
                 return reStr;
             }
             if (memset_s(rePtr, reSize, 0, reSize) != EOK) {
-                HILOG_ERROR("ToUSVString memset_s failed");
+                HILOG_ERROR("URLSearchParams:: ToUSVString memset_s failed");
                 delete[] rePtr;
                 return reStr;
             } else {
@@ -1765,13 +1765,13 @@ namespace OHOS::Url {
         std::string name = "";
         size_t nameSize = 0;
         if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer size");
+            HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return nullptr;
         }
         name.reserve(nameSize);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer value");
+            HILOG_ERROR("URLSearchParams:: can not get buffer value");
             return nullptr;
         }
         std::string sname = name;
@@ -1796,13 +1796,13 @@ namespace OHOS::Url {
         std::string name = "";
         size_t nameSize = 0;
         if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer size");
+            HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return nullptr;
         }
         name.reserve(nameSize);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer value");
+            HILOG_ERROR("URLSearchParams:: can not get buffer value");
             return nullptr;
         }
         std::string sname = name;
@@ -1831,26 +1831,26 @@ namespace OHOS::Url {
         std::string name = "";
         size_t nameSize = 0;
         if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer size");
+            HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return;
         }
         name.reserve(nameSize);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer value");
+            HILOG_ERROR("URLSearchParams:: can not get buffer value");
             return;
         }
         std::string tempName = name;
         std::string value = "";
         size_t valueSize = 0;
         if (napi_get_value_string_utf8(env, temp, nullptr, 0, &valueSize) != napi_ok) {
-            HILOG_ERROR("can not get temp size");
+            HILOG_ERROR("URLSearchParams:: can not get temp size");
             return;
         }
         value.reserve(valueSize);
         value.resize(valueSize);
         if (napi_get_value_string_utf8(env, temp, value.data(), valueSize + 1, &valueSize) != napi_ok) {
-            HILOG_ERROR("can not get temp value");
+            HILOG_ERROR("URLSearchParams:: can not get temp value");
             return;
         }
         std::string tempValue = value;
@@ -1862,13 +1862,13 @@ namespace OHOS::Url {
         std::string name = "";
         size_t nameSize = 0;
         if (napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer size");
+            HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return;
         }
         name.reserve(nameSize);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
-            HILOG_ERROR("can not get buffer value");
+            HILOG_ERROR("URLSearchParams:: can not get buffer value");
             return;
         }
         std::string sname = name;
@@ -1909,13 +1909,13 @@ namespace OHOS::Url {
     {
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name size");
+            HILOG_ERROR("URLSearchParams:: can not get name size");
             return nullptr;
         }
         std::string buf = "";
         buf.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, buf.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name value");
+            HILOG_ERROR("URLSearchParams:: can not get name value");
             return nullptr;
         }
         bool flag = false;
@@ -1936,26 +1936,26 @@ namespace OHOS::Url {
         std::string buffer = "";
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name size");
+            HILOG_ERROR("URLSearchParams:: can not get name size");
             return;
         }
         buffer.reserve(bufferSize);
         buffer.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get name value");
+            HILOG_ERROR("URLSearchParams:: can not get name value");
             return;
         }
         std::string cppName = buffer;
         std::string temp = "";
         size_t tempSize = 0;
         if (napi_get_value_string_utf8(env, value, nullptr, 0, &tempSize) != napi_ok) {
-            HILOG_ERROR("can not get value size");
+            HILOG_ERROR("URLSearchParams:: can not get value size");
             return;
         }
         temp.reserve(tempSize);
         temp.resize(tempSize);
         if (napi_get_value_string_utf8(env, value, temp.data(), tempSize + 1, &tempSize) != napi_ok) {
-            HILOG_ERROR("can not get value value");
+            HILOG_ERROR("URLSearchParams:: can not get value value");
             return;
         }
         std::string cppValue = temp;

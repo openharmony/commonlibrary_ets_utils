@@ -44,7 +44,7 @@ namespace OHOS::Uri {
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type.data(), typelen + 1, &typelen));
             object = new (std::nothrow) Uri(type);
             if (object == nullptr) {
-                HILOG_ERROR("UriConstructor:: object is nullptr");
+                HILOG_ERROR("UriConstructor:: memory allocation failed, object is nullptr");
                 return nullptr;
             }
         }

@@ -25,13 +25,13 @@ namespace OHOS::xml {
         buffer.reserve(bufferSize + 1);
         buffer.resize(bufferSize);
         if (status != napi_ok) {
-            HILOG_ERROR("can not get buffer size");
+            HILOG_ERROR("XmlSerializer:: can not get buffer size");
             return status;
         }
         if (bufferSize > 0) {
             status = napi_get_value_string_utf8(env, napiStr, buffer.data(), bufferSize + 1, &bufferSize);
             if (status != napi_ok) {
-                HILOG_ERROR("can not get buffer value");
+                HILOG_ERROR("XmlSerializer:: can not get buffer value");
                 return status;
             }
         }
@@ -99,7 +99,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("SetDeclaration memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: SetDeclaration memcpy_s failed");
             }
         }
     }
@@ -122,7 +122,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("SetNamespace memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: SetNamespace memcpy_s failed");
             }
         }
     }
@@ -160,7 +160,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("StartElement memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: StartElement memcpy_s failed");
             }
         }
     }
@@ -182,7 +182,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("SetAttributes memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: SetAttributes memcpy_s failed");
             }
         }
     }
@@ -201,7 +201,7 @@ namespace OHOS::xml {
                 if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                     iPos_ += iLenTemp;
                 } else {
-                HILOG_ERROR("StartElement memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: StartElement memcpy_s failed");
                 }
             }
             return;
@@ -225,7 +225,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("EndElement memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: EndElement memcpy_s failed");
             }
         }
     }
@@ -249,7 +249,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("AddEmptyElement memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: AddEmptyElement memcpy_s failed");
             }
         }
     }
@@ -268,7 +268,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("SetText memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: SetText memcpy_s failed");
             }
         }
     }
@@ -290,7 +290,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("SetComment memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: SetComment memcpy_s failed");
             }
         }
     }
@@ -313,7 +313,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("SetCData memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: SetCData memcpy_s failed");
             }
         }
     }
@@ -335,7 +335,7 @@ namespace OHOS::xml {
             if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
                 iPos_ += iLenTemp;
             } else {
-                HILOG_ERROR("SetDocType memcpy_s failed");
+                HILOG_ERROR("XmlSerializer:: SetDocType memcpy_s failed");
             }
         }
     }

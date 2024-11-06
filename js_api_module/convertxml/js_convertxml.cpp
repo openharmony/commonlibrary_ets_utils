@@ -344,7 +344,7 @@ namespace OHOS::Xml {
         napi_status status = napi_ok;
         status = napi_get_value_string_utf8(env, napi_StrValue, nullptr, -1, &bufferSize);
         if (status != napi_ok) {
-            HILOG_ERROR("can not get buffer size");
+            HILOG_ERROR("ConvertXml:: can not get buffer size");
             return status;
         }
         buffer.reserve(bufferSize + 1);
@@ -352,7 +352,7 @@ namespace OHOS::Xml {
         if (bufferSize > 0) {
             status = napi_get_value_string_utf8(env, napi_StrValue, buffer.data(), bufferSize + 1, &bufferSize);
             if (status != napi_ok) {
-                HILOG_ERROR("can not get buffer value");
+                HILOG_ERROR("ConvertXml:: can not get buffer value");
                 return status;
             }
         }

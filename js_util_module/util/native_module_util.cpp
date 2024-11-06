@@ -68,11 +68,11 @@ namespace OHOS::Util {
         }
         char *type = new (std::nothrow) char[length + 1];
         if (type == nullptr) {
-            HILOG_ERROR("type is nullptr");
+            HILOG_ERROR("Textdecoder:: memory allocation failed, type is nullptr");
             return nullptr;
         }
         if (memset_s(type, length + 1, '\0', length + 1) != EOK) {
-            HILOG_ERROR("type memset_s failed");
+            HILOG_ERROR("Textdecoder:: type memset_s failed");
             delete[] type;
             return nullptr;
         }
@@ -193,13 +193,13 @@ namespace OHOS::Util {
         std::string format = "";
         size_t formatsize = 0;
         if (napi_get_value_string_utf8(env, argv, nullptr, 0, &formatsize) != napi_ok) {
-            HILOG_ERROR("can not get argv size");
+            HILOG_ERROR("DealWithFormatString:: can not get argv size");
             return nullptr;
         }
         format.reserve(formatsize + 1);
         format.resize(formatsize);
         if (napi_get_value_string_utf8(env, argv, format.data(), formatsize + 1, &formatsize) != napi_ok) {
-            HILOG_ERROR("can not get argv value");
+            HILOG_ERROR("DealWithFormatString:: can not get argv value");
             return nullptr;
         }
         return FormatString(env, format);
@@ -219,21 +219,21 @@ namespace OHOS::Util {
         if (argc > 0) {
             argv = new (std::nothrow) napi_value[argc];
             if (argv == nullptr) {
-                HILOG_ERROR("Printf:: argv is nullptr");
+                HILOG_ERROR("Printf:: memory allocation failed, argv is nullptr");
                 return nullptr;
             }
             napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
             std::string format = "";
             size_t formatsize = 0;
             if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &formatsize) != napi_ok) {
-                HILOG_ERROR("can not get argv[0] size");
+                HILOG_ERROR("Printf:: can not get argv[0] size");
                 FreeMemory(argv);
                 return nullptr;
             }
             format.reserve(formatsize);
             format.resize(formatsize);
             if (napi_get_value_string_utf8(env, argv[0], format.data(), formatsize + 1, &formatsize) != napi_ok) {
-                HILOG_ERROR("can not get argv[0] value");
+                HILOG_ERROR("Printf:: can not get argv[0] value");
                 FreeMemory(argv);
                 return nullptr;
             }
@@ -242,7 +242,7 @@ namespace OHOS::Util {
                 std::string valueString = "";
                 size_t valuesize = 0;
                 if (napi_get_value_string_utf8(env, argv[i], nullptr, 0, &valuesize) != napi_ok) {
-                    HILOG_ERROR("can not get argv[i] size");
+                    HILOG_ERROR("Printf:: can not get argv[i] size");
                     FreeMemory(argv);
                     return nullptr;
                 }
@@ -250,7 +250,7 @@ namespace OHOS::Util {
                 valueString.resize(valuesize);
                 if (napi_get_value_string_utf8(env, argv[i], valueString.data(),
                                                valuesize + 1, &valuesize) != napi_ok) {
-                    HILOG_ERROR("can not get argv[i] value");
+                    HILOG_ERROR("Printf:: can not get argv[i] value");
                     FreeMemory(argv);
                     return nullptr;
                 }
@@ -390,7 +390,7 @@ namespace OHOS::Util {
         type = nullptr;
         auto objectInfo = new (std::nothrow) TextDecoder(enconding, flags);
         if (objectInfo == nullptr) {
-            HILOG_ERROR("TextDecoder objectInfo is nullptr");
+            HILOG_ERROR("TextDecoder:: memory allocation failed, objectInfo is nullptr");
             return nullptr;
         }
         NAPI_CALL(env, napi_wrap(
@@ -422,7 +422,7 @@ namespace OHOS::Util {
         TextDecoder *textDecoder = nullptr;
         napi_unwrap(env, thisVar, (void**)&textDecoder);
         if (textDecoder == nullptr) {
-            HILOG_ERROR("DecodeToString::textDecoder is nullptr");
+            HILOG_ERROR("DecodeToString:: textDecoder is nullptr");
             return nullptr;
         }
         napi_value valStr = nullptr;
@@ -547,12 +547,12 @@ namespace OHOS::Util {
                 }
                 size_t bufferSize = 0;
                 if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
-                    HILOG_ERROR("can not get src size");
+                    HILOG_ERROR("TextEncoder:: can not get src size");
                     return nullptr;
                 }
                 std::string buffer(bufferSize, '\0');
                 if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-                    HILOG_ERROR("can not get src value");
+                    HILOG_ERROR("TextEncoder:: can not get src value");
                     return nullptr;
                 }
                 orgEncoding = buffer;
@@ -566,7 +566,7 @@ namespace OHOS::Util {
         }
         auto object = new (std::nothrow) TextEncoder(encoding);
         if (object == nullptr) {
-            HILOG_ERROR("TextEncoder:: object is nullptr");
+            HILOG_ERROR("TextEncoder:: memory allocation failed, object is nullptr");
             return nullptr;
         }
         object->SetOrgEncoding(orgEncoding);
@@ -1576,14 +1576,14 @@ namespace OHOS::Util {
             if (valuetype == napi_string) {
                 size_t bufferSize = 0;
                 if (napi_get_value_string_utf8(env, argv, nullptr, 0, &bufferSize) != napi_ok) {
-                    HILOG_ERROR("can not get argv size");
+                    HILOG_ERROR("StringDecoder:: can not get argv size");
                     return nullptr;
                 }
                 std::string buffer = "";
                 buffer.reserve(bufferSize);
                 buffer.resize(bufferSize);
                 if (napi_get_value_string_utf8(env, argv, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-                    HILOG_ERROR("can not get argv value");
+                    HILOG_ERROR("StringDecoder:: can not get argv value");
                     return nullptr;
                 }
                 if (!CheckEncodingFormat(buffer)) {

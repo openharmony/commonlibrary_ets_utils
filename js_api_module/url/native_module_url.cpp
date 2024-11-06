@@ -43,33 +43,33 @@ namespace OHOS::Url {
             size_t tempSize = 0;
             size_t tempTypeSize = 0;
             if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &tempSize) != napi_ok) {
-                HILOG_ERROR("can not get argv[0] size");
+                HILOG_ERROR("UrlStructor:: can not get argv[0] size");
                 return;
             }
             temp.reserve(tempSize);
             temp.resize(tempSize);
             if (napi_get_value_string_utf8(env, argv[0], temp.data(), tempSize + 1, &tempSize) != napi_ok) {
-                HILOG_ERROR("can not get argv[0] value");
+                HILOG_ERROR("UrlStructor:: can not get argv[0] value");
                 return;
             }
             std::string input = temp;
             napi_typeof(env, argv[1], &valuetype2);
             if (valuetype2 == napi_string) {
                 if (napi_get_value_string_utf8(env, argv[1], nullptr, 0, &tempTypeSize) != napi_ok) {
-                    HILOG_ERROR("can not get argv[1] size");
+                    HILOG_ERROR("UrlStructor:: can not get argv[1] size");
                     return;
                 }
                 tempType.reserve(tempTypeSize);
                 tempType.resize(tempTypeSize);
                 if (napi_get_value_string_utf8(env, argv[1], tempType.data(),
                                                tempTypeSize + 1, &tempTypeSize) != napi_ok) {
-                    HILOG_ERROR("can not get argv[1] value");
+                    HILOG_ERROR("UrlStructor:: can not get argv[1] value");
                     return;
                 }
                 std::string base = tempType;
                 object = new (std::nothrow) URL(input, base);
                 if (object == nullptr) {
-                    HILOG_ERROR("UrlStructor:: object is nullptr");
+                    HILOG_ERROR("UrlStructor:: memory allocation failed, object is nullptr");
                     return;
                 }
             } else if (valuetype2 == napi_object) {
@@ -81,14 +81,14 @@ namespace OHOS::Url {
                 }
                 object = new (std::nothrow) URL(input, *tempUrl);
                 if (object == nullptr) {
-                    HILOG_ERROR("UrlStructor:: object is nullptr");
+                    HILOG_ERROR("UrlStructor:: memory allocation failed, object is nullptr");
                     return;
                 }
             } else {
-                HILOG_INFO("secondParameter error");
+                HILOG_INFO("UrlStructor:: secondParameter error");
             }
         } else {
-            HILOG_INFO("firstParameter error");
+            HILOG_INFO("UrlStructor:: firstParameter error");
         }
         return;
     }
@@ -109,23 +109,23 @@ namespace OHOS::Url {
                 std::string type = "";
                 size_t typeSize = 0;
                 if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typeSize) != napi_ok) {
-                    HILOG_ERROR("can not get argv[0] size");
+                    HILOG_ERROR("UrlStructor:: can not get argv[0] size");
                     return nullptr;
                 }
                 type.reserve(typeSize);
                 type.resize(typeSize);
                 if (napi_get_value_string_utf8(env, argv[0], type.data(), typeSize + 1, &typeSize) != napi_ok) {
-                    HILOG_ERROR("can not get argv[0] value");
+                    HILOG_ERROR("UrlStructor:: can not get argv[0] value");
                     return nullptr;
                 }
                 std::string input = type;
                 object = new (std::nothrow) URL(input);
                 if (object == nullptr) {
-                    HILOG_ERROR("UrlStructor:: object is nullptr");
+                    HILOG_ERROR("UrlStructor:: memory allocation failed, object is nullptr");
                     return nullptr;
                 }
             } else {
-                HILOG_INFO("Parameter error");
+                HILOG_INFO("UrlStructor:: Parameter error");
             }
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             UrlStructor(env, info, object);
@@ -261,12 +261,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -286,12 +286,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -311,12 +311,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -336,12 +336,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -361,12 +361,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -386,12 +386,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -411,12 +411,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -436,12 +436,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -461,12 +461,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -486,12 +486,12 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URL:: can not get argv[0] value");
             return nullptr;
         }
         URL *murl = nullptr;
@@ -509,7 +509,7 @@ namespace OHOS::Url {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
         auto object = new (std::nothrow) URLSearchParams();
         if (object == nullptr) {
-            HILOG_ERROR("SeachParamsConstructor:: object is nullptr");
+            HILOG_ERROR("SeachParamsConstructor:: memory allocation failed, object is nullptr");
             return nullptr;
         }
         napi_wrap(
@@ -538,14 +538,14 @@ namespace OHOS::Url {
         for (size_t i = 0; i < length; i++) {
             napi_get_element(env, argv[0], i, &napiStr);
             if (napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize) != napi_ok) {
-                HILOG_ERROR("can not get napiStr size");
+                HILOG_ERROR("URLSearchParams:: can not get napiStr size");
                 return nullptr;
             }
             if (arraySize > 0) {
                 std::string cstr = "";
                 cstr.resize(arraySize);
                 if (napi_get_value_string_utf8(env, napiStr, cstr.data(), arraySize + 1, &arraySize) != napi_ok) {
-                    HILOG_ERROR("can not get name value");
+                    HILOG_ERROR("URLSearchParams:: can not get name value");
                     return nullptr;
                 }
                 vec.push_back(cstr);
@@ -578,7 +578,7 @@ namespace OHOS::Url {
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         if (argc != 1) {
-            HILOG_INFO("One arg needs to be specified");
+            HILOG_INFO("URLSearchParams:: One arg needs to be specified");
             return nullptr;
         }
         URLSearchParams *object = nullptr;
@@ -597,7 +597,7 @@ namespace OHOS::Url {
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         if (argc != 1) {
-            HILOG_INFO("One arg needs to be specified");
+            HILOG_INFO("URLSearchParams:: One arg needs to be specified");
             return nullptr;
         }
         URLSearchParams *object = nullptr;
@@ -617,7 +617,7 @@ namespace OHOS::Url {
         void *data = nullptr;
         napi_get_cb_info(env, info, &argc, args, &thisVar, &data);
         if (argc != 2) { // 2:If the input parameter is not set to 2,
-            HILOG_INFO("Two args needs to be specified");
+            HILOG_INFO("URLSearchParams:: Two args needs to be specified");
             return nullptr;
         }
         URLSearchParams *object = nullptr;
@@ -636,7 +636,7 @@ namespace OHOS::Url {
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
         if (argc != 1) {
-            HILOG_INFO("One arg needs to be specified");
+            HILOG_INFO("URLSearchParams:: One arg needs to be specified");
             return nullptr;
         }
         URLSearchParams *object = nullptr;
@@ -827,12 +827,12 @@ namespace OHOS::Url {
         napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
         size_t typelen = 0;
         if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] size");
+            HILOG_ERROR("URLSearchParams:: can not get argv[0] size");
             return nullptr;
         }
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
-            HILOG_ERROR("can not get argv[0] value");
+            HILOG_ERROR("URLSearchParams:: can not get argv[0] value");
             return nullptr;
         }
         std::vector<std::string> seachParasmsString;
@@ -863,7 +863,7 @@ namespace OHOS::Url {
         if (inputSize > 0) {
             inputStr = new (std::nothrow) char16_t[inputSize + 1]();
             if (inputStr == nullptr) {
-                HILOG_ERROR("url:: inputStr is nullptr");
+                HILOG_ERROR("url:: memory allocation failed, inputStr is nullptr");
                 return resultStr;
             }
             napi_get_value_string_utf16(env, argv[0], inputStr, inputSize + 1, &inputSize);

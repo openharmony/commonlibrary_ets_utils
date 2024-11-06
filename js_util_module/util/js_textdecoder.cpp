@@ -43,7 +43,7 @@ namespace OHOS::Util {
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter *conv = CreateConverter(encStr_, codeflag);
         if (U_FAILURE(codeflag)) {
-            HILOG_ERROR("ucnv_open failed !");
+            HILOG_ERROR("TextDecoder:: ucnv_open failed !");
             return;
         }
         if (fatal) {
@@ -81,7 +81,7 @@ namespace OHOS::Util {
         uint16_t *uint16Data = reinterpret_cast<uint16_t *>(uchar);
         if (CanBeCompressed(uint16Data, length)) {
             if (length <= 0) {
-                HILOG_ERROR("textencoder:: length is error");
+                HILOG_ERROR("TextDecoder:: length is error");
                 return std::make_pair(nullptr, false);
             }
             char *strUtf8;
@@ -90,7 +90,7 @@ namespace OHOS::Util {
             } else {
                 strUtf8 = new (std::nothrow) char[length];
                 if (strUtf8 == nullptr) {
-                    HILOG_ERROR("textencoder:: data allocation failed");
+                    HILOG_ERROR("TextDecoder:: memory allocation failed, strUtf8 is nullptr");
                     return std::make_pair(nullptr, false);
                 }
             }
@@ -121,16 +121,16 @@ namespace OHOS::Util {
         if (limit > 0) {
             arr = new (std::nothrow) UChar[limit + 1];
             if (arr == nullptr) {
-                HILOG_ERROR("decode arr is nullptr");
+                HILOG_ERROR("TextDecoder:: memory allocation failed, decode arr is nullptr");
                 return nullptr;
             }
             if (memset_s(arr, len + sizeof(UChar), 0, len + sizeof(UChar)) != EOK) {
-                HILOG_ERROR("decode arr memset_s failed");
+                HILOG_ERROR("TextDecoder:: decode arr memset_s failed");
                 FreedMemory(arr);
                 return nullptr;
             }
         } else {
-            HILOG_DEBUG("limit is error");
+            HILOG_DEBUG("TextDecoder:: limit is error");
             return nullptr;
         }
         UChar *target = arr;
@@ -206,11 +206,11 @@ namespace OHOS::Util {
         if (limit > 0) {
             arr = new (std::nothrow) UChar[limit + 1]{0};
             if (arr == nullptr) {
-                HILOG_DEBUG("arr is nullptr");
+                HILOG_ERROR("TextDecoder:: memory allocation failed, arr is nullptr");
                 return nullptr;
             }
         } else {
-            HILOG_DEBUG("limit is error");
+            HILOG_DEBUG("TextDecoder:: limit is error");
             return nullptr;
         }
         UChar *target = arr;

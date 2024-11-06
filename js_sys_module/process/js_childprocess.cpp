@@ -68,12 +68,12 @@ namespace OHOS::JsSysModule::Process {
     {
         int ret = pipe(stdOutFd_);
         if (ret < 0) {
-            HILOG_ERROR("pipe1 failed %{public}d", errno);
+            HILOG_ERROR("ChildProcess:: pipe1 failed %{public}d", errno);
             return;
         }
         ret = pipe(stdErrFd_);
         if (ret < 0) {
-            HILOG_ERROR("pipe2 failed %{public}d", errno);
+            HILOG_ERROR("ChildProcess:: pipe2 failed %{public}d", errno);
             return;
         }
         std::string strCommnd = RequireStrValue(env, command);
@@ -84,12 +84,12 @@ namespace OHOS::JsSysModule::Process {
             dup2(stdOutFd_[1], 1);
             dup2(stdErrFd_[1], 2); // 2:The value of parameter
             if (execl("/bin/sh", "sh", "-c", strCommnd.c_str(), nullptr) == -1) {
-                HILOG_ERROR("execl command failed");
+                HILOG_ERROR("ChildProcess:: execl command failed");
                 _exit(127); // 127:The parameter value
             }
         } else if (pid > 0) {
             if (optionsInfo_ == nullptr) {
-                HILOG_ERROR("optionsInfo_ is nullptr");
+                HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
                 return;
             }
             optionsInfo_->pid = pid;
@@ -110,7 +110,7 @@ namespace OHOS::JsSysModule::Process {
             close(stdErrFd_[1]);
             close(stdOutFd_[1]);
         } else {
-            HILOG_ERROR("child process create failed");
+            HILOG_ERROR("ChildProcess:: child process create failed");
         }
     }
 
@@ -128,7 +128,7 @@ namespace OHOS::JsSysModule::Process {
                 napi_get_undefined(env, &res);
                 delete waitInfo;
                 waitInfo = nullptr;
-                HILOG_ERROR("optionsInfo_ is nullptr");
+                HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
                 return res;
             }
             waitpid(optionsInfo_->pid, &status, 0);
@@ -149,7 +149,7 @@ namespace OHOS::JsSysModule::Process {
         if (stdOutInfo_ == nullptr) {
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
-            HILOG_ERROR("stdOutInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: stdOutInfo_ is nullptr");
             return res;
         }
         NAPI_CALL(env, napi_create_promise(env, &stdOutInfo_->deferred, &stdOutInfo_->promise));
@@ -159,7 +159,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdOutInfo_->stdData.c_str()),
             stdOutInfo_->stdData.size()) != EOK) {
-            HILOG_ERROR("getOutput memcpy_s failed");
+            HILOG_ERROR("ChildProcess:: getOutput memcpy_s failed");
             NAPI_CALL(env, napi_delete_async_work(env, stdOutInfo_->worker));
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
@@ -177,7 +177,7 @@ namespace OHOS::JsSysModule::Process {
         if (stdErrInfo_ == nullptr) {
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
-            HILOG_ERROR("stdErrInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: stdErrInfo_ is nullptr");
             return res;
         }
         NAPI_CALL(env, napi_create_promise(env, &stdErrInfo_->deferred, &stdErrInfo_->promise));
@@ -187,7 +187,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
         if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdErrInfo_->stdData.c_str()),
             stdErrInfo_->stdData.size()) != EOK) {
-            HILOG_ERROR("getErrOutput memcpy_s failed");
+            HILOG_ERROR("ChildProcess:: getErrOutput memcpy_s failed");
             NAPI_CALL(env, napi_delete_async_work(env, stdErrInfo_->worker));
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
@@ -214,7 +214,7 @@ namespace OHOS::JsSysModule::Process {
         if (optionsInfo_ == nullptr) {
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
-            HILOG_ERROR("optionsInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
             return res;
         }
         NAPI_CALL(env, napi_create_int32(env, optionsInfo_->pid, &result));
@@ -244,13 +244,13 @@ namespace OHOS::JsSysModule::Process {
         napi_value resourceName = nullptr;
         stdOutInfo_ = new StdInfo();
         if (stdOutInfo_ == nullptr) {
-            HILOG_ERROR("stdOutInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: memory allocation failed, stdOutInfo_ is nullptr");
             return;
         }
         stdOutInfo_->isNeedRun = &isNeedRun_;
         stdOutInfo_->fd = stdOutFd_[0];
         if (optionsInfo_ == nullptr) {
-            HILOG_ERROR("optionsInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
             return;
         }
         stdOutInfo_->pid = optionsInfo_->pid;
@@ -263,7 +263,7 @@ namespace OHOS::JsSysModule::Process {
         // getstderr
         stdErrInfo_ = new StdInfo();
         if (stdErrInfo_ == nullptr) {
-            HILOG_ERROR("stdErrInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: memory allocation failed, stdErrInfo_ is nullptr");
             return;
         }
         stdErrInfo_->isNeedRun = &isNeedRun_;
@@ -293,11 +293,11 @@ namespace OHOS::JsSysModule::Process {
                     *(stdOutInfo->isNeedRun) = false;
                     stdOutInfo->stdData = stdOutInfo->stdData.substr(0, stdOutInfo->maxBuffSize);
                 } else {
-                    HILOG_ERROR("stdOut maxBuff kill signal failed");
+                    HILOG_ERROR("ChildProcess:: stdOut maxBuff kill signal failed");
                 }
             }
             if (memset_s(childStdout, sizeof(childStdout), '\0', MAXSIZE) != EOK) {
-                HILOG_ERROR("getOutput memset_s failed");
+                HILOG_ERROR("ChildProcess:: getOutput memset_s failed");
                 return;
             }
         }
@@ -328,11 +328,11 @@ namespace OHOS::JsSysModule::Process {
                     *(stdErrInfo->isNeedRun) = false;
                     stdErrInfo->stdData = stdErrInfo->stdData.substr(0, stdErrInfo->maxBuffSize);
                 } else {
-                    HILOG_ERROR("stdErr maxBuff kill signal failed");
+                    HILOG_ERROR("ChildProcess:: stdErr maxBuff kill signal failed");
                 }
             }
             if (memset_s(childStderr, sizeof(childStderr), '\0', MAXSIZE) != EOK) {
-                HILOG_ERROR("getOutput memset_s failed");
+                HILOG_ERROR("ChildProcess:: getOutput memset_s failed");
                 return;
             }
         }
@@ -373,7 +373,7 @@ namespace OHOS::JsSysModule::Process {
         int signal = GetValidSignal(env, signo);
         std::vector<int32_t> signalType = {SIGINT, SIGQUIT, SIGKILL, SIGTERM};
         if (optionsInfo_ == nullptr) {
-            HILOG_ERROR("optionsInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
             return;
         }
         if (!kill(optionsInfo_->pid, signal)) {
@@ -381,7 +381,7 @@ namespace OHOS::JsSysModule::Process {
             (res != signalType.end()) ? isNeedRun_ = false : 0;
             killed_ = true;
         } else {
-            HILOG_ERROR("kill signal failed");
+            HILOG_ERROR("ChildProcess:: kill signal failed");
         }
     }
 
@@ -389,7 +389,7 @@ namespace OHOS::JsSysModule::Process {
     {
         int32_t status = 0;
         if (optionsInfo_ == nullptr) {
-            HILOG_ERROR("optionsInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
             return;
         }
         if (isWait_ && !(waitpid(optionsInfo_->pid, &status, WNOHANG)) && isNeedRun_) {
@@ -399,7 +399,7 @@ namespace OHOS::JsSysModule::Process {
                 exitCode_ = status;
                 isNeedRun_ = false;
             } else {
-                HILOG_ERROR("close kill SIGKILL signal failed");
+                HILOG_ERROR("ChildProcess:: close kill SIGKILL signal failed");
             }
         }
     }
@@ -416,7 +416,7 @@ namespace OHOS::JsSysModule::Process {
                     auto res = std::find(signalType.begin(), signalType.end(), temp->killSignal);
                     (res != signalType.end()) ? *(temp->isNeedRun) = false : 0;
                 } else {
-                    HILOG_ERROR("timeout kill signal failed");
+                    HILOG_ERROR("ChildProcess:: timeout kill signal failed");
                 }
             }
         }
@@ -427,7 +427,7 @@ namespace OHOS::JsSysModule::Process {
         std::vector<std::string> keyStr = {"timeout", "killSignal", "maxBuffer"};
         optionsInfo_ = new OptionsInfo();
         if (optionsInfo_ == nullptr) {
-            HILOG_ERROR("optionsInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: memory allocation failed, optionsInfo_ is nullptr");
             return;
         }
         size_t size = keyStr.size();
@@ -462,14 +462,14 @@ namespace OHOS::JsSysModule::Process {
     {
         size_t bufferSize = 0;
         if (napi_get_value_string_utf8(env, strValue, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get strValue size");
+            HILOG_ERROR("ChildProcess:: can not get strValue size");
             return nullptr;
         }
         std::string result = "";
         result.reserve(bufferSize + 1);
         result.resize(bufferSize);
         if (napi_get_value_string_utf8(env, strValue, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("can not get strValue value");
+            HILOG_ERROR("ChildProcess:: can not get strValue value");
             return nullptr;
         }
         return result;

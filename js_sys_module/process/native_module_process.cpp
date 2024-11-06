@@ -31,7 +31,7 @@ namespace OHOS::JsSysModule::Process {
             napi_typeof(env, args[0], &valueType);
             NAPI_ASSERT(env, valueType == napi_string, "Wrong argument type: string expected.");
         } else {
-            HILOG_ERROR("command is null");
+            HILOG_ERROR("Process:: command is null");
             napi_throw_error(env, "", "command is empty");
             return nullptr;
         }

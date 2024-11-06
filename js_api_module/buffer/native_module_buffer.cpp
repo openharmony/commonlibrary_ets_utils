@@ -282,7 +282,7 @@ static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *b
         if (buffer != nullptr) {
             delete buffer;
         }
-        HILOG_ERROR("can not wrap buffer");
+        HILOG_ERROR("Buffer:: can not wrap buffer");
         return nullptr;
     }
     return thisVar;
@@ -353,7 +353,7 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
 {
     Buffer *buffer = new (std::nothrow) Buffer();
     if (buffer == nullptr) {
-        HILOG_ERROR("BufferStructor:: buffer is nullptr");
+        HILOG_ERROR("BufferStructor:: memory allocation failed, buffer is nullptr");
         return nullptr;
     }
     uint32_t length = 0;
@@ -649,7 +649,7 @@ static napi_value GetBufferData(napi_env env, napi_callback_info info)
     uint32_t length = buf->GetLength();
     uint8_t* data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
-        HILOG_ERROR("buffer:: data is nullptr");
+        HILOG_ERROR("Buffer:: memory allocation failed, data is nullptr");
         return result;
     }
     buf->ReadBytes(data, 0, length);
@@ -863,12 +863,12 @@ static napi_value Compare(napi_env env, napi_callback_info info)
     Buffer *targetBuf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&targetBuf)));
     if (targetBuf == nullptr) {
-        HILOG_FATAL("buffer:: targetBuf is NULL");
+        HILOG_FATAL("Buffer:: can not unwarp targetBuf");
     }
     Buffer *sBuf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&sBuf)));
     if (sBuf == nullptr) {
-        HILOG_FATAL("buffer:: sBuf is NULL");
+        HILOG_FATAL("Buffer:: can not unwarp sBuf");
         napi_create_int32(env, 0, &result);
         return result;
     }
@@ -1073,7 +1073,7 @@ static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
     napi_value bufferPromise = nullptr;
     PromiseInfo *promiseInfo = new (std::nothrow) PromiseInfo();
     if (promiseInfo == nullptr) {
-        HILOG_ERROR("buffer:: promiseInfo is nullptr");
+        HILOG_ERROR("Buffer:: memory allocation failed, promiseInfo is nullptr");
         return nullptr;
     }
     napi_create_arraybuffer(env, bufferSize, &bufdata, &arrayBuffer);
@@ -1097,7 +1097,7 @@ static napi_value TextAsync(napi_env env, napi_callback_info info)
     napi_value string = nullptr;
     PromiseInfo *promiseInfo = new (std::nothrow) PromiseInfo();
     if (promiseInfo == nullptr) {
-        HILOG_ERROR("buffer:: promiseInfo is nullptr");
+        HILOG_ERROR("Buffer:: memory allocation failed, promiseInfo is nullptr");
         return nullptr;
     }
     napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &string);
