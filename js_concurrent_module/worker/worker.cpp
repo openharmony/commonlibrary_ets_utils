@@ -1273,6 +1273,7 @@ void Worker::ExecuteInThread(const void* data)
         std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
         if (worker->HostIsStop() || worker->isHostEnvExited_) {
             HILOG_ERROR("worker:: host thread is stop");
+            worker->EraseWorker();
             CloseHelp::DeletePointer(worker, false);
             return;
         }
@@ -1284,6 +1285,7 @@ void Worker::ExecuteInThread(const void* data)
         }
         if (workerEnv == nullptr) {
             HILOG_ERROR("worker:: Worker create runtime error");
+            worker->EraseWorker();
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
             return;
         }
@@ -1302,6 +1304,7 @@ void Worker::ExecuteInThread(const void* data)
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
         HILOG_ERROR("worker:: Worker loop is nullptr");
+        worker->EraseWorker();
         return;
     }
 
@@ -1333,6 +1336,7 @@ void Worker::ExecuteInThread(const void* data)
     } else {
         worker->PublishWorkerOverSignal();
     }
+    worker->EraseWorker();
 }
 
 bool Worker::PrepareForWorkerInstance()
@@ -1346,6 +1350,7 @@ bool Worker::PrepareForWorkerInstance()
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop() || isHostEnvExited_) {
             HILOG_INFO("worker:: host is stopped");
+            EraseWorker();
             return false;
         }
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
@@ -1358,6 +1363,7 @@ bool Worker::PrepareForWorkerInstance()
 #endif
         if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
             HILOG_ERROR("worker:: CallInitWorkerFunc error");
+            EraseWorker();
             return false;
         }
         // 2. get uril content
@@ -1366,6 +1372,7 @@ bool Worker::PrepareForWorkerInstance()
         }
         if (!hostEngine->GetAbcBuffer(rawFileName.c_str(), &scriptContent, &scriptContentSize, content, workerAmi)) {
             HILOG_ERROR("worker:: GetAbcBuffer error");
+            EraseWorker();
             return false;
         }
     }
@@ -1379,6 +1386,7 @@ bool Worker::PrepareForWorkerInstance()
         // An exception occurred when running the script.
         HILOG_ERROR("worker:: run script exception occurs, will handle exception");
         HandleException();
+        EraseWorker();
         return false;
     }
 
@@ -1676,7 +1684,6 @@ void Worker::CloseHostCallback()
         // handle listeners
         HandleEventListeners(hostEnv_, obj, 1, argv, "exit");
     }
-    EraseWorker();
     CloseHelp::DeletePointer(this, false);
 }
 
@@ -1858,11 +1865,9 @@ void Worker::PublishWorkerOverSignal()
 void Worker::PostWorkerOverTask()
 {
     auto hostOnOverSignalTask = [this]() {
-        if (IsValidWorker(this)) {
-            HILOG_INFO("worker:: host thread receive terminate signal.");
-            HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
-            this->HostOnMessageInner();
-        }
+        HILOG_INFO("worker:: host thread receive terminate signal.");
+        HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
+        this->HostOnMessageInner();
     };
     GetMainThreadHandler()->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
@@ -2236,9 +2241,6 @@ void Worker::ReleaseWorkerThreadContent()
                 }
                 hostEngine->DecreaseSubEnvCounter();
             }
-        }
-        if (isHostEnvExited_) {
-            EraseWorker();
         }
     }
     // 1. delete worker listener
