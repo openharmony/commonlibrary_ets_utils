@@ -3873,3 +3873,549 @@ HWTEST_F(NativeEngineTest, testIsMapIterator001, testing::ext::TestSize.Level0)
     napi_get_value_bool(env, result, &res);
     ASSERT_FALSE(res);
 }
+
+/**
+ * @tc.name: textIsDateTest001
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 202110181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsExternalTest001
+ * @tc.desc: Check if the input value is of type native External.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsExternalTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsExternalTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value dataVal = nullptr;
+    int* raw = new int(1);
+    napi_status status = napi_create_external(env, (void*) raw, NULL, NULL, &dataVal);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_external success");
+    } else {
+        HILOG_INFO("Types::napi_create_external fail");
+    }
+    napi_value result = type.IsExternal(env, dataVal);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsMapTest001
+ * @tc.desc: Check if the input value is of Map type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsMapTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsMapTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value resMap = nullptr;
+    napi_create_map(env, &resMap);
+    napi_value result = type.IsMap(env, resMap);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsMapTest002
+ * @tc.desc: Check if the input value is of Map type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsMapTest002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsMapTest002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value dest = nullptr;
+    napi_create_sendable_map(env, &dest);
+    napi_value result = type.IsMap(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsAnyArrayBufferTest001
+ * @tc.desc: Check if the input value is of type ArrayBuffer or SharedArrayBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsAnyArrayBufferTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsAnyArrayBufferTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &arrayBufferPtr, &arrayBuffer);
+    napi_value result = type.IsAnyArrayBuffer(env, arrayBuffer);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsAnyArrayBufferTest002
+ * @tc.desc: Check if the input value is of type ArrayBuffer or SharedArrayBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsAnyArrayBufferTest002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsAnyArrayBufferTest002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value testFlag = nullptr;
+    bool test = false;
+    napi_get_value_bool(env, testFlag, &test);
+    napi_value result = type.IsAnyArrayBuffer(env, testFlag);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsArrayBufferViewTest001
+ * @tc.desc: Check if the input value is of the built-in ArrayBufferView auxiliary type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArrayBufferViewTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsArrayBufferViewTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value testFlag = nullptr;
+    bool test = false;
+    napi_get_value_bool(env, testFlag, &test);
+    napi_value result = type.IsArrayBufferView(env, testFlag);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsArrayBufferViewTest002
+ * @tc.desc: Check if the input value is of the built-in ArrayBufferView auxiliary type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArrayBufferViewTest002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsArrayBufferViewTest002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+    napi_value dataview = nullptr;
+    napi_create_dataview(env, arrayBufferSize, arrayBuffer, 0, &dataview);
+    napi_value result = type.IsArrayBufferView(env, dataview);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDataViewTest001
+ * @tc.desc: Check if the input value is of type WebView.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDataViewTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDataViewTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrBuffer = nullptr;
+    void* arrBufferPtr = nullptr;
+    size_t arrBufferSize = 1;
+    napi_create_arraybuffer(env, arrBufferSize * sizeof(size_t), &arrBufferPtr, &arrBuffer);
+    napi_value dataView = nullptr;
+    napi_create_dataview(env, arrBufferSize * sizeof(size_t), arrBuffer, 0, &dataView);
+    napi_value result = type.IsDataView(env, dataView);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsArrayBufferViewTest003
+ * @tc.desc: Check if the input value is of the built-in ArrayBufferView auxiliary type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArrayBufferViewTest003, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsArrayBufferViewTest003 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    size_t byteLength = 1;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[1] = {0x1};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value int8Array = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &int8Array);
+    napi_value result = type.IsArrayBufferView(env, int8Array);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsArrayBufferViewTest004
+ * @tc.desc: Check if the input value is of the built-in ArrayBufferView auxiliary type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArrayBufferViewTest004, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsArrayBufferViewTest004 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    size_t byteLength = 1;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[1] = {0x1};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value uint8Array = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, byteLength, resultBuff, 0, &uint8Array);
+    napi_value result = type.IsArrayBufferView(env, uint8Array);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsArrayBufferViewTest005
+ * @tc.desc: Check if the input value is of the built-in ArrayBufferView auxiliary type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArrayBufferViewTest005, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsArrayBufferViewTest005 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    size_t byteLength = 1;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength * sizeof(int16_t), &data, &resultBuff);
+    int16_t arr[1] = {0x1};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value int16Array = nullptr;
+    napi_create_typedarray(env, napi_int16_array, byteLength, resultBuff, 0, &int16Array);
+    napi_value result = type.IsArrayBufferView(env, int16Array);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsArgumentsObjectTest001
+ * @tc.desc: Check if the input value is an arguments object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArgumentsObjectTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsArgumentsObjectTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    bool test = false;
+    napi_value testVal = nullptr;
+    napi_get_value_bool(env, testVal, &test);
+    napi_value result = type.IsArgumentsObject(env, testVal);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsArrayBufferTest001
+ * @tc.desc: Check if the input value is of type ArrayBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArrayBufferTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsArrayBufferTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+    napi_value result = type.IsArrayBuffer(env, arrayBuffer);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsAsyncFunctionTest001
+ * @tc.desc: Check if the input value is an asynchronous function type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsAsyncFunctionTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsAsyncFunctionTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    bool testRes = false;
+    napi_value testRst = nullptr;
+    napi_get_value_bool(env, testRst, &testRes);
+    napi_value result = type.IsAsyncFunction(env, testRst);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsInt32ArrayTest001
+ * @tc.desc: Check if the input value is of type Int32Array array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsInt32ArrayTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsInt32ArrayTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(size_t), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_int32_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsInt32Array(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsBigInt64ArrayTest001
+ * @tc.desc: Check if the input value is of type BigInt64Array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBigInt64ArrayTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBigInt64ArrayTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(int64_t), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_bigint64_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsBigInt64Array(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsBigUint64ArrayTest001
+ * @tc.desc: Check if the input value is of type BigUint64Array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBigUint64ArrayTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBigUint64ArrayTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 20; // number 20
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(uint64_t), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_biguint64_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsBigUint64Array(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsGeneratorFunctionTest001
+ * @tc.desc: Check if the input value is of the generator function type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsGeneratorFunctionTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsGeneratorFunctionTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    bool resFlag = false;
+    napi_value dest = nullptr;
+    napi_get_value_bool(env, dest, &resFlag);
+    napi_value result = type.IsGeneratorFunction(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsGeneratorObjectTest001
+ * @tc.desc: Check if the input value is of the generator object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsGeneratorObjectTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsGeneratorObjectTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value dest = nullptr;
+    napi_create_object(env, &dest);
+    napi_value result = type.IsGeneratorObject(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsFloat32ArrayTest001
+ * @tc.desc: Check if the input value is of Float32Array array type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsFloat32ArrayTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsFloat32ArrayTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(float), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_float32_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsFloat32Array(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsBooleanObjectTest001
+ * @tc.desc: Check if the input value is a Boolean object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBooleanObjectTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBooleanObjectTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value testRst = nullptr;
+    napi_get_boolean(env, false, &testRst);
+    napi_value result = type.IsBooleanObject(env, testRst);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest001
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abcd", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsFloat64ArrayTest001
+ * @tc.desc: Check if the input value is of Float64Array array type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsFloat64ArrayTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsFloat64ArrayTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(double), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_float64_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsFloat64Array(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsInt8ArrayTest001
+ * @tc.desc: Check if the input value is of type Int8Array array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsInt8ArrayTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsInt8ArrayTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(int8_t), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_int8_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsInt8Array(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsInt16ArrayTest001
+ * @tc.desc: Check if the input value is of type Int16Array array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsInt16ArrayTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsInt16ArrayTest001 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1;
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(int16_t), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_int16_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsInt16Array(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
