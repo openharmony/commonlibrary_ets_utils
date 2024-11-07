@@ -15,6 +15,9 @@
 
 #include "sys_timer.h"
 
+#ifdef ENABLE_HITRACE_HELPER_METER
+#include "helper/hitrace_helper.h"
+#endif
 #include "native_engine/native_engine.h"
 #include "tools/log.h"
 
@@ -32,6 +35,9 @@ std::mutex Timer::timeLock;
 
 TimerCallbackInfo::~TimerCallbackInfo()
 {
+#ifdef ENABLE_HITRACE_HELPER_METER
+    HITRACE_HELPER_METER_NAME("~TimerCallbackInfo address = " + std::to_string(reinterpret_cast<std::uintptr_t>(this)));
+#endif
     Helper::NapiHelper::DeleteReference(env_, callback_);
     for (size_t idx = 0; idx < argc_; idx++) {
         Helper::NapiHelper::DeleteReference(env_, argv_[idx]);
@@ -105,6 +111,10 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
             timerTable.erase(tId);
             Helper::CloseHelp::DeletePointer(callbackInfo, false);
             HILOG_INFO("DeleteTimer ID: %{public}u, count: %{public}u", tId, ++deleteTimerCount);
+#ifdef ENABLE_HITRACE_HELPER_METER
+            HITRACE_HELPER_METER_NAME("DeleteTimer ID: " + std::to_string(tId) + ", count: "
+                + std::to_string(deleteTimerCount));
+#endif
         }
     }
     return Helper::NapiHelper::GetUndefinedValue(env);
@@ -123,7 +133,10 @@ void Timer::TimerCallback(uv_timer_t* handle)
 #ifdef ENABLE_CONTAINER_SCOPE
     ContainerScope containerScope(callbackInfo->containerScopeId_);
 #endif
-
+#ifdef ENABLE_HITRACE_HELPER_METER
+    HITRACE_HELPER_METER_NAME("TimerCallback callbackInfo address = "
+        + std::to_string(reinterpret_cast<std::uintptr_t>(callbackInfo)) + ", tId = " + std::to_string(tId));
+#endif
     napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env, &scope);
     if (scope == nullptr) {
@@ -214,6 +227,10 @@ napi_value Timer::SetTimeoutInnerCore(napi_env env, napi_value* argv, size_t arg
     }
 
     HILOG_DEBUG("SetTimeoutInnerCore function call before libuv! tId = %{public}u,timeout = %{public}u", tId, timeout);
+#ifdef ENABLE_HITRACE_HELPER_METER
+    HITRACE_HELPER_METER_NAME("SetTimeoutInnerCore function call before libuv! tId = " + std::to_string(tId)
+        + ", timeout = " + std::to_string(timeout));
+#endif
     // 6. start timer
     uv_loop_t* loop = Helper::NapiHelper::GetLibUV(env);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
