@@ -526,26 +526,27 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         task->currentTaskInfo_ = nullptr;
     }
     TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(task->groupId_);
-    if (taskGroup == nullptr) {
-        HILOG_DEBUG("taskpool:: taskGroup has been released");
+    if (taskGroup == nullptr || taskGroup->currentGroupInfo_ == nullptr) {
+        HILOG_DEBUG("taskpool:: taskGroup may have been released or canceled");
         return;
     }
-    if (taskGroup->currentGroupInfo_ == nullptr) {
-        HILOG_DEBUG("taskpool:: taskGroup has been canceled");
-        return;
-    }
+    // store the result
     uint32_t index = taskGroup->GetTaskIndex(task->taskId_);
     auto groupInfo = taskGroup->currentGroupInfo_;
-    if (success) {
-        // Update res at resArr
-        napi_ref arrRef = groupInfo->resArr;
-        napi_value resArr = NapiHelper::GetReferenceValue(env, arrRef);
-        napi_set_element(env, resArr, index, res);
-
-        groupInfo->finishedTask++;
-        if (groupInfo->finishedTask < taskGroup->taskNum_) {
-            return;
-        }
+    napi_ref arrRef = groupInfo->resArr;
+    napi_value resArr = NapiHelper::GetReferenceValue(env, arrRef);
+    napi_set_element(env, resArr, index, res);
+    groupInfo->finishedTaskNum++;
+    // store the index when the first exception occurs
+    if (!success && !groupInfo->HasException()) {
+        groupInfo->SetFailedIndex(index);
+    }
+    // we will not handle the result until all tasks are finished
+    if (groupInfo->finishedTaskNum < taskGroup->taskNum_) {
+        return;
+    }
+    // if there is no exception, just resolve
+    if (!groupInfo->HasException()) {
         HILOG_INFO("taskpool:: taskGroup perform end, taskGroupId %{public}s", std::to_string(task->groupId_).c_str());
         napi_resolve_deferred(env, groupInfo->deferred, resArr);
         for (uint64_t taskId : taskGroup->taskIds_) {
@@ -555,6 +556,8 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
             }
         }
     } else {
+        napi_value res = nullptr;
+        napi_get_element(env, resArr, groupInfo->GetFailedIndex(), &res);
         napi_reject_deferred(env, groupInfo->deferred, res);
         if (task->onExecutionFailedCallBackInfo_ != nullptr) {
             task->onExecutionFailedCallBackInfo_->taskError_ = res;
