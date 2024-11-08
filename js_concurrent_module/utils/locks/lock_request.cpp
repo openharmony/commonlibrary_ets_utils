@@ -25,7 +25,7 @@
 #include "helper/hitrace_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
-#include "js_concurrent_module/utils/locks/weap_wrap.h"
+#include "js_concurrent_module/utils/locks/weak_wrap.h"
 #include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
