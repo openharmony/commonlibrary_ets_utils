@@ -142,7 +142,7 @@ static napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value 
     string strDecoded = GetStringBase64(env, str, type);
     Buffer *buffer = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
-
+    size = (size < strDecoded.length()) ? size : strDecoded.length();
     buffer->WriteString(strDecoded, size);
     return thisVar;
 }
