@@ -16,8 +16,10 @@
 #ifndef JS_CONCURRENT_MODULE_UTILS_LOCKS_LOCK_REQUEST_H
 #define JS_CONCURRENT_MODULE_UTILS_LOCKS_LOCK_REQUEST_H
 
+#include <memory>
 #include <queue>
 #include <string>
+
 #include "common.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
@@ -39,11 +41,16 @@ struct LockOptions {
 
 class AsyncLock;
 
-class LockRequest {
+class LockRequest : public std::enable_shared_from_this<LockRequest> {
 public:
     LockRequest(AsyncLock* lock, tid_t tid, napi_env env, napi_ref cb, LockMode mode, const LockOptions &options,
         napi_deferred deferred);
     ~LockRequest();
+
+    std::weak_ptr<LockRequest> GetWeakPtr()
+    {
+        return weak_from_this();
+    }
 
     tid_t GetTid() const
     {
@@ -73,12 +80,13 @@ public:
     void CallCallbackAsync();
     void CallCallback();
 
-    void OnQueued(uint32_t timeoutMillis);
-    void OnSatisfied();
+    void OnQueued(napi_env env, uint32_t timeoutMillis);
+    void OnSatisfied(napi_env env);
+
 private:
     bool AbortIfNeeded();
-    void ArmTimeoutTimer(uint32_t timeoutMillis);
-    void DisarmTimeoutTimer();
+    void ArmTimeoutTimer(napi_env env, uint32_t timeoutMillis);
+    void DisarmTimeoutTimer(napi_env env);
     void HandleRequestTimeout(std::string &&errorMessage);
     std::string GetLockInfo() const;
     void CleanTimer();
@@ -87,6 +95,7 @@ private:
     static void TimeoutCallback(uv_timer_t *handle);
     static void DeallocateTimeoutTimerCallback(uv_handle_t* handle);
     static void EnvCleanUp(void* arg);
+    static void StopTimer(napi_env env, napi_value jsCallback, void* context, void* data);
 
     AsyncLock* lock_;
     tid_t tid_;
@@ -99,6 +108,7 @@ private:
     napi_async_work work_;
     uv_timer_t *timeoutTimer_;
     bool timeoutActive_;
+    napi_threadsafe_function stopTimerTsfn_{nullptr};
     std::mutex lockRequestMutex_;
 };
 
