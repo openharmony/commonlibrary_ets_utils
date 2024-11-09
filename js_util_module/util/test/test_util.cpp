@@ -3712,7 +3712,7 @@ HWTEST_F(NativeEngineTest, testIsSetIterator001, testing::ext::TestSize.Level0)
     napi_value obj = nullptr;
     napi_create_object(env, &obj);
     bool res = true;
-    napi_value result = types.IsSharedArrayBuffer(env, obj);
+    napi_value result = types.IsSetIterator(env, obj);
     napi_get_value_bool(env, result, &res);
     ASSERT_FALSE(res);
 }
