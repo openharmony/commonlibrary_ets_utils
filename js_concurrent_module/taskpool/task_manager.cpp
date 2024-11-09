@@ -1574,7 +1574,9 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
         TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
-        group->currentGroupInfo_->finishedTaskNum++;
+        if (group->currentGroupInfo_ != nullptr) {
+            group->currentGroupInfo_->finishedTaskNum++;
+        }
     }
     task->taskState_ = ExecuteState::CANCELED;
 }
