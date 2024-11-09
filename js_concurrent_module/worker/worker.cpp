@@ -59,7 +59,9 @@ std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::GetMainThreadHandler()
 
 Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
-{}
+{
+    workerWrapper_ = std::make_shared<WorkerWrapper>(this);
+}
 
 napi_value Worker::InitWorker(napi_env env, napi_value exports)
 {
@@ -301,7 +303,11 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
 
 void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
 {
-    Worker* worker = reinterpret_cast<Worker*>(data);
+    Worker* worker = static_cast<Worker*>(data);
+    if (worker == nullptr) {
+        HILOG_WARN("worker:: worker is null.");
+        return;
+    }
     napi_remove_env_cleanup_hook(env, HostEnvCleanCallback, worker);
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->isHostEnvExited_) {
@@ -327,7 +333,7 @@ void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
 
 void Worker::HostEnvCleanCallback(void *data)
 {
-    Worker* worker = reinterpret_cast<Worker*>(data);
+    Worker* worker = static_cast<Worker*>(data);
     if (worker == nullptr) {
         HILOG_INFO("worker:: worker is nullptr when host env exit.");
         return;
@@ -1350,7 +1356,6 @@ bool Worker::PrepareForWorkerInstance()
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop() || isHostEnvExited_) {
             HILOG_INFO("worker:: host is stopped");
-            EraseWorker();
             return false;
         }
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
@@ -1363,7 +1368,6 @@ bool Worker::PrepareForWorkerInstance()
 #endif
         if (!hostEngine->CallInitWorkerFunc(workerEngine)) {
             HILOG_ERROR("worker:: CallInitWorkerFunc error");
-            EraseWorker();
             return false;
         }
         // 2. get uril content
@@ -1372,7 +1376,6 @@ bool Worker::PrepareForWorkerInstance()
         }
         if (!hostEngine->GetAbcBuffer(rawFileName.c_str(), &scriptContent, &scriptContentSize, content, workerAmi)) {
             HILOG_ERROR("worker:: GetAbcBuffer error");
-            EraseWorker();
             return false;
         }
     }
@@ -1386,7 +1389,6 @@ bool Worker::PrepareForWorkerInstance()
         // An exception occurred when running the script.
         HILOG_ERROR("worker:: run script exception occurs, will handle exception");
         HandleException();
-        EraseWorker();
         return false;
     }
 
@@ -1864,10 +1866,16 @@ void Worker::PublishWorkerOverSignal()
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 void Worker::PostWorkerOverTask()
 {
-    auto hostOnOverSignalTask = [this]() {
-        HILOG_INFO("worker:: host thread receive terminate signal.");
-        HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
-        this->HostOnMessageInner();
+    std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
+    auto hostOnOverSignalTask = [weak]() {
+        auto strong = weak.lock();
+        if (strong) {
+            HILOG_INFO("worker:: host receive terminate.");
+            HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
+            strong->GetWorker()->HostOnMessageInner();
+        } else {
+            HILOG_INFO("worker:: worker is null.");
+        }
     };
     GetMainThreadHandler()->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
@@ -1877,7 +1885,7 @@ void Worker::PostWorkerErrorTask()
 {
     auto hostOnErrorTask = [this]() {
         if (IsValidWorker(this)) {
-            HILOG_INFO("worker:: host thread receive error message.");
+            HILOG_INFO("worker:: host receive error.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnErrorMessage");
             this->HostOnErrorInner();
             this->TerminateInner();
