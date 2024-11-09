@@ -649,6 +649,7 @@ void NativeEngineTest::CancelGroupTask(napi_env env)
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     TaskManager& taskManager = TaskManager::GetInstance();
     TaskGroup* group = new TaskGroup();
+    group->currentGroupInfo_ = new GroupInfo();
     Task* task = new Task();
     task->taskId_ = reinterpret_cast<uint64_t>(task);
     taskManager.StoreTask(task->taskId_, task);

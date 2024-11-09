@@ -196,7 +196,7 @@ void TaskGroup::CancelPendingGroup(napi_env env)
 void TaskGroup::CancelGroupTask(napi_env env, uint64_t taskId)
 {
     TaskGroupManager::GetInstance().CancelGroupTask(env, taskId, this);
-    if (currentGroupInfo_->finishedTaskNum == taskNum_) {
+    if (currentGroupInfo_ != nullptr && currentGroupInfo_->finishedTaskNum == taskNum_) {
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
         RejectResult(env, error);
     }
