@@ -52,7 +52,7 @@ TimerCallbackInfo::~TimerCallbackInfo()
 typedef napi_value (*SetTimeFunction)(napi_env env, napi_callback_info info, bool repeat);
 
 napi_value Timer::SetTimeOutFaker(napi_env env, napi_callback_info cbinfo, bool repeat)
-{    
+{
     std::lock_guard<std::mutex> lock(timeLock);
     uint32_t tId = timeCallbackId++;
     HILOG_WARN("Timer is deactivated on current JS Thread, timer id = %{public}" PRIu32, tId);
