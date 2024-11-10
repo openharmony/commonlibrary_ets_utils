@@ -15,6 +15,8 @@
 
 #include "timer.h"
 
+#include <cinttypes>
+
 #include "native_engine/native_engine.h"
 #include "tools/log.h"
 
@@ -47,23 +49,26 @@ TimerCallbackInfo::~TimerCallbackInfo()
     });
 }
 
-typedef napi_value (*SetTimerFunction)(napi_env env, napi_callback_info info, bool repeat);
+typedef napi_value (*SetTimeFunction)(napi_env env, napi_callback_info info, bool repeat);
 
-napi_value Timer::SetTimeroutFaker(napi_env env, napi_callback_info cbinfo, bool repeat)
-{
-    return nullptr;
+napi_value Timer::SetTimeOutFaker(napi_env env, napi_callback_info cbinfo, bool repeat)
+{    
+    std::lock_guard<std::mutex> lock(timeLock);
+    uint32_t tId = timeCallbackId++;
+    HILOG_WARN("Timer is deactivated on current JS Thread, timer id = %{public}" PRIu32, tId);
+    return Helper::NapiHelper::CreateUint32(env, tId);
 }
 
-struct Data {
+struct TimeData {
     napi_env env_;
-    SetTimerFunction func_;
+    SetTimeFunction func_;
 };
 
 void Timer::CleanUpHook(void* data)
 {
-    auto that = reinterpret_cast<Data*>(data);
+    auto that = reinterpret_cast<TimeData*>(data);
     Timer::ClearEnvironmentTimer(that->env_);
-    that->func_ = Timer::SetTimeroutFaker;
+    that->func_ = Timer::SetTimeOutFaker;
     that->env_ = nullptr;
 }
 
@@ -72,14 +77,14 @@ bool Timer::RegisterTime(napi_env env)
     if (env == nullptr) {
         return false;
     }
-    thread_local auto data = new Data();
+    thread_local auto data = new TimeData();
     data->env_ = env;
     data->func_ = SetTimeoutInner;
     napi_add_env_cleanup_hook(env, CleanUpHook, data);
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION_WITH_DATA("setTimeout", SetTimeout, data),
-        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("setInterval", SetInterval),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("setInterval", SetInterval, data),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearTimeout", ClearTimer),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearInterval", ClearTimer)
     };
@@ -92,12 +97,14 @@ napi_value Timer::SetTimeout(napi_env env, napi_callback_info cbinfo)
 {
     void *data = nullptr;
     napi_get_cb_info(env, cbinfo, 0, nullptr, nullptr, &data);
-    return reinterpret_cast<Data*>(data)->func_(env, cbinfo, false);
+    return reinterpret_cast<TimeData*>(data)->func_(env, cbinfo, false);
 }
 
 napi_value Timer::SetInterval(napi_env env, napi_callback_info cbinfo)
 {
-    return Timer::SetTimeoutInner(env, cbinfo, true);
+    void *data = nullptr;
+    napi_get_cb_info(env, cbinfo, 0, nullptr, nullptr, &data);
+    return reinterpret_cast<TimeData*>(data)->func_(env, cbinfo, true);
 }
 
 napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
