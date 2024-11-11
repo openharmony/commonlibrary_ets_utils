@@ -618,8 +618,6 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         }
         return taskGroup->CancelGroupTask(env, task->taskId_);
     }
-
-    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->IsPeriodicTask()) {
         napi_reference_unref(env, task->taskRef_, nullptr);
         task->CancelPendingTask(env);
@@ -630,28 +628,35 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         CancelSeqRunnerTask(env, task);
         return;
     }
-    if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
-        task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
-        task->taskState_ == ExecuteState::ENDING) {
-        std::string errMsg = "taskpool:: task is not executed or has been executed";
-        HILOG_ERROR("%{public}s", errMsg.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
-        return;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
+            task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
+            task->taskState_ == ExecuteState::ENDING) {
+            std::string errMsg = "taskpool:: task is not executed or has been executed";
+            HILOG_ERROR("%{public}s", errMsg.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
+            return;
+        }
     }
-    
     task->ClearDelayedTimers();
     ExecuteState state = task->taskState_.exchange(ExecuteState::CANCELED);
     task->CancelPendingTask(env);
-    if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
-        reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
-        task->DecreaseTaskRefCount();
-        EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
-        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
-        napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
-        napi_reference_unref(env, task->taskRef_, nullptr);
-        delete task->currentTaskInfo_;
-        task->currentTaskInfo_ = nullptr;
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+            reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+            task->DecreaseTaskRefCount();
+            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
+            deferreds.push_back(task->currentTaskInfo_->deferred);
+            napi_reference_unref(env, task->taskRef_, nullptr);
+            delete task->currentTaskInfo_;
+            task->currentTaskInfo_ = nullptr;
+        }
     }
+    std::string error = "taskpool:: task has been canceled";
+    BatchRejectDeferred(env, deferreds, error);
 }
 
 void TaskManager::CancelSeqRunnerTask(napi_env env, Task *task)
@@ -1372,6 +1377,7 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
 void TaskManager::ReleaseCallBackInfo(Task* task)
 {
     HILOG_DEBUG("taskpool:: ReleaseCallBackInfo task:%{public}s", std::to_string(task->taskId_).c_str());
+    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->onEnqueuedCallBackInfo_ != nullptr) {
         delete task->onEnqueuedCallBackInfo_;
         task->onEnqueuedCallBackInfo_ = nullptr;
@@ -1478,6 +1484,17 @@ bool TaskManager::CheckTask(uint64_t taskId)
     return item != tasks_.end();
 }
 
+void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error)
+{
+    if (deferreds.empty()) {
+        return;
+    }
+    napi_value message = ErrorHelper::NewError(env, 0, error.c_str());
+    for (auto deferred : deferreds) {
+        napi_reject_deferred(env, deferred, message);
+    }
+}
+
 // ----------------------------------- TaskGroupManager ----------------------------------------
 TaskGroupManager& TaskGroupManager::GetInstance()
 {
@@ -1507,19 +1524,20 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
 {
     HILOG_DEBUG("taskpool:: ReleaseTaskGroupData group");
     TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
-    std::lock_guard<RECURSIVE_MUTEX> lock(group->taskGroupMutex_);
-    for (uint64_t taskId : group->taskIds_) {
-        Task* task = TaskManager::GetInstance().GetTask(taskId);
-        if (task == nullptr || !task->IsValid()) {
-            continue;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(group->taskGroupMutex_);
+        for (uint64_t taskId : group->taskIds_) {
+            Task* task = TaskManager::GetInstance().GetTask(taskId);
+            if (task == nullptr || !task->IsValid()) {
+                continue;
+            }
+            napi_reference_unref(task->env_, task->taskRef_, nullptr);
         }
-        napi_reference_unref(task->env_, task->taskRef_, nullptr);
-    }
 
-    if (group->currentGroupInfo_ != nullptr) {
-        delete group->currentGroupInfo_;
+        if (group->currentGroupInfo_ != nullptr) {
+            delete group->currentGroupInfo_;
+        }
     }
-
     group->CancelPendingGroup(env);
 }
 
@@ -1536,17 +1554,20 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     if (taskGroup->groupState_ == ExecuteState::CANCELED) {
         return;
     }
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskGroup->taskGroupMutex_);
-    if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::NOT_FOUND ||
-        taskGroup->groupState_ == ExecuteState::FINISHED) {
-        std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
-        HILOG_ERROR("%{public}s", errMsg.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
-        return;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskGroup->taskGroupMutex_);
+        if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::NOT_FOUND ||
+            taskGroup->groupState_ == ExecuteState::FINISHED) {
+            std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
+            HILOG_ERROR("%{public}s", errMsg.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
+            return;
+        }
     }
     ExecuteState groupState = taskGroup->groupState_;
     taskGroup->groupState_ = ExecuteState::CANCELED;
     taskGroup->CancelPendingGroup(env);
+    std::lock_guard<RECURSIVE_MUTEX> lock(taskGroup->taskGroupMutex_);
     if (taskGroup->currentGroupInfo_->finishedTaskNum != taskGroup->taskNum_) {
         for (uint64_t taskId : taskGroup->taskIds_) {
             CancelGroupTask(env, taskId, taskGroup);
@@ -1641,40 +1662,44 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         HILOG_ERROR("seqRunner:: only front task can trigger seqRunner.");
         return false;
     }
+    std::list<napi_deferred> deferreds {};
     {
         std::unique_lock<std::shared_mutex> lock(seqRunner->seqRunnerMutex_);
         if (seqRunner->seqRunnerTasks_.empty()) {
-            HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty.", std::to_string(seqRunnerId).c_str());
             seqRunner->currentTaskId_ = 0;
             return true;
         }
         Task* task = seqRunner->seqRunnerTasks_.front();
         seqRunner->seqRunnerTasks_.pop();
+        bool isEmpty = false;
         while (task->taskState_ == ExecuteState::CANCELED) {
+            deferreds.push_back(task->currentTaskInfo_->deferred);
             DisposeCanceledTask(env, task);
             if (seqRunner->seqRunnerTasks_.empty()) {
                 HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty in cancel loop.",
                             std::to_string(seqRunnerId).c_str());
                 seqRunner->currentTaskId_ = 0;
-                return true;
+                isEmpty = true;
+                break;
             }
             task = seqRunner->seqRunnerTasks_.front();
             seqRunner->seqRunnerTasks_.pop();
         }
-        seqRunner->currentTaskId_ = task->taskId_;
-        task->IncreaseRefCount();
-        task->taskState_ = ExecuteState::WAITING;
-        HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
-                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
-        TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
+        if (!isEmpty) {
+            seqRunner->currentTaskId_ = task->taskId_;
+            task->IncreaseRefCount();
+            task->taskState_ = ExecuteState::WAITING;
+            HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
+                        std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
+            TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
+        }
     }
+    TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, "taskpool:: sequenceRunner task has been canceled");
     return true;
 }
 
 void TaskGroupManager::DisposeCanceledTask(napi_env env, Task* task)
 {
-    napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: sequenceRunner task has been canceled");
-    napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
     reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
     napi_reference_unref(env, task->taskRef_, nullptr);
     delete task->currentTaskInfo_;

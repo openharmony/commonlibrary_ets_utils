@@ -1095,17 +1095,22 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
 
 napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* args)
 {
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    if (UNLIKELY(currentTaskInfo_ == nullptr)) {
-        HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
-        return nullptr;
+    void* serializationFunction = nullptr;
+    void* serializationArguments = nullptr;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        if (UNLIKELY(currentTaskInfo_ == nullptr)) {
+            HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
+            return nullptr;
+        }
+        serializationFunction = currentTaskInfo_->serializationFunction;
+        serializationArguments = currentTaskInfo_->serializationArguments;
     }
-
     napi_status status = napi_ok;
     std::string errMessage = "";
-    status = napi_deserialize(env, currentTaskInfo_->serializationFunction, func);
+    status = napi_deserialize(env, serializationFunction, func);
     if (!IsGroupFunctionTask()) {
-        napi_delete_serialization_data(env, currentTaskInfo_->serializationFunction);
+        napi_delete_serialization_data(env, serializationFunction);
     }
     if (status != napi_ok || func == nullptr) {
         errMessage = "taskpool:: failed to deserialize function.";
@@ -1115,9 +1120,9 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
         return err;
     }
 
-    status = napi_deserialize(env, currentTaskInfo_->serializationArguments, args);
+    status = napi_deserialize(env, serializationArguments, args);
     if (!IsGroupFunctionTask()) {
-        napi_delete_serialization_data(env, currentTaskInfo_->serializationArguments);
+        napi_delete_serialization_data(env, serializationArguments);
     }
     if (status != napi_ok || args == nullptr) {
         errMessage = "taskpool:: failed to deserialize function.";
@@ -1354,24 +1359,28 @@ void Task::InitHandle(napi_env env)
 void Task::ClearDelayedTimers()
 {
     HILOG_DEBUG("taskpool:: task ClearDelayedTimers");
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    TaskMessage *taskMessage = nullptr;
-    for (auto t: delayedTimers_) {
-        if (t == nullptr) {
-            continue;
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        TaskMessage *taskMessage = nullptr;
+        for (auto t: delayedTimers_) {
+            if (t == nullptr) {
+                continue;
+            }
+            taskMessage = static_cast<TaskMessage *>(t->data);
+            deferreds.push_back(taskMessage->deferred);
+            uv_timer_stop(t);
+            uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
+                delete (uv_timer_t*)handle;
+                handle = nullptr;
+            });
+            delete taskMessage;
+            taskMessage = nullptr;
         }
-        taskMessage = static_cast<TaskMessage *>(t->data);
-        napi_value error = ErrorHelper::NewError(env_, 0, "taskpool:: task has been canceled");
-        napi_reject_deferred(env_, taskMessage->deferred, error);
-        uv_timer_stop(t);
-        uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
-            delete (uv_timer_t*)handle;
-            handle = nullptr;
-        });
-        delete taskMessage;
-        taskMessage = nullptr;
+        delayedTimers_.clear();
     }
-    delayedTimers_.clear();
+    std::string error = "taskpool:: task has been canceled";
+    TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
 }
 
 bool Task::VerifyAndPostResult(Priority priority)

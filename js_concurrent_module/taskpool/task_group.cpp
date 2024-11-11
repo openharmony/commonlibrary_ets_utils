@@ -174,23 +174,27 @@ void TaskGroup::NotifyGroupTask(napi_env env)
 void TaskGroup::CancelPendingGroup(napi_env env)
 {
     HILOG_DEBUG("taskpool:: CancelPendingGroup");
-    if (pendingGroupInfos_.empty()) {
-        return;
-    }
-    napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
-    auto pendingIter = pendingGroupInfos_.begin();
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    for (; pendingIter != pendingGroupInfos_.end(); ++pendingIter) {
-        for (size_t i = 0; i < taskIds_.size(); i++) {
-            engine->DecreaseSubEnvCounter();
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskGroupMutex_);
+        if (pendingGroupInfos_.empty()) {
+            return;
         }
-        GroupInfo* info = *pendingIter;
-        napi_reject_deferred(env, info->deferred, error);
-        napi_reference_unref(env, groupRef_, nullptr);
-        delete info;
+        auto pendingIter = pendingGroupInfos_.begin();
+        auto engine = reinterpret_cast<NativeEngine*>(env);
+        for (; pendingIter != pendingGroupInfos_.end(); ++pendingIter) {
+            for (size_t i = 0; i < taskIds_.size(); i++) {
+                engine->DecreaseSubEnvCounter();
+            }
+            GroupInfo* info = *pendingIter;
+            deferreds.push_back(info->deferred);
+            napi_reference_unref(env, groupRef_, nullptr);
+            delete info;
+        }
+        pendingIter = pendingGroupInfos_.begin();
+        pendingGroupInfos_.erase(pendingIter, pendingGroupInfos_.end());
     }
-    pendingIter = pendingGroupInfos_.begin();
-    pendingGroupInfos_.erase(pendingIter, pendingGroupInfos_.end());
+    TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, "taskpool:: taskGroup has been canceled");
 }
 
 void TaskGroup::CancelGroupTask(napi_env env, uint64_t taskId)
