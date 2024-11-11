@@ -336,7 +336,8 @@ namespace OHOS::xml {
         bool DealLength(size_t minimum);
         void Replace(std::string &strTemp, std::string strSrc, std::string strDes) const;
         size_t GetNSCount(size_t iTemp);
-        void Parse(napi_env env, napi_value thisVar);
+        std::string DealCdata(std::string data);
+        void Parse(napi_env env, napi_value thisVar, bool deprecated);
         std::string GetNamespace(const std::string &prefix);
         napi_value DealOptionInfo(napi_env env, napi_value napiObj);
         TagEnum ParseTagType(bool inDeclaration);

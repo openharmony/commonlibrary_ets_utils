@@ -16,6 +16,7 @@
 interface NativeXmlPullParser {
   new(value: object, strEncoding?: string): NativeXmlPullParser;
   parse(options: object): void;
+  parseXml(options: object): boolean;
   XmlPullParserError(): string;
 }
 
@@ -246,6 +247,16 @@ class XmlPullParser {
     this.xmlPullParserClass.parse(options);
     let errStr: string = this.xmlPullParserClass.XmlPullParserError();
     if (errStr.length !== 0) {
+      throw new BusinessError(errStr);
+    }
+  }
+
+  parseXml(options: object): void {
+    if (typeof options !== 'object') {
+      throw new BusinessError(`Parameter error.The type of ${options} must be object`);
+    }
+    if (this.xmlPullParserClass.parseXml(options)) {
+      let errStr: string = this.xmlPullParserClass.XmlPullParserError();
       throw new BusinessError(errStr);
     }
   }

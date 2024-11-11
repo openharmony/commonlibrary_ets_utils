@@ -553,8 +553,39 @@ namespace OHOS::xml {
         return true;
     }
 
-    void XmlPullParser::Parse(napi_env env, napi_value thisVar)
+    std::string XmlPullParser::DealCdata(std::string data)
     {
+        std::string_view cDataBegin = "<![CDATA[";
+        std::string_view cDataEnd = "]]>";
+        size_t foundPosBegin = data.find(cDataBegin);
+        size_t foundPosEnd = data.find(cDataEnd);
+        size_t count = 0;
+        while (foundPosBegin != std::string::npos) {
+            std::string temp = data.substr(foundPosBegin, foundPosEnd - foundPosBegin + cDataEnd.length());
+            std::string resStr = "";
+            for (char c : temp) {
+                if (c == '\r') {
+                    resStr += "\\r";
+                    count++;
+                } else if (c == '\n') {
+                    resStr += "\\n";
+                    count++;
+                } else {
+                    resStr += c;
+                }
+            }
+            data.replace(foundPosBegin, temp.length(), resStr);
+            foundPosBegin = data.find(cDataBegin, foundPosBegin + 1);
+            foundPosEnd = data.find(cDataEnd, foundPosEnd + count + 1);
+        }
+        return data;
+    }
+
+    void XmlPullParser::Parse(napi_env env, napi_value thisVar, bool deprecated)
+    {
+        if (deprecated) {
+            strXml_ = DealCdata(strXml_);
+        }
         if (tagFunc_ || attrFunc_ || tokenFunc_) {
             while (type != TagEnum::END_DOCUMENT) {
                 if (ParseOneTag() == TagEnum::ERROR) {
