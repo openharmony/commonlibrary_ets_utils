@@ -83,8 +83,8 @@ bool Timer::RegisterTime(napi_env env)
     napi_add_env_cleanup_hook(env, CleanUpHook, data);
 
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_FUNCTION_WITH_DATA("setTimeout", SetTimeout, data),
-        DECLARE_NAPI_FUNCTION_WITH_DATA("setInterval", SetInterval, data),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION_WITH_DATA("setTimeout", SetTimeout, data),
+        DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION_WITH_DATA("setInterval", SetInterval, data),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearTimeout", ClearTimer),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("clearInterval", ClearTimer)
     };
