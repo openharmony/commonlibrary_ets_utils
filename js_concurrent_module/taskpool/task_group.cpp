@@ -58,7 +58,14 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
     };
     napi_set_named_property(env, thisVar, NAME, name);
     napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    napi_wrap(env, thisVar, group, TaskGroupDestructor, nullptr, nullptr);
+    napi_status status = napi_wrap(env, thisVar, group, TaskGroupDestructor, nullptr, nullptr);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool::TaskGroupConstructor napi_wrap return value is %{public}d", status);
+        TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
+        delete group;
+        group = nullptr;
+        return nullptr;
+    }
     napi_create_reference(env, thisVar, 0, &group->groupRef_);
     return thisVar;
 }
@@ -121,8 +128,14 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
         task->groupId_ = groupId;
+        napi_status status = napi_wrap(env, napiTask, task, Task::TaskDestructor, nullptr, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("taskpool::AddTask napi_wrap return value is %{public}d", status);
+            delete task;
+            task = nullptr;
+            return nullptr;
+        }
         TaskManager::GetInstance().StoreTask(task->taskId_, task);
-        napi_wrap(env, napiTask, task, Task::TaskDestructor, nullptr, nullptr);
         napi_create_reference(env, napiTask, 1, &task->taskRef_);
         TaskGroupManager::GetInstance().AddTask(groupId, task->taskRef_, task->taskId_);
         return nullptr;
