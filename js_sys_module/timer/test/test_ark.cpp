@@ -14,6 +14,7 @@
  */
 
 #include "test.h"
+#include "../sys_timer.h"
 #include "ark_native_engine.h"
 #include "tools/log.h"
 
@@ -47,6 +48,8 @@ int main(int argc, char **argv)
     }
 
     g_nativeEngine = new ArkNativeEngine(vm, nullptr);
+    napi_env env = (napi_env)g_nativeEngine;
+    OHOS::JsSysModule::Timer::RegisterTime(env);
 
     int ret = testing::UnitTest::GetInstance()->Run();
 
