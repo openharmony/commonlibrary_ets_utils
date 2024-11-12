@@ -296,7 +296,12 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         return nullptr;
     }
     napi_add_env_cleanup_hook(env, HostEnvCleanCallback, worker);
-    napi_wrap(env, thisVar, worker, WorkerDestructor, nullptr, &worker->workerRef_);
+    napi_status status = napi_wrap(env, thisVar, worker, WorkerDestructor, nullptr, &worker->workerRef_);
+    if (status != napi_ok) {
+        HILOG_ERROR("worker::Constructor napi_wrap return value is %{public}d", status);
+        WorkerDestructor(env, worker, nullptr);
+        return nullptr;
+    }
     worker->StartExecuteInThread(env, script);
     return thisVar;
 }
