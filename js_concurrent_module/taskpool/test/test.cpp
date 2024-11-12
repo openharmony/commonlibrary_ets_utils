@@ -621,7 +621,7 @@ void NativeEngineTest::CheckTask(napi_env env)
     groupManager.CancelGroup(env, groupId);
 
     GroupInfo* groupInfo = new GroupInfo();
-    groupInfo->finishedTask = FINSHED_TASK_;
+    groupInfo->finishedTaskNum = FINSHED_TASK_;
     group->currentGroupInfo_ = groupInfo;
     group->groupState_ = ExecuteState::NOT_FOUND;
     groupManager.CancelGroup(env, groupId);
@@ -649,6 +649,7 @@ void NativeEngineTest::CancelGroupTask(napi_env env)
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     TaskManager& taskManager = TaskManager::GetInstance();
     TaskGroup* group = new TaskGroup();
+    group->currentGroupInfo_ = new GroupInfo();
     Task* task = new Task();
     task->taskId_ = reinterpret_cast<uint64_t>(task);
     taskManager.StoreTask(task->taskId_, task);

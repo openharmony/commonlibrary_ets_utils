@@ -604,6 +604,22 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         HILOG_DEBUG("taskpool:: task has been canceled");
         return;
     }
+    if (task->IsGroupCommonTask()) {
+        // when task is a group common task, still check the state
+        if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND ||
+            task->taskState_ == ExecuteState::FINISHED || task->taskState_ == ExecuteState::ENDING) {
+            std::string errMsg = "taskpool:: task is not executed or has been executed";
+            HILOG_ERROR("%{public}s", errMsg.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
+            return;
+        }
+        TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(task->groupId_);
+        if (taskGroup == nullptr) {
+            return;
+        }
+        return taskGroup->CancelGroupTask(env, task->taskId_);
+    }
+
     std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->IsPeriodicTask()) {
         napi_reference_unref(env, task->taskRef_, nullptr);
@@ -1543,9 +1559,14 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     ExecuteState groupState = taskGroup->groupState_;
     taskGroup->groupState_ = ExecuteState::CANCELED;
     taskGroup->CancelPendingGroup(env);
-    if (taskGroup->currentGroupInfo_->finishedTask != taskGroup->taskNum_) {
+    if (taskGroup->currentGroupInfo_->finishedTaskNum != taskGroup->taskNum_) {
         for (uint64_t taskId : taskGroup->taskIds_) {
             CancelGroupTask(env, taskId, taskGroup);
+        }
+        if (taskGroup->currentGroupInfo_->finishedTaskNum == taskGroup->taskNum_) {
+            napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
+            taskGroup->RejectResult(env, error);
+            return;
         }
     }
     if (groupState == ExecuteState::WAITING && taskGroup->currentGroupInfo_ != nullptr) {
@@ -1554,11 +1575,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
             engine->DecreaseSubEnvCounter();
         }
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
-        napi_reject_deferred(env, taskGroup->currentGroupInfo_->deferred, error);
-        napi_delete_reference(env, taskGroup->currentGroupInfo_->resArr);
-        napi_reference_unref(env, taskGroup->groupRef_, nullptr);
-        delete taskGroup->currentGroupInfo_;
-        taskGroup->currentGroupInfo_ = nullptr;
+        taskGroup->RejectResult(env, error);
     }
 }
 
@@ -1577,6 +1594,9 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
         TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
+        if (group->currentGroupInfo_ != nullptr) {
+            group->currentGroupInfo_->finishedTaskNum++;
+        }
     }
     task->taskState_ = ExecuteState::CANCELED;
 }
