@@ -559,7 +559,10 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         napi_value res = nullptr;
         napi_get_element(env, resArr, groupInfo->GetFailedIndex(), &res);
         napi_reject_deferred(env, groupInfo->deferred, res);
-        if (task->onExecutionFailedCallBackInfo_ != nullptr) {
+        auto iter = taskGroup->taskIds_.begin();
+        std::advance(iter, groupInfo->GetFailedIndex());
+        auto task = iter != taskGroup->taskIds_.end() ? TaskManager::GetInstance().GetTask(*iter) : nullptr;
+        if (task != nullptr && task->onExecutionFailedCallBackInfo_ != nullptr) {
             task->onExecutionFailedCallBackInfo_->taskError_ = res;
             task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_);
         }
