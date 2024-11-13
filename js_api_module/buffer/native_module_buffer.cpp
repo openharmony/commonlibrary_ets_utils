@@ -45,6 +45,7 @@ void FinalizeBufferCallback(napi_env env, void *finalizeData, void *finalizeHint
     if (finalizeData != nullptr) {
         auto obj = reinterpret_cast<Buffer *>(finalizeData);
         delete obj;
+        obj = nullptr;
     }
 }
 
@@ -53,6 +54,7 @@ void FinalizeBlobCallback(napi_env env, void *finalizeData, void *finalizeHint)
     if (finalizeData != nullptr) {
         auto obj = reinterpret_cast<Blob *>(finalizeData);
         delete obj;
+        obj = nullptr;
     }
 }
 
