@@ -4454,3 +4454,99 @@ HWTEST_F(NativeEngineTest, textIsInt16ArrayTest001, testing::ext::TestSize.Level
     napi_get_value_bool(env, result, &res);
     ASSERT_TRUE(res);
 }
+
+/**
+ * @tc.name: textIsArrayBufferViewTest006
+ * @tc.desc: Check if the input value is of the built-in ArrayBufferView auxiliary type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArrayBufferViewTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 20; // number 20
+    napi_create_arraybuffer(env, arrayBufferSize * sizeof(uint64_t), &arrayBufferPtr, &arrayBuffer);
+    napi_value dest = nullptr;
+    napi_create_typedarray(env, napi_biguint64_array, arrayBufferSize, arrayBuffer, 0, &dest);
+    napi_value result = type.IsArrayBufferView(env, dest);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsArgumentsObjectTest002
+ * @tc.desc: Check if the input value is an arguments object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsArgumentsObjectTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value dest = nullptr;
+    napi_create_object(env, &dest);
+    napi_value result = type.IsArgumentsObject(env, dest);
+    bool res = true;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+static napi_value SayHello(napi_env env, napi_callback_info info)
+{
+    napi_value ret;
+    NAPI_CALL(env, napi_create_int32(env, 1, &ret));
+    return ret;
+}
+
+/**
+ * @tc.name: textIsAsyncFunctionTest002
+ * @tc.desc: Check if the input value is an asynchronous function type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsAsyncFunctionTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value funcValue = nullptr;
+    napi_create_function(env, nullptr, NAPI_AUTO_LENGTH, SayHello, nullptr, &funcValue);
+    bool res = true;
+    napi_value result = type.IsAsyncFunction(env, funcValue);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBooleanObjectTest002
+ * @tc.desc: Check if the input value is a Boolean object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBooleanObjectTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value dest = nullptr;
+    napi_create_object(env, &dest);
+    bool res = true;
+    napi_value result = type.IsBooleanObject(env, dest);
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsGeneratorFunctionTest002
+ * @tc.desc: Check if the input value is of the generator function type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsGeneratorFunctionTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value funcValue = nullptr;
+    napi_create_function(env, nullptr, NAPI_AUTO_LENGTH, SayHello, nullptr, &funcValue);
+    napi_value result = type.IsGeneratorFunction(env, funcValue);
+    bool res = true;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
