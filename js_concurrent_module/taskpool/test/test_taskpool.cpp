@@ -92,14 +92,18 @@ napi_value CreateTaskObject(napi_env env, TaskType taskType = TaskType::TASK,
         TaskManager &taskManager = TaskManager::GetInstance();
         taskManager.StoreTask(task->taskId_, task);
     }
-    napi_wrap(
+    if (napi_wrap(
         env, thisValue, task,
         [](napi_env environment, void* data, void* hint) {
             auto obj = reinterpret_cast<Task*>(data);
             if (obj != nullptr) {
                 delete obj;
             }
-        }, nullptr, nullptr);
+        }, nullptr, nullptr) != napi_ok) {
+        delete task;
+        task = nullptr;
+        return nullptr;
+    }
     return thisValue;
 }
 

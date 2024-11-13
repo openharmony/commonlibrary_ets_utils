@@ -42,7 +42,11 @@ void SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar
                seqRunner->seqName_.c_str(), std::to_string(seqRunnerId).c_str());
 
     seqRunner->seqRunnerId_ = seqRunnerId;
-    napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
+    napi_status status = napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool::SeqRunnerConstructorInner napi_wrap return value is %{public}d", status);
+        SequenceRunnerDestructor(env, seqRunner, nullptr);
+    }
 }
 
 napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo)
