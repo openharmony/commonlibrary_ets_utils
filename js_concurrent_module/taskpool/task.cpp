@@ -348,6 +348,10 @@ napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
     }
     for (size_t i = 0; i < arrayLength; i++) {
         napi_value cloneVal = NapiHelper::GetElement(env, args[0], i);
+        if (NapiHelper::IsBitVector(env, cloneVal)) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "BitVector not support setCloneList.");
+            return nullptr;
+        }
         if (!NapiHelper::IsArrayBuffer(env, cloneVal) && !NapiHelper::IsSendable(env, cloneVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
                 "the type of setCloneList elements in array must be arraybuffer or sendable.");
