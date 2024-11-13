@@ -83,6 +83,19 @@ bool NapiHelper::IsArrayBuffer(napi_env env, napi_value value)
     return result;
 }
 
+bool NapiHelper::IsBitVector(napi_env env, napi_value value)
+{
+    bool result = false;
+    if (value == nullptr) {
+        return false;
+    }
+    if (napi_is_bitvector(env, value, &result) != napi_ok) {
+        return false;
+    }
+
+    return result;
+}
+
 bool NapiHelper::IsNumber(napi_env env, napi_value value)
 {
     return IsTypeForNapiValue(env, value, napi_number);
