@@ -41,6 +41,7 @@ public:
         }
         if (isArray) {
             delete[] value;
+            value = nullptr;
         } else {
             delete value;
             value = nullptr;
