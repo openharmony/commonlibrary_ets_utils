@@ -23,10 +23,29 @@
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 struct GroupInfo {
-    uint32_t finishedTask {};
-    napi_ref resArr = nullptr;
+public:
+    int32_t GetFailedIndex()
+    {
+        return failedIndex;
+    }
+
+    void SetFailedIndex(int32_t index)
+    {
+        failedIndex = index;
+    }
+    
+    bool HasException()
+    {
+        return failedIndex != -1;
+    }
+
+    uint32_t finishedTaskNum {};
+    napi_ref resArr {nullptr};
     Priority priority {Priority::DEFAULT};
-    napi_deferred deferred = nullptr;
+    napi_deferred deferred {nullptr};
+
+private:
+    int32_t failedIndex {-1}; // -1: the initial value means no exception
 };
 
 class TaskGroup {
@@ -40,6 +59,8 @@ public:
     uint32_t GetTaskIndex(uint32_t taskId);
     void NotifyGroupTask(napi_env env);
     void CancelPendingGroup(napi_env env);
+    void CancelGroupTask(napi_env env, uint64_t taskId);
+    void RejectResult(napi_env env, napi_value res);
 
 private:
     TaskGroup(const TaskGroup &) = delete;

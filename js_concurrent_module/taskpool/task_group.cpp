@@ -197,4 +197,22 @@ void TaskGroup::CancelPendingGroup(napi_env env)
     pendingIter = pendingGroupInfos_.begin();
     pendingGroupInfos_.erase(pendingIter, pendingGroupInfos_.end());
 }
+
+void TaskGroup::CancelGroupTask(napi_env env, uint64_t taskId)
+{
+    TaskGroupManager::GetInstance().CancelGroupTask(env, taskId, this);
+    if (currentGroupInfo_ != nullptr && currentGroupInfo_->finishedTaskNum == taskNum_) {
+        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
+        RejectResult(env, error);
+    }
+}
+
+void TaskGroup::RejectResult(napi_env env, napi_value res)
+{
+    napi_reject_deferred(env, currentGroupInfo_->deferred, res);
+    napi_delete_reference(env, currentGroupInfo_->resArr);
+    napi_reference_unref(env, groupRef_, nullptr);
+    delete currentGroupInfo_;
+    currentGroupInfo_ = nullptr;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
