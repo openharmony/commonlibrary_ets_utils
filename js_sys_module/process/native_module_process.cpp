@@ -641,15 +641,19 @@ namespace OHOS::JsSysModule::Process {
         void *data = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
         auto objectInfo = new ProcessManager();
-        napi_wrap(
-            env, thisVar, objectInfo,
+        napi_status status = napi_wrap(env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
                 auto objInfo = reinterpret_cast<ProcessManager*>(data);
                 if (objInfo != nullptr) {
                     delete objInfo;
+                    objInfo = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && objectInfo != nullptr) {
+            HILOG_ERROR("ProcessManager:: napi_wrap failed");
+            delete objectInfo;
+            objectInfo = nullptr;
+        }
         return thisVar;
     }
 

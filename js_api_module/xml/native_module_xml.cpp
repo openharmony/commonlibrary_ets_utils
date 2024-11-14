@@ -74,15 +74,19 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
                 }
             }
         }
-        napi_wrap(
-            env, thisVar, object,
+        napi_status status = napi_wrap(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<XmlSerializer*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            HILOG_ERROR("XmlPullParserConstructor:: napi_wrap failed");
+            delete object;
+            object = nullptr;
+        }
         return thisVar;
     }
 
@@ -134,15 +138,19 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
                 }
             }
         }
-        napi_wrap(
-            env, thisVar, object,
+        napi_status status = napi_wrap(env, thisVar, object,
             [](napi_env env, void *data, void *hint) {
                 auto obj = reinterpret_cast<XmlPullParser*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            HILOG_ERROR("XmlPullParserConstructor:: napi_wrap failed");
+            delete object;
+            object = nullptr;
+        }
         return thisVar;
     }
 

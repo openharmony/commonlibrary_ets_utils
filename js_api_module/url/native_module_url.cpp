@@ -130,16 +130,18 @@ namespace OHOS::Url {
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             UrlStructor(env, info, object);
         }
-        napi_wrap(
-            env, thisVar, object,
+        napi_status status = napi_wrap(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<URL*>(data);
                 if (obj != nullptr) {
                     delete obj;
                     obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            delete object;
+            object = nullptr;
+        }
         return thisVar;
     }
 
@@ -513,16 +515,19 @@ namespace OHOS::Url {
             HILOG_ERROR("SeachParamsConstructor:: memory allocation failed, object is nullptr");
             return nullptr;
         }
-        napi_wrap(
-            env, thisVar, object,
+        napi_status status = napi_wrap(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<URLSearchParams*>(data);
                 if (obj != nullptr) {
                     delete obj;
                     obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            HILOG_ERROR("SeachParamsConstructor:: napi_wrap failed");
+            delete object;
+            object = nullptr;
+        }
         return thisVar;
     }
 

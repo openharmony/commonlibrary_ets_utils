@@ -33,15 +33,19 @@ namespace OHOS::Xml {
             HILOG_ERROR("ConvertXmlConstructor:: memory allocation failed, objectInfo is nullptr");
             return nullptr;
         }
-        napi_wrap(
-            env, thisVar, objectInfo,
+        napi_status status = napi_wrap(env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<ConvertXml*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("ConvertXmlConstructor:: napi_wrap failed");
+            delete objectInfo;
+            objectInfo = nullptr;
+        }
         return thisVar;
     }
 
