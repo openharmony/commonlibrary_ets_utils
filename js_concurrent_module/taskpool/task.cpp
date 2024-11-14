@@ -93,6 +93,9 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
 napi_value Task::LongTaskConstructor(napi_env env, napi_callback_info cbinfo)
 {
     auto thisVar = TaskConstructor(env, cbinfo);
+    if (thisVar == nullptr) {
+        return nullptr;
+    }
     Task* task;
     napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
     task->isLongTask_ = true;
@@ -418,6 +421,10 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     auto task = TaskManager::GetInstance().GetTask(taskId);
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: OnReceiveData's task is nullptr");
+        return nullptr;
+    }
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!task->IsMainThreadTask()) {
