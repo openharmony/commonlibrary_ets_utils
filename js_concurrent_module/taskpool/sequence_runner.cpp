@@ -27,7 +27,7 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 static constexpr char EXECUTE_STR[] = "execute";
 static constexpr char SEQ_RUNNER_ID_STR[] = "seqRunnerId";
 
-void SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar, SequenceRunner *seqRunner)
+bool SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar, SequenceRunner *seqRunner)
 {
     // update seqRunner.seqRunnerId
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
@@ -46,7 +46,9 @@ void SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar
     if (status != napi_ok) {
         HILOG_ERROR("taskpool::SeqRunnerConstructorInner napi_wrap return value is %{public}d", status);
         SequenceRunnerDestructor(env, seqRunner, nullptr);
+        return false;
     }
+    return true;
 }
 
 napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo)
@@ -100,7 +102,10 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         napi_create_reference(env, thisVar, 0, &seqRunner->seqRunnerRef_);
     }
 
-    SeqRunnerConstructorInner(env, thisVar, seqRunner);
+    if (!SeqRunnerConstructorInner(env, thisVar, seqRunner)) {
+        HILOG_ERROR("taskpool:: SeqRunnerConstructorInner failed");
+        return nullptr;
+    }
     return thisVar;
 }
 

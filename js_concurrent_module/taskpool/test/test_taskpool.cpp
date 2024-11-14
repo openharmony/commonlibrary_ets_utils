@@ -100,6 +100,10 @@ napi_value CreateTaskObject(napi_env env, TaskType taskType = TaskType::TASK,
                 delete obj;
             }
         }, nullptr, nullptr) != napi_ok) {
+        if (args != nullptr) {
+            delete[] args;
+            args = nullptr;
+        }
         delete task;
         task = nullptr;
         return nullptr;
