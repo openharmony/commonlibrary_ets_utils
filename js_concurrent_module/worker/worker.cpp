@@ -59,7 +59,9 @@ std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::GetMainThreadHandler()
 
 Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
-{}
+{
+    workerWrapper_ = std::make_shared<WorkerWrapper>(this);
+}
 
 napi_value Worker::InitWorker(napi_env env, napi_value exports)
 {
@@ -302,7 +304,11 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
 
 void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
 {
-    Worker* worker = reinterpret_cast<Worker*>(data);
+    Worker* worker = static_cast<Worker*>(data);
+    if (worker == nullptr) {
+        HILOG_WARN("worker:: worker is null.");
+        return;
+    }
     napi_remove_env_cleanup_hook(env, HostEnvCleanCallback, worker);
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->isHostEnvExited_) {
@@ -328,7 +334,7 @@ void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
 
 void Worker::HostEnvCleanCallback(void *data)
 {
-    Worker* worker = reinterpret_cast<Worker*>(data);
+    Worker* worker = static_cast<Worker*>(data);
     if (worker == nullptr) {
         HILOG_INFO("worker:: worker is nullptr when host env exit.");
         return;
@@ -1274,6 +1280,7 @@ void Worker::ExecuteInThread(const void* data)
         std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
         if (worker->HostIsStop() || worker->isHostEnvExited_) {
             HILOG_ERROR("worker:: host thread is stop");
+            worker->EraseWorker();
             CloseHelp::DeletePointer(worker, false);
             return;
         }
@@ -1285,6 +1292,7 @@ void Worker::ExecuteInThread(const void* data)
         }
         if (workerEnv == nullptr) {
             HILOG_ERROR("worker:: Worker create runtime error");
+            worker->EraseWorker();
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
             return;
         }
@@ -1303,6 +1311,7 @@ void Worker::ExecuteInThread(const void* data)
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
         HILOG_ERROR("worker:: Worker loop is nullptr");
+        worker->EraseWorker();
         return;
     }
 
@@ -1334,6 +1343,7 @@ void Worker::ExecuteInThread(const void* data)
     } else {
         worker->PublishWorkerOverSignal();
     }
+    worker->EraseWorker();
 }
 
 bool Worker::PrepareForWorkerInstance()
@@ -1677,7 +1687,6 @@ void Worker::CloseHostCallback()
         // handle listeners
         HandleEventListeners(hostEnv_, obj, 1, argv, "exit");
     }
-    EraseWorker();
     CloseHelp::DeletePointer(this, false);
 }
 
@@ -1858,11 +1867,15 @@ void Worker::PublishWorkerOverSignal()
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 void Worker::PostWorkerOverTask()
 {
-    auto hostOnOverSignalTask = [this]() {
-        if (IsValidWorker(this)) {
-            HILOG_INFO("worker:: host thread receive terminate signal.");
+    std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
+    auto hostOnOverSignalTask = [weak]() {
+        auto strong = weak.lock();
+        if (strong) {
+            HILOG_INFO("worker:: host receive terminate.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
-            this->HostOnMessageInner();
+            strong->GetWorker()->HostOnMessageInner();
+        } else {
+            HILOG_INFO("worker:: worker is null.");
         }
     };
     GetMainThreadHandler()->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
@@ -1873,7 +1886,7 @@ void Worker::PostWorkerErrorTask()
 {
     auto hostOnErrorTask = [this]() {
         if (IsValidWorker(this)) {
-            HILOG_INFO("worker:: host thread receive error message.");
+            HILOG_INFO("worker:: host receive error.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnErrorMessage");
             this->HostOnErrorInner();
             this->TerminateInner();
@@ -2237,9 +2250,6 @@ void Worker::ReleaseWorkerThreadContent()
                 }
                 hostEngine->DecreaseSubEnvCounter();
             }
-        }
-        if (isHostEnvExited_) {
-            EraseWorker();
         }
     }
     // 1. delete worker listener
