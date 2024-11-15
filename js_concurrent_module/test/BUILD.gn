@@ -23,8 +23,6 @@ ohos_unittest("test_concurrent_unittest") {
 
   include_dirs = [
     "${ets_util_path}/js_concurrent_module/common/helper",
-    "//third_party/bounds_checking_function/include",
-    "//third_party/googletest/include",
     "//third_party/node/src",
     ets_util_path,
   ]
@@ -36,31 +34,19 @@ ohos_unittest("test_concurrent_unittest") {
     "test_concurrent.cpp",
   ]
 
-  deps = [
-    "${ets_util_path}/js_concurrent_module/worker:worker_static",
-    "//third_party/googletest:gtest",
-    "//third_party/googletest:gtest_main",
-    "//third_party/icu/icu4c:static_icuuc",
-    "//third_party/libuv:uv",
-  ]
+  deps = [ "${ets_util_path}/js_concurrent_module/worker:worker_static" ]
 
   external_deps = [
     "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
     "ets_runtime:libark_jsruntime",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "icu:shared_icuuc",
+    "libuv:uv",
     "napi:ace_napi",
   ]
-
-  if (is_standard_system) {
-    external_deps += [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  } else {
-    external_deps += [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  }
 }
 
 group("unittest") {
