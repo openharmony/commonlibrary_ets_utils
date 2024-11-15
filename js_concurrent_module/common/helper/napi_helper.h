@@ -27,6 +27,7 @@ public:
     static bool IsTypeForNapiValue(napi_env env, napi_value param, napi_valuetype expectType);
     static bool IsNotUndefined(napi_env env, napi_value value);
     static bool IsArray(napi_env env, napi_value value);
+    static bool IsBitVector(napi_env env, napi_value value);
     static bool IsFunction(napi_env env, napi_value object);
     static bool IsArrayBuffer(napi_env env, napi_value value);
     static bool IsNumber(napi_env env, napi_value value);
