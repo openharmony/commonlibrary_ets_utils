@@ -82,6 +82,7 @@ napi_value CreateTaskObject(napi_env env, TaskType taskType = TaskType::TASK,
     napi_value func = nullptr;
     napi_create_string_utf8(env, "testFunc", NAPI_AUTO_LENGTH, &func);
     napi_value* args = new napi_value[1];
+    ObjectScope<napi_value> objScope(args, true);
     napi_value taskName = NapiHelper::CreateEmptyString(env);
     Task* task = Task::GenerateTask(env, thisValue, func, taskName, args, argc);
     task->UpdateTaskType(taskType);
@@ -92,14 +93,18 @@ napi_value CreateTaskObject(napi_env env, TaskType taskType = TaskType::TASK,
         TaskManager &taskManager = TaskManager::GetInstance();
         taskManager.StoreTask(task->taskId_, task);
     }
-    napi_wrap(
+    if (napi_wrap(
         env, thisValue, task,
         [](napi_env environment, void* data, void* hint) {
             auto obj = reinterpret_cast<Task*>(data);
             if (obj != nullptr) {
                 delete obj;
             }
-        }, nullptr, nullptr);
+        }, nullptr, nullptr) != napi_ok) {
+        delete task;
+        task = nullptr;
+        return nullptr;
+    }
     return thisValue;
 }
 
@@ -368,6 +373,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest021, testing::ext::TestSize.Level0)
     uint32_t number = 10;
     napi_value value = NapiHelper::CreateUint32(env, number);
     napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> objScope(args, true);
     napi_value taskName = NapiHelper::CreateEmptyString(env);
     Task::GenerateTask(env, value, func, taskName, args, argc);
     ASSERT_TRUE(args != nullptr);
@@ -2179,6 +2185,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest135, testing::ext::TestSize.Level0)
     napi_value func = nullptr;
     napi_create_string_utf8(env, "testLongFunc", NAPI_AUTO_LENGTH, &func);
     napi_value* args = new napi_value[1];
+    ObjectScope<napi_value> objScope(args, true);
     napi_value taskName = NapiHelper::CreateEmptyString(env);
     Task* task = Task::GenerateTask(env, thisValue, func, taskName, args, argc);
     task->isLongTask_ = true;
@@ -2363,6 +2370,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest140, testing::ext::TestSize.Level0)
     napi_value funcValue = nullptr;
     napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
     napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> objScope(args, true);
     napi_value taskName = NapiHelper::CreateEmptyString(env);
     napi_value obj = NapiHelper::CreateObject(env);
     Task* task = Task::GenerateTask(env, obj, funcValue, taskName, args, argc);
