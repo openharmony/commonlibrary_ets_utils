@@ -281,10 +281,11 @@ static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *b
 {
     napi_status status = napi_wrap(env, thisVar, buffer, FinalizeBufferCallback, nullptr, nullptr);
     if (status != napi_ok) {
+        HILOG_ERROR("Buffer:: can not wrap buffer");
         if (buffer != nullptr) {
             delete buffer;
+            buffer = nullptr;
         }
-        HILOG_ERROR("can not wrap buffer");
         return nullptr;
     }
     return thisVar;

@@ -29,15 +29,19 @@ namespace OHOS::Xml {
         void *data = nullptr;
         napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
         auto objectInfo = new ConvertXml(env);
-        napi_wrap(
-            env, thisVar, objectInfo,
+        napi_status status = napi_wrap(env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<ConvertXml*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && objectInfo != nullptr) {
+            HILOG_ERROR("ConvertXmlConstructor:: napi_wrap failed");
+            delete objectInfo;
+            objectInfo = nullptr;
+        }
         return thisVar;
     }
 
