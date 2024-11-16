@@ -605,6 +605,29 @@ namespace OHOS::Util {
         return false;
     }
 
+    static napi_value InitTextEncoder(napi_env env, napi_value thisVar, std::string encoding, std::string orgEncoding)
+    {
+        auto object = new (std::nothrow) TextEncoder(encoding);
+        if (object == nullptr) {
+            HILOG_ERROR("TextEncoder:: memory allocation failed, object is nullptr");
+            return nullptr;
+        }
+        object->SetOrgEncoding(orgEncoding);
+        napi_status status = napi_wrap(env, thisVar, object,
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<TextEncoder*>(data);
+                if (obj != nullptr) {
+                    delete obj;
+                    obj = nullptr;
+                }
+            }, nullptr, nullptr);
+        if (status != napi_ok) {
+            delete object;
+            object = nullptr;
+        }
+        return thisVar;
+    }
+
     // Encoder
     static napi_value TextEncoderConstructor(napi_env env, napi_callback_info info)
     {
@@ -641,22 +664,7 @@ namespace OHOS::Util {
                 encoding = buffer;
             }
         }
-        auto object = new (std::nothrow) TextEncoder(encoding);
-        if (object == nullptr) {
-            HILOG_ERROR("TextEncoder:: object is nullptr");
-            return nullptr;
-        }
-        object->SetOrgEncoding(orgEncoding);
-        napi_wrap(
-            env, thisVar, object,
-            [](napi_env environment, void *data, void *hint) {
-                auto obj = reinterpret_cast<TextEncoder*>(data);
-                if (obj != nullptr) {
-                    delete obj;
-                }
-            },
-            nullptr, nullptr);
-        return thisVar;
+        return InitTextEncoder(env, thisVar, encoding, orgEncoding);
     }
 
     static napi_value GetEncoding(napi_env env, napi_callback_info info)
@@ -861,15 +869,19 @@ namespace OHOS::Util {
         void *data = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
         auto objectInfo = new Base64();
-        napi_wrap(
-            env, thisVar, objectInfo,
+        napi_status status = napi_wrap(env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
                 auto objInfo = reinterpret_cast<Base64*>(data);
                 if (objInfo != nullptr) {
                     delete objInfo;
+                    objInfo = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && objectInfo != nullptr) {
+            HILOG_ERROR("Base64Constructor:: napi_wrap failed");
+            delete objectInfo;
+            objectInfo = nullptr;
+        }
         return thisVar;
     }
 
@@ -1117,15 +1129,18 @@ namespace OHOS::Util {
         void* data = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
         auto objectInfo = new Types();
-        napi_wrap(
-            env, thisVar, objectInfo,
+        napi_status status = napi_wrap(env, thisVar, objectInfo,
             [](napi_env environment, void* data, void* hint) {
                 auto objectInformation = reinterpret_cast<Types*>(data);
                 if (objectInformation != nullptr) {
                     delete objectInformation;
+                    objectInformation = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && objectInfo != nullptr) {
+            delete objectInfo;
+            objectInfo = nullptr;
+        }
         return thisVar;
     }
 
@@ -1678,15 +1693,19 @@ namespace OHOS::Util {
             }
         }
         auto objectInfo = new StringDecoder(enconding);
-        napi_wrap(
-            env, thisVar, objectInfo,
+        napi_status status = napi_wrap(env, thisVar, objectInfo,
             [](napi_env environment, void* data, void* hint) {
                 auto obj = reinterpret_cast<StringDecoder*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && objectInfo != nullptr) {
+            HILOG_ERROR("StringDecoderConstructor:: napi_wrap failed.");
+            delete objectInfo;
+            objectInfo = nullptr;
+        }
         return thisVar;
     }
 

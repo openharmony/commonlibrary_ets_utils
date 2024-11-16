@@ -62,15 +62,19 @@ namespace OHOS::xml {
                 object = new XmlSerializer(reinterpret_cast<char*>(data), iLength, encoding);
             }
         }
-        napi_wrap(
-            env, thisVar, object,
+        napi_status status = napi_wrap(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<XmlSerializer*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            HILOG_ERROR("XmlPullParserConstructor:: napi_wrap failed");
+            delete object;
+            object = nullptr;
+        }
         return thisVar;
     }
 
@@ -146,15 +150,19 @@ namespace OHOS::xml {
                 object = new XmlPullParser(env, strEnd, strEncoding);
             }
         }
-        napi_wrap(
-            env, thisVar, object,
+        napi_status status = napi_wrap(env, thisVar, object,
             [](napi_env env, void *data, void *hint) {
                 auto obj = reinterpret_cast<XmlPullParser*>(data);
                 if (obj != nullptr) {
                     delete obj;
+                    obj = nullptr;
                 }
-            },
-            nullptr, nullptr);
+            }, nullptr, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            HILOG_ERROR("XmlPullParserConstructor:: napi_wrap failed");
+            delete object;
+            object = nullptr;
+        }
         return thisVar;
     }
 
