@@ -44,9 +44,11 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value isCanceledFunc = nullptr;
     napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, Task::IsCanceled, NULL, &isCanceledFunc);
     napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
+    napi_set_named_property(env, longTaskClass, "isCanceled", isCanceledFunc);
     napi_value sendDataFunc = nullptr;
     napi_create_function(env, "sendData", NAPI_AUTO_LENGTH, Task::SendData, NULL, &sendDataFunc);
     napi_set_named_property(env, taskClass, "sendData", sendDataFunc);
+    napi_set_named_property(env, longTaskClass, "sendData", sendDataFunc);
     napi_value taskGroupClass = nullptr;
     napi_define_class(env, "TaskGroup", NAPI_AUTO_LENGTH, TaskGroup::TaskGroupConstructor, nullptr, 0, nullptr,
                       &taskGroupClass);
