@@ -111,10 +111,10 @@ size_t NapiHelper::GetCallbackInfoArgc(napi_env env, napi_callback_info cbInfo)
 napi_value NapiHelper::GetNamePropertyInParentPort(napi_env env, napi_ref parentPort, const char* name)
 {
     napi_value obj = nullptr;
-    napi_get_reference_value(env, parentPort, &obj);
+    NAPI_CALL(env, napi_get_reference_value(env, parentPort, &obj));
 
     napi_value value = nullptr;
-    napi_get_named_property(env, obj, name, &value);
+    NAPI_CALL(env, napi_get_named_property(env, obj, name, &value));
 
     return value;
 }
