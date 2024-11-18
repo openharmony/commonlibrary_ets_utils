@@ -29,9 +29,9 @@ napi_value InitGlobal(napi_env env, const std::string& valueName, bool isFunc, n
     napi_value global;
     napi_value key;
     napi_value value;
-    napi_get_global(env, &global);
-    napi_create_string_utf8(env, valueName.c_str(), valueName.size(), &key);
-    napi_get_property(env, global, key, &value);
+    NAPI_CALL(env, napi_get_global(env, &global));
+    NAPI_CALL(env, napi_create_string_utf8(env, valueName.c_str(), valueName.size(), &key));
+    NAPI_CALL(env, napi_get_property(env, global, key, &value));
 
     if (isFunc) {
         bool validFunction = false;
@@ -41,7 +41,7 @@ napi_value InitGlobal(napi_env env, const std::string& valueName, bool isFunc, n
             return exports;
         }
     }
-    napi_set_named_property(env, exports, valueName.c_str(), value);
+    NAPI_CALL(env, napi_set_named_property(env, exports, valueName.c_str(), value));
 
     return exports;
 }

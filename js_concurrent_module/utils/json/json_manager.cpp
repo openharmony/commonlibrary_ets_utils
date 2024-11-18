@@ -30,10 +30,10 @@ const std::string STRINGIFY_NAME = "stringify";
 bool JsonManager::GeJsonFunction(napi_env env, napi_value global, const std::string &jsonName, napi_value &jsonFunction)
 {
     napi_value jsonKey;
-    napi_create_string_utf8(env, jsonName.c_str(), jsonName.size(), &jsonKey);
-    napi_get_property(env, global, jsonKey, &jsonFunction);
+    NAPI_CALL_BASE(env, napi_create_string_utf8(env, jsonName.c_str(), jsonName.size(), &jsonKey), false);
+    NAPI_CALL_BASE(env, napi_get_property(env, global, jsonKey, &jsonFunction), false);
     bool validFunction = false;
-    napi_is_callable(env, jsonFunction, &validFunction);
+    NAPI_CALL_BASE(env, napi_is_callable(env, jsonFunction, &validFunction), false);
     if (!validFunction) {
         HILOG_ERROR("Get ASON function for %{public}s failed.", jsonName.c_str());
     }

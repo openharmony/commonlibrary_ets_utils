@@ -34,27 +34,28 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     HILOG_INFO("taskpool:: Import taskpool");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value taskClass = nullptr;
-    napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor, nullptr, 0, nullptr, &taskClass);
+    NAPI_CALL(env, napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor,
+              nullptr, 0, nullptr, &taskClass));
     napi_value longTaskClass = nullptr;
-    napi_define_class(env, "LongTask", NAPI_AUTO_LENGTH, Task::LongTaskConstructor,
-                      nullptr, 0, nullptr, &longTaskClass);
+    NAPI_CALL(env, napi_define_class(env, "LongTask", NAPI_AUTO_LENGTH, Task::LongTaskConstructor,
+              nullptr, 0, nullptr, &longTaskClass));
     napi_value genericsTaskClass = nullptr;
-    napi_define_class(env, "GenericsTask", NAPI_AUTO_LENGTH, Task::TaskConstructor,
-                      nullptr, 0, nullptr, &genericsTaskClass);
+    NAPI_CALL(env, napi_define_class(env, "GenericsTask", NAPI_AUTO_LENGTH, Task::TaskConstructor,
+              nullptr, 0, nullptr, &genericsTaskClass));
     napi_value isCanceledFunc = nullptr;
-    napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, Task::IsCanceled, NULL, &isCanceledFunc);
+    NAPI_CALL(env, napi_create_function(env, "isCanceled", NAPI_AUTO_LENGTH, Task::IsCanceled, NULL, &isCanceledFunc));
     napi_set_named_property(env, taskClass, "isCanceled", isCanceledFunc);
     napi_set_named_property(env, longTaskClass, "isCanceled", isCanceledFunc);
     napi_value sendDataFunc = nullptr;
-    napi_create_function(env, "sendData", NAPI_AUTO_LENGTH, Task::SendData, NULL, &sendDataFunc);
+    NAPI_CALL(env, napi_create_function(env, "sendData", NAPI_AUTO_LENGTH, Task::SendData, NULL, &sendDataFunc));
     napi_set_named_property(env, taskClass, "sendData", sendDataFunc);
     napi_set_named_property(env, longTaskClass, "sendData", sendDataFunc);
     napi_value taskGroupClass = nullptr;
-    napi_define_class(env, "TaskGroup", NAPI_AUTO_LENGTH, TaskGroup::TaskGroupConstructor, nullptr, 0, nullptr,
-                      &taskGroupClass);
+    NAPI_CALL(env, napi_define_class(env, "TaskGroup", NAPI_AUTO_LENGTH, TaskGroup::TaskGroupConstructor,
+              nullptr, 0, nullptr, &taskGroupClass));
     napi_value seqRunnerClass = nullptr;
-    napi_define_class(env, "SequenceRunner", NAPI_AUTO_LENGTH, SequenceRunner::SeqRunnerConstructor,
-                      nullptr, 0, nullptr, &seqRunnerClass);
+    NAPI_CALL(env, napi_define_class(env, "SequenceRunner", NAPI_AUTO_LENGTH, SequenceRunner::SeqRunnerConstructor,
+              nullptr, 0, nullptr, &seqRunnerClass));
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);
