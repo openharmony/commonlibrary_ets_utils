@@ -19,16 +19,14 @@
 namespace Commonlibrary::Concurrent::WorkerModule {
 void MessageQueue::EnQueue(MessageDataType data)
 {
-    queueLock_.lock();
+    std::lock_guard<std::mutex> lock(queueLock_);
     queue_.push(data);
-    queueLock_.unlock();
 }
 
 bool MessageQueue::DeQueue(MessageDataType *data)
 {
-    queueLock_.lock();
+    std::unique_lock<std::mutex> lock(queueLock_);
     if (queue_.empty()) {
-        queueLock_.unlock();
         return false;
     }
     if (data != nullptr) {
@@ -37,7 +35,6 @@ bool MessageQueue::DeQueue(MessageDataType *data)
     } else {
         HILOG_ERROR("worker:: data is nullptr.");
     }
-    queueLock_.unlock();
     return true;
 }
 
@@ -48,14 +45,13 @@ bool MessageQueue::IsEmpty() const
 
 void MessageQueue::Clear(napi_env env)
 {
-    queueLock_.lock();
+    std::lock_guard<std::mutex> lock(queueLock_);
     size_t size = queue_.size();
     for (size_t i = 0; i < size; i++) {
         MessageDataType data = queue_.front();
         napi_delete_serialization_data(env, data);
         queue_.pop();
     }
-    queueLock_.unlock();
 }
 
 void MarkedMessageQueue::Push(uint32_t id, MessageDataType data)
