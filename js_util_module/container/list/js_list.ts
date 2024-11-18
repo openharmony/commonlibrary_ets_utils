@@ -143,7 +143,7 @@ if (flag || fastList === undefined) {
         for (let i: number = 0; i < index && current !== undefined; i++) {
           current = current.next;
         }
-        return current.element;
+        return current && current.element;
       }
       return undefined;
     }
