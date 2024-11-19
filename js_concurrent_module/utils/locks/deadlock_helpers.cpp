@@ -25,7 +25,12 @@ std::string CreateDeadlockWarningMessage(DeadlockInfo &&deadlock)
 {
     std::stringstream s;
     auto vertexPrinter = [](tid_t tid) { return "TID " + std::to_string(tid); };
-    auto edgePrinter = [](const AsyncLockDependency *edata) { return " <-- lock {" + edata->name + "} -- WAITED BY "; };
+    auto edgePrinter = [](const AsyncLockDependency *edata) {
+        if (edata == nullptr) {
+            return std::string(" <-- lock {NULL} -- WAITED BY ");
+        }
+        return " <-- lock {" + edata->name + "} -- WAITED BY ";
+    };
     s << "!!! DEADLOCK WARNING !!!\n"
       << LockGraph::CycleAsString(deadlock, "Possible deadlock: ", "\n", vertexPrinter, edgePrinter);
     return s.str();
