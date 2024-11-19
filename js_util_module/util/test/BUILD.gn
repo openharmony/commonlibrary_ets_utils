@@ -22,10 +22,6 @@ ohos_unittest("test_util_unittest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//third_party/openssl",
-    "//third_party/openssl/include",
-    "//third_party/icu/icu4c/source/common",
-    "//third_party/icu/icu4c/source",
     platform_root,
     ets_util_path,
   ]
@@ -45,28 +41,15 @@ ohos_unittest("test_util_unittest") {
     "test_util.cpp",
   ]
 
-  deps = [
-    "//third_party/icu/icu4c:static_icuuc",
-    "//third_party/libuv:uv_static",
-    "//third_party/openssl:libcrypto_static",
-  ]
-
   external_deps = [
+    "c_utils:utils",
     "ets_runtime:libark_jsruntime",
+    "hilog:libhilog",
+    "icu:shared_icuuc",
+    "libuv:uv_static",
     "napi:ace_napi",
+    "openssl:libcrypto_shared",
   ]
-
-  if (is_standard_system) {
-    external_deps += [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  } else {
-    external_deps += [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  }
 }
 
 group("unittest") {

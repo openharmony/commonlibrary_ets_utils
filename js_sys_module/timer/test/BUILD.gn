@@ -28,8 +28,6 @@ ohos_unittest("test_timer_unittest") {
     "$napi_root/interfaces/kits",
     "$napi_root/native_engine",
     "$napi_root/native_engine/impl/ark",
-    "//third_party/bounds_checking_function/include",
-    "//third_party/googletest/include",
     "//third_party/node/src",
     ets_util_path,
   ]
@@ -41,27 +39,19 @@ ohos_unittest("test_timer_unittest") {
     "test_timer.cpp",
   ]
 
-  deps = [
-    "$ets_runtime:libark_jsruntime",
-    "$napi_root:ace_napi",
-    "$sys_module/timer:timer",
-    "//third_party/googletest:gtest",
-    "//third_party/googletest:gtest_main",
-    "//third_party/icu/icu4c:static_icuuc",
-    "//third_party/libuv:uv",
-  ]
+  deps = [ "$sys_module/timer:timer" ]
 
-  if (is_standard_system) {
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  } else {
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-  }
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "ets_runtime:libark_jsruntime",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "icu:shared_icuuc",
+    "libuv:uv",
+    "napi:ace_napi",
+  ]
 }
 
 group("unittest") {

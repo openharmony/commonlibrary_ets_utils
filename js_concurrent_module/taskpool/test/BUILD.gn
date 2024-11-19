@@ -24,8 +24,6 @@ ohos_unittest("test_taskpool_unittest") {
   include_dirs = [
     js_concurrent_module_common,
     "${ets_util_path}/js_concurrent_module/taskpool",
-    "//third_party/bounds_checking_function/include",
-    "//third_party/googletest/include",
     "//third_party/node/src",
     platform_root,
     ets_util_path,
@@ -41,19 +39,17 @@ ohos_unittest("test_taskpool_unittest") {
     "test_taskpool.cpp",
   ]
 
-  deps = [
-    "${ets_util_path}/js_concurrent_module/taskpool:taskpool_static",
-    "//third_party/googletest:gtest",
-    "//third_party/googletest:gtest_main",
-    "//third_party/icu/icu4c:static_icuuc",
-    "//third_party/libuv:uv",
-  ]
+  deps = [ "${ets_util_path}/js_concurrent_module/taskpool:taskpool_static" ]
 
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ets_runtime:libark_jsruntime",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "hilog:libhilog",
+    "icu:shared_icuuc",
+    "libuv:uv",
     "napi:ace_napi",
     "qos_manager:qos",
   ]

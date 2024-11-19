@@ -58,12 +58,14 @@
                 "ffrt",
                 "ipc",
                 "samgr",
-                "eventhandler"
+                "eventhandler",
+                "icu",
+                "openssl"
             ],
             "third_party": [
                 "icu",
-                "libxml2",
                 "openssl",
+                "libxml2",
                 "decimal.js"
             ]
         },
