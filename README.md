@@ -5493,13 +5493,3 @@ parentPort.onmessageerror = function(e) {
 # 相关仓
 
 [ets_utils子系统](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/README.md)
-
-# 许可证
-
-js_api_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_api_module/mozilla_docs.txt)。
-
-js_util_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_util_module/mozilla_docs.txt)。
-
-js_concurrent_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_concurrent_module/mozilla_docs.txt)。
-
-js_sys_module子模块在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_sys_module/mozilla_docs.txt)。
