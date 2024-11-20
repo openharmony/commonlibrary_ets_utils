@@ -2420,13 +2420,3 @@ parentPort.onmessageerror = function(e) {
 [arkcompiler_ets_runtime](https://gitee.com/openharmony/arkcompiler_ets_runtime/blob/master/README_zh.md)
 [arkui_ace_engine](https://gitee.com/openharmony/arkui_ace_engine/blob/master/README_zh.md)
 [arkui_napi](https://gitee.com/openharmony/arkui_napi/blob/master/README_zh.md)
-
-# Licenses
-
-**js_api_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_api_module/mozilla_docs.txt).
-
-**js_util_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_util_module/mozilla_docs.txt).
-
-**js_concurrent_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_concurrent_module/mozilla_docs.txt).
-
-**js_sys_module** can be used under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/). For the complete license text, see [License](https://gitee.com/openharmony/commonlibrary_ets_utils/blob/master/js_sys_module/mozilla_docs.txt).
