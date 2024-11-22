@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ark_native_engine.h"
 #include "native_engine/native_value.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -23,6 +24,7 @@
 
 using namespace Commonlibrary::Concurrent::Common;
 using namespace OHOS::JsSysModule;
+using panda::RuntimeOption;
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -42,6 +44,62 @@ napi_value TimerCallback(napi_env env, napi_callback_info info)
     if (info == nullptr) {
         HILOG_ERROR("TimerCallback, Invalid input info.");
     }
+    return nullptr;
+}
+
+class NativeEngineProxy {
+public:
+    NativeEngineProxy()
+    {
+        //Setup
+        RuntimeOption option;
+        option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+        const int64_t poolSize = 0x1000000;
+        option.SetGcPoolSize(poolSize);
+        option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+        option.SetDebuggerLibraryPath("");
+        vm_ = panda::JSNApi::CreateJSVM(option);
+        if (vm_ == nullptr) {
+            return;
+        }
+
+        engine_ = new ArkNativeEngine(vm_, nullptr);
+        Timer::RegisterTime(reinterpret_cast<napi_env>(engine_));
+    }
+
+    ~NativeEngineProxy()
+    {
+        delete engine_;
+        panda::JSNApi::DestroyJSVM(vm_);
+    }
+
+    inline ArkNativeEngine* operator-() const
+    {
+        return engine_;
+    }
+
+    inline operator napi_env() const
+    {
+        return reinterpret_cast<napi_env>(engine_);
+    }
+
+private:
+    EcmaVM* vm_ {nullptr};
+    ArkNativeEngine* engine_ {nullptr};
+};
+
+struct TestData {
+    napi_env env_;
+};
+
+void AssertFalse()
+{
+    ASSERT_TRUE(false);
+}
+
+napi_value TimerAbort(napi_env env, napi_callback_info info)
+{
+    AssertFalse();
     return nullptr;
 }
 
@@ -344,14 +402,14 @@ HWTEST_F(NativeEngineTest, TimerTest013, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TimerTest014, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    size_t argc = 2;
     napi_value nativeMessage0 = nullptr;
-    napi_create_uint32(env, 50, &nativeMessage0); // Random number
+    napi_create_uint32(env, 50, &nativeMessage0);
     napi_value nativeMessage1 = nullptr;
     napi_create_function(env, "callback", NAPI_AUTO_LENGTH, TimerCallback, nullptr, &nativeMessage1);
     napi_value argv[] = {nativeMessage1, nativeMessage0};
     napi_value setTimeoutCB = GetGlobalProperty(env, "setTimeout");
     napi_value tId = nullptr;
+    size_t argc = 2;
     napi_call_function(env, nullptr, setTimeoutCB, argc, argv, &tId);
     ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
     napi_env* env2 = new napi_env;
@@ -442,4 +500,156 @@ HWTEST_F(NativeEngineTest, TimerTest017, testing::ext::TestSize.Level0)
     napi_value tId = nullptr;
     napi_call_function(env, nullptr, setTimeoutCB, argc, argv, &tId);
     ASSERT_CHECK_VALUE_TYPE(env, tId, napi_number);
+}
+
+/* @tc.name: settimeout
+ * @tc.desc: Test settimeout should not be change.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest018, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    thread_local auto cleanUpData = new TestData();
+    cleanUpData->env_ = env;
+    napi_add_env_cleanup_hook(env, [](void * data) {
+        auto that = reinterpret_cast<TestData*>(cleanUpData);
+        size_t argc = 2;
+        napi_value nativeMessage0 = nullptr;
+        napi_value nativeMessage1 = nullptr;
+        napi_create_function(that->env_, "callback", NAPI_AUTO_LENGTH, TimerAbort, nullptr, &nativeMessage1);
+        napi_create_uint32(that->env_, 0, &nativeMessage0);
+        napi_value argv[] = {nativeMessage1, nativeMessage0};
+        napi_value setTimeoutCB = GetGlobalProperty(that->env_, "setTimeout");
+        napi_value tId = nullptr;
+        napi_call_function(that->env_, nullptr, setTimeoutCB, argc, argv, &tId);
+        ASSERT_CHECK_VALUE_TYPE(that->env_, tId, napi_number);
+    }, cleanUpData);
+}
+
+/* @tc.name: setInterval
+ * @tc.desc: Test setInterval should not be change.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest019, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    thread_local auto cleanData = new TestData();
+    cleanData->env_ = env;
+    napi_add_env_cleanup_hook(env, [](void * data) {
+        napi_value nativeMessage1 = nullptr;
+        auto that = reinterpret_cast<TestData*>(cleanData);
+        size_t argc = 2;
+        napi_create_function(that->env_, "callback", NAPI_AUTO_LENGTH, TimerAbort, nullptr, &nativeMessage1);
+        napi_value nativeMessage0 = nullptr;
+        napi_create_uint32(that->env_, 0, &nativeMessage0);
+        napi_value argv[] = {nativeMessage1, nativeMessage0};
+        napi_value setIntervalCB = GetGlobalProperty(that->env_, "setInterval");
+        napi_value tId = nullptr;
+        napi_call_function(that->env_, nullptr, setIntervalCB, argc, argv, &tId);
+        ASSERT_CHECK_VALUE_TYPE(that->env_, tId, napi_number);
+    }, cleanData);
+}
+
+/* @tc.name: timer
+ * @tc.desc: Test timer can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest020, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func1 = nullptr;
+    napi_status status = napi_create_function(env, "setTimeout", NAPI_AUTO_LENGTH,
+                                              TimerTest::SetTimeout, nullptr, &func1);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value func2 = nullptr;
+    status = napi_create_function(env, "setInterval", NAPI_AUTO_LENGTH, TimerTest::SetInterval, nullptr, &func2);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value func3 = nullptr;
+    status = napi_create_function(env, "clearTimeout", NAPI_AUTO_LENGTH, TimerTest::ClearTimer, nullptr, &func3);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value func4 = nullptr;
+    status = napi_create_function(env, "clearInterval", NAPI_AUTO_LENGTH, TimerTest::ClearTimer, nullptr, &func4);
+    ASSERT_TRUE(status == napi_ok);
+    napi_property_descriptor properties[] = {
+        {"setTimeout", nullptr, nullptr, nullptr, nullptr, func1, napi_default_jsproperty, nullptr},
+        {"setInterval", nullptr, nullptr, nullptr, nullptr, func2, napi_default_jsproperty, nullptr},
+        {"clearTimeout", nullptr, nullptr, nullptr, nullptr, func3, napi_default_jsproperty, nullptr},
+        {"clearInterval", nullptr, nullptr, nullptr, nullptr, func4, napi_default_jsproperty, nullptr}
+    };
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value setTimeoutCB = GetGlobalProperty(env, "setTimeout");
+    napi_value setIntervalCB = GetGlobalProperty(env, "setInterval");
+    napi_value clearTimeoutCB = GetGlobalProperty(env, "clearTimeout");
+    napi_value clearIntervalCB = GetGlobalProperty(env, "clearInterval");
+    bool isEqual = false;
+    napi_strict_equals(env, setTimeoutCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, setIntervalCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, clearTimeoutCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, clearIntervalCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+}
+
+/* @tc.name: settimeout
+ * @tc.desc: Test settimeout can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest021, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "setTimeout", NAPI_AUTO_LENGTH,
+                                              TimerTest::SetTimeout, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "setTimeout", func) == napi_ok);
+}
+
+/* @tc.name: setInterval
+ * @tc.desc: Test setInterval can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest022, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "setInterval", NAPI_AUTO_LENGTH,
+                                              TimerTest::SetInterval, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "setInterval", func) == napi_ok);
+}
+
+/* @tc.name: clearTimeout
+ * @tc.desc: Test clearTimeout can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest023, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "clearTimeout", NAPI_AUTO_LENGTH,
+                                              TimerTest::ClearTimer, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "clearTimeout", func) == napi_ok);
+}
+
+/* @tc.name: clearInterval
+ * @tc.desc: Test clearInterval can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TimerTest024, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "clearInterval", NAPI_AUTO_LENGTH,
+                                              TimerTest::ClearTimer, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "clearInterval", func) == napi_ok);
 }
