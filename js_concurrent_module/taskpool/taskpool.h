@@ -28,7 +28,7 @@ using namespace Commonlibrary::Concurrent::Common;
 struct TaskMessage {
     napi_deferred deferred = nullptr;
     Priority priority {Priority::DEFAULT};
-    uint64_t taskId {};
+    uint32_t taskId {};
 };
 
 class TaskPool {
@@ -74,7 +74,7 @@ private:
 
 class CallbackScope {
 public:
-    CallbackScope(napi_env env, napi_env workerEnv, uint64_t taskId, napi_status& status): env_(env),
+    CallbackScope(napi_env env, napi_env workerEnv, uint32_t taskId, napi_status& status): env_(env),
         workerEnv_(workerEnv), taskId_(taskId)
     {
         status = napi_open_handle_scope(env_, &scope_);
@@ -94,7 +94,7 @@ public:
 private:
     napi_env env_;
     napi_env workerEnv_;
-    uint64_t taskId_;
+    uint32_t taskId_;
     napi_handle_scope scope_ = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -24,9 +24,9 @@ public:
     ExecuteQueue() = default;
     ~ExecuteQueue() = default;
 
-    void EnqueueTaskId(uint64_t taskId);
-    bool EraseWaitingTaskId(uint64_t taskId);
-    uint64_t DequeueTaskId();
+    void EnqueueTaskId(uint32_t taskId);
+    bool EraseWaitingTaskId(uint32_t taskId);
+    uint32_t DequeueTaskId();
 
     bool IsEmpty() const;
     uint32_t GetTaskNum() const
@@ -35,7 +35,7 @@ public:
     }
 
 private:
-    std::list<uint64_t> tasks_ {};
+    std::list<uint32_t> tasks_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H
