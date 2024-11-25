@@ -155,7 +155,7 @@ void LockRequest::CallCallback()
         return;
     }
     napi_value cb = nullptr;
-    napi_get_reference_value(env_, callback_, &cb);
+    NAPI_CALL_RETURN_VOID(env_, napi_get_reference_value(env_, callback_, &cb));
     napi_value result;
     napi_status status = napi_call_function(env_, nullptr, cb, 0, nullptr, &result);
     napi_delete_reference(env_, callback_);

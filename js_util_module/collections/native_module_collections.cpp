@@ -42,9 +42,9 @@ static bool GetCollectionFunction(napi_env env, napi_value global, const std::st
     napi_value collectionKey;
     NAPI_CALL_BASE(env, napi_create_string_utf8(env, collectionName.c_str(),
                    collectionName.size(), &collectionKey), false);
-    napi_get_property(env, global, collectionKey, &collectionFunction);
+    NAPI_CALL_BASE(env, napi_get_property(env, global, collectionKey, &collectionFunction), false);
     bool validFunction = false;
-    napi_is_callable(env, collectionFunction, &validFunction);
+    NAPI_CALL_BASE(env, napi_is_callable(env, collectionFunction, &validFunction), false);
     if (!validFunction) {
         HILOG_ERROR("Get function for %{public}s failed.", collectionName.c_str());
     }
@@ -58,13 +58,13 @@ static void GetBitVectorFunction(napi_env env, napi_value global, napi_value &bi
     std::string arkPrivateStr = "ArkPrivate";
     NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, arkPrivateStr.c_str(),
                           arkPrivateStr.size(), &arkPrivateKey));
-    napi_get_property(env, global, arkPrivateKey, &arkPrivateClass);
+    NAPI_CALL_RETURN_VOID(env, napi_get_property(env, global, arkPrivateKey, &arkPrivateClass));
 
     napi_value loadFunction = nullptr;
     napi_value loadKey = nullptr;
     std::string loadStr = "Load";
     NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, loadStr.c_str(), loadStr.size(), &loadKey));
-    napi_get_property(env, arkPrivateClass, loadKey, &loadFunction);
+    NAPI_CALL_RETURN_VOID(env, napi_get_property(env, arkPrivateClass, loadKey, &loadFunction));
 
     napi_value bitVectorIndex = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_create_int32(env, ARK_PRIVATE_BIT_VECTOR_INDEX, &bitVectorIndex));
