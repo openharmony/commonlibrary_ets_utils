@@ -49,9 +49,9 @@ napi_value JsonManager::Init(napi_env env, napi_value exports)
     napi_value jsonKey;
     napi_value jsonValue;
     NAPI_CALL(env, napi_create_object(env, &ason));
-    napi_get_global(env, &global);
-    napi_create_string_utf8(env, JSON_NAME.c_str(), JSON_NAME.size(), &jsonKey);
-    napi_get_property(env, global, jsonKey, &jsonValue);
+    NAPI_CALL(env, napi_get_global(env, &global));
+    NAPI_CALL(env, napi_create_string_utf8(env, JSON_NAME.c_str(), JSON_NAME.size(), &jsonKey));
+    NAPI_CALL(env, napi_get_property(env, global, jsonKey, &jsonValue));
     if (!(GeJsonFunction(env, jsonValue, PARSE_SENDABLE_NAME, parseSendable) &&
           GeJsonFunction(env, jsonValue, STRINGIFY_SENDABLE_NAME, stringify))) {
         return exports;
@@ -60,8 +60,8 @@ napi_value JsonManager::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY(PARSE_NAME.c_str(), parseSendable),
         DECLARE_NAPI_PROPERTY(STRINGIFY_NAME.c_str(), stringify),
     };
-    napi_define_properties(env, ason, sizeof(desc) / sizeof(desc[0]), desc);
-    napi_set_named_property(env, exports, ASON_NAME.c_str(), ason);
+    NAPI_CALL(env, napi_define_properties(env, ason, sizeof(desc) / sizeof(desc[0]), desc));
+    NAPI_CALL(env, napi_set_named_property(env, exports, ASON_NAME.c_str(), ason));
     return exports;
 }
 }
