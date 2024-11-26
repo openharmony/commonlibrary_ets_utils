@@ -148,7 +148,9 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (promise == nullptr) {
         return nullptr;
     }
-    napi_reference_ref(env, seqRunner->seqRunnerRef_, nullptr);
+    if (!SequenceRunnerManager::GetInstance().IncreaseGlobalSeqRunner(env, seqRunner)) {
+        return nullptr;
+    }
     if (seqRunner->currentTaskId_ == 0) {
         HILOG_INFO("taskpool:: taskId %{public}s in seqRunner %{public}s immediately.",
                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
