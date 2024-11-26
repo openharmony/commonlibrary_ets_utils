@@ -381,8 +381,9 @@ public:
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
 
-    static void WorkerDestructor(napi_env env, void *data, void *hint);
-    static void HostEnvCleanCallback(void *data);
+    static void WorkerDestructor(napi_env env, void* data, void* hint);
+    static void WorkerHostEnvCleanCallback(void* data);
+    static void LimitedWorkerHostEnvCleanCallback(void* data);
 
 #if defined(ENABLE_WORKER_EVENTHANDLER)
     static std::shared_ptr<OHOS::AppExecFwk::EventHandler> GetMainThreadHandler();
@@ -531,6 +532,8 @@ private:
     void PostWorkerMessageTask();
     void PostWorkerGlobalCallTask();
     static bool IsValidWorker(Worker* worker);
+    static bool IsValidLimitedWorker(Worker* worker);
+    static void HostEnvCleanCallbackInner(Worker* worker);
 
     void InitHostHandle(uv_loop_t* loop);
     void CloseHostHandle();
