@@ -60,12 +60,10 @@
                 "samgr",
                 "eventhandler",
                 "icu",
-                "openssl"
+                "openssl",
+                "libxml2"
             ],
             "third_party": [
-                "icu",
-                "openssl",
-                "libxml2",
                 "decimal.js"
             ]
         },

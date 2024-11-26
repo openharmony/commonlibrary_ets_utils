@@ -137,9 +137,9 @@ ohos_source_set("xml_static") {
     }
     external_deps += [
       "bounds_checking_function:libsec_shared",
+      "icu:shared_icuuc",
       "napi:ace_napi",
     ]
-    deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
   }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
