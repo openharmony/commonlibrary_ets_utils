@@ -295,6 +295,7 @@ public:
     void RemoveSequenceRunner(const std::string &name);
     bool TriggerGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner);
     void GlobalSequenceRunnerDestructor(napi_env env, SequenceRunner *seqRunner);
+    bool IncreaseGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner);
 
 private:
     SequenceRunnerManager(const SequenceRunnerManager &) = delete;
