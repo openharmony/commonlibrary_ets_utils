@@ -178,6 +178,7 @@ namespace OHOS::Xml {
             xmlFree(reinterpret_cast<void*>(curContent));
         }
     }
+
     void ConvertXml::SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
                                  const std::string parentName) const
     {
@@ -249,6 +250,13 @@ namespace OHOS::Xml {
         int32_t index = 0;
         bool bFlag = false;
         while (pNode != nullptr) {
+            if (!deprecated_) {
+                if (pNode->type == xmlElementType::XML_TEXT_NODE &&
+                    (pNode->next != nullptr || pNode->prev != nullptr)) {
+                    pNode = pNode->next;
+                    continue;
+                }
+            }
             bFlag = false;
             napi_value elementsObject = nullptr;
             napi_create_object(env, &elementsObject);
@@ -298,7 +306,7 @@ namespace OHOS::Xml {
             }
     }
 
-    napi_value ConvertXml::Convert(napi_env env, std::string strXml)
+    napi_value ConvertXml::Convert(napi_env env, std::string strXml, bool deprecated)
     {
         xmlNodePtr curNode = nullptr;
         napi_value object = nullptr;
@@ -308,6 +316,7 @@ namespace OHOS::Xml {
         }
         size_t len = strXml.size();
         xmlDocPtr doc = xmlParseMemory(strXml.c_str(), len);
+        deprecated_ = deprecated;
         if (!doc) {
             xmlFreeDoc(doc);
             DealSingleLine(env, strXml, object);
@@ -333,7 +342,9 @@ namespace OHOS::Xml {
             GetXMLInfo(env, curNode, object, 0);
         }
         xmlFreeDoc(doc);
-        SetSpacesInfo(env, object);
+        if (deprecated_) {
+            SetSpacesInfo(env, object);
+        }
         return object;
     }
 
@@ -467,7 +478,7 @@ namespace OHOS::Xml {
         }
     }
 
-    void ConvertXml::DealOptions(napi_env env, const napi_value napiObj)
+    void ConvertXml::DealOptions(napi_env env, const napi_value napiObj, bool deprecated)
     {
         std::vector<std::string> vctOptions = {"declarationKey", "instructionKey", "attributesKey", "textKey",
                                               "cdataKey", "doctypeKey", "commentKey", "parentKey", "typeKey",
@@ -482,7 +493,9 @@ namespace OHOS::Xml {
             }
         }
         DealIgnore(env, napiObj);
-        DealSpaces(env, napiObj);
+        if (deprecated) {
+            DealSpaces(env, napiObj);
+        }
     }
 
     void ConvertXml::DealSingleLine(napi_env env, std::string &strXml, const napi_value &object)
@@ -560,6 +573,11 @@ namespace OHOS::Xml {
                 napi_create_object(env, &elementsObject);
                 SetNodeInfo(env, curNode, elementsObject);
                 SetXmlElementType(env, curNode, elementsObject, bHasEle);
+                if (!deprecated_ && curNode->type == xmlElementType::XML_TEXT_NODE &&
+                    (curNode->next != nullptr || curNode->prev != nullptr)) {
+                    curNode = curNode->next;
+                    continue;
+                }
                 SetEndInfo(env, curNode, elementsObject, bHasEle);
                 napi_set_element(env, elements, index++, elementsObject);
                 DealCDataInfo(bCData, curNode);

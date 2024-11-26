@@ -14,6 +14,7 @@
  */
 
 #include "native_module_convertxml.h"
+#include "tools/ets_error.h"
 #include "tools/log.h"
 #include "js_convertxml.h"
 
@@ -23,6 +24,9 @@ extern const char _binary_convertxml_abc_start[];
 extern const char _binary_convertxml_abc_end[];
 
 namespace OHOS::Xml {
+using namespace OHOS::Tools;
+static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
+
     static napi_value ConvertXmlConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -67,12 +71,31 @@ namespace OHOS::Xml {
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         object->DealNapiStrValue(env, args[0], strXml);
-
         if (argc > 1) {
-            object->DealOptions(env, args[1]);
+            object->DealOptions(env, args[1], true);
         }
-        napi_value result = object->Convert(env, strXml);
+        napi_value result = object->Convert(env, strXml, true);
         return result;
+    }
+
+    static napi_value FastConvert(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = 2; // 2:The number of parameters
+        napi_value args[2] = { nullptr }; // 2:The number of parameters
+        napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        std::string strXml;
+        ConvertXml *convertxml = nullptr;
+        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&convertxml));
+        if (convertxml == nullptr) {
+            ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
+            return nullptr;
+        }
+        convertxml->DealNapiStrValue(env, args[0], strXml);
+        if (argc > 1) {
+            convertxml->DealOptions(env, args[1], false);
+        }
+        return convertxml->Convert(env, strXml, false);
     }
 
     napi_value ConvertXmlInit(napi_env env, napi_value exports)
@@ -80,7 +103,8 @@ namespace OHOS::Xml {
         const char *convertXmlClassName = "ConvertXml";
         napi_value convertXmlClass = nullptr;
         napi_property_descriptor convertXmlDesc[] = {
-            DECLARE_NAPI_FUNCTION("convert", Convert)
+            DECLARE_NAPI_FUNCTION("convert", Convert),
+            DECLARE_NAPI_FUNCTION("fastConvertToJSObject", FastConvert)
         };
         NAPI_CALL(env, napi_define_class(env, convertXmlClassName, strlen(convertXmlClassName), ConvertXmlConstructor,
                                          nullptr, sizeof(convertXmlDesc) / sizeof(convertXmlDesc[0]), convertXmlDesc,

@@ -100,7 +100,7 @@ namespace OHOS::Xml {
          * @param env NAPI environment parameters.
          * @param strXml A string of XML text.
          */
-        napi_value Convert(napi_env env, std::string strXml);
+        napi_value Convert(napi_env env, std::string strXml, bool deprecated);
 
         /**
          * Converts the string of js to string of C++.
@@ -117,7 +117,7 @@ namespace OHOS::Xml {
          * @param env NAPI environment parameters.
          * @param napiObj Get the option parameter from js to the napi layer
          */
-        void DealOptions(napi_env env, const napi_value napiObj);
+        void DealOptions(napi_env env, const napi_value napiObj, bool deprecated);
 
         friend class CxmlTest;
 
@@ -127,8 +127,8 @@ namespace OHOS::Xml {
         void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
                          const std::string parentName = "") const;
         void SetEndInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
-        void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object, int flag = 0,
-                        const std::string parentName = "");
+        void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
+                        int flag = 0, const std::string parentName = "");
         std::string GetNodeType(const xmlElementType enumType) const;
         void SetKeyValue(napi_env env, const napi_value &object, const std::string strKey,
                          const std::string strValue) const;
@@ -155,6 +155,7 @@ namespace OHOS::Xml {
         APIVersion APIVerIsolation_;
         bool apiFlag_ {false};
         napi_env env_ {nullptr};
+        bool deprecated_ {false};
     };
 } // namespace OHOS::Xml
 #endif // CONVERTXML_JS_CONVERTXML_H
