@@ -1351,13 +1351,13 @@ void Worker::ExecuteInThread(const void* data)
     }
     worker->ReleaseWorkerThreadContent();
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+    worker->EraseWorker();
     if (worker->HostIsStop() || worker->isHostEnvExited_) {
         HILOG_INFO("worker:: host is stopped");
         CloseHelp::DeletePointer(worker, false);
     } else {
         worker->PublishWorkerOverSignal();
     }
-    worker->EraseWorker();
 }
 
 bool Worker::PrepareForWorkerInstance()
