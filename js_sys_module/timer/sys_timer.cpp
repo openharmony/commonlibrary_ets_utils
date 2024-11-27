@@ -30,7 +30,7 @@ using OHOS::Ace::ContainerScope;
 namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
 
-uint32_t Timer::timeCallbackId = 1; // Timer ID start from 1
+uint32_t Timer::timeCallbackId = 0;
 uint32_t deleteTimerCount = 0;
 std::map<uint32_t, TimerCallbackInfo*> Timer::timerTable;
 std::mutex Timer::timeLock;
