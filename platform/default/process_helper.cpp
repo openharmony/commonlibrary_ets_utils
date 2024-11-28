@@ -21,9 +21,11 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/sysinfo.h>
+#include <uv.h>
 
 namespace Commonlibrary::Platform {
-static long g_hz = sysconf(_SC_CLK_TCK);
+constexpr int NUM_OF_DATA = 15; // 15:Data size
+thread_local const std::string PROCESS_START_TIME_DATA = "PROCESS_START_TIME";
 
 void ProcessExit(int signal)
 {
@@ -63,35 +65,14 @@ int GetThreadPRY(int tid)
 double GetProcessStartRealtime()
 {
     double startRealtime = 0;
-    std::string path = "/proc/" + std::to_string(getpid()) + "/stat";
-    std::ifstream statFile(path);
-    if (!statFile.is_open()) {
-        HILOG_ERROR("process:: Failed to open config file");
-        return startRealtime;
+    char buf[NUM_OF_DATA] = { 0 };
+    size_t length = sizeof(buf);
+    auto envNum = uv_os_getenv(PROCESS_START_TIME_DATA.c_str(), buf, &length);
+    if (envNum == UV_ENOENT || strlen(buf) == 0) {
+        startRealtime = 0;
+    } else {
+        startRealtime = std::strtod(buf, nullptr);
     }
-    std::string strLine;
-    std::getline(statFile, strLine);
-    if (strLine.empty()) {
-        HILOG_ERROR("process:: No valid content was read");
-        statFile.close();
-        return startRealtime;
-    }
-    std::istringstream iss(strLine);
-    int count = 1;
-    std::string word;
-    while (iss >> word) {
-        if (count == 22) { // 22 : starttime
-            if (g_hz == -1) {
-                statFile.close();
-                return startRealtime;
-            }
-            startRealtime = word.empty() ? 0 : std::strtod(word.c_str(), nullptr);
-            startRealtime = (startRealtime * 1000) / static_cast<double>(g_hz); // 1000 : // Calculate milliseconds
-            break;
-        }
-        count++;
-    }
-    statFile.close();
     return startRealtime;
 }
 } // namespace Commonlibrary::Platform
