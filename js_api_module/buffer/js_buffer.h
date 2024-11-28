@@ -70,6 +70,10 @@ public:
     void FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end);
     void FillNumber(std::vector<uint8_t> numbers, unsigned int offset, unsigned int end);
     void FillString(std::string value, unsigned int offset, unsigned int end, std::string encoding);
+    bool GetNeedRelease() const
+    {
+        return needRelease_;
+    }
 
 private:
     uint8_t *GetRaw();
