@@ -496,6 +496,12 @@ namespace OHOS::xml {
 
     bool XmlPullParser::ParseToken(napi_env env, napi_value thisVar) const
     {
+        napi_handle_scope scope = nullptr;
+        napi_status status = napi_open_handle_scope(env, &scope);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlPullParser::open scope failed!");
+            return false;
+        }
         napi_value returnVal = nullptr;
         size_t argc = 2; // 2: number of args
         napi_value key = nullptr;
@@ -526,6 +532,7 @@ namespace OHOS::xml {
             delete object;
             object = nullptr;
         }
+        napi_close_handle_scope(env, scope);
         return bRec;
     }
 
