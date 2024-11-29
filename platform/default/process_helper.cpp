@@ -25,7 +25,7 @@
 
 namespace Commonlibrary::Platform {
 constexpr int NUM_OF_DATA = 15; // 15:Data size
-thread_local const std::string PROCESS_START_TIME_DATA = "PROCESS_START_TIME";
+const std::string PROCESS_START_TIME_DATA = "PROCESS_START_TIME";
 
 void ProcessExit(int signal)
 {
@@ -69,6 +69,7 @@ double GetProcessStartRealtime()
     size_t length = sizeof(buf);
     auto envNum = uv_os_getenv(PROCESS_START_TIME_DATA.c_str(), buf, &length);
     if (envNum == UV_ENOENT || strlen(buf) == 0) {
+        HILOG_ERROR("process:: Failed to get process start env");
         startRealtime = 0;
     } else {
         startRealtime = std::strtod(buf, nullptr);
