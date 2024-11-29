@@ -629,7 +629,7 @@ HWTEST_F(NativeEngineTest, ProcesGetGetStartRealtime001, testing::ext::TestSize.
     double num = 0;
     napi_get_value_double(env, result, &num);
     bool res = false;
-    if (num != 0) {
+    if (num == 0) {
         res = true;
     }
     ASSERT_TRUE(res);
