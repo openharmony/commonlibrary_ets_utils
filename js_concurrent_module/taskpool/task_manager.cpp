@@ -1823,4 +1823,19 @@ void SequenceRunnerManager::GlobalSequenceRunnerDestructor(napi_env env, Sequenc
         delete seqRunner;
     }
 }
+
+bool SequenceRunnerManager::IncreaseGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner)
+{
+    std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
+    if (seqRunner->isGlobalRunner_) {
+        auto iter = seqRunner->globalSeqRunnerRef_.find(env);
+        if (iter == seqRunner->globalSeqRunnerRef_.end()) {
+            return false;
+        }
+        napi_reference_ref(env, iter->second, nullptr);
+    } else {
+        napi_reference_ref(env, seqRunner->seqRunnerRef_, nullptr);
+    }
+    return true;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
