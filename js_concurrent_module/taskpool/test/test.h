@@ -79,6 +79,7 @@ public:
     static void* WorkerConstructor(napi_env env);
     static pid_t GetWorkerTid(uv_timer_t* handle);
     static void WorkerPostTask(napi_env env);
+    static void ResetTaskManager();
 
     class ExceptionScope {
     public:
