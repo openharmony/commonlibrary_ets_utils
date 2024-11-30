@@ -904,6 +904,12 @@ void* NativeEngineTest::WorkerConstructor(napi_env env)
     Worker* worker = Worker::WorkerConstructor(env);
     usleep(sleepTime);
     uv_loop_t* loop = worker->GetWorkerLoop();
+    int num = 0;
+    while (loop == nullptr && num < 10) { // 10: is loop 10 times
+        usleep(sleepTime);
+        loop = worker->GetWorkerLoop();
+        num++;
+    }
     ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, NativeEngineTest::foo, worker);
     return worker;
 }
@@ -921,7 +927,9 @@ void NativeEngineTest::WorkerPostTask(napi_env env)
     std::function<void()> myTask = []() {
         return;
     };
+    usleep(100000); // 100000: is sleep 100ms
     worker->CloseHandles();
+    usleep(100000); // 100000: is sleep 100ms
     worker->debuggerOnPostTaskSignal_ = nullptr;
     worker->DebuggerOnPostTask(std::move(myTask));
     uv_async_t* req = new uv_async_t;
@@ -933,5 +941,15 @@ void NativeEngineTest::WorkerPostTask(napi_env env)
     Worker::TriggerGCCheck(req);
     worker->NotifyTaskFinished();
     worker->PostReleaseSignal();
+}
+
+void NativeEngineTest::ResetTaskManager()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.workers_.clear();
+    taskManager.idleWorkers_.clear();
+    taskManager.timeoutWorkers_.clear();
+    taskManager.highPrioExecuteCount_ = 0;
+    taskManager.mediumPrioExecuteCount_ = 0;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
