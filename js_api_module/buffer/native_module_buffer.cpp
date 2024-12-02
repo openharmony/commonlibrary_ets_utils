@@ -279,7 +279,8 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
 
 static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *buffer)
 {
-    napi_status status = napi_wrap(env, thisVar, buffer, FinalizeBufferCallback, nullptr, nullptr);
+    uint32_t length = buffer->GetNeedRelease() ? buffer->GetLength() : 0;
+    napi_status status = napi_wrap_with_size(env, thisVar, buffer, FinalizeBufferCallback, nullptr, nullptr, length);
     if (status != napi_ok) {
         HILOG_ERROR("Buffer:: can not wrap buffer");
         if (buffer != nullptr) {
