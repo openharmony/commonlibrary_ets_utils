@@ -112,7 +112,7 @@ void AsyncLock::ProcessPendingLockRequest(napi_env env, LockRequest* syncLockReq
 void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncLockRequest)
 {
     if (pendingList_.empty()) {
-        if (refCount_ == 0) {
+        if (refCount_ == 0 && heldList_.empty()) {
             // No more refs to the lock. We need to delete the instance but we cannot do it right now
             // because asyncLockMutex_ is acquired. Do it asynchronously.
             AsyncDestroy(env);
