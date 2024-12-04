@@ -23,12 +23,12 @@
 #include "bundle_info.h"
 #include "bundle_mgr_interface.h"
 #include "bundle_mgr_proxy.h"
-#include "c/executor_task.h"
-#include "ffrt_inner.h"
 #include "iservice_registry.h"
 #include "parameters.h"
 #include "status_receiver_interface.h"
 #include "system_ability_definition.h"
+#include "c/executor_task.h"
+#include "ffrt_inner.h"
 #endif
 #include "sys_timer.h"
 #include "helper/concurrent_helper.h"
@@ -843,6 +843,7 @@ void TaskManager::NotifyExecuteTask()
         // When there are only idle tasks and workers executing them, it is not triggered
         return;
     }
+
     for (auto& worker : idleWorkers_) {
         worker->NotifyExecuteTask();
     }

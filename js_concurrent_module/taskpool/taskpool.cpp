@@ -488,6 +488,7 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
     TriggerTask(task);
+    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
 }
 
 void TaskPool::TriggerTask(Task* task)
