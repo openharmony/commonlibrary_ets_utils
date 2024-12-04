@@ -41,7 +41,15 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
 
 enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING};
-enum TaskType { TASK, FUNCTION_TASK, SEQRUNNER_TASK, COMMON_TASK, GROUP_COMMON_TASK, GROUP_FUNCTION_TASK };
+enum TaskType {
+    TASK,
+    FUNCTION_TASK,
+    SEQRUNNER_TASK,
+    COMMON_TASK,
+    GROUP_COMMON_TASK,
+    GROUP_FUNCTION_TASK,
+    ASYNCRUNNER_TASK
+};
 
 struct GroupInfo;
 class Worker;
@@ -155,6 +163,8 @@ public:
     bool CheckStartExecution(Priority priority);
     bool IsValid();
     void SetValid(bool isValid);
+    bool CanForAsyncRunner(napi_env env);
+    bool IsAsyncRunnerTask();
 
 private:
     Task(const Task &) = delete;
@@ -172,6 +182,7 @@ public:
     std::atomic<ExecuteState> taskState_ {ExecuteState::NOT_FOUND};
     uint64_t groupId_ {}; // 0 for task outside taskgroup
     uint64_t seqRunnerId_ {}; // 0 for task without seqRunner
+    uint64_t asyncRunnerId_ {}; // 0 for task without asyncRunner
     TaskInfo* currentTaskInfo_ {};
     std::list<TaskInfo*> pendingTaskInfos_ {}; // for a common task executes multiple times
     void* result_ = nullptr;
@@ -206,6 +217,7 @@ public:
     std::set<uv_timer_t*> delayedTimers_ {}; // task delayed timer
 
     bool isMainThreadTask_ {false};
+    Priority asyncTaskPriority_ {Priority::DEFAULT};
 };
 
 struct CallbackInfo {

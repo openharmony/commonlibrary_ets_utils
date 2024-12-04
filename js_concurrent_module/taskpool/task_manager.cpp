@@ -19,6 +19,7 @@
 #include <securec.h>
 #include <thread>
 
+#include "async_runner_manager.h"
 #if defined(ENABLE_TASKPOOL_FFRT)
 #include "bundle_info.h"
 #include "bundle_mgr_interface.h"
@@ -624,8 +625,13 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         uv_timer_stop(task->timer_);
         ConcurrentHelper::UvHandleClose(task->timer_);
         return;
-    } else if (task->IsSeqRunnerTask()) {
+    }
+    if (task->IsSeqRunnerTask()) {
         CancelSeqRunnerTask(env, task);
+        return;
+    }
+    if (task->IsAsyncRunnerTask()) {
+        AsyncRunnerManager::GetInstance().CancelAsyncRunnerTask(env, task);
         return;
     }
     {
