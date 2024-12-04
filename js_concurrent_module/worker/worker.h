@@ -532,7 +532,7 @@ private:
     void PostWorkerMessageTask();
     void PostWorkerGlobalCallTask();
     static bool IsValidWorker(Worker* worker);
-    static bool IsValidLimitedWorker(Worker* worker);
+    static bool IsValidLimitedWorker(Worker* limitedWorker);
     static void HostEnvCleanCallbackInner(Worker* worker);
 
     void InitHostHandle(uv_loop_t* loop);
