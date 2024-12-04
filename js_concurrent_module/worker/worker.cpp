@@ -231,6 +231,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             return nullptr;
         }
     }
+
     Worker* worker = nullptr;
     if (limitSign) {
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
@@ -313,7 +314,7 @@ void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
 {
     Worker* worker = static_cast<Worker*>(data);
     if (worker == nullptr) {
-        HILOG_WARN("worker:: worker is nullptr.");
+        HILOG_WARN("worker:: worker is null.");
         return;
     }
     if (worker->isLimitedWorker_) {
