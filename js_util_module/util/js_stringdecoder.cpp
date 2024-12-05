@@ -66,7 +66,11 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
 
     napi_value resultStr = nullptr;
     size_t resultLen = target - arr;
-    napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arr), resultLen, &resultStr);
+    if (napi_create_string_utf16(env, reinterpret_cast<char16_t *>(arr), resultLen, &resultStr) != napi_ok) {
+        HILOG_ERROR("StringDecoder:: create string error!");
+        FreedMemory(arr);
+        return nullptr;
+    }
     FreedMemory(arr);
     return resultStr;
 }
