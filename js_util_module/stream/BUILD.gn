@@ -11,9 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/config/components/ets_frontend/es2abc_config.gni")
+import("//arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
+import("//commonlibrary/ets_utils/js_util_module/stream/stream_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
@@ -47,26 +48,26 @@ es2abc_gen_abc("gen_stream_abc") {
 
 abc_output_path = get_label_info(":stream_abc", "target_out_dir")
 
-gen_js_obj("stream_js") {
+gen_obj("stream_js") {
   input = "$target_out_dir/stream_js.js"
-  if (is_arkui_x) {
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
     stream_js_obj_path = abc_output_path + "/stream.c"
   } else {
     stream_js_obj_path = abc_output_path + "/stream.o"
   }
   output = stream_js_obj_path
-  dep = ":build_ts_js"
+  snapshot_dep = [ ":build_ts_js" ]
 }
 
-gen_js_obj("stream_abc") {
+gen_obj("stream_abc") {
   input = "$target_out_dir/stream.abc"
-  if (is_arkui_x) {
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
     stream_js_obj_path = abc_output_path + "/stream_abc.c"
   } else {
     stream_js_obj_path = abc_output_path + "/stream_abc.o"
   }
   output = stream_js_obj_path
-  dep = ":gen_stream_abc"
+  snapshot_dep = [ ":gen_stream_abc" ]
 }
 
 stream_sources = [ "native_module_stream.cpp" ]
@@ -83,8 +84,8 @@ ohos_source_set("stream_static") {
   sources = stream_sources
 
   deps = [
-    ":stream_abc",
-    ":stream_js",
+    ":gen_obj_src_stream_abc",
+    ":gen_obj_src_stream_js",
   ]
 
   if (is_arkui_x) {
