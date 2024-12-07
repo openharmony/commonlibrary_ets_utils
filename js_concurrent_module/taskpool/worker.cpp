@@ -526,6 +526,17 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         uint64_t cpuDuration = task->cpuTime_ - task->startTime_;
         TaskManager::GetInstance().StoreTaskDuration(task->taskId_, std::max(ioDuration, cpuDuration), cpuDuration);
     }
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    if (exception != nullptr) {
+        HILOG_ERROR("taskpool::TaskResultCallback occur exception");
+        reinterpret_cast<NativeEngine*>(env)->HandleTaskpoolException(exception, task->name_);
+        task->success_ = false;
+        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
+        NotifyTaskResult(env, task, errorEvent);
+        return;
+    }
+
     task->success_ = success;
     NotifyTaskResult(env, task, result);
 }
@@ -620,10 +631,11 @@ bool Worker::HasLongTask()
 
 void Worker::HandleFunctionException(napi_env env, Task* task)
 {
-    napi_value exception;
+    napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");
+        reinterpret_cast<NativeEngine*>(env)->HandleTaskpoolException(exception, task->name_);
         task->DecreaseRefCount();
         task->success_ = false;
         napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
