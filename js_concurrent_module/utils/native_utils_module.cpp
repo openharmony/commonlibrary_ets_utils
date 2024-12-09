@@ -14,18 +14,37 @@
  */
 
 #include "utils.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 
-static napi_module g_utilsModule = {
+
+extern const char _binary_utils_abc_start[];
+extern const char _binary_utils_abc_end[];
+
+// utils JS register
+
+extern "C" __attribute__((visibility("default"))) void NAPI_utils_GetABCCode(const char** buf, int* buflen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_utils_abc_start;
+    }
+    if (buflen != nullptr) {
+        *buflen = _binary_utils_abc_end - _binary_utils_abc_start;
+    }
+}
+
+
+static napi_module_with_js g_utilsModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
     .nm_register_func = Commonlibrary::Concurrent::Utils::Init,
     .nm_modname = "arkts.utils",
     .nm_priv = reinterpret_cast<void *>(0),
-    .reserved = {0},
+    .nm_get_abc_code = NAPI_utils_GetABCCode,
 };
 
 extern "C" __attribute__((constructor)) void LocksRegister()
 {
-    napi_module_register(&g_utilsModule);
+    napi_module_with_js_register(&g_utilsModule);
 }
