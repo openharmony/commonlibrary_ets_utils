@@ -118,7 +118,7 @@ void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
     }
     bool shouldDelete = false;
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
         task->SetValid(false);
         if (task->refCount_ == 0) {
             shouldDelete = true;
@@ -138,7 +138,7 @@ void Task::CleanupHookFunc(void* arg)
         return;
     }
     Task* task = static_cast<Task*>(arg);
-    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
     if (task->onResultSignal_ != nullptr) {
         uv_close(reinterpret_cast<uv_handle_t*>(task->onResultSignal_), nullptr);
     }
@@ -252,7 +252,7 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value napiTask, Priority priority
         return nullptr;
     }
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (currentTaskInfo_ == nullptr) {
             currentTaskInfo_ = pendingInfo;
         } else {
@@ -1060,7 +1060,7 @@ void Task::NotifyPendingTask()
 {
     HILOG_DEBUG("taskpool:: task:%{public}s NotifyPendingTask", std::to_string(taskId_).c_str());
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
         currentTaskInfo_ = nullptr;
@@ -1115,7 +1115,7 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
     void* serializationFunction = nullptr;
     void* serializationArguments = nullptr;
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (UNLIKELY(currentTaskInfo_ == nullptr)) {
             HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
             return nullptr;
@@ -1378,7 +1378,7 @@ void Task::ClearDelayedTimers()
     HILOG_DEBUG("taskpool:: task ClearDelayedTimers");
     std::list<napi_deferred> deferreds {};
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         TaskMessage *taskMessage = nullptr;
         for (auto t: delayedTimers_) {
             if (t == nullptr) {
@@ -1416,7 +1416,7 @@ bool Task::VerifyAndPostResult(Priority priority)
         TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask", priority);
         return true;
     } else {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
             return false;
         }
@@ -1424,7 +1424,7 @@ bool Task::VerifyAndPostResult(Priority priority)
         return true;
     }
 #else
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
         return false;
     }
@@ -1445,7 +1445,7 @@ void Task::DecreaseTaskRefCount()
 
 bool Task::ShouldDeleteTask(bool needUnref)
 {
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (!IsValid()) {
         HILOG_WARN("taskpool:: task is invalid");
         TaskManager::GetInstance().RemoveTask(taskId_);
@@ -1478,7 +1478,7 @@ bool Task::CheckStartExecution(Priority priority)
         if (onStartExecutionSignal_ == nullptr) {
             return true;
         }
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (!IsValid()) {
             return false;
         }
@@ -1491,7 +1491,7 @@ bool Task::CheckStartExecution(Priority priority)
     if (onStartExecutionSignal_ == nullptr) {
         return true;
     }
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (!IsValid()) {
         return false;
     }
