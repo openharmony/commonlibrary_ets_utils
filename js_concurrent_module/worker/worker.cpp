@@ -1332,9 +1332,8 @@ void Worker::ExecuteInThread(const void* data)
 
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
-        worker->workerOnMessageSignal_ = new uv_async_t;
-        uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::WorkerOnMessage));
-        worker->workerOnMessageSignal_->data = worker;
+        ConcurrentHelper::UvHandleInit(loop, worker->workerOnMessageSignal_, Worker::WorkerOnMessage, worker);
+        ConcurrentHelper::UvHandleInit(loop, worker->workerOnTerminateSignal_, Worker::WorkerOnMessage, worker);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             Worker::HandleDebuggerTask));
@@ -1768,7 +1767,10 @@ void Worker::PostMessageInner(MessageDataType data)
     }
     workerMessageQueue_.EnQueue(data);
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
-    if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
+    if (data == nullptr) {
+        HILOG_INFO("worker:: host post nullptr to worker.");
+        uv_async_send(workerOnTerminateSignal_);
+    } else if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
         uv_async_send(workerOnMessageSignal_);
     }
 }
@@ -1844,10 +1846,8 @@ void Worker::TerminateWorker()
     // when there is no active handle, worker loop will stop automatic.
     {
         std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
-        uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(workerOnMessageSignal_);
+        ConcurrentHelper::UvHandleClose(workerOnTerminateSignal_);
     }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_close(reinterpret_cast<uv_handle_t*>(&debuggerOnPostTaskSignal_), nullptr);
@@ -2435,36 +2435,21 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 
 void Worker::InitHostHandle(uv_loop_t* loop)
 {
-    hostOnMessageSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
-    hostOnMessageSignal_->data = this;
-    hostOnErrorSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnError));
-    hostOnErrorSignal_->data = this;
-    hostOnGlobalCallSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnGlobalCallSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnGlobalCall));
-    hostOnGlobalCallSignal_->data = this;
+    ConcurrentHelper::UvHandleInit(loop, hostOnMessageSignal_, Worker::HostOnMessage, this);
+    ConcurrentHelper::UvHandleInit(loop, hostOnErrorSignal_, Worker::HostOnError, this);
+    ConcurrentHelper::UvHandleInit(loop, hostOnGlobalCallSignal_, Worker::HostOnGlobalCall, this);
 }
 
 void Worker::CloseHostHandle()
 {
     if (hostOnMessageSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(hostOnMessageSignal_);
     }
     if (hostOnErrorSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(hostOnErrorSignal_);
     }
     if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
     }
 }
 
