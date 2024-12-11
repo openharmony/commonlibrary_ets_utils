@@ -206,7 +206,7 @@ napi_value TaskPool::TerminateTask(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
-    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+    uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
     auto task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr || !task->IsLongTask()) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the params must be long task.");
@@ -272,7 +272,6 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         HILOG_ERROR("taskpool:: GenerateFunctionTask failed");
         return nullptr;
     }
-    TaskManager::GetInstance().StoreTask(task->taskId_, task);
     napi_value promise = NapiHelper::CreatePromise(env, &task->currentTaskInfo_->deferred);
     ExecuteTask(env, task);
     return promise;
@@ -562,7 +561,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
     if (!groupInfo->HasException()) {
         HILOG_INFO("taskpool:: taskGroup perform end, taskGroupId %{public}s", std::to_string(task->groupId_).c_str());
         napi_resolve_deferred(env, groupInfo->deferred, resArr);
-        for (uint64_t taskId : taskGroup->taskIds_) {
+        for (uint32_t taskId : taskGroup->taskIds_) {
             auto task = TaskManager::GetInstance().GetTask(taskId);
             if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
                 task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_);
@@ -616,6 +615,12 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
+    if (NapiHelper::IsNumber(env, args[0])) {
+        uint32_t taskId = NapiHelper::GetUint32Value(env, args[0]);
+        TaskManager::GetInstance().CancelTask(env, taskId);
+        return nullptr;
+    }
+
     if (!NapiHelper::IsObject(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the params must be object.");
         return nullptr;
@@ -627,7 +632,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the params must be task.");
             return nullptr;
         }
-        uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+        uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
         TaskManager::GetInstance().CancelTask(env, taskId);
     } else {
         napi_value napiGroupId = NapiHelper::GetNameProperty(env, args[0], GROUP_ID_STR);
@@ -671,6 +676,10 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
         return;
     } else if (task->taskState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: the periodic task has been canceled");
+        napi_reference_unref(task->env_, task->taskRef_, nullptr);
+        task->CancelPendingTask(task->env_);
+        uv_timer_stop(task->timer_);
+        ConcurrentHelper::UvHandleClose(task->timer_);
         return;
     }
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);

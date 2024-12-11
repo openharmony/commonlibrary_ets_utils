@@ -53,6 +53,7 @@ static constexpr uint32_t MAX_TIMEOUT_TIME = 600000; // 600000: 10min
 static constexpr int32_t MAX_IDLE_TIME = 30000; // 30000: 30s
 static constexpr uint32_t TRIGGER_INTERVAL = 30000; // 30000: 30s
 static constexpr uint32_t SHRINK_STEP = 4; // 4: try to release 4 threads every time
+static constexpr uint32_t MAX_UINT32_T = 0xFFFFFFFF; // 0xFFFFFFFF: max uint32_t
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
@@ -584,7 +585,7 @@ void TaskManager::RunTaskManager()
     }
 }
 
-void TaskManager::CancelTask(napi_env env, uint64_t taskId)
+void TaskManager::CancelTask(napi_env env, uint32_t taskId)
 {
     // 1. Cannot find taskInfo by executeId, throw error
     // 2. Find executing taskInfo, skip it
@@ -620,10 +621,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         return taskGroup->CancelGroupTask(env, task->taskId_);
     }
     if (task->IsPeriodicTask()) {
-        napi_reference_unref(env, task->taskRef_, nullptr);
-        task->CancelPendingTask(env);
-        uv_timer_stop(task->timer_);
-        ConcurrentHelper::UvHandleClose(task->timer_);
+        task->taskState_.exchange(ExecuteState::CANCELED);
         return;
     }
     if (task->IsSeqRunnerTask()) {
@@ -634,8 +632,13 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         AsyncRunnerManager::GetInstance().CancelAsyncRunnerTask(env, task);
         return;
     }
+    ExecuteState state = ExecuteState::NOT_FOUND;
     {
         std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        if (task->taskState_ == ExecuteState::CANCELED) {
+            HILOG_DEBUG("taskpool:: task has been canceled");
+            return;
+        }
         if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
             task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
             task->taskState_ == ExecuteState::ENDING) {
@@ -644,36 +647,28 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
             return;
         }
+        state = task->taskState_.exchange(ExecuteState::CANCELED);
     }
-    task->ClearDelayedTimers();
-    ExecuteState state = task->taskState_.exchange(ExecuteState::CANCELED);
-    task->CancelPendingTask(env);
-    std::list<napi_deferred> deferreds {};
-    {
-        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
-        if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
-            reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
-            task->DecreaseTaskRefCount();
-            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
-            deferreds.push_back(task->currentTaskInfo_->deferred);
-            napi_reference_unref(env, task->taskRef_, nullptr);
-            delete task->currentTaskInfo_;
-            task->currentTaskInfo_ = nullptr;
-        }
+    if (task->IsSameEnv(env)) {
+        task->CancelInner(state);
+        return;
     }
-    std::string error = "taskpool:: task has been canceled";
-    BatchRejectDeferred(env, deferreds, error);
+    CancelTaskMessage* message = new CancelTaskMessage(state, task->taskId_);
+    task->TriggerCancel(message);
 }
 
 void TaskManager::CancelSeqRunnerTask(napi_env env, Task *task)
 {
-    if (task->taskState_ == ExecuteState::FINISHED) {
-        std::string errMsg = "taskpool:: sequenceRunner task has been executed";
-        HILOG_ERROR("%{public}s", errMsg.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
-    } else {
-        task->taskState_ = ExecuteState::CANCELED;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        if (task->taskState_ != ExecuteState::FINISHED) {
+            task->taskState_ = ExecuteState::CANCELED;
+            return;
+        }
     }
+    std::string errMsg = "taskpool:: sequenceRunner task has been executed";
+    HILOG_ERROR("%{public}s", errMsg.c_str());
+    ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
 }
 
 void TaskManager::NotifyWorkerIdle(Worker* worker)
@@ -759,7 +754,7 @@ uint32_t TaskManager::GetThreadNum()
     return workers_.size();
 }
 
-void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
+void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
 {
     {
         std::lock_guard<FFRT_MUTEX> lock(taskQueuesMutex_);
@@ -778,7 +773,7 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
     }
 }
 
-void TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
+void TaskManager::EraseWaitingTaskId(uint32_t taskId, Priority priority)
 {
     std::lock_guard<FFRT_MUTEX> lock(taskQueuesMutex_);
     if (!taskQueues_[priority]->EraseWaitingTaskId(taskId)) {
@@ -786,7 +781,7 @@ void TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
     }
 }
 
-std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
+std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()
 {
     std::lock_guard<FFRT_MUTEX> lock(taskQueuesMutex_);
     auto& highTaskQueue = taskQueues_[Priority::HIGH];
@@ -830,10 +825,10 @@ bool TaskManager::IsChooseIdle()
     return true;
 }
 
-std::pair<uint64_t, Priority> TaskManager::GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue,
+std::pair<uint32_t, Priority> TaskManager::GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue,
     Priority priority)
 {
-    uint64_t taskId = taskQueue->DequeueTaskId();
+    uint32_t taskId = taskQueue->DequeueTaskId();
     if (IsDependendByTaskId(taskId)) {
         EnqueuePendingTaskInfo(taskId, priority);
         return std::make_pair(0, priority);
@@ -930,13 +925,13 @@ void TaskManager::RestoreWorker(Worker* worker)
 }
 
 // ---------------------------------- SendData ---------------------------------------
-void TaskManager::RegisterCallback(napi_env env, uint64_t taskId, std::shared_ptr<CallbackInfo> callbackInfo)
+void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     callbackTable_[taskId] = callbackInfo;
 }
 
-std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint64_t taskId)
+std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint32_t taskId)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     auto iter = callbackTable_.find(taskId);
@@ -947,7 +942,7 @@ std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint64_t taskId)
     return iter->second;
 }
 
-void TaskManager::IncreaseRefCount(uint64_t taskId)
+void TaskManager::IncreaseRefCount(uint32_t taskId)
 {
     if (taskId == 0) { // do not support func
         return;
@@ -960,7 +955,7 @@ void TaskManager::IncreaseRefCount(uint64_t taskId)
     iter->second->refCount++;
 }
 
-void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
+void TaskManager::DecreaseRefCount(napi_env env, uint32_t taskId)
 {
     if (taskId == 0) { // do not support func
         return;
@@ -971,8 +966,8 @@ void TaskManager::DecreaseRefCount(napi_env env, uint64_t taskId)
         return;
     }
 
-    auto task = reinterpret_cast<Task*>(taskId);
-    if (!task->IsValid()) {
+    auto task = GetTask(taskId);
+    if (task != nullptr && !task->IsValid()) {
         callbackTable_.erase(iter);
         return;
     }
@@ -1053,7 +1048,7 @@ MsgQueue* TaskManager::GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInf
 }
 // ---------------------------------- SendData ---------------------------------------
 
-void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
+void TaskManager::NotifyDependencyTaskInfo(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s NotifyDependencyTaskInfo", std::to_string(taskId).c_str());
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
@@ -1073,7 +1068,7 @@ void TaskManager::NotifyDependencyTaskInfo(uint64_t taskId)
     }
 }
 
-void TaskManager::RemoveDependencyById(uint64_t dependentTaskId, uint64_t taskId)
+void TaskManager::RemoveDependencyById(uint32_t dependentTaskId, uint32_t taskId)
 {
     HILOG_DEBUG("taskpool::task:%{public}s RemoveDependencyById", std::to_string(taskId).c_str());
     // remove dependency after task execute
@@ -1087,7 +1082,7 @@ void TaskManager::RemoveDependencyById(uint64_t dependentTaskId, uint64_t taskId
     }
 }
 
-bool TaskManager::IsDependendByTaskId(uint64_t taskId)
+bool TaskManager::IsDependendByTaskId(uint32_t taskId)
 {
     std::shared_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     auto iter = dependTaskInfos_.find(taskId);
@@ -1097,7 +1092,7 @@ bool TaskManager::IsDependendByTaskId(uint64_t taskId)
     return true;
 }
 
-bool TaskManager::IsDependentByTaskId(uint64_t dependentTaskId)
+bool TaskManager::IsDependentByTaskId(uint32_t dependentTaskId)
 {
     std::shared_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     auto iter = dependentTaskInfos_.find(dependentTaskId);
@@ -1107,7 +1102,7 @@ bool TaskManager::IsDependentByTaskId(uint64_t dependentTaskId)
     return true;
 }
 
-bool TaskManager::StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskIdSet)
+bool TaskManager::StoreTaskDependency(uint32_t taskId, std::set<uint32_t> taskIdSet)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s StoreTaskDependency", std::to_string(taskId).c_str());
     StoreDependentTaskInfo(taskIdSet, taskId);
@@ -1140,7 +1135,7 @@ bool TaskManager::StoreTaskDependency(uint64_t taskId, std::set<uint64_t> taskId
     return true;
 }
 
-bool TaskManager::CheckCircularDependency(std::set<uint64_t> dependentIdSet, std::set<uint64_t> idSet, uint64_t taskId)
+bool TaskManager::CheckCircularDependency(std::set<uint32_t> dependentIdSet, std::set<uint32_t> idSet, uint32_t taskId)
 {
     for (const auto& id : idSet) {
         if (id == taskId) {
@@ -1161,7 +1156,7 @@ bool TaskManager::CheckCircularDependency(std::set<uint64_t> dependentIdSet, std
     return true;
 }
 
-bool TaskManager::RemoveTaskDependency(uint64_t taskId, uint64_t dependentId)
+bool TaskManager::RemoveTaskDependency(uint32_t taskId, uint32_t dependentId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s RemoveTaskDependency", std::to_string(taskId).c_str());
     RemoveDependentTaskInfo(dependentId, taskId);
@@ -1178,7 +1173,7 @@ bool TaskManager::RemoveTaskDependency(uint64_t taskId, uint64_t dependentId)
     return true;
 }
 
-void TaskManager::EnqueuePendingTaskInfo(uint64_t taskId, Priority priority)
+void TaskManager::EnqueuePendingTaskInfo(uint32_t taskId, Priority priority)
 {
     if (taskId == 0) {
         return;
@@ -1187,13 +1182,13 @@ void TaskManager::EnqueuePendingTaskInfo(uint64_t taskId, Priority priority)
     pendingTaskInfos_.emplace(taskId, priority);
 }
 
-std::pair<uint64_t, Priority> TaskManager::DequeuePendingTaskInfo(uint64_t taskId)
+std::pair<uint32_t, Priority> TaskManager::DequeuePendingTaskInfo(uint32_t taskId)
 {
     std::unique_lock<std::shared_mutex> lock(pendingTaskInfosMutex_);
     if (pendingTaskInfos_.empty()) {
         return std::make_pair(0, Priority::DEFAULT);
     }
-    std::pair<uint64_t, Priority> result;
+    std::pair<uint32_t, Priority> result;
     for (auto it = pendingTaskInfos_.begin(); it != pendingTaskInfos_.end(); ++it) {
         if (it->first == taskId) {
             result = std::make_pair(it->first, it->second);
@@ -1204,21 +1199,21 @@ std::pair<uint64_t, Priority> TaskManager::DequeuePendingTaskInfo(uint64_t taskI
     return result;
 }
 
-void TaskManager::RemovePendingTaskInfo(uint64_t taskId)
+void TaskManager::RemovePendingTaskInfo(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s RemovePendingTaskInfo", std::to_string(taskId).c_str());
     std::unique_lock<std::shared_mutex> lock(pendingTaskInfosMutex_);
     pendingTaskInfos_.erase(taskId);
 }
 
-void TaskManager::StoreDependentTaskInfo(std::set<uint64_t> dependentTaskIdSet, uint64_t taskId)
+void TaskManager::StoreDependentTaskInfo(std::set<uint32_t> dependentTaskIdSet, uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s StoreDependentTaskInfo", std::to_string(taskId).c_str());
     std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     for (const auto& id : dependentTaskIdSet) {
         auto iter = dependentTaskInfos_.find(id);
         if (iter == dependentTaskInfos_.end()) {
-            std::set<uint64_t> set{taskId};
+            std::set<uint32_t> set{taskId};
             dependentTaskInfos_.emplace(id, std::move(set));
         } else {
             iter->second.emplace(taskId);
@@ -1226,7 +1221,7 @@ void TaskManager::StoreDependentTaskInfo(std::set<uint64_t> dependentTaskIdSet, 
     }
 }
 
-void TaskManager::RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t taskId)
+void TaskManager::RemoveDependentTaskInfo(uint32_t dependentTaskId, uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s RemoveDependentTaskInfo", std::to_string(taskId).c_str());
     std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
@@ -1241,7 +1236,7 @@ void TaskManager::RemoveDependentTaskInfo(uint64_t dependentTaskId, uint64_t tas
     iter->second.erase(taskIter);
 }
 
-std::string TaskManager::GetTaskDependInfoToString(uint64_t taskId)
+std::string TaskManager::GetTaskDependInfoToString(uint32_t taskId)
 {
     std::shared_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
     std::string str = "TaskInfos: taskId: " + std::to_string(taskId) + ", dependTaskId:";
@@ -1254,7 +1249,7 @@ std::string TaskManager::GetTaskDependInfoToString(uint64_t taskId)
     return str;
 }
 
-void TaskManager::StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
+void TaskManager::StoreTaskDuration(uint32_t taskId, uint64_t totalDuration, uint64_t cpuDuration)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s StoreTaskDuration", std::to_string(taskId).c_str());
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
@@ -1272,7 +1267,7 @@ void TaskManager::StoreTaskDuration(uint64_t taskId, uint64_t totalDuration, uin
     }
 }
 
-uint64_t TaskManager::GetTaskDuration(uint64_t taskId, std::string durationType)
+uint64_t TaskManager::GetTaskDuration(uint32_t taskId, std::string durationType)
 {
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
     auto iter = taskDurationInfos_.find(taskId);
@@ -1289,7 +1284,7 @@ uint64_t TaskManager::GetTaskDuration(uint64_t taskId, std::string durationType)
     return iter->second.first - iter->second.second;
 }
 
-void TaskManager::RemoveTaskDuration(uint64_t taskId)
+void TaskManager::RemoveTaskDuration(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s RemoveTaskDuration", std::to_string(taskId).c_str());
     std::unique_lock<std::shared_mutex> lock(taskDurationInfosMutex_);
@@ -1299,26 +1294,26 @@ void TaskManager::RemoveTaskDuration(uint64_t taskId)
     }
 }
 
-void TaskManager::StoreLongTaskInfo(uint64_t taskId, Worker* worker)
+void TaskManager::StoreLongTaskInfo(uint32_t taskId, Worker* worker)
 {
     std::unique_lock<std::shared_mutex> lock(longTasksMutex_);
     longTasksMap_.emplace(taskId, worker);
 }
 
-void TaskManager::RemoveLongTaskInfo(uint64_t taskId)
+void TaskManager::RemoveLongTaskInfo(uint32_t taskId)
 {
     std::unique_lock<std::shared_mutex> lock(longTasksMutex_);
     longTasksMap_.erase(taskId);
 }
 
-Worker* TaskManager::GetLongTaskInfo(uint64_t taskId)
+Worker* TaskManager::GetLongTaskInfo(uint32_t taskId)
 {
     std::shared_lock<std::shared_mutex> lock(longTasksMutex_);
     auto iter = longTasksMap_.find(taskId);
     return iter != longTasksMap_.end() ? iter->second : nullptr;
 }
 
-void TaskManager::TerminateTask(uint64_t taskId)
+void TaskManager::TerminateTask(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s TerminateTask", std::to_string(taskId).c_str());
     auto worker = GetLongTaskInfo(taskId);
@@ -1331,7 +1326,7 @@ void TaskManager::TerminateTask(uint64_t taskId)
 
 void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTask)
 {
-    uint64_t taskId = task->taskId_;
+    uint32_t taskId = task->taskId_;
     if (shouldDeleteTask) {
         RemoveTask(taskId);
     }
@@ -1344,6 +1339,15 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
                 delete task->onResultSignal_;
             }
             task->onResultSignal_ = nullptr;
+        }
+
+        if (task->onStartCancelSignal_ != nullptr) {
+            if (!uv_is_closing((uv_handle_t*)task->onStartCancelSignal_)) {
+                ConcurrentHelper::UvHandleClose(task->onStartCancelSignal_);
+            } else {
+                delete task->onStartCancelSignal_;
+            }
+            task->onStartCancelSignal_ = nullptr;
         }
 
         if (task->currentTaskInfo_ != nullptr) {
@@ -1425,19 +1429,27 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
 #endif
 }
 
-void TaskManager::StoreTask(uint64_t taskId, Task* task)
+void TaskManager::StoreTask(Task* task)
 {
+    uint64_t id = reinterpret_cast<uint64_t>(task);
+    uint32_t taskId = CalculateTaskId(id);
+
     std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
+    while (tasks_.find(taskId) != tasks_.end()) {
+        id++;
+        taskId = CalculateTaskId(id);
+    }
+    task->SetTaskId(taskId);
     tasks_.emplace(taskId, task);
 }
 
-void TaskManager::RemoveTask(uint64_t taskId)
+void TaskManager::RemoveTask(uint32_t taskId)
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     tasks_.erase(taskId);
 }
 
-Task* TaskManager::GetTask(uint64_t taskId)
+Task* TaskManager::GetTask(uint32_t taskId)
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     auto iter = tasks_.find(taskId);
@@ -1483,7 +1495,7 @@ bool TaskManager::PostTask(std::function<void()> task, const char* taskName, Pri
 }
 #endif
 
-bool TaskManager::CheckTask(uint64_t taskId)
+bool TaskManager::CheckTask(uint32_t taskId)
 {
     std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     auto item = tasks_.find(taskId);
@@ -1501,6 +1513,12 @@ void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> def
     }
 }
 
+uint32_t TaskManager::CalculateTaskId(uint64_t id)
+{
+    size_t hash = std::hash<uint64_t>{}(id);
+    return static_cast<uint32_t>(hash & MAX_UINT32_T);
+}
+
 // ----------------------------------- TaskGroupManager ----------------------------------------
 TaskGroupManager& TaskGroupManager::GetInstance()
 {
@@ -1508,7 +1526,7 @@ TaskGroupManager& TaskGroupManager::GetInstance()
     return groupManager;
 }
 
-void TaskGroupManager::AddTask(uint64_t groupId, napi_ref taskRef, uint64_t taskId)
+void TaskGroupManager::AddTask(uint64_t groupId, napi_ref taskRef, uint32_t taskId)
 {
     std::lock_guard<std::mutex> lock(taskGroupsMutex_);
     auto groupIter = taskGroups_.find(groupId);
@@ -1532,7 +1550,15 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
     TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
     {
         std::lock_guard<RECURSIVE_MUTEX> lock(group->taskGroupMutex_);
-        for (uint64_t taskId : group->taskIds_) {
+        if (group->onRejectResultSignal_ != nullptr) {
+            if (!uv_is_closing((uv_handle_t*)group->onRejectResultSignal_)) {
+                ConcurrentHelper::UvHandleClose(group->onRejectResultSignal_);
+            } else {
+                delete group->onRejectResultSignal_;
+            }
+            group->onRejectResultSignal_ = nullptr;
+        }
+        for (uint32_t taskId : group->taskIds_) {
             Task* task = TaskManager::GetInstance().GetTask(taskId);
             if (task == nullptr || !task->IsValid()) {
                 continue;
@@ -1575,7 +1601,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     taskGroup->CancelPendingGroup(env);
     std::lock_guard<RECURSIVE_MUTEX> lock(taskGroup->taskGroupMutex_);
     if (taskGroup->currentGroupInfo_->finishedTaskNum != taskGroup->taskNum_) {
-        for (uint64_t taskId : taskGroup->taskIds_) {
+        for (uint32_t taskId : taskGroup->taskIds_) {
             CancelGroupTask(env, taskId, taskGroup);
         }
         if (taskGroup->currentGroupInfo_->finishedTaskNum == taskGroup->taskNum_) {
@@ -1594,7 +1620,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     }
 }
 
-void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup* group)
+void TaskGroupManager::CancelGroupTask(napi_env env, uint32_t taskId, TaskGroup* group)
 {
     HILOG_DEBUG("taskpool:: CancelGroupTask task:%{public}s", std::to_string(taskId).c_str());
     auto task = TaskManager::GetInstance().GetTask(taskId);
