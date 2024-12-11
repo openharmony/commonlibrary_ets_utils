@@ -22,6 +22,7 @@
 #include "test.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "../../common/helper/napi_helper.h"
 #include "tools/log.h"
 #include "worker.h"
 
@@ -1007,6 +1008,15 @@ napi_value Worker_Terminate(napi_env env, napi_value global)
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::Terminate, nullptr, &cb);
     napi_call_function(env, global, cb, 0, nullptr, &result);
     return result;
+}
+
+napi_value GetGlobalProperty(napi_env env, const char *name)
+{
+    napi_value value = nullptr;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, name, &value);
+    return value;
 }
 
 // worker WorkerConstructor
@@ -4664,6 +4674,194 @@ HWTEST_F(WorkersTest, WorkerTest092, testing::ext::TestSize.Level0)
     ASSERT_TRUE(exception == nullptr);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest093, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "postMessage", NAPI_AUTO_LENGTH,
+                                              Worker::PostMessageToHost, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "postMessage", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest094, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "postMessageWithSharedSendable", NAPI_AUTO_LENGTH,
+                                              Worker::PostMessageWithSharedSendableToHost, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "postMessageWithSharedSendable", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest095, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "callGlobalCallObjectMethod", NAPI_AUTO_LENGTH,
+                                              Worker::GlobalCall, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "callGlobalCallObjectMethod", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest096, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "close", NAPI_AUTO_LENGTH,
+                                              Worker::CloseWorker, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "close", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest097, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "cancelTasks", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortCancelTask, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "cancelTasks", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest098, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "addEventListener", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortAddEventListener, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "addEventListener", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest099, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "dispatchEvent", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortDispatchEvent, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "dispatchEvent", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest100, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "removeEventListener", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortRemoveEventListener, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "removeEventListener", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest101, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "removeAllListener", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortRemoveAllListener, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "removeAllListener", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest102, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func1 = nullptr;
+    napi_status status = napi_create_function(env, "postMessage", NAPI_AUTO_LENGTH,
+                                              Worker::PostMessageToHost, nullptr, &func1);
+    napi_value func2 = nullptr;
+    status = napi_create_function(env, "postMessageWithSharedSendable", NAPI_AUTO_LENGTH,
+                                  Worker::PostMessageWithSharedSendableToHost, nullptr, &func2);
+    napi_value func3 = nullptr;
+    status = napi_create_function(env, "callGlobalCallObjectMethod", NAPI_AUTO_LENGTH,
+                                  Worker::GlobalCall, nullptr, &func3);
+    napi_value func4 = nullptr;
+    status = napi_create_function(env, "close", NAPI_AUTO_LENGTH,
+                                  Worker::CloseWorker, nullptr, &func4);
+    ASSERT_TRUE(status == napi_ok);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"postMessage", nullptr, nullptr, nullptr, nullptr, func1, napi_default, nullptr},
+        {"postMessageWithSharedSendable", nullptr, nullptr, nullptr, nullptr, func2, napi_default, nullptr},
+        {"callGlobalCallObjectMethod", nullptr, nullptr, nullptr, nullptr, func3, napi_default, nullptr},
+        {"close", nullptr, nullptr, nullptr, nullptr, func4, napi_default, nullptr}
+    };
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value postMessageCB = GetGlobalProperty(env, "postMessage");
+    napi_value postMessageWithSSCB = GetGlobalProperty(env, "postMessageWithSharedSendable");
+    napi_value globalCallObjMethodCB = GetGlobalProperty(env, "callGlobalCallObjectMethod");
+    napi_value closeCB = GetGlobalProperty(env, "close");
+    bool isEqual = false;
+    napi_strict_equals(env, postMessageCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, postMessageWithSSCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, globalCallObjMethodCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, closeCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest103, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func1 = nullptr;
+    napi_status status = napi_create_function(env, "cancelTasks", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortCancelTask, nullptr, &func1);
+    napi_value func2 = nullptr;
+    status = napi_create_function(env, "addEventListener", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortAddEventListener, nullptr, &func2);
+    napi_value func3 = nullptr;
+    status = napi_create_function(env, "dispatchEvent", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortDispatchEvent, nullptr, &func3);
+    napi_value func4 = nullptr;
+    status = napi_create_function(env, "removeEventListener", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortRemoveEventListener, nullptr, &func4);
+    napi_value func5 = nullptr;
+    status = napi_create_function(env, "removeAllListener", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortRemoveAllListener, nullptr, &func5);
+    ASSERT_TRUE(status == napi_ok);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"cancelTasks", nullptr, nullptr, nullptr, nullptr, func1, napi_default, nullptr},
+        {"addEventListener", nullptr, nullptr, nullptr, nullptr, func2, napi_default, nullptr},
+        {"dispatchEvent", nullptr, nullptr, nullptr, nullptr, func3, napi_default, nullptr},
+        {"removeEventListener", nullptr, nullptr, nullptr, nullptr, func4, napi_default, nullptr},
+        {"removeAllListener", nullptr, nullptr, nullptr, nullptr, func5, napi_default, nullptr}
+    };
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value cancelTasksCB = GetGlobalProperty(env, "cancelTasks");
+    napi_value addEventListenerCB = GetGlobalProperty(env, "addEventListener");
+    napi_value dispatchEventCB = GetGlobalProperty(env, "dispatchEvent");
+    napi_value removeEventListenerCB = GetGlobalProperty(env, "removeEventListener");
+    napi_value removeAllListenerCB = GetGlobalProperty(env, "removeAllListener");
+    bool isEqual = false;
+    napi_strict_equals(env, cancelTasksCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, addEventListenerCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, dispatchEventCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, removeEventListenerCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, removeAllListenerCB, func5, &isEqual);
+    ASSERT_TRUE(isEqual);
 }
 
 HWTEST_F(WorkersTest, PostMessageTest004, testing::ext::TestSize.Level0)
