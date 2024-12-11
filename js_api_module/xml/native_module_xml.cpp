@@ -15,6 +15,7 @@
 
 #include "native_module_xml.h"
 #include "js_xml.h"
+#include "tools/ets_error.h"
 
 extern const char _binary_js_xml_js_start[];
 extern const char _binary_js_xml_js_end[];
@@ -22,6 +23,9 @@ extern const char _binary_xml_abc_start[];
 extern const char _binary_xml_abc_end[];
 
 namespace OHOS::xml {
+using namespace OHOS::Tools;
+static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
+
     static napi_value XmlSerializerConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -78,38 +82,6 @@ namespace OHOS::xml {
         return thisVar;
     }
 
-    std::string DealCdata(void *data, size_t len)
-    {
-        std::string strEnd(reinterpret_cast<char*>(data), len);
-        strEnd = strEnd.substr(0, std::strlen(strEnd.c_str()));
-        std::string cDataBegin = "<![CDATA[";
-        std::string cDataEnd = "]]>";
-        size_t foundPosBegin = strEnd.find(cDataBegin);
-        size_t foundPosEnd = strEnd.find(cDataEnd);
-        size_t count = 0;
-        while (foundPosBegin != std::string::npos) {
-            std::string temp = strEnd.substr(foundPosBegin, foundPosEnd - foundPosBegin + cDataEnd.length());
-            std::string resStr = "";
-            for (char c : temp) {
-                if (c != '\r' && c != '\n') {
-                    resStr += c;
-                }
-                if (c == '\r') {
-                    resStr += "\\r";
-                    count++;
-                }
-                if (c == '\n') {
-                    resStr += "\\n";
-                    count++;
-                }
-            }
-            strEnd.replace(foundPosBegin, temp.length(), resStr);
-            foundPosBegin = strEnd.find(cDataBegin, foundPosBegin + 1);
-            foundPosEnd = strEnd.find(cDataEnd, foundPosEnd + count + 1);
-        }
-        return strEnd;
-    }
-
     static napi_value XmlPullParserConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -139,7 +111,7 @@ namespace OHOS::xml {
             }
         }
         if (data) {
-            std::string strEnd = DealCdata(data, len);
+            std::string strEnd(reinterpret_cast<char*>(data), len);
             if (argc == 1) {
                 object = new XmlPullParser(env, strEnd, "utf-8");
             } else if (argc == 2) { // 2:When the input parameter is set to 2
@@ -408,9 +380,30 @@ namespace OHOS::xml {
         XmlPullParser *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         object->DealOptionInfo(env, args[0]);
-        object->Parse(env, thisVar);
+        object->Parse(env, thisVar, true);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
+        return result;
+    }
+
+    static napi_value ParseXml(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = 1;
+        napi_value args[1] = { nullptr };
+        napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        XmlPullParser *xmlPullParser = nullptr;
+        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&xmlPullParser));
+        napi_value result = nullptr;
+        if (xmlPullParser == nullptr) {
+            ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
+            napi_get_boolean(env, false, &result);
+            return result;
+        }
+        xmlPullParser->DealOptionInfo(env, args[0]);
+        xmlPullParser->Parse(env, thisVar, false);
+        std::string errStr = xmlPullParser->XmlPullParserError();
+        napi_get_boolean(env, !errStr.empty(), &result);
         return result;
     }
 
@@ -433,6 +426,7 @@ namespace OHOS::xml {
         napi_value xmlClass = nullptr;
         napi_property_descriptor xmlDesc[] = {
             DECLARE_NAPI_FUNCTION("parse", Parse),
+            DECLARE_NAPI_FUNCTION("parseXml", ParseXml),
             DECLARE_NAPI_FUNCTION("XmlPullParserError", XmlPullParserError)
         };
         NAPI_CALL(env, napi_define_class(env, xmlPullParserClass, strlen(xmlPullParserClass),
