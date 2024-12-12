@@ -156,8 +156,10 @@ ohos_source_set("worker_static") {
       defines += [ "IOS_PLATFORM" ]
     }
   } else {
-    deps += [ "$napi_root:ace_napi" ]
-    external_deps += [ "hitrace:hitrace_meter" ]
+    external_deps += [
+      "hitrace:hitrace_meter",
+      "napi:ace_napi",
+    ]
   }
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
