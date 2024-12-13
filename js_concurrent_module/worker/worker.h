@@ -578,6 +578,7 @@ private:
     MessageQueue errorQueue_ {};
 
     uv_async_t* workerOnMessageSignal_ = nullptr;
+    uv_async_t* workerOnTerminateSignal_ = nullptr;
     uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* hostOnErrorSignal_ = nullptr;
     uv_async_t* hostOnGlobalCallSignal_ = nullptr;
