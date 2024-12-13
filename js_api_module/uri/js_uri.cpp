@@ -473,26 +473,22 @@ namespace OHOS::Uri {
         return result;
     }
 
-    std::vector<std::string> Uri::GetSegment() const
+    std::string Uri::GetLastSegment() const
     {
-        std::vector<std::string> segments;
-        if (uriData_.path.empty()) {
-            return segments;
+        std::string trimmedPath = uriData_.path;
+        if (trimmedPath.empty()) {
+            return trimmedPath;
         }
-        size_t previous = 0;
-        size_t current = 0;
-        for (current = uriData_.path.find('/', previous); current != std::string::npos;
-            current = uriData_.path.find('/', previous)) {
-            if (previous < current) {
-                std::string segment = uriData_.path.substr(previous, current - previous);
-                segments.push_back(segment);
-            }
-            previous = current + 1;
+        if (trimmedPath.back() == '/') {
+            trimmedPath.pop_back();
         }
-        if (previous < uriData_.path.length()) {
-            segments.push_back(uriData_.path.substr(previous));
+
+        size_t pos = trimmedPath.rfind('/');
+        if (pos != std::string::npos) {
+            return trimmedPath.substr(pos + 1);
         }
-        return segments;
+
+        return trimmedPath;
     }
 
     std::string Uri::IsFailed() const

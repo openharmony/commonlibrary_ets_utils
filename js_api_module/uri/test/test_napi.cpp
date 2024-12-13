@@ -702,11 +702,17 @@ HWTEST_F(NativeEngineTest, ClearQueryTest001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(temp.c_str(), "https://username:password@host:8080/file#myfragment");
 }
 
-HWTEST_F(NativeEngineTest, GetSegmentTest001, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, GetLastSegmentTest001, testing::ext::TestSize.Level0)
 {
-    OHOS::Uri::Uri uri("https://username:password@host:8080/file?aaa=1#myfragment");
-    std::vector<std::string> temp = uri.GetSegment();
-    ASSERT_EQ(temp.size(), 1);
+    OHOS::Uri::Uri uri("https://username:password@host:8080/file/test1?aaa=1#myfragment");
+    std::string temp = uri.GetLastSegment();
+    ASSERT_EQ(temp.size(), 5);
+    OHOS::Uri::Uri uri1("https://username:password@host:8080?aaa=1#myfragment");
+    temp = uri1.GetLastSegment();
+    ASSERT_EQ(temp.size(), 0);
+    OHOS::Uri::Uri uri2("https://username:password@host:8080/file/test1/?aaa=1#myfragment");
+    temp = uri2.GetLastSegment();
+    ASSERT_EQ(temp.size(), 5);
 }
 
 HWTEST_F(NativeEngineTest, AddSegmentTest001, testing::ext::TestSize.Level0)
@@ -921,11 +927,10 @@ HWTEST_F(NativeEngineTest, ModuleTest003, testing::ext::TestSize.Level0)
     std::string res = GetStringUtf8(env, result);
     ASSERT_STREQ(res.c_str(), "http://name:word@www.uritest.com:99/path/abc?query&aaa=bbb#fagment");
 
-    napi_get_named_property(env, instance, "getSegment", &tempFn);
+    napi_get_named_property(env, instance, "getLastSegment", &tempFn);
     napi_call_function(env, instance, tempFn, 0, nullptr, &result);
-    std::vector<std::string> temp = GetArray(env, result);
-    ASSERT_STREQ(temp[0].c_str(), "path");
-    ASSERT_STREQ(temp[1].c_str(), "abc");
+    std::string temp = GetStringUtf8(env, result);
+    ASSERT_STREQ(temp.c_str(), "abc");
 
     napi_value segment = StrToNapiValue(env, "aaa");
     napi_value segargs[] = { segment };

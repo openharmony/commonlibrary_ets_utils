@@ -100,9 +100,9 @@ namespace OHOS::Uri {
         std::string AddSegment(const std::string pathSegment) const;
 
         /**
-         * Gets the all Segment of the URI.
+         * Gets the LastSegment of the URI.
          */
-        std::vector<std::string> GetSegment() const;
+        std::string GetLastSegment() const;
 
         /**
          * Normalize the path of this URI.
