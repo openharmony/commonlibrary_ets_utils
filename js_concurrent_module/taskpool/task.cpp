@@ -548,9 +548,8 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (task->IsAsyncRunnerTask()) {
-        errMessage = "AsyncRunnerTask cannot addDependency.";
-        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        HILOG_ERROR("taskpool:: AsyncRunnerTask cannot addDependency.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
         return nullptr;
     }
     if (task->IsGroupCommonTask()) {
@@ -591,9 +590,8 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
                 return nullptr;
             }
             if (dependentTask->IsAsyncRunnerTask()) {
-                errMessage = "AsyncRunnerTask cannot be relied on.";
-                HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                HILOG_ERROR("taskpool:: AsyncRunnerTask cannot be relied on.");
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
                 return nullptr;
             }
             if (dependentTask->IsGroupCommonTask()) {
@@ -651,6 +649,11 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_INEXISTENT_DEPENDENCY, errMessage.c_str());
         return nullptr;
     }
+    if (task->IsAsyncRunnerTask()) {
+        HILOG_ERROR("taskpool:: AsyncRunnerTask cannot call removeDependency.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
+        return nullptr;
+    }
     for (size_t i = 0; i < argc; i++) {
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             std::string errMessage = "taskpool:: removeDependency param is not task";
@@ -678,6 +681,11 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
             std::string errMessage = "taskpool:: cannot removeDependency on a dependent and executed task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        if (dependentTask->IsAsyncRunnerTask()) {
+            HILOG_ERROR("taskpool:: AsyncRunnerTask cannot call removeDependency.");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
             return nullptr;
         }
         if (!TaskManager::GetInstance().RemoveTaskDependency(task->taskId_, dependentTask->taskId_)) {
@@ -1382,6 +1390,11 @@ bool Task::CanExecuteDelayed(napi_env env)
 
 bool Task::CanExecutePeriodically(napi_env env)
 {
+    if (IsAsyncRunnerTask()) {
+        std::string errMessage = "AsyncRunnerTask cannot executePeriodically.";
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     if (IsExecuted() || IsPeriodicTask()) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_PERIODICALLY);
         return false;

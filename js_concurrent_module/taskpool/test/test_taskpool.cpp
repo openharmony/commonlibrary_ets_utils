@@ -3377,6 +3377,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest179, testing::ext::TestSize.Level0)
     napi_call_function(env, thisValue, cb, 1, argv, &result);
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
+
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest180, testing::ext::TestSize.Level0)
@@ -5382,6 +5387,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest271, testing::ext::TestSize.Level0)
 
     flag = task->CanExecuteDelayed(env);
     ASSERT_FALSE(flag);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    flag = task->CanExecutePeriodically(env);
+    ASSERT_FALSE(flag);
     delete task;
 }
 
@@ -5597,4 +5607,32 @@ HWTEST_F(NativeEngineTest, TaskpoolTest280, testing::ext::TestSize.Level0)
     napi_value argv[] = {name, runningCapacity};
     napi_call_function(env, nullptr, cb, 2, argv, &result);
     ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest281, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value thisValue = CreateTaskObject(env);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+
+    napi_value dependentTask = CreateTaskObject(env);
+    Task* task1 = nullptr;
+    napi_unwrap(env, dependentTask, reinterpret_cast<void**>(&task1));
+    napi_value argv[] = { dependentTask };
+    std::string funcName = "RemoveDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::RemoveDependency, nullptr, &cb);
+    task->hasDependency_ = true;
+    task->isPeriodicTask_ = false;
+    task->taskType_ = TaskType::TASK;
+    task1->hasDependency_ = true;
+    task1->isPeriodicTask_ = false;
+    task1->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    NativeEngineTest::StoreDependentId(task->taskId_, task1->taskId_);
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
 }

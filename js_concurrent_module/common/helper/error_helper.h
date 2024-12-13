@@ -129,6 +129,9 @@ public:
             case ERR_ASYNCRUNNER_TASK_CANCELED:
                 errTitle = "The asyncRunner task has been canceled.";
                 break;
+            case ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY:
+                errTitle = "The task has been executed by AsyncRunner.";
+                break;
             case ERR_TASK_CANNOT_EXECUTED:
                 errTitle = "The task cannot be executed by two APIs, ";
                 break;
@@ -299,6 +302,8 @@ public:
     static const int32_t ERR_ASYNCRUNNER_TASK_DISCARDED = 10200054;
     // 10200055 : The asyncRunner task has been canceled
     static const int32_t ERR_ASYNCRUNNER_TASK_CANCELED = 10200055;
+    // 10200056 : The task has been executed by AsyncRunner
+    static const int32_t ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY = 10200056;
     // 10200056 : The task cannot be executed by two APIs
     static const int32_t ERR_TASK_CANNOT_EXECUTED = 10200057;
 };
