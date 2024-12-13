@@ -275,7 +275,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         if (!success) {
             HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
-                "the number of JSThread or worker number exceeds the maximum.");
+                "the number of limiteworkers exceeds the maximum.");
             return nullptr;
         }
 
@@ -297,7 +297,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         if (!success) {
             HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
-                "the number of JSThread or worker number exceeds the maximum.");
+                "the number of workers exceeds the maximum.");
             return nullptr;
         }
 
