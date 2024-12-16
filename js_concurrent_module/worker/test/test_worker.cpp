@@ -1747,12 +1747,18 @@ HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
 
     napi_set_named_property(workerEnv, object, "name", nameValue);
     napi_set_named_property(workerEnv, object, "type", typeValue);
+    napi_value priorityValue = nullptr;
+    napi_create_uint32(workerEnv, static_cast<int32_t>(WorkerPriority::HIGH), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
     argv[1] = object;
 
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    uv_sleep(200);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    bool qosUpdated = false;
+    worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
+    uv_sleep(200);
+    ASSERT_TRUE(qosUpdated);
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     result = Worker_Terminate(workerEnv, workerGlobal);
@@ -4691,4 +4697,206 @@ HWTEST_F(WorkersTest, PostMessageTest004, testing::ext::TestSize.Level0)
     uv_sleep(1000); // 1000 : for post and receive message
     PostMessage(worker, data);
     uv_sleep(1000); // 1000 : for post and receive message
+}
+
+HWTEST_F(WorkersTest, QOSTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = WorkersTest::GetEnv();
+    napi_value exportObject = nullptr;
+    napi_create_object(env, &exportObject);
+    Worker::InitPriorityObject(env, exportObject);
+
+    napi_value priorityValue = NapiHelper::GetNameProperty(env, exportObject, "ThreadWorkerPriority");
+    ASSERT_NE(priorityValue, nullptr);
+
+    int32_t temp = -1;
+    napi_value highValue = NapiHelper::GetNameProperty(env, priorityValue, "HIGH");
+    ASSERT_NE(highValue, nullptr);
+    napi_get_value_int32(env, highValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::HIGH));
+
+    napi_value mediumValue = NapiHelper::GetNameProperty(env, priorityValue, "MEDIUM");
+    ASSERT_NE(mediumValue, nullptr);
+    napi_get_value_int32(env, mediumValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::MEDIUM));
+
+    napi_value lowValue = NapiHelper::GetNameProperty(env, priorityValue, "LOW");
+    ASSERT_NE(lowValue, nullptr);
+    napi_get_value_int32(env, lowValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::LOW));
+
+    napi_value idleValue = NapiHelper::GetNameProperty(env, priorityValue, "IDLE");
+    ASSERT_NE(idleValue, nullptr);
+    napi_get_value_int32(env, idleValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::IDLE));
+}
+
+HWTEST_F(WorkersTest, QOSTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = WorkersTest::GetEnv();
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    std::string str = "test";
+    napi_value strValue = nullptr;
+    napi_create_string_utf8(env, str.c_str(), str.length(), &strValue);
+    napi_set_named_property(env, object, "priority", strValue);
+    WorkerPriority ret = Worker::GetPriorityArg(env, object);
+    ASSERT_EQ(ret, WorkerPriority::INVALID);
+
+    napi_value intValue = nullptr;
+    napi_create_int32(env, -1, &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_EQ(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::HIGH), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::MEDIUM), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::LOW), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::IDLE), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, 4, &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_EQ(ret, WorkerPriority::INVALID);
+}
+
+HWTEST_F(WorkersTest, QOSTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+    std::string funcName = "ThreadWorkerConstructor";
+    napi_value cb = nullptr;
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
+
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    napi_value priorityValue = nullptr;
+    napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    argv[1] = object;
+
+    TryCatch tryCatch(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_TRUE(tryCatch.HasCaught());
+    tryCatch.ClearException();
+    ArkNativeEngine* engine = (ArkNativeEngine*)workerEnv;
+    if (!engine->lastException_.IsEmpty()) {
+        engine->lastException_.Empty();
+    }
+    std::string strpriority = "kkk";
+    napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    TryCatch tryCatch2(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_TRUE(tryCatch2.HasCaught());
+    tryCatch2.ClearException();
+    if (!engine->lastException_.IsEmpty()) {
+        engine->lastException_.Empty();
+    }
+    Worker_Terminate(workerEnv, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+}
+
+HWTEST_F(WorkersTest, QOSTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+    std::string funcName = "ThreadWorkerConstructor";
+    napi_value cb = nullptr;
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
+
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    argv[1] = object;
+
+    WorkerPriority priority[] =
+        {WorkerPriority::HIGH, WorkerPriority::MEDIUM, WorkerPriority::LOW, WorkerPriority::IDLE};
+    for (int k = 0; k < sizeof(priority) / sizeof(priority[0]); k++)
+    {
+        napi_value priorityValue = nullptr;
+        napi_create_uint32(workerEnv, static_cast<int32_t>(priority[k]), &priorityValue);
+        napi_set_named_property(workerEnv, object, "priority", priorityValue);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        ASSERT_TRUE(result != nullptr);
+        Worker* worker = nullptr;
+        napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+        bool qosUpdated = false;
+        worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
+        uv_sleep(200);
+        ASSERT_TRUE(qosUpdated);
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+    }
+    result = Worker_Terminate(workerEnv, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, QOSTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+    std::string funcName = "WorkerConstructor";
+    napi_value cb = nullptr;
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
+
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    napi_value priorityValue = nullptr;
+    napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    argv[1] = object;
+
+    TryCatch tryCatch(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_FALSE(tryCatch.HasCaught());
+
+    std::string strpriority = "kkk";
+    napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    TryCatch tryCatch2(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_FALSE(tryCatch2.HasCaught());
+    uv_sleep(200);
 }
