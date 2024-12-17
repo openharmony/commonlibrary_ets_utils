@@ -256,6 +256,11 @@ void Worker::HostOnErrorInner()
         HILOG_ERROR("worker:: host thread maybe is over");
         return;
     }
+
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
+
     NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
@@ -370,6 +375,11 @@ void Worker::HostOnMessageInner()
         HILOG_ERROR("worker:: host thread maybe is over");
         return;
     }
+
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
+
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!engine->InitContainerScopeFunc(scopeId_)) {
         HILOG_ERROR("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
@@ -487,10 +497,19 @@ void Worker::WorkerOnMessageInner()
     if (IsTerminated()) {
         return;
     }
+
+    napi_status status;
+    napi_handle_scope scope = nullptr;
+    status = napi_open_handle_scope(workerEnv_, &scope);
+    if (status != napi_ok) {
+        return;
+    }
+
     MessageDataType data = nullptr;
     while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
         if (data == nullptr) {
             HILOG_INFO("worker:: worker reveive terminate signal");
+            napi_close_handle_scope(workerEnv_, scope);
             TerminateWorker();
             return;
         }
@@ -510,6 +529,7 @@ void Worker::WorkerOnMessageInner()
             HILOG_ERROR("worker:: call WorkerGlobalScope onmessage error");
         }
     }
+    napi_close_handle_scope(workerEnv_, scope);
 }
 
 void Worker::HostOnMessageErrorInner()
