@@ -17,6 +17,7 @@
 
 #include <cinttypes>
 
+#include "async_runner_manager.h"
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
 #include "helper/napi_helper.h"
@@ -56,6 +57,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value seqRunnerClass = nullptr;
     NAPI_CALL(env, napi_define_class(env, "SequenceRunner", NAPI_AUTO_LENGTH, SequenceRunner::SeqRunnerConstructor,
               nullptr, 0, nullptr, &seqRunnerClass));
+    napi_value asyncRunnerClass = nullptr;
+    NAPI_CALL(env, napi_define_class(env, "AsyncRunner", NAPI_AUTO_LENGTH, AsyncRunner::AsyncRunnerConstructor,
+              nullptr, 0, nullptr, &asyncRunnerClass));
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);
@@ -89,6 +93,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("GenericsTask", genericsTaskClass),
         DECLARE_NAPI_PROPERTY("TaskGroup", taskGroupClass),
         DECLARE_NAPI_PROPERTY("SequenceRunner", seqRunnerClass),
+        DECLARE_NAPI_PROPERTY("AsyncRunner", asyncRunnerClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
         DECLARE_NAPI_PROPERTY("State", stateObj),
         DECLARE_NAPI_FUNCTION("execute", Execute),
@@ -502,11 +507,16 @@ void TaskPool::TriggerTask(Task* task)
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
         if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
-            HILOG_ERROR("seqRunner:: task %{public}s trigger in seqRunner %{public}s failed",
+            HILOG_ERROR("taskpool:: task %{public}s trigger in seqRunner %{public}s failed",
                         std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
         }
     } else if (task->IsCommonTask()) {
         task->NotifyPendingTask();
+    } else if (task->IsAsyncRunnerTask()) {
+        if (!AsyncRunnerManager::GetInstance().TriggerAsyncRunner(task->env_, task)) {
+            HILOG_ERROR("taskpool:: task %{public}s trigger in asyncRunner %{public}s failed",
+                        std::to_string(task->taskId_).c_str(), std::to_string(task->asyncRunnerId_).c_str());
+        }
     }
     if (task->IsPeriodicTask()) {
         return;
