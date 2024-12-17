@@ -1384,6 +1384,10 @@ void Worker::HostOnMessageInner()
         return;
     }
 
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
+
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!engine->InitContainerScopeFunc(scopeId_)) {
         HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
@@ -1455,6 +1459,10 @@ void Worker::HostOnGlobalCallInner()
         cv_.notify_one();
         return;
     }
+
+    napi_status scopeStatus = napi_ok;
+    HandleScope handleScope(hostEnv_, scopeStatus);
+    NAPI_CALL_RETURN_VOID(hostEnv_, scopeStatus);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!engine->InitContainerScopeFunc(scopeId_)) {
