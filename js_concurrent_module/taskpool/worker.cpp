@@ -26,6 +26,7 @@
 #include "task_manager.h"
 #include "taskpool.h"
 #include "tools/log.h"
+#include "native_engine.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
@@ -390,6 +391,7 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
     RunningScope runningScope(worker);
+    WorkerRunningScope workerRunningScope(env);
     PriorityScope priorityScope(worker, taskInfo.second);
     Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
     if (task == nullptr) {
