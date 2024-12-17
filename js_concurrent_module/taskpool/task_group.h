@@ -80,7 +80,7 @@ public:
     uint32_t taskNum_ {};
     std::atomic<ExecuteState> groupState_ {ExecuteState::NOT_FOUND};
     napi_ref groupRef_ {};
-    RECURSIVE_MUTEX taskGroupMutex_ {};
+    std::recursive_mutex taskGroupMutex_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H

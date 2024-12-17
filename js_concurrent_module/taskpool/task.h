@@ -52,16 +52,6 @@ struct TaskInfo {
     void* serializationArguments = nullptr;
 };
 
-#if defined(ENABLE_TASKPOOL_FFRT)
-#define RECURSIVE_MUTEX ffrt::recursive_mutex
-#define FFRT_MUTEX ffrt::mutex
-#define SHARED_MUTEX ffrt::shared_mutex
-#else
-#define RECURSIVE_MUTEX std::recursive_mutex
-#define FFRT_MUTEX std::mutex
-#define SHARED_MUTEX std::shared_mutex
-#endif
-
 struct ListenerCallBackInfo {
     ListenerCallBackInfo(napi_env env, napi_ref callbackRef, napi_value taskError) : env_(env),
         callbackRef_(callbackRef), taskError_(taskError) {}
@@ -183,7 +173,7 @@ public:
     void* worker_ {nullptr};
     napi_ref taskRef_ {};
     std::atomic<uint32_t> taskRefCount_ {};
-    RECURSIVE_MUTEX taskMutex_ {};
+    std::recursive_mutex taskMutex_ {};
     bool hasDependency_ {false};
     bool isLongTask_ {false};
     bool defaultTransfer_ {true};

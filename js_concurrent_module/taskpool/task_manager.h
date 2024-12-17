@@ -180,7 +180,7 @@ private:
 
     // <taskId, Task>
     std::unordered_map<uint64_t, Task*> tasks_ {};
-    RECURSIVE_MUTEX tasksMutex_;
+    std::recursive_mutex tasksMutex_;
 
     // <taskId, <dependent taskId1, dependent taskId2, ...>>, update when removeDependency or executeTask
     std::unordered_map<uint64_t, std::set<uint64_t>> dependTaskInfos_ {};
@@ -205,7 +205,7 @@ private:
     std::unordered_set<Worker*> workers_ {};
     std::unordered_set<Worker*> idleWorkers_ {};
     std::unordered_set<Worker*> timeoutWorkers_ {};
-    RECURSIVE_MUTEX workersMutex_;
+    std::recursive_mutex workersMutex_;
 
     // for load balance
     napi_env hostEnv_ = nullptr;
@@ -224,7 +224,7 @@ private:
     uint32_t highPrioExecuteCount_ = 0;
     uint32_t mediumPrioExecuteCount_ = 0;
     std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};
-    FFRT_MUTEX taskQueuesMutex_;
+    std::mutex taskQueuesMutex_;
 
     std::atomic<bool> isInitialized_ = false;
     std::atomic<bool> isSystemApp_ = false;

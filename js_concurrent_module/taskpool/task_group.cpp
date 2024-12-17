@@ -155,7 +155,7 @@ uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)
 void TaskGroup::NotifyGroupTask(napi_env env)
 {
     HILOG_DEBUG("taskpool:: NotifyGroupTask");
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskGroupMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
     if (pendingGroupInfos_.empty()) {
         return;
     }
@@ -189,7 +189,7 @@ void TaskGroup::CancelPendingGroup(napi_env env)
     HILOG_DEBUG("taskpool:: CancelPendingGroup");
     std::list<napi_deferred> deferreds {};
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskGroupMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
         if (pendingGroupInfos_.empty()) {
             return;
         }
