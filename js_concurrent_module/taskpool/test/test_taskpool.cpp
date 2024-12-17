@@ -17,6 +17,8 @@
 
 #include <unistd.h>
 
+#include "async_runner.h"
+#include "async_runner_manager.h"
 #include "helper/napi_helper.h"
 #include "queue.h"
 #include "task.h"
@@ -121,6 +123,13 @@ napi_value CreateNullTaskObject(napi_env env)
             }
         }, nullptr, nullptr);
     return thisValue;
+}
+
+napi_value GetNapiString(napi_env env, const char* str)
+{
+    napi_value name = nullptr;
+    napi_create_string_utf8(env, str, NAPI_AUTO_LENGTH, &name);
+    return name;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest001, testing::ext::TestSize.Level0)
@@ -3284,6 +3293,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest174, testing::ext::TestSize.Level0)
     napi_call_function(env, thisValue, cb, 1, argv, &result);
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
+
+    task1->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest175, testing::ext::TestSize.Level0)
@@ -3305,6 +3319,18 @@ HWTEST_F(NativeEngineTest, TaskpoolTest175, testing::ext::TestSize.Level0)
     task->taskType_ = TaskType::SEQRUNNER_TASK;
     napi_call_function(env, thisValue, cb, 1, argv, &result);
     napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    task->taskType_ = TaskType::COMMON_TASK;
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
 }
@@ -3418,6 +3444,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest179, testing::ext::TestSize.Level0)
     ASSERT_TRUE(exception != nullptr);
 
     task1->taskType_ = TaskType::TASK;
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
     napi_call_function(env, thisValue, cb, 1, argv, &result);
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -4962,4 +4993,762 @@ HWTEST_F(NativeEngineTest, TaskpoolTest249, testing::ext::TestSize.Level0)
     napi_value argv[] = {task};
     napi_call_function(env, thisValue, callback, 1, argv, &result);
     ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest250, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "AsyncRunnerConstructor250";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value nameNumber = NapiHelper::CreateUint32(env, 5);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 5);
+    napi_value waitingCapacity = nullptr;
+    napi_create_int32(env, -1, &waitingCapacity);
+    napi_value argv[] = {nameNumber, runningCapacity, waitingCapacity};
+    napi_call_function(env, nullptr, cb, 3, argv, &result);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value argv2[] = {runningCapacity, waitingCapacity};
+    napi_call_function(env, nullptr, cb, 2, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest251, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "AsyncRunnerConstructor251";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 5);
+    napi_value argv[] = {nullptr, runningCapacity};
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest252, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "AsyncRunnerConstructor252";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value name = GetNapiString(env, "async252");
+    napi_value argv[] = {name, name};
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest253, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "AsyncRunnerConstructor253";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 0);
+    napi_value argv[] = {runningCapacity};
+    napi_call_function(env, nullptr, cb, 1, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest254, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "AsyncRunnerConstructor254";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 5);
+    napi_value name = GetNapiString(env, "async254");
+    napi_value argv[] = {runningCapacity, name};
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest255, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "AsyncRunnerConstructor255";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 5);
+    napi_value argv[] = {runningCapacity};
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_call_function(env, obj, cb, 1, argv, &result);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest256, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    NativeEngineTest::CheckAndCreateAsyncRunner(env, nullptr, nullptr, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest257, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    std::string asyncName = "async257";
+    AsyncRunnerManager &asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    napi_value global = NapiHelper::GetGlobalObject(env);
+    uint32_t capacity = 5;
+    asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, capacity);
+
+    std::string funcName = "AsyncRunnerConstructor257";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 3);
+    napi_value name = GetNapiString(env, asyncName.c_str());
+    napi_value argv1[] = {name, runningCapacity};
+    napi_call_function(env, nullptr, cb, 2, argv1, &result);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    result = nullptr;
+    napi_value runningCapacity2 = NapiHelper::CreateUint32(env, 5);
+    napi_value argv2[] = {name, runningCapacity2};
+    napi_call_function(env, nullptr, cb, 2, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, capacity);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest258, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "Execute258";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
+    napi_value argv[] = {obj, priority};
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest259, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "Execute259";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+
+    napi_value argv1[] = {nullptr};
+    napi_call_function(env, nullptr, cb, 0, argv1, &result);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
+    napi_value argv2[] = {priority, priority, priority};
+    result = nullptr;
+    napi_call_function(env, nullptr, cb, 3, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest260, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "Execute260";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+
+    napi_value priority = NapiHelper::CreateUint32(env, 4);
+    napi_value argv[] = {priority, priority};
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest261, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "Execute261";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_value task = GeneratorTask(env, obj);
+    napi_value argv1[] = {task, task};
+    napi_call_function(env, nullptr, cb, 2, argv1, &result);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value priority = NapiHelper::CreateUint32(env, 4);
+    napi_value argv2[] = {task, priority};
+    result = nullptr;
+    napi_call_function(env, nullptr, cb, 2, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest262, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "Execute262";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_value task = GeneratorTask(env, obj);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
+    napi_value argv[] = {task, priority};
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest263, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value asyncGlobal = NapiHelper::CreateObject(env);
+    std::string conName = "AsyncRunnerConstructor263";
+    napi_value callback = nullptr;
+    napi_value asyncResult = nullptr;
+    napi_create_function(env, conName.c_str(), conName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &callback);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 3);
+    napi_value asyncArgv[] = {runningCapacity, runningCapacity};
+    napi_call_function(env, asyncGlobal, callback, 2, asyncArgv, &asyncResult);
+
+    std::string funcName = "Execute263";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_value task = GeneratorTask(env, obj);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
+    napi_value argv[] = {task, priority};
+    napi_call_function(env, asyncGlobal, cb, 2, argv, &result);
+    ASSERT_NE(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    napi_value task2 = CreateTaskObject(env, TaskType::ASYNCRUNNER_TASK);
+    napi_value argv2[] = {task2, priority};
+    result = nullptr;
+    napi_call_function(env, asyncGlobal, cb, 2, argv2, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest264, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value asyncGlobal = NapiHelper::CreateObject(env);
+    std::string conName = "AsyncRunnerConstructor264";
+    napi_value callback = nullptr;
+    napi_value asyncResult = nullptr;
+    napi_create_function(env, conName.c_str(), conName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &callback);
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 1);
+    napi_value asyncArgv[] = {runningCapacity, runningCapacity};
+    napi_call_function(env, asyncGlobal, callback, 2, asyncArgv, &asyncResult);
+
+    std::string funcName = "Execute264";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+    napi_value task1 = CreateTaskObject(env);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
+    napi_value argv1[] = {task1, priority};
+    napi_call_function(env, asyncGlobal, cb, 2, argv1, &result);
+    ASSERT_NE(result, nullptr);
+
+    napi_value task2 = CreateTaskObject(env);
+    napi_value argv2[] = {task2, priority};
+    result = nullptr;
+    napi_call_function(env, asyncGlobal, cb, 2, argv2, &result);
+    ASSERT_NE(result, nullptr);
+
+    napi_value task3 = CreateTaskObject(env);
+    napi_value argv3[] = {task3, priority};
+    result = nullptr;
+    napi_call_function(env, asyncGlobal, cb, 2, argv3, &result);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest265, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    void* data = nullptr;
+    NativeEngineTest::AsyncRunnerDestructor(nullptr, data);
+    NativeEngineTest::AsyncRunnerDestructor(env, data);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest266, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    AsyncRunnerManager &asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    Task* task = new Task();
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    asyncRunnerManager.TriggerAsyncRunner(env, task);
+
+    AsyncRunner* asyncRunner = new AsyncRunner();
+    asyncRunner->runningCapacity_ = 1;
+    asyncRunner->waitingCapacity_ = 1;
+    asyncRunner->runningCount_ = 1;
+    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+
+    Task* task2 = new Task();
+    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    TaskInfo* taskInfo = new TaskInfo();
+    task2->currentTaskInfo_ = taskInfo;
+    void* data2 = reinterpret_cast<void*>(task2);
+    void* async = reinterpret_cast<void*>(asyncRunner);
+    NativeEngineTest::AddTasksToAsyncRunner(async, data2);
+    asyncRunnerManager.TriggerAsyncRunner(env, task);
+    delete task;
+    delete asyncRunner;
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest267, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    AsyncRunnerManager &asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    Task* task = new Task();
+    task->taskState_ = ExecuteState::FINISHED;
+    asyncRunnerManager.CancelAsyncRunnerTask(env, task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+
+    task->taskState_ = ExecuteState::ENDING;
+    asyncRunnerManager.CancelAsyncRunnerTask(env, task);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+
+    task->taskState_ = ExecuteState::RUNNING;
+    asyncRunnerManager.CancelAsyncRunnerTask(env, task);
+    
+    task->taskState_ = ExecuteState::WAITING;
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    asyncRunnerManager.CancelAsyncRunnerTask(env, task);
+    delete task;
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest268, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    AsyncRunnerManager &asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    Task* task = new Task();
+    
+    AsyncRunner* asyncRunner = new AsyncRunner();
+    asyncRunner->runningCapacity_ = 1;
+    asyncRunner->waitingCapacity_ = 1;
+    asyncRunner->runningCount_ = 1;
+    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
+    ASSERT_TRUE(flag);
+    asyncRunner->isGlobalRunner_ = true;
+    flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
+    ASSERT_FALSE(flag);
+    delete task;
+    delete asyncRunner;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest269, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    AsyncRunnerManager &asyncRunnerManager = AsyncRunnerManager::GetInstance();
+
+    std::string asyncName = "async269";
+    napi_value obj = NapiHelper::CreateObject(env);
+    AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, asyncName, 5, 0);
+    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunner->isGlobalRunner_ = true;
+    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+
+    Task* task = new Task();
+    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+
+    Task* task2 = new Task();
+    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task2->taskState_ = ExecuteState::CANCELED;
+    TaskInfo* taskInfo = new TaskInfo();
+    task2->currentTaskInfo_ = taskInfo;
+    void* data2 = reinterpret_cast<void*>(task2);
+    void* async = reinterpret_cast<void*>(asyncRunner);
+    NativeEngineTest::AddTasksToAsyncRunner(async, data2);
+
+    Task* task3 = new Task();
+    task3->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task3->taskId_ = reinterpret_cast<uint64_t>(task3);
+    void* data3 = reinterpret_cast<void*>(task3);
+    NativeEngineTest::AddTasksToAsyncRunner(async, data3);
+    bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
+    ASSERT_TRUE(flag);
+
+    delete task;
+    delete task2;
+    delete task3;
+    delete asyncRunner;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest270, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    
+    napi_value asyncGlobal = NapiHelper::CreateObject(env);
+    std::string conName = "AsyncRunnerConstructor270";
+    napi_value callback = nullptr;
+    napi_value asyncResult = nullptr;
+    napi_create_function(env, conName.c_str(), conName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &callback);
+    std::string asyncName = "async270";
+    napi_value name = GetNapiString(env, asyncName.c_str());
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 1);
+    napi_value asyncArgv[] = {name, runningCapacity, runningCapacity};
+    napi_call_function(env, asyncGlobal, callback, 3, asyncArgv, &asyncResult);
+
+    std::string funcName = "Execute270";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
+    napi_value task = CreateTaskObject(env);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
+    napi_value argv[] = {task, priority};
+    napi_call_function(env, asyncGlobal, cb, 2, argv, &result);
+    ASSERT_NE(result, nullptr);
+
+    AsyncRunner* asyncRunner = nullptr;
+    napi_unwrap(env, asyncGlobal, reinterpret_cast<void**>(&asyncRunner));
+    asyncRunner->RemoveGlobalAsyncRunnerRef(env);
+
+    std::string funcName2 = "Execute270-1";
+    napi_value cb2 = nullptr;
+    napi_value result2 = nullptr;
+    napi_create_function(env, funcName2.c_str(), funcName2.size(), AsyncRunner::Execute, nullptr, &cb2);
+    napi_value task2 = CreateTaskObject(env);
+    napi_value argv2[] = {task2, priority};
+    napi_call_function(env, asyncGlobal, cb2, 2, argv2, &result2);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest271, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    bool flag = task->CanForSequenceRunner(env);
+    ASSERT_FALSE(flag);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    flag = task->CanForTaskGroup(env);
+    ASSERT_FALSE(flag);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    flag = task->CanExecute(env);
+    ASSERT_FALSE(flag);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    flag = task->CanExecuteDelayed(env);
+    ASSERT_FALSE(flag);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    flag = task->CanExecutePeriodically(env);
+    ASSERT_FALSE(flag);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest272, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->hasDependency_ = true;
+    bool flag = task->CanForAsyncRunner(env);
+    ASSERT_FALSE(flag);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    task->hasDependency_ = false;
+    task->isPeriodicTask_ = true;
+    flag = task->CanForAsyncRunner(env);
+    ASSERT_FALSE(flag);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    task->isPeriodicTask_ = false;
+    task->taskType_ = TaskType::COMMON_TASK;
+    flag = task->CanForAsyncRunner(env);
+    ASSERT_FALSE(flag);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    flag = task->CanForAsyncRunner(env);
+    ASSERT_FALSE(flag);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+
+    task->taskType_ = TaskType::GROUP_COMMON_TASK;
+    flag = task->CanForAsyncRunner(env);
+    ASSERT_FALSE(flag);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest273, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value thisValue = CreateTaskObject(env, TaskType::ASYNCRUNNER_TASK, ExecuteState::CANCELED);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    task->asyncRunnerId_ = 1;
+    napi_value num = nullptr;
+    napi_create_int32(env, 1, &num);
+    napi_ref callbackRef = NapiHelper::CreateReference(env, num, 1);
+    task->onExecutionFailedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    TaskPool::HandleTaskResultCallback(task);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest274, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    uint64_t taskId = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = taskId;
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    taskManager.StoreTask(taskId, task);
+    taskManager.CancelTask(env, taskId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    taskManager.RemoveTask(taskId);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest275, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    AsyncRunnerManager& asyncRunnerManager = AsyncRunnerManager::GetInstance();
+
+    std::string asyncName = "async275";
+    napi_value obj = NapiHelper::CreateObject(env);
+    AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, asyncName, 5, 0);
+    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+
+    Task* task = new Task();
+    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    task->taskState_ = ExecuteState::WAITING;
+    taskManager.StoreTask(task->taskId_, task);
+    taskManager.CancelTask(env, task->taskId_);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    asyncRunner->waitingTasks_.push_back(task);
+
+    Task* task2 = new Task();
+    task2->env_ = env;
+    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    TaskInfo* taskInfo2 = new TaskInfo();
+    task2->currentTaskInfo_ = taskInfo2;
+    task2->taskId_ = reinterpret_cast<uint64_t>(task2);
+    task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    asyncRunner->waitingTasks_.push_back(task2);
+    taskManager.StoreTask(task2->taskId_, task2);
+    taskManager.CancelTask(env, task2->taskId_);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest276, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+
+    Task* task = new Task();
+    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTask(task->taskId_, task);
+    uv_timer_t* handle = new uv_timer_t;
+    ErrorMessage* errMessage = new ErrorMessage();
+    errMessage->taskId = task->taskId_;
+    handle->data = errMessage;
+    uv_timer_init(loop, handle);
+    NativeEngineTest::RejectError(handle);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest277, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+
+    Task* task = new Task();
+    task->env_ = env;
+    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    taskManager.StoreTask(task->taskId_, task);
+    uv_timer_t* handle = new uv_timer_t;
+    ErrorMessage* errMessage = new ErrorMessage();
+    errMessage->taskId = task->taskId_;
+    errMessage->errCode = ErrorHelper::ERR_ASYNCRUNNER_TASK_DISCARDED;
+    handle->data = errMessage;
+    uv_timer_init(loop, handle);
+    NativeEngineTest::RejectError(handle);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest278, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    AsyncRunnerManager& asyncRunnerManager = AsyncRunnerManager::GetInstance();
+
+    napi_value obj = NapiHelper::CreateObject(env);
+    AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, "", 5, 0);
+    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+
+    Task* task = new Task();
+    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    taskManager.StoreTask(task->taskId_, task);
+    asyncRunner->waitingTasks_.push_back(task);
+    taskManager.CancelTask(env, task->taskId_);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest279, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value argv[] = {nullptr};
+    std::string funcName = "AsyncRunnerConstructor279";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv, &result);
+    ASSERT_EQ(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest280, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string funcName = "AsyncRunnerConstructor280";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::AsyncRunnerConstructor, nullptr, &cb);
+    napi_value name = GetNapiString(env, "async280");
+    napi_value runningCapacity = NapiHelper::CreateUint32(env, 5);
+    napi_value argv[] = {name, runningCapacity};
+    napi_call_function(env, nullptr, cb, 2, argv, &result);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest281, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value thisValue = CreateTaskObject(env);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+
+    napi_value dependentTask = CreateTaskObject(env);
+    Task* task1 = nullptr;
+    napi_unwrap(env, dependentTask, reinterpret_cast<void**>(&task1));
+    napi_value argv[] = { dependentTask };
+    std::string funcName = "RemoveDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::RemoveDependency, nullptr, &cb);
+    task->hasDependency_ = true;
+    task->isPeriodicTask_ = false;
+    task->taskType_ = TaskType::TASK;
+    task1->hasDependency_ = true;
+    task1->isPeriodicTask_ = false;
+    task1->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    NativeEngineTest::StoreDependentId(task->taskId_, task1->taskId_);
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
 }
