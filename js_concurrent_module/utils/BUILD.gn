@@ -15,6 +15,7 @@ import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 locks_sources = [
+  "condition/condition_variable.cpp",
   "json/json_manager.cpp",
   "locks/async_lock.cpp",
   "locks/async_lock_manager.cpp",
