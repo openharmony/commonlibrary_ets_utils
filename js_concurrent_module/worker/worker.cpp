@@ -15,6 +15,8 @@
 
 #include "worker.h"
 
+#include <unordered_map>
+
 #include "sys_timer.h"
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
@@ -23,6 +25,9 @@
 #include "tools/log.h"
 #if defined(OHOS_PLATFORM)
 #include "parameters.h"
+#endif
+#ifdef ENABLE_QOS
+#include "qos.h"
 #endif
 
 namespace Commonlibrary::Concurrent::WorkerModule {
@@ -40,6 +45,16 @@ static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
 static constexpr size_t GLOBAL_CALL_MAX_COUNT = 65535;
+static constexpr uint32_t THREAD_NAME_MAX_LENGTH = 15;
+
+#ifdef ENABLE_QOS
+static const std::unordered_map<WorkerPriority, OHOS::QOS::QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
+    {WorkerPriority::HIGH, OHOS::QOS::QosLevel::QOS_USER_INITIATED},
+    {WorkerPriority::MEDIUM, OHOS::QOS::QosLevel::QOS_DEFAULT},
+    {WorkerPriority::LOW, OHOS::QOS::QosLevel::QOS_UTILITY},
+    {WorkerPriority::IDLE, OHOS::QOS::QosLevel::QOS_BACKGROUND},
+};
+#endif
 
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::GetMainThreadHandler()
@@ -101,7 +116,32 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
     napi_define_class(env, limitedWorkerName, sizeof(limitedWorkerName), Worker::LimitedWorkerConstructor, nullptr,
         sizeof(properties) / sizeof(properties[0]), properties, &limitedWorkerClazz);
     napi_set_named_property(env, exports, "RestrictedWorker", limitedWorkerClazz);
+
+    InitPriorityObject(env, exports);
+
     return InitPort(env, exports);
+}
+
+void Worker::InitPriorityObject(napi_env env, napi_value exports)
+{
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+
+    napi_value highPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::HIGH));
+    napi_value mediumPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::MEDIUM));
+    napi_value lowPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::LOW));
+    napi_value idlePriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::IDLE));
+    napi_property_descriptor exportPriority[] = {
+        DECLARE_NAPI_PROPERTY("HIGH", highPriority),
+        DECLARE_NAPI_PROPERTY("MEDIUM", mediumPriority),
+        DECLARE_NAPI_PROPERTY("LOW", lowPriority),
+        DECLARE_NAPI_PROPERTY("IDLE", idlePriority),
+    };
+    napi_define_properties(env, priorityObj, sizeof(exportPriority) / sizeof(exportPriority[0]), exportPriority);
+
+    napi_property_descriptor exportObjs[] = {
+        DECLARE_NAPI_PROPERTY("ThreadWorkerPriority", priorityObj),
+    };
+    napi_define_properties(env, exports, sizeof(exportObjs) / sizeof(exportObjs[0]), exportObjs);
 }
 
 napi_value Worker::InitPort(napi_env env, napi_value exports)
@@ -225,7 +265,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     }
     WorkerParams* workerParams = nullptr;
     if (argc == 2) {  // 2: max args number is 2
-        workerParams = CheckWorkerArgs(env, args[1]);
+        workerParams = CheckWorkerArgs(env, args[1], version);
         if (workerParams == nullptr) {
             HILOG_ERROR("Worker:: arguments check failed.");
             return nullptr;
@@ -281,6 +321,8 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         }
         // default classic
         worker->SetScriptMode(workerParams->type_);
+        worker->workerPriority_ = workerParams->workerPriority;
+
         CloseHelp::DeletePointer(workerParams, false);
         workerParams = nullptr;
     }
@@ -388,11 +430,19 @@ void Worker::HostEnvCleanCallbackInner(Worker* worker)
     worker->ClearGlobalCallObject();
 }
 
-Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue)
+Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue, WorkerVersion version)
 {
     WorkerParams* workerParams = nullptr;
     if (NapiHelper::IsObject(env, argsValue)) {
         workerParams = new WorkerParams();
+        bool hasPriorityValue = NapiHelper::HasNameProperty(env, argsValue, "priority");
+        if (version != WorkerVersion::OLD && hasPriorityValue) {
+            workerParams->workerPriority = Worker::GetPriorityArg(env, argsValue);
+            if (workerParams->workerPriority == WorkerPriority::INVALID) {
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the priority value is invalid");
+                return nullptr;
+            }
+        }
         napi_value nameValue = NapiHelper::GetNameProperty(env, argsValue, "name");
         if (NapiHelper::IsNotUndefined(env, nameValue)) {
             if (!NapiHelper::IsString(env, nameValue)) {
@@ -435,6 +485,24 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
         }
     }
     return workerParams;
+}
+
+WorkerPriority Worker::GetPriorityArg(napi_env env, napi_value argsValue)
+{
+    napi_value priorityValue = NapiHelper::GetNameProperty(env, argsValue, "priority");
+    if (!NapiHelper::IsNumber(env, priorityValue)) {
+        HILOG_ERROR("worker:: GetPriorityArg error, not number");
+        return WorkerPriority::INVALID;
+    }
+
+    int32_t priority = static_cast<int32_t>(WorkerPriority::INVALID);
+    napi_get_value_int32(env, priorityValue, static_cast<int32_t*>(&priority));
+    if (priority < static_cast<int32_t>(WorkerPriority::HIGH) ||
+        priority > static_cast<int32_t>(WorkerPriority::IDLE)) {
+        HILOG_ERROR("worker:: GetPriorityArg error, value not in scope");
+        return WorkerPriority::INVALID;
+    }
+    return static_cast<WorkerPriority>(priority);
 }
 
 napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
@@ -1289,6 +1357,11 @@ void Worker::ExecuteInThread(const void* data)
 {
     HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
+#ifdef ENABLE_QOS
+    if (worker != nullptr) {
+        worker->SetQOSLevel();
+    }
+#endif
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
     {
@@ -1407,13 +1480,28 @@ bool Worker::PrepareForWorkerInstance()
         return false;
     }
 
-    // 4. register worker name in DedicatedWorkerGlobalScope
+    ApplyNameSetting();
+    return true;
+}
+
+void Worker::ApplyNameSetting()
+{
+    std::string threadName = "WorkerThread";
     if (!name_.empty()) {
         napi_value nameValue = nullptr;
         napi_create_string_utf8(workerEnv_, name_.c_str(), name_.length(), &nameValue);
         NapiHelper::SetNamePropertyInGlobal(workerEnv_, "name", nameValue);
+
+        threadName += "_" + name_;
+        if (threadName.length() > THREAD_NAME_MAX_LENGTH) {
+            threadName = threadName.substr(0, THREAD_NAME_MAX_LENGTH);
+        }
     }
-    return true;
+#if defined IOS_PLATFORM || defined MAC_PLATFORM
+    pthread_setname_np(threadName.c_str());
+#elif !defined(WINDOWS_PLATFORM)
+    pthread_setname_np(pthread_self(), threadName.c_str());
+#endif
 }
 
 void Worker::HostOnMessage(const uv_async_t* req)
@@ -2484,4 +2572,29 @@ void Worker::ClearHostMessage(napi_env env)
     hostGlobalCallQueue_.Clear(env);
     errorQueue_.Clear(env);
 }
+
+#ifdef ENABLE_QOS
+void Worker::SetQOSLevel()
+{
+    if (workerPriority_ == WorkerPriority::INVALID) {
+        return;
+    }
+    auto iter = WORKERPRIORITY_QOSLEVEL_MAP.find(workerPriority_);
+    if (iter == WORKERPRIORITY_QOSLEVEL_MAP.end()) {
+        HILOG_ERROR("worker:: not in WORKERPRIORITY_QOSLEVEL_MAP");
+        return;
+    }
+    OHOS::QOS::QosLevel qosLevel = iter->second;
+    if (qosLevel != OHOS::QOS::QosLevel::QOS_MAX) {
+        HILOG_INFO("SetThreadQos %{public}d", qosLevel);
+        int ret = SetThreadQos(qosLevel);
+        if (ret != 0) {
+            HILOG_ERROR("worker:: SetThreadQos failed, return %{public}d", ret);
+        }
+        if (qosUpdatedCallback_ != nullptr) {
+            qosUpdatedCallback_();
+        }
+    }
+}
+#endif
 } // namespace Commonlibrary::Concurrent::WorkerModule
