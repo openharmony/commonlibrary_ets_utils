@@ -23,7 +23,7 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 
 struct ErrorMessage {
-    uint64_t taskId {};
+    uint32_t taskId {};
     int32_t errCode = 0;
     bool isWaiting = false;
 };

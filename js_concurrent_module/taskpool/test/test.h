@@ -58,9 +58,9 @@ public:
     static void EnqueueTaskId(napi_env env);
     static void GetTaskByPriority(napi_env env);
     static void RestoreWorker(napi_env env);
-    static void StoreDependentId(uint64_t taskId, uint64_t dependentId);
-    static void StoreDependentTaskId(uint64_t taskId, uint64_t dependentId);
-    static void StoreTaskDuration(uint64_t taskId);
+    static void StoreDependentId(uint32_t taskId, uint32_t dependentId);
+    static void StoreDependentTaskId(uint32_t taskId, uint32_t dependentId);
+    static void StoreTaskDuration(uint32_t taskId);
     static void InitTaskManager(napi_env env);
     static void NotifyDependencyTaskInfo(napi_env env);
     static void StoreTaskDependency(napi_env env);
