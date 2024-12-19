@@ -13,6 +13,41 @@
 
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
+import("//build/config/components/ets_frontend/es2abc_config.gni")
+
+
+# compile .js to .abc.
+es2abc_gen_abc("gen_utils_abc") {
+  src_js = rebase_path("src/utils_js.ts")
+  dst_file = rebase_path(target_out_dir + "/utils.abc")
+  in_puts = [ "src/utils_js.ts" ]
+  out_puts = [ target_out_dir + "/utils.abc" ]
+  extra_args = [ "--module" ]
+}
+
+abc_output_path = get_label_info(":utils_abc", "target_out_dir")
+
+gen_js_obj("utils_js") {
+  input = "src/utils_js.ts"
+  if (is_arkui_x) {
+    utils_js_obj_path = abc_output_path + "/utils.c"
+  } else {
+    utils_js_obj_path = abc_output_path + "/utils.o"
+  }
+  output = utils_js_obj_path
+}
+
+gen_js_obj("utils_abc") {
+  input = "$target_out_dir/utils.abc"
+  if (is_arkui_x) {
+    utils_js_obj_path = abc_output_path + "/utils_abc.c"
+  } else {
+    utils_js_obj_path = abc_output_path + "/utils_abc.o"
+  }
+  output = utils_js_obj_path
+  dep = ":gen_utils_abc"
+  print("Debug info gen_utils_abc file path: ", input)
+}
 
 locks_sources = [
   "json/json_manager.cpp",
@@ -34,16 +69,9 @@ ohos_shared_library("utils") {
     cfi_cross_dso = true
     debug = false
   }
-  include_dirs = [
-    js_concurrent_module_common,
-    ets_util_path,
-  ]
-
-  sources = locks_sources
-  sources += concurrent_helper_sources
 
   defines = []
-  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
+  deps = [ ":utils_static" ]
   external_deps = [ "napi:ace_napi" ]
 
   if (is_ohos) {
@@ -91,7 +119,10 @@ ohos_source_set("utils_static") {
   sources += concurrent_helper_sources
 
   defines = []
-  deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
+  deps = [ "${ets_util_path}/js_sys_module/timer:timer",
+   ":utils_abc",
+   ":utils_js",
+  ]
   external_deps = [ "napi:ace_napi" ]
 
   if (is_arkui_x) {
