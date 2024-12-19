@@ -70,6 +70,15 @@ void ConditionVariable::RemoveEnvCleanupHook(std::shared_ptr<PromiseInfo> pi)
 
 napi_value ConditionVariable::Init(napi_env env, napi_value exports)
 {
+    napi_value locks;
+    bool hasLocks = false;
+    napi_has_named_property(env, exports, "locks", &hasLocks);
+    if (hasLocks) {
+        napi_get_named_property(env, exports, "locks", &locks);
+    } else {
+        return exports;
+    }
+
     napi_property_descriptor props[] = {
         DECLARE_NAPI_FUNCTION("wait", Wait),
         DECLARE_NAPI_FUNCTION("waitFor", WaitFor),
@@ -83,10 +92,7 @@ napi_value ConditionVariable::Init(napi_env env, napi_value exports)
     napi_create_reference(env, ConditionVariableClass, 1, &conditionClassRef);
     napi_set_named_property(env, exports, "ConditionVariable", ConditionVariableClass);
 
-    napi_value condition;
-    napi_create_object(env, &condition);
-    napi_set_named_property(env, condition, "ConditionVariable", ConditionVariableClass);
-    napi_set_named_property(env, exports, "condition", condition);
+    napi_set_named_property(env, locks, "ConditionVariable", ConditionVariableClass);
 
     return exports;
 }
@@ -243,7 +249,7 @@ napi_threadsafe_function ConditionVariable::CreateThreadSafeFunction(napi_env en
     napi_threadsafe_function tsfn;
     napi_value asyncName;
     napi_create_string_utf8(env, "ConditionSafeFunc", NAPI_AUTO_LENGTH, &asyncName);
-    NAPI_CALL(env, napi_create_threadsafe_function(
+    napi_create_threadsafe_function(
         env,
         nullptr,
         nullptr,
@@ -254,7 +260,7 @@ napi_threadsafe_function ConditionVariable::CreateThreadSafeFunction(napi_env en
         nullptr,
         this,
         CallJsCallback,
-        &tsfn));
+        &tsfn);
     if (tsfn == nullptr) {
         HILOG_FATAL("Create thread safe function failed");
     }
@@ -306,8 +312,7 @@ void ConditionVariable::ResolveDeferred(std::shared_ptr<PromiseInfo> pi, napi_th
             break;
         case SettleBy::CLEANCV:
             std::string restultStr = "ConditionVariable is being deleted, clean all wait by reject";
-            NAPI_CALL_RETURN_VOID(pi->env, napi_create_string_utf8(pi->env, restultStr.c_str(),
-                restultStr.size(), &result_val));
+            napi_create_string_utf8(pi->env, restultStr.c_str(), restultStr.size(), &result_val);
             napi_reject_deferred(pi->env, pi->deferred, result_val);
             break;
     }
