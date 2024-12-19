@@ -35,11 +35,8 @@ using namespace OHOS::JsSysModule;
 static constexpr int8_t NUM_WORKER_ARGS = 2;
 static constexpr uint8_t NUM_GLOBAL_CALL_ARGS = 3;
 static std::list<Worker *> g_workers;
-static constexpr int MAX_WORKERS = 8;
-static constexpr int MAX_THREAD_WORKERS = 64;
 static std::mutex g_workersMutex;
 static std::list<Worker *> g_limitedworkers;
-static constexpr int MAX_LIMITEDWORKERS = 16;
 static std::mutex g_limitedworkersMutex;
 static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
@@ -274,43 +271,46 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
 
     Worker* worker = nullptr;
     if (limitSign) {
-        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-        if (static_cast<int>(g_limitedworkers.size()) >= MAX_LIMITEDWORKERS) {
-            HILOG_ERROR("worker:: the number of limiteworkers exceeds the maximum");
+        bool success = WorkerManager::IncrementWorkerCount(WorkerType::LIMITED_WORKER);
+        if (!success) {
+            HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
                 "the number of limiteworkers exceeds the maximum.");
             return nullptr;
         }
 
+        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
             HILOG_ERROR("worker:: create worker error");
+            WorkerManager::DecrementWorkerCount(WorkerType::LIMITED_WORKER);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
             return nullptr;
         }
+        worker->workerType_ = WorkerType::LIMITED_WORKER;
         g_limitedworkers.push_back(worker);
         HILOG_INFO("worker:: limited workers num %{public}zu", g_limitedworkers.size());
     } else {
-        int maxWorkers = (version == WorkerVersion::NEW) ? MAX_THREAD_WORKERS : MAX_WORKERS;
-    #if defined(OHOS_PLATFORM)
-        maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", maxWorkers);
-    #endif
-        std::lock_guard<std::mutex> lock(g_workersMutex);
-        if (static_cast<int>(g_workers.size()) >= maxWorkers) {
-            HILOG_ERROR("worker:: the number of workers exceeds the maximum");
+        WorkerType workerType = (version == WorkerVersion::NEW) ? THREAD_WORKER : OLD_WORKER;
+        bool success = WorkerManager::IncrementWorkerCount(workerType);
+        if (!success) {
+            HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
                 "the number of workers exceeds the maximum.");
             return nullptr;
         }
 
+        std::lock_guard<std::mutex> lock(g_workersMutex);
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
             HILOG_ERROR("worker:: create worker error");
+            WorkerManager::DecrementWorkerCount(workerType);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
             return nullptr;
         }
+        worker->workerType_ = workerType;
         g_workers.push_back(worker);
         HILOG_INFO("worker:: workers num %{public}zu", g_workers.size());
     }
@@ -332,6 +332,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     // 3. execute in thread
     char* script = NapiHelper::GetChars(env, args[0]);
     if (script == nullptr) {
+        WorkerManager::DecrementWorkerCount(worker->workerType_);
         HILOG_ERROR("worker:: the file path is invaild, maybe path is null");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH,
             "the file path is invaild, maybe path is null.");
@@ -344,6 +345,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     }
     napi_status status = napi_wrap(env, thisVar, worker, WorkerDestructor, nullptr, &worker->workerRef_);
     if (status != napi_ok) {
+        WorkerManager::DecrementWorkerCount(worker->workerType_);
         HILOG_ERROR("worker::Constructor napi_wrap return value is %{public}d", status);
         WorkerDestructor(env, worker, nullptr);
         return nullptr;
@@ -2555,12 +2557,20 @@ void Worker::EraseWorker()
         std::lock_guard<std::mutex> lock(g_workersMutex);
         std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
         if (it != g_workers.end()) {
+            Worker* worker = *it;
+            if (worker != nullptr) {
+                WorkerManager::DecrementWorkerCount(worker->workerType_);
+            }
             g_workers.erase(it);
         }
     } else {
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
         std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
         if (it != g_limitedworkers.end()) {
+            Worker* worker = *it;
+            if (worker != nullptr) {
+                WorkerManager::DecrementWorkerCount(worker->workerType_);
+            }
             g_limitedworkers.erase(it);
         }
     }
