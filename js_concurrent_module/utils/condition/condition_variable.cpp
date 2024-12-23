@@ -47,10 +47,10 @@ void ConditionVariable::CleanupHookEnvPromise(std::shared_ptr<PromiseInfo> pi, C
     }
     if (pi->timer != nullptr) {
         uv_timer_stop(pi->timer);
+        delete static_cast<WorkerData*>(pi->timer->data);
         uv_close(reinterpret_cast<uv_handle_t*>(pi->timer), [](uv_handle_t* handle) {
             delete handle;
         });
-        delete static_cast<WorkerData*>(pi->timer->data);
         pi->timer = nullptr;
     }
 }
@@ -76,7 +76,8 @@ napi_value ConditionVariable::Init(napi_env env, napi_value exports)
     if (hasLocks) {
         napi_get_named_property(env, exports, "locks", &locks);
     } else {
-        return exports;
+        napi_create_object(env, &locks);
+        napi_set_named_property(env, exports, "locks", locks);
     }
 
     napi_property_descriptor props[] = {
@@ -90,8 +91,6 @@ napi_value ConditionVariable::Init(napi_env env, napi_value exports)
     napi_define_sendable_class(env, "ConditionVariable", NAPI_AUTO_LENGTH, Constructor, nullptr,
                                sizeof(props) / sizeof(props[0]), props, nullptr, &ConditionVariableClass);
     napi_create_reference(env, ConditionVariableClass, 1, &conditionClassRef);
-    napi_set_named_property(env, exports, "ConditionVariable", ConditionVariableClass);
-
     napi_set_named_property(env, locks, "ConditionVariable", ConditionVariableClass);
 
     return exports;
@@ -106,11 +105,6 @@ napi_value ConditionVariable::Wait(napi_env env, napi_callback_info cbinfo)
     napi_deferred deferred;
     napi_value promise;
     NAPI_CALL(env, napi_create_promise(env, &deferred, &promise));
-    if (promise == nullptr) {
-        Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-            "Failed to create promise in Wait method: ");
-        return nullptr;
-    }
 
     auto tsfn = cond->CreateThreadSafeFunction(env);
     {
@@ -133,22 +127,25 @@ napi_value ConditionVariable::WaitFor(napi_env env, napi_callback_info cbinfo)
 
     if (argc != ARGCONE) {
         Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-            "First argument must be a number");
+                                                "Invalid number of arguments");
         return nullptr;
     }
 
-    double milliseconds;
-    napi_get_value_double(env, args, &milliseconds);
+    int32_t milliseconds = 0;
+    napi_status status = napi_get_value_int32(env, args, &milliseconds);
+    if (status != napi_ok) {
+        Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
+                                                "Invalid argument type. Expected number");
+        return nullptr;
+    }
+    if (milliseconds < 0) {
+        milliseconds = 0;
+    }
     ConditionVariable* cond;
     napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
     napi_deferred deferred;
     napi_value promise;
     NAPI_CALL(env, napi_create_promise(env, &deferred, &promise));
-    if (promise == nullptr) {
-        Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-            "Invalid argument type");
-        return nullptr;
-    }
     uv_timer_t* timer = new uv_timer_t;
     uv_timer_init(Common::Helper::NapiHelper::GetLibUV(env), timer);
    
@@ -161,8 +158,7 @@ napi_value ConditionVariable::WaitFor(napi_env env, napi_callback_info cbinfo)
         ++(cond->refCount_);
     }
     if (!cond->TimerTask(pi, cond, timer, static_cast<uint64_t>(milliseconds))) {
-        Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-            "Failed to start timer");
+        HILOG_FATAL("Failed to start timer");
         if (timer) {
             delete timer;
             timer = nullptr;
@@ -219,13 +215,9 @@ napi_value ConditionVariable::Notify(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     ConditionVariable* cond;
     napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
-    if (cond->promiseQueue_.empty()) {
-        Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-            "There is no notice to wait for");
-    } else {
+    if (!cond->promiseQueue_.empty()) {
         cond->PromiseProcessFlow(cond, SettleBy::NOTIFY, true);
     }
-
     return nullptr;
 }
 
@@ -235,10 +227,7 @@ napi_value ConditionVariable::NotifyOne(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
     ConditionVariable* cond;
     napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
-    if (cond->promiseQueue_.empty()) {
-        Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-            "There is no notice to wait for");
-    } else {
+    if (!cond->promiseQueue_.empty()) {
         cond->PromiseProcessFlow(cond, SettleBy::NOTIFY, false);
     }
     return nullptr;
@@ -361,10 +350,10 @@ void ConditionVariable::PromiseProcessFlow(ConditionVariable *cond, SettleBy set
 
         if (pi->timer != nullptr) {
             uv_timer_stop(pi->timer);
+            delete static_cast<WorkerData*>(pi->timer->data);
             uv_close(reinterpret_cast<uv_handle_t*>(pi->timer), [](uv_handle_t* handle) {
                 delete handle;
             });
-            delete static_cast<WorkerData*>(pi->timer->data);
             pi->timer = nullptr;
         }
         --(cond->refCount_);
