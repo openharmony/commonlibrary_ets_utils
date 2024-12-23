@@ -91,8 +91,6 @@ napi_value ConditionVariable::Init(napi_env env, napi_value exports)
     napi_define_sendable_class(env, "ConditionVariable", NAPI_AUTO_LENGTH, Constructor, nullptr,
                                sizeof(props) / sizeof(props[0]), props, nullptr, &ConditionVariableClass);
     napi_create_reference(env, ConditionVariableClass, 1, &conditionClassRef);
-    napi_set_named_property(env, exports, "ConditionVariable", ConditionVariableClass);
-
     napi_set_named_property(env, locks, "ConditionVariable", ConditionVariableClass);
 
     return exports;
@@ -138,8 +136,7 @@ napi_value ConditionVariable::WaitFor(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    double milliseconds;
-    napi_get_value_double(env, args, &milliseconds);
+    uint32_t milliseconds = Common::Helper::NapiHelper::GetUint32Value(env, args);
     ConditionVariable* cond;
     napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
     napi_deferred deferred;

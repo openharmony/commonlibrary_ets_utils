@@ -512,8 +512,7 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         return;
     }
     Task* task = static_cast<Task*>(data);
-    auto taskId = reinterpret_cast<uint64_t>(task);
-    if (TaskManager::GetInstance().GetTask(taskId) == nullptr) {
+    if (TaskManager::GetInstance().GetTask(task->taskId_) == nullptr) {
         HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
@@ -547,7 +546,7 @@ void Worker::ResetWorkerPriority()
     }
 }
 
-void Worker::StoreTaskId(uint64_t taskId)
+void Worker::StoreTaskId(uint32_t taskId)
 {
     std::lock_guard<std::mutex> lock(currentTaskIdMutex_);
     currentTaskId_.emplace_back(taskId);
@@ -587,7 +586,7 @@ void Worker::UpdateExecutedInfo()
 }
 
 // Only when the worker has no longTask can it be released.
-void Worker::TerminateTask(uint64_t taskId)
+void Worker::TerminateTask(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: TerminateTask task:%{public}s", std::to_string(taskId).c_str());
     std::lock_guard<std::mutex> lock(longMutex_);

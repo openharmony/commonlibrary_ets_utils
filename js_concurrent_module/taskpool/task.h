@@ -41,7 +41,15 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
 
 enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING};
-enum TaskType { TASK, FUNCTION_TASK, SEQRUNNER_TASK, COMMON_TASK, GROUP_COMMON_TASK, GROUP_FUNCTION_TASK };
+enum TaskType {
+    TASK,
+    FUNCTION_TASK,
+    SEQRUNNER_TASK,
+    COMMON_TASK,
+    GROUP_COMMON_TASK,
+    GROUP_FUNCTION_TASK,
+    ASYNCRUNNER_TASK
+};
 
 struct GroupInfo;
 class Worker;
@@ -51,16 +59,6 @@ struct TaskInfo {
     void* serializationFunction = nullptr;
     void* serializationArguments = nullptr;
 };
-
-#if defined(ENABLE_TASKPOOL_FFRT)
-#define RECURSIVE_MUTEX ffrt::recursive_mutex
-#define FFRT_MUTEX ffrt::mutex
-#define SHARED_MUTEX ffrt::shared_mutex
-#else
-#define RECURSIVE_MUTEX std::recursive_mutex
-#define FFRT_MUTEX std::mutex
-#define SHARED_MUTEX std::shared_mutex
-#endif
 
 struct ListenerCallBackInfo {
     ListenerCallBackInfo(napi_env env, napi_ref callbackRef, napi_value taskError) : env_(env),
@@ -72,6 +70,14 @@ struct ListenerCallBackInfo {
     napi_env env_;
     napi_ref callbackRef_;
     napi_value taskError_;
+};
+
+struct CancelTaskMessage {
+    CancelTaskMessage(ExecuteState state, uint32_t taskId) : state(state), taskId(taskId) {}
+    ~CancelTaskMessage() = default;
+
+    ExecuteState state;
+    uint32_t taskId;
 };
 
 class Task {
@@ -98,7 +104,8 @@ public:
     static napi_value GetCPUDuration(napi_env env, napi_callback_info info);
     static napi_value GetIODuration(napi_env env, napi_callback_info info);
     static napi_value GetTaskDuration(napi_env env, napi_callback_info& info, std::string durationType);
-    static napi_value GetName(napi_env env, [[maybe_unused]] napi_callback_info info);
+    static napi_value GetName(napi_env env, napi_callback_info info);
+    static napi_value GetTaskId(napi_env env, napi_callback_info info);
 
     static Task* GenerateTask(napi_env env, napi_value task, napi_value func,
                               napi_value name, napi_value* args, size_t argc);
@@ -113,8 +120,9 @@ public:
     static void StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo);
     static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
     static void CleanupHookFunc(void* arg);
+    static void Cancel(const uv_async_t* req);
 
-    void StoreTaskId(uint64_t taskId);
+    void StoreTaskId(uint32_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
                                   Priority priority = Priority::DEFAULT);
     TaskInfo* GetTaskInfo(napi_env env, napi_value task, Priority priority);
@@ -155,6 +163,12 @@ public:
     bool CheckStartExecution(Priority priority);
     bool IsValid();
     void SetValid(bool isValid);
+    bool CanForAsyncRunner(napi_env env);
+    bool IsAsyncRunnerTask();
+    void SetTaskId(uint32_t taskId);
+    void TriggerCancel(CancelTaskMessage* message);
+    void CancelInner(ExecuteState state);
+    bool IsSameEnv(napi_env env);
 
 private:
     Task(const Task &) = delete;
@@ -168,10 +182,11 @@ public:
     napi_env env_ = nullptr;
     std::atomic<TaskType> taskType_ {TaskType::TASK};
     std::string name_ {};
-    uint64_t taskId_ {};
+    uint32_t taskId_ {};
     std::atomic<ExecuteState> taskState_ {ExecuteState::NOT_FOUND};
     uint64_t groupId_ {}; // 0 for task outside taskgroup
     uint64_t seqRunnerId_ {}; // 0 for task without seqRunner
+    uint64_t asyncRunnerId_ {}; // 0 for task without asyncRunner
     TaskInfo* currentTaskInfo_ {};
     std::list<TaskInfo*> pendingTaskInfos_ {}; // for a common task executes multiple times
     void* result_ = nullptr;
@@ -183,7 +198,7 @@ public:
     void* worker_ {nullptr};
     napi_ref taskRef_ {};
     std::atomic<uint32_t> taskRefCount_ {};
-    RECURSIVE_MUTEX taskMutex_ {};
+    std::recursive_mutex taskMutex_ {};
     bool hasDependency_ {false};
     bool isLongTask_ {false};
     bool defaultTransfer_ {true};
@@ -191,6 +206,7 @@ public:
     std::atomic<bool> isValid_ {true};
     std::atomic<uint32_t> refCount_ {false}; // when refCount_ is 0, the task pointer can be deleted
     uv_async_t* onStartExecutionSignal_ = nullptr;
+    uv_async_t* onStartCancelSignal_ = nullptr;
     ListenerCallBackInfo* onEnqueuedCallBackInfo_ = nullptr;
     ListenerCallBackInfo* onStartExecutionCallBackInfo_ = nullptr;
     ListenerCallBackInfo* onExecutionFailedCallBackInfo_ = nullptr;
@@ -206,6 +222,7 @@ public:
     std::set<uv_timer_t*> delayedTimers_ {}; // task delayed timer
 
     bool isMainThreadTask_ {false};
+    Priority asyncTaskPriority_ {Priority::DEFAULT};
 };
 
 struct CallbackInfo {
@@ -237,13 +254,13 @@ struct CallbackInfo {
 };
 
 struct TaskResultInfo {
-    TaskResultInfo(napi_env env, napi_env curEnv, uint64_t id, void* args) : hostEnv(env), workerEnv(curEnv),
+    TaskResultInfo(napi_env env, napi_env curEnv, uint32_t id, void* args) : hostEnv(env), workerEnv(curEnv),
         taskId(id), serializationArgs(args) {}
     ~TaskResultInfo() = default;
 
     napi_env hostEnv;
     napi_env workerEnv;
-    uint64_t taskId;
+    uint32_t taskId;
     void* serializationArgs;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

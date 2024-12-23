@@ -538,6 +538,12 @@ namespace OHOS::xml {
 
     bool XmlPullParser::ParseAttri(napi_env env, napi_value thisVar) const
     {
+        napi_handle_scope scope = nullptr;
+        napi_status status_scope = napi_open_handle_scope(env, &scope);
+        if (status_scope != napi_ok) {
+            HILOG_ERROR("XmlPullParser::open scope failed!");
+            return false;
+        }
         for (size_t i = 0; i < attriCount_; ++i) {
             napi_value returnVal = nullptr;
             size_t argc = 3; // 3: number of args
@@ -554,9 +560,11 @@ namespace OHOS::xml {
             bool bRec = false;
             napi_get_value_bool(env, returnVal, &bRec);
             if (!bRec) {
+                napi_close_handle_scope(env, scope);
                 return bRec;
             }
         }
+        napi_close_handle_scope(env, scope);
         return true;
     }
 
@@ -590,6 +598,12 @@ namespace OHOS::xml {
 
     void XmlPullParser::Parse(napi_env env, napi_value thisVar, bool deprecated)
     {
+        napi_handle_scope scope = nullptr;
+        napi_status status_scope = napi_open_handle_scope(env, &scope);
+        if (status_scope != napi_ok) {
+            HILOG_ERROR("XmlPullParser::open scope failed!");
+            return;
+        }
         if (deprecated) {
             strXml_ = DealCdata(strXml_);
         }
@@ -630,6 +644,7 @@ namespace OHOS::xml {
                 }
             }
         }
+        napi_close_handle_scope(env, scope);
     }
 
     TagEnum XmlPullParser::DealExclamationGroup()

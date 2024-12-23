@@ -3,7 +3,7 @@
     "version": "",
     "description": "commonlibrary_ets_utils, contains of 4 submodules:js_api_module,js_util_module,js_sys_module,js_worker_module",
     "homePage": "https://gitee.com/openharmony",
-    "license": "Apache V2",
+    "license": "Apache License 2.0",
     "repository": "https://gitee.com/openharmony/js_api_module",
     "domain": "os",
     "language": "",

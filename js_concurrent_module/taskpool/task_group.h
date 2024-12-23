@@ -50,17 +50,24 @@ private:
 
 class TaskGroup {
 public:
+    explicit TaskGroup(napi_env env) : env_(env) {}
     TaskGroup() = default;
     ~TaskGroup() = default;
 
     static napi_value TaskGroupConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value AddTask(napi_env env, napi_callback_info cbinfo);
+    static void HostEnvCleanupHook(void* data);
+    static void StartRejectResult(const uv_async_t* req);
 
     uint32_t GetTaskIndex(uint32_t taskId);
     void NotifyGroupTask(napi_env env);
     void CancelPendingGroup(napi_env env);
-    void CancelGroupTask(napi_env env, uint64_t taskId);
+    void CancelGroupTask(napi_env env, uint32_t taskId);
     void RejectResult(napi_env env, napi_value res);
+    void RejectResult(napi_env env);
+    void InitHandle(napi_env env);
+    void TriggerRejectResult();
+    bool IsSameEnv(napi_env env);
 
 private:
     TaskGroup(const TaskGroup &) = delete;
@@ -72,15 +79,17 @@ private:
 
     friend class NativeEngineTest;
 public:
+    napi_env env_ = nullptr;
     uint64_t groupId_ {};
     GroupInfo* currentGroupInfo_ {};
     std::list<GroupInfo*> pendingGroupInfos_ {};
     std::list<napi_ref> taskRefs_ {};
-    std::list<uint64_t> taskIds_ {};
+    std::list<uint32_t> taskIds_ {};
     uint32_t taskNum_ {};
     std::atomic<ExecuteState> groupState_ {ExecuteState::NOT_FOUND};
     napi_ref groupRef_ {};
-    RECURSIVE_MUTEX taskGroupMutex_ {};
+    std::recursive_mutex taskGroupMutex_ {};
+    uv_async_t* onRejectResultSignal_ = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
