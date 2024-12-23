@@ -1615,7 +1615,7 @@ bool Task::CanForAsyncRunner(napi_env env)
     if (IsPeriodicTask()) {
         errMessage = "AsyncRunner cannot execute the periodicTask.";
         HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
         return false;
     }
     if (IsCommonTask() || IsSeqRunnerTask()) {

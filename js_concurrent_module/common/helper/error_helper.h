@@ -124,7 +124,7 @@ public:
                 errTitle = "The periodic task cannot have a dependency.";
                 break;
             case ERR_ASYNCRUNNER_TASK_DISCARDED:
-                errTitle = "The asyncRunner task discarded.";
+                errTitle = "The asyncRunner task is discarded.";
                 break;
             case ERR_ASYNCRUNNER_TASK_CANCELED:
                 errTitle = "The asyncRunner task has been canceled.";
