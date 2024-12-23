@@ -76,7 +76,8 @@ napi_value ConditionVariable::Init(napi_env env, napi_value exports)
     if (hasLocks) {
         napi_get_named_property(env, exports, "locks", &locks);
     } else {
-        return exports;
+        napi_create_object(env, &locks);
+        napi_set_named_property(env, exports, "locks", locks);
     }
 
     napi_property_descriptor props[] = {
