@@ -1413,6 +1413,8 @@ void Worker::ExecuteInThread(const void* data)
         uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             Worker::HandleDebuggerTask));
 #endif
+        reinterpret_cast<NativeEngine*>(worker->workerEnv_)->RegisterGetWorkerNameCallback(GetWorkerNameCallback,
+            reinterpret_cast<void*>(worker));
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
         uv_async_send(worker->workerOnMessageSignal_);
@@ -2548,6 +2550,16 @@ void Worker::CloseHostHandle()
     }
     if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
         ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
+    }
+}
+
+std::string Worker::GetWorkerNameCallback(void* worker)
+{
+    auto workerPtr = reinterpret_cast<Worker*>(worker);
+    if (workerPtr) {
+        return workerPtr->GetName();
+    } else {
+        return "";
     }
 }
 
