@@ -90,6 +90,7 @@ public:
     napi_ref groupRef_ {};
     std::recursive_mutex taskGroupMutex_ {};
     uv_async_t* onRejectResultSignal_ = nullptr;
+    std::atomic<bool> isValid_ {true};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H

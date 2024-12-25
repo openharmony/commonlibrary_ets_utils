@@ -154,6 +154,8 @@ void TaskGroup::HostEnvCleanupHook(void* data)
     if (group->onRejectResultSignal_ != nullptr) {
         uv_close(reinterpret_cast<uv_handle_t*>(group->onRejectResultSignal_), nullptr);
     }
+
+    group->isValid_ = false;
 }
 
 void TaskGroup::StartRejectResult(const uv_async_t* req)

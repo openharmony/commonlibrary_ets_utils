@@ -223,6 +223,7 @@ public:
 
     bool isMainThreadTask_ {false};
     Priority asyncTaskPriority_ {Priority::DEFAULT};
+    std::atomic<bool> isRunning_ {false};
 };
 
 struct CallbackInfo {
