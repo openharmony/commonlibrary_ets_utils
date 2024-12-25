@@ -12,6 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const helpUtil = requireInternal('arkts.utils');
+let locks = helpUtil.locks;
+let ASON = helpUtil.ASON;
+let ConditionVariable = helpUtil.ConditionVariable;
+let isSendable = helpUtil.isSendable;
+
 class SendableLruCache {
   // the following cache is a sendable instance of sendable map
   private cache: SendableMap<Object, Object>;
@@ -32,7 +38,7 @@ class SendableLruCache {
       if (capacity <= 0 || capacity % 1 !== 0 || capacity > this.maxNumber) {
         let error = new Error(`Parameter error. The type of ${capacity} must be small integer`);
         throw error;
-      } 
+      }
       this.maxSize = capacity;
     }
     this.cache = new SendableMap();
@@ -245,5 +251,9 @@ class SendableLruCache {
 }
 
 export default {
-  SendableLruCache: SendableLruCache
+  SendableLruCache: SendableLruCache,
+  locks: locks,
+  ASON: ASON,
+  ConditionVariable: ConditionVariable,
+  isSendable: isSendable,
 };
