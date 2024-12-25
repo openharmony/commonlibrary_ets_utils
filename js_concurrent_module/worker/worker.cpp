@@ -29,6 +29,7 @@
 #ifdef ENABLE_QOS
 #include "qos.h"
 #endif
+#include "native_engine.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace OHOS::JsSysModule;
@@ -2074,6 +2075,7 @@ void Worker::WorkerOnMessageInner()
     if (IsTerminated()) {
         return;
     }
+    WorkerRunningScope workerRunningScope(workerEnv_);
     napi_status status;
     napi_handle_scope scope = nullptr;
     status = napi_open_handle_scope(workerEnv_, &scope);

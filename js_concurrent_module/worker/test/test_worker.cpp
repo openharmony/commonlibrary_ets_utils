@@ -747,8 +747,6 @@ public:
         Worker::WorkerOnMessage(req);
         delete req;
         UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-        worker->workerEnv_ = nullptr;
-        worker->WorkerOnMessageInner();
         napi_env workerEnv = nullptr;
         napi_create_runtime(env, &workerEnv);
         worker->workerEnv_ = workerEnv;
