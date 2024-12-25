@@ -1739,6 +1739,9 @@ class Buffer {
     encoding: string = 'utf8'): number {
     typeErrorCheck(value, ['string', 'number', 'Buffer', 'Uint8Array'], 'value');
     if (typeof value === 'string') {
+      if (value.length === 0) {
+        return -1;
+      }
       if (typeof byteOffset === null) {
         byteOffset = 0;
       }
