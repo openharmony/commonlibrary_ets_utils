@@ -400,6 +400,15 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
     {
         std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
+        if (taskGroup->taskNum_ == 0) {
+            napi_resolve_deferred(env, groupInfo->deferred, resArr);
+            taskGroup->groupState_ = ExecuteState::FINISHED;
+            napi_delete_reference(env, groupInfo->resArr);
+            napi_reference_unref(env, taskGroup->groupRef_, nullptr);
+            delete groupInfo;
+            taskGroup->currentGroupInfo_ = nullptr;
+            return promise;
+        }
         if (taskGroup->currentGroupInfo_ == nullptr) {
             taskGroup->currentGroupInfo_ = groupInfo;
             for (auto iter = taskGroup->taskRefs_.begin(); iter != taskGroup->taskRefs_.end(); iter++) {
@@ -474,6 +483,7 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
     task->taskState_ = ExecuteState::ENDING;
+    task->isRunning_ = false;
     if (task->IsGroupTask()) {
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
     } else if (!task->IsPeriodicTask()) {
@@ -564,7 +574,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         napi_resolve_deferred(env, groupInfo->deferred, resArr);
         for (uint32_t taskId : taskGroup->taskIds_) {
             auto task = TaskManager::GetInstance().GetTask(taskId);
-            if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
+            if (task != nullptr && task->onExecutionSucceededCallBackInfo_ != nullptr) {
                 task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_);
             }
         }
@@ -599,7 +609,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
     if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
-        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING)) {
+        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING && !task->isRunning_)) {
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }

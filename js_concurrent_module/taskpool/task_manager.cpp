@@ -1558,14 +1558,15 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
             }
             group->onRejectResultSignal_ = nullptr;
         }
-        for (uint32_t taskId : group->taskIds_) {
-            Task* task = TaskManager::GetInstance().GetTask(taskId);
-            if (task == nullptr || !task->IsValid()) {
-                continue;
+        if (group->isValid_) {
+            for (uint32_t taskId : group->taskIds_) {
+                Task* task = TaskManager::GetInstance().GetTask(taskId);
+                if (task == nullptr || !task->IsValid()) {
+                    continue;
+                }
+                napi_reference_unref(task->env_, task->taskRef_, nullptr);
             }
-            napi_reference_unref(task->env_, task->taskRef_, nullptr);
         }
-
         if (group->currentGroupInfo_ != nullptr) {
             delete group->currentGroupInfo_;
         }
@@ -1632,6 +1633,7 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint32_t taskId, TaskGroup*
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         task->DecreaseTaskRefCount();
+        TaskManager::GetInstance().DecreaseRefCount(env, taskId);
         TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;

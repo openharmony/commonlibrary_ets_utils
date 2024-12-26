@@ -1167,6 +1167,7 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
     taskState_ = ExecuteState::RUNNING;
     startTime_ = startTime;
     worker_ = worker;
+    isRunning_ = true;
     return true;
 }
 
@@ -1697,6 +1698,7 @@ void Task::CancelInner(ExecuteState state)
         if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr) {
             reinterpret_cast<NativeEngine*>(env_)->DecreaseSubEnvCounter();
             DecreaseTaskRefCount();
+            TaskManager::GetInstance().DecreaseRefCount(env_, taskId_);
             TaskManager::GetInstance().EraseWaitingTaskId(taskId_, currentTaskInfo_->priority);
             deferreds.push_back(currentTaskInfo_->deferred);
             napi_reference_unref(env_, taskRef_, nullptr);
