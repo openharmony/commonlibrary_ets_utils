@@ -36,7 +36,7 @@ public:
     static napi_value AsyncRunnerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
     static AsyncRunner* CreateGlobalRunner(const std::string &name, uint32_t runningCapacity, uint32_t waitingCapacity);
-    bool RemoveWaitingTask(Task* task);
+    bool RemoveWaitingTask(Task* task, bool isReject = true);
     void TriggerRejectErrorTimer(Task* task, int32_t errCode, bool isWaiting = false);
     void TriggerWaitingTask();
     void CreateGlobalRef(napi_env env, napi_value thisVar);
@@ -57,7 +57,6 @@ private:
     static AsyncRunner* CheckAndCreateAsyncRunner(napi_env env, napi_value &thisVar, napi_value name,
                                                   napi_value runningCapacity, napi_value waitingCapacity);
     static bool CheckExecuteArgs(napi_env env, napi_value napiTask, napi_value napiPriority);
-    static void RejectError(uv_timer_t* handle);
     static bool AddTasksToAsyncRunner(AsyncRunner* asyncRunner, Task* task);
 
     friend class NativeEngineTest;

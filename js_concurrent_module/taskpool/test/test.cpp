@@ -958,11 +958,6 @@ void NativeEngineTest::AsyncRunnerDestructor(napi_env env, void* data)
     AsyncRunner::AsyncRunnerDestructor(env, data, hint);
 }
 
-void NativeEngineTest::RejectError(uv_timer_t* handle)
-{
-    AsyncRunner::RejectError(handle);
-}
-
 void NativeEngineTest::AddTasksToAsyncRunner(void* asyncData, void* taskData)
 {
     AsyncRunner* async = reinterpret_cast<AsyncRunner*>(asyncData);
