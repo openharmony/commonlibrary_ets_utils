@@ -93,7 +93,7 @@ public:
     struct WorkerParams {
         std::string name_ {};
         ScriptMode type_ {CLASSIC};
-        WorkerPriority workerPriority { WorkerPriority::INVALID };
+        WorkerPriority workerPriority_ { WorkerPriority::INVALID };
     };
 
     struct WorkerWrapper {

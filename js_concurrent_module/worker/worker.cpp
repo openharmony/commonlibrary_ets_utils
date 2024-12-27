@@ -321,7 +321,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         }
         // default classic
         worker->SetScriptMode(workerParams->type_);
-        worker->workerPriority_ = workerParams->workerPriority;
+        worker->workerPriority_ = workerParams->workerPriority_;
 
         CloseHelp::DeletePointer(workerParams, false);
         workerParams = nullptr;
@@ -439,8 +439,9 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
         workerParams = new WorkerParams();
         bool hasPriorityValue = NapiHelper::HasNameProperty(env, argsValue, "priority");
         if (version != WorkerVersion::OLD && hasPriorityValue) {
-            workerParams->workerPriority = Worker::GetPriorityArg(env, argsValue);
-            if (workerParams->workerPriority == WorkerPriority::INVALID) {
+            workerParams->workerPriority_ = Worker::GetPriorityArg(env, argsValue);
+            if (workerParams->workerPriority_ == WorkerPriority::INVALID) {
+                CloseHelp::DeletePointer(workerParams, false);
                 WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the priority value is invalid");
                 return nullptr;
             }
