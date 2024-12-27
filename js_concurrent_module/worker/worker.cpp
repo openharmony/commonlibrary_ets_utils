@@ -1870,7 +1870,7 @@ void Worker::PostMessageInner(MessageDataType data)
     workerMessageQueue_.EnQueue(data);
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
     if (data == nullptr) {
-        HILOG_INFO("worker:: host post nullptr to worker.");
+        HILOG_DEBUG("worker:: host post nullptr to worker.");
         uv_async_send(workerOnTerminateSignal_);
     } else if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
         uv_async_send(workerOnMessageSignal_);
