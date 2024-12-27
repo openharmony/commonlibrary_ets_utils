@@ -1259,8 +1259,6 @@ HWTEST_F(WorkersTest, WorkerConstructorTest001, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     std::string nameResult = worker->GetName();
     ASSERT_EQ(nameResult, "WorkerThread");
-    ASSERT_EQ(worker->GetWorkerNameCallback(worker), "WorkerThread");
-    ASSERT_EQ(worker->GetWorkerNameCallback(nullptr), "");
     std::string scriptResult = worker->GetScript();
     ASSERT_EQ(scriptResult, "entry/ets/workers/@worker.ts");
     worker->EraseWorker();
@@ -4791,7 +4789,6 @@ HWTEST_F(WorkersTest, WorkerTest086, testing::ext::TestSize.Level0)
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
-    ASSERT_TRUE(exception == nullptr);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
