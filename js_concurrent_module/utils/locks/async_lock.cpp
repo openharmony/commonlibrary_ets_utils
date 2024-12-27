@@ -115,7 +115,7 @@ void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncL
         if (refCount_ == 0 && heldList_.empty()) {
             // No more refs to the lock. We need to delete the instance but we cannot do it right now
             // because asyncLockMutex_ is acquired. Do it asynchronously.
-            AsyncDestroy(env);
+            NAPI_CALL_RETURN_VOID(env, napi_send_event(env, [this]() { delete this; }, napi_eprio_immediate));
         }
         return;
     }
@@ -211,32 +211,6 @@ napi_value AsyncLock::CreateLockInfo(napi_env env, const LockRequest *rq)
     };
     NAPI_CALL(env, napi_define_properties(env, info, sizeof(properties) / sizeof(properties[0]), properties));
     return info;
-}
-
-void AsyncLock::AsyncDestroy(napi_env env)
-{
-    napi_value resourceName;
-    napi_create_string_utf8(env, "AsyncLock::AsyncDestroyCallback", NAPI_AUTO_LENGTH, &resourceName);
-    auto *data = new std::pair<AsyncLock *, napi_async_work>();
-    data->first = this;
-    napi_async_work &work = data->second;
-    napi_status status = napi_create_async_work(
-        env, nullptr, resourceName, [](napi_env, void *) {}, AsyncDestroyCallback, data, &work);
-    if (status != napi_ok) {
-        HILOG_FATAL("Internal error: cannot create async work");
-    }
-    status = napi_queue_async_work(env, work);
-    if (status != napi_ok) {
-        HILOG_FATAL("Internal error: cannot queue async work");
-    }
-}
-
-void AsyncLock::AsyncDestroyCallback(napi_env env, napi_status, void *data)
-{
-    auto *lockAndWork = reinterpret_cast<std::pair<AsyncLock *, napi_async_work> *>(data);
-    delete lockAndWork->first;
-    napi_delete_async_work(env, lockAndWork->second);
-    delete lockAndWork;
 }
 
 uint32_t AsyncLock::IncRefCount()
