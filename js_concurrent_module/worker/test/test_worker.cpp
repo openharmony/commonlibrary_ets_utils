@@ -13,8 +13,11 @@
  * limitations under the License.
  */
 
+#include <condition_variable>
 #include <thread>
 #include <uv.h>
+#include <mutex>
+#include <vector>
 
 #include "ark_native_engine.h"
 #include "helper/error_helper.h"
@@ -22,6 +25,8 @@
 #include "test.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "../../common/helper/napi_helper.h"
+#include "native_engine/native_create_env.h"
 #include "tools/log.h"
 #include "worker.h"
 
@@ -46,6 +51,99 @@ namespace Commonlibrary::Concurrent::WorkerModule {
 
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
 static constexpr size_t GLOBAL_CALL_MAX_COUNT = 65535;
+
+static constexpr int MAX_WORKERS_COUNT = 64;
+static constexpr int MAX_ARKRUNTIME_COUNT = 64;
+static constexpr int MAX_JSTHREAD_COUNT = 80;
+static constexpr int NUM_10 = 10;
+static constexpr int NUM_1 = 1;
+static constexpr int TIME_1000MS = 1000;
+static constexpr int TIME_500MS = 500;
+static constexpr int TIME_100MS = 100;
+
+class ArkRuntimeChecker {
+public:
+    ArkRuntimeChecker() = default;
+    static void CreateArkRuntimeEngine(napi_env& workerEnv);
+    void CreateArkRuntimeList(uint32_t runtimeCount);
+    void DeleteArkRuntimeList();
+    int32_t GetFailedCount();
+
+    std::mutex mutexlock_;
+    std::condition_variable condition_;
+    std::thread* threadArray_[MAX_ARKRUNTIME_COUNT + NUM_10] = { nullptr };
+    std::atomic<uint32_t> failCount_{0};
+    bool notified_ = false;
+};
+
+void ArkRuntimeChecker::CreateArkRuntimeEngine(napi_env& workerEnv)
+{
+    panda::RuntimeOption option;
+    option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
+    const int64_t poolSize = 0x1000000;
+    option.SetGcPoolSize(poolSize);
+    option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    panda::ecmascript::EcmaVM* vm = panda::JSNApi::CreateJSVM(option);
+    ASSERT_NE(vm, nullptr);
+    workerEnv = reinterpret_cast<napi_env>(new (std::nothrow) ArkNativeEngine(vm, nullptr));
+    auto cleanEnv = [vm]() {
+        if (vm != nullptr) {
+            panda::JSNApi::DestroyJSVM(vm);
+        }
+    };
+    ArkNativeEngine* arkEngine = (ArkNativeEngine*)workerEnv;
+    arkEngine->SetCleanEnv(cleanEnv);
+}
+
+void ArkRuntimeChecker::CreateArkRuntimeList(uint32_t runtimeCount)
+{
+    NativeCreateEnv::RegCreateNapiEnvCallback([] (napi_env *env) {
+        ArkRuntimeChecker::CreateArkRuntimeEngine(*env);
+        return napi_status::napi_ok;
+    });
+    NativeCreateEnv::RegDestroyNapiEnvCallback([] (napi_env *env) {
+        ArkNativeEngine* engine = reinterpret_cast<ArkNativeEngine*>(*env);
+        delete engine;
+        return napi_status::napi_ok;
+    });
+    for (int k = 0; k < runtimeCount; k++) {
+        threadArray_[k] = new std::thread([this] {
+            napi_env newenv = nullptr;
+            napi_create_ark_runtime(&newenv);
+            if (newenv == nullptr) {
+                this->failCount_++;
+                return;
+            }
+            std::unique_lock<std::mutex> lock(this->mutexlock_);
+            if (!this->notified_) {
+                this->condition_.wait(lock);
+            }
+            if (newenv != nullptr) {
+                napi_destroy_ark_runtime(&newenv);
+            }
+        });
+    }
+    uv_sleep(TIME_1000MS);
+}
+
+void ArkRuntimeChecker::DeleteArkRuntimeList()
+{
+    mutexlock_.lock();
+    notified_ = true;
+    condition_.notify_all();
+    mutexlock_.unlock();
+    for (int k = 0; k < MAX_ARKRUNTIME_COUNT + NUM_10; k++) {
+        if (threadArray_[k] != nullptr) {
+            threadArray_[k]->join();
+        }
+    }
+}
+
+int32_t ArkRuntimeChecker::GetFailedCount()
+{
+    return failCount_.load();
+}
 
 class WorkersTest : public testing::Test {
 public:
@@ -649,8 +747,6 @@ public:
         Worker::WorkerOnMessage(req);
         delete req;
         UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-        worker->workerEnv_ = nullptr;
-        worker->WorkerOnMessageInner();
         napi_env workerEnv = nullptr;
         napi_create_runtime(env, &workerEnv);
         worker->workerEnv_ = workerEnv;
@@ -703,8 +799,6 @@ public:
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
         worker->HandleHostException();
         napi_value exception = nullptr;
-        napi_get_and_clear_last_exception(env, &exception);
-        ASSERT_TRUE(exception != nullptr);
         napi_env workerEnv = nullptr;
         napi_create_runtime(env, &workerEnv);
         worker->workerEnv_ = workerEnv;
@@ -1009,6 +1103,148 @@ napi_value Worker_Terminate(napi_env env, napi_value global)
     return result;
 }
 
+napi_value GetGlobalProperty(napi_env env, const char *name)
+{
+    napi_value value = nullptr;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_get_named_property(env, global, name, &value);
+    return value;
+}
+
+class WorkerChecker {
+public:
+    WorkerChecker() = default;
+    void CreateWorkerHostEngine(napi_env& workerEnv);
+    static napi_value CreateWorker(bool limited, napi_env workerEnv, napi_value workerGlobal);
+    void CreateWorkerList(bool limited, uint32_t workerNum);
+    void DeleteWorkerList();
+    int32_t GetFailedCount();
+
+    napi_env workerHostEnv_{nullptr};
+    std::atomic<uint32_t> failCount_{0};
+    std::vector<Worker*> workerlist_;
+
+    bool notified_ = false;
+    std::mutex mutexlock_;
+    std::condition_variable condition_;
+};
+
+void WorkerChecker::CreateWorkerHostEngine(napi_env& workerEnv)
+{
+    panda::RuntimeOption option;
+    option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
+    const int64_t poolSize = 0x1000000;
+    option.SetGcPoolSize(poolSize);
+    option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    panda::ecmascript::EcmaVM* vm = panda::JSNApi::CreateJSVM(option);
+    ASSERT_NE(vm, nullptr);
+
+    workerEnv = reinterpret_cast<napi_env>(new (std::nothrow) ArkNativeEngine(vm, nullptr));
+    ArkNativeEngine* arkEngine = (ArkNativeEngine*)workerEnv;
+    arkEngine->SetInitWorkerFunc([this](NativeEngine*) {
+        std::unique_lock<std::mutex> lock(this->mutexlock_);
+        if (!this->notified_) {
+            this->condition_.wait(lock);
+        }
+    });
+    auto cleanEnv = [vm]() {
+        if (vm != nullptr) {
+            panda::JSNApi::DestroyJSVM(vm);
+        }
+    };
+    arkEngine->SetCleanEnv(cleanEnv);
+}
+
+napi_value WorkerChecker::CreateWorker(bool limited, napi_env workerEnv, napi_value workerGlobal)
+{
+    std::string funcName = "ThreadWorkerConstructor";
+    if (limited) {
+        funcName = "LimitedWorkerConstructor";
+    }
+    napi_value cb = nullptr;
+    if (!limited) {
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+            Worker::ThreadWorkerConstructor, nullptr, &cb);
+    } else {
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+            Worker::LimitedWorkerConstructor, nullptr, &cb);
+    }
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+    std::string type = "classic";
+    std::string name = "WorkerThread";
+    napi_value typeValue = nullptr;
+    napi_value nameValue = nullptr;
+    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    napi_set_named_property(workerEnv, object, "name", nameValue);
+    napi_set_named_property(workerEnv, object, "type", typeValue);
+    argv[1] = object;
+
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    return result;
+}
+
+void WorkerChecker::CreateWorkerList(bool limited, uint32_t workerNum)
+{
+    CreateWorkerHostEngine(workerHostEnv_);
+    ASSERT_NE(workerHostEnv_, nullptr);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerHostEnv_, &workerGlobal);
+
+    for (int k = 0; k < workerNum; k++) {
+        TryCatch tryCatch(workerHostEnv_);
+        napi_value result = WorkerChecker::CreateWorker(limited, workerHostEnv_, workerGlobal);
+        if (tryCatch.HasCaught()) {
+            tryCatch.ClearException();
+        }
+        if (result == nullptr) {
+            failCount_++;
+        } else {
+            Worker* worker = nullptr;
+            napi_unwrap(workerHostEnv_, result, reinterpret_cast<void**>(&worker));
+            if (worker != nullptr) {
+                workerlist_.push_back(worker);
+            }
+        }
+    }
+    uv_sleep(TIME_100MS);
+}
+
+void WorkerChecker::DeleteWorkerList()
+{
+    ArkNativeEngine* workerHostEngine = reinterpret_cast<ArkNativeEngine*>(workerHostEnv_);
+    mutexlock_.lock();
+    notified_ = true;
+    condition_.notify_all();
+    mutexlock_.unlock();
+    uv_sleep(TIME_500MS);
+
+    for (auto worker : workerlist_) {
+        worker->EraseWorker();
+        WorkersTest::ClearWorkerHandle(worker);
+    }
+    workerlist_.clear();
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerHostEnv_, &workerGlobal);
+    Worker_Terminate(workerHostEnv_, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+    delete workerHostEngine;
+}
+
+int32_t WorkerChecker::GetFailedCount()
+{
+    return failCount_.load();
+}
+
 // worker WorkerConstructor
 HWTEST_F(WorkersTest, WorkerConstructorTest001, testing::ext::TestSize.Level0)
 {
@@ -1023,6 +1259,8 @@ HWTEST_F(WorkersTest, WorkerConstructorTest001, testing::ext::TestSize.Level0)
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
     std::string nameResult = worker->GetName();
     ASSERT_EQ(nameResult, "WorkerThread");
+    ASSERT_EQ(worker->GetWorkerNameCallback(worker), "WorkerThread");
+    ASSERT_EQ(worker->GetWorkerNameCallback(nullptr), "");
     std::string scriptResult = worker->GetScript();
     ASSERT_EQ(scriptResult, "entry/ets/workers/@worker.ts");
     worker->EraseWorker();
@@ -1747,12 +1985,18 @@ HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
 
     napi_set_named_property(workerEnv, object, "name", nameValue);
     napi_set_named_property(workerEnv, object, "type", typeValue);
+    napi_value priorityValue = nullptr;
+    napi_create_uint32(workerEnv, static_cast<int32_t>(WorkerPriority::HIGH), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
     argv[1] = object;
 
     napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    uv_sleep(200);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    bool qosUpdated = false;
+    worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
+    uv_sleep(200);
+    ASSERT_TRUE(qosUpdated);
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     result = Worker_Terminate(workerEnv, workerGlobal);
@@ -4666,6 +4910,194 @@ HWTEST_F(WorkersTest, WorkerTest092, testing::ext::TestSize.Level0)
     ASSERT_TRUE(result != nullptr);
 }
 
+HWTEST_F(NativeEngineTest, WorkerTest093, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "postMessage", NAPI_AUTO_LENGTH,
+                                              Worker::PostMessageToHost, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "postMessage", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest094, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "postMessageWithSharedSendable", NAPI_AUTO_LENGTH,
+                                              Worker::PostMessageWithSharedSendableToHost, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "postMessageWithSharedSendable", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest095, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "callGlobalCallObjectMethod", NAPI_AUTO_LENGTH,
+                                              Worker::GlobalCall, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "callGlobalCallObjectMethod", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest096, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "close", NAPI_AUTO_LENGTH,
+                                              Worker::CloseWorker, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "close", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest097, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "cancelTasks", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortCancelTask, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "cancelTasks", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest098, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "addEventListener", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortAddEventListener, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "addEventListener", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest099, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "dispatchEvent", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortDispatchEvent, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "dispatchEvent", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest100, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "removeEventListener", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortRemoveEventListener, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "removeEventListener", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest101, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "removeAllListener", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortRemoveAllListener, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "removeAllListener", func) == napi_ok);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest102, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func1 = nullptr;
+    napi_status status = napi_create_function(env, "postMessage", NAPI_AUTO_LENGTH,
+                                              Worker::PostMessageToHost, nullptr, &func1);
+    napi_value func2 = nullptr;
+    status = napi_create_function(env, "postMessageWithSharedSendable", NAPI_AUTO_LENGTH,
+                                  Worker::PostMessageWithSharedSendableToHost, nullptr, &func2);
+    napi_value func3 = nullptr;
+    status = napi_create_function(env, "callGlobalCallObjectMethod", NAPI_AUTO_LENGTH,
+                                  Worker::GlobalCall, nullptr, &func3);
+    napi_value func4 = nullptr;
+    status = napi_create_function(env, "close", NAPI_AUTO_LENGTH,
+                                  Worker::CloseWorker, nullptr, &func4);
+    ASSERT_TRUE(status == napi_ok);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"postMessage", nullptr, nullptr, nullptr, nullptr, func1, napi_default, nullptr},
+        {"postMessageWithSharedSendable", nullptr, nullptr, nullptr, nullptr, func2, napi_default, nullptr},
+        {"callGlobalCallObjectMethod", nullptr, nullptr, nullptr, nullptr, func3, napi_default, nullptr},
+        {"close", nullptr, nullptr, nullptr, nullptr, func4, napi_default, nullptr}
+    };
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value postMessageCB = GetGlobalProperty(env, "postMessage");
+    napi_value postMessageWithSSCB = GetGlobalProperty(env, "postMessageWithSharedSendable");
+    napi_value globalCallObjMethodCB = GetGlobalProperty(env, "callGlobalCallObjectMethod");
+    napi_value closeCB = GetGlobalProperty(env, "close");
+    bool isEqual = false;
+    napi_strict_equals(env, postMessageCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, postMessageWithSSCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, globalCallObjMethodCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, closeCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+}
+
+HWTEST_F(NativeEngineTest, WorkerTest103, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value func1 = nullptr;
+    napi_status status = napi_create_function(env, "cancelTasks", NAPI_AUTO_LENGTH,
+                                              Worker::ParentPortCancelTask, nullptr, &func1);
+    napi_value func2 = nullptr;
+    status = napi_create_function(env, "addEventListener", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortAddEventListener, nullptr, &func2);
+    napi_value func3 = nullptr;
+    status = napi_create_function(env, "dispatchEvent", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortDispatchEvent, nullptr, &func3);
+    napi_value func4 = nullptr;
+    status = napi_create_function(env, "removeEventListener", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortRemoveEventListener, nullptr, &func4);
+    napi_value func5 = nullptr;
+    status = napi_create_function(env, "removeAllListener", NAPI_AUTO_LENGTH,
+                                  Worker::ParentPortRemoveAllListener, nullptr, &func5);
+    ASSERT_TRUE(status == napi_ok);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"cancelTasks", nullptr, nullptr, nullptr, nullptr, func1, napi_default, nullptr},
+        {"addEventListener", nullptr, nullptr, nullptr, nullptr, func2, napi_default, nullptr},
+        {"dispatchEvent", nullptr, nullptr, nullptr, nullptr, func3, napi_default, nullptr},
+        {"removeEventListener", nullptr, nullptr, nullptr, nullptr, func4, napi_default, nullptr},
+        {"removeAllListener", nullptr, nullptr, nullptr, nullptr, func5, napi_default, nullptr}
+    };
+    napi_value globalObj = Commonlibrary::Concurrent::Common::Helper::NapiHelper::GetGlobalObject(env);
+    status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value cancelTasksCB = GetGlobalProperty(env, "cancelTasks");
+    napi_value addEventListenerCB = GetGlobalProperty(env, "addEventListener");
+    napi_value dispatchEventCB = GetGlobalProperty(env, "dispatchEvent");
+    napi_value removeEventListenerCB = GetGlobalProperty(env, "removeEventListener");
+    napi_value removeAllListenerCB = GetGlobalProperty(env, "removeAllListener");
+    bool isEqual = false;
+    napi_strict_equals(env, cancelTasksCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, addEventListenerCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, dispatchEventCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, removeEventListenerCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, removeAllListenerCB, func5, &isEqual);
+    ASSERT_TRUE(isEqual);
+}
+
 HWTEST_F(WorkersTest, PostMessageTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = WorkersTest::GetEnv();
@@ -4691,4 +5123,365 @@ HWTEST_F(WorkersTest, PostMessageTest004, testing::ext::TestSize.Level0)
     uv_sleep(1000); // 1000 : for post and receive message
     PostMessage(worker, data);
     uv_sleep(1000); // 1000 : for post and receive message
+}
+
+HWTEST_F(WorkersTest, QOSTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = WorkersTest::GetEnv();
+    napi_value exportObject = nullptr;
+    napi_create_object(env, &exportObject);
+    Worker::InitPriorityObject(env, exportObject);
+
+    napi_value priorityValue = NapiHelper::GetNameProperty(env, exportObject, "ThreadWorkerPriority");
+    ASSERT_NE(priorityValue, nullptr);
+
+    int32_t temp = -1;
+    napi_value highValue = NapiHelper::GetNameProperty(env, priorityValue, "HIGH");
+    ASSERT_NE(highValue, nullptr);
+    napi_get_value_int32(env, highValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::HIGH));
+
+    napi_value mediumValue = NapiHelper::GetNameProperty(env, priorityValue, "MEDIUM");
+    ASSERT_NE(mediumValue, nullptr);
+    napi_get_value_int32(env, mediumValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::MEDIUM));
+
+    napi_value lowValue = NapiHelper::GetNameProperty(env, priorityValue, "LOW");
+    ASSERT_NE(lowValue, nullptr);
+    napi_get_value_int32(env, lowValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::LOW));
+
+    napi_value idleValue = NapiHelper::GetNameProperty(env, priorityValue, "IDLE");
+    ASSERT_NE(idleValue, nullptr);
+    napi_get_value_int32(env, idleValue, static_cast<int32_t*>(&temp));
+    ASSERT_EQ(temp, static_cast<int32_t>(WorkerPriority::IDLE));
+}
+
+HWTEST_F(WorkersTest, QOSTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = WorkersTest::GetEnv();
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    std::string str = "test";
+    napi_value strValue = nullptr;
+    napi_create_string_utf8(env, str.c_str(), str.length(), &strValue);
+    napi_set_named_property(env, object, "priority", strValue);
+    WorkerPriority ret = Worker::GetPriorityArg(env, object);
+    ASSERT_EQ(ret, WorkerPriority::INVALID);
+
+    napi_value intValue = nullptr;
+    napi_create_int32(env, -1, &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_EQ(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::HIGH), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::MEDIUM), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::LOW), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::IDLE), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, 4, &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_EQ(ret, WorkerPriority::INVALID);
+}
+
+HWTEST_F(WorkersTest, QOSTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+    std::string funcName = "ThreadWorkerConstructor";
+    napi_value cb = nullptr;
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
+
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    napi_value priorityValue = nullptr;
+    napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    argv[1] = object;
+
+    TryCatch tryCatch(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_TRUE(tryCatch.HasCaught());
+    tryCatch.ClearException();
+    ArkNativeEngine* engine = (ArkNativeEngine*)workerEnv;
+    if (!engine->lastException_.IsEmpty()) {
+        engine->lastException_.Empty();
+    }
+    std::string strpriority = "kkk";
+    napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    TryCatch tryCatch2(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_TRUE(tryCatch2.HasCaught());
+    tryCatch2.ClearException();
+    if (!engine->lastException_.IsEmpty()) {
+        engine->lastException_.Empty();
+    }
+    Worker_Terminate(workerEnv, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+}
+
+HWTEST_F(WorkersTest, QOSTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+    std::string funcName = "ThreadWorkerConstructor";
+    napi_value cb = nullptr;
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
+
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    argv[1] = object;
+
+    WorkerPriority priority[] =
+        {WorkerPriority::HIGH, WorkerPriority::MEDIUM, WorkerPriority::LOW, WorkerPriority::IDLE};
+    for (int k = 0; k < sizeof(priority) / sizeof(priority[0]); k++)
+    {
+        napi_value priorityValue = nullptr;
+        napi_create_uint32(workerEnv, static_cast<int32_t>(priority[k]), &priorityValue);
+        napi_set_named_property(workerEnv, object, "priority", priorityValue);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        ASSERT_TRUE(result != nullptr);
+        Worker* worker = nullptr;
+        napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+        bool qosUpdated = false;
+        worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
+        uv_sleep(200);
+        ASSERT_TRUE(qosUpdated);
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+    }
+    result = Worker_Terminate(workerEnv, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, QOSTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerEnv, &workerGlobal);
+    std::string funcName = "WorkerConstructor";
+    napi_value cb = nullptr;
+    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
+
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    napi_value priorityValue = nullptr;
+    napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    argv[1] = object;
+
+    TryCatch tryCatch(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_FALSE(tryCatch.HasCaught());
+
+    std::string strpriority = "kkk";
+    napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
+    napi_set_named_property(workerEnv, object, "priority", priorityValue);
+    TryCatch tryCatch2(workerEnv);
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    ASSERT_FALSE(tryCatch2.HasCaught());
+    uv_sleep(200);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0010, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<WorkerChecker>();
+    checker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
+    int32_t failed = checker->GetFailedCount();
+    checker->DeleteWorkerList();
+    ASSERT_EQ(failed, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0011, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<WorkerChecker>();
+    checker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_1);
+    int32_t failed = checker->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+
+    auto checker2 = std::make_shared<WorkerChecker>();
+    checker2->CreateWorkerList(false, NUM_1);
+    failed = checker2->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+
+    auto checker3 = std::make_shared<WorkerChecker>();
+    checker3->CreateWorkerList(false, NUM_1);
+    failed = checker3->GetFailedCount();
+    ASSERT_EQ(failed, NUM_1);
+    checker3->DeleteWorkerList();
+
+    checker2->DeleteWorkerList();
+    auto checker4 = std::make_shared<WorkerChecker>();
+    checker4->CreateWorkerList(false, NUM_1);
+    failed = checker4->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+    checker4->DeleteWorkerList();
+
+    checker->DeleteWorkerList();
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0020, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<ArkRuntimeChecker>();
+    checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+    int32_t failed = checker->GetFailedCount();
+    checker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0021, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<ArkRuntimeChecker>();
+    checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT - NUM_1);
+    int32_t failed = checker->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+
+    auto checker2 = std::make_shared<ArkRuntimeChecker>();
+    checker2->CreateArkRuntimeList(NUM_10);
+    failed = checker2->GetFailedCount();
+    ASSERT_EQ(failed, NUM_10 - NUM_1);
+
+    auto checker3 = std::make_shared<ArkRuntimeChecker>();
+    checker3->CreateArkRuntimeList(NUM_1);
+    failed = checker3->GetFailedCount();
+    ASSERT_EQ(failed, NUM_1);
+
+    checker3->DeleteArkRuntimeList();
+    checker2->DeleteArkRuntimeList();
+
+    auto checker4 = std::make_shared<ArkRuntimeChecker>();
+    checker4->CreateArkRuntimeList(NUM_1);
+    failed = checker4->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+    checker4->DeleteArkRuntimeList();
+
+    checker->DeleteArkRuntimeList();
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0030, testing::ext::TestSize.Level0)
+{
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+    int32_t failed1 = arkRuntimeChecker->GetFailedCount();
+    auto workerChecker = std::make_shared<WorkerChecker>();
+    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT);
+    int32_t failed2 = workerChecker->GetFailedCount();
+    workerChecker->DeleteWorkerList();
+    ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
+    arkRuntimeChecker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed1, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0031, testing::ext::TestSize.Level0)
+{
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+    int32_t failed1 = arkRuntimeChecker->GetFailedCount();
+    auto workerChecker2 = std::make_shared<WorkerChecker>();
+    workerChecker2->CreateWorkerList(false, MAX_JSTHREAD_COUNT - MAX_ARKRUNTIME_COUNT - NUM_10);
+    int32_t failed2 = workerChecker2->GetFailedCount();
+
+    auto workerChecker3 = std::make_shared<WorkerChecker>();
+    workerChecker3->CreateWorkerList(true, NUM_10 + NUM_1);
+    int32_t failed3 = workerChecker3->GetFailedCount();
+    ASSERT_EQ(failed3, NUM_1);
+    workerChecker3->DeleteWorkerList();
+
+    workerChecker2->DeleteWorkerList();
+    ASSERT_EQ(failed2, 0);
+    arkRuntimeChecker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed1, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest004, testing::ext::TestSize.Level0)
+{
+    auto workerChecker = std::make_shared<WorkerChecker>();
+    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
+    int32_t failed1 = workerChecker->GetFailedCount();
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT);
+    int32_t failed2 = arkRuntimeChecker->GetFailedCount();
+    workerChecker->DeleteWorkerList();
+    ASSERT_EQ(failed1, NUM_10);
+    arkRuntimeChecker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest005, testing::ext::TestSize.Level0)
+{
+    auto workerChecker = std::make_shared<WorkerChecker>();
+    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_10);
+    int32_t failed1 = workerChecker->GetFailedCount();
+    ASSERT_EQ(failed1, 0);
+
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_JSTHREAD_COUNT - MAX_WORKERS_COUNT + NUM_10 - NUM_1);
+    int32_t failed2 = arkRuntimeChecker->GetFailedCount();
+    ASSERT_EQ(failed2, 0);
+
+    auto arkRuntimeChecker2 = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker2->CreateArkRuntimeList(NUM_10);
+    failed2 = arkRuntimeChecker2->GetFailedCount();
+    ASSERT_EQ(failed2, NUM_10 - NUM_1);
+    arkRuntimeChecker2->DeleteArkRuntimeList();
+
+    auto arkRuntimeChecker3 = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker3->CreateArkRuntimeList(NUM_1);
+    failed2 = arkRuntimeChecker3->GetFailedCount();
+    ASSERT_EQ(failed2, 0);
+
+    auto arkRuntimeChecker4 = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker4->CreateArkRuntimeList(NUM_1);
+    failed2 = arkRuntimeChecker4->GetFailedCount();
+    ASSERT_EQ(failed2, NUM_1);
+
+    arkRuntimeChecker3->DeleteArkRuntimeList();
+    arkRuntimeChecker4->DeleteArkRuntimeList();
+
+    workerChecker->DeleteWorkerList();
+    arkRuntimeChecker->DeleteArkRuntimeList();
 }

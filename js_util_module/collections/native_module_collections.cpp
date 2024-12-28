@@ -34,6 +34,9 @@ const std::string BIT_VECTOR = "BitVector";
 const int ARK_PRIVATE_BIT_VECTOR_INDEX = 14;
 const std::string SENDABLE_UINT8_CLAMPED_ARRAY = "SendableUint8ClampedArray";
 const std::string SENDABLE_FLOAT32_ARRAY = "SendableFloat32Array";
+const std::string SENDABLE_FLOAT64_ARRAY = "SendableFloat64Array";
+const std::string SENDABLE_BIGINT64_ARRAY = "SendableBigInt64Array";
+const std::string SENDABLE_BIGUINT64_ARRAY = "SendableBigUint64Array";
 }  // namespace
 
 static bool GetCollectionFunction(napi_env env, napi_value global, const std::string collectionName,
@@ -88,6 +91,9 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
     napi_value bitVector;
     napi_value sendableUint8ClampedArray;
     napi_value sendableFloat32Array;
+    napi_value sendableFloat64Array;
+    napi_value sendableBigInt64Array;
+    napi_value sendableBigUint64Array;
 
     napi_get_global(env, &global);
     if (!GetCollectionFunction(env, global, SENDABLE_ARRAY_NAME, sendableArrayValue)) {
@@ -128,6 +134,18 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
         return exports;
     }
 
+    if (!GetCollectionFunction(env, global, SENDABLE_FLOAT64_ARRAY, sendableFloat64Array)) {
+        return exports;
+    }
+
+    if (!GetCollectionFunction(env, global, SENDABLE_BIGINT64_ARRAY, sendableBigInt64Array)) {
+        return exports;
+    }
+
+    if (!GetCollectionFunction(env, global, SENDABLE_BIGUINT64_ARRAY, sendableBigUint64Array)) {
+        return exports;
+    }
+
     GetBitVectorFunction(env, global, bitVector);
 
     napi_property_descriptor desc[] = {
@@ -144,6 +162,9 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("BitVector", bitVector),
         DECLARE_NAPI_PROPERTY("Uint8ClampedArray", sendableUint8ClampedArray),
         DECLARE_NAPI_PROPERTY("Float32Array", sendableFloat32Array),
+        DECLARE_NAPI_PROPERTY("Float64Array", sendableFloat64Array),
+        DECLARE_NAPI_PROPERTY("BigInt64Array", sendableBigInt64Array),
+        DECLARE_NAPI_PROPERTY("BigUint64Array", sendableBigUint64Array),
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;

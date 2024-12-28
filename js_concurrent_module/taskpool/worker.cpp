@@ -26,6 +26,7 @@
 #include "task_manager.h"
 #include "taskpool.h"
 #include "tools/log.h"
+#include "native_engine.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
@@ -390,6 +391,7 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
     RunningScope runningScope(worker);
+    WorkerRunningScope workerRunningScope(env);
     PriorityScope priorityScope(worker, taskInfo.second);
     Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
     if (task == nullptr) {
@@ -512,8 +514,7 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         return;
     }
     Task* task = static_cast<Task*>(data);
-    auto taskId = reinterpret_cast<uint64_t>(task);
-    if (TaskManager::GetInstance().GetTask(taskId) == nullptr) {
+    if (TaskManager::GetInstance().GetTask(task->taskId_) == nullptr) {
         HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
@@ -526,6 +527,17 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         uint64_t cpuDuration = task->cpuTime_ - task->startTime_;
         TaskManager::GetInstance().StoreTaskDuration(task->taskId_, std::max(ioDuration, cpuDuration), cpuDuration);
     }
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    if (exception != nullptr) {
+        HILOG_ERROR("taskpool::TaskResultCallback occur exception");
+        reinterpret_cast<NativeEngine*>(env)->HandleTaskpoolException(exception, task->name_);
+        task->success_ = false;
+        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
+        NotifyTaskResult(env, task, errorEvent);
+        return;
+    }
+
     task->success_ = success;
     NotifyTaskResult(env, task, result);
 }
@@ -547,7 +559,7 @@ void Worker::ResetWorkerPriority()
     }
 }
 
-void Worker::StoreTaskId(uint64_t taskId)
+void Worker::StoreTaskId(uint32_t taskId)
 {
     std::lock_guard<std::mutex> lock(currentTaskIdMutex_);
     currentTaskId_.emplace_back(taskId);
@@ -587,7 +599,7 @@ void Worker::UpdateExecutedInfo()
 }
 
 // Only when the worker has no longTask can it be released.
-void Worker::TerminateTask(uint64_t taskId)
+void Worker::TerminateTask(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: TerminateTask task:%{public}s", std::to_string(taskId).c_str());
     std::lock_guard<std::mutex> lock(longMutex_);
@@ -620,10 +632,11 @@ bool Worker::HasLongTask()
 
 void Worker::HandleFunctionException(napi_env env, Task* task)
 {
-    napi_value exception;
+    napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");
+        reinterpret_cast<NativeEngine*>(env)->HandleTaskpoolException(exception, task->name_);
         task->DecreaseRefCount();
         task->success_ = false;
         napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);

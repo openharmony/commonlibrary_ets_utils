@@ -45,10 +45,11 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
     } else {
         name = NapiHelper::CreateEmptyString(env);
     }
-    TaskGroup* group = new TaskGroup();
+    TaskGroup* group = new TaskGroup(env);
     uint64_t groupId = reinterpret_cast<uint64_t>(group);
     group->groupId_ = groupId;
     TaskGroupManager::GetInstance().StoreTaskGroup(groupId, group);
+    group->InitHandle(env);
     napi_value napiGroupId = NapiHelper::CreateUint64(env, groupId);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY(GROUP_ID_STR, napiGroupId),
@@ -65,6 +66,7 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
         return nullptr;
     }
     napi_create_reference(env, thisVar, 0, &group->groupRef_);
+    napi_add_env_cleanup_hook(env, TaskGroup::HostEnvCleanupHook, group);
     return thisVar;
 }
 
@@ -72,6 +74,7 @@ void TaskGroup::TaskGroupDestructor(napi_env env, void* data, [[maybe_unused]] v
 {
     HILOG_DEBUG("taskpool::TaskGroupDestructor");
     TaskGroup* group = static_cast<TaskGroup*>(data);
+    napi_remove_env_cleanup_hook(env, TaskGroup::HostEnvCleanupHook, group);
     TaskGroupManager::GetInstance().ReleaseTaskGroupData(env, group);
     napi_delete_reference(env, group->groupRef_);
     delete group;
@@ -127,17 +130,48 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         napi_status status = napi_wrap(env, napiTask, task, Task::TaskDestructor, nullptr, nullptr);
         if (status != napi_ok) {
             HILOG_ERROR("taskpool::AddTask napi_wrap return value is %{public}d", status);
+            TaskManager::GetInstance().RemoveTask(task->taskId_);
             delete task;
             task = nullptr;
             return nullptr;
         }
-        TaskManager::GetInstance().StoreTask(task->taskId_, task);
         napi_create_reference(env, napiTask, 1, &task->taskRef_);
         TaskGroupManager::GetInstance().AddTask(groupId, task->taskRef_, task->taskId_);
         return nullptr;
     }
     ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be object or function.");
     return nullptr;
+}
+
+void TaskGroup::HostEnvCleanupHook(void* data)
+{
+    if (data == nullptr) {
+        HILOG_ERROR("taskpool:: taskGroup cleanupHook arg is nullptr");
+        return;
+    }
+    TaskGroup* group = static_cast<TaskGroup*>(data);
+    std::lock_guard<std::recursive_mutex> lock(group->taskGroupMutex_);
+    if (group->onRejectResultSignal_ != nullptr) {
+        uv_close(reinterpret_cast<uv_handle_t*>(group->onRejectResultSignal_), nullptr);
+    }
+
+    group->isValid_ = false;
+}
+
+void TaskGroup::StartRejectResult(const uv_async_t* req)
+{
+    auto* group = static_cast<TaskGroup*>(req->data);
+    if (group == nullptr) {
+        HILOG_DEBUG("taskpool::StartRejectResult group is nullptr");
+        return;
+    }
+    napi_status status = napi_ok;
+    HandleScope scope(group->env_, status);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+        return;
+    }
+    group->RejectResult(group->env_);
 }
 
 uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)
@@ -155,7 +189,7 @@ uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)
 void TaskGroup::NotifyGroupTask(napi_env env)
 {
     HILOG_DEBUG("taskpool:: NotifyGroupTask");
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskGroupMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
     if (pendingGroupInfos_.empty()) {
         return;
     }
@@ -189,7 +223,7 @@ void TaskGroup::CancelPendingGroup(napi_env env)
     HILOG_DEBUG("taskpool:: CancelPendingGroup");
     std::list<napi_deferred> deferreds {};
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskGroupMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
         if (pendingGroupInfos_.empty()) {
             return;
         }
@@ -210,13 +244,14 @@ void TaskGroup::CancelPendingGroup(napi_env env)
     TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, "taskpool:: taskGroup has been canceled");
 }
 
-void TaskGroup::CancelGroupTask(napi_env env, uint64_t taskId)
+void TaskGroup::CancelGroupTask(napi_env env, uint32_t taskId)
 {
-    TaskGroupManager::GetInstance().CancelGroupTask(env, taskId, this);
-    if (currentGroupInfo_ != nullptr && currentGroupInfo_->finishedTaskNum == taskNum_) {
-        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
-        RejectResult(env, error);
+    TaskGroupManager::GetInstance().CancelGroupTask(env_, taskId, this);
+    if (IsSameEnv(env)) {
+        RejectResult(env);
+        return;
     }
+    TriggerRejectResult();
 }
 
 void TaskGroup::RejectResult(napi_env env, napi_value res)
@@ -226,5 +261,42 @@ void TaskGroup::RejectResult(napi_env env, napi_value res)
     napi_reference_unref(env, groupRef_, nullptr);
     delete currentGroupInfo_;
     currentGroupInfo_ = nullptr;
+}
+
+void TaskGroup::RejectResult(napi_env env)
+{
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
+        if (currentGroupInfo_ != nullptr && currentGroupInfo_->finishedTaskNum == taskNum_) {
+            deferreds.push_back(currentGroupInfo_->deferred);
+            napi_delete_reference(env, currentGroupInfo_->resArr);
+            napi_reference_unref(env, groupRef_, nullptr);
+            delete currentGroupInfo_;
+            currentGroupInfo_ = nullptr;
+        }
+    }
+    std::string error = "taskpool:: taskGroup has been canceled";
+    TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, error);
+}
+
+void TaskGroup::InitHandle(napi_env env)
+{
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    ConcurrentHelper::UvHandleInit(loop, onRejectResultSignal_, TaskGroup::StartRejectResult, this);
+}
+
+void TaskGroup::TriggerRejectResult()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
+    if (onRejectResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onRejectResultSignal_)) {
+        return;
+    }
+    uv_async_send(onRejectResultSignal_);
+}
+
+bool TaskGroup::IsSameEnv(napi_env env)
+{
+    return env_ == env;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

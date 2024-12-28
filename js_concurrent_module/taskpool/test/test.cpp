@@ -15,6 +15,7 @@
 
 #include "test.h"
 
+#include "async_runner.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "sequence_runner.h"
@@ -328,17 +329,13 @@ void NativeEngineTest::CancelTask(napi_env env)
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
     task->taskType_ = TaskType::COMMON_TASK;
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTask(task);
     napi_value val = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, val, 0);
     task->taskRef_ = ref;
-    taskManager.StoreTask(task->taskId_, task);
     task->taskState_ = ExecuteState::CANCELED;
     taskManager.CancelTask(env, task->taskId_);
 
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    task->timer_ = new uv_timer_t;
-    uv_timer_init(loop, task->timer_);
     task->taskState_ = ExecuteState::RUNNING;
     task->isPeriodicTask_ = true;
     taskManager.CancelTask(env, task->taskId_);
@@ -362,7 +359,7 @@ void NativeEngineTest::NotifyWorkerIdle(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     taskManager.taskQueues_[Priority::DEFAULT]->EnqueueTaskId(task->taskId_);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     worker->workerEnv_ = env;
@@ -379,8 +376,7 @@ void NativeEngineTest::EnqueueTaskId(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task);
     napi_value obj = Helper::NapiHelper::CreateObject(env);
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, obj, 1);
     task->onEnqueuedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
@@ -400,15 +396,14 @@ void NativeEngineTest::GetTaskByPriority(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task);
     auto& mediumTaskQueue = taskManager.taskQueues_[Priority::DEFAULT];
-    uint64_t id = mediumTaskQueue->DequeueTaskId();
+    uint32_t id = mediumTaskQueue->DequeueTaskId();
     while (id != 0) {
         id = mediumTaskQueue->DequeueTaskId();
     }
     taskManager.EnqueueTaskId(task->taskId_);
-    std::set<uint64_t> set{task->taskId_};
+    std::set<uint32_t> set{task->taskId_};
     taskManager.dependTaskInfos_.emplace(task->taskId_, std::move(set));
     taskManager.GetTaskByPriority(mediumTaskQueue, Priority::DEFAULT);
     taskManager.dependTaskInfos_.clear();
@@ -425,7 +420,7 @@ void NativeEngineTest::RestoreWorker(napi_env env)
     taskManager.RestoreWorker(worker);
 
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     taskManager.EnqueueTaskId(task->taskId_);
     worker->state_ = WorkerState::IDLE;
     worker->workerEnv_ = env;
@@ -434,21 +429,21 @@ void NativeEngineTest::RestoreWorker(napi_env env)
     taskManager.RestoreWorker(worker);
 }
 
-void NativeEngineTest::StoreDependentId(uint64_t taskId, uint64_t dependentId)
+void NativeEngineTest::StoreDependentId(uint32_t taskId, uint32_t dependentId)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
-    std::set<uint64_t> set{ dependentId };
+    std::set<uint32_t> set{ dependentId };
     taskManager.dependTaskInfos_.emplace(taskId, std::move(set));
 }
 
-void NativeEngineTest::StoreDependentTaskId(uint64_t taskId, uint64_t dependentId)
+void NativeEngineTest::StoreDependentTaskId(uint32_t taskId, uint32_t dependentId)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
-    std::set<uint64_t> set{ dependentId };
+    std::set<uint32_t> set{ dependentId };
     taskManager.dependentTaskInfos_.emplace(taskId, std::move(set));
 }
 
-void NativeEngineTest::StoreTaskDuration(uint64_t taskId)
+void NativeEngineTest::StoreTaskDuration(uint32_t taskId)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     uint64_t durationId = taskId + MAX_TIMEOUT_TIME;
@@ -474,22 +469,22 @@ void NativeEngineTest::NotifyDependencyTaskInfo(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->env_ = env;
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     worker->workerEnv_ = env;
     task->worker_ = worker;
-    uint64_t id = task->taskId_ + MAX_TIMEOUT_TIME;
-    std::set<uint64_t> set{ task->taskId_, id };
+    uint32_t id = task->taskId_ + MAX_TIMEOUT_TIME;
+    std::set<uint32_t> set{ task->taskId_, id };
     taskManager.dependentTaskInfos_.emplace(task->taskId_, std::move(set));
     taskManager.NotifyDependencyTaskInfo(task->taskId_);
-    std::set<uint64_t> set1{ task->taskId_, id };
+    std::set<uint32_t> set1{ task->taskId_, id };
     taskManager.dependentTaskInfos_.emplace(task->taskId_, std::move(set1));
     taskManager.EnqueuePendingTaskInfo(0, Priority::DEFAULT);
     taskManager.EnqueuePendingTaskInfo(id, Priority::DEFAULT);
     taskManager.EnqueuePendingTaskInfo(task->taskId_, Priority::DEFAULT);
     taskManager.NotifyDependencyTaskInfo(task->taskId_);
-    std::set<uint64_t> set2{ task->taskId_, id };
+    std::set<uint32_t> set2{ task->taskId_, id };
     taskManager.dependentTaskInfos_.emplace(task->taskId_, std::move(set2));
     taskManager.IsDependentByTaskId(task->taskId_);
 }
@@ -498,31 +493,31 @@ void NativeEngineTest::StoreTaskDependency(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->env_ = env;
     Task* task1 = new Task();
-    task1->taskId_ = reinterpret_cast<uint64_t>(task1);
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     task1->env_ = env;
     Task* task2 = new Task();
-    task2->taskId_ = reinterpret_cast<uint64_t>(task1);
+    task2->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
     task2->env_ = env;
     taskManager.dependTaskInfos_.clear();
-    uint64_t id1 = task->taskId_;
-    uint64_t id2 = task->taskId_ + MAX_TIMEOUT_TIME;
-    uint64_t id3 = task1->taskId_;
-    uint64_t id4 = task1->taskId_ + MAX_TIMEOUT_TIME;
-    uint64_t id5 = task2->taskId_;
-    uint64_t id6 = task2->taskId_ + MAX_TIMEOUT_TIME;
-    std::set<uint64_t> set{ id2, id3 };
+    uint32_t id1 = task->taskId_;
+    uint32_t id2 = task->taskId_ + MAX_TIMEOUT_TIME;
+    uint32_t id3 = task1->taskId_;
+    uint32_t id4 = task1->taskId_ + MAX_TIMEOUT_TIME;
+    uint32_t id5 = task2->taskId_;
+    uint32_t id6 = task2->taskId_ + MAX_TIMEOUT_TIME;
+    std::set<uint32_t> set{ id2, id3 };
     taskManager.dependTaskInfos_.emplace(id1, std::move(set));
-    std::set<uint64_t> taskId{ id1, id2 };
+    std::set<uint32_t> taskId{ id1, id2 };
     taskManager.StoreTaskDependency(id3, taskId);
     taskManager.StoreTaskDependency(id5, taskId);
-    std::set<uint64_t> set1{ id4, id5 };
+    std::set<uint32_t> set1{ id4, id5 };
     taskManager.dependTaskInfos_.emplace(id3, std::move(set1));
     taskManager.StoreTaskDependency(id1, taskId);
-    std::set<uint64_t> set2{ id6 };
-    std::set<uint64_t> set3{ id1 };
+    std::set<uint32_t> set2{ id6 };
+    std::set<uint32_t> set3{ id1 };
     taskManager.dependTaskInfos_.emplace(id5, std::move(set3));
     taskManager.StoreTaskDependency(id1, taskId);
     taskManager.dependTaskInfos_.emplace(id5, std::move(set2));
@@ -536,19 +531,19 @@ void NativeEngineTest::RemoveTaskDependency(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
-    uint64_t id = task->taskId_ + MAX_TIMEOUT_TIME;
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    uint32_t id = task->taskId_ + MAX_TIMEOUT_TIME;
     Task* task1 = new Task();
-    task1->taskId_ = reinterpret_cast<uint64_t>(task1);
-    uint64_t id2 = task1->taskId_ + MAX_TIMEOUT_TIME;
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
+    uint32_t id2 = task1->taskId_ + MAX_TIMEOUT_TIME;
     taskManager.dependTaskInfos_.clear();
-    std::set<uint64_t> set{ id };
+    std::set<uint32_t> set{ id };
     taskManager.dependTaskInfos_.emplace(task->taskId_, std::move(set));
     taskManager.RemoveTaskDependency(task->taskId_, task1->taskId_);
     taskManager.RemoveTaskDependency(task->taskId_, id);
-    std::set<uint64_t> set2{ id };
+    std::set<uint32_t> set2{ id };
     taskManager.dependentTaskInfos_.emplace(task->taskId_, std::move(set2));
-    std::set<uint64_t> dependentTaskIdSet{ task->taskId_ };
+    std::set<uint32_t> dependentTaskIdSet{ task->taskId_ };
     taskManager.StoreDependentTaskInfo(dependentTaskIdSet, task1->taskId_);
     taskManager.RemoveDependentTaskInfo(task->taskId_, id2);
     taskManager.RemoveDependentTaskInfo(task->taskId_, id);
@@ -563,28 +558,27 @@ void NativeEngineTest::ReleaseTaskData(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
     task->onResultSignal_ = nullptr;
     task->taskType_ = TaskType::FUNCTION_TASK;
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task);
     taskManager.ReleaseTaskData(env, task);
     task->taskType_ = TaskType::GROUP_FUNCTION_TASK;
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task);
     taskManager.ReleaseTaskData(env, task);
-    std::set<uint64_t> set{ task->taskId_ };
+    std::set<uint32_t> set{ task->taskId_ };
     taskManager.dependTaskInfos_.emplace(task->taskId_, std::move(set));
     task->taskType_ = TaskType::COMMON_TASK;
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task);
     taskManager.ReleaseTaskData(env, task);
     Task* task1 = new Task();
-    task1->taskId_ = reinterpret_cast<uint64_t>(task1);
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     task1->onEnqueuedCallBackInfo_ = new ListenerCallBackInfo(env, nullptr, nullptr);
     task1->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, nullptr, nullptr);
     task1->onExecutionFailedCallBackInfo_ = new ListenerCallBackInfo(env, nullptr, nullptr);
     task1->onExecutionSucceededCallBackInfo_ = new ListenerCallBackInfo(env, nullptr, nullptr);
     taskManager.ReleaseCallBackInfo(task1);
     Task* task2 = new Task();
-    task2->taskId_ = reinterpret_cast<uint64_t>(task2);
+    task2->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
     task2->isMainThreadTask_ = true;
     taskManager.ReleaseCallBackInfo(task2);
     task2->isMainThreadTask_ = false;
@@ -598,10 +592,10 @@ void NativeEngineTest::CheckTask(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    taskManager.StoreTask(task);
     Task* task1 = new Task();
-    task1->taskId_ = reinterpret_cast<uint64_t>(task1);
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task1);
+    taskManager.RemoveTask(task1->taskId_);
     taskManager.CheckTask(task1->taskId_);
 
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
@@ -651,8 +645,7 @@ void NativeEngineTest::CancelGroupTask(napi_env env)
     TaskGroup* group = new TaskGroup();
     group->currentGroupInfo_ = new GroupInfo();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task);
     task->taskState_ = ExecuteState::RUNNING;
     groupManager.CancelGroupTask(env, task->taskId_, group);
     task->taskState_ = ExecuteState::WAITING;
@@ -663,7 +656,7 @@ void NativeEngineTest::CancelGroupTask(napi_env env)
     groupManager.CancelGroupTask(env, task->taskId_, group);
 
     Task* task1 = new Task();
-    task1->taskId_ = reinterpret_cast<uint64_t>(task1);
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     SequenceRunner* seqRunner = new SequenceRunner();
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
     groupManager.StoreSequenceRunner(seqRunnerId, seqRunner);
@@ -674,9 +667,9 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
 {
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     Task* task1 = new Task();
-    task1->taskId_ = reinterpret_cast<uint64_t>(task1);
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     SequenceRunner* seqRunner = new SequenceRunner();
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
     seqRunner->priority_ = Priority::DEFAULT;
@@ -715,7 +708,7 @@ void NativeEngineTest::UpdateGroupState(napi_env env)
     TaskGroup* group = new TaskGroup();
     uint64_t groupId = reinterpret_cast<uint64_t>(group);
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     groupManager.StoreTaskGroup(groupId, group);
     groupManager.UpdateGroupState(task->taskId_);
     group->groupState_ = ExecuteState::CANCELED;
@@ -806,11 +799,10 @@ void NativeEngineTest::PerformTask(napi_env env)
     groupManager.StoreTaskGroup(groupId, group);
 
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
-    taskManager.StoreTask(task->taskId_, task);
+    taskManager.StoreTask(task);
     Priority priority = Priority::DEFAULT;
     auto& mediumTaskQueue = taskManager.taskQueues_[priority];
-    uint64_t id = mediumTaskQueue->DequeueTaskId();
+    uint32_t id = mediumTaskQueue->DequeueTaskId();
     while (id != 0) {
         id = mediumTaskQueue->DequeueTaskId();
     }
@@ -830,17 +822,17 @@ void NativeEngineTest::NotifyHandleTaskResult(napi_env env)
     ExceptionScope scope(env);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->env_ = worker->workerEnv_;
     uv_loop_t* loop = worker->GetWorkerLoop();
     ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, NativeEngineTest::foo, task);
     Task* task1 = new Task();
-    task1->taskId_ = reinterpret_cast<uint64_t>(task1);
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     worker->currentTaskId_.push_back(task1->taskId_);
     task->worker_ = worker;
     task->isMainThreadTask_ = true;
     task->taskRefCount_.fetch_add(1);
-    TaskManager::GetInstance().StoreTask(task->taskId_, task);
+    TaskManager::GetInstance().StoreTask(task);
     Worker::NotifyHandleTaskResult(task);
 }
 
@@ -849,7 +841,7 @@ void NativeEngineTest::TaskResultCallback(napi_env env)
     ExceptionScope scope(env);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->env_ = worker->workerEnv_;
     task->taskRefCount_.fetch_add(1);
     task->worker_ = worker;
@@ -871,8 +863,8 @@ void NativeEngineTest::TaskResultCallback(napi_env env)
     worker->state_ = WorkerState::IDLE;
     worker->UpdateExecutedInfo();
 
-    uint64_t id = task->taskId_ + MAX_TIMEOUT_TIME;
-    std::unordered_set<uint64_t> set{ task->taskId_, id };
+    uint32_t id = task->taskId_ + MAX_TIMEOUT_TIME;
+    std::unordered_set<uint32_t> set{ task->taskId_, id };
     worker->longTasksSet_ = std::move(set);
     worker->TerminateTask(task->taskId_);
 }
@@ -885,7 +877,7 @@ void NativeEngineTest::HandleFunctionException(napi_env env)
     napi_create_runtime(env, &workerEnv);
     worker->workerEnv_ = workerEnv;
     Task* task = new Task();
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->env_ = workerEnv;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, workerEnv, task->taskId_, nullptr);
     TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, task);
@@ -951,5 +943,30 @@ void NativeEngineTest::ResetTaskManager()
     taskManager.timeoutWorkers_.clear();
     taskManager.highPrioExecuteCount_ = 0;
     taskManager.mediumPrioExecuteCount_ = 0;
+}
+
+void NativeEngineTest::CheckAndCreateAsyncRunner(napi_env env, napi_value name, napi_value runningCapacity,
+                                                 napi_value waitingCapacity)
+{
+    napi_value thisVar = nullptr;
+    AsyncRunner::CheckAndCreateAsyncRunner(env, thisVar, name, runningCapacity, waitingCapacity);
+}
+
+void NativeEngineTest::AsyncRunnerDestructor(napi_env env, void* data)
+{
+    void* hint = nullptr;
+    AsyncRunner::AsyncRunnerDestructor(env, data, hint);
+}
+
+void NativeEngineTest::RejectError(uv_timer_t* handle)
+{
+    AsyncRunner::RejectError(handle);
+}
+
+void NativeEngineTest::AddTasksToAsyncRunner(void* asyncData, void* taskData)
+{
+    AsyncRunner* async = reinterpret_cast<AsyncRunner*>(asyncData);
+    Task* task = reinterpret_cast<Task*>(taskData);
+    AsyncRunner::AddTasksToAsyncRunner(async, task);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

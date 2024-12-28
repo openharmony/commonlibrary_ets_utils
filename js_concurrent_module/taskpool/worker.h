@@ -174,13 +174,13 @@ private:
     void ResetWorkerPriority();
     bool CheckFreeConditions();
     bool UpdateWorkerState(WorkerState expect, WorkerState desired);
-    void StoreTaskId(uint64_t taskId);
+    void StoreTaskId(uint32_t taskId);
     bool InitTaskPoolFunc(napi_env env, napi_value func, Task* task);
     void UpdateExecutedInfo();
     void UpdateLongTaskInfo(Task* task);
     bool IsExecutingLongTask();
     bool HasLongTask();
-    void TerminateTask(uint64_t taskId);
+    void TerminateTask(uint32_t taskId);
     void CloseHandles();
     void PostReleaseSignal();
 
@@ -215,7 +215,7 @@ private:
     std::atomic<bool> hasExecuted_ = false; // false means this worker hasn't execute any tasks
     Priority priority_ {Priority::DEFAULT};
     pid_t tid_ = 0;
-    std::vector<uint64_t> currentTaskId_ {};
+    std::vector<uint32_t> currentTaskId_ {};
     std::mutex currentTaskIdMutex_;
     MessageQueue<TaskResultInfo*> hostMessageQueue_ {};
     uint64_t lastCpuTime_ = 0;
@@ -223,7 +223,7 @@ private:
     std::atomic<bool> hasLongTask_ = false;
     std::atomic<bool> isExecutingLongTask_ = false;
     std::mutex longMutex_;
-    std::unordered_set<uint64_t> longTasksSet_ {};
+    std::unordered_set<uint32_t> longTasksSet_ {};
     std::mutex queueMutex_; // for sendData
     std::unordered_map<napi_env, MsgQueue> msgQueueMap_ {};
     friend class TaskManager;

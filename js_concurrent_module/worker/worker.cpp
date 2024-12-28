@@ -15,6 +15,8 @@
 
 #include "worker.h"
 
+#include <unordered_map>
+
 #include "sys_timer.h"
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
@@ -24,22 +26,33 @@
 #if defined(OHOS_PLATFORM)
 #include "parameters.h"
 #endif
+#ifdef ENABLE_QOS
+#include "qos.h"
+#endif
+#include "native_engine.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace OHOS::JsSysModule;
 static constexpr int8_t NUM_WORKER_ARGS = 2;
 static constexpr uint8_t NUM_GLOBAL_CALL_ARGS = 3;
 static std::list<Worker *> g_workers;
-static constexpr int MAX_WORKERS = 8;
-static constexpr int MAX_THREAD_WORKERS = 64;
 static std::mutex g_workersMutex;
 static std::list<Worker *> g_limitedworkers;
-static constexpr int MAX_LIMITEDWORKERS = 16;
 static std::mutex g_limitedworkersMutex;
 static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
 static constexpr size_t GLOBAL_CALL_MAX_COUNT = 65535;
+static constexpr uint32_t THREAD_NAME_MAX_LENGTH = 15;
+
+#ifdef ENABLE_QOS
+static const std::unordered_map<WorkerPriority, OHOS::QOS::QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
+    {WorkerPriority::HIGH, OHOS::QOS::QosLevel::QOS_USER_INITIATED},
+    {WorkerPriority::MEDIUM, OHOS::QOS::QosLevel::QOS_DEFAULT},
+    {WorkerPriority::LOW, OHOS::QOS::QosLevel::QOS_UTILITY},
+    {WorkerPriority::IDLE, OHOS::QOS::QosLevel::QOS_BACKGROUND},
+};
+#endif
 
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::GetMainThreadHandler()
@@ -101,7 +114,32 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
     napi_define_class(env, limitedWorkerName, sizeof(limitedWorkerName), Worker::LimitedWorkerConstructor, nullptr,
         sizeof(properties) / sizeof(properties[0]), properties, &limitedWorkerClazz);
     napi_set_named_property(env, exports, "RestrictedWorker", limitedWorkerClazz);
+
+    InitPriorityObject(env, exports);
+
     return InitPort(env, exports);
+}
+
+void Worker::InitPriorityObject(napi_env env, napi_value exports)
+{
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+
+    napi_value highPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::HIGH));
+    napi_value mediumPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::MEDIUM));
+    napi_value lowPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::LOW));
+    napi_value idlePriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::IDLE));
+    napi_property_descriptor exportPriority[] = {
+        DECLARE_NAPI_PROPERTY("HIGH", highPriority),
+        DECLARE_NAPI_PROPERTY("MEDIUM", mediumPriority),
+        DECLARE_NAPI_PROPERTY("LOW", lowPriority),
+        DECLARE_NAPI_PROPERTY("IDLE", idlePriority),
+    };
+    napi_define_properties(env, priorityObj, sizeof(exportPriority) / sizeof(exportPriority[0]), exportPriority);
+
+    napi_property_descriptor exportObjs[] = {
+        DECLARE_NAPI_PROPERTY("ThreadWorkerPriority", priorityObj),
+    };
+    napi_define_properties(env, exports, sizeof(exportObjs) / sizeof(exportObjs[0]), exportObjs);
 }
 
 napi_value Worker::InitPort(napi_env env, napi_value exports)
@@ -225,51 +263,55 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     }
     WorkerParams* workerParams = nullptr;
     if (argc == 2) {  // 2: max args number is 2
-        workerParams = CheckWorkerArgs(env, args[1]);
+        workerParams = CheckWorkerArgs(env, args[1], version);
         if (workerParams == nullptr) {
             HILOG_ERROR("Worker:: arguments check failed.");
             return nullptr;
         }
     }
+
     Worker* worker = nullptr;
     if (limitSign) {
-        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
-        if (static_cast<int>(g_limitedworkers.size()) >= MAX_LIMITEDWORKERS) {
-            HILOG_ERROR("worker:: the number of limiteworkers exceeds the maximum");
+        bool success = WorkerManager::IncrementWorkerCount(WorkerType::LIMITED_WORKER);
+        if (!success) {
+            HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
                 "the number of limiteworkers exceeds the maximum.");
             return nullptr;
         }
 
+        std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
             HILOG_ERROR("worker:: create worker error");
+            WorkerManager::DecrementWorkerCount(WorkerType::LIMITED_WORKER);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
             return nullptr;
         }
+        worker->workerType_ = WorkerType::LIMITED_WORKER;
         g_limitedworkers.push_back(worker);
         HILOG_INFO("worker:: limited workers num %{public}zu", g_limitedworkers.size());
     } else {
-        int maxWorkers = (version == WorkerVersion::NEW) ? MAX_THREAD_WORKERS : MAX_WORKERS;
-    #if defined(OHOS_PLATFORM)
-        maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", maxWorkers);
-    #endif
-        std::lock_guard<std::mutex> lock(g_workersMutex);
-        if (static_cast<int>(g_workers.size()) >= maxWorkers) {
-            HILOG_ERROR("worker:: the number of workers exceeds the maximum");
+        WorkerType workerType = (version == WorkerVersion::NEW) ? THREAD_WORKER : OLD_WORKER;
+        bool success = WorkerManager::IncrementWorkerCount(workerType);
+        if (!success) {
+            HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
                 "the number of workers exceeds the maximum.");
             return nullptr;
         }
 
+        std::lock_guard<std::mutex> lock(g_workersMutex);
         // 2. new worker instance
         worker = new Worker(env, nullptr);
         if (worker == nullptr) {
             HILOG_ERROR("worker:: create worker error");
+            WorkerManager::DecrementWorkerCount(workerType);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
             return nullptr;
         }
+        worker->workerType_ = workerType;
         g_workers.push_back(worker);
         HILOG_INFO("worker:: workers num %{public}zu", g_workers.size());
     }
@@ -280,6 +322,8 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         }
         // default classic
         worker->SetScriptMode(workerParams->type_);
+        worker->workerPriority_ = workerParams->workerPriority_;
+
         CloseHelp::DeletePointer(workerParams, false);
         workerParams = nullptr;
     }
@@ -289,6 +333,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     // 3. execute in thread
     char* script = NapiHelper::GetChars(env, args[0]);
     if (script == nullptr) {
+        WorkerManager::DecrementWorkerCount(worker->workerType_);
         HILOG_ERROR("worker:: the file path is invaild, maybe path is null");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH,
             "the file path is invaild, maybe path is null.");
@@ -301,6 +346,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     }
     napi_status status = napi_wrap(env, thisVar, worker, WorkerDestructor, nullptr, &worker->workerRef_);
     if (status != napi_ok) {
+        WorkerManager::DecrementWorkerCount(worker->workerType_);
         HILOG_ERROR("worker::Constructor napi_wrap return value is %{public}d", status);
         WorkerDestructor(env, worker, nullptr);
         return nullptr;
@@ -313,7 +359,7 @@ void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
 {
     Worker* worker = static_cast<Worker*>(data);
     if (worker == nullptr) {
-        HILOG_WARN("worker:: worker is nullptr.");
+        HILOG_WARN("worker:: worker is null.");
         return;
     }
     if (worker->isLimitedWorker_) {
@@ -387,11 +433,20 @@ void Worker::HostEnvCleanCallbackInner(Worker* worker)
     worker->ClearGlobalCallObject();
 }
 
-Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue)
+Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue, WorkerVersion version)
 {
     WorkerParams* workerParams = nullptr;
     if (NapiHelper::IsObject(env, argsValue)) {
         workerParams = new WorkerParams();
+        bool hasPriorityValue = NapiHelper::HasNameProperty(env, argsValue, "priority");
+        if (version != WorkerVersion::OLD && hasPriorityValue) {
+            workerParams->workerPriority_ = Worker::GetPriorityArg(env, argsValue);
+            if (workerParams->workerPriority_ == WorkerPriority::INVALID) {
+                CloseHelp::DeletePointer(workerParams, false);
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the priority value is invalid");
+                return nullptr;
+            }
+        }
         napi_value nameValue = NapiHelper::GetNameProperty(env, argsValue, "name");
         if (NapiHelper::IsNotUndefined(env, nameValue)) {
             if (!NapiHelper::IsString(env, nameValue)) {
@@ -434,6 +489,24 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
         }
     }
     return workerParams;
+}
+
+WorkerPriority Worker::GetPriorityArg(napi_env env, napi_value argsValue)
+{
+    napi_value priorityValue = NapiHelper::GetNameProperty(env, argsValue, "priority");
+    if (!NapiHelper::IsNumber(env, priorityValue)) {
+        HILOG_ERROR("worker:: GetPriorityArg error, not number");
+        return WorkerPriority::INVALID;
+    }
+
+    int32_t priority = static_cast<int32_t>(WorkerPriority::INVALID);
+    napi_get_value_int32(env, priorityValue, static_cast<int32_t*>(&priority));
+    if (priority < static_cast<int32_t>(WorkerPriority::HIGH) ||
+        priority > static_cast<int32_t>(WorkerPriority::IDLE)) {
+        HILOG_ERROR("worker:: GetPriorityArg error, value not in scope");
+        return WorkerPriority::INVALID;
+    }
+    return static_cast<WorkerPriority>(priority);
 }
 
 napi_value Worker::PostMessage(napi_env env, napi_callback_info cbinfo)
@@ -1288,6 +1361,11 @@ void Worker::ExecuteInThread(const void* data)
 {
     HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
+#ifdef ENABLE_QOS
+    if (worker != nullptr) {
+        worker->SetQOSLevel();
+    }
+#endif
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
     {
@@ -1331,13 +1409,14 @@ void Worker::ExecuteInThread(const void* data)
 
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
-        worker->workerOnMessageSignal_ = new uv_async_t;
-        uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::WorkerOnMessage));
-        worker->workerOnMessageSignal_->data = worker;
+        ConcurrentHelper::UvHandleInit(loop, worker->workerOnMessageSignal_, Worker::WorkerOnMessage, worker);
+        ConcurrentHelper::UvHandleInit(loop, worker->workerOnTerminateSignal_, Worker::WorkerOnMessage, worker);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             Worker::HandleDebuggerTask));
 #endif
+        reinterpret_cast<NativeEngine*>(worker->workerEnv_)->RegisterGetWorkerNameCallback(GetWorkerNameCallback,
+            reinterpret_cast<void*>(worker));
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
         uv_async_send(worker->workerOnMessageSignal_);
@@ -1407,13 +1486,28 @@ bool Worker::PrepareForWorkerInstance()
         return false;
     }
 
-    // 4. register worker name in DedicatedWorkerGlobalScope
+    ApplyNameSetting();
+    return true;
+}
+
+void Worker::ApplyNameSetting()
+{
+    std::string threadName = "WorkerThread";
     if (!name_.empty()) {
         napi_value nameValue = nullptr;
         napi_create_string_utf8(workerEnv_, name_.c_str(), name_.length(), &nameValue);
         NapiHelper::SetNamePropertyInGlobal(workerEnv_, "name", nameValue);
+
+        threadName += "_" + name_;
+        if (threadName.length() > THREAD_NAME_MAX_LENGTH) {
+            threadName = threadName.substr(0, THREAD_NAME_MAX_LENGTH);
+        }
     }
-    return true;
+#if defined IOS_PLATFORM || defined MAC_PLATFORM
+    pthread_setname_np(threadName.c_str());
+#elif !defined(WINDOWS_PLATFORM)
+    pthread_setname_np(pthread_self(), threadName.c_str());
+#endif
 }
 
 void Worker::HostOnMessage(const uv_async_t* req)
@@ -1433,6 +1527,10 @@ void Worker::HostOnMessageInner()
         HILOG_ERROR("worker:: host thread maybe is over when host onmessage.");
         return;
     }
+
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!engine->InitContainerScopeFunc(scopeId_)) {
@@ -1507,6 +1605,10 @@ void Worker::HostOnGlobalCallInner()
         cv_.notify_one();
         return;
     }
+
+    napi_status scopeStatus = napi_ok;
+    HandleScope handleScope(hostEnv_, scopeStatus);
+    NAPI_CALL_RETURN_VOID(hostEnv_, scopeStatus);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     if (!engine->InitContainerScopeFunc(scopeId_)) {
@@ -1767,7 +1869,10 @@ void Worker::PostMessageInner(MessageDataType data)
     }
     workerMessageQueue_.EnQueue(data);
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
-    if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
+    if (data == nullptr) {
+        HILOG_DEBUG("worker:: host post nullptr to worker.");
+        uv_async_send(workerOnTerminateSignal_);
+    } else if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
         uv_async_send(workerOnMessageSignal_);
     }
 }
@@ -1843,10 +1948,8 @@ void Worker::TerminateWorker()
     // when there is no active handle, worker loop will stop automatic.
     {
         std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
-        uv_close(reinterpret_cast<uv_handle_t*>(workerOnMessageSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(workerOnMessageSignal_);
+        ConcurrentHelper::UvHandleClose(workerOnTerminateSignal_);
     }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_close(reinterpret_cast<uv_handle_t*>(&debuggerOnPostTaskSignal_), nullptr);
@@ -1973,6 +2076,7 @@ void Worker::WorkerOnMessageInner()
     if (IsTerminated()) {
         return;
     }
+    WorkerRunningScope workerRunningScope(workerEnv_);
     napi_status status;
     napi_handle_scope scope = nullptr;
     status = napi_open_handle_scope(workerEnv_, &scope);
@@ -2434,36 +2538,31 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 
 void Worker::InitHostHandle(uv_loop_t* loop)
 {
-    hostOnMessageSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnMessage));
-    hostOnMessageSignal_->data = this;
-    hostOnErrorSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnError));
-    hostOnErrorSignal_->data = this;
-    hostOnGlobalCallSignal_ = new uv_async_t;
-    uv_async_init(loop, hostOnGlobalCallSignal_, reinterpret_cast<uv_async_cb>(Worker::HostOnGlobalCall));
-    hostOnGlobalCallSignal_->data = this;
+    ConcurrentHelper::UvHandleInit(loop, hostOnMessageSignal_, Worker::HostOnMessage, this);
+    ConcurrentHelper::UvHandleInit(loop, hostOnErrorSignal_, Worker::HostOnError, this);
+    ConcurrentHelper::UvHandleInit(loop, hostOnGlobalCallSignal_, Worker::HostOnGlobalCall, this);
 }
 
 void Worker::CloseHostHandle()
 {
     if (hostOnMessageSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(hostOnMessageSignal_);
     }
     if (hostOnErrorSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(hostOnErrorSignal_);
     }
     if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_), [](uv_handle_t* handle) {
-            delete reinterpret_cast<uv_async_t*>(handle);
-            handle = nullptr;
-        });
+        ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
+    }
+}
+
+std::string Worker::GetWorkerNameCallback(void* worker)
+{
+    auto workerPtr = reinterpret_cast<Worker*>(worker);
+    if (workerPtr) {
+        return workerPtr->GetName();
+    } else {
+        return "";
     }
 }
 
@@ -2473,12 +2572,20 @@ void Worker::EraseWorker()
         std::lock_guard<std::mutex> lock(g_workersMutex);
         std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), this);
         if (it != g_workers.end()) {
+            Worker* worker = *it;
+            if (worker != nullptr) {
+                WorkerManager::DecrementWorkerCount(worker->workerType_);
+            }
             g_workers.erase(it);
         }
     } else {
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
         std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), this);
         if (it != g_limitedworkers.end()) {
+            Worker* worker = *it;
+            if (worker != nullptr) {
+                WorkerManager::DecrementWorkerCount(worker->workerType_);
+            }
             g_limitedworkers.erase(it);
         }
     }
@@ -2490,4 +2597,29 @@ void Worker::ClearHostMessage(napi_env env)
     hostGlobalCallQueue_.Clear(env);
     errorQueue_.Clear(env);
 }
+
+#ifdef ENABLE_QOS
+void Worker::SetQOSLevel()
+{
+    if (workerPriority_ == WorkerPriority::INVALID) {
+        return;
+    }
+    auto iter = WORKERPRIORITY_QOSLEVEL_MAP.find(workerPriority_);
+    if (iter == WORKERPRIORITY_QOSLEVEL_MAP.end()) {
+        HILOG_ERROR("worker:: not in WORKERPRIORITY_QOSLEVEL_MAP");
+        return;
+    }
+    OHOS::QOS::QosLevel qosLevel = iter->second;
+    if (qosLevel != OHOS::QOS::QosLevel::QOS_MAX) {
+        HILOG_INFO("SetThreadQos %{public}d", qosLevel);
+        int ret = SetThreadQos(qosLevel);
+        if (ret != 0) {
+            HILOG_ERROR("worker:: SetThreadQos failed, return %{public}d", ret);
+        }
+        if (qosUpdatedCallback_ != nullptr) {
+            qosUpdatedCallback_();
+        }
+    }
+}
+#endif
 } // namespace Commonlibrary::Concurrent::WorkerModule

@@ -16,12 +16,12 @@
 #include "task_queue.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-void ExecuteQueue::EnqueueTaskId(uint64_t taskId)
+void ExecuteQueue::EnqueueTaskId(uint32_t taskId)
 {
     tasks_.emplace_back(taskId);
 }
 
-bool ExecuteQueue::EraseWaitingTaskId(uint64_t taskId)
+bool ExecuteQueue::EraseWaitingTaskId(uint32_t taskId)
 {
     auto it = std::find(tasks_.begin(), tasks_.end(), taskId);
     if (it != tasks_.end()) {
@@ -31,10 +31,10 @@ bool ExecuteQueue::EraseWaitingTaskId(uint64_t taskId)
     return false;
 }
 
-uint64_t ExecuteQueue::DequeueTaskId()
+uint32_t ExecuteQueue::DequeueTaskId()
 {
     if (!tasks_.empty()) {
-        uint64_t taskId = tasks_.front();
+        uint32_t taskId = tasks_.front();
         tasks_.pop_front();
         return taskId;
     }
