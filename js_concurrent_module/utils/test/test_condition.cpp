@@ -55,8 +55,6 @@ public:
 
     static void DestroyEngine()
     {
-        delete engine_;
-        engine_ = nullptr;
         panda::JSNApi::DestroyJSVM(vm_);
     }
 
@@ -91,9 +89,11 @@ TEST_F(ConditionTest, WaitTest)
     napi_status status;
     napi_create_object(env, &exports);
     napi_value exportsResult = Commonlibrary::Concurrent::Condition::ConditionVariable::Init(env, exports);
-
+    napi_value locks;
+    status = napi_get_named_property(env, exportsResult, "locks", &locks);
+    ASSERT_EQ(status, napi_ok);
     napi_value conditionClass;
-    status = napi_get_named_property(env, exportsResult, "ConditionVariable", &conditionClass);
+    status = napi_get_named_property(env, locks, "ConditionVariable", &conditionClass);
     ASSERT_EQ(status, napi_ok);
     napi_value instance;
     napi_ref napi_ref;
@@ -126,7 +126,7 @@ TEST_F(ConditionTest, WaitTest)
 
     // 调用notify 方法
     status = napi_call_function(env, thisVar, notifyFn, 0, nullptr, nullptr);
-    ASSERT_NE(status, napi_ok);
+    ASSERT_EQ(status, napi_ok);
 }
 
 TEST_F(ConditionTest, WaitForTest)
@@ -138,9 +138,11 @@ TEST_F(ConditionTest, WaitForTest)
     napi_status status;
     napi_create_object(env, &exports);
     napi_value exportsResult = Commonlibrary::Concurrent::Condition::ConditionVariable::Init(env, exports);
-
+    napi_value locks;
+    status = napi_get_named_property(env, exportsResult, "locks", &locks);
+    ASSERT_EQ(status, napi_ok);
     napi_value conditionClass;
-    status = napi_get_named_property(env, exportsResult, "ConditionVariable", &conditionClass);
+    status = napi_get_named_property(env, locks, "ConditionVariable", &conditionClass);
     ASSERT_EQ(status, napi_ok);
     napi_value instance;
     napi_ref napi_ref;
@@ -177,5 +179,5 @@ TEST_F(ConditionTest, WaitForTest)
 
     // 调用notifyOne 方法
     status = napi_call_function(env, thisVar, notifyFn, 0, nullptr, nullptr);
-    ASSERT_NE(status, napi_ok);
+    ASSERT_EQ(status, napi_ok);
 }
