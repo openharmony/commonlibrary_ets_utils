@@ -859,10 +859,6 @@ void TaskManager::InitTaskManager(napi_env env)
         }
         if (EnableFfrt()) {
             HILOG_INFO("taskpool:: apps use ffrt");
-            ffrt_set_cpu_worker_max_num(ffrt::qos_background, 1);
-            ffrt_set_cpu_worker_max_num(ffrt::qos_utility, 12); // 12 : worker max num
-            ffrt_set_cpu_worker_max_num(ffrt::qos_default, 12); // 12 : worker max num
-            ffrt_set_cpu_worker_max_num(ffrt::qos_user_initiated, 12); // 12 : worker max num
         } else {
             HILOG_INFO("taskpool:: apps do not use ffrt");
         }
