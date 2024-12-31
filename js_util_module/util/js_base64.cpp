@@ -20,6 +20,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "tools/log.h"
+#include "tools/ets_error.h"
 
 namespace OHOS::Util {
     namespace {
@@ -758,6 +759,11 @@ namespace OHOS::Util {
         if (memcpy_s(data, bufferSize,
             reinterpret_cast<const void*>(stdDecodeInfo->sinputDecoding), bufferSize) != EOK) {
             HILOG_ERROR("Base64:: copy ret to arraybuffer error");
+            int32_t errCode = 401; // 401：errCode
+            const char* errMessage =
+                "Parameter error. The type of the parameter must be a string and must be valid and legal";
+            napi_value error = Tools::ErrorHelper::CreateError(env, errCode, errMessage);
+            napi_reject_deferred(env, stdDecodeInfo->deferred, error);
             napi_delete_async_work(env, stdDecodeInfo->worker);
             napi_close_handle_scope(env, scope);
             return;
