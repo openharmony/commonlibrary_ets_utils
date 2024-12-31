@@ -464,19 +464,22 @@ void TaskPool::HandleTaskResultCallback(Task* task)
 
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
+    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
         napiTaskResult = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
     } else if (status != napi_ok) {
         HILOG_ERROR("taskpool: failed to deserialize result");
         strTrace += ", performResult : DeserializeFailed";
+        taskLog += ", DeserializeFailed";
     } else if (task->success_) {
         strTrace += ", performResult : Successful";
     } else {
         strTrace += ", performResult : Unsuccessful";
+        taskLog += ", Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     if (napiTaskResult == nullptr) {
         napi_get_undefined(task->env_, &napiTaskResult);
     }
@@ -605,7 +608,9 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    std::string taskLog = "Task Allocation: " + std::to_string(task->taskId_)
+        + ", " + std::to_string(priority);
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
     if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
