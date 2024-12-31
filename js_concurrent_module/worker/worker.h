@@ -431,7 +431,6 @@ public:
     void RemoveListenerInner(napi_env env, const char* type, napi_ref callback);
     void RemoveAllListenerInner();
     void EraseWorker();
-    static std::string GetWorkerNameCallback(void* worker);
     uv_loop_t* GetWorkerLoop() const
     {
         if (workerEnv_ != nullptr) {

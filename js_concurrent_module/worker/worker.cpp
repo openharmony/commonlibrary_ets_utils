@@ -39,6 +39,7 @@ static std::list<Worker *> g_workers;
 static std::mutex g_workersMutex;
 static std::list<Worker *> g_limitedworkers;
 static std::mutex g_limitedworkersMutex;
+static constexpr uint32_t WORKER_TYPE = 1;
 static constexpr uint8_t BEGIN_INDEX_OF_ARGUMENTS = 2;
 static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
@@ -1406,6 +1407,30 @@ void Worker::ExecuteInThread(const void* data)
         worker->EraseWorker();
         return;
     }
+    reinterpret_cast<NativeEngine*>(workerEnv)->RegisterNapiUncaughtExceptionHandler(
+        [workerEnv, worker] (napi_value exception) -> void {
+        if (!NativeEngine::IsAlive(reinterpret_cast<NativeEngine*>(workerEnv))) {
+            HILOG_WARN("napi_env has been destoryed!");
+            return;
+        }
+        if (!IsValidWorker(worker)) {
+            HILOG_WARN("worker:: the worker is not Valid.");
+            return;
+        }
+        NapiErrorManager::GetInstance()->NotifyUncaughtException(workerEnv, exception, worker->GetName(), WORKER_TYPE);
+    });
+    reinterpret_cast<NativeEngine*>(workerEnv)->RegisterAllPromiseCallback(
+        [workerEnv, worker] (napi_value* args) -> void {
+        if (!NativeEngine::IsAlive(reinterpret_cast<NativeEngine*>(workerEnv))) {
+            HILOG_WARN("napi_env has been destoryed!");
+            return;
+        }
+        if (!IsValidWorker(worker)) {
+            HILOG_WARN("worker:: the worker is not Valid.");
+            return;
+        }
+        NapiErrorManager::GetInstance()->NotifyUnhandledRejection(workerEnv, args, worker->GetName(), WORKER_TYPE);
+    });
 
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
@@ -1415,8 +1440,6 @@ void Worker::ExecuteInThread(const void* data)
         uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             Worker::HandleDebuggerTask));
 #endif
-        reinterpret_cast<NativeEngine*>(worker->workerEnv_)->RegisterGetWorkerNameCallback(GetWorkerNameCallback,
-            reinterpret_cast<void*>(worker));
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
         uv_async_send(worker->workerOnMessageSignal_);
@@ -2164,7 +2187,7 @@ void Worker::HandleException()
     if (exception == nullptr) {
         return;
     }
-
+    NapiErrorManager::GetInstance()->NotifyUncaughtException(workerEnv_, exception, this->GetName(), WORKER_TYPE);
     HandleUncaughtException(exception);
 }
 
@@ -2553,16 +2576,6 @@ void Worker::CloseHostHandle()
     }
     if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
         ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
-    }
-}
-
-std::string Worker::GetWorkerNameCallback(void* worker)
-{
-    auto workerPtr = reinterpret_cast<Worker*>(worker);
-    if (workerPtr) {
-        return workerPtr->GetName();
-    } else {
-        return "";
     }
 }
 
