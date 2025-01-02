@@ -5575,6 +5575,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest275, testing::ext::TestSize.Level0)
     TaskInfo* taskInfo2 = new TaskInfo();
     task2->currentTaskInfo_ = taskInfo2;
     task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    task2->SetValid(false);
     asyncRunner->waitingTasks_.push_back(task2);
     taskManager.StoreTask(task2);
     taskManager.CancelTask(env, task2->taskId_);
@@ -5588,20 +5589,35 @@ HWTEST_F(NativeEngineTest, TaskpoolTest276, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     TaskManager& taskManager = TaskManager::GetInstance();
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    uv_update_time(loop);
-
-    Task* task = new Task();
-    taskManager.StoreTask(task);
-    uv_timer_t* handle = new uv_timer_t;
-    ErrorMessage* errMessage = new ErrorMessage();
-    errMessage->taskId = task->taskId_;
-    handle->data = errMessage;
-    uv_timer_init(loop, handle);
-    NativeEngineTest::RejectError(handle);
+    AsyncRunner* asyncRunner = new AsyncRunner();
+    asyncRunner->TriggerRejectErrorTimer(nullptr, 0);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_EQ(exception, nullptr);
+    delete asyncRunner;
+
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    DiscardTaskMessage* message = new DiscardTaskMessage(task->env_, task->taskId_, 0, true);
+    task->DiscardAsyncRunnerTask(message);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    DiscardTaskMessage* message2 = new DiscardTaskMessage(task->env_, task->taskId_, 0, true);
+    task->SetValid(false);
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    task->DiscardAsyncRunnerTask(message2);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    task->SetValid(true);
+    task->DiscardAsyncRunnerTask(nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
     taskManager.RemoveTask(task->taskId_);
     delete task;
 }
@@ -5611,25 +5627,46 @@ HWTEST_F(NativeEngineTest, TaskpoolTest277, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     TaskManager& taskManager = TaskManager::GetInstance();
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    uv_update_time(loop);
-
+    
     Task* task = new Task();
-    task->env_ = env;
     TaskInfo* taskInfo = new TaskInfo();
     task->currentTaskInfo_ = taskInfo;
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    task->isMainThreadTask_ = true;
     taskManager.StoreTask(task);
-    uv_timer_t* handle = new uv_timer_t;
-    ErrorMessage* errMessage = new ErrorMessage();
-    errMessage->taskId = task->taskId_;
-    errMessage->errCode = ErrorHelper::ERR_ASYNCRUNNER_TASK_DISCARDED;
-    handle->data = errMessage;
-    uv_timer_init(loop, handle);
-    NativeEngineTest::RejectError(handle);
+    DiscardTaskMessage* message = new DiscardTaskMessage(task->env_, 1, 0, true);
+    task->DiscardAsyncRunnerTask(message);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_EQ(exception, nullptr);
+
+    Task* task2 = new Task();
+    TaskInfo* taskInfo2 = new TaskInfo();
+    task2->currentTaskInfo_ = taskInfo2;
+    task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    taskManager.StoreTask(task2);
+    task2->DiscardInner(nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    task2->env_ = env;
+    DiscardTaskMessage* message2 = new DiscardTaskMessage(nullptr, task2->taskId_, 0, true);
+    task2->DiscardInner(message2);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    task2->SetValid(false);
+    DiscardTaskMessage* message3 = new DiscardTaskMessage(task2->env_, task2->taskId_, 0, true);
+    task2->DiscardInner(message3);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    taskManager.RemoveTask(task->taskId_);
+    taskManager.RemoveTask(task2->taskId_);
     delete task;
+    delete task2;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest278, testing::ext::TestSize.Level0)
@@ -5711,4 +5748,112 @@ HWTEST_F(NativeEngineTest, TaskpoolTest281, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest282, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    AsyncRunnerManager& asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    
+    Task* task = new Task();
+    task->env_ = env;
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    taskManager.StoreTask(task);
+
+    std::string asyncName = "";
+    napi_value obj = NapiHelper::CreateObject(env);
+    AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, asyncName, 5, 0);
+    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    napi_value obj2 = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj2, 1);
+    DiscardTaskMessage* message = new DiscardTaskMessage(task->env_, task->taskId_, 0, false);
+    task->DiscardInner(message);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest283, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    AsyncRunnerManager& asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    
+    uv_async_t* req = new uv_async_t;
+    req->data = nullptr;
+    Task::DiscardTask(req);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    Task* task = new Task();
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    taskManager.StoreTask(task);
+    DiscardTaskMessage* message = new DiscardTaskMessage(env, task->taskId_, 0, false);
+    req->data = message;
+    Task::DiscardTask(req);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    DiscardTaskMessage* message2 = new DiscardTaskMessage(nullptr, 283, 0, false);
+    req->data = message2;
+    Task::DiscardTask(req);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    task->env_ = env;
+    task->SetValid(false);
+    DiscardTaskMessage* message3 = new DiscardTaskMessage(env, task->taskId_, 0, false);
+    req->data = message3;
+    Task::DiscardTask(req);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest284, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    AsyncRunnerManager &asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    Task* task = new Task();
+    task->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    asyncRunnerManager.TriggerAsyncRunner(env, task);
+
+    AsyncRunner* asyncRunner = new AsyncRunner();
+    asyncRunner->runningCapacity_ = 1;
+    asyncRunner->waitingCapacity_ = 1;
+    asyncRunner->runningCount_ = 1;
+    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+
+    Task* task2 = new Task();
+    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    TaskInfo* taskInfo = new TaskInfo();
+    task2->currentTaskInfo_ = taskInfo;
+    task2->SetValid(false);
+    void* data2 = reinterpret_cast<void*>(task2);
+    void* async = reinterpret_cast<void*>(asyncRunner);
+    NativeEngineTest::AddTasksToAsyncRunner(async, data2);
+    asyncRunnerManager.TriggerAsyncRunner(env, task);
+    delete task;
+    delete task2;
+    delete asyncRunner;
+    ASSERT_TRUE(true);
 }

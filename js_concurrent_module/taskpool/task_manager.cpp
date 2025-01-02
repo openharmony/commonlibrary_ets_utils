@@ -1331,32 +1331,8 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
     if (shouldDeleteTask) {
         RemoveTask(taskId);
     }
-    {
-        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        if (task->onResultSignal_ != nullptr) {
-            if (!uv_is_closing((uv_handle_t*)task->onResultSignal_)) {
-                ConcurrentHelper::UvHandleClose(task->onResultSignal_);
-            } else {
-                delete task->onResultSignal_;
-            }
-            task->onResultSignal_ = nullptr;
-        }
-
-        if (task->onStartCancelSignal_ != nullptr) {
-            if (!uv_is_closing((uv_handle_t*)task->onStartCancelSignal_)) {
-                ConcurrentHelper::UvHandleClose(task->onStartCancelSignal_);
-            } else {
-                delete task->onStartCancelSignal_;
-            }
-            task->onStartCancelSignal_ = nullptr;
-        }
-
-        if (task->currentTaskInfo_ != nullptr) {
-            delete task->currentTaskInfo_;
-            task->currentTaskInfo_ = nullptr;
-        }
-    }
-
+    
+    task->ReleaseData();
     task->CancelPendingTask(env);
 
     task->ClearDelayedTimers();
