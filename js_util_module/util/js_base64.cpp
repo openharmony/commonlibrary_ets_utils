@@ -584,6 +584,7 @@ namespace OHOS::Util {
             if (prolen > 0) {
                 inputString = new char[prolen + 1];
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
+                    delete[] inputString;
                     napi_throw_error(env, "-1", "decode inputString memset_s failed");
                     return nullptr;
                 }
