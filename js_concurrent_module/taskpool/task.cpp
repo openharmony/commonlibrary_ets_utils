@@ -1480,12 +1480,12 @@ void Task::ClearDelayedTimers()
     std::list<napi_deferred> deferreds {};
     {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-        TaskMessage *taskMessage = nullptr;
+        TaskMessage* taskMessage = nullptr;
         for (auto t: delayedTimers_) {
             if (t == nullptr) {
                 continue;
             }
-            taskMessage = static_cast<TaskMessage *>(t->data);
+            taskMessage = static_cast<TaskMessage*>(t->data);
             deferreds.push_back(taskMessage->deferred);
             uv_timer_stop(t);
             uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
@@ -1778,7 +1778,7 @@ void Task::DiscardInner(DiscardTaskMessage* message)
     }
     napi_value error = ErrorHelper::NewError(task->env_, message->errCode);
     napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, error);
-    TaskGroupManager::GetInstance().DisposeCanceledTask(env_, task);
+    DisposeCanceledTask();
     TaskManager::GetInstance().RemoveTask(message->taskId);
     auto asyncRunner = AsyncRunnerManager::GetInstance().GetAsyncRunner(task->asyncRunnerId_);
     if (asyncRunner != nullptr && !message->isWaiting) {
@@ -1845,5 +1845,13 @@ void Task::ReleaseData()
         delete currentTaskInfo_;
         currentTaskInfo_ = nullptr;
     }
+}
+
+void Task::DisposeCanceledTask()
+{
+    reinterpret_cast<NativeEngine*>(env_)->DecreaseSubEnvCounter();
+    napi_reference_unref(env_, taskRef_, nullptr);
+    delete currentTaskInfo_;
+    currentTaskInfo_ = nullptr;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

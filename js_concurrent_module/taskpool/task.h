@@ -184,6 +184,7 @@ public:
     void DiscardAsyncRunnerTask(DiscardTaskMessage* message);
     void DiscardInner(DiscardTaskMessage* message);
     void ReleaseData();
+    void DisposeCanceledTask();
 
 private:
     Task(const Task &) = delete;

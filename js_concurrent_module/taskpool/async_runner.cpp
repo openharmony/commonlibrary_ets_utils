@@ -19,6 +19,7 @@
 #include "async_runner_manager.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
+#include "task_group_manager.h"
 #include "task_manager.h"
 #include "tools/log.h"
 
@@ -65,7 +66,7 @@ napi_value AsyncRunner::AsyncRunnerConstructor(napi_env env, napi_callback_info 
     return nullptr;
 }
 
-bool AsyncRunner::AsyncRunnerConstructorInner(napi_env env, napi_value &thisVar, AsyncRunner *asyncRunner)
+bool AsyncRunner::AsyncRunnerConstructorInner(napi_env env, napi_value& thisVar, AsyncRunner* asyncRunner)
 {
     uint64_t asyncRunnerId = reinterpret_cast<uint64_t>(asyncRunner);
     asyncRunner->asyncRunnerId_ = asyncRunnerId;
@@ -137,7 +138,7 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
     return promise;
 }
 
-AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value &thisVar, napi_value name,
+AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value& thisVar, napi_value name,
                                                     napi_value runningCapacity, napi_value waitingCapacity)
 {
     std::string nameValue = "";
@@ -305,7 +306,7 @@ void AsyncRunner::TriggerWaitingTask()
     }
 }
 
-AsyncRunner* AsyncRunner::CreateGlobalRunner(const std::string &name, uint32_t runningCapacity,
+AsyncRunner* AsyncRunner::CreateGlobalRunner(const std::string& name, uint32_t runningCapacity,
                                              uint32_t waitingCapacity)
 {
     AsyncRunner* asyncRunner = new AsyncRunner();
