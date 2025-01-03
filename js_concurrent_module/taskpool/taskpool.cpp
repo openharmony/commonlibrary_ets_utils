@@ -533,6 +533,8 @@ void TaskPool::TriggerTask(Task* task)
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
         return;
     }
+    // function task need release data
+    task->ReleaseData();
     TaskManager::GetInstance().RemoveTask(task->taskId_);
     delete task;
 }

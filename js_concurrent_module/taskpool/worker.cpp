@@ -14,6 +14,7 @@
  */
 
 #include "worker.h"
+#include "helper/concurrent_helper.h"
 
 #if defined(ENABLE_TASKPOOL_FFRT)
 #include "c/executor_task.h"
@@ -72,15 +73,11 @@ void Worker::CloseHandles()
 {
     // set all handles to nullptr so that they can not be used even when the loop is re-running
     ConcurrentHelper::UvHandleClose(performTaskSignal_);
-    performTaskSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     ConcurrentHelper::UvHandleClose(debuggerOnPostTaskSignal_);
-    debuggerOnPostTaskSignal_ = nullptr;
 #endif
     ConcurrentHelper::UvHandleClose(clearWorkerSignal_);
-    clearWorkerSignal_ = nullptr;
     ConcurrentHelper::UvHandleClose(triggerGCCheckSignal_);
-    triggerGCCheckSignal_ = nullptr;
 }
 
 void Worker::ReleaseWorkerHandles(const uv_async_t* req)
@@ -161,8 +158,7 @@ void Worker::HandleDebuggerTask(const uv_async_t* req)
 
 void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 {
-    if (debuggerOnPostTaskSignal_ != nullptr && !uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
+    if (ConcurrentHelper::IsUvActive(debuggerOnPostTaskSignal_)) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
         uv_async_send(debuggerOnPostTaskSignal_);
@@ -353,9 +349,7 @@ void Worker::ReleaseWorkerThreadContent()
 
 void Worker::NotifyExecuteTask()
 {
-    if (LIKELY(performTaskSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
-        uv_async_send(performTaskSignal_);
-    }
+    ConcurrentHelper::UvCheckAndAsyncSend(performTaskSignal_);
 }
 
 void Worker::NotifyIdle()
@@ -388,8 +382,7 @@ void Worker::TriggerGCCheck(const uv_async_t* req)
 void Worker::NotifyTaskFinished()
 {
     // trigger gc check by uv and return immediately if the handle is invalid
-    if (UNLIKELY(triggerGCCheckSignal_ == nullptr || uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(triggerGCCheckSignal_)))) {
+    if (UNLIKELY(!ConcurrentHelper::IsUvActive(triggerGCCheckSignal_))) {
         HILOG_ERROR("taskpool:: triggerGCCheckSignal_ is nullptr or closed");
         return;
     } else {
@@ -681,8 +674,7 @@ void Worker::HandleFunctionException(napi_env env, Task* task)
 
 void Worker::PostReleaseSignal()
 {
-    if (UNLIKELY(clearWorkerSignal_ == nullptr || uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(clearWorkerSignal_)))) {
+    if (UNLIKELY(!ConcurrentHelper::IsUvActive(clearWorkerSignal_))) {
         HILOG_ERROR("taskpool:: clearWorkerSignal_ is nullptr or closed");
         return;
     }

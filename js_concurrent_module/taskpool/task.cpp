@@ -16,6 +16,7 @@
 #include "task.h"
 
 #include "async_runner_manager.h"
+#include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
@@ -141,18 +142,10 @@ void Task::CleanupHookFunc(void* arg)
     Task* task = static_cast<Task*>(arg);
     {
         std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        if (task->onResultSignal_ != nullptr) {
-            uv_close(reinterpret_cast<uv_handle_t*>(task->onResultSignal_), nullptr);
-        }
-        if (task->onStartCancelSignal_ != nullptr) {
-            uv_close(reinterpret_cast<uv_handle_t*>(task->onStartCancelSignal_), nullptr);
-        }
-        if (task->onStartExecutionSignal_ != nullptr) {
-            uv_close(reinterpret_cast<uv_handle_t*>(task->onStartExecutionSignal_), nullptr);
-        }
-        if (task->onStartDiscardSignal_ != nullptr) {
-            uv_close(reinterpret_cast<uv_handle_t*>(task->onStartDiscardSignal_), nullptr);
-        }
+        ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+        ConcurrentHelper::UvHandleClose(task->onStartCancelSignal_);
+        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        ConcurrentHelper::UvHandleClose(task->onStartDiscardSignal_);
         if (task->IsFunctionTask()) {
             task->SetValid(false);
         }
@@ -1525,7 +1518,7 @@ bool Task::VerifyAndPostResult(Priority priority)
         return true;
     } else {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-        if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+        if (!IsValid() || !ConcurrentHelper::IsUvActive(onResultSignal_)) {
             return false;
         }
         uv_async_send(onResultSignal_);
@@ -1533,7 +1526,7 @@ bool Task::VerifyAndPostResult(Priority priority)
     }
 #else
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-    if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+    if (!IsValid() || !ConcurrentHelper::IsUvActive(onResultSignal_)) {
         return false;
     }
     uv_async_send(onResultSignal_);
@@ -1590,9 +1583,7 @@ bool Task::CheckStartExecution(Priority priority)
         if (!IsValid()) {
             return false;
         }
-        if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
-            uv_async_send(onStartExecutionSignal_);
-        }
+        ConcurrentHelper::UvCheckAndAsyncSend(onStartExecutionSignal_);
     }
     return true;
 #else
@@ -1603,9 +1594,7 @@ bool Task::CheckStartExecution(Priority priority)
     if (!IsValid()) {
         return false;
     }
-    if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
-        uv_async_send(onStartExecutionSignal_);
-    }
+    ConcurrentHelper::UvCheckAndAsyncSend(onStartExecutionSignal_);
     return true;
 #endif
 }
@@ -1690,7 +1679,7 @@ void Task::TriggerCancel(CancelTaskMessage* message)
         TaskManager::GetInstance().PostTask(onCancelTask, "TaskOnCancelTask", Priority::DEFAULT);
     } else {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-        if (!IsValid() || onStartCancelSignal_ == nullptr || uv_is_closing((uv_handle_t*)onStartCancelSignal_)) {
+        if (!IsValid() || !ConcurrentHelper::IsUvActive(onStartCancelSignal_)) {
             return;
         }
         onStartCancelSignal_->data = message;
@@ -1698,7 +1687,7 @@ void Task::TriggerCancel(CancelTaskMessage* message)
     }
 #else
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-    if (!IsValid() || onStartCancelSignal_ == nullptr || uv_is_closing((uv_handle_t*)onStartCancelSignal_)) {
+    if (!IsValid() || !ConcurrentHelper::IsUvActive(onStartCancelSignal_)) {
         CloseHelp::DeletePointer(message, false);
         return;
     }
@@ -1761,14 +1750,14 @@ void Task::DiscardAsyncRunnerTask(DiscardTaskMessage* message)
         TaskManager::GetInstance().PostTask(onDiscardTask, "TaskOnDiscardTask", Priority::DEFAULT);
     } else {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-        if (onStartDiscardSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartDiscardSignal_)) {
+        if (ConcurrentHelper::IsUvActive(onStartDiscardSignal_)) {
             onStartDiscardSignal_->data = message;
             uv_async_send(onStartDiscardSignal_);
         }
     }
 #else
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-    if (onStartDiscardSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartDiscardSignal_)) {
+    if (ConcurrentHelper::IsUvActive(onStartDiscardSignal_)) {
         onStartDiscardSignal_->data = message;
         uv_async_send(onStartDiscardSignal_);
     }
@@ -1826,30 +1815,30 @@ void Task::ReleaseData()
 {
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (onResultSignal_ != nullptr) {
-        if (!uv_is_closing((uv_handle_t*)onResultSignal_)) {
+        if (!ConcurrentHelper::IsUvClosing(onResultSignal_)) {
             ConcurrentHelper::UvHandleClose(onResultSignal_);
         } else {
             delete onResultSignal_;
+            onResultSignal_ = nullptr;
         }
-        onResultSignal_ = nullptr;
     }
 
     if (onStartCancelSignal_ != nullptr) {
-        if (!uv_is_closing((uv_handle_t*)onStartCancelSignal_)) {
+        if (!ConcurrentHelper::IsUvClosing(onStartCancelSignal_)) {
             ConcurrentHelper::UvHandleClose(onStartCancelSignal_);
         } else {
             delete onStartCancelSignal_;
+            onStartCancelSignal_ = nullptr;
         }
-        onStartCancelSignal_ = nullptr;
     }
 
     if (onStartDiscardSignal_ != nullptr) {
-        if (!uv_is_closing((uv_handle_t*)onStartDiscardSignal_)) {
+        if (!ConcurrentHelper::IsUvClosing(onStartDiscardSignal_)) {
             ConcurrentHelper::UvHandleClose(onStartDiscardSignal_);
         } else {
             delete onStartDiscardSignal_;
+            onStartDiscardSignal_ = nullptr;
         }
-        onStartDiscardSignal_ = nullptr;
     }
 
     if (currentTaskInfo_ != nullptr) {

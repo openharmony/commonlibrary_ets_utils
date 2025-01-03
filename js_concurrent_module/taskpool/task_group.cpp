@@ -15,6 +15,7 @@
 
 #include "task_group.h"
 
+#include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
@@ -151,10 +152,7 @@ void TaskGroup::HostEnvCleanupHook(void* data)
     }
     TaskGroup* group = static_cast<TaskGroup*>(data);
     std::lock_guard<std::recursive_mutex> lock(group->taskGroupMutex_);
-    if (group->onRejectResultSignal_ != nullptr) {
-        uv_close(reinterpret_cast<uv_handle_t*>(group->onRejectResultSignal_), nullptr);
-    }
-
+    ConcurrentHelper::UvHandleClose(group->onRejectResultSignal_);
     group->isValid_ = false;
 }
 
@@ -289,10 +287,7 @@ void TaskGroup::InitHandle(napi_env env)
 void TaskGroup::TriggerRejectResult()
 {
     std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
-    if (onRejectResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onRejectResultSignal_)) {
-        return;
-    }
-    uv_async_send(onRejectResultSignal_);
+    ConcurrentHelper::UvCheckAndAsyncSend(onRejectResultSignal_);
 }
 
 bool TaskGroup::IsSameEnv(napi_env env)
