@@ -368,10 +368,6 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t *work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t *) {},
-                               [](uv_work_t *work, int32_t) {delete work; }, uv_qos_user_initiated);
     }
     return promise;
 }
@@ -763,10 +759,6 @@ void TaskPool::TriggerTimer(napi_env env, Task* task, int32_t period)
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t* work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t*) {},
-                               [](uv_work_t* work, int32_t) { delete work; }, uv_qos_user_initiated);
     }
 }
 
