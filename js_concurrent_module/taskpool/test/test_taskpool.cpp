@@ -5857,3 +5857,249 @@ HWTEST_F(NativeEngineTest, TaskpoolTest284, testing::ext::TestSize.Level0)
     delete asyncRunner;
     ASSERT_TRUE(true);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest285, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup::HostEnvCleanupHook(nullptr);
+    TaskGroup* group = new TaskGroup();
+    TaskGroup::HostEnvCleanupHook(group);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest286, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    uv_async_t* req = new uv_async_t;
+    req->data = nullptr;
+    TaskGroup::StartRejectResult(req);
+    TaskGroup* group = new TaskGroup(env);
+    req->data = group;
+    TaskGroup::StartRejectResult(req);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    delete group;
+    delete req;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest287, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup* group = new TaskGroup(env);
+    group->CancelGroupTask(env, 0);
+    napi_env runtimeEnv = nullptr;
+    napi_create_runtime(env, &runtimeEnv);
+    group->CancelGroupTask(runtimeEnv, 0);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest288, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup* group = new TaskGroup(env);
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    
+    Task* task = new Task();
+    uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    task->taskId_ = taskId;
+    task->groupId_ = groupId;
+    group->taskIds_.push_back(taskId);
+    GroupInfo* groupInfo = new GroupInfo();
+    groupInfo->priority = Priority::DEFAULT;
+    napi_value resArr;
+    napi_create_array_with_length(env, group->taskIds_.size(), &resArr);
+    napi_ref arrRef = NapiHelper::CreateReference(env, resArr, 1);
+    groupInfo->resArr = arrRef;
+    NapiHelper::CreatePromise(env, &groupInfo->deferred);
+    group->currentGroupInfo_ = groupInfo;
+    group->taskNum_ = 0;
+    groupInfo->finishedTaskNum = 1;
+    group->RejectResult(env);
+
+    group->taskNum_ = 1;
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_ref ref = NapiHelper::CreateReference(env, obj, 1);
+    group->groupRef_ = ref;
+    group->RejectResult(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    delete group;
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest289, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskGroup* group = new TaskGroup(env);
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    ConcurrentHelper::UvHandleInit(loop, group->onRejectResultSignal_, NativeEngineTest::foo);
+    group->TriggerRejectResult();
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest290, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    uint32_t id = 1;
+    napi_value taskId = NapiHelper::CreateUint32(env, id);
+    napi_value argv[] = { taskId };
+    NativeEngineTest::Cancel(env, argv, 1);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest291, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    task->taskType_ = TaskType::GROUP_COMMON_TASK;
+    taskManager.CancelTask(env, task->taskId_);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    taskManager.CancelTask(env, task->taskId_);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+    task->taskState_ = ExecuteState::FINISHED;
+    taskManager.CancelTask(env, task->taskId_);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    task->taskState_ = ExecuteState::ENDING;
+    taskManager.CancelTask(env, task->taskId_);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    task->taskState_ = ExecuteState::RUNNING;
+    task->groupId_ = 1;
+    taskManager.CancelTask(env, task->taskId_);
+    TaskGroup* group = new TaskGroup(env);
+    group->groupId_ = reinterpret_cast<uint64_t>(group);
+    TaskGroupManager::GetInstance().StoreTaskGroup(group->groupId_, group);
+    task->groupId_ = group->groupId_;
+    taskManager.CancelTask(env, task->taskId_);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+    TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
+    delete taskInfo;
+    delete task;
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest292, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    task->env_ = env;
+    task->taskType_ = TaskType::COMMON_TASK;
+    task->taskState_ = ExecuteState::RUNNING;
+    task->isMainThreadTask_ = false;
+    napi_env runtimeEnv = nullptr;
+    napi_create_runtime(env, &runtimeEnv);
+    TaskManager::GetInstance().CancelTask(runtimeEnv, task->taskId_);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest293, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    task->env_ = env;
+    TaskManager::GetInstance().StoreTask(task);
+    task->isMainThreadTask_ = true;
+    CancelTaskMessage* message = new CancelTaskMessage(ExecuteState::RUNNING, task->taskId_);
+    task->TriggerCancel(message);
+    usleep(100000); // 100000: is sleep 100ms
+
+    task->isMainThreadTask_ = false;
+    CancelTaskMessage* message2 = new CancelTaskMessage(ExecuteState::RUNNING, task->taskId_);
+    task->SetValid(false);
+    task->TriggerCancel(message2);
+    CancelTaskMessage* message3 = new CancelTaskMessage(ExecuteState::RUNNING, task->taskId_);
+    task->SetValid(true);
+    task->TriggerCancel(message3);
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    ConcurrentHelper::UvHandleInit(loop, task->onStartCancelSignal_, NativeEngineTest::foo);
+    CancelTaskMessage* message4 = new CancelTaskMessage(ExecuteState::RUNNING, task->taskId_);
+    task->TriggerCancel(message4);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    task->ReleaseData();
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest294, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    task->env_ = env;
+    task->CancelInner(ExecuteState::RUNNING);
+    task->CancelInner(ExecuteState::WAITING);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest295, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    task->env_ = env;
+    task->CancelInner(ExecuteState::RUNNING);
+    task->CancelInner(ExecuteState::WAITING);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest296, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    task->env_ = env;
+    uv_async_t* req = new uv_async_t;
+    req->data = nullptr;
+    Task::Cancel(req);
+    task->taskId_ = 1000; // 1000: test number
+    CancelTaskMessage* message = new CancelTaskMessage(ExecuteState::RUNNING, task->taskId_);
+    req->data = message;
+    Task::Cancel(req);
+    TaskManager::GetInstance().StoreTask(task);
+    CancelTaskMessage* message2 = new CancelTaskMessage(ExecuteState::RUNNING, task->taskId_);
+    req->data = message2;
+    Task::Cancel(req);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete req;
+}

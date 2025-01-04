@@ -175,12 +175,14 @@ void Task::Cancel(const uv_async_t* req)
     Task* task = TaskManager::GetInstance().GetTask(message->taskId);
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: cancel task is nullptr");
+        CloseHelp::DeletePointer(message, false);
         return;
     }
     napi_status status = napi_ok;
     HandleScope scope(task->env_, status);
     if (status != napi_ok) {
         HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+        CloseHelp::DeletePointer(message, false);
         return;
     }
     task->CancelInner(message->state);
@@ -1152,7 +1154,7 @@ void Task::CancelPendingTask(napi_env env)
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (pendingTaskInfos_.empty()) {
             HILOG_DEBUG("taskpool:: task CancelPendingTask end, pendingTaskInfos_ nullptr");
-        return;
+            return;
         }
         auto engine = reinterpret_cast<NativeEngine*>(env);
         for (const auto& info : pendingTaskInfos_) {
@@ -1672,12 +1674,14 @@ void Task::TriggerCancel(CancelTaskMessage* message)
         auto onCancelTask = [message]() {
             Task* task = TaskManager::GetInstance().GetTask(message->taskId);
             if (task == nullptr) {
+                CloseHelp::DeletePointer(message, false);
                 return;
             }
             napi_status status = napi_ok;
             HandleScope scope(task->env_, status);
             if (status != napi_ok) {
                 HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+                CloseHelp::DeletePointer(message, false);
                 return;
             }
             task->CancelInner(message->state);
@@ -1695,6 +1699,7 @@ void Task::TriggerCancel(CancelTaskMessage* message)
 #else
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (!IsValid() || onStartCancelSignal_ == nullptr || uv_is_closing((uv_handle_t*)onStartCancelSignal_)) {
+        CloseHelp::DeletePointer(message, false);
         return;
     }
     onStartCancelSignal_->data = message;
