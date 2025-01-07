@@ -1894,9 +1894,9 @@ void Worker::PostMessageInner(MessageDataType data)
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
     if (data == nullptr) {
         HILOG_INFO("worker:: host post nullptr to worker.");
-        uv_async_send(workerOnTerminateSignal_);
-    } else if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
-        uv_async_send(workerOnMessageSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(workerOnTerminateSignal_);
+    } else {
+        ConcurrentHelper::UvCheckAndAsyncSend(workerOnMessageSignal_);
     }
 }
 
@@ -2551,7 +2551,7 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
         HILOG_ERROR("worker:: worker has been terminated.");
         return;
     }
-    if (!uv_is_closing((uv_handle_t*)&debuggerOnPostTaskSignal_)) {
+    if (!ConcurrentHelper::IsUvClosing(&debuggerOnPostTaskSignal_)) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
         uv_async_send(&debuggerOnPostTaskSignal_);
@@ -2568,13 +2568,13 @@ void Worker::InitHostHandle(uv_loop_t* loop)
 
 void Worker::CloseHostHandle()
 {
-    if (hostOnMessageSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnMessageSignal_))) {
+    if (ConcurrentHelper::IsUvActive(hostOnMessageSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnMessageSignal_);
     }
-    if (hostOnErrorSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnErrorSignal_))) {
+    if (ConcurrentHelper::IsUvActive(hostOnErrorSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnErrorSignal_);
     }
-    if (hostOnGlobalCallSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(hostOnGlobalCallSignal_))) {
+    if (ConcurrentHelper::IsUvActive(hostOnGlobalCallSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
     }
 }

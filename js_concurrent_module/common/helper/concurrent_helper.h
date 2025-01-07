@@ -87,7 +87,7 @@ public:
     }
 
     template<typename T>
-    static void UvHandleClose(T* handle)
+    static void UvHandleClose(T*& handle)
     {
         if (handle == nullptr) {
             return;
@@ -98,6 +98,24 @@ public:
                 handle = nullptr;
             }
         });
+        handle = nullptr;
+    }
+
+    static bool IsUvClosing(uv_async_t* handle)
+    {
+        return uv_is_closing((uv_handle_t*)handle);
+    }
+
+    static bool IsUvActive(uv_async_t* handle)
+    {
+        return handle != nullptr && !IsUvClosing(handle);
+    }
+
+    static void UvCheckAndAsyncSend(uv_async_t* handle)
+    {
+        if (LIKELY(IsUvActive(handle))) {
+            uv_async_send(handle);
+        }
     }
 
 #if defined(OHOS_PLATFORM)

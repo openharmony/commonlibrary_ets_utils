@@ -1331,7 +1331,7 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
     if (shouldDeleteTask) {
         RemoveTask(taskId);
     }
-    
+
     task->ReleaseData();
     task->CancelPendingTask(env);
 
@@ -1387,21 +1387,21 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!task->IsMainThreadTask() && task->onStartExecutionSignal_ != nullptr) {
-        if (!uv_is_closing((uv_handle_t*)task->onStartExecutionSignal_)) {
+        if (!ConcurrentHelper::IsUvClosing(task->onStartExecutionSignal_)) {
             ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
         } else {
             delete task->onStartExecutionSignal_;
+            task->onStartExecutionSignal_ = nullptr;
         }
-        task->onStartExecutionSignal_ = nullptr;
     }
 #else
     if (task->onStartExecutionSignal_ != nullptr) {
-        if (!uv_is_closing((uv_handle_t*)task->onStartExecutionSignal_)) {
+        if (!ConcurrentHelper::IsUvClosing(task->onStartExecutionSignal_)) {
             ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
         } else {
             delete task->onStartExecutionSignal_;
+            task->onStartExecutionSignal_ = nullptr;
         }
-        task->onStartExecutionSignal_ = nullptr;
     }
 #endif
 }
@@ -1527,12 +1527,12 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
     {
         std::lock_guard<std::recursive_mutex> lock(group->taskGroupMutex_);
         if (group->onRejectResultSignal_ != nullptr) {
-            if (!uv_is_closing((uv_handle_t*)group->onRejectResultSignal_)) {
+            if (!ConcurrentHelper::IsUvClosing(group->onRejectResultSignal_)) {
                 ConcurrentHelper::UvHandleClose(group->onRejectResultSignal_);
             } else {
                 delete group->onRejectResultSignal_;
+                group->onRejectResultSignal_ = nullptr;
             }
-            group->onRejectResultSignal_ = nullptr;
         }
         if (group->isValid_) {
             for (uint32_t taskId : group->taskIds_) {
@@ -1545,6 +1545,7 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
         }
         if (group->currentGroupInfo_ != nullptr) {
             delete group->currentGroupInfo_;
+            group->currentGroupInfo_ = nullptr;
         }
     }
     group->CancelPendingGroup(env);
