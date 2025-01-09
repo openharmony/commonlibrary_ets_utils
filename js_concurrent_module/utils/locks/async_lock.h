@@ -65,8 +65,6 @@ public:
 private:
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
-    void AsyncDestroy(napi_env env);
-    static void AsyncDestroyCallback(napi_env env, napi_status status, void *data);
     template <bool isAsync>
     void ProcessLockRequest(napi_env env, LockRequest *lockRequest);
     void ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncLockRequest = nullptr);
