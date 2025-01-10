@@ -21,8 +21,10 @@
 #include "async_runner_manager.h"
 #include "helper/napi_helper.h"
 #include "queue.h"
+#include "sequence_runner_manager.h"
 #include "task.h"
 #include "taskpool.h"
+#include "task_group_manager.h"
 #include "task_manager.h"
 #include "task_runner.h"
 #include "thread.h"
@@ -770,16 +772,17 @@ HWTEST_F(NativeEngineTest, TaskpoolTest058, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
     uint64_t seqRunnerId = 35;
-    Task *task = new Task();
+    Task* task = new Task();
     ASSERT_NE(task, nullptr);
-    taskGroupManager.AddTaskToSeqRunner(seqRunnerId, task);
-    taskGroupManager.TriggerSeqRunner(env, task);
+    sequenceRunnerManager.AddTaskToSeqRunner(seqRunnerId, task);
+    sequenceRunnerManager.TriggerSeqRunner(env, task);
     SequenceRunner sequenceRunner;
-    taskGroupManager.StoreSequenceRunner(seqRunnerId, &sequenceRunner);
-    taskGroupManager.RemoveSequenceRunner(seqRunnerId);
+    sequenceRunnerManager.StoreSequenceRunner(seqRunnerId, &sequenceRunner);
+    sequenceRunnerManager.RemoveSequenceRunner(seqRunnerId);
     ASSERT_EQ(seqRunnerId, 35);
-    SequenceRunner *res = taskGroupManager.GetSeqRunner(seqRunnerId);
+    SequenceRunner* res = sequenceRunnerManager.GetSeqRunner(seqRunnerId);
     ASSERT_EQ(res, nullptr);
 }
 
@@ -1212,8 +1215,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest087, testing::ext::TestSize.Level0)
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, result, "seqRunnerId");
     uint64_t seqId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
     SequenceRunner seq;
-    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
-    taskGroupManager.StoreSequenceRunner(seqId, &seq);
+    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqId, &seq);
 
     res = nullptr;
     napi_call_function(env, nullptr, cb, 1, argv2, &res);
@@ -2330,7 +2332,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest140, testing::ext::TestSize.Level0)
     uv_update_time(loop);
     uv_timer_t* handle = new uv_timer_t;
     uv_timer_init(loop, handle);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
     auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
         return nullptr;
     };
@@ -4152,7 +4154,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest212, testing::ext::TestSize.Level0)
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
     uv_timer_init(loop, timer);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
     taskMessage->priority = Priority::DEFAULT;
     taskMessage->taskId = task->taskId_;
     napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
@@ -4280,8 +4282,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, SeqResult, "seqRunnerId");
     uint64_t seqId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
     SequenceRunner seq;
-    TaskGroupManager &taskGroupManager = TaskGroupManager::GetInstance();
-    taskGroupManager.StoreSequenceRunner(seqId, &seq);
+    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqId, &seq);
 
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_value num = nullptr;
@@ -4302,8 +4303,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
 
     SequenceRunner seq1;
     seq1.currentTaskId_ = 1;
-    taskGroupManager.RemoveSequenceRunner(seqId);
-    taskGroupManager.StoreSequenceRunner(seqId, &seq1);
+    SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqId);
+    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqId, &seq1);
     thisValue = CreateTaskObject(env);
     napi_value argv2[] = {thisValue};
     napi_call_function(env, nullptr, callback, 1, argv2, &result);
@@ -4481,7 +4482,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest223, testing::ext::TestSize.Level0)
     uv_update_time(loop);
     uv_timer_t* handle = new uv_timer_t;
     uv_timer_init(loop, handle);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
 
     napi_value global = NapiHelper::CreateObject(env);
     auto napiTask = GeneratorTask(env, global);
@@ -4505,7 +4506,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest224, testing::ext::TestSize.Level0)
     uv_update_time(loop);
     uv_timer_t* handle = new uv_timer_t;
     uv_timer_init(loop, handle);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
 
     napi_value global = NapiHelper::CreateObject(env);
     auto napiTask = GeneratorTask(env, global);
@@ -4528,7 +4529,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest225, testing::ext::TestSize.Level0)
     uv_update_time(loop);
     uv_timer_t* handle = new uv_timer_t;
     uv_timer_init(loop, handle);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
 
     napi_value global = NapiHelper::CreateObject(env);
     auto napiTask = GeneratorTask(env, global);

@@ -98,7 +98,7 @@ public:
     };
 
 protected:
-    NativeEngine *engine_ = nullptr;
+    NativeEngine* engine_ = nullptr;
 };
 
 class SendableUtils {

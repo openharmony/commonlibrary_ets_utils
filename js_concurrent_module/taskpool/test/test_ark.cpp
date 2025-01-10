@@ -18,7 +18,7 @@
 #include "tools/log.h"
 
 using panda::RuntimeOption;
-static NativeEngine *g_nativeEngine = nullptr;
+static NativeEngine* g_nativeEngine = nullptr;
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 NativeEngineTest::NativeEngineTest()
@@ -29,7 +29,7 @@ NativeEngineTest::NativeEngineTest()
 NativeEngineTest::~NativeEngineTest() {}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 
     option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
     option.SetDebuggerLibraryPath("");
-    EcmaVM *vm = panda::JSNApi::CreateJSVM(option);
+    EcmaVM* vm = panda::JSNApi::CreateJSVM(option);
     if (vm == nullptr) {
         return 0;
     }
