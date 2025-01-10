@@ -18,7 +18,6 @@
 #include <cinttypes>
 
 #include "helper/error_helper.h"
-#include "task_group_manager.h"
 #include "task_manager.h"
 #include "tools/log.h"
 
@@ -40,15 +39,16 @@ AsyncRunner* AsyncRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_valu
         if (iter == globalAsyncRunner_.end()) {
             asyncRunner = AsyncRunner::CreateGlobalRunner(name, runningCapacity, waitingCapacity);
             globalAsyncRunner_.emplace(name, asyncRunner);
+            napi_add_env_cleanup_hook(env, AsyncRunner::HostEnvCleanupHook, asyncRunner);
         } else {
             asyncRunner = iter->second;
             bool res = asyncRunner->CheckGlobalRunnerParams(env, runningCapacity, waitingCapacity);
             if (!res) {
                 return nullptr;
             }
+            asyncRunner->IncreaseAsyncCount();
         }
     }
-    asyncRunner->CreateGlobalRef(env, thisVar);
 
     return asyncRunner;
 }
@@ -84,10 +84,6 @@ bool AsyncRunnerManager::TriggerAsyncRunner(napi_env env, Task* lastTask)
         HILOG_ERROR("taskpool:: trigger asyncRunner not exist.");
         return false;
     }
-    if (!asyncRunner->DecreaseAsyncRunnerRef(env)) {
-        HILOG_ERROR("taskpool:: globalAsyncRunner not exist.");
-        return false;
-    }
     asyncRunner->TriggerWaitingTask();
     return true;
 }
@@ -103,8 +99,7 @@ void AsyncRunnerManager::RemoveGlobalAsyncRunner(const std::string& name)
 
 void AsyncRunnerManager::GlobalAsyncRunnerDestructor(napi_env env, AsyncRunner* asyncRunner)
 {
-    asyncRunner->RemoveGlobalAsyncRunnerRef(env);
-    if (asyncRunner->DecreaseAsyncCount() == 0) {
+    if (asyncRunner->CheckNeedDelete(env)) {
         RemoveGlobalAsyncRunner(asyncRunner->name_);
         RemoveAsyncRunner(asyncRunner->asyncRunnerId_);
         delete asyncRunner;
