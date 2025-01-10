@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 
-#include <cstring>
-#include <vector>
-
 #include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
@@ -26,9 +23,6 @@
 #include "securec.h"
 #include "tools/log.h"
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "native_engine.h"
 #include "jni_helper.h"
 
 extern const char _binary_util_js_js_start[];

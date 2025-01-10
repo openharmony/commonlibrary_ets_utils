@@ -14,10 +14,6 @@
  */
 
 #include "js_buffer.h"
-
-#include <cmath>
-#include <iostream>
-
 #include "securec.h"
 
 using namespace std;

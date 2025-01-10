@@ -14,11 +14,7 @@
  */
 
 #include "js_textencoder.h"
-
-#include "native_engine.h"
-#include "securec.h"
 #include "util_helper.h"
-#include "tools/log.h"
 
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;

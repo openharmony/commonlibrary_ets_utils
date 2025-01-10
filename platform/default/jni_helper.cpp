@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-#include "util_helper.h"
-
 namespace Commonlibrary::Platform {
 
 void UtilPluginJniRegister()

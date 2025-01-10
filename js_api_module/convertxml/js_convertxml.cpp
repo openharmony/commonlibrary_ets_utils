@@ -14,7 +14,6 @@
  */
 
 #include "js_convertxml.h"
-#include "securec.h"
 #include "tools/log.h"
 namespace OHOS::Xml {
     std::string ConvertXml::GetNodeType(const xmlElementType enumType) const

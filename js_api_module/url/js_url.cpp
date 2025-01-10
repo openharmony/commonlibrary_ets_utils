@@ -15,10 +15,7 @@
 
 #include "js_url.h"
 #include <regex>
-#include <sstream>
 #include "securec.h"
-#include "unicode/stringpiece.h"
-#include "unicode/unistr.h"
 #include "tools/log.h"
 namespace OHOS::Url {
     std::map<std::string, int> g_head = {

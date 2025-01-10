@@ -19,9 +19,6 @@
 #include "securec.h"
 #include "tools/log.h"
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-
 namespace OHOS::Util {
 static thread_local unsigned char g_uuidCache[MAX_CACHE_MASK * UUID_SIZE];
 static thread_local uint32_t uuidCachedIndex = 0;
