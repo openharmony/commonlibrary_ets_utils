@@ -81,10 +81,10 @@ napi_value ConditionVariable::Init(napi_env env, napi_value exports)
     }
 
     napi_property_descriptor props[] = {
-        DECLARE_NAPI_FUNCTION("wait", Wait),
-        DECLARE_NAPI_FUNCTION("waitFor", WaitFor),
-        DECLARE_NAPI_FUNCTION("notify", Notify),
-        DECLARE_NAPI_FUNCTION("notifyOne", NotifyOne),
+        DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("wait"),
+        DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("waitFor"),
+        DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("notify"),
+        DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("notifyOne"),
     };
 
     napi_value ConditionVariableClass = nullptr;
@@ -274,11 +274,18 @@ napi_value ConditionVariable::Constructor(napi_env env, napi_callback_info cbinf
 
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
+    napi_property_descriptor properties[] = {
+        DECLARE_NAPI_FUNCTION_WITH_DATA("wait", Wait, thisVar),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("waitFor", WaitFor, thisVar),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("notify", Notify, thisVar),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("notifyOne", NotifyOne, thisVar),
+    };
     ConditionVariable *cond = new ConditionVariable();
     {
         std::lock_guard<std::mutex> lock(cond->queueMtx_);
         ++(cond->refCount_);
     }
+    NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
     napi_wrap_sendable(env, thisVar, reinterpret_cast<void *>(cond), ConditionVariable::Destructor, nullptr);
     return thisVar;
 }
