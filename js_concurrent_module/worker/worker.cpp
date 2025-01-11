@@ -1603,6 +1603,15 @@ void Worker::HostOnMessageInner()
         // handle listeners.
         HandleEventListeners(hostEnv_, obj, 1, argv, "message");
         HandleHostException();
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (isMainThreadWorker_ && !isLimitedWorker_) {
+            auto handler = OHOS::AppExecFwk::EventHandler::Current();
+            if (handler && (handler->HasPendingHigherEvent() && !hostMessageQueue_.IsEmpty())) {
+                PostWorkerMessageTask();
+                break;
+            }
+        }
+#endif
     }
     if (!engine->FinishContainerScopeFunc(scopeId_)) {
         HILOG_WARN("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
