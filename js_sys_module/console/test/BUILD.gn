@@ -21,15 +21,7 @@ if (is_standard_system) {
 ohos_unittest("test_console_unittest") {
   module_out_path = module_output_path
 
-  configs = [ "$ets_runtime:ark_jsruntime_public_config" ]
-  include_dirs = [
-    "$sys_module/console",
-    "$ets_runtime",
-    "$napi_root/interfaces/kits",
-    "$napi_root/native_engine",
-    "$napi_root/native_engine/impl/ark",
-    "//third_party/node/src",
-  ]
+  include_dirs = [ "$sys_module/console" ]
 
   cflags = [ "-g3" ]
 

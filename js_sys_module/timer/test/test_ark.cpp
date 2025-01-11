@@ -14,7 +14,7 @@
  */
 
 #include "test.h"
-#include "../sys_timer.h"
+#include "js_sys_module/timer/sys_timer.h"
 #include "ark_native_engine.h"
 #include "tools/log.h"
 

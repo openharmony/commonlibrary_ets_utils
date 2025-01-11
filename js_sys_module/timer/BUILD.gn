@@ -105,26 +105,23 @@ ohos_source_set("timer_static") {
 
   defines = []
 
-  configs = [ "$napi_root:ace_napi_config" ]
-  external_deps = []
+  external_deps = [ "napi:ace_napi" ]
   if (is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
-      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     deps += [
       "$plugins_root/libs/napi:napi_${target_os}",
       "$plugins_root/libs/uv:uv_${target_os}",
     ]
+    external_deps = [ "hilog:libhilog" ]
     if (target_os == "android") {
       defines += [ "ANDROID_PLATFORM" ]
     }
     if (target_os == "ios") {
       defines += [ "IOS_PLATFORM" ]
     }
-  } else {
-    deps += [ "$napi_root:ace_napi" ]
   }
 
   if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {

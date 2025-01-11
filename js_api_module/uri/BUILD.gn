@@ -11,11 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build/config/components/ace_engine/ace_gen_obj.gni")
 import("//build/config/components/ets_frontend/es2abc_config.gni")
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
-import("//foundation/arkui/ace_engine/build/ace_gen_obj.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
@@ -104,7 +103,6 @@ ohos_source_set("uri_static") {
     ets_util_path,
   ]
 
-  configs = [ "//third_party/icu/icu4c:icu_config" ]
   sources = uri_sources
 
   deps = [

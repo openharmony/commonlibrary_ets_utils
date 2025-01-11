@@ -16,7 +16,7 @@
 #ifndef TEST_CONVERTXML_H
 #define TEST_CONVERTXML_H
 
-#include "../js_convertxml.h"
+#include "js_api_module/convertxml/js_convertxml.h"
 
 namespace OHOS::Xml {
 class CxmlTest {

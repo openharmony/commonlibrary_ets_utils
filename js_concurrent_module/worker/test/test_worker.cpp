@@ -25,7 +25,7 @@
 #include "test.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "../../common/helper/napi_helper.h"
+#include "js_concurrent_module/common/helper/napi_helper.h"
 #include "native_engine/native_create_env.h"
 #include "tools/log.h"
 #include "worker.h"

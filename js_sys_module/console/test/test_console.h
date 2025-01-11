@@ -15,7 +15,7 @@
 #ifndef TEST_CONSOLE_H
 #define TEST_CONSOLE_H
 
-#include "../console.h"
+#include "console.h"
 
 namespace OHOS::JsSysModule {
 

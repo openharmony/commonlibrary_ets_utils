@@ -63,9 +63,7 @@
                 "openssl",
                 "libxml2"
             ],
-            "third_party": [
-                "decimal.js"
-            ]
+            "third_party": []
         },
         "build": {
             "sub_component": [
@@ -85,8 +83,7 @@
                 "//commonlibrary/ets_utils/js_util_module/container:container_packages",
                 "//commonlibrary/ets_utils/js_util_module/json:json_packages",
                 "//commonlibrary/ets_utils/js_util_module/collections:collections_packages",
-                "//commonlibrary/ets_utils/js_util_module/stream:stream_packages",
-                "//third_party/decimal.js:decimal"
+                "//commonlibrary/ets_utils/js_util_module/stream:stream_packages"
             ],
             "inner_kits": [
                 {
