@@ -32,9 +32,6 @@ void ConditionVariable::EnvCleanupHook(void* arg)
 
 void ConditionVariable::CleanupHookEnvPromise(std::shared_ptr<PromiseInfo> pi, ConditionVariable *cond)
 {
-    napi_value undefined;
-    napi_get_undefined(pi->env, &undefined);
-    napi_reject_deferred(pi->env, pi->deferred, undefined);
     {
         std::lock_guard<std::mutex> lock(cond->queueMtx_);
         auto it = std::find_if(cond->promiseQueue_.begin(), cond->promiseQueue_.end(),
@@ -42,6 +39,8 @@ void ConditionVariable::CleanupHookEnvPromise(std::shared_ptr<PromiseInfo> pi, C
         if (it != cond->promiseQueue_.end()) {
             cond->promiseQueue_.erase(it);
             --(cond->refCount_);
+        } else {
+            return;
         }
         napi_release_threadsafe_function(pi->tsfn_, napi_tsfn_abort);
     }
@@ -53,6 +52,9 @@ void ConditionVariable::CleanupHookEnvPromise(std::shared_ptr<PromiseInfo> pi, C
         });
         pi->timer = nullptr;
     }
+    napi_value undefined;
+    napi_get_undefined(pi->env, &undefined);
+    napi_reject_deferred(pi->env, pi->deferred, undefined);
 }
 
 void ConditionVariable::AddEnvCleanupHook(std::shared_ptr<PromiseInfo> pi)
@@ -179,7 +181,6 @@ bool ConditionVariable::TimerTask(std::shared_ptr<PromiseInfo> pi, ConditionVari
         std::shared_ptr<PromiseInfo> pi = workeData->pi;
         pi->resolved = SettleBy::WAITTIME;
         ConditionVariable* cond = workeData->cond;
-        uv_timer_stop(handle);
         {
             std::lock_guard<std::mutex> lock(cond->queueMtx_);
             auto it = std::find_if(cond->promiseQueue_.begin(), cond->promiseQueue_.end(),
@@ -187,9 +188,12 @@ bool ConditionVariable::TimerTask(std::shared_ptr<PromiseInfo> pi, ConditionVari
             if (it != cond->promiseQueue_.end()) {
                 ScheduleAsyncWork(pi, cond);
                 cond->promiseQueue_.erase(it);
+                cond->RemoveEnvCleanupHook(pi);
                 --(cond->refCount_);
-            }
+            } else
+                return;
         }
+        uv_timer_stop(handle);
         uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* handle) {
             WorkerData* workeData = static_cast<WorkerData*>(handle->data);
             if (workeData->pi->timer) {
