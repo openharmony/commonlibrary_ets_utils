@@ -14,19 +14,10 @@
  */
 
 #include "js_textdecoder.h"
-#include <algorithm>
-#include <codecvt>
-
-#include <locale>
-#include <map>
-#include <string>
-#include <vector>
 
 #include "ohos/init_data.h"
 #include "securec.h"
-#include "unicode/unistr.h"
 #include "util_helper.h"
-#include "tools/log.h"
 
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;

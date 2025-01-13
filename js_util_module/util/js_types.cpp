@@ -14,10 +14,6 @@
  */
 
 #include "js_types.h"
-#include <cstring>
-#include <sys/types.h>
-#include "securec.h"
-#include "tools/log.h"
 
 namespace OHOS::Util {
     napi_value Types::IsAnyArrayBuffer(napi_env env, napi_value src) const
