@@ -15,19 +15,10 @@
 
 #include "taskpool.h"
 
-#include <cinttypes>
-
 #include "async_runner_manager.h"
-#include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
-#include "message_queue.h"
 #include "sequence_runner_manager.h"
 #include "task_group_manager.h"
-#include "task_manager.h"
-#include "tools/log.h"
-#include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;

@@ -15,7 +15,6 @@
 
 #include "task_manager.h"
 
-#include <cinttypes>
 #include <securec.h>
 #include <thread>
 
@@ -32,13 +31,9 @@
 #include "ffrt_inner.h"
 #endif
 #include "sys_timer.h"
-#include "helper/concurrent_helper.h"
-#include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
 #include "taskpool.h"
 #include "task_group_manager.h"
-#include "tools/log.h"
-#include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;

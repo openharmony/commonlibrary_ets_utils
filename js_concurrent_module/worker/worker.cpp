@@ -22,7 +22,6 @@
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
 #include "helper/path_helper.h"
-#include "tools/log.h"
 #if defined(OHOS_PLATFORM)
 #include "parameters.h"
 #endif

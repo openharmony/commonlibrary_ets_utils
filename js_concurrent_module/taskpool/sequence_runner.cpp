@@ -14,14 +14,8 @@
  */
 #include "sequence_runner.h"
 
-#include <cinttypes>
-
-#include "helper/error_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
 #include "sequence_runner_manager.h"
 #include "task_manager.h"
-#include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;

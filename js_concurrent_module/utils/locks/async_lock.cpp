@@ -13,12 +13,8 @@
  * limitations under the License.
  */
 
-#include <uv.h>
 #include "async_lock.h"
 #include "async_lock_manager.h"
-#include "helper/error_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
 #include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
