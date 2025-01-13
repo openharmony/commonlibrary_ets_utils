@@ -1556,7 +1556,8 @@ void Worker::HostOnMessageInner()
     NAPI_CALL_RETURN_VOID(hostEnv_, status);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    if (!engine->InitContainerScopeFunc(scopeId_)) {
+    ContainerScope containerScope(engine, scopeId_);
+    if (!containerScope.IsInitialized()) {
         HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
     }
 
@@ -1613,9 +1614,6 @@ void Worker::HostOnMessageInner()
         }
 #endif
     }
-    if (!engine->FinishContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
-    }
 }
 
 void Worker::HostOnGlobalCall(const uv_async_t* req)
@@ -1643,8 +1641,9 @@ void Worker::HostOnGlobalCallInner()
     NAPI_CALL_RETURN_VOID(hostEnv_, scopeStatus);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    if (!engine->InitContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
+    ContainerScope containerScope(engine, scopeId_);
+    if (!containerScope.IsInitialized()) {
+        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnGlobalCallInner begin(only stage model)");
     }
 
     if (hostGlobalCallQueue_.IsEmpty()) {
@@ -1859,8 +1858,9 @@ void Worker::HostOnErrorInner()
     HandleScope scope(hostEnv_, status);
     NAPI_CALL_RETURN_VOID(hostEnv_, status);
     NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
+    ContainerScope containerScope(hostEngine, scopeId_);
+    if (!containerScope.IsInitialized()) {
+        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnErrorInner begin(only stage model)");
     }
 
     napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
@@ -1887,9 +1887,6 @@ void Worker::HostOnErrorInner()
             return;
         }
         HandleHostException();
-    }
-    if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
     }
 }
 
