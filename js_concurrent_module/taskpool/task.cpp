@@ -17,13 +17,8 @@
 
 #include "async_runner_manager.h"
 #include "helper/concurrent_helper.h"
-#include "helper/error_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
 #include "helper/hitrace_helper.h"
-#include "task_manager.h"
 #include "taskpool.h"
-#include "tools/log.h"
 #include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {

@@ -13,18 +13,8 @@
  * limitations under the License.
  */
 
-#include "js_concurrent_module/utils/locks/lock_request.h"
-
-#include <uv.h>
-
-#include <memory>
-
-#include "async_lock.h"
 #include "async_lock_manager.h"
-#include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
 #include "js_concurrent_module/utils/locks/weak_wrap.h"
 #include "tools/log.h"
 

@@ -23,11 +23,8 @@
 #include "sys_timer.h"
 #include "helper/hitrace_helper.h"
 #include "process_helper.h"
-#include "task_group.h"
 #include "task_group_manager.h"
-#include "task_manager.h"
 #include "taskpool.h"
-#include "tools/log.h"
 #include "native_engine.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
