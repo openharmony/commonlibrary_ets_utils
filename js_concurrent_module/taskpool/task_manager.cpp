@@ -646,6 +646,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         task->DecreaseTaskRefCount();
+        DecreaseRefCount(env, task->taskId_);
         EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
@@ -1516,18 +1517,22 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
 {
     HILOG_DEBUG("taskpool:: ReleaseTaskGroupData group");
     TaskGroupManager::GetInstance().RemoveTaskGroup(group->groupId_);
-    for (uint64_t taskId : group->taskIds_) {
-        Task* task = TaskManager::GetInstance().GetTask(taskId);
-        if (task == nullptr || !task->IsValid()) {
-            continue;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(group->taskGroupMutex_);
+        if (group->isValid_) {
+            for (uint64_t taskId : group->taskIds_) {
+                Task* task = TaskManager::GetInstance().GetTask(taskId);
+                if (task == nullptr || !task->IsValid()) {
+                    continue;
+                }
+                napi_reference_unref(task->env_, task->taskRef_, nullptr);
+            }
         }
-        napi_reference_unref(task->env_, task->taskRef_, nullptr);
-    }
 
-    if (group->currentGroupInfo_ != nullptr) {
-        delete group->currentGroupInfo_;
+        if (group->currentGroupInfo_ != nullptr) {
+            delete group->currentGroupInfo_;
+        }
     }
-
     group->CancelPendingGroup(env);
 }
 
@@ -1587,6 +1592,7 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         task->DecreaseTaskRefCount();
+        TaskManager::GetInstance().DecreaseRefCount(env, taskId);
         TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
