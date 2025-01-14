@@ -14,6 +14,8 @@
  */
 
 #include "process_helper.h"
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <sys/sysinfo.h>
 #include <uv.h>
 
