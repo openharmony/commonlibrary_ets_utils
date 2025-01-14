@@ -14,7 +14,6 @@
  */
 type AnyType = Object | null | undefined | unknown;
 declare function requireNapi(napiModuleName: string): AnyType;
-const emitter = requireNapi('events.emitter');
 // @ts-ignore
 const { TextEncoder, StringDecoder } = requireNapi('util');
 
@@ -182,7 +181,7 @@ class Readable {
       }
       if (ENCODING_SET.indexOf(this.readableEncodingInner.toLowerCase()) === -1) {
         let error = new BusinessError('Parameter error. Incorrect parameter types.', 401);
-      throw error;
+        throw error;
       }
       this.stringDecoder = new StringDecoder(this.readableEncodingInner);
       this.encoder = new TextEncoder(this.readableEncodingInner);
@@ -410,7 +409,7 @@ class Readable {
   }
 
   /**
-   * Sets the encoding format of the input binary data.Default: utf8.
+   * Sets the encoding format of the input binary data. Default: utf8.
    *
    * @param { string } [encoding] - Original Data Encoding Type.
    * @returns { boolean } Setting successful returns true, setting failed returns false.
@@ -436,11 +435,12 @@ class Readable {
       console.error('stream: The buffer also has data, and encoding is not allowed');
       return false;
     }
-    if (ENCODING_SET.indexOf(encoding.toLowerCase()) !== -1) {
+    let encodingLowCase = encoding.toLowerCase();
+    if (ENCODING_SET.indexOf(encodingLowCase) !== -1) {
       try {
         this.encoder = new TextEncoder(encoding);
         this.stringDecoder = new StringDecoder(encoding);
-        this.readableEncodingInner = encoding.toLowerCase();
+        this.readableEncodingInner = encodingLowCase;
       } catch (e) {
         this.throwError(e as Error);
         return false;
