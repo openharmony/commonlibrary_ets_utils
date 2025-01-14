@@ -14,11 +14,7 @@
  */
 
 #include "js_base64.h"
-#include <cstring>
-#include <sys/types.h>
 #include "securec.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 #include "tools/log.h"
 #include "tools/ets_error.h"
 
@@ -585,6 +581,7 @@ namespace OHOS::Util {
             if (prolen > 0) {
                 inputString = new char[prolen + 1];
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
+                    delete[] inputString;
                     napi_throw_error(env, "-1", "decode inputString memset_s failed");
                     return nullptr;
                 }

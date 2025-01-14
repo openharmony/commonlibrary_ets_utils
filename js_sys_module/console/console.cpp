@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 #include "console.h"
-
-#include <chrono>
-#include <vector>
 #include "log.h"
 
 namespace OHOS::JsSysModule {

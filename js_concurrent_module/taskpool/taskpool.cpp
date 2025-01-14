@@ -15,17 +15,10 @@
 
 #include "taskpool.h"
 
-#include <cinttypes>
-
 #include "async_runner_manager.h"
-#include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
-#include "message_queue.h"
-#include "task_manager.h"
-#include "tools/log.h"
-#include "worker.h"
+#include "sequence_runner_manager.h"
+#include "task_group_manager.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -279,7 +272,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 
 void TaskPool::DelayTask(uv_timer_t* handle)
 {
-    TaskMessage *taskMessage = static_cast<TaskMessage *>(handle->data);
+    TaskMessage* taskMessage = static_cast<TaskMessage*>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
     napi_status status = napi_ok;
     if (task == nullptr) {
@@ -348,7 +341,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
     uv_timer_init(loop, timer);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
     taskMessage->priority = static_cast<Priority>(priority);
     taskMessage->taskId = task->taskId_;
     napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
@@ -368,10 +361,6 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t *work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t *) {},
-                               [](uv_work_t *work, int32_t) {delete work; }, uv_qos_user_initiated);
     }
     return promise;
 }
@@ -464,19 +453,22 @@ void TaskPool::HandleTaskResultCallback(Task* task)
 
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
+    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
         napiTaskResult = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
     } else if (status != napi_ok) {
         HILOG_ERROR("taskpool: failed to deserialize result");
         strTrace += ", performResult : DeserializeFailed";
+        taskLog += ", DeserializeFailed";
     } else if (task->success_) {
         strTrace += ", performResult : Successful";
     } else {
         strTrace += ", performResult : Unsuccessful";
+        taskLog += ", Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     if (napiTaskResult == nullptr) {
         napi_get_undefined(task->env_, &napiTaskResult);
     }
@@ -515,7 +507,7 @@ void TaskPool::TriggerTask(Task* task)
     task->taskState_ = ExecuteState::FINISHED;
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
-        if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
+        if (!SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
             HILOG_ERROR("taskpool:: task %{public}s trigger in seqRunner %{public}s failed",
                         std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
         }
@@ -534,6 +526,8 @@ void TaskPool::TriggerTask(Task* task)
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
         return;
     }
+    // function task need release data
+    task->ReleaseData();
     TaskManager::GetInstance().RemoveTask(task->taskId_);
     delete task;
 }
@@ -605,7 +599,9 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    std::string taskLog = "Task Allocation: " + std::to_string(task->taskId_)
+        + ", " + std::to_string(priority);
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
     if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
@@ -758,10 +754,6 @@ void TaskPool::TriggerTimer(napi_env env, Task* task, int32_t period)
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t* work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t*) {},
-                               [](uv_work_t* work, int32_t) { delete work; }, uv_qos_user_initiated);
     }
 }
 

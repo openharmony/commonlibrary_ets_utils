@@ -16,8 +16,6 @@
 #include <sstream>
 
 #include "deadlock_helpers.h"
-#include "common.h"
-#include "graph.h"
 
 namespace Commonlibrary::Concurrent::LocksModule {
 

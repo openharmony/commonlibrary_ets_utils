@@ -80,6 +80,17 @@ struct CancelTaskMessage {
     uint32_t taskId;
 };
 
+struct DiscardTaskMessage {
+    DiscardTaskMessage(napi_env env, uint32_t taskId, int32_t errCode, bool isWaiting) : env(env),
+        taskId(taskId), errCode(errCode), isWaiting(isWaiting) {}
+    ~DiscardTaskMessage() = default;
+    
+    napi_env env;
+    uint32_t taskId;
+    int32_t errCode;
+    bool isWaiting;
+};
+
 class Task {
 public:
     Task(napi_env env, TaskType taskType, std::string name);
@@ -121,6 +132,7 @@ public:
     static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
     static void CleanupHookFunc(void* arg);
     static void Cancel(const uv_async_t* req);
+    static void DiscardTask(const uv_async_t* req);
 
     void StoreTaskId(uint32_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
@@ -169,6 +181,10 @@ public:
     void TriggerCancel(CancelTaskMessage* message);
     void CancelInner(ExecuteState state);
     bool IsSameEnv(napi_env env);
+    void DiscardAsyncRunnerTask(DiscardTaskMessage* message);
+    void DiscardInner(DiscardTaskMessage* message);
+    void ReleaseData();
+    void DisposeCanceledTask();
 
 private:
     Task(const Task &) = delete;
@@ -207,6 +223,7 @@ public:
     std::atomic<uint32_t> refCount_ {false}; // when refCount_ is 0, the task pointer can be deleted
     uv_async_t* onStartExecutionSignal_ = nullptr;
     uv_async_t* onStartCancelSignal_ = nullptr;
+    uv_async_t* onStartDiscardSignal_ = nullptr;
     ListenerCallBackInfo* onEnqueuedCallBackInfo_ = nullptr;
     ListenerCallBackInfo* onStartExecutionCallBackInfo_ = nullptr;
     ListenerCallBackInfo* onExecutionFailedCallBackInfo_ = nullptr;

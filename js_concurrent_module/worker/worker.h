@@ -532,7 +532,7 @@ private:
     void PostMessageToHostInner(MessageDataType data);
 
     void TerminateWorker();
-    
+
     void CloseInner();
 
     void PublishWorkerOverSignal();

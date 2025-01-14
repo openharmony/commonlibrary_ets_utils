@@ -19,6 +19,7 @@
 #include "async_runner_manager.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
+#include "task_group_manager.h"
 #include "task_manager.h"
 #include "tools/log.h"
 
@@ -65,7 +66,7 @@ napi_value AsyncRunner::AsyncRunnerConstructor(napi_env env, napi_callback_info 
     return nullptr;
 }
 
-bool AsyncRunner::AsyncRunnerConstructorInner(napi_env env, napi_value &thisVar, AsyncRunner *asyncRunner)
+bool AsyncRunner::AsyncRunnerConstructorInner(napi_env env, napi_value& thisVar, AsyncRunner* asyncRunner)
 {
     uint64_t asyncRunnerId = reinterpret_cast<uint64_t>(asyncRunner);
     asyncRunner->asyncRunnerId_ = asyncRunnerId;
@@ -137,7 +138,7 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
     return promise;
 }
 
-AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value &thisVar, napi_value name,
+AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value& thisVar, napi_value name,
                                                     napi_value runningCapacity, napi_value waitingCapacity)
 {
     std::string nameValue = "";
@@ -213,7 +214,6 @@ void AsyncRunner::ExecuteTaskImmediately(AsyncRunner* asyncRunner, Task* task)
 {
     HILOG_DEBUG("taskpool:: task %{public}s in asyncRunner %{public}s immediately.",
                 std::to_string(task->taskId_).c_str(), std::to_string(asyncRunner->asyncRunnerId_).c_str());
-    asyncRunner->runningCount_.fetch_add(1);
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
     task->taskState_ = ExecuteState::WAITING;
@@ -226,6 +226,7 @@ bool AsyncRunner::AddTasksToAsyncRunner(AsyncRunner* asyncRunner, Task* task)
     {
         std::unique_lock<std::shared_mutex> asyncRunnerLock(asyncRunner->waitingTasksMutex_);
         if (asyncRunner->runningCount_ < asyncRunner->runningCapacity_) {
+            asyncRunner->runningCount_.fetch_add(1);
             return false;
         }
         if (asyncRunner->waitingCapacity_ && asyncRunner->waitingTasks_.size() == asyncRunner->waitingCapacity_) {
@@ -257,23 +258,18 @@ void AsyncRunner::AsyncRunnerDestructor(napi_env env, void* data, [[maybe_unused
     }
 }
 
-bool AsyncRunner::RemoveWaitingTask(Task* task)
+bool AsyncRunner::RemoveWaitingTask(Task* task, bool isReject)
 {
     bool flag = false;
     {
         std::unique_lock<std::shared_mutex> lock(waitingTasksMutex_);
-        for (auto iter = waitingTasks_.begin(); iter != waitingTasks_.end();) {
-            auto taskTmp = *iter;
-            if (taskTmp == task) {
-                iter = waitingTasks_.erase(iter);
-                flag = true;
-                break;
-            } else {
-                iter++;
-            }
+        auto iter = std::find(waitingTasks_.begin(), waitingTasks_.end(), task);
+        if (iter != waitingTasks_.end()) {
+            waitingTasks_.erase(iter);
+            flag = true;
         }
     }
-    if (flag) {
+    if (flag && isReject) {
         TriggerRejectErrorTimer(task, ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED);
     }
     return flag;
@@ -281,56 +277,11 @@ bool AsyncRunner::RemoveWaitingTask(Task* task)
 
 void AsyncRunner::TriggerRejectErrorTimer(Task* task, int32_t errCode, bool isWaiting)
 {
-    uv_loop_t* loop = NapiHelper::GetLibUV(task->env_);
-    if (loop == nullptr) {
+    if (task == nullptr || !task->IsValid()) {
         return;
     }
-    uv_update_time(loop);
-    uv_timer_t* timer = new uv_timer_t;
-    uv_timer_init(loop, timer);
-    ErrorMessage* errorMessage = new ErrorMessage();
-    errorMessage->errCode = errCode;
-    errorMessage->taskId = task->taskId_;
-    errorMessage->isWaiting = isWaiting;
-    timer->data = errorMessage;
-    uv_timer_start(timer, reinterpret_cast<uv_timer_cb>(RejectError), 0, 0);
-    NativeEngine* engine = reinterpret_cast<NativeEngine*>(task->env_);
-    if (engine->IsMainThread()) {
-        uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t* work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t*) {},
-                               [](uv_work_t* work, int32_t) { delete work; }, uv_qos_user_initiated);
-    }
-}
-
-void AsyncRunner::RejectError(uv_timer_t* handle)
-{
-    ErrorMessage* errorMessage = static_cast<ErrorMessage*>(handle->data);
-    auto task = TaskManager::GetInstance().GetTask(errorMessage->taskId);
-    if (task == nullptr) {
-        HILOG_DEBUG("taskpool:: task is nullptr.");
-    } else {
-        napi_status status = napi_ok;
-        HandleScope scope(task->env_, status);
-        if (status != napi_ok) {
-            HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
-            return;
-        }
-        TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
-        napi_value error = ErrorHelper::NewError(task->env_, errorMessage->errCode);
-        napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, error);
-        TaskGroupManager::GetInstance().DisposeCanceledTask(task->env_, task);
-        TaskManager::GetInstance().RemoveTask(errorMessage->taskId);
-        auto asyncRunner = AsyncRunnerManager::GetInstance().GetAsyncRunner(task->asyncRunnerId_);
-        if (asyncRunner != nullptr && !errorMessage->isWaiting) {
-            asyncRunner->DecreaseAsyncRunnerRef(task->env_);
-        }
-    }
-    uv_timer_stop(handle);
-    ConcurrentHelper::UvHandleClose(handle);
-    delete errorMessage;
-    errorMessage = nullptr;
+    DiscardTaskMessage* message = new DiscardTaskMessage(task->env_, task->taskId_, errCode, isWaiting);
+    task->DiscardAsyncRunnerTask(message);
 }
 
 void AsyncRunner::TriggerWaitingTask()
@@ -355,7 +306,7 @@ void AsyncRunner::TriggerWaitingTask()
     }
 }
 
-AsyncRunner* AsyncRunner::CreateGlobalRunner(const std::string &name, uint32_t runningCapacity,
+AsyncRunner* AsyncRunner::CreateGlobalRunner(const std::string& name, uint32_t runningCapacity,
                                              uint32_t waitingCapacity)
 {
     AsyncRunner* asyncRunner = new AsyncRunner();

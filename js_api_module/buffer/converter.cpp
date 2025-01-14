@@ -14,11 +14,7 @@
  */
 
 #include "converter.h"
-
 #include <climits>
-#include <codecvt>
-#include <locale>
-
 using namespace std;
 
 namespace OHOS::buffer {

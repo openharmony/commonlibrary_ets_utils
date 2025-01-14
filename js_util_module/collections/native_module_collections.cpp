@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 
-#include <string>
-
-#include "js_native_api.h"
 #include "napi/native_node_api.h"
 #include "tools/log.h"
 
