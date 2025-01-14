@@ -18,7 +18,7 @@ let ASON = helpUtil.ASON;
 let ConditionVariable = helpUtil.ConditionVariable;
 let isSendable = helpUtil.isSendable;
 
-const typeErrorCode = 401;
+export const typeErrorCode = 401;
 export class BusinessError extends Error {
   code: number;
   constructor(errorcode: number, msg: string) {
