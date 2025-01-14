@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <unicode/ustring.h>
 #include "native_engine.h"
+#include "securec.h"
 
 namespace Commonlibrary::Platform {
 using namespace OHOS::Util;
