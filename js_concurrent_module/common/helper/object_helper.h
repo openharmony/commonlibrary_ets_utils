@@ -16,6 +16,8 @@
 #ifndef JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H
 #define JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H
 
+#include "native_engine/native_engine.h"
+
 namespace Commonlibrary::Concurrent::Common::Helper {
 class DereferenceHelp {
 public:
@@ -87,6 +89,34 @@ public:
 private:
     napi_handle_scope scope_ = nullptr;
     napi_env env_ = nullptr;
+};
+
+class ContainerScope {
+public:
+    ContainerScope(NativeEngine* engine, uint32_t scopeId)
+        : engine_(engine), scopeId_(scopeId), initialized_(false)
+    {
+        if (engine_ != nullptr) {
+            initialized_ = engine_->InitContainerScopeFunc(scopeId_);
+        }
+    }
+
+    ~ContainerScope()
+    {
+        if (engine_ != nullptr && initialized_) {
+            engine_->FinishContainerScopeFunc(scopeId_);
+        }
+    }
+
+    bool IsInitialized() const
+    {
+        return initialized_;
+    }
+
+private:
+    NativeEngine* engine_ {nullptr};
+    int32_t scopeId_ {-1};
+    bool initialized_ {false};
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_OBJECT_HELPER_H

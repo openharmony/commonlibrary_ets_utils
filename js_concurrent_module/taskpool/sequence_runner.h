@@ -38,7 +38,7 @@ private:
 
     static void ExecuteTaskImmediately(uint32_t taskId, Priority priority);
     static void SequenceRunnerDestructor(napi_env env, void* data, void* hint);
-    static bool SeqRunnerConstructorInner(napi_env env, napi_value &thisVar, SequenceRunner *seqRunner);
+    static bool SeqRunnerConstructorInner(napi_env env, napi_value& thisVar, SequenceRunner* seqRunner);
 
     friend class NativeEngineTest;
 public:
@@ -55,6 +55,5 @@ public:
     uint64_t count_ = 0;
     std::unordered_map<napi_env, napi_ref> globalSeqRunnerRef_ {};
 };
-}
-
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_RUNNER_H

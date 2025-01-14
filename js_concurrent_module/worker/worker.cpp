@@ -22,7 +22,6 @@
 #include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
 #include "helper/path_helper.h"
-#include "tools/log.h"
 #if defined(OHOS_PLATFORM)
 #include "parameters.h"
 #endif
@@ -1556,7 +1555,8 @@ void Worker::HostOnMessageInner()
     NAPI_CALL_RETURN_VOID(hostEnv_, status);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    if (!engine->InitContainerScopeFunc(scopeId_)) {
+    ContainerScope containerScope(engine, scopeId_);
+    if (!containerScope.IsInitialized()) {
         HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
     }
 
@@ -1603,9 +1603,15 @@ void Worker::HostOnMessageInner()
         // handle listeners.
         HandleEventListeners(hostEnv_, obj, 1, argv, "message");
         HandleHostException();
-    }
-    if (!engine->FinishContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: FinishContainerScopeFunc error when HostOnMessageInner end(only stage model)");
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (isMainThreadWorker_ && !isLimitedWorker_) {
+            auto handler = OHOS::AppExecFwk::EventHandler::Current();
+            if (handler && (handler->HasPendingHigherEvent() && !hostMessageQueue_.IsEmpty())) {
+                PostWorkerMessageTask();
+                break;
+            }
+        }
+#endif
     }
 }
 
@@ -1634,8 +1640,9 @@ void Worker::HostOnGlobalCallInner()
     NAPI_CALL_RETURN_VOID(hostEnv_, scopeStatus);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    if (!engine->InitContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
+    ContainerScope containerScope(engine, scopeId_);
+    if (!containerScope.IsInitialized()) {
+        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnGlobalCallInner begin(only stage model)");
     }
 
     if (hostGlobalCallQueue_.IsEmpty()) {
@@ -1850,8 +1857,9 @@ void Worker::HostOnErrorInner()
     HandleScope scope(hostEnv_, status);
     NAPI_CALL_RETURN_VOID(hostEnv_, status);
     NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
-    if (!hostEngine->InitContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: InitContainerScopeFunc error when onerror begin(only stage model)");
+    ContainerScope containerScope(hostEngine, scopeId_);
+    if (!containerScope.IsInitialized()) {
+        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnErrorInner begin(only stage model)");
     }
 
     napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
@@ -1878,9 +1886,6 @@ void Worker::HostOnErrorInner()
             return;
         }
         HandleHostException();
-    }
-    if (!hostEngine->FinishContainerScopeFunc(scopeId_)) {
-        HILOG_WARN("worker:: FinishContainerScopeFunc error when onerror end(only stage model)");
     }
 }
 

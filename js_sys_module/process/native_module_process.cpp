@@ -13,14 +13,8 @@
  * limitations under the License.
  */
 
-#include <cassert>
-#include <vector>
-#include <grp.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include "js_childprocess.h"
 #include "js_process.h"
-#include "securec.h"
 #include "tools/log.h"
 
 namespace OHOS::JsSysModule::Process {

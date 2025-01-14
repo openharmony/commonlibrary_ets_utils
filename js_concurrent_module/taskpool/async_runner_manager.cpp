@@ -18,6 +18,7 @@
 #include <cinttypes>
 
 #include "helper/error_helper.h"
+#include "task_group_manager.h"
 #include "task_manager.h"
 #include "tools/log.h"
 
@@ -29,7 +30,7 @@ AsyncRunnerManager& AsyncRunnerManager::GetInstance()
     return asyncRunnerManager;
 }
 
-AsyncRunner* AsyncRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, const std::string &name,
+AsyncRunner* AsyncRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, const std::string& name,
                                                          uint32_t runningCapacity, uint32_t waitingCapacity)
 {
     AsyncRunner *asyncRunner = nullptr;
@@ -91,7 +92,7 @@ bool AsyncRunnerManager::TriggerAsyncRunner(napi_env env, Task* lastTask)
     return true;
 }
 
-void AsyncRunnerManager::RemoveGlobalAsyncRunner(const std::string &name)
+void AsyncRunnerManager::RemoveGlobalAsyncRunner(const std::string& name)
 {
     std::unique_lock<std::mutex> lock(globalAsyncRunnerMutex_);
     auto iter = globalAsyncRunner_.find(name);
@@ -110,7 +111,7 @@ void AsyncRunnerManager::GlobalAsyncRunnerDestructor(napi_env env, AsyncRunner* 
     }
 }
 
-void AsyncRunnerManager::CancelAsyncRunnerTask(napi_env env, Task *task)
+void AsyncRunnerManager::CancelAsyncRunnerTask(napi_env env, Task* task)
 {
     std::string errMsg = "";
     if (task->taskState_ == ExecuteState::FINISHED || task->taskState_ == ExecuteState::ENDING) {

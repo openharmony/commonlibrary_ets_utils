@@ -28,22 +28,21 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 class AsyncRunnerManager {
 public:
-    AsyncRunnerManager() = default;
-    ~AsyncRunnerManager() = default;
-
-    static AsyncRunnerManager &GetInstance();
-    AsyncRunner* CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, const std::string &name,
+    static AsyncRunnerManager& GetInstance();
+    AsyncRunner* CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, const std::string& name,
                                          uint32_t runningCapacity, uint32_t waitingCapacity);
     bool TriggerAsyncRunner(napi_env env, Task* lastTask);
     void StoreAsyncRunner(uint64_t asyncRunnerId, AsyncRunner* asyncRunner);
     void RemoveAsyncRunner(uint64_t asyncRunnerId);
     AsyncRunner* GetAsyncRunner(uint64_t asyncRunnerId);
     void RemoveGlobalAsyncRunnerRef(napi_env env, AsyncRunner* asyncRunner);
-    void RemoveGlobalAsyncRunner(const std::string &name);
+    void RemoveGlobalAsyncRunner(const std::string& name);
     void GlobalAsyncRunnerDestructor(napi_env env, AsyncRunner* asyncRunner);
-    void CancelAsyncRunnerTask(napi_env env, Task *task);
+    void CancelAsyncRunnerTask(napi_env env, Task* task);
 
 private:
+    AsyncRunnerManager() = default;
+    ~AsyncRunnerManager() = default;
     AsyncRunnerManager(const AsyncRunnerManager &) = delete;
     AsyncRunnerManager& operator=(const AsyncRunnerManager &) = delete;
     AsyncRunnerManager(AsyncRunnerManager &&) = delete;

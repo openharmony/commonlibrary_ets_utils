@@ -16,11 +16,7 @@
 #include "task_group.h"
 
 #include "helper/concurrent_helper.h"
-#include "helper/error_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
-#include "napi/native_api.h"
-#include "tools/log.h"
+#include "task_group_manager.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;

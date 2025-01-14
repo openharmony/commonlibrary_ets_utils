@@ -17,13 +17,10 @@
 #include <codecvt>
 #include <iostream>
 #include <locale>
-#include <vector>
 
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
 #include "tools/common_helper.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 
 using namespace std;
 

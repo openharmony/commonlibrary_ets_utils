@@ -14,11 +14,6 @@
  */
 
 #include "native_module_url.h"
-
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "js_url.h"
-#include "securec.h"
 #include "tools/log.h"
 
 extern const char _binary_js_url_js_start[];

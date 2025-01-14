@@ -15,17 +15,10 @@
 
 #include "taskpool.h"
 
-#include <cinttypes>
-
 #include "async_runner_manager.h"
-#include "helper/error_helper.h"
 #include "helper/hitrace_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
-#include "message_queue.h"
-#include "task_manager.h"
-#include "tools/log.h"
-#include "worker.h"
+#include "sequence_runner_manager.h"
+#include "task_group_manager.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -279,7 +272,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 
 void TaskPool::DelayTask(uv_timer_t* handle)
 {
-    TaskMessage *taskMessage = static_cast<TaskMessage *>(handle->data);
+    TaskMessage* taskMessage = static_cast<TaskMessage*>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
     napi_status status = napi_ok;
     if (task == nullptr) {
@@ -348,7 +341,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
     uv_timer_init(loop, timer);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
     taskMessage->priority = static_cast<Priority>(priority);
     taskMessage->taskId = task->taskId_;
     napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
@@ -514,7 +507,7 @@ void TaskPool::TriggerTask(Task* task)
     task->taskState_ = ExecuteState::FINISHED;
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
-        if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
+        if (!SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
             HILOG_ERROR("taskpool:: task %{public}s trigger in seqRunner %{public}s failed",
                         std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
         }

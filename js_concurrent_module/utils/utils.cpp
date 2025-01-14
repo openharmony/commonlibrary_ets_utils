@@ -12,10 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <unistd.h>
-#include <sys/types.h>
-
 #include "condition/condition_variable.h"
 #include "locks/async_lock_manager.h"
 #include "json/json_manager.h"

@@ -16,14 +16,8 @@
 #include "js_childprocess.h"
 
 #include <map>
-#include <vector>
-
-#include <csignal>
-#include <cstdlib>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
 #include "securec.h"
 #include "tools/log.h"
 
