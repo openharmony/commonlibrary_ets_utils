@@ -35,11 +35,15 @@ void Blob::Init(uint8_t *blob, unsigned int length)
 
 void Blob::Init(Blob *blob, int start)
 {
-    if (blob != nullptr) {
+    if (blob != nullptr && blob->length_ > 0) {
         this->raw_ = reinterpret_cast<uint8_t *>(malloc(blob->length_));
         if (raw_ == nullptr) {
             HILOG_FATAL("Blob:: constructor malloc failed");
         } else {
+            if (start >= blob->length_ || start < 0) {
+                HILOG_ERROR("Blob:: start position error");
+                return;
+            }
             if ((blob->raw_ + start) == nullptr) {
                 HILOG_FATAL("Blob:: constructor(start) memcpy_s failed");
                 return;

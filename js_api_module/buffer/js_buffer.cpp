@@ -21,13 +21,14 @@ using namespace std;
 namespace OHOS::buffer {
 void Buffer::Init(uint32_t size)
 {
-    raw_ = reinterpret_cast<uint8_t *>(malloc(size));
-    if (raw_ == nullptr) {
-        HILOG_FATAL("Buffer:: constructor malloc failed");
-        length_ = 0;
-    } else {
-        length_ = size;
+    if (size > 0) {
+        raw_ = reinterpret_cast<uint8_t *>(malloc(size));
+        if (raw_ == nullptr) {
+            HILOG_FATAL("Buffer:: constructor malloc failed");
+            length_ = 0;
+        }
     }
+    length_ = size;
 }
 
 void Buffer::Init(Buffer *buffer)
