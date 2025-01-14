@@ -437,12 +437,12 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     // store callbackInfo
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, thisVar, "taskId");
     uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
-    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     auto task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr) {
         HILOG_ERROR("taskpool:: OnReceiveData's task is nullptr");
         return nullptr;
     }
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!task->IsMainThreadTask()) {
@@ -1118,6 +1118,7 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
     taskState_ = ExecuteState::RUNNING;
     startTime_ = startTime;
     worker_ = worker;
+    isRunning_ = true;
     return true;
 }
 

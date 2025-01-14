@@ -67,6 +67,7 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
         return nullptr;
     }
     napi_create_reference(env, thisVar, 0, &group->groupRef_);
+    napi_add_env_cleanup_hook(env, TaskGroup::HostEnvCleanupHook, group);
     return thisVar;
 }
 
@@ -74,6 +75,7 @@ void TaskGroup::TaskGroupDestructor(napi_env env, void* data, [[maybe_unused]] v
 {
     HILOG_DEBUG("taskpool::TaskGroupDestructor");
     TaskGroup* group = static_cast<TaskGroup*>(data);
+    napi_remove_env_cleanup_hook(env, TaskGroup::HostEnvCleanupHook, group);
     TaskGroupManager::GetInstance().ReleaseTaskGroupData(env, group);
     napi_delete_reference(env, group->groupRef_);
     delete group;
@@ -143,6 +145,16 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
     ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
         "the type of the first param must be object or function.");
     return nullptr;
+}
+
+void TaskGroup::HostEnvCleanupHook(void* data)
+{
+    if (data == nullptr) {
+        HILOG_ERROR("taskpool:: taskGroup cleanupHook arg is nullptr");
+        return;
+    }
+    TaskGroup* group = static_cast<TaskGroup*>(data);
+    group->isValid_ = false;
 }
 
 uint32_t TaskGroup::GetTaskIndex(uint32_t taskId)

@@ -55,6 +55,7 @@ public:
 
     static napi_value TaskGroupConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value AddTask(napi_env env, napi_callback_info cbinfo);
+    static void HostEnvCleanupHook(void* data);
 
     uint32_t GetTaskIndex(uint32_t taskId);
     void NotifyGroupTask(napi_env env);
@@ -81,6 +82,7 @@ public:
     std::atomic<ExecuteState> groupState_ {ExecuteState::NOT_FOUND};
     napi_ref groupRef_ {};
     RECURSIVE_MUTEX taskGroupMutex_ {};
+    std::atomic<bool> isValid_ {true};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
