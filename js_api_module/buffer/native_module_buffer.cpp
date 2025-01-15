@@ -1038,33 +1038,26 @@ struct PromiseInfo {
     napi_deferred deferred = nullptr;
     napi_ref blobDataRef = nullptr;
 };
-
-static void CopiedBlobToString(napi_env env, napi_status status, void *data)
+static void SendEventToArrayBuffer(napi_env env, PromiseInfo *promiseInfo, napi_event_priority prio)
 {
-    auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
-    napi_value string = nullptr;
-    napi_get_reference_value(env, promiseInfo->blobDataRef, &string);
-    napi_resolve_deferred(env, promiseInfo->deferred, string);
-    napi_delete_reference(env, promiseInfo->blobDataRef);
-    napi_delete_async_work(env, promiseInfo->worker);
-    delete promiseInfo;
-}
-
-static void CopiedBlobToArrayBuffer(napi_env env, napi_status status, void *data)
-{
-    auto promiseInfo = reinterpret_cast<PromiseInfo *>(data);
-    napi_value arrayBuffer = nullptr;
-    napi_get_reference_value(env, promiseInfo->blobDataRef, &arrayBuffer);
-    napi_resolve_deferred(env, promiseInfo->deferred, arrayBuffer);
-    napi_delete_reference(env, promiseInfo->blobDataRef);
-    napi_delete_async_work(env, promiseInfo->worker);
-    delete promiseInfo;
+    auto task = [env, promiseInfo]() {
+        HILOG_DEBUG("Blob:: Copy Blob To ArrayBuffer!");
+        napi_value buf = nullptr;
+        napi_get_reference_value(env, promiseInfo->blobDataRef, &buf);
+        napi_resolve_deferred(env, promiseInfo->deferred, buf);
+        napi_delete_reference(env, promiseInfo->blobDataRef);
+        if (promiseInfo != nullptr) {
+            delete promiseInfo;
+        }
+    };
+    if (napi_send_event(env, task, prio) != napi_status::napi_ok) {
+        HILOG_ERROR("Blob:: failed to SendEventToArrayBuffer!");
+    }
 }
 
 static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    napi_value resourceName = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
@@ -1081,34 +1074,43 @@ static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
     blob->ReadBytes(reinterpret_cast<uint8_t *>(bufdata), bufferSize);
     napi_create_reference(env, arrayBuffer, 1, &promiseInfo->blobDataRef);
     napi_create_promise(env, &promiseInfo->deferred, &bufferPromise);
-    napi_create_string_utf8(env, "CopyBlobToArrayBuffer", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_async_work(env, nullptr, resourceName, [](napi_env env, void* data) {}, CopiedBlobToArrayBuffer,
-                           reinterpret_cast<void *>(promiseInfo), &promiseInfo->worker);
-    napi_queue_async_work_with_qos(env, promiseInfo->worker, napi_qos_user_initiated);
+    SendEventToArrayBuffer(env, promiseInfo, napi_eprio_immediate);
     return bufferPromise;
 }
 
+static void SendEventToString(napi_env env, PromiseInfo *promiseInfo, napi_event_priority prio)
+{
+    auto task = [env, promiseInfo]() {
+        HILOG_DEBUG("Blob:: Copy Blob To String!");
+        napi_value stringValue = nullptr;
+        napi_get_reference_value(env, promiseInfo->blobDataRef, &stringValue);
+        napi_resolve_deferred(env, promiseInfo->deferred, stringValue);
+        napi_delete_reference(env, promiseInfo->blobDataRef);
+        if (promiseInfo != nullptr) {
+            delete promiseInfo;
+        }
+    };
+    if (napi_send_event(env, task, prio) != napi_status::napi_ok) {
+        HILOG_ERROR("Blob:: failed to SendEventToString!");
+    }
+}
 static napi_value TextAsync(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    napi_value resourceName = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
-    napi_value string = nullptr;
+    napi_value stringValue = nullptr;
     PromiseInfo *promiseInfo = new (std::nothrow) PromiseInfo();
     if (promiseInfo == nullptr) {
         HILOG_ERROR("Buffer:: memory allocation failed, promiseInfo is nullptr");
         return nullptr;
     }
-    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &string);
-    napi_create_reference(env, string, 1, &promiseInfo->blobDataRef);
+    napi_create_string_utf8(env, reinterpret_cast<char *>(blob->GetRaw()), blob->GetLength(), &stringValue);
+    napi_create_reference(env, stringValue, 1, &promiseInfo->blobDataRef);
     napi_value textPromise = nullptr;
     napi_create_promise(env, &promiseInfo->deferred, &textPromise);
-    napi_create_string_utf8(env, "GetPromiseOfString", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_async_work(env, nullptr, resourceName, [](napi_env env, void* data) {}, CopiedBlobToString,
-                           reinterpret_cast<void *>(promiseInfo), &promiseInfo->worker);
-    napi_queue_async_work_with_qos(env, promiseInfo->worker, napi_qos_user_initiated);
+    SendEventToString(env, promiseInfo, napi_eprio_immediate);
     return textPromise;
 }
 
