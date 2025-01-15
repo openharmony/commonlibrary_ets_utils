@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,6 +24,7 @@
 #include "unicode/stringpiece.h"
 #include "unicode/unistr.h"
 #include "native_module_url.h"
+#include "url_helper.h"
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -119,6 +120,12 @@ static std::string ReviseStr(std::string &str, std::string *reviseChar)
         }
     }
     return output;
+}
+
+static std::string DecimalToPercentHexString(uint8_t n)
+{
+    std::string tem = "%";
+    return tem + OHOS::Url::HEX_CHAR_MAP[(n >> OHOS::Url::INT_SHIFT_SIZE) & 0xf] + OHOS::Url::HEX_CHAR_MAP[n & 0xf];
 }
 
 napi_value ToString(napi_env env, std::vector<std::string> &searchParams)
@@ -820,7 +827,7 @@ HWTEST_F(NativeEngineTest, testUrlSetPath001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "/");
     url.SetPath("\\D:");
     DealNapiStrValue(env, url.GetPath(env), output);
-    ASSERT_STREQ(output.c_str(), "/D:");
+    ASSERT_STREQ(output.c_str(), "/%5CD:");
 }
 
 HWTEST_F(NativeEngineTest, testUrlSetPath002, testing::ext::TestSize.Level0)
@@ -832,7 +839,7 @@ HWTEST_F(NativeEngineTest, testUrlSetPath002, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "/");
     url.SetPath(":\\D:");
     DealNapiStrValue(env, url.GetPath(env), output);
-    ASSERT_STREQ(output.c_str(), "/:/D:");
+    ASSERT_STREQ(output.c_str(), "/:%5CD:");
 }
 
 HWTEST_F(NativeEngineTest, testUrlSetPath003, testing::ext::TestSize.Level0)
@@ -2557,4 +2564,242 @@ HWTEST_F(NativeEngineTest, testUrlutilities050, testing::ext::TestSize.Level0)
     std::string input = "99::1080:8:800:200C:417A";
     OHOS::Url::FormatIpv6(input);
     ASSERT_STREQ(input.c_str(), "99:0:0:1080:8:800:200C:417A");
+}
+
+HWTEST_F(NativeEngineTest, testUrlHelper001, testing::ext::TestSize.Level0)
+{
+    std::string input = "abc~!@#$|[]{}`^%()_+-=";
+    std::string urlEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::URL_ENCODED_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(urlEncode.c_str(), "abc~!@#$%7C%5B%5D%7B%7D%60%5E%25()_+-=");
+
+    std::string userinfoEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::USERINFO_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(userinfoEncode.c_str(), "abc~!@#$%7C%5B%5D%7B%7D%60%5E%()_+-=");
+
+    std::string pathEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::PATH_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(pathEncode.c_str(), "abc~!@#$|[]%7B%7D%60%5E%()_+-=");
+
+    std::string fragmentEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::FRAGMENT_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(fragmentEncode.c_str(), "abc~!@#$|[]{}`%5E%()_+-=");
+
+    std::string queryEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::QUERY_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(queryEncode.c_str(), "abc~!@#$|[]{}`^%()_+-=");
+
+}
+
+HWTEST_F(NativeEngineTest, testUrlHelper002, testing::ext::TestSize.Level0)
+{
+    std::string input = "";
+    for (uint8_t i = 0; i <= 0x7F; i++) {
+        input += static_cast<char>(i);
+    }
+    std::string out =
+        "%00%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D"
+        "%1E%1F%20!%22#$%25&'()*+,-./0123456789:;%3C=%3E?@ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklm"
+        "nopqrstuvwxyz%7B%7C%7D~%7F";
+    // username, password {'%25':'%'}
+    std::string outUserInfo =
+        "%00%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D"
+        "%1E%1F%20!%22#$%&'()*+,-./0123456789:;%3C=%3E?@ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklm"
+        "nopqrstuvwxyz%7B%7C%7D~%7F";
+    // {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'}
+    std::string outPath =
+        "%00%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D"
+        "%1E%1F%20!%22#$%&'()*+,-./0123456789:;%3C=%3E?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[%5C]%5E_%60abcdefghijklm"
+        "nopqrstuvwxyz%7B|%7D~%7F";
+    // hash, fragment {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'}
+    std::string outFragment =
+        "%00%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D"
+        "%1E%1F%20!%22#$%&'()*+,-./0123456789:;%3C=%3E?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[%5C]%5E_`abcdefghijklm"
+        "nopqrstuvwxyz{|}~%7F";
+    // query {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%5E': '^', '%25': '%'}
+    std::string outQuery =
+        "%00%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D"
+        "%1E%1F%20!%22#$%&'()*+,-./0123456789:;%3C=%3E?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[%5C]^_`abcdefghijklm"
+        "nopqrstuvwxyz{|}~%7F";
+
+    std::string urlEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::URL_ENCODED_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(urlEncode.c_str(), out.c_str());
+    ASSERT_STREQ(
+        OHOS::Url::EncodePercentEncoding(input, OHOS::Url::USERINFO_PERCENT_SIGN_CHARS).c_str(), outUserInfo.c_str());
+    ASSERT_STREQ(OHOS::Url::EncodePercentEncoding(input, OHOS::Url::PATH_PERCENT_SIGN_CHARS).c_str(), outPath.c_str());
+    ASSERT_STREQ(
+        OHOS::Url::EncodePercentEncoding(input, OHOS::Url::FRAGMENT_PERCENT_SIGN_CHARS).c_str(), outFragment.c_str());
+    ASSERT_STREQ(
+        OHOS::Url::EncodePercentEncoding(input, OHOS::Url::QUERY_PERCENT_SIGN_CHARS).c_str(), outQuery.c_str());
+}
+
+HWTEST_F(NativeEngineTest, testUrlHelper003, testing::ext::TestSize.Level0)
+{
+    std::string input = "";
+    char chars[] = { 0x1, 0x7, 0x8, 0xF, 0x25, 0x2F, 0x5B, 0x5D, 0x5E, 0x60, 0x6C, 0x7B, 0x7C, 0x7D, 0x7F, 0x8F, 0xC1,
+        0xF1, 0xFF };
+    for (uint8_t i = 0; i < sizeof(chars) / sizeof(char); i++) {
+        input += chars[i];
+    }
+    std::string out = "%01%07%08%0F%25/%5B%5D%5E%60l%7B%7C%7D%7F%8F%C1%F1%FF";
+    // username, password {'%25':'%'}
+    std::string outUserInfo = "%01%07%08%0F%/%5B%5D%5E%60l%7B%7C%7D%7F%8F%C1%F1%FF";
+    // {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'}
+    std::string outPath = "%01%07%08%0F%/[]%5E%60l%7B|%7D%7F%8F%C1%F1%FF";
+    // hash, fragment {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'}
+    std::string outFragment = "%01%07%08%0F%/[]%5E`l{|}%7F%8F%C1%F1%FF";
+    // query {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%5E': '^', '%25': '%'}
+    std::string outQuery = "%01%07%08%0F%/[]^`l{|}%7F%8F%C1%F1%FF";
+
+    std::string urlEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::URL_ENCODED_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(urlEncode.c_str(), out.c_str());
+    ASSERT_STREQ(
+        OHOS::Url::EncodePercentEncoding(input, OHOS::Url::USERINFO_PERCENT_SIGN_CHARS).c_str(), outUserInfo.c_str());
+    ASSERT_STREQ(OHOS::Url::EncodePercentEncoding(input, OHOS::Url::PATH_PERCENT_SIGN_CHARS).c_str(), outPath.c_str());
+    ASSERT_STREQ(
+        OHOS::Url::EncodePercentEncoding(input, OHOS::Url::FRAGMENT_PERCENT_SIGN_CHARS).c_str(), outFragment.c_str());
+    ASSERT_STREQ(
+        OHOS::Url::EncodePercentEncoding(input, OHOS::Url::QUERY_PERCENT_SIGN_CHARS).c_str(), outQuery.c_str());
+}
+
+HWTEST_F(NativeEngineTest, testUrlHelper004, testing::ext::TestSize.Level0)
+{
+    std::string input = "";
+    for (uint8_t i = 0x80; i != 0x00; i++) {
+        input += static_cast<char>(i);
+    }
+    std::string out =
+        "%80%81%82%83%84%85%86%87%88%89%8A%8B%8C%8D%8E%8F%90%91%92%93%94%95%96%97%98%99%9A%9B%9C%9D%9E%9F"
+        "%A0%A1%A2%A3%A4%A5%A6%A7%A8%A9%AA%AB%AC%AD%AE%AF%B0%B1%B2%B3%B4%B5%B6%B7%B8%B9%BA%BB%BC%BD%BE%BF"
+        "%C0%C1%C2%C3%C4%C5%C6%C7%C8%C9%CA%CB%CC%CD%CE%CF%D0%D1%D2%D3%D4%D5%D6%D7%D8%D9%DA%DB%DC%DD%DE%DF"
+        "%E0%E1%E2%E3%E4%E5%E6%E7%E8%E9%EA%EB%EC%ED%EE%EF%F0%F1%F2%F3%F4%F5%F6%F7%F8%F9%FA%FB%FC%FD%FE%FF";
+
+    std::string urlEncode = OHOS::Url::EncodePercentEncoding(input, OHOS::Url::URL_ENCODED_PERCENT_SIGN_CHARS);
+    ASSERT_STREQ(urlEncode.c_str(), out.c_str());
+    ASSERT_STREQ(OHOS::Url::EncodePercentEncoding(input, OHOS::Url::USERINFO_PERCENT_SIGN_CHARS).c_str(), out.c_str());
+    ASSERT_STREQ(OHOS::Url::EncodePercentEncoding(input, OHOS::Url::PATH_PERCENT_SIGN_CHARS).c_str(), out.c_str());
+    ASSERT_STREQ(OHOS::Url::EncodePercentEncoding(input, OHOS::Url::FRAGMENT_PERCENT_SIGN_CHARS).c_str(), out.c_str());
+    ASSERT_STREQ(OHOS::Url::EncodePercentEncoding(input, OHOS::Url::QUERY_PERCENT_SIGN_CHARS).c_str(), out.c_str());
+}
+
+HWTEST_F(NativeEngineTest, testUrlHelper005, testing::ext::TestSize.Level0)
+{
+    std::string input = "abc~!@#$%7C%5B%5D%7B%7D%60%5E%()_+-=%7c";
+    std::string decodeResult = OHOS::Url::DecodePercentEncoding(input);
+    ASSERT_STREQ(decodeResult.c_str(), "abc~!@#$|[]{}`^%()_+-=|");
+    std::string inputTwo = "abc~!@#$|[]{}`^()_+-=";
+    std::string decodeResultTwo = OHOS::Url::DecodePercentEncoding(inputTwo);
+    ASSERT_STREQ(decodeResultTwo.c_str(), "abc~!@#$|[]{}`^()_+-=");
+}
+
+HWTEST_F(NativeEngineTest, testUrlHelper006, testing::ext::TestSize.Level0)
+{
+    std::string input = "?foo=1&index=0&url=https%3A%2F%2Fssse?iz=67594&from=article.detail%26x-expires%3D17&ff=&cc";
+    std::vector<OHOS::Url::KeyValue> params {};
+    OHOS::Url::StringAnalyzing(input, params);
+    ASSERT_EQ(params.size(), 6);
+    ASSERT_STREQ(params[0].first.c_str(), "foo");
+    ASSERT_STREQ(params[0].second.c_str(), "1");
+    ASSERT_STREQ(params[1].first.c_str(), "index");
+    ASSERT_STREQ(params[1].second.c_str(), "0");
+    ASSERT_STREQ(params[2].first.c_str(), "url");
+    ASSERT_STREQ(params[2].second.c_str(), "https://ssse?iz=67594");
+    ASSERT_STREQ(params[3].first.c_str(), "from");
+    ASSERT_STREQ(params[3].second.c_str(), "article.detail&x-expires=17");
+    ASSERT_STREQ(params[4].first.c_str(), "ff");
+    ASSERT_STREQ(params[4].second.c_str(), "");
+    ASSERT_STREQ(params[5].first.c_str(), "cc");
+    ASSERT_STREQ(params[5].second.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlHelper007, testing::ext::TestSize.Level0)
+{
+    std::string input = "?bar=2&&&&&foo~!@$%^&*()_+=test+@$%";
+    std::vector<OHOS::Url::KeyValue> params {};
+    OHOS::Url::StringAnalyzing(input, params);
+    ASSERT_EQ(params.size(), 3);
+    ASSERT_STREQ(params[0].first.c_str(), "bar");
+    ASSERT_STREQ(params[0].second.c_str(), "2");
+    ASSERT_STREQ(params[1].first.c_str(), "foo~!@$%^");
+    ASSERT_STREQ(params[1].second.c_str(), "");
+    ASSERT_STREQ(params[2].first.c_str(), "*()_ ");
+    ASSERT_STREQ(params[2].second.c_str(), "test @$%");
+}
+
+// 0xxx xxxx 0x00 -0x7F decode, 0x80-0xFF not decode
+HWTEST_F(NativeEngineTest, testUrlHelper008, testing::ext::TestSize.Level0)
+{
+    for (int i = 0x00; i <= 0xFF; i++) {
+        auto tem = DecimalToPercentHexString(i);
+        //%xx,  char 0xxx xxxx
+        if (i <= 0x7F) {
+            ASSERT_STRNE(OHOS::Url::DecodePercentEncoding(tem).c_str(), tem.c_str());
+        } else {
+            ASSERT_STREQ(OHOS::Url::DecodePercentEncoding(tem).c_str(), tem.c_str());
+        }
+    }
+}
+
+// 10xx xxxx xxxx xxxx , 0x8000-0xFFFF ,
+// 0xc080-0xc0BF, 0xDF80-0xDFBF decode
+HWTEST_F(NativeEngineTest, testUrlHelper009, testing::ext::TestSize.Level1)
+{
+    for (int i = 0x80; i <= 0xFF; i++) {
+        auto tem = DecimalToPercentHexString(i);
+        for (int j = 0x00; j <= 0xFF; j++) {
+            auto tem1 = tem + DecimalToPercentHexString(j);
+            //%xx%xx, first char 110X XXXX - 1101 1111;//second char 10XX XXXX - 1011 1111
+            if ((i >= 0xc0 && i <= 0xDF) && (j >= 0x80 && j <= 0xBF)) {
+                // mean can be decode, 2 length
+                ASSERT_EQ(OHOS::Url::DecodePercentEncoding(tem1).length(), 2);
+            } else {
+                // only part decode or not, 2 length
+                ASSERT_NE(OHOS::Url::DecodePercentEncoding(tem1).length(), 2);
+            }
+        }
+    }
+}
+
+// 111x xxxx xxxx xxxx xxxx xxxx, 0xE00000-0xFFFF00
+HWTEST_F(NativeEngineTest, testUrlHelper010, testing::ext::TestSize.Level1)
+{
+    for (int i = 0xE00000; i <= 0xFF0000; i++) {
+        // 16 two byte, 8 one byte,get char from all byte
+        auto tem3 = DecimalToPercentHexString((i >> 16)) + DecimalToPercentHexString((i >> 8) & 0xFF) +
+                    DecimalToPercentHexString(i & 0xFF);
+        // std::cout<<"beigin"<<tem3.c_str()<<std::endl;
+        //%xx%xx%xx,first char 1110 XXXX - 1110 1111; 0xE0-0xEF
+        // second char 10XX XXXX - 1011 1111, third char 10XX XXXX - 1011 1111;0x80-0xBF
+        if (((i & 0xFF0000) >= 0xE00000 && (i & 0xFF0000) <= 0xEF0000) &&
+            ((i & 0x00FF00) >= 0x008000 && (i & 0x00FF00) <= 0x00BF00) &&
+            ((i & 0x0000FF) >= 0x000080 && (i & 0x0000FF) <= 0x0000BF)) {
+            // 3 legnth
+            ASSERT_EQ(OHOS::Url::DecodePercentEncoding(tem3).length(), 3);
+
+        } else {
+            // 3 legnth
+            ASSERT_NE(OHOS::Url::DecodePercentEncoding(tem3).length(), 3);
+        }
+    }
+}
+
+// 1111 0XXX xxxx xxxx xxxx xxxx xxxx xxxx
+//  0xF0-0xF7,
+HWTEST_F(NativeEngineTest, testUrlHelper011, testing::ext::TestSize.Level1)
+{
+    // pick up part,for 0x00-0xFF to large, will run to long time
+    int last[] = { 0x00, 0x1F, 0x20, 0x2F, 0x7F, 0x80, 0x81, 0xBF, 0xFF };
+    for (int i = 0xF00000; i <= 0xFF0000; i++) {
+        auto tem = DecimalToPercentHexString((i >> 16)) + DecimalToPercentHexString((i >> 8) & 0xFF) +
+                   DecimalToPercentHexString(i & 0xFF);
+        for (int k1 = 0; k1 <= sizeof(last) / sizeof(int); k1++) {
+            auto tem4 = tem + DecimalToPercentHexString(last[k1]);
+            //%xx%xx%xx%xx,first char 1111 0XXX - 1111 0111;0xF0-0xF7
+            // second char 10XX XXXX - 1011 1111;0x80-0xBF
+            // third char 10XX XXXX - 1011 1111;0x80-0xBF
+            // fourth char 10XX XXXX - 1011 1111;0x80-0xBF
+            if (((i & 0xFF0000) >= 0xF00000 && (i & 0xFF0000) <= 0xF70000) &&
+                ((i & 0x00FF00) >= 0x008000 && (i & 0x00FF00) <= 0x00BF00) &&
+                ((i & 0x0000FF) >= 0x000080 && (i & 0x0000FF) <= 0x0000BF) && (last[k1] >= 0x80 && last[k1] <= 0xBF)) {
+                ASSERT_EQ(OHOS::Url::DecodePercentEncoding(tem4).length(), 4);
+            } else {
+                ASSERT_NE(OHOS::Url::DecodePercentEncoding(tem4).length(), 4);
+            }
+        }
+    }
 }

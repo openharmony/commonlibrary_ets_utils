@@ -58,6 +58,7 @@ interface NativeUrl {
   hostname: string;
   host: string;
   port: string;
+  encodeSearch: string;
   href(input: string): void;
   pathname: string;
   onOrOff: boolean;
@@ -133,19 +134,6 @@ function customEncodeForToString(str: string): string {
     .replace(/%20/g, '+');
 }
 
-function customEncodeURI(str: string, keepCharacters: object): string {
-  let encodedStr = '';
-  try {
-    encodedStr = encodeURI(str);
-  } catch (error) {
-    encodedStr = encodeURI(UrlInterface.fixUSVstring(str));
-  }
-  for (let key in keepCharacters) {
-    encodedStr = encodedStr.replaceAll(`${key}`, keepCharacters[key]);
-  }
-  return encodedStr;
-}
-
 function removeKeyValuePairs(str: string, key: string): string {
   const regex = new RegExp(`\\b${key}=[^&]*&?`, 'g');
   let result = str.replace(regex, '');
@@ -153,6 +141,21 @@ function removeKeyValuePairs(str: string, key: string): string {
     result = result.slice(0, -1);
   }  
   return result;
+}
+
+function containIllegalCode(str: string): Boolean {
+  const unpairedSurrogateRe =
+    /(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])/;
+  const regex = new RegExp(unpairedSurrogateRe);
+  return regex.test(str)
+}
+
+function fixIllegalString(str: string):string {
+  if(containIllegalCode(str)){
+    return UrlInterface.fixUSVstring(str);
+  } else {
+    return str;
+  }
 }
 
 class URLParams {
@@ -540,10 +543,8 @@ function initToStringSeachParams(input: string): Array<string> {
     input = input.slice(1);
   }
   let strVal = input.replace(/\+/g, ' ');
-  seachParamsArr = UrlInterface.stringParmas(strVal);  
-  return seachParamsArr.map(item => {
-    return item = decodeStringParmas(item);
-  });
+  seachParamsArr = UrlInterface.stringParmas(strVal);
+  return seachParamsArr;
 }
 
 class URL {
@@ -569,7 +570,7 @@ class URL {
     let nativeUrl !: NativeUrl;
     if (arguments.length === 1 || (arguments.length === 2 && (typeof inputBase === 'undefined' || inputBase === null))) {
       if (typeof inputUrl === 'string' && inputUrl.length > 0) {
-        nativeUrl = new UrlInterface.Url(inputUrl);
+        nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl));
       } else {
         throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
       }
@@ -577,47 +578,43 @@ class URL {
       if (typeof inputUrl === 'string') {
         if (typeof inputBase === 'string') {
           if (inputBase.length > 0) {
-            nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
+            nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl), fixIllegalString(inputBase));
           } else {
             throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
             return;
           }
         } else if (typeof inputBase === 'object') {
           let nativeBase: NativeUrl = inputBase.getInfo();
-          nativeUrl = new UrlInterface.Url(inputUrl, nativeBase);
+          nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl), nativeBase);
         }
       }
     }
     if (arguments.length === 1 || arguments.length === 2) { // 2:The number of parameters is 2
       this.c_info = nativeUrl;
       if (nativeUrl.onOrOff) {
-        this.search_ = nativeUrl.search;
-        this.username_ = customEncodeURI(nativeUrl.username, {'%25':'%'});
-        this.password_ = customEncodeURI(nativeUrl.password, {'%25':'%'});
-        if (nativeUrl.GetIsIpv6) {
-          this.hostname_ = nativeUrl.hostname;
-          this.host_ = nativeUrl.host;
-        } else {
-          this.hostname_ = customEncodeURI(nativeUrl.hostname, {});
-          this.host_ = customEncodeURI(nativeUrl.host, {});
-        }
-        this.hash_ = customEncodeURI(nativeUrl.hash, 
-          {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
-        this.protocol_ = nativeUrl.protocol;
-        this.pathname_ = customEncodeURI(nativeUrl.pathname, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
-        this.port_ = nativeUrl.port;
-        this.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
-        this.searchParamsClass_ = new URLSearchParams(customEncodeURI(this.search_,
-          {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
-        this.URLParamsClass_ = new URLParams(customEncodeURI(this.search_,
-          {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
-        this.URLParamsClass_.parentUrl = this;
-        this.searchParamsClass_.parentUrl = this;
-        this.setHref();
+        URL.setParamsFromNativeUrl(nativeUrl, this);
       } else {
         console.error('constructor failed');
       }
     }
+  }
+
+  static setParamsFromNativeUrl(nativeUrl: NativeUrl, urlHelper:URL) {
+    urlHelper.search_ = nativeUrl.search;
+    urlHelper.username_ = nativeUrl.username;
+    urlHelper.password_ = nativeUrl.password;
+    urlHelper.hostname_ = nativeUrl.hostname;
+    urlHelper.host_ = nativeUrl.host;
+    urlHelper.hash_ = nativeUrl.hash;
+    urlHelper.protocol_ = nativeUrl.protocol;
+    urlHelper.pathname_ = nativeUrl.pathname;
+    urlHelper.port_ = nativeUrl.port;
+    urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
+    urlHelper.searchParamsClass_ = new URLSearchParams(nativeUrl.encodeSearch);
+    urlHelper.URLParamsClass_ = new URLParams(nativeUrl.encodeSearch);
+    urlHelper.URLParamsClass_.parentUrl = urlHelper;
+    urlHelper.searchParamsClass_.parentUrl = urlHelper;
+    urlHelper.setHref();
   }
 
   static parseURL(inputUrl: string, inputBase?: string | NativeUrl | URL): URL {
@@ -626,17 +623,17 @@ class URL {
     }
     let nativeUrl !: NativeUrl;
     if (arguments.length === 1 || (arguments.length === 2 && (typeof inputBase === 'undefined' || inputBase === null))) {
-      nativeUrl = new UrlInterface.Url(inputUrl);
+      nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl));
     } else if (arguments.length === 2) { // 2:The number of parameters is 2
       if (typeof inputBase === 'string') {
         if (inputBase.length > 0) {
-          nativeUrl = new UrlInterface.Url(inputUrl, inputBase);
+          nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl), fixIllegalString(inputBase));
         } else {
           throw new BusinessError(`Parameter error. The type of ${inputBase} must be string`);
         }
       } else if (typeof inputBase === 'object') {
         let nativeBase: NativeUrl = inputBase.getInfo();
-        nativeUrl = new UrlInterface.Url(inputUrl, nativeBase);
+        nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl), nativeBase);
       } else {
         throw new BusinessError(`Parameter error. The type of ${inputBase} must be string or URL`);
       }
@@ -644,29 +641,7 @@ class URL {
     let urlHelper = new URL();
     urlHelper.c_info = nativeUrl;
     if (nativeUrl.onOrOff) {
-      urlHelper.search_ = nativeUrl.search;
-      urlHelper.username_ = customEncodeURI(nativeUrl.username, {'%25':'%'});
-      urlHelper.password_ = customEncodeURI(nativeUrl.password, {'%25':'%'});
-      if (nativeUrl.GetIsIpv6) {
-        urlHelper.hostname_ = nativeUrl.hostname;
-        urlHelper.host_ = nativeUrl.host;
-      } else {
-        urlHelper.hostname_ = customEncodeURI(nativeUrl.hostname, {});
-        urlHelper.host_ = customEncodeURI(nativeUrl.host, {});
-      }
-      urlHelper.hash_ = customEncodeURI(nativeUrl.hash,
-        {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
-      urlHelper.protocol_ = nativeUrl.protocol;
-      urlHelper.pathname_ = customEncodeURI(nativeUrl.pathname, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
-      urlHelper.port_ = nativeUrl.port;
-      urlHelper.origin_ = nativeUrl.protocol + '//' + nativeUrl.host;
-      urlHelper.searchParamsClass_ = new URLSearchParams(customEncodeURI(urlHelper.search_,
-        {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
-      urlHelper.URLParamsClass_ = new URLParams(customEncodeURI(urlHelper.search_,
-        {'%7C': '|', '%5B': '[', '%5D': ']', '%5E': '^', '%25': '%'}));
-      urlHelper.URLParamsClass_.parentUrl = urlHelper;
-      urlHelper.searchParamsClass_.parentUrl = urlHelper;
-      urlHelper.setHref();
+      URL.setParamsFromNativeUrl(nativeUrl,urlHelper);
     } else {
       let err : BusinessError = new BusinessError('Syntax Error. Invalid Url string');
       err.code = syntaxErrorCodeId;
@@ -716,8 +691,7 @@ class URL {
     if (this.host_ === null || this.host_ === '' || this.protocol_ === 'file:') {
       return;
     }
-    const usname_ = customEncodeURI(input, {'%25':'%'});
-    this.c_info.username = usname_;
+    this.c_info.username = fixIllegalString(input);
     this.username_ = this.c_info.username;
     this.setHref();
   }
@@ -728,8 +702,7 @@ class URL {
     if (this.host_ === null || this.host_ === '' || this.protocol_ === 'file:') {
       return;
     }
-    const passwd_ = customEncodeURI(input, {'%25':'%'});
-    this.c_info.password = passwd_;
+    this.c_info.password = fixIllegalString(input);
     this.password_ = this.c_info.password;
     this.setHref();
   }
@@ -737,9 +710,7 @@ class URL {
     return this.hash_;
   }
   set hash(fragment) {
-    const fragment_ = customEncodeURI(fragment,
-      {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
-    this.c_info.hash = fragment_;
+    this.c_info.hash = fixIllegalString(fragment);
     this.hash_ = this.c_info.hash;
     this.setHref();
   }
@@ -747,9 +718,7 @@ class URL {
     return this.search_;
   }
   set search(query) {
-    const query_ = customEncodeURI(query,
-      {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%5E': '^', '%25': '%'});
-    this.c_info.search = query_;
+    this.c_info.encodeSearch = fixIllegalString(query);
     this.search_ = this.c_info.search;
     this.searchParamsClass_.updateParams(this.search_);
     this.URLParamsClass_.updateParams(this.search_);
@@ -760,11 +729,7 @@ class URL {
   }
   set hostname(hostname) {
     this.c_info.hostname = hostname;
-    if (this.c_info.GetIsIpv6) {
-      this.hostname_ = this.c_info.hostname;
-    } else {
-      this.hostname_ = customEncodeURI(this.c_info.hostname, {});
-    }
+    this.hostname_ = this.c_info.hostname;
     this.setHref();
   }
   get host(): string {
@@ -772,15 +737,9 @@ class URL {
   }
   set host(host_) {
     this.c_info.host = host_;
-    if (this.c_info.GetIsIpv6) {
-      this.host_ = this.c_info.host;
-      this.hostname_ = this.c_info.hostname;
-      this.port_ = this.c_info.port;
-    } else {
-      this.host_ = customEncodeURI(this.c_info.host, {});
-      this.hostname_ = customEncodeURI(this.c_info.hostname, {});
-      this.port_ = this.c_info.port;
-    }
+    this.host_ = this.c_info.host;
+    this.hostname_ = this.c_info.hostname;
+    this.port_ = this.c_info.port;
     this.setHref();
   }
   get port(): string {
@@ -801,19 +760,13 @@ class URL {
     this.c_info.href(href_);
     if (this.c_info.onOrOff) {
       this.search_ = this.c_info.search;
-      this.username_ = customEncodeURI(this.c_info.username, {'%25':'%'});
-      this.password_ = customEncodeURI(this.c_info.password, {'%25':'%'});
-      if (this.c_info.GetIsIpv6) {
-        this.hostname_ = this.c_info.hostname;
-        this.host_ = this.c_info.host;
-      } else {
-        this.hostname_ = customEncodeURI(this.c_info.hostname, {});
-        this.host_ = customEncodeURI(this.c_info.host, {});
-      }
-      this.hash_ = customEncodeURI(this.c_info.hash,
-        {'%7C': '|', '%5B': '[', '%5D': ']', '%7B': '{', '%7D': '}', '%60': '`', '%25': '%'});
+      this.username_ = this.c_info.username;
+      this.password_ = this.c_info.password;
+      this.hostname_ = this.c_info.hostname;
+      this.host_ = this.c_info.host;
+      this.hash_ = this.c_info.hash;
       this.protocol_ = this.c_info.protocol;
-      this.pathname_ = customEncodeURI(this.c_info.pathname, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
+      this.pathname_ = this.c_info.pathname;
       this.port_ = this.c_info.port;
       this.origin_ = this.protocol_ + '//' + this.host_;
       this.searchParamsClass_.updateParams(this.search_);
@@ -826,8 +779,7 @@ class URL {
     return this.pathname_;
   }
   set pathname(path) {
-    const path_ = customEncodeURI(path, {'%7C': '|', '%5B': '[', '%5D': ']', '%25': '%'});
-    this.c_info.pathname = path_;
+    this.c_info.pathname = fixIllegalString(path);
     this.pathname_ = this.c_info.pathname;
     this.setHref();
   }
