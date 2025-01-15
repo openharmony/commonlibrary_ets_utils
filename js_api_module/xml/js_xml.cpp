@@ -81,8 +81,33 @@ namespace OHOS::xml {
         return str;
     }
 
+    void XmlSerializer::BufferCopy(size_t length, const char* name)
+    {
+        if (isDynamic_) {
+            if (strXml_.length() + length <= MAX_XML_LENGTH) {
+                strXml_.append(out_);
+            } else {
+                errorCode_ = ErrorCodeEnum::BUFFER_OVERFLOW;
+                xmlSerializerError_ = "XmlSerializer::xml length is too long";
+            }
+        } else if (iLength_ > iPos_ + length - 1) {
+            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), length) == EOK) {
+                iPos_ += length;
+            } else {
+                HILOG_ERROR("XmlSerializer:: %{public}s memcpy_s failed", name);
+            }
+        }
+    }
+
+    void XmlSerializer::ClearXmlSerializerError()
+    {
+        errorCode_ = ErrorCodeEnum::NO_ERROR;
+        xmlSerializerError_ = "";
+    }
+
     void XmlSerializer::SetDeclaration()
     {
+        ClearXmlSerializerError();
         if (isHasDecl) {
             xmlSerializerError_ = "illegal position for declaration";
             return;
@@ -95,17 +120,12 @@ namespace OHOS::xml {
         out_.append("\"?>");
         type = "isDecl";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: SetDeclaration memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "SetDeclaration");
     }
 
     void XmlSerializer::SetNamespace(std::string prefix, const std::string &nsTemp)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
@@ -118,17 +138,12 @@ namespace OHOS::xml {
         ++curNspNum;
         type = "isNsp";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: SetNamespace memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "SetNamespace");
     }
 
     void XmlSerializer::StartElement(const std::string &name)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
@@ -152,21 +167,17 @@ namespace OHOS::xml {
         out_.append(elementStack[depth_ * 3 + 2]); // 3: number of args 2: number of args
         type = "isStart";
         ++depth_;
+        elementNum_++;
         elementStack.push_back("");
         elementStack.push_back("");
         elementStack.push_back("");
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: StartElement memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "StartElement");
     }
 
     void XmlSerializer::SetAttributes(const std::string &name, const std::string &value)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type != "isStart" && type != "isAttri") {
             xmlSerializerError_ = "illegal position for attribute";
@@ -178,17 +189,18 @@ namespace OHOS::xml {
         out_.append("\"");
         type = "isAttri";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: SetAttributes memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "SetAttributes");
     }
 
     void XmlSerializer::EndElement()
     {
+        ClearXmlSerializerError();
+        if (elementNum_ < 1) {
+            xmlSerializerError_ = "XmlSerializer:: There is no match between the start element and the end element";
+            errorCode_ = ErrorCodeEnum::NO_ELEMENT_MATCH;
+            return;
+        }
+        elementNum_--;
         out_ = "";
         size_t iLenTemp = 0;
         if (type == "isStart" || type == "isAttri") {
@@ -197,13 +209,7 @@ namespace OHOS::xml {
             type = "isEndTag";
             --depth_;
             iLenTemp = out_.length();
-            if (iLength_ > iPos_ + iLenTemp - 1) {
-                if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                    iPos_ += iLenTemp;
-                } else {
-                HILOG_ERROR("XmlSerializer:: StartElement memcpy_s failed");
-                }
-            }
+            BufferCopy(iLenTemp, "EndElement");
             return;
         }
         --depth_;
@@ -221,17 +227,12 @@ namespace OHOS::xml {
         type = "isEndTag";
         out_.append(">");
         iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: EndElement memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "EndElement");
     }
 
     void XmlSerializer::AddEmptyElement(std::string name)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
@@ -245,17 +246,12 @@ namespace OHOS::xml {
         out_.append("/>");
         type = "isAddEmpElem";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: AddEmptyElement memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "AddEmptyElement");
     }
 
     void XmlSerializer::SetText(const std::string &text)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
@@ -264,17 +260,12 @@ namespace OHOS::xml {
         WriteEscaped(text);
         type = "isText";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: SetText memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "SetText");
     }
 
     void XmlSerializer::SetComment(const std::string &comment)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
@@ -286,17 +277,12 @@ namespace OHOS::xml {
         out_ += "<!--" + comment + "-->";
         type = "isCom";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: SetComment memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "SetComment");
     }
 
     void XmlSerializer::SetCData(std::string data)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
@@ -309,17 +295,12 @@ namespace OHOS::xml {
         out_ += "<![CDATA[" + data + "]]>";
         type = "isCData";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: SetCData memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "SetCData");
     }
 
     void XmlSerializer::SetDocType(const std::string &text)
     {
+        ClearXmlSerializerError();
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
@@ -331,13 +312,7 @@ namespace OHOS::xml {
         out_ += "<!DOCTYPE " + text + ">";
         type = "isDocType";
         size_t iLenTemp = out_.length();
-        if (iLength_ > iPos_ + iLenTemp - 1) {
-            if (memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp) == EOK) {
-                iPos_ += iLenTemp;
-            } else {
-                HILOG_ERROR("XmlSerializer:: SetDocType memcpy_s failed");
-            }
-        }
+        BufferCopy(iLenTemp, "SetDocType");
     }
 
     void XmlSerializer::WriteEscaped(std::string s)
@@ -370,6 +345,36 @@ namespace OHOS::xml {
     std::string XmlSerializer::XmlSerializerError()
     {
         return xmlSerializerError_;
+    }
+
+    ErrorCodeEnum XmlSerializer::XmlSerializerErrorCode()
+    {
+        return errorCode_;
+    }
+
+    size_t XmlSerializer::GetXmlBufferLength()
+    {
+        return strXml_.length();
+    }
+
+    void XmlSerializer::GetXmlBuffer(void *data, uint32_t length)
+    {
+        if (data == nullptr) {
+            HILOG_ERROR("XmlSerializer:: GetXmlBuffer data is NULL");
+            return;
+        }
+        if (length == 0) {
+            HILOG_ERROR("XmlSerializer:: GetXmlBuffer length is 0");
+            return;
+        }
+
+        if (strXml_.length() == 0) {
+            HILOG_ERROR("XmlSerializer:: GetXmlBuffer xml buffer is empty");
+            return;
+        }
+        if (memcpy_s(data, length, reinterpret_cast<const void*>(strXml_.data()), strXml_.length()) != EOK) {
+            HILOG_ERROR("XmlSerializer:: GetXmlBuffer copy xml buffer error");
+        }
     }
 
     napi_value XmlPullParser::DealOptionInfo(napi_env env, napi_value napiObj)

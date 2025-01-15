@@ -27,6 +27,14 @@
 #include "tools/log.h"
 
 namespace OHOS::xml {
+    constexpr uint32_t MAX_XML_LENGTH = 100000;
+    constexpr uint32_t INIT_XML_LENGTH = 8 * 1024;
+    enum ErrorCodeEnum {
+        NO_ERROR = 0,
+        BUFFER_OVERFLOW = 10200062,
+        NO_ELEMENT_MATCH = 10200063
+    };
+
     class XmlSerializer {
     public:
         /**
@@ -37,7 +45,17 @@ namespace OHOS::xml {
          * DataView memory used to receive the written xml information.
          */
         XmlSerializer(char *pStart, size_t bufferLength, const std::string &encoding = "utf-8") :pStart_(pStart),
-            iLength_(bufferLength), encoding_(encoding) {};
+            iLength_(bufferLength), encoding_(encoding), isDynamic_(false), elementNum_(0) {};
+
+        /**
+         * Constructor for XmlSerializer.
+         *
+         * DataView memory used to receive the written xml information.
+         */
+        explicit XmlSerializer(const std::string &encoding = "utf-8") :pStart_(nullptr),
+            iLength_(0), encoding_(encoding), strXml_(""), isDynamic_(true), elementNum_(0) {
+                strXml_.reserve(INIT_XML_LENGTH);
+        };
 
         /**
          * XmlSerializer destructor.
@@ -135,6 +153,37 @@ namespace OHOS::xml {
         std::string XmlSerializerError();
 
         /**
+         * Get exception function errorcode.
+         */
+        ErrorCodeEnum XmlSerializerErrorCode();
+
+        /**
+         * clear errorcode and description.
+         */
+        void ClearXmlSerializerError();
+
+        /**
+         * get xml string length.
+         */
+        size_t GetXmlBufferLength();
+
+        /**
+         * get xml string buffer.
+         *
+         * @param data The parameter is the point of xml string
+         * @param length The parameter is the length of xml string.
+         */
+        void GetXmlBuffer(void* data, uint32_t length);
+
+        /**
+         * copy xml Serializer buffer.
+         *
+         * @param length The parameter is the length need to copy.
+         * @param name The parameter is the name of the function.
+         */
+        void BufferCopy(size_t length, const char* name);
+
+        /**
          * Process the value of the string passed by napi.
          *
          * @param env The parameter is NAPI environment variables.
@@ -158,7 +207,11 @@ namespace OHOS::xml {
         std::map<int, std::map<int, std::string>> multNsp;
         int curNspNum {};
         std::string out_ {};
+        std::string strXml_ {};
         bool isHasDecl {};
+        bool isDynamic_ {};
+        int32_t elementNum_ {};
+        ErrorCodeEnum errorCode_{NO_ERROR};
     };
 
     enum class TagEnum {
