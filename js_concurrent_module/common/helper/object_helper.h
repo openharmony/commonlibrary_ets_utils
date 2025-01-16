@@ -36,7 +36,20 @@ public:
 class CloseHelp {
 public:
     template<typename T>
+    static void DeletePointer(T*& value, bool isArray)
+    {
+        DeletePointerInner(value, isArray);
+        value = nullptr;
+    }
+
+    template<typename T>
     static void DeletePointer(const T* value, bool isArray)
+    {
+        DeletePointerInner(value, isArray);
+    }
+
+    template<typename T>
+    static void DeletePointerInner(const T* value, bool isArray)
     {
         if (value == nullptr) {
             return;
