@@ -526,9 +526,12 @@ void TaskManager::TryExpand()
     uint32_t timeoutWorkers = 0;
     {
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-        idleCount = idleWorkers_.size();
         workerCount = workers_.size();
         timeoutWorkers = timeoutWorkers_.size();
+        uint64_t currTime = ConcurrentHelper::GetMilliseconds();
+        idleCount = std::count_if(idleWorkers_.begin(), idleWorkers_.end(), [currTime](const auto& worker) {
+            return worker->IsRunnable(currTime);
+        });
     }
     uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
     maxThreads = (timeoutWorkers == 0) ? maxThreads : maxThreads + 2; // 2: extra threads

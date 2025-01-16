@@ -406,6 +406,8 @@ void Worker::PerformTask(const uv_async_t* req)
 {
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     auto worker = static_cast<Worker*>(req->data);
+    worker->wakeUpTime_ = startTime;
+    worker->checkCount_ = 0;
     napi_env env = worker->workerEnv_;
     TaskManager::GetInstance().NotifyWorkerRunning(worker);
     auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
@@ -440,9 +442,12 @@ void Worker::PerformTask(const uv_async_t* req)
     }
     worker->StoreTaskId(task->taskId_);
     // tag for trace parse: Task Perform
+    auto loop = worker->GetWorkerLoop();
+    uint64_t loopAddress = reinterpret_cast<uint64_t>(loop);
     std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_)
                             + ", priority : " + std::to_string(taskInfo.second);
-    std::string taskLog = "Task Perform: "  + task->name_ + ", " + std::to_string(task->taskId_);
+    std::string taskLog = "Task Perform: "  + task->name_ + ", " + std::to_string(task->taskId_) + ", "
+                          "runningLoop: " + std::to_string(loopAddress);
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
 
@@ -677,5 +682,17 @@ void Worker::PostReleaseSignal()
         return;
     }
     uv_async_send(clearWorkerSignal_);
+}
+
+bool Worker::IsRunnable(uint64_t currTime)
+{
+    bool res = true;
+    if (currTime > wakeUpTime_) {
+        res = (currTime - wakeUpTime_ < 10000) || (++checkCount_ <= 2); // 10000: ms, 10s; 2: check threshold
+    }
+    if (!res) {
+        HILOG_WARN("taskpool:: the worker may have been blocked or fd is invalid");
+    }
+    return res;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
