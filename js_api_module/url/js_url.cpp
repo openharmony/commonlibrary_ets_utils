@@ -15,7 +15,6 @@
 
 #include "js_url.h"
 #include <regex>
-#include <sstream>
 #include "securec.h"
 #include "tools/log.h"
 #include "unicode/stringpiece.h"

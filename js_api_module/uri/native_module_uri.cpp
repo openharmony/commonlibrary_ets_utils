@@ -13,12 +13,7 @@
  * limitations under the License.
  */
 #include "native_module_uri.h"
-
-#include "js_uri.h"
-#include "securec.h"
 #include "tools/log.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 
 extern const char _binary_js_uri_js_start[];
 extern const char _binary_js_uri_js_end[];

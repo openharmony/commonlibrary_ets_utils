@@ -33,6 +33,7 @@ ohos_unittest("test_utils_unittest") {
 
   sources = [
     "test_ark.cpp",
+    "test_condition.cpp",
     "test_locks.cpp",
   ]
 

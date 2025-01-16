@@ -138,15 +138,20 @@ napi_value AsyncLockManager::Init(napi_env env, napi_value exports)
                       &asyncLockOptionsClass);
 
     napi_value locks;
-    NAPI_CALL(env, napi_create_object(env, &locks));
+    bool locksExist = false;
+    NAPI_CALL(env, napi_has_named_property(env, exports, "locks", &locksExist));
+    if (locksExist) {
+        NAPI_CALL(env, napi_get_named_property(env, exports, "locks", &locks));
+    } else {
+        NAPI_CALL(env, napi_create_object(env, &locks));
+        NAPI_CALL(env, napi_set_named_property(env, exports, "locks", locks));
+    }
     napi_property_descriptor locksProperties[] = {
         DECLARE_NAPI_PROPERTY("AsyncLock", asyncLockManagerClass),
         DECLARE_NAPI_PROPERTY("AsyncLockMode", asyncLockMode),
         DECLARE_NAPI_PROPERTY("AsyncLockOptions", asyncLockOptionsClass),
     };
     napi_define_properties(env, locks, sizeof(locksProperties) / sizeof(locksProperties[0]), locksProperties);
-
-    napi_set_named_property(env, exports, "locks", locks);
 
     return exports;
 }

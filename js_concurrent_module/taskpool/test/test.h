@@ -58,9 +58,9 @@ public:
     static void EnqueueTaskId(napi_env env);
     static void GetTaskByPriority(napi_env env);
     static void RestoreWorker(napi_env env);
-    static void StoreDependentId(uint64_t taskId, uint64_t dependentId);
-    static void StoreDependentTaskId(uint64_t taskId, uint64_t dependentId);
-    static void StoreTaskDuration(uint64_t taskId);
+    static void StoreDependentId(uint32_t taskId, uint32_t dependentId);
+    static void StoreDependentTaskId(uint32_t taskId, uint32_t dependentId);
+    static void StoreTaskDuration(uint32_t taskId);
     static void InitTaskManager(napi_env env);
     static void NotifyDependencyTaskInfo(napi_env env);
     static void StoreTaskDependency(napi_env env);
@@ -80,6 +80,10 @@ public:
     static pid_t GetWorkerTid(uv_timer_t* handle);
     static void WorkerPostTask(napi_env env);
     static void ResetTaskManager();
+    static void CheckAndCreateAsyncRunner(napi_env env, napi_value name, napi_value runningCapacity,
+                                          napi_value waitingCapacity);
+    static void AsyncRunnerDestructor(napi_env env, void* data);
+    static void AddTasksToAsyncRunner(void* asyncData, void* taskData);
 
     class ExceptionScope {
     public:
@@ -94,7 +98,7 @@ public:
     };
 
 protected:
-    NativeEngine *engine_ = nullptr;
+    NativeEngine* engine_ = nullptr;
 };
 
 class SendableUtils {

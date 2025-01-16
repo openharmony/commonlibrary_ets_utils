@@ -14,25 +14,11 @@
  */
 
 #include "js_process.h"
-
-#include <cstdlib>
-#include <vector>
-
-#include <grp.h>
-#include <mutex>
-#include <pthread.h>
-#include <pwd.h>
-#include <sched.h>
-#include <unistd.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <uv.h>
 
-#include <sys/resource.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-
-#include "securec.h"
 #include "process_helper.h"
-#include "tools/log.h"
 namespace OHOS::JsSysModule::Process {
 
     using namespace Commonlibrary::Platform;

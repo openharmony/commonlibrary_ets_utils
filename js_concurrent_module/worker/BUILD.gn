@@ -85,6 +85,12 @@ ohos_shared_library("worker") {
     external_deps += [ "eventhandler:libeventhandler" ]
   }
 
+  if (is_ohos && is_standard_system && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_qos_manager)) {
+    defines += [ "ENABLE_QOS" ]
+    external_deps += [ "qos_manager:qos" ]
+  }
+
   external_deps += [ "hitrace:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
@@ -156,13 +162,21 @@ ohos_source_set("worker_static") {
       defines += [ "IOS_PLATFORM" ]
     }
   } else {
-    deps += [ "$napi_root:ace_napi" ]
-    external_deps += [ "hitrace:hitrace_meter" ]
+    external_deps += [
+      "hitrace:hitrace_meter",
+      "napi:ace_napi",
+    ]
   }
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
     defines += [ "ENABLE_WORKER_EVENTHANDLER" ]
     external_deps += [ "eventhandler:libeventhandler" ]
+  }
+
+  if (is_ohos && is_standard_system && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_qos_manager)) {
+    defines += [ "ENABLE_QOS" ]
+    external_deps += [ "qos_manager:qos" ]
   }
 
   subsystem_name = "commonlibrary"

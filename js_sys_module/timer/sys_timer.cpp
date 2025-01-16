@@ -187,15 +187,9 @@ void Timer::TimerCallback(uv_timer_t* handle)
     napi_call_function(env, undefinedValue, callback,
                        callbackInfo->argc_, callbackArgv, &callbackResult);
     Helper::CloseHelp::DeletePointer(callbackArgv, true);
-    bool isExceptionPending = false;
-    napi_is_exception_pending(env, &isExceptionPending);
-    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
-    if (isExceptionPending) {
+    if (Helper::NapiHelper::IsExceptionPending(env)) {
         HILOG_ERROR("Pending exception in TimerCallback. Triggering HandleUncaughtException");
-        // worker will handle exception itself
-        if (engine->IsMainThread()) {
-            engine->HandleUncaughtException();
-        }
+        reinterpret_cast<NativeEngine*>(env)->HandleUncaughtException();
         napi_close_handle_scope(env, scope);
         DeleteTimer(tId, callbackInfo);
         return;
@@ -272,10 +266,6 @@ napi_value Timer::SetTimeoutInnerCore(napi_env env, napi_value* argv, size_t arg
     uv_timer_start(callbackInfo->timeReq_, TimerCallback, timeout >= 0 ? timeout : 1, timeout > 0 ? timeout : 1);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t *work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t *) {},
-                               [](uv_work_t *work, int32_t) {delete work; }, uv_qos_user_initiated);
     }
     return Helper::NapiHelper::CreateUint32(env, tId);
 }

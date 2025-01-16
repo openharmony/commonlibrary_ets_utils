@@ -27,6 +27,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
+#include "native_engine/worker_manager.h"
 #include "worker_runner.h"
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 #include "event_handler.h"
@@ -34,6 +35,8 @@
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
+
+enum class WorkerPriority { INVALID = -1, HIGH = 0, MEDIUM, LOW, IDLE };
 
 class Worker {
 public:
@@ -90,6 +93,7 @@ public:
     struct WorkerParams {
         std::string name_ {};
         ScriptMode type_ {CLASSIC};
+        WorkerPriority workerPriority_ { WorkerPriority::INVALID };
     };
 
     struct WorkerWrapper {
@@ -299,6 +303,7 @@ public:
      * @param cbinfo The callback information of the js layer.
      */
     static napi_value InitWorker(napi_env env, napi_value exports);
+    static void InitPriorityObject(napi_env env, napi_value exports);
     static napi_value InitPort(napi_env env, napi_value exports);
 
     /**
@@ -377,7 +382,10 @@ public:
 
     static bool CanCreateWorker(napi_env env, WorkerVersion target);
 
-    static WorkerParams* CheckWorkerArgs(napi_env env, napi_value argsValue);
+    static WorkerParams* CheckWorkerArgs(napi_env env, napi_value argsValue,
+        WorkerVersion version = WorkerVersion::NONE);
+
+    static WorkerPriority GetPriorityArg(napi_env env, napi_value argsValue);
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
 
@@ -496,6 +504,10 @@ public:
         return hostEnv_;
     }
 
+    void SetQOSLevelUpdatedCallback(std::function<void()> callback)
+    {
+        qosUpdatedCallback_ = callback;
+    }
 private:
     void WorkerOnMessageInner();
     void HostOnMessageInner();
@@ -520,7 +532,7 @@ private:
     void PostMessageToHostInner(MessageDataType data);
 
     void TerminateWorker();
-    
+
     void CloseInner();
 
     void PublishWorkerOverSignal();
@@ -532,7 +544,7 @@ private:
     void PostWorkerMessageTask();
     void PostWorkerGlobalCallTask();
     static bool IsValidWorker(Worker* worker);
-    static bool IsValidLimitedWorker(Worker* worker);
+    static bool IsValidLimitedWorker(Worker* limitedWorker);
     static void HostEnvCleanCallbackInner(Worker* worker);
 
     void InitHostHandle(uv_loop_t* loop);
@@ -541,6 +553,7 @@ private:
     void ReleaseWorkerThreadContent();
     void ReleaseHostThreadContent();
     bool PrepareForWorkerInstance();
+    void ApplyNameSetting();
     void ParentPortAddListenerInner(napi_env env, const char* type, const WorkerListener* listener);
     void ParentPortRemoveAllListenerInner();
     void ParentPortRemoveListenerInner(napi_env env, const char* type, napi_ref callback);
@@ -562,10 +575,14 @@ private:
     void DebuggerOnPostTask(std::function<void()>&& task);
 #endif
 
+#ifdef ENABLE_QOS
+    void SetQOSLevel();
+#endif
     std::string script_ {};
     std::string fileName_ {};
     std::string name_ {};
     ScriptMode scriptMode_ {CLASSIC};
+    WorkerType workerType_ {WorkerType::THREAD_WORKER};
     bool isLimitedWorker_ {false};
     bool isRelativePath_ {false};
     int32_t scopeId_ {-1};
@@ -578,6 +595,7 @@ private:
     MessageQueue errorQueue_ {};
 
     uv_async_t* workerOnMessageSignal_ = nullptr;
+    uv_async_t* workerOnTerminateSignal_ = nullptr;
     uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* hostOnErrorSignal_ = nullptr;
     uv_async_t* hostOnGlobalCallSignal_ = nullptr;
@@ -618,6 +636,8 @@ private:
     std::atomic<bool> isHostEnvExited_ = false;
 
     std::shared_ptr<WorkerWrapper> workerWrapper_ = nullptr;
+    WorkerPriority workerPriority_ = WorkerPriority::INVALID;
+    std::function<void()> qosUpdatedCallback_;
 
     friend class WorkersTest;
 };

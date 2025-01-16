@@ -15,10 +15,14 @@ import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 taskpool_sources = [
+  "async_runner.cpp",
+  "async_runner_manager.cpp",
   "native_module_taskpool.cpp",
   "sequence_runner.cpp",
+  "sequence_runner_manager.cpp",
   "task.cpp",
   "task_group.cpp",
+  "task_group_manager.cpp",
   "task_manager.cpp",
   "task_queue.cpp",
   "task_runner.cpp",

@@ -15,16 +15,10 @@
 
 #include "taskpool.h"
 
-#include <cinttypes>
-
-#include "helper/error_helper.h"
+#include "async_runner_manager.h"
 #include "helper/hitrace_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
-#include "message_queue.h"
-#include "task_manager.h"
-#include "tools/log.h"
-#include "worker.h"
+#include "sequence_runner_manager.h"
+#include "task_group_manager.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -56,6 +50,9 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
     napi_value seqRunnerClass = nullptr;
     NAPI_CALL(env, napi_define_class(env, "SequenceRunner", NAPI_AUTO_LENGTH, SequenceRunner::SeqRunnerConstructor,
               nullptr, 0, nullptr, &seqRunnerClass));
+    napi_value asyncRunnerClass = nullptr;
+    NAPI_CALL(env, napi_define_class(env, "AsyncRunner", NAPI_AUTO_LENGTH, AsyncRunner::AsyncRunnerConstructor,
+              nullptr, 0, nullptr, &asyncRunnerClass));
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);
@@ -89,6 +86,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("GenericsTask", genericsTaskClass),
         DECLARE_NAPI_PROPERTY("TaskGroup", taskGroupClass),
         DECLARE_NAPI_PROPERTY("SequenceRunner", seqRunnerClass),
+        DECLARE_NAPI_PROPERTY("AsyncRunner", asyncRunnerClass),
         DECLARE_NAPI_PROPERTY("Priority", priorityObj),
         DECLARE_NAPI_PROPERTY("State", stateObj),
         DECLARE_NAPI_FUNCTION("execute", Execute),
@@ -201,7 +199,7 @@ napi_value TaskPool::TerminateTask(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
-    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+    uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
     auto task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr || !task->IsLongTask()) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the params must be long task.");
@@ -267,7 +265,6 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         HILOG_ERROR("taskpool:: GenerateFunctionTask failed");
         return nullptr;
     }
-    TaskManager::GetInstance().StoreTask(task->taskId_, task);
     napi_value promise = NapiHelper::CreatePromise(env, &task->currentTaskInfo_->deferred);
     ExecuteTask(env, task);
     return promise;
@@ -275,7 +272,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
 
 void TaskPool::DelayTask(uv_timer_t* handle)
 {
-    TaskMessage *taskMessage = static_cast<TaskMessage *>(handle->data);
+    TaskMessage* taskMessage = static_cast<TaskMessage*>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(taskMessage->taskId);
     napi_status status = napi_ok;
     if (task == nullptr) {
@@ -315,7 +312,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         }
     }
     if (task != nullptr) {
-        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
         task->delayedTimers_.erase(handle);
     }
     uv_timer_stop(handle);
@@ -344,7 +341,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     uv_update_time(loop);
     uv_timer_t* timer = new uv_timer_t;
     uv_timer_init(loop, timer);
-    TaskMessage *taskMessage = new TaskMessage();
+    TaskMessage* taskMessage = new TaskMessage();
     taskMessage->priority = static_cast<Priority>(priority);
     taskMessage->taskId = task->taskId_;
     napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
@@ -358,16 +355,12 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
 
     uv_timer_start(timer, reinterpret_cast<uv_timer_cb>(DelayTask), delayTime, 0);
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
         task->delayedTimers_.insert(timer);
     }
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t *work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t *) {},
-                               [](uv_work_t *work, int32_t) {delete work; }, uv_qos_user_initiated);
     }
     return promise;
 }
@@ -395,7 +388,16 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     groupInfo->resArr = arrRef;
     napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskGroup->taskGroupMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
+        if (taskGroup->taskNum_ == 0) {
+            napi_resolve_deferred(env, groupInfo->deferred, resArr);
+            taskGroup->groupState_ = ExecuteState::FINISHED;
+            napi_delete_reference(env, groupInfo->resArr);
+            napi_reference_unref(env, taskGroup->groupRef_, nullptr);
+            delete groupInfo;
+            taskGroup->currentGroupInfo_ = nullptr;
+            return promise;
+        }
         if (taskGroup->currentGroupInfo_ == nullptr) {
             taskGroup->currentGroupInfo_ = groupInfo;
             for (auto iter = taskGroup->taskRefs_.begin(); iter != taskGroup->taskRefs_.end(); iter++) {
@@ -451,25 +453,29 @@ void TaskPool::HandleTaskResultCallback(Task* task)
 
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
+    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
         napiTaskResult = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
     } else if (status != napi_ok) {
         HILOG_ERROR("taskpool: failed to deserialize result");
         strTrace += ", performResult : DeserializeFailed";
+        taskLog += ", DeserializeFailed";
     } else if (task->success_) {
         strTrace += ", performResult : Successful";
     } else {
         strTrace += ", performResult : Unsuccessful";
+        taskLog += ", Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     if (napiTaskResult == nullptr) {
         napi_get_undefined(task->env_, &napiTaskResult);
     }
     reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
     task->taskState_ = ExecuteState::ENDING;
+    task->isRunning_ = false;
     if (task->IsGroupTask()) {
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
     } else if (!task->IsPeriodicTask()) {
@@ -488,6 +494,7 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
     TriggerTask(task);
+    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
 }
 
 void TaskPool::TriggerTask(Task* task)
@@ -500,12 +507,17 @@ void TaskPool::TriggerTask(Task* task)
     task->taskState_ = ExecuteState::FINISHED;
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
-        if (!TaskGroupManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
-            HILOG_ERROR("seqRunner:: task %{public}s trigger in seqRunner %{public}s failed",
+        if (!SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
+            HILOG_ERROR("taskpool:: task %{public}s trigger in seqRunner %{public}s failed",
                         std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
         }
     } else if (task->IsCommonTask()) {
         task->NotifyPendingTask();
+    } else if (task->IsAsyncRunnerTask()) {
+        if (!AsyncRunnerManager::GetInstance().TriggerAsyncRunner(task->env_, task)) {
+            HILOG_ERROR("taskpool:: task %{public}s trigger in asyncRunner %{public}s failed",
+                        std::to_string(task->taskId_).c_str(), std::to_string(task->asyncRunnerId_).c_str());
+        }
     }
     if (task->IsPeriodicTask()) {
         return;
@@ -514,6 +526,8 @@ void TaskPool::TriggerTask(Task* task)
         napi_reference_unref(task->env_, task->taskRef_, nullptr);
         return;
     }
+    // function task need release data
+    task->ReleaseData();
     TaskManager::GetInstance().RemoveTask(task->taskId_);
     delete task;
 }
@@ -552,9 +566,9 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
     if (!groupInfo->HasException()) {
         HILOG_INFO("taskpool:: taskGroup perform end, taskGroupId %{public}s", std::to_string(task->groupId_).c_str());
         napi_resolve_deferred(env, groupInfo->deferred, resArr);
-        for (uint64_t taskId : taskGroup->taskIds_) {
+        for (uint32_t taskId : taskGroup->taskIds_) {
             auto task = TaskManager::GetInstance().GetTask(taskId);
-            if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
+            if (task != nullptr && task->onExecutionSucceededCallBackInfo_ != nullptr) {
                 task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_);
             }
         }
@@ -585,11 +599,13 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    std::string taskLog = "Task Allocation: " + std::to_string(task->taskId_)
+        + ", " + std::to_string(priority);
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
     if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
-        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING)) {
+        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING && !task->isRunning_)) {
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
@@ -606,6 +622,12 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
+    if (NapiHelper::IsNumber(env, args[0])) {
+        uint32_t taskId = NapiHelper::GetUint32Value(env, args[0]);
+        TaskManager::GetInstance().CancelTask(env, taskId);
+        return nullptr;
+    }
+
     if (!NapiHelper::IsObject(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the params must be object.");
         return nullptr;
@@ -617,7 +639,7 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the params must be task.");
             return nullptr;
         }
-        uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
+        uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
         TaskManager::GetInstance().CancelTask(env, taskId);
     } else {
         napi_value napiGroupId = NapiHelper::GetNameProperty(env, args[0], GROUP_ID_STR);
@@ -661,6 +683,10 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
         return;
     } else if (task->taskState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: the periodic task has been canceled");
+        napi_reference_unref(task->env_, task->taskRef_, nullptr);
+        task->CancelPendingTask(task->env_);
+        uv_timer_stop(task->timer_);
+        ConcurrentHelper::UvHandleClose(task->timer_);
         return;
     }
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
@@ -728,10 +754,6 @@ void TaskPool::TriggerTimer(napi_env env, Task* task, int32_t period)
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
-    } else {
-        uv_work_t* work = new uv_work_t;
-        uv_queue_work_with_qos(loop, work, [](uv_work_t*) {},
-                               [](uv_work_t* work, int32_t) { delete work; }, uv_qos_user_initiated);
     }
 }
 

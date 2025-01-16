@@ -28,7 +28,7 @@ using namespace Commonlibrary::Concurrent::Common;
 struct TaskMessage {
     napi_deferred deferred = nullptr;
     Priority priority {Priority::DEFAULT};
-    uint64_t taskId {};
+    uint32_t taskId {};
 };
 
 class TaskPool {
@@ -64,17 +64,17 @@ private:
     static void TriggerTask(Task* task);
     static void TriggerTimer(napi_env env, Task* task, int32_t period);
     static void ExecuteCallbackInner(MsgQueue& msgQueue);
-    static bool CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint32_t &priority, int32_t &delayTime,
-                                   Task* &task);
-    static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t &period, uint32_t &priority,
-                                        Task* &task);
+    static bool CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint32_t& priority, int32_t& delayTime,
+                                   Task*& task);
+    static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t& period, uint32_t& priority,
+                                        Task*& task);
     friend class TaskManager;
     friend class NativeEngineTest;
 };
 
 class CallbackScope {
 public:
-    CallbackScope(napi_env env, napi_env workerEnv, uint64_t taskId, napi_status& status): env_(env),
+    CallbackScope(napi_env env, napi_env workerEnv, uint32_t taskId, napi_status& status): env_(env),
         workerEnv_(workerEnv), taskId_(taskId)
     {
         status = napi_open_handle_scope(env_, &scope_);
@@ -94,7 +94,7 @@ public:
 private:
     napi_env env_;
     napi_env workerEnv_;
-    uint64_t taskId_;
+    uint32_t taskId_;
     napi_handle_scope scope_ = nullptr;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

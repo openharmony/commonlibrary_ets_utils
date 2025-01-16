@@ -15,13 +15,10 @@
 
 #include "task.h"
 
-#include "helper/error_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
+#include "async_runner_manager.h"
+#include "helper/concurrent_helper.h"
 #include "helper/hitrace_helper.h"
-#include "task_manager.h"
 #include "taskpool.h"
-#include "tools/log.h"
 #include "worker.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
@@ -78,11 +75,11 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     napi_status status = napi_wrap(env, thisVar, task, TaskDestructor, nullptr, nullptr);
     if (status != napi_ok) {
         HILOG_ERROR("taskpool::TaskConstructor napi_wrap return value is %{public}d", status);
+        TaskManager::GetInstance().RemoveTask(task->taskId_);
         delete task;
         task = nullptr;
         return nullptr;
     }
-    TaskManager::GetInstance().StoreTask(task->taskId_, task);
     napi_create_reference(env, thisVar, 0, &task->taskRef_);
     if (!task->IsMainThreadTask()) {
         napi_add_env_cleanup_hook(env, Task::CleanupHookFunc, task);
@@ -105,7 +102,7 @@ napi_value Task::LongTaskConstructor(napi_env env, napi_callback_info cbinfo)
 void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     Task* task = static_cast<Task*>(data);
-    HILOG_INFO("taskpool:: taskId:%{public}s TaskDestructor", std::to_string(task->taskId_).c_str());
+    HILOG_DEBUG("taskpool:: taskId:%{public}s TaskDestructor", std::to_string(task->taskId_).c_str());
     if (!task->IsMainThreadTask()) {
         napi_remove_env_cleanup_hook(env, Task::CleanupHookFunc, task);
     }
@@ -118,7 +115,7 @@ void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
     }
     bool shouldDelete = false;
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
         task->SetValid(false);
         if (task->refCount_ == 0) {
             shouldDelete = true;
@@ -138,16 +135,46 @@ void Task::CleanupHookFunc(void* arg)
         return;
     }
     Task* task = static_cast<Task*>(arg);
-    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
-    if (task->onResultSignal_ != nullptr) {
-        uv_close(reinterpret_cast<uv_handle_t*>(task->onResultSignal_), nullptr);
+    {
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        ConcurrentHelper::UvHandleClose(task->onResultSignal_);
+        ConcurrentHelper::UvHandleClose(task->onStartCancelSignal_);
+        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
+        ConcurrentHelper::UvHandleClose(task->onStartDiscardSignal_);
+        if (task->IsFunctionTask()) {
+            task->SetValid(false);
+        }
     }
-    if (task->onStartExecutionSignal_ != nullptr) {
-        uv_close(reinterpret_cast<uv_handle_t*>(task->onStartExecutionSignal_), nullptr);
+    if (task->IsAsyncRunnerTask()) {
+        auto asyncRunner = AsyncRunnerManager::GetInstance().GetAsyncRunner(task->asyncRunnerId_);
+        if (asyncRunner != nullptr) {
+            asyncRunner->RemoveWaitingTask(task, false);
+        }
     }
-    if (task->IsFunctionTask()) {
-        task->SetValid(false);
+}
+
+void Task::Cancel(const uv_async_t* req)
+{
+    auto message = static_cast<CancelTaskMessage*>(req->data);
+    if (message == nullptr) {
+        HILOG_DEBUG("taskpool:: cancel message is nullptr");
+        return;
     }
+    Task* task = TaskManager::GetInstance().GetTask(message->taskId);
+    if (task == nullptr) {
+        HILOG_DEBUG("taskpool:: cancel task is nullptr");
+        CloseHelp::DeletePointer(message, false);
+        return;
+    }
+    napi_status status = napi_ok;
+    HandleScope scope(task->env_, status);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+        CloseHelp::DeletePointer(message, false);
+        return;
+    }
+    task->CancelInner(message->state);
+    CloseHelp::DeletePointer(message, false);
 }
 
 Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
@@ -164,10 +191,10 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
     char* nameStr = NapiHelper::GetChars(env, name);
     Task* task = new Task(env, TaskType::TASK, nameStr);
     delete[] nameStr;
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
+    TaskManager::GetInstance().StoreTask(task);
     task->InitHandle(env);
 
-    napi_value taskId = NapiHelper::CreateUint64(env, task->taskId_);
+    napi_value taskId = NapiHelper::CreateUint32(env, task->taskId_);
     napi_set_named_property(env, napiTask, FUNCTION_STR, func);
     napi_set_named_property(env, napiTask, TASKID_STR, taskId);
     napi_set_named_property(env, napiTask, ARGUMENTS_STR, argsArray);
@@ -185,7 +212,8 @@ Task* Task::GenerateTask(napi_env env, napi_value napiTask, napi_value func,
         DECLARE_NAPI_GETTER(TASK_TOTAL_TIME, GetTotalDuration),
         DECLARE_NAPI_GETTER(TASK_CPU_TIME, GetCPUDuration),
         DECLARE_NAPI_GETTER(TASK_IO_TIME, GetIODuration),
-        DECLARE_NAPI_GETTER(NAME, GetName)
+        DECLARE_NAPI_GETTER(NAME, GetName),
+        DECLARE_NAPI_GETTER(TASKID_STR, GetTaskId)
     };
     napi_define_properties(env, napiTask, sizeof(properties) / sizeof(properties[0]), properties);
     return task;
@@ -209,12 +237,12 @@ Task* Task::GenerateFunctionTask(napi_env env, napi_value func, napi_value* args
     char* nameStr = NapiHelper::GetChars(env, napiFuncName);
     Task* task = new Task(env, type, nameStr);
     delete[] nameStr;
-    task->taskId_ = reinterpret_cast<uint64_t>(task);
     task->currentTaskInfo_ = taskInfo;
     task->InitHandle(env);
     if (!task->IsMainThreadTask()) {
         napi_add_env_cleanup_hook(env, CleanupHookFunc, task);
     }
+    TaskManager::GetInstance().StoreTask(task);
     return task;
 }
 
@@ -252,7 +280,7 @@ TaskInfo* Task::GetTaskInfo(napi_env env, napi_value napiTask, Priority priority
         return nullptr;
     }
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (currentTaskInfo_ == nullptr) {
             currentTaskInfo_ = pendingInfo;
         } else {
@@ -405,7 +433,7 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
         HILOG_INFO("taskpool:: Set taskpool.Task.onReceiveData to undefined");
         napi_get_cb_info(env, cbinfo, &argc, nullptr, &thisVar, nullptr);
         napi_value id = NapiHelper::GetNameProperty(env, thisVar, "taskId");
-        uint64_t taskId = NapiHelper::GetUint64Value(env, id);
+        uint32_t taskId = NapiHelper::GetUint32Value(env, id);
         TaskManager::GetInstance().RegisterCallback(env, taskId, nullptr);
         return nullptr;
     }
@@ -422,13 +450,13 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     }
     // store callbackInfo
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, thisVar, "taskId");
-    uint64_t taskId = NapiHelper::GetUint64Value(env, napiTaskId);
-    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
+    uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
     auto task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr) {
         HILOG_ERROR("taskpool:: OnReceiveData's task is nullptr");
         return nullptr;
     }
+    napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!task->IsMainThreadTask()) {
@@ -521,6 +549,11 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
+    if (task->IsAsyncRunnerTask()) {
+        HILOG_ERROR("taskpool:: AsyncRunnerTask cannot addDependency.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
+        return nullptr;
+    }
     if (task->IsGroupCommonTask()) {
         errMessage = "taskpool:: groupTask cannot addDependency";
         HILOG_ERROR("%{public}s", errMessage.c_str());
@@ -528,7 +561,7 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     task->SetHasDependency(true);
-    std::set<uint64_t> idSet;
+    std::set<uint32_t> idSet;
     for (size_t i = 0; i < argc; i++) {
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             errMessage = "taskpool:: addDependency param is not task";
@@ -556,6 +589,11 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
                 errMessage = "taskpool:: seqRunnerTask or executedTask cannot be relied on";
                 HILOG_ERROR("%{public}s", errMessage.c_str());
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                return nullptr;
+            }
+            if (dependentTask->IsAsyncRunnerTask()) {
+                HILOG_ERROR("taskpool:: AsyncRunnerTask cannot be relied on.");
+                ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
                 return nullptr;
             }
             if (dependentTask->IsGroupCommonTask()) {
@@ -613,6 +651,11 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_INEXISTENT_DEPENDENCY, errMessage.c_str());
         return nullptr;
     }
+    if (task->IsAsyncRunnerTask()) {
+        HILOG_ERROR("taskpool:: AsyncRunnerTask cannot call removeDependency.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
+        return nullptr;
+    }
     for (size_t i = 0; i < argc; i++) {
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             std::string errMessage = "taskpool:: removeDependency param is not task";
@@ -640,6 +683,11 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
             std::string errMessage = "taskpool:: cannot removeDependency on a dependent and executed task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            return nullptr;
+        }
+        if (dependentTask->IsAsyncRunnerTask()) {
+            HILOG_ERROR("taskpool:: AsyncRunnerTask cannot call removeDependency.");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY);
             return nullptr;
         }
         if (!TaskManager::GetInstance().RemoveTaskDependency(task->taskId_, dependentTask->taskId_)) {
@@ -931,7 +979,7 @@ napi_value Task::GetIODuration(napi_env env, napi_callback_info cbinfo)
     return GetTaskDuration(env, cbinfo, TASK_IO_TIME);
 }
 
-napi_value Task::GetName(napi_env env, [[maybe_unused]] napi_callback_info cbinfo)
+napi_value Task::GetName(napi_env env, napi_callback_info cbinfo)
 {
     napi_value thisVar = nullptr;
     Task* task = nullptr;
@@ -943,6 +991,18 @@ napi_value Task::GetName(napi_env env, [[maybe_unused]] napi_callback_info cbinf
     napi_value name = nullptr;
     napi_create_string_utf8(env, task->name_.c_str(), NAPI_AUTO_LENGTH, &name);
     return name;
+}
+
+napi_value Task::GetTaskId(napi_env env, napi_callback_info cbinfo)
+{
+    napi_value thisVar = nullptr;
+    Task* task = nullptr;
+    napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
+    napi_unwrap(env, thisVar, reinterpret_cast<void**>(&task));
+    if (task == nullptr) {
+        return NapiHelper::CreateUint32(env, 0); // 0 : default value
+    }
+    return NapiHelper::CreateUint32(env, task->taskId_);
 }
 
 void Task::UpdateTaskType(TaskType taskType)
@@ -1060,7 +1120,7 @@ void Task::NotifyPendingTask()
 {
     HILOG_DEBUG("taskpool:: task:%{public}s NotifyPendingTask", std::to_string(taskId_).c_str());
     TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
         currentTaskInfo_ = nullptr;
@@ -1077,24 +1137,26 @@ void Task::NotifyPendingTask()
 void Task::CancelPendingTask(napi_env env)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s CancelPendingTask", std::to_string(taskId_).c_str());
-    if (pendingTaskInfos_.empty()) {
-        HILOG_DEBUG("taskpool:: task CancelPendingTask end, pendingTaskInfos_ nullptr");
-        return;
-    }
-    napi_value error = nullptr;
-    if (!IsPeriodicTask()) {
-        error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
-    }
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    for (const auto& info : pendingTaskInfos_) {
-        engine->DecreaseSubEnvCounter();
-        if (!IsPeriodicTask()) {
-            napi_reject_deferred(env, info->deferred, error);
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        if (pendingTaskInfos_.empty()) {
+            HILOG_DEBUG("taskpool:: task CancelPendingTask end, pendingTaskInfos_ nullptr");
+            return;
         }
-        napi_reference_unref(env, taskRef_, nullptr);
-        delete info;
+        auto engine = reinterpret_cast<NativeEngine*>(env);
+        for (const auto& info : pendingTaskInfos_) {
+            engine->DecreaseSubEnvCounter();
+            if (!IsPeriodicTask()) {
+                deferreds.push_back(info->deferred);
+            }
+            napi_reference_unref(env, taskRef_, nullptr);
+            delete info;
+        }
+        pendingTaskInfos_.clear();
     }
-    pendingTaskInfos_.clear();
+    std::string error = "taskpool:: task has been canceled";
+    TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
 }
 
 bool Task::UpdateTask(uint64_t startTime, void* worker)
@@ -1107,6 +1169,7 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
     taskState_ = ExecuteState::RUNNING;
     startTime_ = startTime;
     worker_ = worker;
+    isRunning_ = true;
     return true;
 }
 
@@ -1115,7 +1178,7 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
     void* serializationFunction = nullptr;
     void* serializationArguments = nullptr;
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (UNLIKELY(currentTaskInfo_ == nullptr)) {
             HILOG_ERROR("taskpool:: the currentTaskInfo is nullptr, the task may have been cancelled");
             return nullptr;
@@ -1192,6 +1255,12 @@ bool Task::CanForSequenceRunner(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return false;
     }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "SequenceRunner cannot execute asyncRunnerTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1226,6 +1295,12 @@ bool Task::CanForTaskGroup(napi_env env)
         errMessage = "taskpool:: The interface does not support the long task";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return false;
+    }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "TaskGroup cannot execute asyncRunnerTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
     taskType_ = TaskType::GROUP_COMMON_TASK;
@@ -1265,6 +1340,12 @@ bool Task::CanExecute(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
         return false;
     }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "AsyncRunnerTask cannot execute outside.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1301,11 +1382,22 @@ bool Task::CanExecuteDelayed(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
         return false;
     }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "AsyncRunnerTask cannot executeDelayed.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
 bool Task::CanExecutePeriodically(napi_env env)
 {
+    if (IsAsyncRunnerTask()) {
+        std::string errMessage = "AsyncRunnerTask cannot executePeriodically.";
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     if (IsExecuted() || IsPeriodicTask()) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_PERIODICALLY);
         return false;
@@ -1361,6 +1453,8 @@ void Task::InitHandle(napi_env env)
     if (!OHOS::AppExecFwk::EventRunner::IsAppMainThread()) {
         uv_loop_t* loop = NapiHelper::GetLibUV(env);
         ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
+        ConcurrentHelper::UvHandleInit(loop, onStartCancelSignal_, Task::Cancel);
+        ConcurrentHelper::UvHandleInit(loop, onStartDiscardSignal_, Task::DiscardTask);
     } else {
         isMainThreadTask_ = true;
         HILOG_DEBUG("taskpool:: eventrunner should be nullptr if the current thread is not the main thread");
@@ -1368,6 +1462,8 @@ void Task::InitHandle(napi_env env)
 #else
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, onResultSignal_, TaskPool::HandleTaskResult, this);
+    ConcurrentHelper::UvHandleInit(loop, onStartCancelSignal_, Task::Cancel);
+    ConcurrentHelper::UvHandleInit(loop, onStartDiscardSignal_, Task::DiscardTask);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     isMainThreadTask_ = engine->IsMainThread();
 #endif
@@ -1378,13 +1474,13 @@ void Task::ClearDelayedTimers()
     HILOG_DEBUG("taskpool:: task ClearDelayedTimers");
     std::list<napi_deferred> deferreds {};
     {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-        TaskMessage *taskMessage = nullptr;
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        TaskMessage* taskMessage = nullptr;
         for (auto t: delayedTimers_) {
             if (t == nullptr) {
                 continue;
             }
-            taskMessage = static_cast<TaskMessage *>(t->data);
+            taskMessage = static_cast<TaskMessage*>(t->data);
             deferreds.push_back(taskMessage->deferred);
             uv_timer_stop(t);
             uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
@@ -1405,7 +1501,7 @@ bool Task::VerifyAndPostResult(Priority priority)
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (IsMainThreadTask()) {
         HITRACE_HELPER_METER_NAME("VerifyAndPostResult: PostTask");
-        uint64_t taskId = taskId_;
+        uint32_t taskId = taskId_;
         auto onResultTask = [taskId]() {
             Task* task = TaskManager::GetInstance().GetTask(taskId);
             if (task == nullptr) {
@@ -1416,16 +1512,16 @@ bool Task::VerifyAndPostResult(Priority priority)
         TaskManager::GetInstance().PostTask(onResultTask, "TaskPoolOnResultTask", priority);
         return true;
     } else {
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-        if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        if (!IsValid() || !ConcurrentHelper::IsUvActive(onResultSignal_)) {
             return false;
         }
         uv_async_send(onResultSignal_);
         return true;
     }
 #else
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    if (!IsValid() || onResultSignal_ == nullptr || uv_is_closing((uv_handle_t*)onResultSignal_)) {
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (!IsValid() || !ConcurrentHelper::IsUvActive(onResultSignal_)) {
         return false;
     }
     uv_async_send(onResultSignal_);
@@ -1445,7 +1541,7 @@ void Task::DecreaseTaskRefCount()
 
 bool Task::ShouldDeleteTask(bool needUnref)
 {
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (!IsValid()) {
         HILOG_WARN("taskpool:: task is invalid");
         TaskManager::GetInstance().RemoveTask(taskId_);
@@ -1465,7 +1561,7 @@ bool Task::CheckStartExecution(Priority priority)
             return true;
         }
         HITRACE_HELPER_METER_NAME("PerformTask: PostTask");
-        uint64_t taskId = taskId_;
+        uint32_t taskId = taskId_;
         auto onStartExecutionTask = [taskId]() {
             Task* task = TaskManager::GetInstance().GetTask(taskId);
             if (task == nullptr || task->onStartExecutionCallBackInfo_ == nullptr) {
@@ -1478,26 +1574,22 @@ bool Task::CheckStartExecution(Priority priority)
         if (onStartExecutionSignal_ == nullptr) {
             return true;
         }
-        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (!IsValid()) {
             return false;
         }
-        if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
-            uv_async_send(onStartExecutionSignal_);
-        }
+        ConcurrentHelper::UvCheckAndAsyncSend(onStartExecutionSignal_);
     }
     return true;
 #else
     if (onStartExecutionSignal_ == nullptr) {
         return true;
     }
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (!IsValid()) {
         return false;
     }
-    if (onStartExecutionSignal_ != nullptr && !uv_is_closing((uv_handle_t*)onStartExecutionSignal_)) {
-        uv_async_send(onStartExecutionSignal_);
-    }
+    ConcurrentHelper::UvCheckAndAsyncSend(onStartExecutionSignal_);
     return true;
 #endif
 }
@@ -1510,5 +1602,251 @@ void Task::SetValid(bool isValid)
 bool Task::IsValid()
 {
     return isValid_.load();
+}
+
+bool Task::CanForAsyncRunner(napi_env env)
+{
+    std::string errMessage = "";
+    if (HasDependency()) {
+        errMessage = "AsyncRunner:: dependent task not allowed.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_ADD_DEPENDENT_TASK_TO_SEQRUNNER, errMessage.c_str());
+        return false;
+    }
+    if (IsPeriodicTask()) {
+        errMessage = "AsyncRunner cannot execute the periodicTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_EXECUTE_AGAIN, errMessage.c_str());
+        return false;
+    }
+    if (IsCommonTask() || IsSeqRunnerTask()) {
+        errMessage = "AsyncRunner cannot execute seqRunnerTask or executedTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    if (IsGroupCommonTask()) {
+        errMessage = "AsyncRunner cannot execute groupTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    if (IsAsyncRunnerTask()) {
+        errMessage = "AsyncRunner cannot execute asyncRunnerTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    return true;
+}
+
+bool Task::IsAsyncRunnerTask()
+{
+    return taskType_ == TaskType::ASYNCRUNNER_TASK;
+}
+
+void Task::SetTaskId(uint32_t taskId)
+{
+    taskId_ = taskId;
+}
+
+void Task::TriggerCancel(CancelTaskMessage* message)
+{
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (IsMainThreadTask()) {
+        HITRACE_HELPER_METER_NAME("TriggerCancel: PostTask");
+        auto onCancelTask = [message]() {
+            Task* task = TaskManager::GetInstance().GetTask(message->taskId);
+            if (task == nullptr) {
+                CloseHelp::DeletePointer(message, false);
+                return;
+            }
+            napi_status status = napi_ok;
+            HandleScope scope(task->env_, status);
+            if (status != napi_ok) {
+                HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+                CloseHelp::DeletePointer(message, false);
+                return;
+            }
+            task->CancelInner(message->state);
+            CloseHelp::DeletePointer(message, false);
+        };
+        TaskManager::GetInstance().PostTask(onCancelTask, "TaskOnCancelTask", Priority::DEFAULT);
+    } else {
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        if (!IsValid() || !ConcurrentHelper::IsUvActive(onStartCancelSignal_)) {
+            return;
+        }
+        onStartCancelSignal_->data = message;
+        uv_async_send(onStartCancelSignal_);
+    }
+#else
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (!IsValid() || !ConcurrentHelper::IsUvActive(onStartCancelSignal_)) {
+        CloseHelp::DeletePointer(message, false);
+        return;
+    }
+    onStartCancelSignal_->data = message;
+    uv_async_send(onStartCancelSignal_);
+#endif
+}
+
+void Task::CancelInner(ExecuteState state)
+{
+    ClearDelayedTimers();
+    CancelPendingTask(env_);
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr) {
+            reinterpret_cast<NativeEngine*>(env_)->DecreaseSubEnvCounter();
+            DecreaseTaskRefCount();
+            TaskManager::GetInstance().DecreaseRefCount(env_, taskId_);
+            TaskManager::GetInstance().EraseWaitingTaskId(taskId_, currentTaskInfo_->priority);
+            deferreds.push_back(currentTaskInfo_->deferred);
+            napi_reference_unref(env_, taskRef_, nullptr);
+            delete currentTaskInfo_;
+            currentTaskInfo_ = nullptr;
+        }
+    }
+    std::string error = "taskpool:: task has been canceled";
+    TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
+}
+
+bool Task::IsSameEnv(napi_env env)
+{
+    return env_ == env;
+}
+
+void Task::DiscardAsyncRunnerTask(DiscardTaskMessage* message)
+{
+    if (message == nullptr || !IsAsyncRunnerTask() || !IsValid()) {
+        CloseHelp::DeletePointer(message, false);
+        return;
+    }
+#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
+    if (IsMainThreadTask()) {
+        HITRACE_HELPER_METER_NAME("DiscardAsyncRunnerTask: PostTask");
+        auto onDiscardTask = [message]() {
+            Task* task = TaskManager::GetInstance().GetTask(message->taskId);
+            if (task == nullptr) {
+                CloseHelp::DeletePointer(message, false);
+                return;
+            }
+            napi_status status = napi_ok;
+            HandleScope scope(task->env_, status);
+            if (status != napi_ok) {
+                CloseHelp::DeletePointer(message, false);
+                HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+                return;
+            }
+            task->DiscardInner(message);
+        };
+        TaskManager::GetInstance().PostTask(onDiscardTask, "TaskOnDiscardTask", Priority::DEFAULT);
+    } else {
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        if (ConcurrentHelper::IsUvActive(onStartDiscardSignal_)) {
+            onStartDiscardSignal_->data = message;
+            uv_async_send(onStartDiscardSignal_);
+        }
+    }
+#else
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (ConcurrentHelper::IsUvActive(onStartDiscardSignal_)) {
+        onStartDiscardSignal_->data = message;
+        uv_async_send(onStartDiscardSignal_);
+    }
+#endif
+}
+
+void Task::DiscardInner(DiscardTaskMessage* message)
+{
+    if (message == nullptr) {
+        CloseHelp::DeletePointer(message, false);
+        return;
+    }
+    auto task = TaskManager::GetInstance().GetTask(message->taskId);
+    if (task == nullptr || !task->IsValid() || message->env != task->env_) {
+        CloseHelp::DeletePointer(message, false);
+        HILOG_DEBUG("taskpool:: discard task is nullptr.");
+        return;
+    }
+    napi_value error = ErrorHelper::NewError(task->env_, message->errCode);
+    napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, error);
+    DisposeCanceledTask();
+    TaskManager::GetInstance().RemoveTask(message->taskId);
+    auto asyncRunner = AsyncRunnerManager::GetInstance().GetAsyncRunner(task->asyncRunnerId_);
+    if (asyncRunner != nullptr && !message->isWaiting) {
+        asyncRunner->DecreaseAsyncRunnerRef(task->env_);
+    }
+
+    CloseHelp::DeletePointer(message, false);
+}
+
+void Task::DiscardTask(const uv_async_t* req)
+{
+    auto message = static_cast<DiscardTaskMessage*>(req->data);
+    if (message == nullptr) {
+        return;
+    }
+    auto task = TaskManager::GetInstance().GetTask(message->taskId);
+    if (task == nullptr || task->env_ != message->env) {
+        CloseHelp::DeletePointer(message, false);
+        HILOG_DEBUG("taskpool:: task is nullptr.");
+        return;
+    }
+    napi_status status = napi_ok;
+    HandleScope scope(task->env_, status);
+    if (status != napi_ok) {
+        CloseHelp::DeletePointer(message, false);
+        HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+        return;
+    }
+
+    task->DiscardInner(message);
+}
+
+void Task::ReleaseData()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (onResultSignal_ != nullptr) {
+        if (!ConcurrentHelper::IsUvClosing(onResultSignal_)) {
+            ConcurrentHelper::UvHandleClose(onResultSignal_);
+        } else {
+            delete onResultSignal_;
+            onResultSignal_ = nullptr;
+        }
+    }
+
+    if (onStartCancelSignal_ != nullptr) {
+        if (!ConcurrentHelper::IsUvClosing(onStartCancelSignal_)) {
+            ConcurrentHelper::UvHandleClose(onStartCancelSignal_);
+        } else {
+            delete onStartCancelSignal_;
+            onStartCancelSignal_ = nullptr;
+        }
+    }
+
+    if (onStartDiscardSignal_ != nullptr) {
+        if (!ConcurrentHelper::IsUvClosing(onStartDiscardSignal_)) {
+            ConcurrentHelper::UvHandleClose(onStartDiscardSignal_);
+        } else {
+            delete onStartDiscardSignal_;
+            onStartDiscardSignal_ = nullptr;
+        }
+    }
+
+    if (currentTaskInfo_ != nullptr) {
+        delete currentTaskInfo_;
+        currentTaskInfo_ = nullptr;
+    }
+}
+
+void Task::DisposeCanceledTask()
+{
+    reinterpret_cast<NativeEngine*>(env_)->DecreaseSubEnvCounter();
+    napi_reference_unref(env_, taskRef_, nullptr);
+    delete currentTaskInfo_;
+    currentTaskInfo_ = nullptr;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

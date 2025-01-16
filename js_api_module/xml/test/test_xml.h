@@ -474,7 +474,7 @@ bool XmlTest::ParseStartTag(napi_env env, std::string str)
     xmlPullParser.ParseDeclaration();
     return true;
 }
-
+ 
 bool XmlTest::ParseEndTagFunction(napi_env env, std::string str)
 {
     OHOS::xml::XmlPullParser xml(env, str, "utf8");
@@ -523,4 +523,4 @@ int XmlTest::SkipCharFunction(napi_env env, std::string str, char expected)
     return xmlPullParser.PriorDealChar();
 }
 }
-#endif // TEST_XML_Hs
+#endif // TEST_XML_H

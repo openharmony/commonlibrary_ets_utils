@@ -36,14 +36,13 @@
         ASSERT_CHECK_CALL(napi_typeof(env, value, &valueType)); \
         ASSERT_EQ(valueType, type);                             \
     }
-static OHOS::JsSysModule::Process::ChildProcess RunCommand(napi_env env, napi_value command, napi_value options)
+OHOS::JsSysModule::Process::ChildProcess* RunCommand(napi_env env, napi_value command, napi_value options)
 {
-    OHOS::JsSysModule::Process::ChildProcess objectInfo;
+    OHOS::JsSysModule::Process::ChildProcess* objectInfo = nullptr;
+    objectInfo = new OHOS::JsSysModule::Process::ChildProcess();
+    objectInfo->InitOptionsInfo(env, options);
 
-    objectInfo.InitOptionsInfo(env, options);
-
-    objectInfo.Spawn(env, command);
-
+    objectInfo->Spawn(env, command);
     return objectInfo;
 }
 static std::string testStr = "";
@@ -109,9 +108,10 @@ HWTEST_F(NativeEngineTest, ProcessKillTest001, testing::ext::TestSize.Level0)
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
 
-    napi_value pid = childprocess.Getpid(env);
+    napi_value pid = childprocess->Getpid(env);
+    childprocess->Close();
     napi_value signal = nullptr;
     napi_create_int32(env, 9, &signal);
     napi_value result = process.Kill(env, pid, signal);
@@ -134,9 +134,10 @@ HWTEST_F(NativeEngineTest, ProcessKillTest002, testing::ext::TestSize.Level0)
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
 
-    napi_value pid = childprocess.Getpid(env);
+    napi_value pid = childprocess->Getpid(env);
+    childprocess->Close();
     napi_value signal = nullptr;
     napi_create_int32(env, 999, &signal);
     napi_value result = process.Kill(env, pid, signal);
@@ -159,9 +160,10 @@ HWTEST_F(NativeEngineTest, ProcessRunCmdTest001, testing::ext::TestSize.Level0)
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
 
-    napi_value output = childprocess.GetOutput(env);
+    napi_value output = childprocess->GetOutput(env);
+    childprocess->Close();
     bool res = false;
     napi_is_promise(env, output, &res);
     ASSERT_TRUE(res);
@@ -181,9 +183,10 @@ HWTEST_F(NativeEngineTest, ProcessRunCmdTest002, testing::ext::TestSize.Level0)
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
 
-    napi_value errorOutput = childprocess.GetErrorOutput(env);
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
     bool res = false;
     napi_is_promise(env, errorOutput, &res);
     ASSERT_TRUE(res);
@@ -317,8 +320,9 @@ HWTEST_F(NativeEngineTest, childProcessPpidTest001, testing::ext::TestSize.Level
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
-    napi_value result = childprocess.Getppid(env);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getppid(env);
+    childprocess->Close();
     int32_t ppid = 0;
     napi_get_value_int32(env, result, &ppid);
     bool res = false;
@@ -342,8 +346,9 @@ HWTEST_F(NativeEngineTest, childProcesspidTest001, testing::ext::TestSize.Level0
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
-    napi_value result = childprocess.Getpid(env);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
     int32_t pid = 0;
     napi_get_value_int32(env, result, &pid);
     bool res = false;
@@ -691,10 +696,10 @@ HWTEST_F(NativeEngineTest, ProcessCloseTest001, testing::ext::TestSize.Level0)
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
-    childprocess.Wait(env);
-    childprocess.Close();
-    napi_value exitCode = childprocess.GetExitCode(env);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
     int32_t num = 0;
     napi_value result = nullptr;
     napi_get_value_int32(env, exitCode, &num);
@@ -720,12 +725,13 @@ HWTEST_F(NativeEngineTest, childProcessKillTest001, testing::ext::TestSize.Level
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
-    OHOS::JsSysModule::Process::ChildProcess childprocess = RunCommand(env, temp, nullptr);
-    childprocess.Wait(env);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
     napi_value signo = nullptr;
     napi_create_int32(env, 9, &signo);
-    childprocess.Kill(env, signo);
-    napi_value result = childprocess.GetKilled(env);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
     bool res = false;
     napi_get_value_bool(env, result, &res);
     ASSERT_FALSE(res);

@@ -17,12 +17,9 @@
 #include <codecvt>
 #include <iostream>
 #include <locale>
-#include <vector>
 
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
 
 using namespace std;
 
@@ -215,10 +212,10 @@ static vector<uint8_t> GetArray(napi_env env, napi_value arr)
     vector<uint8_t> vec;
     for (size_t i = 0; i < length; i++) {
         napi_get_element(env, arr, i, &napiNumber);
-        int32_t num = 0;
-        napi_get_value_int32(env, napiNumber, &num);
+        uint32_t num = 0;
+        napi_get_value_uint32(env, napiNumber, &num);
         // 255 : the max number of one byte unsigned value
-        num = num & 0xFF;
+        num = num > 255 ? 0 : num;
         vec.push_back(num);
     }
     return vec;
@@ -806,7 +803,7 @@ static napi_value SubBuffer(napi_env env, napi_callback_info info)
     size_t argc = 3;
     napi_value args[3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, argc == 3, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc == 3, "Wrong number of arguments"); // 3:Number of parameters.
 
     Buffer *newBuf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&newBuf)));
@@ -816,7 +813,7 @@ static napi_value SubBuffer(napi_env env, napi_callback_info info)
     uint32_t start = 0;
     uint32_t end = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &start));
-    NAPI_CALL(env, napi_get_value_uint32(env, args[2], &end));
+    NAPI_CALL(env, napi_get_value_uint32(env, args[2], &end)); // 2:Array Size.
     newBuf->SubBuffer(targetBuf, start, end);
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));

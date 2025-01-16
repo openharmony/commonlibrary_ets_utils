@@ -12,10 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <unistd.h>
-#include <sys/types.h>
-
+#include "condition/condition_variable.h"
 #include "locks/async_lock_manager.h"
 #include "json/json_manager.h"
 #include "tools/log.h"
@@ -49,6 +46,7 @@ napi_value Utils::Init(napi_env env, napi_value exports)
 {
     Commonlibrary::Concurrent::LocksModule::AsyncLockManager::Init(env, exports);
     Commonlibrary::Concurrent::JsonManager::Init(env, exports);
+    Commonlibrary::Concurrent::Condition::ConditionVariable::Init(env, exports);
     InitGlobal(env, IS_SENDABLE_NAME, true, exports);
 
     return exports;

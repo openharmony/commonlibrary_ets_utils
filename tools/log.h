@@ -49,6 +49,8 @@
 #define HILOG_INFO(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, \
     "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
+#define HILOG_TASK_INFO(...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,  ##__VA_ARGS__))
 #define HILOG_DEBUG(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, \
     "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))

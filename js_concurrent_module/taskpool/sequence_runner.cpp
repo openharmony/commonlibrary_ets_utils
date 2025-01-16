@@ -14,25 +14,20 @@
  */
 #include "sequence_runner.h"
 
-#include <cinttypes>
-
-#include "helper/error_helper.h"
-#include "helper/napi_helper.h"
-#include "helper/object_helper.h"
+#include "sequence_runner_manager.h"
 #include "task_manager.h"
-#include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
 static constexpr char EXECUTE_STR[] = "execute";
 static constexpr char SEQ_RUNNER_ID_STR[] = "seqRunnerId";
 
-bool SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value &thisVar, SequenceRunner *seqRunner)
+bool SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value& thisVar, SequenceRunner* seqRunner)
 {
     // update seqRunner.seqRunnerId
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
     napi_value napiSeqRunnerId = NapiHelper::CreateUint64(env, seqRunnerId);
-    TaskGroupManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
+    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY(SEQ_RUNNER_ID_STR, napiSeqRunnerId),
         DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
@@ -130,7 +125,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     }
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, thisVar, SEQ_RUNNER_ID_STR);
     uint64_t seqRunnerId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
-    SequenceRunner* seqRunner = TaskGroupManager::GetInstance().GetSeqRunner(seqRunnerId);
+    SequenceRunner* seqRunner = SequenceRunnerManager::GetInstance().GetSeqRunner(seqRunnerId);
     if (seqRunner == nullptr) {
         return nullptr;
     }
@@ -161,12 +156,12 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     } else {
         HILOG_INFO("taskpool:: add taskId: %{public}s to seqRunner %{public}s.",
                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
-        TaskGroupManager::GetInstance().AddTaskToSeqRunner(seqRunnerId, task);
+        SequenceRunnerManager::GetInstance().AddTaskToSeqRunner(seqRunnerId, task);
     }
     return promise;
 }
 
-void SequenceRunner::ExecuteTaskImmediately(uint64_t taskId, Priority priority)
+void SequenceRunner::ExecuteTaskImmediately(uint32_t taskId, Priority priority)
 {
     TaskManager::GetInstance().EnqueueTaskId(taskId, priority);
 }
@@ -177,7 +172,7 @@ void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_
     if (seqRunner->isGlobalRunner_) {
         SequenceRunnerManager::GetInstance().GlobalSequenceRunnerDestructor(env, seqRunner);
     } else {
-        TaskGroupManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
+        SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
         napi_delete_reference(env, seqRunner->seqRunnerRef_);
         delete seqRunner;
     }

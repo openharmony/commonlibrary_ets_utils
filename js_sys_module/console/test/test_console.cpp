@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "ark_native_engine.h"
 #include "native_engine/native_value.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -21,6 +22,7 @@
 
 using namespace Commonlibrary::Concurrent::Common;
 using namespace OHOS::JsSysModule;
+using panda::RuntimeOption;
 
 #define ASSERT_CHECK_CALL(call)   \
     {                             \
@@ -34,6 +36,58 @@ using namespace OHOS::JsSysModule;
         ASSERT_CHECK_CALL(napi_typeof(env, value, &valueType)); \
         ASSERT_EQ(valueType, type);                             \
     }
+
+class NativeEngineProxy {
+public:
+    NativeEngineProxy()
+    {
+        //Setup
+        RuntimeOption option;
+        option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+        const int64_t poolSize = 0x1000000;
+        option.SetGcPoolSize(poolSize);
+        option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+        option.SetDebuggerLibraryPath("");
+        vm_ = panda::JSNApi::CreateJSVM(option);
+        if (vm_ == nullptr) {
+            return;
+        }
+
+        engine_ = new ArkNativeEngine(vm_, nullptr);
+        Console::InitConsoleModule(reinterpret_cast<napi_env>(engine_));
+    }
+
+    ~NativeEngineProxy()
+    {
+        delete engine_;
+        panda::JSNApi::DestroyJSVM(vm_);
+    }
+
+    inline ArkNativeEngine* operator-() const
+    {
+        return engine_;
+    }
+
+    inline operator napi_env() const
+    {
+        return reinterpret_cast<napi_env>(engine_);
+    }
+
+private:
+    EcmaVM* vm_ {nullptr};
+    ArkNativeEngine* engine_ {nullptr};
+};
+
+napi_value GetGlobalProperty(napi_env env, const char *name)
+{
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value console = nullptr;
+    napi_get_named_property(env, global, "console", &console);
+    napi_value value = nullptr;
+    napi_get_named_property(env, console, name, &value);
+    return value;
+}
 
 template<LogLevel LEVEL>
 napi_value ConsoleTest::ConsoleLog(napi_env env, napi_callback_info info)
@@ -507,14 +561,14 @@ HWTEST_F(NativeEngineTest, ConsoleTest014, testing::ext::TestSize.Level0)
     funcName = "GroupEnd";
     cb = nullptr;
     napi_value res2 = nullptr;
-    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Group, nullptr, &cb);
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::GroupEnd, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc, argv, &res2);
     ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
 
     funcName = "GroupEnd";
     cb = nullptr;
     napi_value res3 = nullptr;
-    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Group, nullptr, &cb);
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::GroupEnd, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc, argv, &res3);
     ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
 }
@@ -908,4 +962,537 @@ HWTEST_F(NativeEngineTest, ConsoleTest025, testing::ext::TestSize.Level0)
     std::vector<std::string> params;
     res = ConsoleTest::ParseLogContent(params);
     ASSERT_TRUE(res == "");
+}
+
+/* @tc.name: log
+ * @tc.desc: Test log can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest026, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "log", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "log", func) == napi_ok);
+}
+
+/* @tc.name: debug
+ * @tc.desc: Test debug can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest027, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "debug", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::DEBUG>, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "debug", func) == napi_ok);
+}
+
+/* @tc.name: info
+ * @tc.desc: Test info can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest028, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "info", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "info", func) == napi_ok);
+}
+
+/* @tc.name: warn
+ * @tc.desc: Test warn can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest029, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "warn", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::WARN>, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "warn", func) == napi_ok);
+}
+
+/* @tc.name: error
+ * @tc.desc: Test error can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest030, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "error", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::ERROR>, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "error", func) == napi_ok);
+}
+
+/* @tc.name: fatal
+ * @tc.desc: Test fatal can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest031, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "fatal", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::FATAL>, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "fatal", func) == napi_ok);
+}
+
+/* @tc.name: group
+ * @tc.desc: Test group can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest032, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "group", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Group, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "group", func) == napi_ok);
+}
+
+/* @tc.name: groupCollapsed
+ * @tc.desc: Test groupCollapsed can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest033, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "groupCollapsed", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Group, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "groupCollapsed", func) == napi_ok);
+}
+
+/* @tc.name: groupEnd
+ * @tc.desc: Test groupEnd can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest034, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "groupEnd", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::GroupEnd, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "groupEnd", func) == napi_ok);
+}
+
+/* @tc.name: table
+ * @tc.desc: Test table can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest035, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "table", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Table, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "table", func) == napi_ok);
+}
+
+/* @tc.name: time
+ * @tc.desc: Test time can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest036, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "time", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Time, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "time", func) == napi_ok);
+}
+
+/* @tc.name: timeLog
+ * @tc.desc: Test timeLog can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest037, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "timeLog", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::TimeLog, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "timeLog", func) == napi_ok);
+}
+
+/* @tc.name: timeEnd
+ * @tc.desc: Test timeEnd can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest038, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "timeEnd", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::TimeEnd, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "timeEnd", func) == napi_ok);
+}
+
+/* @tc.name: trace
+ * @tc.desc: Test trace can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest039, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "trace", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Trace, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "trace", func) == napi_ok);
+}
+
+/* @tc.name: traceHybridStack
+ * @tc.desc: Test traceHybridStack can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest040, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "traceHybridStack", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::TraceHybridStack, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "traceHybridStack", func) == napi_ok);
+}
+
+/* @tc.name: assert
+ * @tc.desc: Test assert can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest041, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "assert", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Assert, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "assert", func) == napi_ok);
+}
+
+/* @tc.name: count
+ * @tc.desc: Test count can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest042, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "count", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Count, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value globalConsole = nullptr;
+    napi_get_named_property(env, globalObj, "console", &globalConsole);
+    ASSERT_TRUE(napi_set_named_property(env, globalConsole, "count", func) == napi_ok);
+}
+
+/* @tc.name: countReset
+ * @tc.desc: Test countReset can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest043, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "countReset", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::CountReset, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "countReset", func) == napi_ok);
+}
+
+/* @tc.name: dir
+ * @tc.desc: Test dir can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest044, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "dir", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::Dir, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "dir", func) == napi_ok);
+}
+
+/* @tc.name: dirxml
+ * @tc.desc: Test dirxml can be write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest045, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_status status = napi_create_function(env, "dirxml", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    ASSERT_TRUE(napi_set_named_property(env, globalObj, "dirxml", func) == napi_ok);
+}
+
+/* @tc.name: log
+ * @tc.desc: Test log debug info warn property not change.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest046, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func1 = nullptr;
+    napi_status status = napi_create_function(env, "log", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func1);
+    napi_value func2 = nullptr;
+    status = napi_create_function(env, "debug", NAPI_AUTO_LENGTH,
+                                  ConsoleTest::ConsoleLog<LogLevel::DEBUG>, nullptr, &func2);
+    napi_value func3 = nullptr;
+    status = napi_create_function(env, "info", NAPI_AUTO_LENGTH,
+                                  ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func3);
+    napi_value func4 = nullptr;
+    status = napi_create_function(env, "warn", NAPI_AUTO_LENGTH,
+                                  ConsoleTest::ConsoleLog<LogLevel::WARN>, nullptr, &func4);
+    ASSERT_TRUE(status == napi_ok);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"log", nullptr, nullptr, nullptr, nullptr, func1, napi_default_jsproperty, nullptr},
+        {"debug", nullptr, nullptr, nullptr, nullptr, func2, napi_default_jsproperty, nullptr},
+        {"info", nullptr, nullptr, nullptr, nullptr, func3, napi_default_jsproperty, nullptr},
+        {"warn", nullptr, nullptr, nullptr, nullptr, func4, napi_default_jsproperty, nullptr}
+    };
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value console = nullptr;
+    status = napi_get_named_property(env, globalObj, "console", &console);
+    ASSERT_TRUE(status == napi_ok);
+    status = napi_define_properties(env, console, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value logCB = GetGlobalProperty(env, "log");
+    napi_value debugCB = GetGlobalProperty(env, "debug");
+    napi_value infoCB = GetGlobalProperty(env, "info");
+    napi_value warnCB = GetGlobalProperty(env, "warn");
+    bool isEqual = false;
+    napi_strict_equals(env, logCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, debugCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, infoCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, warnCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+}
+
+/* @tc.name: error
+ * @tc.desc: Test error fatal group property not change.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest047, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func1 = nullptr;
+    napi_status status = napi_create_function(env, "error", NAPI_AUTO_LENGTH,
+                                              ConsoleTest::ConsoleLog<LogLevel::ERROR>, nullptr, &func1);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value func2 = nullptr;
+    napi_create_function(env, "fatal", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::FATAL>, nullptr, &func2);
+    napi_value func3 = nullptr;
+    napi_create_function(env, "group", NAPI_AUTO_LENGTH, ConsoleTest::Group, nullptr, &func3);
+    napi_value func4 = nullptr;
+    napi_create_function(env, "groupCollapsed", NAPI_AUTO_LENGTH, ConsoleTest::Group, nullptr, &func4);
+    napi_value func5 = nullptr;
+    napi_create_function(env, "groupEnd", NAPI_AUTO_LENGTH, ConsoleTest::GroupEnd, nullptr, &func5);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"error", nullptr, nullptr, nullptr, nullptr, func1, napi_default_jsproperty, nullptr},
+        {"fatal", nullptr, nullptr, nullptr, nullptr, func2, napi_default_jsproperty, nullptr},
+        {"group", nullptr, nullptr, nullptr, nullptr, func3, napi_default_jsproperty, nullptr},
+        {"groupCollapsed", nullptr, nullptr, nullptr, nullptr, func4, napi_default_jsproperty, nullptr},
+        {"groupEnd", nullptr, nullptr, nullptr, nullptr, func5, napi_default_jsproperty, nullptr}
+    };
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value console = nullptr;
+    napi_get_named_property(env, globalObj, "console", &console);
+    status = napi_define_properties(env, console, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value errorCB = GetGlobalProperty(env, "error");
+    napi_value fatalCB = GetGlobalProperty(env, "fatal");
+    napi_value groupCB = GetGlobalProperty(env, "group");
+    napi_value groupCollapsedCB = GetGlobalProperty(env, "groupCollapsed");
+    napi_value groupEndCB = GetGlobalProperty(env, "groupEnd");
+    bool isEqual = false;
+    napi_strict_equals(env, errorCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, fatalCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, groupCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, groupCollapsedCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, groupEndCB, func5, &isEqual);
+    ASSERT_TRUE(isEqual);
+}
+
+/* @tc.name: table
+ * @tc.desc: Test table time trace property not change.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest048, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func1 = nullptr;
+    napi_create_function(env, "table", NAPI_AUTO_LENGTH, ConsoleTest::Table, nullptr, &func1);
+    napi_value func2 = nullptr;
+    napi_create_function(env, "time", NAPI_AUTO_LENGTH, ConsoleTest::Time, nullptr, &func2);
+    napi_value func3 = nullptr;
+    napi_create_function(env, "timeLog", NAPI_AUTO_LENGTH, ConsoleTest::TimeLog, nullptr, &func3);
+    napi_value func4 = nullptr;
+    napi_create_function(env, "timeEnd", NAPI_AUTO_LENGTH, ConsoleTest::TimeEnd, nullptr, &func4);
+    napi_value func5 = nullptr;
+    napi_create_function(env, "trace", NAPI_AUTO_LENGTH, ConsoleTest::Trace, nullptr, &func5);
+    napi_value func6 = nullptr;
+    napi_create_function(env, "traceHybridStack", NAPI_AUTO_LENGTH, ConsoleTest::TraceHybridStack, nullptr, &func6);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"table", nullptr, nullptr, nullptr, nullptr, func1, napi_default_jsproperty, nullptr},
+        {"time", nullptr, nullptr, nullptr, nullptr, func2, napi_default_jsproperty, nullptr},
+        {"timeLog", nullptr, nullptr, nullptr, nullptr, func3, napi_default_jsproperty, nullptr},
+        {"timeEnd", nullptr, nullptr, nullptr, nullptr, func4, napi_default_jsproperty, nullptr},
+        {"trace", nullptr, nullptr, nullptr, nullptr, func5, napi_default_jsproperty, nullptr},
+        {"traceHybridStack", nullptr, nullptr, nullptr, nullptr, func6, napi_default_jsproperty, nullptr}
+    };
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value console = nullptr;
+    napi_get_named_property(env, globalObj, "console", &console);
+    napi_define_properties(env, console, sizeof(properties) / sizeof(properties[0]), properties);
+    napi_value tableCB = GetGlobalProperty(env, "table");
+    napi_value timeCB = GetGlobalProperty(env, "time");
+    napi_value timeLogCB = GetGlobalProperty(env, "timeLog");
+    napi_value timeEndCB = GetGlobalProperty(env, "timeEnd");
+    napi_value traceCB = GetGlobalProperty(env, "trace");
+    napi_value traceHybridStackCB = GetGlobalProperty(env, "traceHybridStack");
+    bool isEqual = false;
+    napi_strict_equals(env, tableCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, timeCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, timeLogCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, timeEndCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, traceCB, func5, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, traceHybridStackCB, func6, &isEqual);
+    ASSERT_TRUE(isEqual);
+}
+
+/* @tc.name: assert
+ * @tc.desc: Test assert count dir property not change.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest049, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func1 = nullptr;
+    napi_create_function(env, "assert", NAPI_AUTO_LENGTH, ConsoleTest::Assert, nullptr, &func1);
+    napi_value func2 = nullptr;
+    napi_create_function(env, "count", NAPI_AUTO_LENGTH, ConsoleTest::Count, nullptr, &func2);
+    napi_value func3 = nullptr;
+    napi_create_function(env, "countReset", NAPI_AUTO_LENGTH, ConsoleTest::CountReset, nullptr, &func3);
+    napi_value func4 = nullptr;
+    napi_create_function(env, "dir", NAPI_AUTO_LENGTH, ConsoleTest::Dir, nullptr, &func4);
+    napi_value func5 = nullptr;
+    napi_create_function(env, "dirxml", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func5);
+    napi_property_descriptor properties[] = {
+        // napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+        {"assert", nullptr, nullptr, nullptr, nullptr, func1, napi_default_jsproperty, nullptr},
+        {"count", nullptr, nullptr, nullptr, nullptr, func2, napi_default_jsproperty, nullptr},
+        {"countReset", nullptr, nullptr, nullptr, nullptr, func3, napi_default_jsproperty, nullptr},
+        {"dir", nullptr, nullptr, nullptr, nullptr, func4, napi_default_jsproperty, nullptr},
+        {"dirxml", nullptr, nullptr, nullptr, nullptr, func5, napi_default_jsproperty, nullptr}
+    };
+    napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
+    napi_value console = nullptr;
+    napi_get_named_property(env, globalObj, "console", &console);
+    napi_status status = napi_define_properties(env, console, sizeof(properties) / sizeof(properties[0]), properties);
+    ASSERT_TRUE(status == napi_ok);
+    napi_value assertCB = GetGlobalProperty(env, "assert");
+    napi_value countCB = GetGlobalProperty(env, "count");
+    napi_value countResetCB = GetGlobalProperty(env, "countReset");
+    napi_value dirCB = GetGlobalProperty(env, "dir");
+    napi_value dirxmlCB = GetGlobalProperty(env, "dirxml");
+    bool isEqual = false;
+    napi_strict_equals(env, assertCB, func1, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, countCB, func2, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, countResetCB, func3, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, dirCB, func4, &isEqual);
+    ASSERT_TRUE(isEqual);
+    napi_strict_equals(env, dirxmlCB, func5, &isEqual);
+    ASSERT_TRUE(isEqual);
 }

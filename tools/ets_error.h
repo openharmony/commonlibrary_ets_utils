@@ -48,6 +48,27 @@ public:
         napi_throw(env, errorValue);
         return nullptr;
     }
+
+    static napi_value CreateError(napi_env env, int32_t errCode, const char* errMessage)
+    {
+        napi_value errorValue = nullptr;
+        // err-name
+        std::string errName = "BusinessError";
+        napi_value name = nullptr;
+        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
+        // err-code
+        napi_value code = nullptr;
+        napi_create_int32(env, errCode, &code);
+        // err-message
+        napi_value msg = nullptr;
+        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
+
+        napi_create_error(env, nullptr, msg, &errorValue);
+        napi_set_named_property(env, errorValue, "code", code);
+        napi_set_named_property(env, errorValue, "name", name);
+
+        return errorValue;
+    }
 };
 } // namespace OHOS::Tools
 #endif /* COMMONLIBRARY_ETS_UTILS_TOOLS_ETS_ERROR_H */

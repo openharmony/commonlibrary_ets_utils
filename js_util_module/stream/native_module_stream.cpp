@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
 extern const char _binary_stream_js_js_start[];

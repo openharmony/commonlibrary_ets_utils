@@ -14,6 +14,7 @@
  */
 
 #include "worker.h"
+#include "helper/concurrent_helper.h"
 
 #if defined(ENABLE_TASKPOOL_FFRT)
 #include "c/executor_task.h"
@@ -22,14 +23,14 @@
 #include "sys_timer.h"
 #include "helper/hitrace_helper.h"
 #include "process_helper.h"
-#include "task_group.h"
-#include "task_manager.h"
+#include "task_group_manager.h"
 #include "taskpool.h"
-#include "tools/log.h"
+#include "native_engine.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
 using namespace Commonlibrary::Platform;
+static constexpr uint32_t TASKPOOL_TYPE = 2;
 
 Worker::PriorityScope::PriorityScope(Worker* worker, Priority taskPriority) : worker_(worker)
 {
@@ -70,15 +71,11 @@ void Worker::CloseHandles()
 {
     // set all handles to nullptr so that they can not be used even when the loop is re-running
     ConcurrentHelper::UvHandleClose(performTaskSignal_);
-    performTaskSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     ConcurrentHelper::UvHandleClose(debuggerOnPostTaskSignal_);
-    debuggerOnPostTaskSignal_ = nullptr;
 #endif
     ConcurrentHelper::UvHandleClose(clearWorkerSignal_);
-    clearWorkerSignal_ = nullptr;
     ConcurrentHelper::UvHandleClose(triggerGCCheckSignal_);
-    triggerGCCheckSignal_ = nullptr;
 }
 
 void Worker::ReleaseWorkerHandles(const uv_async_t* req)
@@ -159,8 +156,7 @@ void Worker::HandleDebuggerTask(const uv_async_t* req)
 
 void Worker::DebuggerOnPostTask(std::function<void()>&& task)
 {
-    if (debuggerOnPostTaskSignal_ != nullptr && !uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(debuggerOnPostTaskSignal_))) {
+    if (ConcurrentHelper::IsUvActive(debuggerOnPostTaskSignal_)) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
         uv_async_send(debuggerOnPostTaskSignal_);
@@ -275,6 +271,37 @@ bool Worker::PrepareForWorkerInstance()
         this->DebuggerOnPostTask(std::move(task));
     });
 #endif
+    reinterpret_cast<NativeEngine*>(workerEnv_)->RegisterNapiUncaughtExceptionHandler(
+        [workerEngine] (napi_value exception) -> void {
+        if (!NativeEngine::IsAlive(workerEngine)) {
+            HILOG_WARN("napi_env has been destoryed!");
+            return;
+        }
+        std::string name = "";
+        void* data = workerEngine->GetCurrentTaskInfo();
+        if (data != nullptr) {
+            Task* task = static_cast<Task*>(data);
+            name = task->name_;
+        }
+        NapiErrorManager::GetInstance()->NotifyUncaughtException(reinterpret_cast<napi_env>(workerEngine),
+            exception, name, TASKPOOL_TYPE);
+    });
+    reinterpret_cast<NativeEngine*>(workerEnv_)->RegisterAllPromiseCallback(
+        [workerEngine] (napi_value* args) -> void {
+        if (!NativeEngine::IsAlive(workerEngine)) {
+            HILOG_WARN("napi_env has been destoryed!");
+            return;
+        }
+        std::string name = "";
+        void* data = workerEngine->GetCurrentTaskInfo();
+        if (data != nullptr) {
+            Task* task = static_cast<Task*>(data);
+            name = task->name_;
+        }
+        NapiErrorManager::GetInstance()->NotifyUnhandledRejection(reinterpret_cast<napi_env>(workerEngine),
+            args, name, TASKPOOL_TYPE);
+    });
+
     if (!workerEngine->CallInitWorkerFunc(workerEngine)) {
         HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc fail");
         return false;
@@ -320,9 +347,7 @@ void Worker::ReleaseWorkerThreadContent()
 
 void Worker::NotifyExecuteTask()
 {
-    if (LIKELY(performTaskSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
-        uv_async_send(performTaskSignal_);
-    }
+    ConcurrentHelper::UvCheckAndAsyncSend(performTaskSignal_);
 }
 
 void Worker::NotifyIdle()
@@ -355,8 +380,7 @@ void Worker::TriggerGCCheck(const uv_async_t* req)
 void Worker::NotifyTaskFinished()
 {
     // trigger gc check by uv and return immediately if the handle is invalid
-    if (UNLIKELY(triggerGCCheckSignal_ == nullptr || uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(triggerGCCheckSignal_)))) {
+    if (UNLIKELY(!ConcurrentHelper::IsUvActive(triggerGCCheckSignal_))) {
         HILOG_ERROR("taskpool:: triggerGCCheckSignal_ is nullptr or closed");
         return;
     } else {
@@ -390,6 +414,7 @@ void Worker::PerformTask(const uv_async_t* req)
         return;
     }
     RunningScope runningScope(worker);
+    WorkerRunningScope workerRunningScope(env);
     PriorityScope priorityScope(worker, taskInfo.second);
     Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
     if (task == nullptr) {
@@ -417,8 +442,9 @@ void Worker::PerformTask(const uv_async_t* req)
     // tag for trace parse: Task Perform
     std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_)
                             + ", priority : " + std::to_string(taskInfo.second);
+    std::string taskLog = "Task Perform: "  + task->name_ + ", " + std::to_string(task->taskId_);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
 
     napi_value func = nullptr;
     napi_value args = nullptr;
@@ -512,8 +538,7 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         return;
     }
     Task* task = static_cast<Task*>(data);
-    auto taskId = reinterpret_cast<uint64_t>(task);
-    if (TaskManager::GetInstance().GetTask(taskId) == nullptr) {
+    if (TaskManager::GetInstance().GetTask(task->taskId_) == nullptr) {
         HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
@@ -526,6 +551,17 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         uint64_t cpuDuration = task->cpuTime_ - task->startTime_;
         TaskManager::GetInstance().StoreTaskDuration(task->taskId_, std::max(ioDuration, cpuDuration), cpuDuration);
     }
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    if (exception != nullptr) {
+        HILOG_ERROR("taskpool::TaskResultCallback occur exception");
+        reinterpret_cast<NativeEngine*>(env)->HandleTaskpoolException(exception);
+        task->success_ = false;
+        napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
+        NotifyTaskResult(env, task, errorEvent);
+        return;
+    }
+
     task->success_ = success;
     NotifyTaskResult(env, task, result);
 }
@@ -547,7 +583,7 @@ void Worker::ResetWorkerPriority()
     }
 }
 
-void Worker::StoreTaskId(uint64_t taskId)
+void Worker::StoreTaskId(uint32_t taskId)
 {
     std::lock_guard<std::mutex> lock(currentTaskIdMutex_);
     currentTaskId_.emplace_back(taskId);
@@ -587,7 +623,7 @@ void Worker::UpdateExecutedInfo()
 }
 
 // Only when the worker has no longTask can it be released.
-void Worker::TerminateTask(uint64_t taskId)
+void Worker::TerminateTask(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: TerminateTask task:%{public}s", std::to_string(taskId).c_str());
     std::lock_guard<std::mutex> lock(longMutex_);
@@ -620,10 +656,11 @@ bool Worker::HasLongTask()
 
 void Worker::HandleFunctionException(napi_env env, Task* task)
 {
-    napi_value exception;
+    napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     if (exception != nullptr) {
         HILOG_ERROR("taskpool::PerformTask occur exception");
+        reinterpret_cast<NativeEngine*>(env)->HandleTaskpoolException(exception);
         task->DecreaseRefCount();
         task->success_ = false;
         napi_value errorEvent = ErrorHelper::TranslateErrorEvent(env, exception);
@@ -635,8 +672,7 @@ void Worker::HandleFunctionException(napi_env env, Task* task)
 
 void Worker::PostReleaseSignal()
 {
-    if (UNLIKELY(clearWorkerSignal_ == nullptr || uv_is_closing(
-        reinterpret_cast<uv_handle_t*>(clearWorkerSignal_)))) {
+    if (UNLIKELY(!ConcurrentHelper::IsUvActive(clearWorkerSignal_))) {
         HILOG_ERROR("taskpool:: clearWorkerSignal_ is nullptr or closed");
         return;
     }
