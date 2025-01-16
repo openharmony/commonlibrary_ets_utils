@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -179,6 +179,13 @@ namespace OHOS::Url {
         void SetSearch(const std::string& input);
 
         /**
+         * Sets the encode search portion of the URL.
+         *
+         * @param input Constructs a URI by parsing a given string, will be encode first.
+         */
+        void SetEncodeSearch(const std::string& input);
+
+        /**
          * Sets the host portion of the URL��not include the port.
          *
          * @param input Constructs a URI by parsing a given string.
@@ -212,6 +219,13 @@ namespace OHOS::Url {
          * @param env NAPI environment parameters.
          */
         napi_value GetSearch(napi_env env) const;
+
+        /**
+         * Gets the encode search portion of the URL.
+         *
+         * @param env NAPI environment parameters.
+         */
+        napi_value GetEncodeSearch(napi_env env) const;
 
         /**
          * Gets the username portion of the URL��not include the port.

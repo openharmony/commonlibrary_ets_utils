@@ -1,5 +1,5 @@
  /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,7 @@
 
 #include "native_module_url.h"
 #include "tools/log.h"
+#include "url_helper.h"
 
 extern const char _binary_js_url_js_start[];
 extern const char _binary_js_url_js_end[];
@@ -157,6 +158,22 @@ namespace OHOS::Url {
         URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
         napi_value retVal = murl->GetSearch(env);
+        return retVal;
+    }
+
+    static napi_value GetEncodeSearch(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        if (napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URL:: can not get thisVar");
+            return nullptr;
+        }
+        URL *murl = nullptr;
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)) != napi_ok) {
+            HILOG_ERROR("URL:: can not get murl");
+            return nullptr;
+        }
+        napi_value retVal = murl->GetEncodeSearch(env);
         return retVal;
     }
 
@@ -372,6 +389,40 @@ namespace OHOS::Url {
         murl->SetSearch(input);
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
+        return result;
+    }
+
+    static napi_value SetEncodeSearch(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value argv[1] = {0};
+        size_t argc = 1;
+        std::string input = "";
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URL:: can not get thisVar");
+            return nullptr;
+        }
+        size_t typelen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen) != napi_ok) {
+            HILOG_ERROR("URL:: can not get argv[0] size");
+            return nullptr;
+        }
+        input.resize(typelen);
+        if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
+            HILOG_ERROR("URL:: can not get argv[0] value");
+            return nullptr;
+        }
+        URL *murl = nullptr;
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)) != napi_ok) {
+            HILOG_ERROR("URL:: can not get url");
+            return nullptr;
+        }
+        murl->SetEncodeSearch(input);
+        napi_value result = nullptr;
+        if (napi_get_undefined(env, &result) != napi_ok) {
+            HILOG_ERROR("URL:: can not get result");
+            return nullptr;
+        }
         return result;
     }
 
@@ -737,89 +788,6 @@ namespace OHOS::Url {
         return result;
     }
 
-    static void IsEqualSign(size_t &strLastPos, const size_t &iteaor,
-        std::string &buf, std::string &stringParm, std::vector<std::string> &seachParasVec)
-    {
-        if (strLastPos < iteaor) {
-            buf += stringParm.substr(strLastPos, iteaor - strLastPos);
-        }
-        seachParasVec.push_back(buf);
-        buf = "";
-        strLastPos = iteaor + 1;
-        return;
-    }
-
-    static void IsAddressSign(const size_t &strLastPos, const size_t &iteaor, std::string &buf,
-        std::string &stringParm, std::vector<std::string> &seachParasVec)
-    {
-        if (strLastPos < iteaor) {
-            buf += stringParm.substr(strLastPos, iteaor - strLastPos);
-        }
-        seachParasVec.push_back(buf);
-        return;
-    }
-    static void DealParmsString(const size_t &strLastPos, const size_t &iteaor, std::string &buf,
-        std::string &stringParm, std::vector<std::string> &seachParasVec)
-    {
-        if (strLastPos < iteaor) {
-            buf += stringParm.substr(strLastPos, iteaor - strLastPos);
-        }
-        seachParasVec.push_back(buf);
-    }
-    static void IsEqualCode(size_t &strStartPos, const size_t &iteaor, size_t &strLastPos)
-    {
-        if (strStartPos == iteaor) {
-            strLastPos = iteaor + 1;
-            strStartPos = iteaor + 1;
-        }
-        return;
-    }
-    static std::vector<std::string> StringParsing(std::string stringParm)
-    {
-        std::vector<std::string> seachParasVec;
-        size_t strStartPos = 0;
-        size_t strLastPos = 0;
-        bool isHasSpace = false;
-        std::string buf = "";
-        size_t iteaor = 0;
-        for (iteaor = 0; iteaor < stringParm.length(); iteaor++) {
-            char code = stringParm[iteaor];
-            switch (code) {
-                case '&':
-                    {
-                        IsEqualCode(strStartPos, iteaor, strLastPos);
-                        IsAddressSign(strLastPos, iteaor, buf, stringParm, seachParasVec);
-                        if (!isHasSpace) {
-                            seachParasVec.push_back("");
-                        }
-                        isHasSpace = false;
-                        buf = "";
-                        strLastPos = iteaor + 1;
-                        strStartPos = iteaor + 1;
-                        break;
-                    }
-                case '=':
-                    {
-                        if (isHasSpace) {
-                            break;
-                        }
-                        IsEqualSign(strLastPos, iteaor, buf, stringParm, seachParasVec);
-                        isHasSpace = true;
-                        break;
-                    }
-                default:break;
-            }
-        }
-        if (strStartPos == iteaor) {
-            return seachParasVec;
-        }
-        DealParmsString(strLastPos, iteaor, buf, stringParm, seachParasVec);
-        if (!isHasSpace) {
-            seachParasVec.push_back("");
-        }
-        return seachParasVec;
-    }
-
     static napi_value StringParmas(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -837,14 +805,20 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get argv[0] value");
             return nullptr;
         }
-        std::vector<std::string> seachParasmsString;
-        seachParasmsString = StringParsing(input);
+        std::vector<KeyValue> params{};
+        StringAnalyzing(input, params);
         napi_value arr = nullptr;
         napi_create_array(env, &arr);
-        for (size_t i = 0; i < seachParasmsString.size(); i++) {
+        size_t j = 0;
+        for (size_t i = 0; i < params.size(); i++) {
             napi_value result = nullptr;
-            napi_create_string_utf8(env, seachParasmsString[i].c_str(), seachParasmsString[i].size(), &result);
-            napi_set_element(env, arr, i, result);
+            napi_value result1 = nullptr;
+            napi_create_string_utf8(env, params[i].first.c_str(), params[i].first.size(), &result);
+            napi_set_element(env, arr, j, result);
+            napi_create_string_utf8(env, params[i].second.c_str(), params[i].second.size(), &result1);
+            napi_set_element(env, arr, j + 1, result1);
+            // 2 step, j, j + 1
+            j += 2;
         }
         return arr;
     }
@@ -964,6 +938,7 @@ namespace OHOS::Url {
             DECLARE_NAPI_GETTER_SETTER("protocol", GetUrlScheme, SetUrlScheme),
             DECLARE_NAPI_GETTER_SETTER("pathname", GetUrlPath, SetUrlPath),
             DECLARE_NAPI_GETTER_SETTER("port", GetUrlPort, SetUrlPort),
+            DECLARE_NAPI_GETTER_SETTER("encodeSearch", GetEncodeSearch, SetEncodeSearch),
             DECLARE_NAPI_GETTER("onOrOff", GetOnOrOff),
             DECLARE_NAPI_GETTER("GetIsIpv6", GetIsIpv6),
         };

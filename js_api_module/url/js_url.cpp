@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,10 @@
 #include <regex>
 #include "securec.h"
 #include "tools/log.h"
+#include "unicode/stringpiece.h"
+#include "unicode/unistr.h"
+#include "url_helper.h"
+
 namespace OHOS::Url {
     std::map<std::string, int> g_head = {
         {"ftp:", 21}, {"file:", -1}, {"gopher:", 70}, {"http:", 80},
@@ -1304,7 +1308,11 @@ namespace OHOS::Url {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT4))) {
-            temp = urlData_.host;
+            if (!flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT10))) {
+                temp = EncodePercentEncoding(urlData_.host, URL_ENCODED_PERCENT_SIGN_CHARS);
+            } else {
+                temp = urlData_.host;
+            }
         }
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
@@ -1321,12 +1329,23 @@ namespace OHOS::Url {
         return result;
     }
 
+    napi_value URL::GetEncodeSearch(napi_env env) const
+    {
+        napi_value result;
+        std::string temp = "";
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT7)) && !(urlData_.query.size() == 1)) {
+            temp = EncodePercentEncoding(urlData_.query, QUERY_PERCENT_SIGN_CHARS);
+        }
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
+        return result;
+    }
+
     napi_value URL::GetUsername(napi_env env) const
     {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT2))) {
-            temp = urlData_.username;
+            temp = EncodePercentEncoding(urlData_.username, USERINFO_PERCENT_SIGN_CHARS);
         }
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
@@ -1337,7 +1356,7 @@ namespace OHOS::Url {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT3))) {
-            temp = urlData_.password;
+            temp = EncodePercentEncoding(urlData_.password, USERINFO_PERCENT_SIGN_CHARS);
         }
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
@@ -1348,7 +1367,7 @@ namespace OHOS::Url {
         napi_value result;
         std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT8)) && !(urlData_.fragment.size() == 1)) {
-            temp = urlData_.fragment;
+            temp = EncodePercentEncoding(urlData_.fragment, FRAGMENT_PERCENT_SIGN_CHARS);
         }
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
@@ -1387,10 +1406,10 @@ namespace OHOS::Url {
                 temp = "";
             }
         }
+        temp = EncodePercentEncoding(temp, PATH_PERCENT_SIGN_CHARS);
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
     }
-
 
     napi_value URL::GetPort(napi_env env) const
     {
@@ -1410,6 +1429,9 @@ namespace OHOS::Url {
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
             temp += ":";
             temp += std::to_string(urlData_.port);
+        }
+        if (!flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT10))) {
+            temp = EncodePercentEncoding(temp, URL_ENCODED_PERCENT_SIGN_CHARS);
         }
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
         return result;
@@ -1485,7 +1507,7 @@ namespace OHOS::Url {
 
     void URL::SetPath(const std::string& input)
     {
-        std::string strPath = input;
+        std::string strPath = EncodePercentEncoding(input, PATH_PERCENT_SIGN_CHARS);
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9)) || strPath.empty()) {
             return;
         }
@@ -1621,6 +1643,11 @@ namespace OHOS::Url {
         }
     }
 
+    void URL::SetEncodeSearch(const std::string& input)
+    {
+        SetSearch(EncodePercentEncoding(input, QUERY_PERCENT_SIGN_CHARS));
+    }
+
     void URL::SetFragment(const std::string& input)
     {
         std::string temp;
@@ -1630,13 +1657,14 @@ namespace OHOS::Url {
         } else {
             if (input[0] != '#') {
                 temp = "#";
-                temp += input;
+                temp += EncodePercentEncoding(input, FRAGMENT_PERCENT_SIGN_CHARS);
             } else {
-                temp = input;
+                temp = EncodePercentEncoding(input, FRAGMENT_PERCENT_SIGN_CHARS);
             }
             AnalysisFragment(temp, urlData_.fragment, flags_);
         }
     }
+
 
     void URL::SetScheme(const std::string& input)
     {
@@ -1665,13 +1693,13 @@ namespace OHOS::Url {
             urlData_.username = "";
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT2), 0);
         } else {
-                std::string usname = input;
+            std::string usname = EncodePercentEncoding(input, USERINFO_PERCENT_SIGN_CHARS);
             size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
-            for (size_t i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
-            ReplaceSpecialSymbols(usname, g_specialSymbols[i], g_specialSymbols[i + 1]);
+            for (size_t i = 0; i <= len; i += 2) {    // 2:Shift subscript right 2
+                ReplaceSpecialSymbols(usname, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
-                urlData_.username = usname;
-                flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT2));
+            urlData_.username = usname;
+            flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT2));
         }
     }
 
@@ -1681,13 +1709,13 @@ namespace OHOS::Url {
             urlData_.password = "";
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT3), 0);
         } else {
-                std::string keyWord = input;
+            std::string keyWord = EncodePercentEncoding(input, USERINFO_PERCENT_SIGN_CHARS);
             size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
-            for (size_t i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
-            ReplaceSpecialSymbols(keyWord, g_specialSymbols[i], g_specialSymbols[i + 1]);
+            for (size_t i = 0; i <= len; i += 2) {    // 2:Shift subscript right 2
+                ReplaceSpecialSymbols(keyWord, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
-                urlData_.password = keyWord;
-                flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT3));
+            urlData_.password = keyWord;
+            flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT3));
         }
     }
 
