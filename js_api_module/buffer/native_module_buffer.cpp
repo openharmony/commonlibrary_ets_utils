@@ -218,7 +218,7 @@ static vector<uint8_t> GetArray(napi_env env, napi_value arr, bool apiFlag)
             napi_get_element(env, arr, i, &napiNumber);
             int32_t num = 0;
             napi_get_value_int32(env, napiNumber, &num);
-            num = num & 0xFF;
+            num = num & 0xFF; // 0xFF : get lower 8-bits
             vec.push_back(num);
         }
     } else {
