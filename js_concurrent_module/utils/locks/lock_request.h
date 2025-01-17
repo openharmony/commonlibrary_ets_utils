@@ -90,6 +90,7 @@ private:
     void HandleRequestTimeout(std::string &&errorMessage);
     std::string GetLockInfo() const;
     void CleanTimer();
+    static void AsyncAfterWorkCallback(napi_env env, napi_status status, void *data);
     static napi_value FinallyCallback(napi_env env, napi_callback_info info);
     static void TimeoutCallback(uv_timer_t *handle);
     static void DeallocateTimeoutTimerCallback(uv_handle_t* handle);
@@ -104,6 +105,7 @@ private:
     LockMode mode_;
     LockOptions options_;
     napi_deferred deferred_;
+    napi_async_work work_;
     uv_timer_t *timeoutTimer_;
     bool timeoutActive_;
     napi_threadsafe_function stopTimerTsfn_{nullptr};
