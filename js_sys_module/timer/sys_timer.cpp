@@ -41,14 +41,17 @@ TimerCallbackInfo::~TimerCallbackInfo()
     HITRACE_HELPER_METER_NAME("~TimerCallbackInfo address = " + std::to_string(reinterpret_cast<std::uintptr_t>(this)));
 #endif
     Helper::NapiHelper::DeleteReference(env_, callback_);
+    callback_ = nullptr;
     for (size_t idx = 0; idx < argc_; idx++) {
         Helper::NapiHelper::DeleteReference(env_, argv_[idx]);
+        argv_[idx] = nullptr;
     }
     Helper::CloseHelp::DeletePointer(argv_, true);
 
     uv_timer_stop(timeReq_);
     uv_close(reinterpret_cast<uv_handle_t*>(timeReq_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
+            handle->data = nullptr;
             delete (uv_timer_t*)handle;
             handle = nullptr;
         }
