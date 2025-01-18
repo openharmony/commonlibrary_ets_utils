@@ -1417,6 +1417,7 @@ void Worker::ExecuteInThread(const void* data)
             return;
         }
         NapiErrorManager::GetInstance()->NotifyUncaughtException(workerEnv, exception, worker->GetName(), WORKER_TYPE);
+        worker->HandleWorkerUncaughtException(workerEnv, exception);
     });
     reinterpret_cast<NativeEngine*>(workerEnv)->RegisterAllPromiseCallback(
         [workerEnv, worker] (napi_value* args) -> void {
@@ -1844,7 +1845,6 @@ void Worker::HostOnError(const uv_async_t* req)
         return;
     }
     worker->HostOnErrorInner();
-    worker->TerminateInner();
 }
 
 void Worker::HostOnErrorInner()
@@ -1863,7 +1863,14 @@ void Worker::HostOnErrorInner()
     }
 
     napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
-    napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onerror");
+    bool hasOnAllError = NapiHelper::HasNameProperty(hostEnv_, obj, "onAllErrors");
+    napi_value callback = nullptr;
+    if (hasOnAllError) {
+        HILOG_INFO("worker:: host thread register onAllErrors.");
+        callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onAllErrors");
+    } else {
+        callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onerror");
+    }
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
 
     MessageDataType data;
@@ -1879,13 +1886,17 @@ void Worker::HostOnErrorInner()
         }
         // handle listeners
         bool isHandle = HandleEventListeners(hostEnv_, obj, 1, argv, "error");
-        if (!isCallable && !isHandle) {
+        if (!isCallable && !isHandle && !hasOnAllError) {
             napi_value businessError = ErrorHelper::ObjectToError(hostEnv_, result);
             napi_throw(hostEnv_, businessError);
             HandleHostException();
             return;
         }
         HandleHostException();
+    }
+    if (!hasOnAllError) {
+        // if host thread not register onAllErrors, worker still terminate.
+        TerminateInner();
     }
 }
 
@@ -2034,7 +2045,6 @@ void Worker::PostWorkerErrorTask()
             HILOG_INFO("worker:: host receive error.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnErrorMessage");
             this->HostOnErrorInner();
-            this->TerminateInner();
         }
     };
     GetMainThreadHandler()->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
@@ -2568,6 +2578,7 @@ void Worker::InitHostHandle(uv_loop_t* loop)
 {
     ConcurrentHelper::UvHandleInit(loop, hostOnMessageSignal_, Worker::HostOnMessage, this);
     ConcurrentHelper::UvHandleInit(loop, hostOnErrorSignal_, Worker::HostOnError, this);
+    ConcurrentHelper::UvHandleInit(loop, hostOnAllErrorsSignal_, Worker::HostOnAllErrors, this);
     ConcurrentHelper::UvHandleInit(loop, hostOnGlobalCallSignal_, Worker::HostOnGlobalCall, this);
 }
 
@@ -2578,6 +2589,9 @@ void Worker::CloseHostHandle()
     }
     if (ConcurrentHelper::IsUvActive(hostOnErrorSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnErrorSignal_);
+    }
+    if (ConcurrentHelper::IsUvActive(hostOnAllErrorsSignal_)) {
+        ConcurrentHelper::UvHandleClose(hostOnAllErrorsSignal_);
     }
     if (ConcurrentHelper::IsUvActive(hostOnGlobalCallSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
@@ -2614,6 +2628,7 @@ void Worker::ClearHostMessage(napi_env env)
     hostMessageQueue_.Clear(env);
     hostGlobalCallQueue_.Clear(env);
     errorQueue_.Clear(env);
+    exceptionQueue_.Clear(env);
 }
 
 #ifdef ENABLE_QOS
@@ -2640,4 +2655,99 @@ void Worker::SetQOSLevel()
     }
 }
 #endif
+
+void Worker::HostOnAllErrors(const uv_async_t* req)
+{
+    Worker* worker = static_cast<Worker*>(req->data);
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is null");
+        return;
+    }
+    worker->HostOnAllErrorsInner();
+}
+
+void Worker::HandleWorkerUncaughtException(napi_env env, napi_value exception)
+{
+    if (NapiHelper::IsExceptionPending(env)) {
+        napi_get_and_clear_last_exception(env, &exception);
+    }
+
+    if (hostEnv_ == nullptr) {
+        HILOG_ERROR("worker:: host engine is nullptr.");
+        return;
+    }
+
+    MessageDataType data = nullptr;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_serialize_inner(env, exception, undefined, undefined, false, true, &data);
+    {
+        std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+        if (HostIsStop() || isHostEnvExited_) {
+            return;
+        }
+        exceptionQueue_.EnQueue(data);
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (isMainThreadWorker_ && !isLimitedWorker_) {
+            PostWorkerExceptionTask();
+        } else {
+            uv_async_send(hostOnAllErrorsSignal_);
+        }
+#else
+        uv_async_send(hostOnAllErrorsSignal_);
+#endif
+    }
+}
+
+void Worker::PostWorkerExceptionTask()
+{
+    auto hostOnAllErrorsTask = [this]() {
+        if (IsValidWorker(this)) {
+            HILOG_INFO("worker:: host receive exception.");
+            HITRACE_HELPER_METER_NAME("Worker:: HostOnAllErrorsMessage");
+            this->HostOnAllErrorsInner();
+        }
+    };
+    GetMainThreadHandler()->PostTask(hostOnAllErrorsTask, "WorkerHostOnAllErrorsTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+}
+
+void Worker::HostOnAllErrorsInner()
+{
+    if (hostEnv_ == nullptr || HostIsStop()) {
+        HILOG_ERROR("worker:: host thread maybe is over when host onerror.");
+        return;
+    }
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
+    NativeEngine* hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    ContainerScope containerScope(hostEngine, scopeId_);
+    if (!containerScope.IsInitialized()) {
+        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnAllErrorsInner begin(only stage model)");
+    }
+
+    napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
+    napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onAllErrors");
+    bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
+    if (!isCallable) {
+        HILOG_INFO("worker:: worker may not register onAllErrors.");
+        exceptionQueue_.Clear(hostEnv_);
+        return;
+    }
+
+    MessageDataType data = nullptr;
+    while (exceptionQueue_.DeQueue(&data)) {
+        if (data == nullptr) {
+            return;
+        }
+        napi_value result = nullptr;
+        napi_deserialize(hostEnv_, data, &result);
+        napi_delete_serialization_data(hostEnv_, data);
+
+        napi_value argv[1] = { result };
+        napi_value callbackResult = nullptr;
+        napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
+        HandleHostException();
+    }
+}
 } // namespace Commonlibrary::Concurrent::WorkerModule

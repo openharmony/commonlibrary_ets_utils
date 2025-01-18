@@ -135,6 +135,13 @@ public:
     static void HostOnError(const uv_async_t* req);
 
     /**
+     * The host thread receives the worker exception.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
+    static void HostOnAllErrors(const uv_async_t* req);
+
+    /**
      * The worker thread receives the information.
      *
      * @param req The value of the object passed in by the js layer.
@@ -512,6 +519,7 @@ private:
     void WorkerOnMessageInner();
     void HostOnMessageInner();
     void HostOnErrorInner();
+    void HostOnAllErrorsInner();
     void HostOnMessageErrorInner();
     void HostOnGlobalCallInner();
     void WorkerOnMessageErrorInner();
@@ -519,6 +527,7 @@ private:
 
     void HandleHostException() const;
     void HandleException();
+    void HandleWorkerUncaughtException(napi_env env, napi_value exception);
     void HandleUncaughtException(napi_value exception);
     bool CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch);
     void CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const;
@@ -541,6 +550,7 @@ private:
 
     void PostWorkerOverTask();
     void PostWorkerErrorTask();
+    void PostWorkerExceptionTask();
     void PostWorkerMessageTask();
     void PostWorkerGlobalCallTask();
     static bool IsValidWorker(Worker* worker);
@@ -593,11 +603,13 @@ private:
     MarkedMessageQueue hostGlobalCallQueue_ {};
     MessageQueue workerGlobalCallQueue_ {};
     MessageQueue errorQueue_ {};
+    MessageQueue exceptionQueue_ {};
 
     uv_async_t* workerOnMessageSignal_ = nullptr;
     uv_async_t* workerOnTerminateSignal_ = nullptr;
     uv_async_t* hostOnMessageSignal_ = nullptr;
     uv_async_t* hostOnErrorSignal_ = nullptr;
+    uv_async_t* hostOnAllErrorsSignal_ = nullptr;
     uv_async_t* hostOnGlobalCallSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t debuggerOnPostTaskSignal_ {};
