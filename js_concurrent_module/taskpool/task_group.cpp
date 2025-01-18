@@ -94,7 +94,7 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
     napi_value napiGroupId = NapiHelper::GetNameProperty(env, thisVar, GROUP_ID_STR);
     uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
     TaskGroup* group = TaskGroupManager::GetInstance().GetTaskGroup(groupId);
-    if (group->groupState_ != ExecuteState::NOT_FOUND) {
+    if (group == nullptr || group->groupState_ != ExecuteState::NOT_FOUND) {
         errMessage = "taskpool:: executed taskGroup cannot addTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
