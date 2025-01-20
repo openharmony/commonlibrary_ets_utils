@@ -242,6 +242,21 @@ static void freeBolbMemory(Blob *&blob)
     }
 }
 
+static napi_value GetBlobWrapValue(napi_env env, napi_value thisVar, Blob *blob)
+{
+    uint32_t length = blob->GetLength();
+    napi_status status = napi_wrap_with_size(env, thisVar, blob, FinalizeBlobCallback, nullptr, nullptr, length);
+    if (status != napi_ok) {
+        HILOG_ERROR("Buffer:: can not wrap buffer");
+        if (blob != nullptr) {
+            delete blob;
+            blob = nullptr;
+        }
+        return nullptr;
+    }
+    return thisVar;
+}
+
 static napi_value BlobConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -281,11 +296,7 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
             return nullptr;
         }
     }
-    if (napi_wrap(env, thisVar, blob,  FinalizeBlobCallback, nullptr, nullptr) != napi_ok) {
-        freeBolbMemory(blob);
-        return nullptr;
-    }
-    return thisVar;
+    return GetBlobWrapValue(env, thisVar, blob);
 }
 
 static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *buffer)
