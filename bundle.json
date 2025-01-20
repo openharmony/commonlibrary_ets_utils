@@ -40,7 +40,7 @@
         "syscap": [
             "SystemCapability.Utils.Lang"
         ],
-        "features": [],
+        "features": ["ets_utils_stacksize_low_enable"],
         "adapted_system_type": ["standard"],
         "rom": "1400KB",
         "ram": "~4096KB",

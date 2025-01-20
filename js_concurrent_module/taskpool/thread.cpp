@@ -24,7 +24,11 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 Thread::Thread() : tid_() {}
 
+#ifdef ENABLE_ETS_UTILS_STACKSIZE_LOW
+static constexpr uint64_t STACK_SIZE = 1 * 512 * 1024;
+#else
 static constexpr uint64_t STACK_SIZE = 8 * 1024 * 1024;
+#endif
 
 bool Thread::Start()
 {
