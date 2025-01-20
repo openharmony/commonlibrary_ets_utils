@@ -87,6 +87,9 @@ ohos_shared_library("taskpool") {
     "napi:ace_napi",
   ]
 
+  if (ets_utils_stacksize_low_enable) {
+    defines += [ "ENABLE_ETS_UTILS_STACKSIZE_LOW" ]
+  }
   if (is_ohos && is_standard_system && !is_arkui_x) {
     defines += [
       "ENABLE_TASKPOOL_EVENTHANDLER",

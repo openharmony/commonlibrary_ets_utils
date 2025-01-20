@@ -14,6 +14,9 @@
 if (defined(is_arkui_x) && is_arkui_x) {
   plugins_root = "//plugins"
 }
+declare_args() {
+  ets_utils_stacksize_low_enable = false
+}
 container_root = "//commonlibrary/ets_utils/js_util_module/container/"
 concurrent_module = "//commonlibrary/ets_utils/js_concurrent_module/"
 process_root = "//commonlibrary/ets_utils/js_sys_module/process"
