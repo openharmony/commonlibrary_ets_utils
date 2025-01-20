@@ -26,8 +26,10 @@ enum class SettleBy {
     CLEANCV = 3
 };
 
+class ConditionVariable;
 struct PromiseInfo {
 public:
+    ConditionVariable *cond {nullptr};
     napi_env env = nullptr;
     napi_deferred deferred = nullptr;
     SettleBy resolved;
@@ -38,8 +40,9 @@ public:
     {
         return deferred == other.deferred;
     }
-    PromiseInfo(napi_env env, napi_deferred deferred, SettleBy resolved, uv_timer_t* timer,
-        napi_threadsafe_function tsfn) : env(env), deferred(deferred), resolved(resolved), timer(timer), tsfn_(tsfn) {}
+    PromiseInfo(ConditionVariable *cond, napi_env env, napi_deferred deferred, SettleBy resolved, uv_timer_t* timer,
+        napi_threadsafe_function tsfn) :cond(cond), env(env), deferred(deferred), resolved(resolved),
+        timer(timer), tsfn_(tsfn) {}
 };
 
 class ConditionVariable {
@@ -50,15 +53,19 @@ public:
     static napi_value WaitFor(napi_env env, napi_callback_info cbinfo);
     static napi_value Notify(napi_env env, napi_callback_info cbinfo);
     static napi_value NotifyOne(napi_env env, napi_callback_info cbinfo);
+    static napi_value Request(napi_env env, napi_callback_info cbinfo);
     static void Destructor(napi_env env, void *nativeObject, [[maybe_unused]] void *finalizeHint);
     ConditionVariable() : refCount_(0) {}
     explicit ConditionVariable(ConditionVariable *cond) :promiseQueue_(cond->promiseQueue_),
         refCount_(cond->GetRefCount()) {}
     int32_t GetRefCount();
+    void IncreaseRefCount();
+    void DecreaseRefCount();
+    void SetConditionName(const std::string &condName);
+    std::string GetConditionName();
 
 private:
-
-    static void ResolveDeferred(std::shared_ptr<PromiseInfo> promiseInfo, napi_threadsafe_function tsfn);
+    static void ResolveDeferred(PromiseInfo* promiseInfo, napi_threadsafe_function tsfn);
     static void CallJsCallback(napi_env env, napi_value js_callback, void* context, void* data);
     static void ScheduleAsyncWork(std::shared_ptr<PromiseInfo> promiseInfo, ConditionVariable* obj);
     void PromiseProcessFlow(ConditionVariable *cond, SettleBy settleBy, bool notifyAll);
@@ -68,17 +75,22 @@ private:
     static void EnvCleanupHook(void* arg);
     void AddEnvCleanupHook(std::shared_ptr<PromiseInfo> pi);
     void RemoveEnvCleanupHook(std::shared_ptr<PromiseInfo> pi);
-    void CleanupHookEnvPromise(std::shared_ptr<PromiseInfo> pi, ConditionVariable *cond);
+    void CleanupHookEnvPromise(PromiseInfo *pi, ConditionVariable *cond);
+    bool CheckAndRemoveCondition();
+    static ConditionVariable *FindOrCreateCondition(const std::string &condName);
+
     std::deque<std::shared_ptr<PromiseInfo>> promiseQueue_;  // 存储 Promise 的队列
     std::mutex queueMtx_;                // 保护队列的互斥锁
     uint32_t refCount_;
+    std::string conditionName_ {};
+    static std::unordered_map<std::string, ConditionVariable *> condMap_;
+    static std::mutex mapMtx_;
 };
 
 struct WorkerData {
     std::shared_ptr<PromiseInfo> pi;
     ConditionVariable* cond;
 };
-
 }  // namespace Commonlibrary::Concurrent::Condition
 
 #endif // JS_CONCURRENT_MODULE_UTILS_CONDITION_NAPI_H
