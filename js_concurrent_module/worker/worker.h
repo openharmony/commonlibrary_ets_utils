@@ -653,5 +653,33 @@ private:
 
     friend class WorkersTest;
 };
+
+class ContainerScope {
+public:
+    ContainerScope(NativeEngine* engine, uint32_t scopeId)
+        : engine_(engine), scopeId_(scopeId), initialized_(false)
+    {
+        if (engine_ != nullptr) {
+            initialized_ = engine_->InitContainerScopeFunc(scopeId_);
+        }
+    }
+
+    ~ContainerScope()
+    {
+        if (engine_ != nullptr && initialized_) {
+            engine_->FinishContainerScopeFunc(scopeId_);
+        }
+    }
+
+    bool IsInitialized() const
+    {
+        return initialized_;
+    }
+
+private:
+    NativeEngine* engine_ {nullptr};
+    int32_t scopeId_ {-1};
+    bool initialized_ {false};
+};
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H
