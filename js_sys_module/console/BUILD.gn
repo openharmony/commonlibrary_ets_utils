@@ -44,10 +44,10 @@ ohos_shared_library("console") {
   external_deps = [ "napi:ace_napi" ]
 
   if (is_linux && current_toolchain == host_toolchain) {
-    external_deps += [ "hilog:libhilog" ]
+    deps += [ "$hilog_linux" ]
     defines = [
       "LINUX_PLATFORM",
-      "NOGDI",
+      "PREVIEW",
     ]
   } else if (is_mingw) {
     external_deps += [ "hilog:libhilog" ]
