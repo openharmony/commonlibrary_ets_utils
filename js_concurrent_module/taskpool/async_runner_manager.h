@@ -35,7 +35,6 @@ public:
     void StoreAsyncRunner(uint64_t asyncRunnerId, AsyncRunner* asyncRunner);
     void RemoveAsyncRunner(uint64_t asyncRunnerId);
     AsyncRunner* GetAsyncRunner(uint64_t asyncRunnerId);
-    void RemoveGlobalAsyncRunnerRef(napi_env env, AsyncRunner* asyncRunner);
     void RemoveGlobalAsyncRunner(const std::string& name);
     void GlobalAsyncRunnerDestructor(napi_env env, AsyncRunner* asyncRunner);
     void CancelAsyncRunnerTask(napi_env env, Task* task);

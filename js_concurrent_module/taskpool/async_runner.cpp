@@ -19,7 +19,6 @@
 #include "async_runner_manager.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
-#include "task_group_manager.h"
 #include "task_manager.h"
 #include "tools/log.h"
 
@@ -120,14 +119,13 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (!task->CanForAsyncRunner(env)) {
         return nullptr;
     }
-    uint32_t priority = NapiHelper::GetUint32Value(env, napiPriority);
+    if (napiPriority != nullptr) {
+        uint32_t priority = NapiHelper::GetUint32Value(env, napiPriority);
+        task->asyncTaskPriority_ = static_cast<Priority>(priority);
+    }
     task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
-    task->asyncTaskPriority_ = static_cast<Priority>(priority);
     napi_value promise = task->GetTaskInfoPromise(env, napiTask, TaskType::ASYNCRUNNER_TASK, task->asyncTaskPriority_);
     if (promise == nullptr) {
-        return nullptr;
-    }
-    if (!asyncRunner->IncreaseAsyncRunnerRef(env)) {
         return nullptr;
     }
 
@@ -185,7 +183,6 @@ AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value& th
         asyncRunner = new AsyncRunner();
         asyncRunner->runningCapacity_ = runningCapacityVal;
         asyncRunner->waitingCapacity_ = waitingCapacityVal;
-        napi_create_reference(env, thisVar, 0, &asyncRunner->asyncRunnerRef_);
     }
     return asyncRunner;
 }
@@ -223,6 +220,7 @@ void AsyncRunner::ExecuteTaskImmediately(AsyncRunner* asyncRunner, Task* task)
 bool AsyncRunner::AddTasksToAsyncRunner(AsyncRunner* asyncRunner, Task* task)
 {
     Task* frontTask = nullptr;
+    asyncRunner->IncreaseAsyncCount();
     {
         std::unique_lock<std::shared_mutex> asyncRunnerLock(asyncRunner->waitingTasksMutex_);
         if (asyncRunner->runningCount_ < asyncRunner->runningCapacity_) {
@@ -250,10 +248,13 @@ void AsyncRunner::AsyncRunnerDestructor(napi_env env, void* data, [[maybe_unused
         return;
     }
     if (asyncRunner->isGlobalRunner_) {
+        auto runner = AsyncRunnerManager::GetInstance().GetAsyncRunner(asyncRunner->asyncRunnerId_);
+        if (runner == nullptr) {
+            return;
+        }
         AsyncRunnerManager::GetInstance().GlobalAsyncRunnerDestructor(env, asyncRunner);
-    } else {
+    } else if (asyncRunner->CheckNeedDelete(env)) {
         AsyncRunnerManager::GetInstance().RemoveAsyncRunner(asyncRunner->asyncRunnerId_);
-        napi_delete_reference(env, asyncRunner->asyncRunnerRef_);
         delete asyncRunner;
     }
 }
@@ -269,8 +270,12 @@ bool AsyncRunner::RemoveWaitingTask(Task* task, bool isReject)
             flag = true;
         }
     }
-    if (flag && isReject) {
-        TriggerRejectErrorTimer(task, ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED);
+    if (flag) {
+        if (isReject) {
+            TriggerRejectErrorTimer(task, ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED);
+        } else {
+            DecreaseAsyncCount();
+        }
     }
     return flag;
 }
@@ -280,14 +285,22 @@ void AsyncRunner::TriggerRejectErrorTimer(Task* task, int32_t errCode, bool isWa
     if (task == nullptr || !task->IsValid()) {
         return;
     }
+    if (!isWaiting) {
+        DecreaseAsyncCount();
+    }
     DiscardTaskMessage* message = new DiscardTaskMessage(task->env_, task->taskId_, errCode, isWaiting);
     task->DiscardAsyncRunnerTask(message);
 }
 
 void AsyncRunner::TriggerWaitingTask()
 {
+    if (DecreaseAsyncCount() == 0) {
+        return;
+    }
     std::unique_lock<std::shared_mutex> lock(waitingTasksMutex_);
-    runningCount_.fetch_sub(1);
+    if (runningCount_ > 0) {
+        runningCount_.fetch_sub(1);
+    }
     Task* task = nullptr;
     while (runningCount_ < runningCapacity_) {
         if (waitingTasks_.empty()) {
@@ -317,61 +330,29 @@ AsyncRunner* AsyncRunner::CreateGlobalRunner(const std::string& name, uint32_t r
     return asyncRunner;
 }
 
-void AsyncRunner::CreateGlobalRef(napi_env env, napi_value thisVar)
-{
-    std::unique_lock<std::shared_mutex> asyncLock(asyncRunnerMutex_);
-    count_++;
-    auto tmpIter = globalAsyncRunnerRef_.find(env);
-    if (tmpIter == globalAsyncRunnerRef_.end()) {
-        napi_ref gloableAsyncRunnerRef = nullptr;
-        napi_create_reference(env, thisVar, 0, &gloableAsyncRunnerRef);
-        globalAsyncRunnerRef_.emplace(env, gloableAsyncRunnerRef);
-    }
-}
-
-bool AsyncRunner::DecreaseAsyncRunnerRef(napi_env env)
-{
-    std::unique_lock<std::shared_mutex> lock(asyncRunnerMutex_);
-    if (isGlobalRunner_) {
-        auto iter = globalAsyncRunnerRef_.find(env);
-        if (iter == globalAsyncRunnerRef_.end()) {
-            return false;
-        }
-        napi_reference_unref(env, iter->second, nullptr);
-    } else {
-        napi_reference_unref(env, asyncRunnerRef_, nullptr);
-    }
-    return true;
-}
-
-bool AsyncRunner::IncreaseAsyncRunnerRef(napi_env env)
-{
-    std::unique_lock<std::shared_mutex> lock(asyncRunnerMutex_);
-    if (isGlobalRunner_) {
-        auto iter = globalAsyncRunnerRef_.find(env);
-        if (iter == globalAsyncRunnerRef_.end()) {
-            return false;
-        }
-        napi_reference_ref(env, iter->second, nullptr);
-    } else {
-        napi_reference_ref(env, asyncRunnerRef_, nullptr);
-    }
-    return true;
-}
-
 uint64_t AsyncRunner::DecreaseAsyncCount()
 {
-    return --count_;
+    {
+        std::unique_lock<std::shared_mutex> lock(asyncRunnerMutex_);
+        if (refCount_ > 0) {
+            refCount_--;
+        }
+        if (refCount_ > 0) {
+            return refCount_;
+        }
+    }
+    if (isGlobalRunner_) {
+        AsyncRunnerManager::GetInstance().RemoveGlobalAsyncRunner(name_);
+    }
+    AsyncRunnerManager::GetInstance().RemoveAsyncRunner(asyncRunnerId_);
+    delete this;
+    return 0;
 }
 
-void AsyncRunner::RemoveGlobalAsyncRunnerRef(napi_env env)
+void AsyncRunner::IncreaseAsyncCount()
 {
     std::unique_lock<std::shared_mutex> lock(asyncRunnerMutex_);
-    auto iter = globalAsyncRunnerRef_.find(env);
-    if (iter != globalAsyncRunnerRef_.end()) {
-        napi_delete_reference(env, iter->second);
-        globalAsyncRunnerRef_.erase(iter);
-    }
+    refCount_++;
 }
 
 bool AsyncRunner::CheckGlobalRunnerParams(napi_env env, uint32_t runningCapacity, uint32_t waitingCapacity)
@@ -385,5 +366,34 @@ bool AsyncRunner::CheckGlobalRunnerParams(napi_env env, uint32_t runningCapacity
         return false;
     }
     return true;
+}
+
+bool AsyncRunner::CheckNeedDelete(napi_env env)
+{
+    std::unique_lock<std::shared_mutex> lock(asyncRunnerMutex_);
+    if (refCount_ > 0) {
+        refCount_--;
+    }
+    if (refCount_ == 0) {
+        return true;
+    }
+    return false;
+}
+
+void AsyncRunner::HostEnvCleanupHook(void* data)
+{
+    if (data == nullptr) {
+        HILOG_ERROR("taskpool:: asyncRunner cleanupHook arg is nullptr");
+        return;
+    }
+    AsyncRunner* runner = reinterpret_cast<AsyncRunner*>(data);
+    if (runner == nullptr) {
+        HILOG_ERROR("taskpool:: asyncRunner cleanupHook is nullptr");
+        return;
+    }
+    runner->runningCount_ = 0;
+    if (runner->refCount_ > 0) {
+        runner->refCount_--;
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

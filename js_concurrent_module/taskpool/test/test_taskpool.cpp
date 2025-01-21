@@ -5353,11 +5353,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest268, testing::ext::TestSize.Level0)
     asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
     bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
     ASSERT_TRUE(flag);
-    asyncRunner->isGlobalRunner_ = true;
-    flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
-    ASSERT_FALSE(flag);
     delete task;
-    delete asyncRunner;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest269, testing::ext::TestSize.Level0)
@@ -5424,10 +5420,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest270, testing::ext::TestSize.Level0)
     napi_value argv[] = {task, priority};
     napi_call_function(env, asyncGlobal, cb, 2, argv, &result);
     ASSERT_NE(result, nullptr);
-
-    AsyncRunner* asyncRunner = nullptr;
-    napi_unwrap(env, asyncGlobal, reinterpret_cast<void**>(&asyncRunner));
-    asyncRunner->RemoveGlobalAsyncRunnerRef(env);
 
     std::string funcName2 = "Execute270-1";
     napi_value cb2 = nullptr;
@@ -6103,4 +6095,27 @@ HWTEST_F(NativeEngineTest, TaskpoolTest296, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     delete req;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest297, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    
+    AsyncRunner* asyncRunner = new AsyncRunner();
+    asyncRunner->IncreaseAsyncCount();
+    asyncRunner->CheckNeedDelete(env);
+    delete asyncRunner;
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest298, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    
+    AsyncRunner::HostEnvCleanupHook(nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }

@@ -1775,10 +1775,6 @@ void Task::DiscardInner(DiscardTaskMessage* message)
     napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, error);
     DisposeCanceledTask();
     TaskManager::GetInstance().RemoveTask(message->taskId);
-    auto asyncRunner = AsyncRunnerManager::GetInstance().GetAsyncRunner(task->asyncRunnerId_);
-    if (asyncRunner != nullptr && !message->isWaiting) {
-        asyncRunner->DecreaseAsyncRunnerRef(task->env_);
-    }
 
     CloseHelp::DeletePointer(message, false);
 }
