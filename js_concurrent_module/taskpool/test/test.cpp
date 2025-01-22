@@ -32,13 +32,13 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 
 static constexpr uint32_t MAX_TIMEOUT_TIME = 600000;
-static constexpr uint32_t FINSHED_TASK_ = 5;
-static constexpr uint32_t TASK_NUMS_ = 7;
-static constexpr uint64_t UINT64_ZERO_ = 0;
-static constexpr uint32_t UINT32_ZERO_ = 0;
-static constexpr uint32_t UINT32_ONE_ = 1;
-static constexpr size_t SIZE_TWO_ = 2;
-static constexpr size_t SIZE_THREE_ = 3;
+static constexpr uint32_t FINSHED_TASK = 5;
+static constexpr uint32_t TASK_NUMS = 7;
+static constexpr uint64_t UINT64_ZERO = 0;
+static constexpr uint32_t UINT32_ZERO = 0;
+static constexpr uint32_t UINT32_ONE = 1;
+static constexpr size_t SIZE_TWO = 2;
+static constexpr size_t SIZE_THREE = 3;
 
 napi_ref CreateReference(napi_env env)
 {
@@ -550,8 +550,8 @@ void NativeEngineTest::RemoveTaskDependency(napi_env env)
     taskManager.RemoveDependentTaskInfo(task->taskId_, id2);
     taskManager.RemoveDependentTaskInfo(task->taskId_, id);
     taskManager.GetTaskDependInfoToString(task1->taskId_);
-    taskManager.taskDurationInfos_.emplace(task->taskId_, std::make_pair(UINT64_ZERO_, task1->taskId_));
-    taskManager.StoreTaskDuration(task->taskId_, UINT64_ZERO_, UINT64_ZERO_);
+    taskManager.taskDurationInfos_.emplace(task->taskId_, std::make_pair(UINT64_ZERO, task1->taskId_));
+    taskManager.StoreTaskDuration(task->taskId_, UINT64_ZERO, UINT64_ZERO);
     taskManager.GetTaskDuration(task->taskId_, "");
     taskManager.RemoveTaskDuration(task->taskId_);
 }
@@ -617,7 +617,7 @@ void NativeEngineTest::CheckTask(napi_env env)
     groupManager.CancelGroup(env, groupId);
 
     GroupInfo* groupInfo = new GroupInfo();
-    groupInfo->finishedTaskNum = FINSHED_TASK_;
+    groupInfo->finishedTaskNum = FINSHED_TASK;
     group->currentGroupInfo_ = groupInfo;
     group->groupState_ = ExecuteState::NOT_FOUND;
     groupManager.CancelGroup(env, groupId);
@@ -626,11 +626,11 @@ void NativeEngineTest::CheckTask(napi_env env)
     groupManager.CancelGroup(env, groupId);
 
     group->groupState_ = ExecuteState::RUNNING;
-    group->taskNum_ = FINSHED_TASK_;
+    group->taskNum_ = FINSHED_TASK;
     group->taskIds_.push_back(task->taskId_);
     groupManager.CancelGroup(env, groupId);
 
-    group->taskNum_ = TASK_NUMS_;
+    group->taskNum_ = TASK_NUMS;
     group->groupState_ = ExecuteState::WAITING;
     napi_value resArr;
     napi_create_array_with_length(env, group->taskIds_.size(), &resArr);
@@ -680,16 +680,17 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
     task->seqRunnerId_ = seqRunnerId;
     sequenceRunnerManager.StoreSequenceRunner(seqRunnerId, seqRunner);
     seqRunner->isGlobalRunner_ = true;
+    seqRunner->IncreaseSeqCount();
     bool res = sequenceRunnerManager.TriggerSeqRunner(env, task);
     ASSERT_FALSE(res);
-    seqRunner->globalSeqRunnerRef_.emplace(env, CreateReference(env));
     seqRunner->currentTaskId_ = task1->taskId_;
+    seqRunner->IncreaseSeqCount();
     sequenceRunnerManager.TriggerSeqRunner(env, task);
     seqRunner->isGlobalRunner_ = false;
-    seqRunner->seqRunnerRef_ = CreateReference(env);
     seqRunner->currentTaskId_ = task->taskId_;
+    seqRunner->IncreaseSeqCount();
     sequenceRunnerManager.TriggerSeqRunner(env, task);
-    seqRunner->seqRunnerRef_ = CreateReference(env);
+    seqRunner->IncreaseSeqCount();
     task1->taskState_ = ExecuteState::CANCELED;
     task1->env_ = env;
     seqRunner->seqRunnerTasks_.push_back(task1);
@@ -697,7 +698,7 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
     task1->currentTaskInfo_ = taskInfo;
     seqRunner->currentTaskId_ = task->taskId_;
     sequenceRunnerManager.TriggerSeqRunner(env, task);
-    seqRunner->seqRunnerRef_ = CreateReference(env);
+    seqRunner->refCount_ = SIZE_TWO;
     TaskInfo* taskInfo1 = new TaskInfo();
     task1->currentTaskInfo_ = taskInfo1;
     seqRunner->seqRunnerTasks_.push_back(task1);
@@ -723,14 +724,12 @@ void NativeEngineTest::UpdateGroupState(napi_env env)
 
     SequenceRunnerManager& runnerManager = SequenceRunnerManager::GetInstance();
     napi_value obj = NapiHelper::CreateObject(env);
-    SequenceRunner* seqRunner = runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_THREE_, "test", UINT32_ONE_);
+    SequenceRunner* seqRunner = runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_THREE, "test", UINT32_ONE);
     seqRunner->priority_ = Priority::MEDIUM;
-    runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO_, "test", UINT32_ZERO_);
-    runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO_, "test", UINT32_ONE_);
-    runnerManager.DecreaseSeqCount(seqRunner);
-    runnerManager.RemoveGlobalSeqRunnerRef(env, seqRunner);
-    runnerManager.RemoveSequenceRunner("func");
-    runnerManager.RemoveSequenceRunner("test");
+    runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO, "test", UINT32_ZERO);
+    runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO, "test", UINT32_ONE);
+    NativeEngineTest::RemoveSequenceRunnerByName("func");
+    NativeEngineTest::RemoveSequenceRunnerByName("test");
 }
 
 void NativeEngineTest::ReleaseWorkerHandles(napi_env env)
@@ -850,7 +849,7 @@ void NativeEngineTest::TaskResultCallback(napi_env env)
     task->env_ = worker->workerEnv_;
     task->taskRefCount_.fetch_add(1);
     task->worker_ = worker;
-    task->cpuTime_ = UINT64_ZERO_;
+    task->cpuTime_ = UINT64_ZERO;
     Worker::TaskResultCallback(worker->workerEnv_, nullptr, false, reinterpret_cast<void*>(task));
     task->taskRefCount_.fetch_add(1);
     task->cpuTime_ = task->taskId_;
@@ -968,5 +967,15 @@ void NativeEngineTest::AddTasksToAsyncRunner(void* asyncData, void* taskData)
     AsyncRunner* async = reinterpret_cast<AsyncRunner*>(asyncData);
     Task* task = reinterpret_cast<Task*>(taskData);
     AsyncRunner::AddTasksToAsyncRunner(async, task);
+}
+
+void NativeEngineTest::RemoveSequenceRunnerByName(std::string name)
+{
+    SequenceRunnerManager::GetInstance().RemoveSequenceRunnerByName(name);
+}
+
+void NativeEngineTest::RemoveSequenceRunner(uint64_t seqId)
+{
+    SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqId);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

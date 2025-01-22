@@ -92,9 +92,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
             return nullptr;
         }
     } else {
-        seqRunner = new SequenceRunner();
-        seqRunner->priority_ = static_cast<Priority>(priority);
-        napi_create_reference(env, thisVar, 0, &seqRunner->seqRunnerRef_);
+        seqRunner = new SequenceRunner(static_cast<Priority>(priority));
     }
 
     if (!SeqRunnerConstructorInner(env, thisVar, seqRunner)) {
@@ -143,7 +141,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (promise == nullptr) {
         return nullptr;
     }
-    if (!SequenceRunnerManager::GetInstance().IncreaseGlobalSeqRunner(env, seqRunner)) {
+    if (!SequenceRunnerManager::GetInstance().FindRunnerAndRef(seqRunnerId)) {
         return nullptr;
     }
     if (seqRunner->currentTaskId_ == 0) {
@@ -169,22 +167,87 @@ void SequenceRunner::ExecuteTaskImmediately(uint32_t taskId, Priority priority)
 void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
 {
     SequenceRunner* seqRunner = static_cast<SequenceRunner*>(data);
-    if (seqRunner->isGlobalRunner_) {
-        SequenceRunnerManager::GetInstance().GlobalSequenceRunnerDestructor(env, seqRunner);
-    } else {
-        SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
-        napi_delete_reference(env, seqRunner->seqRunnerRef_);
-        delete seqRunner;
-    }
+    SequenceRunnerManager::GetInstance().SequenceRunnerDestructor(seqRunner);
 }
 
-void SequenceRunner::RemoveWaitingTask(Task* task)
+bool SequenceRunner::RemoveWaitingTask(Task* task)
 {
     std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    if (seqRunnerTasks_.empty()) {
+        return false;
+    }
     auto iter = std::find(seqRunnerTasks_.begin(), seqRunnerTasks_.end(), task);
     if (iter != seqRunnerTasks_.end()) {
         seqRunnerTasks_.erase(iter);
-        SequenceRunnerManager::GetInstance().TriggerGlobalSeqRunner(task->env_, this);
+        return true;
     }
+    return false;
+}
+
+uint64_t SequenceRunner::DecreaseSeqCount()
+{
+    if (refCount_ > 0) {
+        refCount_--;
+    }
+    return refCount_;
+}
+
+void SequenceRunner::IncreaseSeqCount()
+{
+    refCount_++;
+}
+
+void SequenceRunner::AddTask(Task* task)
+{
+    std::unique_lock<std::shared_mutex> seqLock(seqRunnerMutex_);
+    seqRunnerTasks_.push_back(task);
+}
+
+void SequenceRunner::TriggerTask(napi_env env)
+{
+    std::list<napi_deferred> deferreds {};
+    {
+        std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+        if (seqRunnerTasks_.empty()) {
+            currentTaskId_ = 0;
+            return;
+        }
+        Task* task = seqRunnerTasks_.front();
+        seqRunnerTasks_.pop_front();
+        bool isEmpty = false;
+        while (task->taskState_ == ExecuteState::CANCELED) {
+            if (refCount_ > 0) {
+                refCount_--;
+            }
+            if (task->currentTaskInfo_ != nullptr) {
+                deferreds.push_back(task->currentTaskInfo_->deferred);
+            }
+            if (task->IsSameEnv(env)) {
+                task->CancelInner(ExecuteState::CANCELED);
+            } else {
+                CancelTaskMessage* message = new CancelTaskMessage(ExecuteState::CANCELED, task->taskId_);
+                task->TriggerCancel(message);
+            }
+            
+            if (seqRunnerTasks_.empty()) {
+                HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty in cancel loop.",
+                            std::to_string(seqRunnerId_).c_str());
+                currentTaskId_ = 0;
+                isEmpty = true;
+                break;
+            }
+            task = seqRunnerTasks_.front();
+            seqRunnerTasks_.pop_front();
+        }
+        if (!isEmpty) {
+            currentTaskId_ = task->taskId_;
+            task->IncreaseRefCount();
+            task->taskState_ = ExecuteState::WAITING;
+            HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
+                        std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId_).c_str());
+            TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority_);
+        }
+    }
+    TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, "taskpool:: sequenceRunner task has been canceled");
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

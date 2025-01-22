@@ -26,17 +26,12 @@ public:
 
     SequenceRunner* CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, size_t argc,
                                             const std::string& name, uint32_t priority);
-    uint64_t DecreaseSeqCount(SequenceRunner* seqRunner);
-    void RemoveGlobalSeqRunnerRef(napi_env env, SequenceRunner* seqRunner);
-    void RemoveSequenceRunner(const std::string& name);
-    bool TriggerGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner);
-    void GlobalSequenceRunnerDestructor(napi_env env, SequenceRunner* seqRunner);
-    bool IncreaseGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner);
+    void SequenceRunnerDestructor(SequenceRunner* seqRunner);
     void AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task);
     bool TriggerSeqRunner(napi_env env, Task* lastTask);
     void StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner);
-    void RemoveSequenceRunner(uint64_t seqRunnerId);
     void RemoveWaitingTask(Task* task);
+    bool FindRunnerAndRef(uint64_t seqRunnerId);
 
 private:
     SequenceRunnerManager() = default;
@@ -45,6 +40,9 @@ private:
     SequenceRunnerManager& operator=(const SequenceRunnerManager &) = delete;
     SequenceRunnerManager(SequenceRunnerManager &&) = delete;
     SequenceRunnerManager& operator=(SequenceRunnerManager &&) = delete;
+    void RemoveSequenceRunnerByName(const std::string& name);
+    void RemoveSequenceRunner(uint64_t seqRunnerId);
+    bool UnrefAndDestroyRunner(SequenceRunner* seqRunner);
 
     // <<name1, seqRunner>, <name2, seqRunner>, ...>
     std::unordered_map<std::string, SequenceRunner*> globalSeqRunner_ {};
@@ -52,6 +50,8 @@ private:
     // <seqRunnerId, SequenceRunner>
     std::unordered_map<uint64_t, SequenceRunner*> seqRunners_ {};
     std::mutex seqRunnersMutex_;
+
+    friend class NativeEngineTest;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_SEQ_RUNNER_MANAGER_H

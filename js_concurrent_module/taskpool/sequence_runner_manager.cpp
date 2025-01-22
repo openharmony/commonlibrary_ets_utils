@@ -37,13 +37,11 @@ SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, nap
     SequenceRunner* seqRunner = nullptr;
     auto iter = globalSeqRunner_.find(name);
     if (iter == globalSeqRunner_.end()) {
-        seqRunner = new SequenceRunner();
-        // refresh priority default values on first creation
+        Priority priorityVal = Priority::DEFAULT;
         if (argc == 2) { // 2: The number of parameters is 2.
-            seqRunner->priority_ = static_cast<Priority>(priority);
+            priorityVal = static_cast<Priority>(priority);
         }
-        seqRunner->isGlobalRunner_ = true;
-        seqRunner->seqName_ = name;
+        seqRunner = new SequenceRunner(priorityVal, name, true);
         globalSeqRunner_.emplace(name, seqRunner);
     } else {
         seqRunner = iter->second;
@@ -51,81 +49,34 @@ SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, nap
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority can not changed.");
             return nullptr;
         }
-    }
-    seqRunner->count_++;
-    auto tmpIter = seqRunner->globalSeqRunnerRef_.find(env);
-    if (tmpIter == seqRunner->globalSeqRunnerRef_.end()) {
-        napi_ref gloableSeqRunnerRef = nullptr;
-        napi_create_reference(env, thisVar, 0, &gloableSeqRunnerRef);
-        seqRunner->globalSeqRunnerRef_.emplace(env, gloableSeqRunnerRef);
+        if (!FindRunnerAndRef(seqRunner->seqRunnerId_)) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: seqRunner not exist.");
+            return nullptr;
+        }
+        if (seqRunner->seqRunnerTasks_.empty()) {
+            seqRunner->currentTaskId_ = 0;
+        }
     }
 
     return seqRunner;
 }
 
-bool SequenceRunnerManager::TriggerGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner)
+void SequenceRunnerManager::RemoveSequenceRunnerByName(const std::string& name)
 {
-    std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
-    if (seqRunner->isGlobalRunner_) {
-        auto iter = seqRunner->globalSeqRunnerRef_.find(env);
-        if (iter == seqRunner->globalSeqRunnerRef_.end()) {
-            return false;
-        }
-        napi_reference_unref(env, iter->second, nullptr);
-    } else {
-        napi_reference_unref(env, seqRunner->seqRunnerRef_, nullptr);
-    }
-    return true;
-}
-
-uint64_t SequenceRunnerManager::DecreaseSeqCount(SequenceRunner* seqRunner)
-{
-    std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
-    return --(seqRunner->count_);
-}
-
-void SequenceRunnerManager::RemoveGlobalSeqRunnerRef(napi_env env, SequenceRunner* seqRunner)
-{
-    std::lock_guard<std::mutex> lock(globalSeqRunnerMutex_);
-    auto iter = seqRunner->globalSeqRunnerRef_.find(env);
-    if (iter != seqRunner->globalSeqRunnerRef_.end()) {
-        napi_delete_reference(env, iter->second);
-        seqRunner->globalSeqRunnerRef_.erase(iter);
-    }
-}
-
-void SequenceRunnerManager::RemoveSequenceRunner(const std::string& name)
-{
-    std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
+    std::unique_lock<std::mutex> globalLock(globalSeqRunnerMutex_);
     auto iter = globalSeqRunner_.find(name.c_str());
     if (iter != globalSeqRunner_.end()) {
         globalSeqRunner_.erase(iter->first);
     }
 }
 
-void SequenceRunnerManager::GlobalSequenceRunnerDestructor(napi_env env, SequenceRunner* seqRunner)
+void SequenceRunnerManager::SequenceRunnerDestructor(SequenceRunner* seqRunner)
 {
-    RemoveGlobalSeqRunnerRef(env, seqRunner);
-    if (DecreaseSeqCount(seqRunner) == 0) {
-        RemoveSequenceRunner(seqRunner->seqName_);
-        SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqRunner->seqRunnerId_);
-        delete seqRunner;
+    auto runner = GetSeqRunner(seqRunner->seqRunnerId_);
+    if (runner == nullptr) {
+        return;
     }
-}
-
-bool SequenceRunnerManager::IncreaseGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner)
-{
-    std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
-    if (seqRunner->isGlobalRunner_) {
-        auto iter = seqRunner->globalSeqRunnerRef_.find(env);
-        if (iter == seqRunner->globalSeqRunnerRef_.end()) {
-            return false;
-        }
-        napi_reference_ref(env, iter->second, nullptr);
-    } else {
-        napi_reference_ref(env, seqRunner->seqRunnerRef_, nullptr);
-    }
-    return true;
+    UnrefAndDestroyRunner(seqRunner);
 }
 
 void SequenceRunnerManager::StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner)
@@ -136,7 +87,6 @@ void SequenceRunnerManager::StoreSequenceRunner(uint64_t seqRunnerId, SequenceRu
 
 void SequenceRunnerManager::RemoveSequenceRunner(uint64_t seqRunnerId)
 {
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
     seqRunners_.erase(seqRunnerId);
 }
 
@@ -159,8 +109,7 @@ void SequenceRunnerManager::AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task)
         HILOG_ERROR("seqRunner:: seqRunner not found.");
         return;
     } else {
-        std::unique_lock<std::shared_mutex> seqRunnerLock(iter->second->seqRunnerMutex_);
-        iter->second->seqRunnerTasks_.push_back(task);
+        iter->second->AddTask(task);
     }
 }
 
@@ -169,58 +118,55 @@ bool SequenceRunnerManager::TriggerSeqRunner(napi_env env, Task* lastTask)
     uint64_t seqRunnerId = lastTask->seqRunnerId_;
     SequenceRunner* seqRunner = GetSeqRunner(seqRunnerId);
     if (seqRunner == nullptr) {
-        HILOG_ERROR("seqRunner:: trigger seqRunner not exist.");
+        HILOG_ERROR("taskpool:: trigger seqRunner not exist.");
         return false;
     }
-    if (!SequenceRunnerManager::GetInstance().TriggerGlobalSeqRunner(env, seqRunner)) {
-        HILOG_ERROR("seqRunner:: trigger globalSeqRunner not exist.");
+    if (UnrefAndDestroyRunner(seqRunner)) {
+        HILOG_ERROR("taskpool:: trigger seqRunner is removed.");
         return false;
     }
     if (seqRunner->currentTaskId_ != lastTask->taskId_) {
-        HILOG_ERROR("seqRunner:: only front task can trigger seqRunner.");
+        HILOG_ERROR("taskpool:: only front task can trigger seqRunner.");
         return false;
     }
-    std::list<napi_deferred> deferreds {};
-    {
-        std::unique_lock<std::shared_mutex> lock(seqRunner->seqRunnerMutex_);
-        if (seqRunner->seqRunnerTasks_.empty()) {
-            seqRunner->currentTaskId_ = 0;
-            return true;
-        }
-        Task* task = seqRunner->seqRunnerTasks_.front();
-        seqRunner->seqRunnerTasks_.pop_front();
-        bool isEmpty = false;
-        while (task->taskState_ == ExecuteState::CANCELED) {
-            deferreds.push_back(task->currentTaskInfo_->deferred);
-            task->DisposeCanceledTask();
-            if (seqRunner->seqRunnerTasks_.empty()) {
-                HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty in cancel loop.",
-                            std::to_string(seqRunnerId).c_str());
-                seqRunner->currentTaskId_ = 0;
-                isEmpty = true;
-                break;
-            }
-            task = seqRunner->seqRunnerTasks_.front();
-            seqRunner->seqRunnerTasks_.pop_front();
-        }
-        if (!isEmpty) {
-            seqRunner->currentTaskId_ = task->taskId_;
-            task->IncreaseRefCount();
-            task->taskState_ = ExecuteState::WAITING;
-            HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
-                        std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
-            TaskManager::GetInstance().EnqueueTaskId(task->taskId_, seqRunner->priority_);
-        }
-    }
-    TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, "taskpool:: sequenceRunner task has been canceled");
+    seqRunner->TriggerTask(env);
     return true;
 }
 
 void SequenceRunnerManager::RemoveWaitingTask(Task* task)
 {
     auto seqRunner = GetSeqRunner(task->seqRunnerId_);
-    if (seqRunner != nullptr) {
-        seqRunner->RemoveWaitingTask(task);
+    if (seqRunner == nullptr) {
+        return;
     }
+    if (seqRunner->RemoveWaitingTask(task)) {
+        UnrefAndDestroyRunner(seqRunner);
+    }
+}
+
+bool SequenceRunnerManager::FindRunnerAndRef(uint64_t seqRunnerId)
+{
+    SequenceRunner* seqRunner = GetSeqRunner(seqRunnerId);
+    if (seqRunner == nullptr) {
+        HILOG_ERROR("taskpool:: seqRunner not exist.");
+        return false;
+    }
+    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+    seqRunner->IncreaseSeqCount();
+    return true;
+}
+
+bool SequenceRunnerManager::UnrefAndDestroyRunner(SequenceRunner* seqRunner)
+{
+    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+    if (seqRunner->DecreaseSeqCount() != 0) {
+        return false;
+    }
+    if (seqRunner->isGlobalRunner_) {
+        RemoveSequenceRunnerByName(seqRunner->seqName_);
+    }
+    RemoveSequenceRunner(seqRunner->seqRunnerId_);
+    delete seqRunner;
+    return true;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

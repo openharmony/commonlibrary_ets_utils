@@ -19,6 +19,7 @@
 #include "native_engine.h"
 
 #include "gtest/gtest.h"
+#include <string>
 
 #if defined(ENABLE_TASKPOOL_FFRT)
 #include "c/executor_task.h"
@@ -84,6 +85,8 @@ public:
                                           napi_value waitingCapacity);
     static void AsyncRunnerDestructor(napi_env env, void* data);
     static void AddTasksToAsyncRunner(void* asyncData, void* taskData);
+    static void RemoveSequenceRunnerByName(std::string name);
+    static void RemoveSequenceRunner(uint64_t seqId);
 
     class ExceptionScope {
     public:
