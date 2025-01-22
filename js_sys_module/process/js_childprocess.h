@@ -22,12 +22,6 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 namespace OHOS::JsSysModule::Process {
-    struct WaitInfo {
-        napi_async_work worker {nullptr};
-        napi_deferred deferred {nullptr};
-        int status {0};
-    };
-
     struct StdInfo {
         napi_async_work worker {nullptr};
         napi_deferred deferred {nullptr};

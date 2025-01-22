@@ -15,6 +15,7 @@
 
 #include "js_childprocess.h"
 
+#include <csignal>
 #include <map>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -110,18 +111,12 @@ namespace OHOS::JsSysModule::Process {
 
     napi_value ChildProcess::Wait(napi_env env)
     {
-        napi_value promise = nullptr;
-        auto waitInfo = new WaitInfo;
-        napi_create_promise(env, &(waitInfo->deferred), &promise);
-
         if (isWait_) {
             int32_t status;
             isWait_ = false;
             if (optionsInfo_ == nullptr) {
                 napi_value res = nullptr;
                 napi_get_undefined(env, &res);
-                delete waitInfo;
-                waitInfo = nullptr;
                 HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
                 return res;
             }
@@ -130,10 +125,11 @@ namespace OHOS::JsSysModule::Process {
         }
         isNeedRun_ = false;
         napi_value result = nullptr;
+        napi_value promise = nullptr;
+        napi_deferred deferred = nullptr;
+        napi_create_promise(env, &deferred, &promise);
         napi_create_int32(env, static_cast<int8_t>(exitCode_), &result);
-        napi_resolve_deferred(env, waitInfo->deferred, result);
-        delete waitInfo;
-        waitInfo = nullptr;
+        napi_resolve_deferred(env, deferred, result);
 
         return promise;
     }
