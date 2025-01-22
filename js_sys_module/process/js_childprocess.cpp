@@ -16,6 +16,7 @@
 #include "js_childprocess.h"
 
 #include <map>
+#include <csignal>
 #include <unistd.h>
 #include <sys/wait.h>
 #include "securec.h"

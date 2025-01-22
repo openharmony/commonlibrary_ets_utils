@@ -2076,6 +2076,19 @@ void Worker::PostWorkerGlobalCallTask()
     GetMainThreadHandler()->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
+
+void Worker::PostWorkerExceptionTask()
+{
+    auto hostOnAllErrorsTask = [this]() {
+        if (IsValidWorker(this)) {
+            HILOG_INFO("worker:: host receive exception.");
+            HITRACE_HELPER_METER_NAME("Worker:: HostOnAllErrorsMessage");
+            this->HostOnAllErrorsInner();
+        }
+    };
+    GetMainThreadHandler()->PostTask(hostOnAllErrorsTask, "WorkerHostOnAllErrorsTask",
+        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+}
 #endif
 
 bool Worker::IsValidWorker(Worker* worker)
@@ -2696,19 +2709,6 @@ void Worker::HandleWorkerUncaughtException(napi_env env, napi_value exception)
         uv_async_send(hostOnAllErrorsSignal_);
 #endif
     }
-}
-
-void Worker::PostWorkerExceptionTask()
-{
-    auto hostOnAllErrorsTask = [this]() {
-        if (IsValidWorker(this)) {
-            HILOG_INFO("worker:: host receive exception.");
-            HITRACE_HELPER_METER_NAME("Worker:: HostOnAllErrorsMessage");
-            this->HostOnAllErrorsInner();
-        }
-    };
-    GetMainThreadHandler()->PostTask(hostOnAllErrorsTask, "WorkerHostOnAllErrorsTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
 void Worker::HostOnAllErrorsInner()
