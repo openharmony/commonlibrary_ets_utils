@@ -286,7 +286,13 @@ class URI {
     let array = new Array();
     let encodedPath: string | null = this.encodedPath;
     if (encodedPath) {
-        return encodedPath.split('/').filter(segment => segment !== '').map(segment => encodeURI(segment));
+      const result: Array<string> = [];
+      encodedPath.split('/').forEach(segment => {
+        if (segment !== '') {
+          result.push(this.decodeSafelyInner(segment));
+        }
+      });
+      return result;
     }
     return array;
   }
