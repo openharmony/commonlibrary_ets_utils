@@ -1431,6 +1431,18 @@ namespace OHOS::Url {
             temp += ":";
             temp += std::to_string(urlData_.port);
         }
+        NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), temp.size(), &result));
+        return result;
+    }
+
+    napi_value URL::GetEncodeHost(napi_env env) const
+    {
+        napi_value result;
+        std::string temp = urlData_.host;
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
+            temp += ":";
+            temp += std::to_string(urlData_.port);
+        }
         if (!flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT10))) {
             temp = EncodePercentEncoding(temp, URL_ENCODED_PERCENT_SIGN_CHARS);
         }
