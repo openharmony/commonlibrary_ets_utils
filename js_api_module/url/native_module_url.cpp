@@ -237,6 +237,16 @@ namespace OHOS::Url {
         return retVal;
     }
 
+    static napi_value GetEncodeUrlHost(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+        URL *murl = nullptr;
+        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&murl)));
+        napi_value retVal = murl->GetEncodeHost(env);
+        return retVal;
+    }
+
     static napi_value GetUrlPath(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -938,6 +948,7 @@ namespace OHOS::Url {
             DECLARE_NAPI_GETTER_SETTER("protocol", GetUrlScheme, SetUrlScheme),
             DECLARE_NAPI_GETTER_SETTER("pathname", GetUrlPath, SetUrlPath),
             DECLARE_NAPI_GETTER_SETTER("port", GetUrlPort, SetUrlPort),
+            DECLARE_NAPI_GETTER("encodeHost", GetEncodeUrlHost),
             DECLARE_NAPI_GETTER_SETTER("encodeSearch", GetEncodeSearch, SetEncodeSearch),
             DECLARE_NAPI_GETTER("onOrOff", GetOnOrOff),
             DECLARE_NAPI_GETTER("GetIsIpv6", GetIsIpv6),

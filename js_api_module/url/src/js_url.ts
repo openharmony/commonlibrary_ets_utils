@@ -58,6 +58,7 @@ interface NativeUrl {
   hostname: string;
   host: string;
   port: string;
+  encodeHost: string;
   encodeSearch: string;
   href(input: string): void;
   pathname: string;
@@ -604,7 +605,7 @@ class URL {
     urlHelper.username_ = nativeUrl.username;
     urlHelper.password_ = nativeUrl.password;
     urlHelper.hostname_ = nativeUrl.hostname;
-    urlHelper.host_ = nativeUrl.host;
+    urlHelper.host_ = nativeUrl.encodeHost;
     urlHelper.hash_ = nativeUrl.hash;
     urlHelper.protocol_ = nativeUrl.protocol;
     urlHelper.pathname_ = nativeUrl.pathname;
@@ -737,7 +738,7 @@ class URL {
   }
   set host(host_) {
     this.c_info.host = host_;
-    this.host_ = this.c_info.host;
+    this.host_ = this.c_info.encodeHost;
     this.hostname_ = this.c_info.hostname;
     this.port_ = this.c_info.port;
     this.setHref();
@@ -763,7 +764,7 @@ class URL {
       this.username_ = this.c_info.username;
       this.password_ = this.c_info.password;
       this.hostname_ = this.c_info.hostname;
-      this.host_ = this.c_info.host;
+      this.host_ = this.c_info.encodeHost;
       this.hash_ = this.c_info.hash;
       this.protocol_ = this.c_info.protocol;
       this.pathname_ = this.c_info.pathname;

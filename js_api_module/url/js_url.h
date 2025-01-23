@@ -291,6 +291,13 @@ namespace OHOS::Url {
         napi_value GetHost(napi_env env) const;
 
         /**
+         * Gets the encode host name portion of the URL.
+         *
+         * @param env NAPI environment parameters.
+         */
+        napi_value GetEncodeHost(napi_env env) const;
+
+        /**
          * The destructor of the url
          */
         virtual ~URL() {}

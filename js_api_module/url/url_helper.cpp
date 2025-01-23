@@ -109,6 +109,7 @@ void StringAnalyzing(std::string_view inputString, std::vector<KeyValue>& result
     }
     auto segmentProcess = [](const std::string_view current, std::vector<KeyValue>& res) {
         if (current.empty()) {
+            res.emplace_back("", "");
             return;
         }
         auto equalIndex = current.find('=');
