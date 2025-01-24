@@ -212,24 +212,22 @@ namespace OHOS::Uri {
         return result;
     }
 
-    static napi_value GetSegment(napi_env env, napi_callback_info info)
+    static napi_value GetLastSegment(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
-        std::vector<std::string> temp = muri->GetSegment();
+        std::string temp = muri->GetLastSegment();
         if (temp.empty()) {
             napi_get_null(env, &result);
             return result;
         }
-        napi_value segment = nullptr;
-        napi_create_array(env, &result);
-        size_t size = temp.size();
-        for (size_t i = 0; i < size; i++) {
-            napi_create_string_utf8(env, temp[i].c_str(), temp[i].length(), &segment);
-            napi_set_element(env, result, i, segment);
+        size_t templen = temp.size();
+        if (napi_create_string_utf8(env, temp.c_str(), templen, &result) != napi_ok) {
+            HILOG_ERROR("GetLastSegment:: can not get temp value");
+            return nullptr;
         }
         return result;
     }
@@ -409,7 +407,7 @@ namespace OHOS::Uri {
             DECLARE_NAPI_FUNCTION("checkIsOpaque", IsOpaque),
             DECLARE_NAPI_FUNCTION("checkIsHierarchical", IsHierarchical),
             DECLARE_NAPI_FUNCTION("addQueryValue", AddQueryValue),
-            DECLARE_NAPI_FUNCTION("getSegment", GetSegment),
+            DECLARE_NAPI_FUNCTION("getLastSegment", GetLastSegment),
             DECLARE_NAPI_FUNCTION("addSegment", AddSegment),
             DECLARE_NAPI_FUNCTION("clearQuery", ClearQuery),
             DECLARE_NAPI_GETTER("scheme", GetScheme),

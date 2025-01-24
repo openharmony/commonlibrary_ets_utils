@@ -24,7 +24,7 @@ interface NativeUri {
   checkIsHierarchical(): boolean;
   addQueryValue(key: string, value: string): string;
   addSegment(pathSegment: string):string;
-  getSegment(): string[];
+  getLastSegment(): string | null;
   clearQuery(): string;
   scheme: string | null;
   authority: string | null;
@@ -275,20 +275,24 @@ class URI {
   }
 
   getLastSegment(): string {
-    let segments = this.uricalss.getSegment();
+    let segments = this.uricalss.getLastSegment();
     if (!segments) {
       return '';
     }
-    return this.decodeSafelyInner(segments[segments.length - 1]);
+    return this.decodeSafelyInner(segments);
   }
 
   getSegment(): string[] {
     let array = new Array();
-    let segments = this.uricalss.getSegment();
-    if (segments) {
-      segments.forEach(element => {
-        array.push(this.decodeSafelyInner(element));
+    let encodedPath: string | null = this.encodedPath;
+    if (encodedPath) {
+      const result: Array<string> = [];
+      encodedPath.split('/').forEach(segment => {
+        if (segment !== '') {
+          result.push(this.decodeSafelyInner(segment));
+        }
       });
+      return result;
     }
     return array;
   }
