@@ -33,8 +33,6 @@ interface NativeXMLSerializer {
   setText(text: string): void;
   setDocType(text: string): void;
   XmlSerializerError(): string;
-  getOutput(): ArrayBuffer | DataView;
-  createDynamic(strEncoding: string): NativeXMLSerializer;
 }
 
 interface Xml {
@@ -56,20 +54,9 @@ declare function requireInternal(s: string): Xml;
 const XML = requireInternal('xml');
 class XmlSerializer {
   xmlSerializerClass: NativeXMLSerializer;
-  buffer: ArrayBuffer | DataView | undefined;
-  constructor();
-  constructor(obj?: object, inputStr?: string) {
-    this.buffer = undefined;
-    if (arguments.length === 0) {
-      let input: string = 'utf-8';
-      this.xmlSerializerClass = XML.XmlSerializer.createDynamic(input);
-      return;
-    }
+  constructor(obj: object, inputStr: string) {
     if (typeof obj !== 'object') {
       throw new BusinessError(`Parameter error.The type of ${obj} must be object`);
-    }
-    if (obj instanceof ArrayBuffer || obj instanceof DataView) {
-      this.buffer = obj;
     }
     if (arguments.length === 1 ||
         (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'undefined' || inputStr === null))) {
@@ -88,30 +75,6 @@ class XmlSerializer {
     if (errStr.length !== 0) {
       throw new BusinessError(errStr);
     }
-  }
-
-  static createDynamic(encoding?: string): XmlSerializer {
-    if (arguments.length === 1) {
-      if (typeof encoding === 'string') {
-        let input: string = encoding;
-        if (input.length === 0 || input.toLowerCase() !== 'utf-8') {
-          throw new BusinessError('Parameter error.Just support utf-8');
-        }
-      } else {
-        throw new BusinessError(`Parameter error.The type of ${encoding} must be string`);
-      }
-    } else if (arguments.length > 1) {
-      throw new BusinessError(`Parameter error.Parameter num more than one`);
-    }
-    let xmlClass = new XmlSerializer();
-    return xmlClass;
-  }
-
-  getOutput(): ArrayBuffer | DataView {
-    if (this.buffer !== undefined) {
-      return this.buffer;
-    }
-    return this.xmlSerializerClass.getOutput();
   }
 
   setAttributes(name: string, value: string): void {
