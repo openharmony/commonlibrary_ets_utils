@@ -25,7 +25,6 @@ extern const char _binary_xml_abc_end[];
 namespace OHOS::xml {
 using namespace OHOS::Tools;
 static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
-const int32_t ARGC_ONE = 1;
 
     static napi_value XmlSerializerConstructor(napi_env env, napi_callback_info info)
     {
@@ -84,7 +83,7 @@ const int32_t ARGC_ONE = 1;
                 }
             }, nullptr, nullptr);
         if (status != napi_ok && object != nullptr) {
-            HILOG_ERROR("XmlSerializerConstructor:: napi_wrap failed");
+            HILOG_ERROR("XmlPullParserConstructor:: napi_wrap failed");
             delete object;
             object = nullptr;
         }
@@ -174,10 +173,6 @@ const int32_t ARGC_ONE = 1;
         XmlSerializer::DealNapiStrValue(env, args[0], name);
         XmlSerializer::DealNapiStrValue(env, args[1], value);
         object->SetAttributes(name, value);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -199,10 +194,7 @@ const int32_t ARGC_ONE = 1;
         std::string name;
         object->DealNapiStrValue(env, args[0], name);
         object->AddEmptyElement(name);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
+
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -215,10 +207,6 @@ const int32_t ARGC_ONE = 1;
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         object->SetDeclaration();
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -236,10 +224,6 @@ const int32_t ARGC_ONE = 1;
         std::string name;
         object->DealNapiStrValue(env, args[0], name);
         object->StartElement(name);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -252,10 +236,6 @@ const int32_t ARGC_ONE = 1;
         XmlSerializer *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
         object->EndElement();
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode != ErrorCodeEnum::NO_ERROR) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -280,10 +260,6 @@ const int32_t ARGC_ONE = 1;
         XmlSerializer::DealNapiStrValue(env, args[0], prefix);
         XmlSerializer::DealNapiStrValue(env, args[1], nsTemp);
         object->SetNamespace(prefix, nsTemp);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -304,10 +280,6 @@ const int32_t ARGC_ONE = 1;
         std::string comment;
         object->DealNapiStrValue(env, args[0], comment);
         object->SetComment(comment);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -328,10 +300,6 @@ const int32_t ARGC_ONE = 1;
         std::string data;
         XmlSerializer::DealNapiStrValue(env, args[0], data);
         object->SetCData(data);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -352,10 +320,6 @@ const int32_t ARGC_ONE = 1;
         std::string text;
         XmlSerializer::DealNapiStrValue(env, args[0], text);
         object->SetText(text);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -376,10 +340,6 @@ const int32_t ARGC_ONE = 1;
         std::string text;
         XmlSerializer::DealNapiStrValue(env, args[0], text);
         object->SetDocType(text);
-        int32_t errorCode = object->XmlSerializerErrorCode();
-        if (errorCode == ErrorCodeEnum::BUFFER_OVERFLOW) {
-            return ErrorHelper::ThrowError(env, errorCode, object->XmlSerializerError().c_str());
-        }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
@@ -397,77 +357,6 @@ const int32_t ARGC_ONE = 1;
         return result;
     }
 
-    static napi_value GetOutput(napi_env env, napi_callback_info info)
-    {
-        napi_value thisVar = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        XmlSerializer *object = nullptr;
-        napi_status status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        if (status != napi_ok) {
-            HILOG_ERROR("XmlSerializer:: napi_unwrap failed!");
-            return nullptr;
-        }
-        napi_value arrBuffer = nullptr;
-        void* arrBufferPtr = nullptr;
-        size_t arrBufferSize = object->GetXmlBufferLength();
-        status = napi_create_arraybuffer(env, arrBufferSize * sizeof(size_t), &arrBufferPtr, &arrBuffer);
-        if (status != napi_ok) {
-            HILOG_ERROR("XmlSerializer:: create arraybuffer failed!");
-            return nullptr;
-        }
-        object->GetXmlBuffer(arrBufferPtr, arrBufferSize);
-        return arrBuffer;
-    }
-
-    static napi_value CreateDynamic(napi_env env, napi_callback_info info)
-    {
-        napi_value thisVar = nullptr;
-        void *data = nullptr;
-        size_t argc = ARGC_ONE;
-        napi_value args[1] = { nullptr }; // 1:The number of parameters is 1
-        XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
-        std::string encoding;
-        napi_status status = XmlSerializer::DealNapiStrValue(env, args[0], encoding);
-        if (status != napi_ok) {
-            return ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. The type of Parameter must be string.");
-        }
-        object = new (std::nothrow) XmlSerializer(encoding);
-        if (object == nullptr) {
-            HILOG_ERROR("XmlSerializerConstructor:: memory allocation failed, object is nullptr");
-            return nullptr;
-        }
-        status = napi_wrap(env, thisVar, object,
-            [](napi_env environment, void *data, void *hint) {
-                auto obj = reinterpret_cast<XmlSerializer*>(data);
-                if (obj != nullptr) {
-                    delete obj;
-                    obj = nullptr;
-                }
-            }, nullptr, nullptr);
-        if (status != napi_ok && object != nullptr) {
-            HILOG_ERROR("XmlSerializerConstructor::napi_wrap failed");
-            delete object;
-            object = nullptr;
-        }
-        napi_property_descriptor xmlDesc[] = {
-            DECLARE_NAPI_FUNCTION("setAttributes", SetAttributes),
-            DECLARE_NAPI_FUNCTION("addEmptyElement", AddEmptyElement),
-            DECLARE_NAPI_FUNCTION("setDeclaration", SetDeclaration),
-            DECLARE_NAPI_FUNCTION("startElement", StartElement),
-            DECLARE_NAPI_FUNCTION("endElement", EndElement),
-            DECLARE_NAPI_FUNCTION("setNamespace", SetNamespace),
-            DECLARE_NAPI_FUNCTION("setComment", SetComment),
-            DECLARE_NAPI_FUNCTION("setCDATA", SetCData),
-            DECLARE_NAPI_FUNCTION("setText", SetText),
-            DECLARE_NAPI_FUNCTION("setDocType", SetDocType),
-            DECLARE_NAPI_FUNCTION("XmlSerializerError", XmlSerializerError),
-            DECLARE_NAPI_FUNCTION("getOutput", GetOutput),
-        };
-        napi_define_properties(env, thisVar, sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc);
-        return thisVar;
-    }
-
     napi_value XmlSerializerInit(napi_env env, napi_value exports)
     {
         const char *xmlSerializerClass = "XmlSerializer";
@@ -483,9 +372,7 @@ const int32_t ARGC_ONE = 1;
             DECLARE_NAPI_FUNCTION("setCDATA", SetCData),
             DECLARE_NAPI_FUNCTION("setText", SetText),
             DECLARE_NAPI_FUNCTION("setDocType", SetDocType),
-            DECLARE_NAPI_FUNCTION("XmlSerializerError", XmlSerializerError),
-            DECLARE_NAPI_FUNCTION("getOutput", GetOutput),
-            DECLARE_NAPI_STATIC_FUNCTION("createDynamic", CreateDynamic)
+            DECLARE_NAPI_FUNCTION("XmlSerializerError", XmlSerializerError)
         };
         NAPI_CALL(env, napi_define_class(env, xmlSerializerClass, strlen(xmlSerializerClass), XmlSerializerConstructor,
                                          nullptr, sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc, &xmlClass));
