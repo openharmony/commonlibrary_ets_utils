@@ -177,4 +177,14 @@ void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_
         delete seqRunner;
     }
 }
+
+void SequenceRunner::RemoveWaitingTask(Task* task)
+{
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    auto iter = std::find(seqRunnerTasks_.begin(), seqRunnerTasks_.end(), task);
+    if (iter != seqRunnerTasks_.end()) {
+        seqRunnerTasks_.erase(iter);
+        SequenceRunnerManager::GetInstance().TriggerGlobalSeqRunner(task->env_, this);
+    }
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

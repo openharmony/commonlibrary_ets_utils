@@ -16,7 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_RUNNER_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_RUNNER_H
 
-#include <queue>
+#include <deque>
 #include <unordered_map>
 
 #include "task.h"
@@ -29,6 +29,7 @@ public:
 
     static napi_value SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
+    void RemoveWaitingTask(Task* task);
 
 private:
     SequenceRunner(const SequenceRunner &) = delete;
@@ -45,7 +46,7 @@ public:
     uint64_t seqRunnerId_ {};
     std::atomic<uint64_t> currentTaskId_ {};
     Priority priority_ {Priority::DEFAULT};
-    std::queue<Task*> seqRunnerTasks_ {};
+    std::deque<Task*> seqRunnerTasks_ {};
     std::shared_mutex seqRunnerMutex_;
 
     // for global SequenceRunner

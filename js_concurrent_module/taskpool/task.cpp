@@ -18,6 +18,7 @@
 #include "async_runner_manager.h"
 #include "helper/concurrent_helper.h"
 #include "helper/hitrace_helper.h"
+#include "sequence_runner_manager.h"
 #include "taskpool.h"
 #include "worker.h"
 
@@ -150,6 +151,9 @@ void Task::CleanupHookFunc(void* arg)
         if (asyncRunner != nullptr) {
             asyncRunner->RemoveWaitingTask(task, false);
         }
+    }
+    if (task->IsSeqRunnerTask()) {
+        SequenceRunnerManager::GetInstance().RemoveWaitingTask(task);
     }
 }
 

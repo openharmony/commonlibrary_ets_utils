@@ -36,6 +36,7 @@ public:
     bool TriggerSeqRunner(napi_env env, Task* lastTask);
     void StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner);
     void RemoveSequenceRunner(uint64_t seqRunnerId);
+    void RemoveWaitingTask(Task* task);
 
 private:
     SequenceRunnerManager() = default;
