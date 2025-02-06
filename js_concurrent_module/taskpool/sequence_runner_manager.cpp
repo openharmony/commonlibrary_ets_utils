@@ -160,7 +160,7 @@ void SequenceRunnerManager::AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task)
         return;
     } else {
         std::unique_lock<std::shared_mutex> seqRunnerLock(iter->second->seqRunnerMutex_);
-        iter->second->seqRunnerTasks_.push(task);
+        iter->second->seqRunnerTasks_.push_back(task);
     }
 }
 
@@ -188,7 +188,7 @@ bool SequenceRunnerManager::TriggerSeqRunner(napi_env env, Task* lastTask)
             return true;
         }
         Task* task = seqRunner->seqRunnerTasks_.front();
-        seqRunner->seqRunnerTasks_.pop();
+        seqRunner->seqRunnerTasks_.pop_front();
         bool isEmpty = false;
         while (task->taskState_ == ExecuteState::CANCELED) {
             deferreds.push_back(task->currentTaskInfo_->deferred);
@@ -201,7 +201,7 @@ bool SequenceRunnerManager::TriggerSeqRunner(napi_env env, Task* lastTask)
                 break;
             }
             task = seqRunner->seqRunnerTasks_.front();
-            seqRunner->seqRunnerTasks_.pop();
+            seqRunner->seqRunnerTasks_.pop_front();
         }
         if (!isEmpty) {
             seqRunner->currentTaskId_ = task->taskId_;
@@ -214,5 +214,13 @@ bool SequenceRunnerManager::TriggerSeqRunner(napi_env env, Task* lastTask)
     }
     TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, "taskpool:: sequenceRunner task has been canceled");
     return true;
+}
+
+void SequenceRunnerManager::RemoveWaitingTask(Task* task)
+{
+    auto seqRunner = GetSeqRunner(task->seqRunnerId_);
+    if (seqRunner != nullptr) {
+        seqRunner->RemoveWaitingTask(task);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
