@@ -2712,13 +2712,21 @@ HWTEST_F(NativeEngineTest, testUrlHelper007, testing::ext::TestSize.Level0)
     std::string input = "?bar=2&&&&&foo~!@$%^&*()_+=test+@$%";
     std::vector<OHOS::Url::KeyValue> params {};
     OHOS::Url::StringAnalyzing(input, params);
-    ASSERT_EQ(params.size(), 3);
+    ASSERT_EQ(params.size(), 7);
     ASSERT_STREQ(params[0].first.c_str(), "bar");
     ASSERT_STREQ(params[0].second.c_str(), "2");
-    ASSERT_STREQ(params[1].first.c_str(), "foo~!@$%^");
+    ASSERT_STREQ(params[1].first.c_str(), "");
     ASSERT_STREQ(params[1].second.c_str(), "");
-    ASSERT_STREQ(params[2].first.c_str(), "*()_ ");
-    ASSERT_STREQ(params[2].second.c_str(), "test @$%");
+    ASSERT_STREQ(params[2].first.c_str(), "");
+    ASSERT_STREQ(params[2].second.c_str(), "");
+    ASSERT_STREQ(params[3].first.c_str(), "");
+    ASSERT_STREQ(params[3].second.c_str(), "");
+    ASSERT_STREQ(params[4].first.c_str(), "");
+    ASSERT_STREQ(params[4].second.c_str(), "");
+    ASSERT_STREQ(params[5].first.c_str(), "foo~!@$%^");
+    ASSERT_STREQ(params[5].second.c_str(), "");
+    ASSERT_STREQ(params[6].first.c_str(), "*()_ ");
+    ASSERT_STREQ(params[6].second.c_str(), "test @$%");
 }
 
 // 0xxx xxxx 0x00 -0x7F decode, 0x80-0xFF not decode
