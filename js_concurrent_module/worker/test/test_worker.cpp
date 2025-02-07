@@ -799,6 +799,8 @@ public:
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
         worker->HandleHostException();
         napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_TRUE(exception != nullptr);
         napi_env workerEnv = nullptr;
         napi_create_runtime(env, &workerEnv);
         worker->workerEnv_ = workerEnv;
@@ -4789,6 +4791,7 @@ HWTEST_F(WorkersTest, WorkerTest086, testing::ext::TestSize.Level0)
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
