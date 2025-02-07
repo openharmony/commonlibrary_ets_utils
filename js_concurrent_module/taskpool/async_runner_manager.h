@@ -33,11 +33,11 @@ public:
                                          uint32_t runningCapacity, uint32_t waitingCapacity);
     bool TriggerAsyncRunner(napi_env env, Task* lastTask);
     void StoreAsyncRunner(uint64_t asyncRunnerId, AsyncRunner* asyncRunner);
-    void RemoveAsyncRunner(uint64_t asyncRunnerId);
     AsyncRunner* GetAsyncRunner(uint64_t asyncRunnerId);
-    void RemoveGlobalAsyncRunner(const std::string& name);
-    void GlobalAsyncRunnerDestructor(napi_env env, AsyncRunner* asyncRunner);
     void CancelAsyncRunnerTask(napi_env env, Task* task);
+    void RemoveWaitingTask(Task* task);
+    bool FindRunnerAndRef(uint64_t asyncRunnerId);
+    bool UnrefAndDestroyRunner(AsyncRunner* asyncRunner);
 
 private:
     AsyncRunnerManager() = default;
@@ -46,6 +46,8 @@ private:
     AsyncRunnerManager& operator=(const AsyncRunnerManager &) = delete;
     AsyncRunnerManager(AsyncRunnerManager &&) = delete;
     AsyncRunnerManager& operator=(AsyncRunnerManager &&) = delete;
+    void RemoveAsyncRunner(uint64_t asyncRunnerId);
+    void RemoveGlobalAsyncRunner(const std::string& name);
 
     // <asyncRunnerId, AsyncRunner>
     std::unordered_map<uint64_t, AsyncRunner*> asyncRunners_ {};

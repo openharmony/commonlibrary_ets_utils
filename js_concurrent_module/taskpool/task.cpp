@@ -147,10 +147,7 @@ void Task::CleanupHookFunc(void* arg)
         }
     }
     if (task->IsAsyncRunnerTask()) {
-        auto asyncRunner = AsyncRunnerManager::GetInstance().GetAsyncRunner(task->asyncRunnerId_);
-        if (asyncRunner != nullptr) {
-            asyncRunner->RemoveWaitingTask(task, false);
-        }
+        AsyncRunnerManager::GetInstance().RemoveWaitingTask(task);
     }
     if (task->IsSeqRunnerTask()) {
         SequenceRunnerManager::GetInstance().RemoveWaitingTask(task);
