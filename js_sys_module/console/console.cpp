@@ -280,7 +280,7 @@ napi_value Console::Group(napi_env env, napi_callback_info info)
 napi_value Console::GroupEnd(napi_env env, napi_callback_info info)
 {
     size_t length = groupIndent.size();
-    if (length > GROUPINDETATIONWIDTH) {
+    if (length >= GROUPINDETATIONWIDTH) {
         groupIndent = groupIndent.substr(0, length - GROUPINDETATIONWIDTH);
     }
     return Helper::NapiHelper::GetUndefinedValue(env);
