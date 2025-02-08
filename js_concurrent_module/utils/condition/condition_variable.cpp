@@ -22,20 +22,21 @@
 namespace Commonlibrary::Concurrent::Condition {
 static constexpr int ARGCONE = 1;
 static thread_local napi_ref conditionClassRef = nullptr;
+std::unordered_map<std::string, ConditionVariable*> ConditionVariable::condMap_;
+std::mutex ConditionVariable::mapMtx_;
 
 void ConditionVariable::EnvCleanupHook(void* arg)
 {
-    auto* workerData = static_cast<WorkerData*>(arg);
-    workerData->cond->CleanupHookEnvPromise(workerData->pi, workerData->cond);
-    delete workerData;
+    auto* workerData = static_cast<PromiseInfo*>(arg);
+    workerData->cond->CleanupHookEnvPromise(workerData, workerData->cond);
 }
 
-void ConditionVariable::CleanupHookEnvPromise(std::shared_ptr<PromiseInfo> pi, ConditionVariable *cond)
+void ConditionVariable::CleanupHookEnvPromise(PromiseInfo *pi, ConditionVariable *cond)
 {
     {
-        std::lock_guard<std::mutex> lock(cond->queueMtx_);
+        std::unique_lock<std::mutex> lock(cond->queueMtx_);
         auto it = std::find_if(cond->promiseQueue_.begin(), cond->promiseQueue_.end(),
-            [pi](const std::shared_ptr<PromiseInfo>& p) { return p.get() == pi.get(); });
+            [pi](const std::shared_ptr<PromiseInfo>& p) { return p.get() == pi; });
         if (it != cond->promiseQueue_.end()) {
             cond->promiseQueue_.erase(it);
             --(cond->refCount_);
@@ -52,22 +53,16 @@ void ConditionVariable::CleanupHookEnvPromise(std::shared_ptr<PromiseInfo> pi, C
         });
         pi->timer = nullptr;
     }
-    napi_value undefined;
-    napi_get_undefined(pi->env, &undefined);
-    napi_reject_deferred(pi->env, pi->deferred, undefined);
 }
 
 void ConditionVariable::AddEnvCleanupHook(std::shared_ptr<PromiseInfo> pi)
 {
-    auto* workerData = new WorkerData{pi, this};
-    napi_add_env_cleanup_hook(pi->env, EnvCleanupHook, static_cast<void*>(workerData));
+    napi_add_env_cleanup_hook(pi->env, EnvCleanupHook, static_cast<void*>(pi.get()));
 }
 
 void ConditionVariable::RemoveEnvCleanupHook(std::shared_ptr<PromiseInfo> pi)
 {
-    auto* workerData = new WorkerData{pi, this};
-    napi_remove_env_cleanup_hook(pi->env, EnvCleanupHook, static_cast<void*>(workerData));
-    delete workerData;
+    napi_remove_env_cleanup_hook(pi->env, EnvCleanupHook, static_cast<void*>(pi.get()));
 }
 
 napi_value ConditionVariable::Init(napi_env env, napi_value exports)
@@ -85,8 +80,9 @@ napi_value ConditionVariable::Init(napi_env env, napi_value exports)
     napi_property_descriptor props[] = {
         DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("wait"),
         DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("waitFor"),
-        DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("notify"),
+        DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("notifyAll"),
         DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY("notifyOne"),
+        DECLARE_NAPI_STATIC_FUNCTION("request", Request),
     };
 
     napi_value ConditionVariableClass = nullptr;
@@ -110,8 +106,8 @@ napi_value ConditionVariable::Wait(napi_env env, napi_callback_info cbinfo)
 
     auto tsfn = cond->CreateThreadSafeFunction(env);
     {
-        std::lock_guard<std::mutex> lock(cond->queueMtx_);
-        auto promiseInfo = std::make_shared<PromiseInfo>(env, deferred, SettleBy::NOTIFY, nullptr, tsfn);
+        std::unique_lock<std::mutex> lock(cond->queueMtx_);
+        auto promiseInfo = std::make_shared<PromiseInfo>(cond, env, deferred, SettleBy::NOTIFY, nullptr, tsfn);
         cond->promiseQueue_.emplace_back(promiseInfo);
         cond->AddEnvCleanupHook(promiseInfo);
         ++(cond->refCount_);
@@ -152,9 +148,9 @@ napi_value ConditionVariable::WaitFor(napi_env env, napi_callback_info cbinfo)
     uv_timer_init(Common::Helper::NapiHelper::GetLibUV(env), timer);
    
     auto tsfn = cond->CreateThreadSafeFunction(env);
-    auto pi = std::make_shared<PromiseInfo>(env, deferred, SettleBy::WAITTIME, timer, tsfn);
+    auto pi = std::make_shared<PromiseInfo>(cond, env, deferred, SettleBy::WAITTIME, timer, tsfn);
     {
-        std::lock_guard<std::mutex> lock(cond->queueMtx_);
+        std::unique_lock<std::mutex> lock(cond->queueMtx_);
         cond->promiseQueue_.push_back(pi);
         cond->AddEnvCleanupHook(pi);
         ++(cond->refCount_);
@@ -182,14 +178,13 @@ bool ConditionVariable::TimerTask(std::shared_ptr<PromiseInfo> pi, ConditionVari
         pi->resolved = SettleBy::WAITTIME;
         ConditionVariable* cond = workeData->cond;
         {
-            std::lock_guard<std::mutex> lock(cond->queueMtx_);
+            std::unique_lock<std::mutex> lock(cond->queueMtx_);
             auto it = std::find_if(cond->promiseQueue_.begin(), cond->promiseQueue_.end(),
                 [pi](const std::shared_ptr<PromiseInfo>& p) { return p.get() == pi.get(); });
             if (it != cond->promiseQueue_.end()) {
-                ScheduleAsyncWork(pi, cond);
                 cond->promiseQueue_.erase(it);
+                ScheduleAsyncWork(pi, cond);
                 cond->RemoveEnvCleanupHook(pi);
-                --(cond->refCount_);
             } else
                 return;
         }
@@ -263,38 +258,74 @@ napi_threadsafe_function ConditionVariable::CreateThreadSafeFunction(napi_env en
 void ConditionVariable::CallJsCallback(napi_env env, napi_value js_callback, void* context, void* data)
 {
     ConditionVariable* cond = reinterpret_cast<ConditionVariable*>(context);
-    std::shared_ptr<PromiseInfo> pi(static_cast<PromiseInfo*>(data));
+    PromiseInfo* pi = static_cast<PromiseInfo*>(data);
 
     ResolveDeferred(pi, pi->tsfn_);
-    if (cond->GetRefCount() == 0) {
-        delete cond;
+    {
+        cond->DecreaseRefCount();
+        if (cond->GetRefCount() == 0) {
+            if (cond->conditionName_.empty()) {
+                delete cond;
+            } else if (cond->CheckAndRemoveCondition()) {
+                delete cond;
+            }
+        }
     }
 }
 
 napi_value ConditionVariable::Constructor(napi_env env, napi_callback_info cbinfo)
 {
-    size_t argc = 0;
-    napi_value* argv = nullptr;
+    size_t argc = Common::Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    NAPI_ASSERT(env, argc == 0 || argc == 1, "AsyncLock::Constructor: the number of params must be zero or one");
 
+    auto args = std::make_unique<napi_value[]>(argc);
     napi_value thisVar;
-    napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr);
+    napi_get_cb_info(env, cbinfo, &argc, args.get(), &thisVar, nullptr);
+    ConditionVariable *cond = nullptr;
+
+    if (argc == 1) {
+        napi_valuetype type;
+        NAPI_CALL(env, napi_typeof(env, args[0], &type));
+        if (type != napi_string) {
+            Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
+                "Request:: param must be string");
+            return nullptr;
+        }
+
+        std::string condName = Common::Helper::NapiHelper::GetString(env, args[0]);
+        cond = FindOrCreateCondition(condName);
+    } else {
+        cond = new ConditionVariable();
+        cond->IncreaseRefCount();
+    }
+
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION_WITH_DATA("wait", Wait, thisVar),
         DECLARE_NAPI_FUNCTION_WITH_DATA("waitFor", WaitFor, thisVar),
-        DECLARE_NAPI_FUNCTION_WITH_DATA("notify", Notify, thisVar),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("notifyAll", Notify, thisVar),
         DECLARE_NAPI_FUNCTION_WITH_DATA("notifyOne", NotifyOne, thisVar),
     };
-    ConditionVariable *cond = new ConditionVariable();
-    {
-        std::lock_guard<std::mutex> lock(cond->queueMtx_);
-        ++(cond->refCount_);
-    }
+
     NAPI_CALL(env, napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties));
     napi_wrap_sendable(env, thisVar, reinterpret_cast<void *>(cond), ConditionVariable::Destructor, nullptr);
     return thisVar;
 }
 
-void ConditionVariable::ResolveDeferred(std::shared_ptr<PromiseInfo> pi, napi_threadsafe_function tsfn)
+napi_value ConditionVariable::Request(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = Common::Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    NAPI_ASSERT(env, argc == 1, "Request:: the number of params must be one");
+    auto args = std::make_unique<napi_value[]>(argc);
+    NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, args.get(), nullptr, nullptr));
+    napi_value conditionClass;
+    NAPI_CALL(env, napi_get_reference_value(env, conditionClassRef, &conditionClass));
+    napi_value instance;
+    NAPI_CALL(env, napi_new_instance(env, conditionClass, argc, args.get(), &instance));
+
+    return instance;
+}
+
+void ConditionVariable::ResolveDeferred(PromiseInfo* pi, napi_threadsafe_function tsfn)
 {
     napi_handle_scope scope;
     napi_open_handle_scope(pi->env, &scope);
@@ -323,7 +354,7 @@ void ConditionVariable::ResolveDeferred(std::shared_ptr<PromiseInfo> pi, napi_th
 
 void ConditionVariable::ScheduleAsyncWork(std::shared_ptr<PromiseInfo> promiseInfo, ConditionVariable* cond)
 {
-    PromiseInfo* workData = new PromiseInfo(promiseInfo->env, promiseInfo->deferred, promiseInfo->resolved,
+    PromiseInfo* workData = new PromiseInfo(cond, promiseInfo->env, promiseInfo->deferred, promiseInfo->resolved,
         promiseInfo->timer, promiseInfo->tsfn_);
 
     NAPI_CALL_RETURN_VOID(promiseInfo->env, napi_call_threadsafe_function(workData->tsfn_, workData,
@@ -338,25 +369,26 @@ int32_t ConditionVariable::GetRefCount()
 void ConditionVariable::Destructor(napi_env env, void *nativeObject, [[maybe_unused]] void *finalizeHint)
 {
     auto cond = reinterpret_cast<ConditionVariable *>(nativeObject);
-    {
-        std::lock_guard<std::mutex> lock(cond->queueMtx_);
-        --(cond->refCount_);
-    }
+    cond->DecreaseRefCount();
     if (cond->GetRefCount() == 0) {
-        delete cond;
-    } else {
+        if (cond->conditionName_.empty()) {
+            delete cond;
+        } else if (cond->CheckAndRemoveCondition()) {
+            delete cond;
+        }
+    } else if (cond->conditionName_.empty()) {
         cond->PromiseProcessFlow(cond, SettleBy::CLEANCV, true);
     }
 }
 
 void ConditionVariable::PromiseProcessFlow(ConditionVariable *cond, SettleBy settleBy, bool notifyAll)
 {
-    std::lock_guard<std::mutex> lock(cond->queueMtx_);
+    std::unique_lock<std::mutex> lock(cond->queueMtx_);
     while (!cond->promiseQueue_.empty()) {
         auto pi = cond->promiseQueue_.front();
         pi->resolved = settleBy;
-        ScheduleAsyncWork(pi, cond);
         cond->promiseQueue_.pop_front();
+        ScheduleAsyncWork(pi, cond);
         cond->RemoveEnvCleanupHook(pi);
 
         if (pi->timer != nullptr) {
@@ -367,11 +399,63 @@ void ConditionVariable::PromiseProcessFlow(ConditionVariable *cond, SettleBy set
             });
             pi->timer = nullptr;
         }
-        --(cond->refCount_);
 
         if (!notifyAll) {
             break;
         }
     }
+}
+
+void ConditionVariable::IncreaseRefCount()
+{
+    std::unique_lock<std::mutex> lock(queueMtx_);
+    ++refCount_;
+}
+
+void ConditionVariable::DecreaseRefCount()
+{
+    std::unique_lock<std::mutex> lock(queueMtx_);
+    --refCount_;
+}
+
+void ConditionVariable::SetConditionName(const std::string &condName)
+{
+    conditionName_ = condName;
+}
+
+std::string ConditionVariable::GetConditionName()
+{
+    return conditionName_;
+}
+
+ConditionVariable *ConditionVariable::FindOrCreateCondition(const std::string &condName)
+{
+    std::unique_lock<std::mutex> lock(mapMtx_);
+    ConditionVariable *cond = nullptr;
+    auto it = condMap_.find(condName);
+    if (it == condMap_.end()) {
+        cond = new ConditionVariable();
+        cond->SetConditionName(condName);
+        condMap_.emplace(condName, cond);
+    } else {
+        cond = it->second;
+    }
+    cond->IncreaseRefCount();
+    return cond;
+}
+
+bool ConditionVariable::CheckAndRemoveCondition()
+{
+    std::unique_lock<std::mutex> lockMap(mapMtx_);
+    std::unique_lock<std::mutex> lockQueue(queueMtx_);
+    if (refCount_ == 0) {
+        auto it = condMap_.find(conditionName_);
+        if (it != condMap_.end()) {
+            condMap_.erase(it);
+            return true;
+        }
+    }
+
+    return false;
 }
 }  // namespace Commonlibrary::Concurrent::Condition
