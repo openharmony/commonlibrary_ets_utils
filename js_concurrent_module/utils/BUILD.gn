@@ -49,6 +49,8 @@ gen_js_obj("utils_abc") {
 }
 
 locks_sources = [
+  "condition/condition_manager.cpp",
+  "condition/condition_task.cpp",
   "condition/condition_variable.cpp",
   "json/json_manager.cpp",
   "locks/async_lock.cpp",
