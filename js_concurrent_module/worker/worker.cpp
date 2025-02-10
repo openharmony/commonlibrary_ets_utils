@@ -1362,9 +1362,7 @@ void Worker::ExecuteInThread(const void* data)
     HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
     auto worker = reinterpret_cast<Worker*>(const_cast<void*>(data));
 #ifdef ENABLE_QOS
-    if (worker != nullptr) {
-        worker->SetQOSLevel();
-    }
+    worker->SetQOSLevel();
 #endif
     // 1. create a runtime, nativeengine
     napi_env workerEnv = nullptr;
