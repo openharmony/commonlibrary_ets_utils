@@ -780,7 +780,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest058, testing::ext::TestSize.Level0)
     sequenceRunnerManager.TriggerSeqRunner(env, task);
     SequenceRunner sequenceRunner;
     sequenceRunnerManager.StoreSequenceRunner(seqRunnerId, &sequenceRunner);
-    sequenceRunnerManager.RemoveSequenceRunner(seqRunnerId);
+    NativeEngineTest::RemoveSequenceRunner(seqRunnerId);
     ASSERT_EQ(seqRunnerId, 35);
     SequenceRunner* res = sequenceRunnerManager.GetSeqRunner(seqRunnerId);
     ASSERT_EQ(res, nullptr);
@@ -1979,7 +1979,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest129, testing::ext::TestSize.Level0)
     seqRunner2->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner2);
     seqRunner2->seqName_ = "seq02";
     seqRunner2->isGlobalRunner_ = true;
-    seqRunner2->count_ = 0;
     void* data2 = static_cast<void*>(seqRunner2);
     NativeEngineTest::SequenceRunnerDestructor(env, data2);
 
@@ -4303,7 +4302,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
 
     SequenceRunner seq1;
     seq1.currentTaskId_ = 1;
-    SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqId);
+    NativeEngineTest::RemoveSequenceRunner(seqId);
     SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqId, &seq1);
     thisValue = CreateTaskObject(env);
     napi_value argv2[] = {thisValue};
@@ -4951,10 +4950,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest249, testing::ext::TestSize.Level0)
     napi_value callback = nullptr;
     napi_value result = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), SequenceRunner::Execute, nullptr, &callback);
-
-    SequenceRunner* seqRunner = nullptr;
-    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&seqRunner));
-    SequenceRunnerManager::GetInstance().RemoveGlobalSeqRunnerRef(env, seqRunner);
 
     napi_value task = CreateTaskObject(env);
     napi_value argv[] = {task};
@@ -6118,4 +6113,116 @@ HWTEST_F(NativeEngineTest, TaskpoolTest298, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest299, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
+    SequenceRunner* seqRunner = new SequenceRunner();
+    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    sequenceRunnerManager.StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
+    Task* task = new Task();
+    uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    task->taskId_ = taskId;
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    sequenceRunnerManager.AddTaskToSeqRunner(seqRunner->seqRunnerId_, task);
+    sequenceRunnerManager.RemoveWaitingTask(task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest300, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
+    Task* task = new Task();
+    task->seqRunnerId_ = 1;
+    sequenceRunnerManager.RemoveWaitingTask(task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest301, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    SequenceRunner* seqRunner = new SequenceRunner();
+    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    Task* task = new Task();
+    seqRunner->RemoveWaitingTask(task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    Task* task2 = new Task();
+    seqRunner->AddTask(task2);
+    seqRunner->RemoveWaitingTask(task);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+    delete task2;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest302, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    bool isFalse = SequenceRunnerManager::GetInstance().FindRunnerAndRef(302);
+    ASSERT_FALSE(isFalse);
+    SequenceRunner* seqRunner = new SequenceRunner();
+    seqRunner->DecreaseSeqCount();
+    isFalse = seqRunner->DecreaseSeqCount();
+    ASSERT_FALSE(isFalse);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest303, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    SequenceRunner* seqRunner = new SequenceRunner();
+    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
+    Task* task = new Task();
+    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    bool isFalse = SequenceRunnerManager::GetInstance().TriggerSeqRunner(env, task);
+    ASSERT_FALSE(isFalse);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest304, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->seqRunnerId_ = 304;
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    Task::CleanupHookFunc(task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest305, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->seqRunnerId_ = 305;
+    task->env_ = env;
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    napi_value obj = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
+    task->CancelInner(ExecuteState::CANCELED);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
 }

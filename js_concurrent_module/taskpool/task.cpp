@@ -1712,6 +1712,10 @@ void Task::CancelInner(ExecuteState state)
             delete currentTaskInfo_;
             currentTaskInfo_ = nullptr;
         }
+        if (IsSeqRunnerTask() && state == ExecuteState::CANCELED) {
+            DisposeCanceledTask();
+            return;
+        }
     }
     std::string error = "taskpool:: task has been canceled";
     TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);

@@ -26,10 +26,15 @@ class SequenceRunner {
 public:
     SequenceRunner() = default;
     ~SequenceRunner() = default;
-
+    explicit SequenceRunner(Priority priority, const std::string& name = "", bool isGlobal = false)
+        : priority_(priority), seqName_(name), isGlobalRunner_(isGlobal) {}
     static napi_value SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
-    void RemoveWaitingTask(Task* task);
+    bool RemoveWaitingTask(Task* task);
+    void AddTask(Task* task);
+    void IncreaseSeqCount();
+    uint64_t DecreaseSeqCount();
+    void TriggerTask(napi_env env);
 
 private:
     SequenceRunner(const SequenceRunner &) = delete;
@@ -51,10 +56,8 @@ public:
 
     // for global SequenceRunner
     std::string seqName_ {};
-    napi_ref seqRunnerRef_ = nullptr;
     bool isGlobalRunner_ {false};
-    uint64_t count_ = 0;
-    std::unordered_map<napi_env, napi_ref> globalSeqRunnerRef_ {};
+    std::atomic<uint64_t> refCount_ {1};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_RUNNER_H
