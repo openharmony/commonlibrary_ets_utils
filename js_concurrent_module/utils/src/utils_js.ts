@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 const helpUtil = requireInternal('arkts.utils');
 let locks = helpUtil.locks;
 let ASON = helpUtil.ASON;
@@ -54,7 +55,7 @@ class SendableLruCache {
     this.cache = new SendableMap();
   }
 
-  private changeCapacity(newCapacity: number) {
+  private changeCapacity(newCapacity: number): void {
     while (this.cache.size > newCapacity) {
       this.cache.delete(this.cache.keys().next().value);
       this.evictionCount++;
