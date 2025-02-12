@@ -17,6 +17,7 @@
 #define JS_CONCURRENT_MODULE_UTILS_CONDITION_NAPI_H
 
 #include <deque>
+#include <unordered_map>
 #include "helper/napi_helper.h"
 
 namespace Commonlibrary::Concurrent::Condition {
