@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build/config/components/ace_engine/ace_gen_obj.gni")
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
 
 process_sources = [
   "js_childprocess.cpp",

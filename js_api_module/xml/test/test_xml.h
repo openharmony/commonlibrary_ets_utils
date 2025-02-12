@@ -16,7 +16,7 @@
 #ifndef TEST_XML_H
 #define TEST_XML_H
 
-#include "../js_xml.h"
+#include "js_api_module/xml/js_xml.h"
 
 namespace OHOS::xml {
 class XmlTest {

@@ -28,8 +28,6 @@ ohos_unittest("test_convertxml_unittest") {
     ets_util_path,
   ]
 
-  configs = [ "//third_party/libxml2:libxml2_config" ]
-
   cflags = [ "-g3" ]
 
   sources = [
@@ -51,6 +49,7 @@ ohos_unittest("test_convertxml_unittest") {
     "hilog:libhilog",
     "icu:shared_icuuc",
     "libuv:uv",
+    "libxml2:libxml2",
     "napi:ace_napi",
   ]
 }

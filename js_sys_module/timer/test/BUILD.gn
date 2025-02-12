@@ -21,14 +21,8 @@ if (is_standard_system) {
 ohos_unittest("test_timer_unittest") {
   module_out_path = module_output_path
 
-  configs = [ "$ets_runtime:ark_jsruntime_public_config" ]
   include_dirs = [
     "$sys_module/timer",
-    "$ets_runtime",
-    "$napi_root/interfaces/kits",
-    "$napi_root/native_engine",
-    "$napi_root/native_engine/impl/ark",
-    "//third_party/node/src",
     ets_util_path,
   ]
 
