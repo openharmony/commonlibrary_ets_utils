@@ -21,6 +21,7 @@
 #include <gtest/gtest.h>
 
 #include "ark_native_engine.h"
+#include "condition/condition_manager.h"
 #include "condition/condition_variable.h"
 
 using namespace Commonlibrary::Concurrent::Condition;
@@ -86,7 +87,7 @@ static napi_value CreateConditionVariableInstances(napi_env env)
 {
     napi_value exports;
     napi_create_object(env, &exports);
-    napi_value exportsResult = Commonlibrary::Concurrent::Condition::ConditionVariable::Init(env, exports);
+    napi_value exportsResult = Commonlibrary::Concurrent::Condition::ConditionManager::Init(env, exports);
     napi_value locks;
     napi_status status = napi_get_named_property(env, exportsResult, "locks", &locks);
     if (status != napi_ok) {
@@ -244,12 +245,6 @@ TEST_F(ConditionTest, ConstructorTest2)
     ASSERT_NE(env, nullptr);
     ConditionVariable *cond = new ConditionVariable();
     ASSERT_NE(cond, nullptr);
-    ASSERT_EQ(cond->GetRefCount(), 0);
-    ConditionVariable *cond2 = new ConditionVariable(cond);
-    ASSERT_NE(cond2, nullptr);
-    ASSERT_EQ(cond2->GetRefCount(), 0);
-    cond->Destructor(env, static_cast<void *>(cond), nullptr);
-    cond->Destructor(env, static_cast<void *>(cond2), nullptr);
 }
 
 TEST_F(ConditionTest, RquestTest)
@@ -259,7 +254,7 @@ TEST_F(ConditionTest, RquestTest)
     ASSERT_NE(env, nullptr);
     napi_value exports;
     napi_create_object(env, &exports);
-    napi_value exportsResult = Commonlibrary::Concurrent::Condition::ConditionVariable::Init(env, exports);
+    napi_value exportsResult = Commonlibrary::Concurrent::Condition::ConditionManager::Init(env, exports);
     napi_value locks;
     napi_status status = napi_get_named_property(env, exportsResult, "locks", &locks);
     ASSERT_EQ(status, napi_ok);
