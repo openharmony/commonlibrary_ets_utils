@@ -13,14 +13,19 @@
  * limitations under the License.
  */
 
+#include <condition_variable>
 #include <thread>
 #include <uv.h>
+#include <mutex>
+#include <vector>
 
 #include "ark_native_engine.h"
 #include "message_queue.h"
 #include "test.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "../../common/helper/napi_helper.h"
+#include "native_engine/native_create_env.h"
 #include "tools/log.h"
 #include "worker.h"
 
@@ -42,6 +47,100 @@
 using namespace Commonlibrary::Concurrent::WorkerModule;
 
 namespace Commonlibrary::Concurrent::WorkerModule {
+
+static constexpr int MAX_WORKERS_COUNT = 64;
+static constexpr int MAX_ARKRUNTIME_COUNT = 64;
+static constexpr int MAX_JSTHREAD_COUNT = 80;
+static constexpr int NUM_10 = 10;
+static constexpr int NUM_1 = 1;
+static constexpr int TIME_1000MS = 1000;
+static constexpr int TIME_500MS = 500;
+static constexpr int TIME_100MS = 100;
+
+class ArkRuntimeChecker {
+public:
+    ArkRuntimeChecker() = default;
+    static void CreateArkRuntimeEngine(napi_env& workerEnv);
+    void CreateArkRuntimeList(uint32_t runtimeCount);
+    void DeleteArkRuntimeList();
+    int32_t GetFailedCount();
+
+    std::mutex mutexlock_;
+    std::condition_variable condition_;
+    std::thread* threadArray_[MAX_ARKRUNTIME_COUNT + NUM_10] = { nullptr };
+    std::atomic<uint32_t> failCount_{0};
+    bool notified_ = false;
+};
+
+void ArkRuntimeChecker::CreateArkRuntimeEngine(napi_env& workerEnv)
+{
+    panda::RuntimeOption option;
+    option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
+    const int64_t poolSize = 0x1000000;
+    option.SetGcPoolSize(poolSize);
+    option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    panda::ecmascript::EcmaVM* vm = panda::JSNApi::CreateJSVM(option);
+    ASSERT_NE(vm, nullptr);
+    workerEnv = reinterpret_cast<napi_env>(new (std::nothrow) ArkNativeEngine(vm, nullptr));
+    auto cleanEnv = [vm]() {
+        if (vm != nullptr) {
+            panda::JSNApi::DestroyJSVM(vm);
+        }
+    };
+    ArkNativeEngine* arkEngine = (ArkNativeEngine*)workerEnv;
+    arkEngine->SetCleanEnv(cleanEnv);
+}
+
+void ArkRuntimeChecker::CreateArkRuntimeList(uint32_t runtimeCount)
+{
+    NativeCreateEnv::RegCreateNapiEnvCallback([] (napi_env *env) {
+        ArkRuntimeChecker::CreateArkRuntimeEngine(*env);
+        return napi_status::napi_ok;
+    });
+    NativeCreateEnv::RegDestroyNapiEnvCallback([] (napi_env *env) {
+        ArkNativeEngine* engine = reinterpret_cast<ArkNativeEngine*>(*env);
+        delete engine;
+        return napi_status::napi_ok;
+    });
+    for (int k = 0; k < runtimeCount; k++) {
+        threadArray_[k] = new std::thread([this] {
+            napi_env newenv = nullptr;
+            napi_create_ark_runtime(&newenv);
+            if (newenv == nullptr) {
+                this->failCount_++;
+                return;
+            }
+            std::unique_lock<std::mutex> lock(this->mutexlock_);
+            if (!this->notified_) {
+                this->condition_.wait(lock);
+            }
+            if (newenv != nullptr) {
+                napi_destroy_ark_runtime(&newenv);
+            }
+        });
+    }
+    uv_sleep(TIME_1000MS);
+}
+
+void ArkRuntimeChecker::DeleteArkRuntimeList()
+{
+    mutexlock_.lock();
+    notified_ = true;
+    condition_.notify_all();
+    mutexlock_.unlock();
+    for (int k = 0; k < MAX_ARKRUNTIME_COUNT + NUM_10; k++) {
+        if (threadArray_[k] != nullptr) {
+            threadArray_[k]->join();
+        }
+    }
+}
+
+int32_t ArkRuntimeChecker::GetFailedCount()
+{
+    return failCount_.load();
+}
+
 class WorkersTest : public testing::Test {
 public:
     static void SetUpTestSuite()
@@ -191,6 +290,16 @@ public:
         uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             UpdateWorkerState));
     }
+
+    static void ClearWorkerHandle(Worker* worker)
+    {
+        worker->CloseHostHandle();
+        if (worker->isLimitedWorker_) {
+            napi_remove_env_cleanup_hook(worker->hostEnv_, Worker::LimitedWorkerHostEnvCleanCallback, worker);
+        } else {
+            napi_remove_env_cleanup_hook(worker->hostEnv_, Worker::WorkerHostEnvCleanCallback, worker);
+        }
+    }
 protected:
     static thread_local NativeEngine *engine_;
     static thread_local EcmaVM *vm_;
@@ -241,6 +350,139 @@ napi_value Worker_Terminate(napi_env env, napi_value global)
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::Terminate, nullptr, &cb);
     napi_call_function(env, global, cb, 0, nullptr, &result);
     return result;
+}
+
+class WorkerChecker {
+public:
+    WorkerChecker() = default;
+    void CreateWorkerHostEngine(napi_env& workerEnv);
+    static napi_value CreateWorker(bool limited, napi_env workerEnv, napi_value workerGlobal);
+    void CreateWorkerList(bool limited, uint32_t workerNum);
+    void DeleteWorkerList();
+    int32_t GetFailedCount();
+
+    napi_env workerHostEnv_{nullptr};
+    std::atomic<uint32_t> failCount_{0};
+    std::vector<Worker*> workerlist_;
+
+    bool notified_ = false;
+    std::mutex mutexlock_;
+    std::condition_variable condition_;
+};
+
+void WorkerChecker::CreateWorkerHostEngine(napi_env& workerEnv)
+{
+    panda::RuntimeOption option;
+    option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
+    const int64_t poolSize = 0x1000000;
+    option.SetGcPoolSize(poolSize);
+    option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    panda::ecmascript::EcmaVM* vm = panda::JSNApi::CreateJSVM(option);
+    ASSERT_NE(vm, nullptr);
+
+    workerEnv = reinterpret_cast<napi_env>(new (std::nothrow) ArkNativeEngine(vm, nullptr));
+    ArkNativeEngine* arkEngine = (ArkNativeEngine*)workerEnv;
+    arkEngine->SetInitWorkerFunc([this](NativeEngine*) {
+        std::unique_lock<std::mutex> lock(this->mutexlock_);
+        if (!this->notified_) {
+            this->condition_.wait(lock);
+        }
+    });
+    auto cleanEnv = [vm]() {
+        if (vm != nullptr) {
+            panda::JSNApi::DestroyJSVM(vm);
+        }
+    };
+    arkEngine->SetCleanEnv(cleanEnv);
+}
+
+napi_value WorkerChecker::CreateWorker(bool limited, napi_env workerEnv, napi_value workerGlobal)
+{
+    std::string funcName = "ThreadWorkerConstructor";
+    if (limited) {
+        funcName = "LimitedWorkerConstructor";
+    }
+    napi_value cb = nullptr;
+    if (!limited) {
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+            Worker::ThreadWorkerConstructor, nullptr, &cb);
+    } else {
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+            Worker::LimitedWorkerConstructor, nullptr, &cb);
+    }
+    napi_value result = nullptr;
+    napi_value argv[2] = { nullptr };
+    std::string script = "entry/ets/workers/@worker.ts";
+    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+    std::string type = "classic";
+    std::string name = "WorkerThread";
+    napi_value typeValue = nullptr;
+    napi_value nameValue = nullptr;
+    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+
+    napi_value object = nullptr;
+    napi_create_object(workerEnv, &object);
+    napi_set_named_property(workerEnv, object, "name", nameValue);
+    napi_set_named_property(workerEnv, object, "type", typeValue);
+    argv[1] = object;
+
+    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    return result;
+}
+
+void WorkerChecker::CreateWorkerList(bool limited, uint32_t workerNum)
+{
+    CreateWorkerHostEngine(workerHostEnv_);
+    ASSERT_NE(workerHostEnv_, nullptr);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerHostEnv_, &workerGlobal);
+
+    for (int k = 0; k < workerNum; k++) {
+        TryCatch tryCatch(workerHostEnv_);
+        napi_value result = WorkerChecker::CreateWorker(limited, workerHostEnv_, workerGlobal);
+        if (tryCatch.HasCaught()) {
+            tryCatch.ClearException();
+        }
+        if (result == nullptr) {
+            failCount_++;
+        } else {
+            Worker* worker = nullptr;
+            napi_unwrap(workerHostEnv_, result, reinterpret_cast<void**>(&worker));
+            if (worker != nullptr) {
+                workerlist_.push_back(worker);
+            }
+        }
+    }
+    uv_sleep(TIME_100MS);
+}
+
+void WorkerChecker::DeleteWorkerList()
+{
+    ArkNativeEngine* workerHostEngine = reinterpret_cast<ArkNativeEngine*>(workerHostEnv_);
+    mutexlock_.lock();
+    notified_ = true;
+    condition_.notify_all();
+    mutexlock_.unlock();
+    uv_sleep(TIME_500MS);
+
+    for (auto worker : workerlist_) {
+        worker->EraseWorker();
+        WorkersTest::ClearWorkerHandle(worker);
+    }
+    workerlist_.clear();
+    napi_value workerGlobal = nullptr;
+    napi_get_global(workerHostEnv_, &workerGlobal);
+    Worker_Terminate(workerHostEnv_, workerGlobal);
+    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+    delete workerHostEngine;
+}
+
+int32_t WorkerChecker::GetFailedCount()
+{
+    return failCount_.load();
 }
 
 // worker WorkerConstructor
@@ -1541,4 +1783,163 @@ HWTEST_F(WorkersTest, PostMessageTest004, testing::ext::TestSize.Level0)
     uv_sleep(1000); // 1000 : for post and receive message
     PostMessage(worker, data);
     uv_sleep(1000); // 1000 : for post and receive message
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0010, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<WorkerChecker>();
+    checker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
+    int32_t failed = checker->GetFailedCount();
+    checker->DeleteWorkerList();
+    ASSERT_EQ(failed, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0011, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<WorkerChecker>();
+    checker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_1);
+    int32_t failed = checker->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+
+    auto checker2 = std::make_shared<WorkerChecker>();
+    checker2->CreateWorkerList(false, NUM_1);
+    failed = checker2->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+
+    auto checker3 = std::make_shared<WorkerChecker>();
+    checker3->CreateWorkerList(false, NUM_1);
+    failed = checker3->GetFailedCount();
+    ASSERT_EQ(failed, NUM_1);
+    checker3->DeleteWorkerList();
+
+    checker2->DeleteWorkerList();
+    auto checker4 = std::make_shared<WorkerChecker>();
+    checker4->CreateWorkerList(false, NUM_1);
+    failed = checker4->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+    checker4->DeleteWorkerList();
+
+    checker->DeleteWorkerList();
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0020, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<ArkRuntimeChecker>();
+    checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+    int32_t failed = checker->GetFailedCount();
+    checker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0021, testing::ext::TestSize.Level0)
+{
+    auto checker = std::make_shared<ArkRuntimeChecker>();
+    checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT - NUM_1);
+    int32_t failed = checker->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+
+    auto checker2 = std::make_shared<ArkRuntimeChecker>();
+    checker2->CreateArkRuntimeList(NUM_10);
+    failed = checker2->GetFailedCount();
+    ASSERT_EQ(failed, NUM_10 - NUM_1);
+
+    auto checker3 = std::make_shared<ArkRuntimeChecker>();
+    checker3->CreateArkRuntimeList(NUM_1);
+    failed = checker3->GetFailedCount();
+    ASSERT_EQ(failed, NUM_1);
+
+    checker3->DeleteArkRuntimeList();
+    checker2->DeleteArkRuntimeList();
+
+    auto checker4 = std::make_shared<ArkRuntimeChecker>();
+    checker4->CreateArkRuntimeList(NUM_1);
+    failed = checker4->GetFailedCount();
+    ASSERT_EQ(failed, 0);
+    checker4->DeleteArkRuntimeList();
+
+    checker->DeleteArkRuntimeList();
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0030, testing::ext::TestSize.Level0)
+{
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+    int32_t failed1 = arkRuntimeChecker->GetFailedCount();
+    auto workerChecker = std::make_shared<WorkerChecker>();
+    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT);
+    int32_t failed2 = workerChecker->GetFailedCount();
+    workerChecker->DeleteWorkerList();
+    ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
+    arkRuntimeChecker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed1, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest0031, testing::ext::TestSize.Level0)
+{
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+    int32_t failed1 = arkRuntimeChecker->GetFailedCount();
+    auto workerChecker2 = std::make_shared<WorkerChecker>();
+    workerChecker2->CreateWorkerList(false, MAX_JSTHREAD_COUNT - MAX_ARKRUNTIME_COUNT - NUM_10);
+    int32_t failed2 = workerChecker2->GetFailedCount();
+
+    auto workerChecker3 = std::make_shared<WorkerChecker>();
+    workerChecker3->CreateWorkerList(true, NUM_10 + NUM_1);
+    int32_t failed3 = workerChecker3->GetFailedCount();
+    ASSERT_EQ(failed3, NUM_1);
+    workerChecker3->DeleteWorkerList();
+
+    workerChecker2->DeleteWorkerList();
+    ASSERT_EQ(failed2, 0);
+    arkRuntimeChecker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed1, NUM_10);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest004, testing::ext::TestSize.Level0)
+{
+    auto workerChecker = std::make_shared<WorkerChecker>();
+    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
+    int32_t failed1 = workerChecker->GetFailedCount();
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT);
+    int32_t failed2 = arkRuntimeChecker->GetFailedCount();
+    workerChecker->DeleteWorkerList();
+    ASSERT_EQ(failed1, NUM_10);
+    arkRuntimeChecker->DeleteArkRuntimeList();
+    ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
+}
+
+HWTEST_F(WorkersTest, MaxLimitTest005, testing::ext::TestSize.Level0)
+{
+    auto workerChecker = std::make_shared<WorkerChecker>();
+    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_10);
+    int32_t failed1 = workerChecker->GetFailedCount();
+    ASSERT_EQ(failed1, 0);
+
+    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker->CreateArkRuntimeList(MAX_JSTHREAD_COUNT - MAX_WORKERS_COUNT + NUM_10 - NUM_1);
+    int32_t failed2 = arkRuntimeChecker->GetFailedCount();
+    ASSERT_EQ(failed2, 0);
+
+    auto arkRuntimeChecker2 = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker2->CreateArkRuntimeList(NUM_10);
+    failed2 = arkRuntimeChecker2->GetFailedCount();
+    ASSERT_EQ(failed2, NUM_10 - NUM_1);
+    arkRuntimeChecker2->DeleteArkRuntimeList();
+
+    auto arkRuntimeChecker3 = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker3->CreateArkRuntimeList(NUM_1);
+    failed2 = arkRuntimeChecker3->GetFailedCount();
+    ASSERT_EQ(failed2, 0);
+
+    auto arkRuntimeChecker4 = std::make_shared<ArkRuntimeChecker>();
+    arkRuntimeChecker4->CreateArkRuntimeList(NUM_1);
+    failed2 = arkRuntimeChecker4->GetFailedCount();
+    ASSERT_EQ(failed2, NUM_1);
+
+    arkRuntimeChecker3->DeleteArkRuntimeList();
+    arkRuntimeChecker4->DeleteArkRuntimeList();
+
+    workerChecker->DeleteWorkerList();
+    arkRuntimeChecker->DeleteArkRuntimeList();
 }
