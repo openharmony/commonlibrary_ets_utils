@@ -110,12 +110,12 @@ ohos_source_set("timer_static") {
     include_dirs += [
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     deps += [
       "$plugins_root/libs/napi:napi_${target_os}",
       "$plugins_root/libs/uv:uv_${target_os}",
     ]
-    external_deps = [ "hilog:libhilog" ]
     if (target_os == "android") {
       defines += [ "ANDROID_PLATFORM" ]
     }
