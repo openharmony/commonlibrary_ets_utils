@@ -27,6 +27,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
+#include "native_engine/worker_manager.h"
 #include "worker_runner.h"
 #if defined(ENABLE_WORKER_EVENTHANDLER)
 #include "event_handler.h"
@@ -566,6 +567,7 @@ private:
     std::string fileName_ {};
     std::string name_ {};
     ScriptMode scriptMode_ {CLASSIC};
+    WorkerType workerType_ {WorkerType::THREAD_WORKER};
     bool isLimitedWorker_ {false};
     bool isRelativePath_ {false};
     int32_t scopeId_ {-1};
