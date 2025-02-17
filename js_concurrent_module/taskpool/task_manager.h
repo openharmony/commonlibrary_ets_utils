@@ -150,6 +150,7 @@ public:
     }
 
     bool CheckTask(uint64_t taskId);
+    void BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error);
 
 private:
     TaskManager();

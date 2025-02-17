@@ -601,7 +601,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
     if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
-        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING)) {
+        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING && !task->isRunning_)) {
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
