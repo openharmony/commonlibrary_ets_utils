@@ -62,7 +62,7 @@ public:
     void RemoveTask(uint32_t taskId);
     Task* GetTask(uint32_t taskId);
     void EnqueueTaskId(uint32_t taskId, Priority priority = Priority::DEFAULT);
-    void EraseWaitingTaskId(uint32_t taskId, Priority priority);
+    bool EraseWaitingTaskId(uint32_t taskId, Priority priority);
     std::pair<uint32_t, Priority> DequeueTaskId();
     void CancelTask(napi_env env, uint32_t taskId);
     void CancelSeqRunnerTask(napi_env env, Task* task);

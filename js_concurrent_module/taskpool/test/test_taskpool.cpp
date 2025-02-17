@@ -4832,7 +4832,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest243, testing::ext::TestSize.Level0)
     uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->taskId_ = taskId;
     task->taskState_ = ExecuteState::CANCELED;
-    task->UpdateTask(0, nullptr);
+    task->UpdateTaskExecutedInfo(0, nullptr);
     task->isMainThreadTask_ = false;
     task->SetValid(false);
     task->VerifyAndPostResult(Priority::DEFAULT);

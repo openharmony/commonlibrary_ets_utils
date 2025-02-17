@@ -1163,18 +1163,15 @@ void Task::CancelPendingTask(napi_env env)
     TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
 }
 
-bool Task::UpdateTask(uint64_t startTime, void* worker)
+void Task::UpdateTaskExecutedInfo(uint64_t startTime, void* worker)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateTask", std::to_string(taskId_).c_str());
-    if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
-        HILOG_INFO("taskpool:: task has been canceled, taskId %{public}s", std::to_string(taskId_).c_str());
-        return false;
+    if (taskState_ != ExecuteState::CANCELED) {
+        taskState_ = ExecuteState::RUNNING;
     }
-    taskState_ = ExecuteState::RUNNING;
     startTime_ = startTime;
     worker_ = worker;
     isRunning_ = true;
-    return true;
 }
 
 napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* args)
@@ -1702,19 +1699,23 @@ void Task::CancelInner(ExecuteState state)
     std::list<napi_deferred> deferreds {};
     {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-        if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr) {
+        if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr &&
+            TaskManager::GetInstance().EraseWaitingTaskId(taskId_, currentTaskInfo_->priority)) {
             reinterpret_cast<NativeEngine*>(env_)->DecreaseSubEnvCounter();
             DecreaseTaskRefCount();
             TaskManager::GetInstance().DecreaseRefCount(env_, taskId_);
-            TaskManager::GetInstance().EraseWaitingTaskId(taskId_, currentTaskInfo_->priority);
             deferreds.push_back(currentTaskInfo_->deferred);
             napi_reference_unref(env_, taskRef_, nullptr);
             delete currentTaskInfo_;
             currentTaskInfo_ = nullptr;
+            taskState_ = ExecuteState::FINISHED;
         }
         if (IsSeqRunnerTask() && state == ExecuteState::CANCELED) {
             DisposeCanceledTask();
             return;
+        }
+        if (state == ExecuteState::DELAYED) {
+            taskState_ = ExecuteState::FINISHED;
         }
     }
     std::string error = "taskpool:: task has been canceled";
