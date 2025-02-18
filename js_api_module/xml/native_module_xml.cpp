@@ -15,6 +15,7 @@
 
 #include "native_module_xml.h"
 #include "js_xml.h"
+#include "js_xml_dynamic.h"
 #include "tools/ets_error.h"
 
 extern const char _binary_js_xml_js_start[];
@@ -25,6 +26,8 @@ extern const char _binary_xml_abc_end[];
 namespace OHOS::xml {
 using namespace OHOS::Tools;
 static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
+const int32_t ARGC_ONE = 1; // 1 : number of args
+const int32_t ARGC_TWO = 2; // 2 : number of args
 
     static napi_value XmlSerializerConstructor(napi_env env, napi_callback_info info)
     {
@@ -383,6 +386,362 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
         return exports;
     }
 
+    static napi_value XmlDynamicSerializerConstructor(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        void *data = nullptr;
+        XmlDynamicSerializer *object = nullptr;
+        size_t argc = ARGC_ONE;
+        napi_value args[1] = { nullptr }; // 1:The number of parameters is 1
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, &data);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        std::string encoding;
+        status = XmlDynamicSerializer::DealNapiStrValue(env, args[0], encoding);
+        if (status == napi_ok) {
+            object = new (std::nothrow) XmlDynamicSerializer(env, encoding);
+            if (object == nullptr) {
+                HILOG_ERROR("XmlDynamicSerializerConstructor:: memory allocation failed, object is nullptr");
+                return nullptr;
+            }
+        }
+        status = napi_wrap(env, thisVar, object,
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<XmlDynamicSerializer*>(data);
+                if (obj != nullptr) {
+                    delete obj;
+                    obj = nullptr;
+                }
+            }, nullptr, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            HILOG_ERROR("XmlDynamicSerializerConstructor::napi_wrap failed");
+            delete object;
+            object = nullptr;
+        }
+        return thisVar;
+    }
+
+    static napi_value SetAttributesDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_TWO;
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string name;
+        std::string value;
+        status = XmlSerializer::DealNapiStrValue(env, args[0], name);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        status = XmlSerializer::DealNapiStrValue(env, args[1], value);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->SetAttributes(name, value);
+        return nullptr;
+    }
+
+    static napi_value AddEmptyElementDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_ONE;
+        napi_value args[1] = { 0 }; // 1:The number of parameters is 1
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string name;
+        status = object->DealNapiStrValue(env, args[0], name);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->AddEmptyElement(name);
+        return nullptr;
+    }
+
+    static napi_value SetDeclarationDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_status status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        object->SetDeclaration();
+        return nullptr;
+    }
+
+    static napi_value StartElementDynamic(napi_env env, napi_callback_info info)
+    {
+        size_t argc = ARGC_ONE;
+        napi_value args[1] = { nullptr }; // 1:The number of parameters is 1
+        napi_value thisVar = nullptr;
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string name;
+        status = object->DealNapiStrValue(env, args[0], name);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->StartElement(name);
+        return nullptr;
+    }
+
+    static napi_value EndElementDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_status status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        object->EndElement();
+        return nullptr;
+    }
+
+    static napi_value SetNamespaceDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_TWO;
+        napi_value args[2] = { nullptr }; // 2:The number of parameters is 2
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string prefix;
+        std::string nsTemp;
+        status = XmlDynamicSerializer::DealNapiStrValue(env, args[0], prefix);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        status = XmlDynamicSerializer::DealNapiStrValue(env, args[1], nsTemp);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->SetNamespace(prefix, nsTemp);
+        return nullptr;
+    }
+
+    static napi_value SetCommentDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_ONE;
+        napi_value args[1] = { nullptr }; // 1:The number of parameters is 1
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string comment;
+        status = object->DealNapiStrValue(env, args[0], comment);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->SetComment(comment);
+        return nullptr;
+    }
+
+    static napi_value SetCDataDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_ONE;
+        napi_value args[1] = { nullptr }; // 1:The number of parameters is 1
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string data;
+        status = XmlDynamicSerializer::DealNapiStrValue(env, args[0], data);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->SetCData(data);
+        return nullptr;
+    }
+
+    static napi_value SetTextDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_ONE;
+        napi_value args[1] = { nullptr }; // 1:The number of parameters is 1
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string text;
+        status = XmlDynamicSerializer::DealNapiStrValue(env, args[0], text);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->SetText(text);
+        return nullptr;
+    }
+
+    static napi_value SetDocTypeDynamic(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_ONE;
+        napi_value args[1] = { nullptr }; // 1:The number of parameters is 1
+        napi_status status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        std::string text;
+        status = XmlDynamicSerializer::DealNapiStrValue(env, args[0], text);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: get string from native failed!");
+            return nullptr;
+        }
+        object->SetDocType(text);
+        return nullptr;
+    }
+
+    static napi_value GetOutput(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_status status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_get_cb_info failed!");
+            return nullptr;
+        }
+        XmlDynamicSerializer *object = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        if (status != napi_ok || object == nullptr) {
+            HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
+            return nullptr;
+        }
+        napi_value arrBuffer = nullptr;
+        void* arrBufferPtr = nullptr;
+        size_t arrBufferSize = object->GetXmlBufferLength();
+        status = napi_create_arraybuffer(env, arrBufferSize, &arrBufferPtr, &arrBuffer);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: create arraybuffer failed!");
+            return nullptr;
+        }
+        if (arrBufferSize == 0) {
+            return arrBuffer;
+        }
+        bool result = object->GetXmlBuffer(arrBufferPtr, arrBufferSize);
+        if (!result) {
+            return nullptr;
+        }
+        return arrBuffer;
+    }
+
+    napi_value XmlDynamicSerializerInit(napi_env env, napi_value exports)
+    {
+        const char *xmlSerializerClass = "XmlDynamicSerializer";
+        napi_value xmlClass = nullptr;
+        napi_property_descriptor xmlDesc[] = {
+            DECLARE_NAPI_FUNCTION("setAttributes", SetAttributesDynamic),
+            DECLARE_NAPI_FUNCTION("addEmptyElement", AddEmptyElementDynamic),
+            DECLARE_NAPI_FUNCTION("setDeclaration", SetDeclarationDynamic),
+            DECLARE_NAPI_FUNCTION("startElement", StartElementDynamic),
+            DECLARE_NAPI_FUNCTION("endElement", EndElementDynamic),
+            DECLARE_NAPI_FUNCTION("setNamespace", SetNamespaceDynamic),
+            DECLARE_NAPI_FUNCTION("setComment", SetCommentDynamic),
+            DECLARE_NAPI_FUNCTION("setCDATA", SetCDataDynamic),
+            DECLARE_NAPI_FUNCTION("setText", SetTextDynamic),
+            DECLARE_NAPI_FUNCTION("setDocType", SetDocTypeDynamic),
+            DECLARE_NAPI_FUNCTION("getOutput", GetOutput)
+        };
+        napi_status status = napi_define_class(env, xmlSerializerClass, strlen(xmlSerializerClass),
+                                               XmlDynamicSerializerConstructor, nullptr,
+                                               sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc, &xmlClass);
+        if (status != napi_ok) {
+            HILOG_ERROR("XmlDynamicSerializer:: XmlDynamicSerializer init failed!");
+            return nullptr;
+        }
+        napi_property_descriptor desc[] = {
+            DECLARE_NAPI_PROPERTY("XmlDynamicSerializer", xmlClass)
+        };
+        napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+        return exports;
+    }
+
     static napi_value Parse(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -459,6 +818,7 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
     {
         XmlSerializerInit(env, exports);
         XmlPullParserInit(env, exports);
+        XmlDynamicSerializerInit(env, exports);
         return exports;
     }
 

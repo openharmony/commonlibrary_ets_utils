@@ -14,6 +14,7 @@
  */
 
 #include "test_xml.h"
+#include "js_xml_dynamic.h"
 #include "test.h"
 
 #include "napi/native_api.h"
@@ -23,6 +24,7 @@
 #include "native_module_xml.h"
 #include "securec.h"
 #include "tools/log.h"
+#include <memory>
 
 using namespace OHOS::xml;
 
@@ -3203,4 +3205,207 @@ HWTEST_F(NativeEngineTest, SkipCharFunction001, testing::ext::TestSize.Level0)
     OHOS::xml::XmlTest testXml;
     int output = testXml.SkipCharFunction(env, xml, expected);
     ASSERT_EQ(output, 63);
+}
+
+/* @tc.name: StartElementDynamicTest001
+ * @tc.desc: Test whether write a elemnet start tag with the given name successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, StartElementDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note1");
+    xmlSerializer.StartElement("note2");
+    xmlSerializer.EndElement();
+    xmlSerializer.StartElement("note3");
+    xmlSerializer.EndElement();
+    xmlSerializer.EndElement();
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(), "<note1>\r\n  <note2/>\r\n  <note3/>\r\n</note1>");
+}
+
+/* @tc.name: SetAttributesDynamicTest001
+ * @tc.desc: Test whether write an attribute successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetAttributesDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance1", "high1");
+    xmlSerializer.SetAttributes("importance2", "high2");
+    xmlSerializer.SetAttributes("importance3", "high3");
+    xmlSerializer.SetAttributes("importance4", "high4");
+    xmlSerializer.SetAttributes("importance5", "high5");
+    xmlSerializer.EndElement();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    std::string strPrior = "<note importance1=\"high1\" importance2=\"high2\" ";
+    std::string strBack = "importance3=\"high3\" importance4=\"high4\" importance5=\"high5\"/>";
+    std::string strEnd = strPrior + strBack;
+    ASSERT_STREQ(pBuffer.get(), strEnd.c_str());
+}
+
+/* @tc.name: AddEmptyElementDynamicTest001
+ * @tc.desc: Test whether add an empty element successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, AddEmptyElementDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.AddEmptyElement("c");
+    xmlSerializer.AddEmptyElement("d");
+    xmlSerializer.EndElement();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(), "<note>\r\n  <c/>\r\n  <d/>\r\n</note>");
+}
+
+/* @tc.name: SetDeclarationDynamicTest001
+ * @tc.desc: Test whether write xml declaration with encoding successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetDeclarationDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.SetDeclaration();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(), "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+}
+
+/* @tc.name: EndElementDynamicTest001
+ * @tc.desc: Test whether write end tag of the element successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EndElementDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note2");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.EndElement();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(), "<note2 importance=\"high\"/>");
+}
+
+/* @tc.name: SetNamespaceDynamicTest001
+ * @tc.desc: Test whether write the namespace of the current element tag successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetNamespaceDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.SetDeclaration();
+    xmlSerializer.SetNamespace("h", "http://www.w3.org/TR/html4/");
+    xmlSerializer.StartElement("note1");
+    xmlSerializer.StartElement("note2");
+    xmlSerializer.EndElement();
+    xmlSerializer.EndElement();
+    
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    std::string strPrior = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n";
+    std::string strBack = "<h:note1 xmlns:h=\"http://www.w3.org/TR/html4/\">\r\n  <h:note2/>\r\n</h:note1>";
+    std::string strEnd = strPrior + strBack;
+    ASSERT_STREQ(pBuffer.get(), strEnd.c_str());
+}
+
+/* @tc.name: SetCommentDynamicTest001
+ * @tc.desc: Test write the comment successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCommentDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.SetComment("Hello, World!");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(), "<!--Hello, World!-->\r\n<note/>");
+}
+
+/* @tc.name: SetCDATADynamicTest001
+ * @tc.desc: Test whether Writes the CDATA successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDATADynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.SetCData("]]>");
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(), "<![CDATA[]]]]><![CDATA[>]]>");
+}
+
+/* @tc.name: SetTextDynamicTest001
+ * @tc.desc: Test whether Writes the text successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetTextDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetText("Happy5");
+    xmlSerializer.EndElement();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(), "<note importance=\"high\">Happy5</note>");
+}
+
+/* @tc.name: SetDocTypeDynamicTest001
+ * @tc.desc: Test whether rites the DOCTYPE successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetDocTypeDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetDocType("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.EndElement();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1; // 1: buffer size add one.
+    auto pBuffer = std::make_unique<char[]>(size);
+    memset_s(pBuffer.get(), size, 0, size);
+    xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
+    ASSERT_STREQ(pBuffer.get(),
+                 "<note>\r\n  <!DOCTYPE root SYSTEM \"http://www.test.org/test.dtd\">\r\n</note>");
 }
