@@ -406,8 +406,7 @@ void Worker::PerformTask(const uv_async_t* req)
 {
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     auto worker = static_cast<Worker*>(req->data);
-    worker->wakeUpTime_ = startTime;
-    worker->checkCount_ = 0;
+    worker->UpdateWorkerWakeUpTime();
     napi_env env = worker->workerEnv_;
     TaskManager::GetInstance().NotifyWorkerRunning(worker);
     auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
@@ -684,15 +683,17 @@ void Worker::PostReleaseSignal()
     uv_async_send(clearWorkerSignal_);
 }
 
-bool Worker::IsRunnable(uint64_t currTime)
+bool Worker::IsRunnable(uint64_t currTime) const
 {
     bool res = true;
     if (currTime > wakeUpTime_) {
-        res = (currTime - wakeUpTime_ < 10000) || (++checkCount_ <= 2); // 10000: ms, 10s; 2: check threshold
-    }
-    if (!res) {
-        HILOG_WARN("taskpool:: the worker may have been blocked or fd is invalid");
+        res = (currTime - wakeUpTime_ < 15); // 15: ms
     }
     return res;
+}
+
+void Worker::UpdateWorkerWakeUpTime()
+{
+    wakeUpTime_ = ConcurrentHelper::GetMilliseconds();
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

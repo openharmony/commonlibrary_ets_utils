@@ -165,13 +165,15 @@ private:
     // for load balance
     void RunTaskManager();
     void CheckForBlockedWorkers();
-    void TryExpand();
+    template <bool needCheckIdle> void TryExpandWithCheckIdle();
     void NotifyShrink(uint32_t targetNum);
     void TriggerShrink(uint32_t step);
     uint32_t ComputeSuitableThreadNum();
     uint32_t ComputeSuitableIdleNum();
-    static void NotifyExpand(const uv_async_t* req);
-    static void TriggerLoadBalance(const uv_timer_t* req = nullptr);
+    void DispatchAndTryExpandInner();
+    static void TryExpand(const uv_timer_t* req = nullptr);
+    static void DispatchAndTryExpand(const uv_async_t* req);
+    static void TriggerLoadBalance(const uv_timer_t* req);
 
     bool IsChooseIdle();
     uint32_t GetNonIdleTaskNum();
@@ -211,15 +213,18 @@ private:
     // for load balance
     napi_env hostEnv_ = nullptr;
     uv_loop_t* loop_ = nullptr;
-    uv_timer_t* timer_ = nullptr;
-    uv_async_t* expandHandle_ = nullptr;
+    uv_timer_t* balanceTimer_ = nullptr;
+    uv_timer_t* expandTimer_ = nullptr;
+    uv_async_t* dispatchHandle_ = nullptr;
     std::atomic<bool> suspend_ = false;
     std::atomic<uint32_t> retryCount_ = 0;
+    std::atomic<uint32_t> expandingCount_ = 0;
     std::atomic<uint32_t> nonIdleTaskNum_ = 0;
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
     std::atomic<bool> needChecking_ = false;
     std::atomic<bool> isHandleInited_ = false;
+    std::atomic<uint32_t> timerTriggered_ = false;
 
     // for task priority
     uint32_t highPrioExecuteCount_ = 0;
@@ -235,6 +240,7 @@ private:
     std::mutex callbackMutex_;
     std::map<uint32_t, std::shared_ptr<CallbackInfo>> callbackTable_ {};
     std::vector<Worker*> freeList_ {};
+    uint32_t maxThreads_ = ConcurrentHelper::GetMaxThreads();
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
