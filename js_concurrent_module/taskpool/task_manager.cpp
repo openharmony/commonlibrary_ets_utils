@@ -772,12 +772,14 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
     }
 }
 
-void TaskManager::EraseWaitingTaskId(uint32_t taskId, Priority priority)
+bool TaskManager::EraseWaitingTaskId(uint32_t taskId, Priority priority)
 {
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
     if (!taskQueues_[priority]->EraseWaitingTaskId(taskId)) {
         HILOG_WARN("taskpool:: taskId is not in executeQueue when cancel");
+        return false;
     }
+    return true;
 }
 
 std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()

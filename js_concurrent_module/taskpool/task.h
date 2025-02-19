@@ -156,7 +156,7 @@ public:
     bool IsReadyToHandle() const;
     void NotifyPendingTask();
     void CancelPendingTask(napi_env env);
-    bool UpdateTask(uint64_t startTime, void* worker);
+    void UpdateTaskExecutedInfo(uint64_t startTime, void* worker);
     napi_value DeserializeValue(napi_env env, napi_value* func, napi_value* args);
     void StoreTaskDuration();
     bool CanForSequenceRunner(napi_env env);

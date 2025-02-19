@@ -430,10 +430,7 @@ void Worker::PerformTask(const uv_async_t* req)
     // try to record the memory data for gc
     worker->NotifyTaskBegin();
 
-    if (!task->UpdateTask(startTime, worker)) {
-        worker->NotifyTaskFinished();
-        return;
-    }
+    task->UpdateTaskExecutedInfo(startTime, worker);
     if (task->IsGroupTask() && (!TaskGroupManager::GetInstance().UpdateGroupState(task->groupId_))) {
         return;
     }

@@ -286,6 +286,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
         }
         napi_value error = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(task->env_, taskMessage->deferred, error);
+        task->taskState_ = ExecuteState::FINISHED;
     } else {
         HILOG_INFO("taskpool:: DelayTask taskId %{public}s", std::to_string(taskMessage->taskId).c_str());
         HandleScope scope(task->env_, status);
@@ -604,8 +605,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
-    if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
-        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING && !task->isRunning_)) {
+    if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED) {
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
