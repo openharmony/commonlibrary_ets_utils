@@ -35,15 +35,15 @@ ConditionVariable::ConditionVariable(const std::string &name) : name_(name)
     IncreaseRefCount();
 }
 
-ConditionVariable *ConditionVariable::FindOrCreateCondition(const std::string &condName)
+ConditionVariable *ConditionVariable::FindOrCreateCondition(const std::string &name)
 {
     std::lock_guard<std::mutex> mapLock(mapMtx_);
     ConditionVariable *cond {nullptr};
-    if (condMap_.find(condName) == condMap_.end()) {
-        cond = new ConditionVariable(condName);
-        condMap_.emplace(condName, cond);
+    if (condMap_.find(name) == condMap_.end()) {
+        cond = new ConditionVariable(name);
+        condMap_.emplace(name, cond);
     } else {
-        cond = condMap_[condName];
+        cond = condMap_[name];
         cond->IncreaseRefCount();
     }
     return cond;

@@ -16,6 +16,7 @@
 #include "condition_task.h"
 #include "condition_variable.h"
 #include "helper/napi_helper.h"
+#include "helper/object_helper.h"
 #include "tools/log.h"
 #include "uv.h"
 
@@ -66,26 +67,24 @@ void ConditionTask::EnvCleanup(void *arg)
 
 void ConditionTask::ResolvePromise()
 {
-    napi_handle_scope scope;
-    NAPI_CALL_RETURN_VOID(env_, napi_open_handle_scope(env_, &scope));
+    napi_status status {napi_ok};
+    Common::Helper::HandleScope scope(env_, status);
+    NAPI_CALL_RETURN_VOID(env_, status);
 
     napi_value result;
     NAPI_CALL_RETURN_VOID(env_, napi_get_undefined(env_, &result));
     NAPI_CALL_RETURN_VOID(env_, napi_resolve_deferred(env_, deferred_, result));
-
-    NAPI_CALL_RETURN_VOID(env_, napi_close_handle_scope(env_, scope));
 }
 
 void ConditionTask::RejectPromise()
 {
-    napi_handle_scope scope;
-    NAPI_CALL_RETURN_VOID(env_, napi_open_handle_scope(env_, &scope));
+    napi_status status {napi_ok};
+    Common::Helper::HandleScope scope(env_, status);
+    NAPI_CALL_RETURN_VOID(env_, status);
 
     napi_value result;
     NAPI_CALL_RETURN_VOID(env_, napi_get_undefined(env_, &result));
     NAPI_CALL_RETURN_VOID(env_, napi_reject_deferred(env_, deferred_, result));
-
-    NAPI_CALL_RETURN_VOID(env_, napi_close_handle_scope(env_, scope));
 }
 
 void ConditionTask::InitTimer(uint64_t timeout)
