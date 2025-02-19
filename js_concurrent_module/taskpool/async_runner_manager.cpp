@@ -46,7 +46,9 @@ AsyncRunner* AsyncRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_valu
             if (!res) {
                 return nullptr;
             }
-            asyncRunner->IncreaseAsyncCount();
+            if (!FindRunnerAndRef(asyncRunner->asyncRunnerId_)) {
+                return nullptr;
+            }
         }
     }
 
@@ -61,7 +63,6 @@ void AsyncRunnerManager::StoreAsyncRunner(uint64_t asyncRunnerId, AsyncRunner* a
 
 void AsyncRunnerManager::RemoveAsyncRunner(uint64_t asyncRunnerId)
 {
-    std::unique_lock<std::mutex> lock(asyncRunnersMutex_);
     asyncRunners_.erase(asyncRunnerId);
 }
 
@@ -72,7 +73,6 @@ AsyncRunner* AsyncRunnerManager::GetAsyncRunner(uint64_t asyncRunnerId)
     if (iter != asyncRunners_.end()) {
         return iter->second;
     }
-    HILOG_DEBUG("taskpool:: asyncRunner has been released.");
     return nullptr;
 }
 
@@ -82,6 +82,10 @@ bool AsyncRunnerManager::TriggerAsyncRunner(napi_env env, Task* lastTask)
     AsyncRunner* asyncRunner = GetAsyncRunner(asyncRunnerId);
     if (asyncRunner == nullptr) {
         HILOG_ERROR("taskpool:: trigger asyncRunner not exist.");
+        return false;
+    }
+    if (UnrefAndDestroyRunner(asyncRunner)) {
+        HILOG_ERROR("taskpool:: trigger asyncRunner is remove.");
         return false;
     }
     asyncRunner->TriggerWaitingTask();
@@ -94,15 +98,6 @@ void AsyncRunnerManager::RemoveGlobalAsyncRunner(const std::string& name)
     auto iter = globalAsyncRunner_.find(name);
     if (iter != globalAsyncRunner_.end()) {
         globalAsyncRunner_.erase(iter);
-    }
-}
-
-void AsyncRunnerManager::GlobalAsyncRunnerDestructor(napi_env env, AsyncRunner* asyncRunner)
-{
-    if (asyncRunner->CheckNeedDelete(env)) {
-        RemoveGlobalAsyncRunner(asyncRunner->name_);
-        RemoveAsyncRunner(asyncRunner->asyncRunnerId_);
-        delete asyncRunner;
     }
 }
 
@@ -132,5 +127,39 @@ void AsyncRunnerManager::CancelAsyncRunnerTask(napi_env env, Task* task)
     if (asyncRunner != nullptr) {
         asyncRunner->RemoveWaitingTask(task);
     }
+}
+
+void AsyncRunnerManager::RemoveWaitingTask(Task* task)
+{
+    auto asyncRunner = GetAsyncRunner(task->asyncRunnerId_);
+    if (asyncRunner != nullptr) {
+        asyncRunner->RemoveWaitingTask(task, false);
+    }
+}
+
+bool AsyncRunnerManager::FindRunnerAndRef(uint64_t asyncRunnerId)
+{
+    std::unique_lock<std::mutex> lock(asyncRunnersMutex_);
+    auto iter = asyncRunners_.find(asyncRunnerId);
+    if (iter == asyncRunners_.end()) {
+        HILOG_ERROR("taskpool:: asyncRunner not exist.");
+        return false;
+    }
+    iter->second->IncreaseAsyncCount();
+    return true;
+}
+
+bool AsyncRunnerManager::UnrefAndDestroyRunner(AsyncRunner* asyncRunner)
+{
+    std::unique_lock<std::mutex> lock(asyncRunnersMutex_);
+    if (asyncRunner->DecreaseAsyncCount() != 0) {
+        return false;
+    }
+    if (asyncRunner->isGlobalRunner_) {
+        RemoveGlobalAsyncRunner(asyncRunner->name_);
+    }
+    RemoveAsyncRunner(asyncRunner->asyncRunnerId_);
+    delete asyncRunner;
+    return true;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

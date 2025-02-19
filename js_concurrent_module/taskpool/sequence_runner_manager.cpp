@@ -146,13 +146,13 @@ void SequenceRunnerManager::RemoveWaitingTask(Task* task)
 
 bool SequenceRunnerManager::FindRunnerAndRef(uint64_t seqRunnerId)
 {
-    SequenceRunner* seqRunner = GetSeqRunner(seqRunnerId);
-    if (seqRunner == nullptr) {
+    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+    auto iter = seqRunners_.find(seqRunnerId);
+    if (iter == seqRunners_.end()) {
         HILOG_ERROR("taskpool:: seqRunner not exist.");
         return false;
     }
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    seqRunner->IncreaseSeqCount();
+    iter->second->IncreaseSeqCount();
     return true;
 }
 

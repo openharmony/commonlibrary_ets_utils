@@ -5269,6 +5269,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest265, testing::ext::TestSize.Level0)
     void* data = nullptr;
     NativeEngineTest::AsyncRunnerDestructor(nullptr, data);
     NativeEngineTest::AsyncRunnerDestructor(env, data);
+    AsyncRunner* asyncRunner = new AsyncRunner();
+    asyncRunner->asyncRunnerId_ = 265;
+    void* data2 = static_cast<void*>(asyncRunner);
+    NativeEngineTest::AsyncRunnerDestructor(env, data2);
     ASSERT_TRUE(true);
 }
 
@@ -5298,7 +5302,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest266, testing::ext::TestSize.Level0)
     NativeEngineTest::AddTasksToAsyncRunner(async, data2);
     asyncRunnerManager.TriggerAsyncRunner(env, task);
     delete task;
-    delete asyncRunner;
     ASSERT_TRUE(true);
 }
 
@@ -5344,6 +5347,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest268, testing::ext::TestSize.Level0)
     asyncRunner->waitingCapacity_ = 1;
     asyncRunner->runningCount_ = 1;
     asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunner->IncreaseAsyncCount();
     task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
     asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
     bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
@@ -5375,19 +5379,20 @@ HWTEST_F(NativeEngineTest, TaskpoolTest269, testing::ext::TestSize.Level0)
     void* data2 = reinterpret_cast<void*>(task2);
     void* async = reinterpret_cast<void*>(asyncRunner);
     NativeEngineTest::AddTasksToAsyncRunner(async, data2);
+    asyncRunner->IncreaseAsyncCount();
 
     Task* task3 = new Task();
     task3->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
     task3->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task3));
     void* data3 = reinterpret_cast<void*>(task3);
     NativeEngineTest::AddTasksToAsyncRunner(async, data3);
+    asyncRunner->IncreaseAsyncCount();
     bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
     ASSERT_TRUE(flag);
 
     delete task;
     delete task2;
     delete task3;
-    delete asyncRunner;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest270, testing::ext::TestSize.Level0)
@@ -5842,7 +5847,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest284, testing::ext::TestSize.Level0)
     asyncRunnerManager.TriggerAsyncRunner(env, task);
     delete task;
     delete task2;
-    delete asyncRunner;
     ASSERT_TRUE(true);
 }
 
@@ -6098,10 +6102,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest297, testing::ext::TestSize.Level0)
     ExceptionScope scope(env);
     
     AsyncRunner* asyncRunner = new AsyncRunner();
-    asyncRunner->IncreaseAsyncCount();
-    asyncRunner->CheckNeedDelete(env);
+    asyncRunner->DecreaseAsyncCount();
+    uint64_t refCount = asyncRunner->DecreaseAsyncCount();
+    ASSERT_TRUE(refCount == 0);
     delete asyncRunner;
-    ASSERT_TRUE(true);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest298, testing::ext::TestSize.Level0)

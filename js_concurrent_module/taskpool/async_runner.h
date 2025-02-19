@@ -37,8 +37,7 @@ public:
     uint64_t DecreaseAsyncCount();
     void IncreaseAsyncCount();
     bool CheckGlobalRunnerParams(napi_env env, uint32_t runningCapacity, uint32_t waitingCapacity);
-    bool CheckNeedDelete(napi_env env);
-    
+
 private:
     AsyncRunner(const AsyncRunner &) = delete;
     AsyncRunner& operator=(const AsyncRunner &) = delete;
