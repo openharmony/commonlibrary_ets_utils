@@ -118,7 +118,10 @@ ohos_source_set("convertxml_static") {
       "$plugins_root/interfaces",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
-    deps += [ "$plugins_root/interfaces/native:plugin_log" ]
+    deps += [
+      "$plugins_root/interfaces/native:plugin_log",
+      "//third_party/libxml2:libxml2",
+    ]
     if (target_os == "android") {
       deps += [ "$plugins_root/interfaces/native:ace_plugin_util_android" ]
       defines = [ "ANDROID_PLATFORM" ]
