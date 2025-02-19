@@ -374,7 +374,8 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
                 freeList_.emplace_back(worker);
                 HILOG_INFO("taskpool:: worker in ffrt epoll wait more than 2 intervals, force to free.");
             } else {
-                HILOG_INFO("taskpool:: worker uv alive, and will be free in 2 intervals if not wake.");
+                auto waitTime = std::to_string(workerWaitTime);
+                HILOG_INFO("taskpool:: worker uv alive, will free 2 intervals, time: %{public}s.", waitTime.c_str());
             }
             continue;
         }
@@ -620,7 +621,6 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         return taskGroup->CancelGroupTask(env, task->taskId_);
     }
 
-    std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->IsPeriodicTask()) {
         napi_reference_unref(env, task->taskRef_, nullptr);
         task->CancelPendingTask(env);
@@ -631,29 +631,37 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
         CancelSeqRunnerTask(env, task);
         return;
     }
-    if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
-        task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
-        task->taskState_ == ExecuteState::ENDING) {
-        std::string errMsg = "taskpool:: task is not executed or has been executed";
-        HILOG_ERROR("%{public}s", errMsg.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
-        return;
+    ExecuteState state = ExecuteState::NOT_FOUND;
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        if ((task->currentTaskInfo_ == nullptr && task->taskState_ != ExecuteState::DELAYED) ||
+            task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
+            task->taskState_ == ExecuteState::ENDING) {
+            std::string errMsg = "taskpool:: task is not executed or has been executed";
+            HILOG_ERROR("%{public}s", errMsg.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
+            return;
+        }
+        state = task->taskState_.exchange(ExecuteState::CANCELED);
     }
-    
     task->ClearDelayedTimers();
-    ExecuteState state = task->taskState_.exchange(ExecuteState::CANCELED);
     task->CancelPendingTask(env);
-    if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
-        reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
-        task->DecreaseTaskRefCount();
-        DecreaseRefCount(env, task->taskId_);
-        EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
-        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: task has been canceled");
-        napi_reject_deferred(env, task->currentTaskInfo_->deferred, error);
-        napi_reference_unref(env, task->taskRef_, nullptr);
-        delete task->currentTaskInfo_;
-        task->currentTaskInfo_ = nullptr;
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
+        if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+            reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
+            task->DecreaseTaskRefCount();
+            DecreaseRefCount(env, task->taskId_);
+            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
+            deferreds.push_back(task->currentTaskInfo_->deferred);
+            napi_reference_unref(env, task->taskRef_, nullptr);
+            delete task->currentTaskInfo_;
+            task->currentTaskInfo_ = nullptr;
+        }
     }
+    std::string error = "taskpool:: task has been canceled";
+    BatchRejectDeferred(env, deferreds, error);
 }
 
 void TaskManager::CancelSeqRunnerTask(napi_env env, Task *task)
@@ -1486,6 +1494,17 @@ bool TaskManager::CheckTask(uint64_t taskId)
     std::lock_guard<RECURSIVE_MUTEX> lock(tasksMutex_);
     auto item = tasks_.find(taskId);
     return item != tasks_.end();
+}
+
+void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error)
+{
+    if (deferreds.empty()) {
+        return;
+    }
+    napi_value message = ErrorHelper::NewError(env, 0, error.c_str());
+    for (auto deferred : deferreds) {
+        napi_reject_deferred(env, deferred, message);
+    }
 }
 
 // ----------------------------------- TaskGroupManager ----------------------------------------

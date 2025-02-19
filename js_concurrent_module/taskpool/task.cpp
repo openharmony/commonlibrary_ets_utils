@@ -1383,24 +1383,28 @@ void Task::InitHandle(napi_env env)
 void Task::ClearDelayedTimers()
 {
     HILOG_DEBUG("taskpool:: task ClearDelayedTimers");
-    std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
-    TaskMessage *taskMessage = nullptr;
-    for (auto t: delayedTimers_) {
-        if (t == nullptr) {
-            continue;
+    std::list<napi_deferred> deferreds {};
+    {
+        std::lock_guard<RECURSIVE_MUTEX> lock(taskMutex_);
+        TaskMessage *taskMessage = nullptr;
+        for (auto t: delayedTimers_) {
+            if (t == nullptr) {
+                continue;
+            }
+            taskMessage = static_cast<TaskMessage *>(t->data);
+            deferreds.push_back(taskMessage->deferred);
+            uv_timer_stop(t);
+            uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
+                delete (uv_timer_t*)handle;
+                handle = nullptr;
+            });
+            delete taskMessage;
+            taskMessage = nullptr;
         }
-        taskMessage = static_cast<TaskMessage *>(t->data);
-        napi_value error = ErrorHelper::NewError(env_, 0, "taskpool:: task has been canceled");
-        napi_reject_deferred(env_, taskMessage->deferred, error);
-        uv_timer_stop(t);
-        uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
-            delete (uv_timer_t*)handle;
-            handle = nullptr;
-        });
-        delete taskMessage;
-        taskMessage = nullptr;
+        delayedTimers_.clear();
     }
-    delayedTimers_.clear();
+    std::string error = "taskpool:: task has been canceled";
+    TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
 }
 
 bool Task::VerifyAndPostResult(Priority priority)
