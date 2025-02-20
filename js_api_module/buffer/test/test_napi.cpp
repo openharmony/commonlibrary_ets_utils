@@ -1505,3 +1505,63 @@ HWTEST_F(NativeEngineTest, FindIndex004, testing::ext::TestSize.Level0)
     int index = buf->IndexOf("3", 10, 1, resultIndex);
     ASSERT_EQ(index, -1);
 }
+
+/**
+ * @tc.name: BlobGetLengthTest002
+ * @tc.desc: Get the length in blob
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, BlobGetLengthTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
+    uint8_t data[5] = {'a', 'b', 'c', 'd', 'e'};
+    blob->Init(data, 5);
+    unsigned int len = blob->GetLength();
+    ASSERT_EQ(len, 5);
+}
+
+/**
+ * @tc.name: BlobGetByteTest002
+ * @tc.desc: Get a byte in blob
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, BlobGetByteTest002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Blob *blob = new OHOS::buffer::Blob();
+    uint8_t data[5] = {'a', 'b', 'c', 'd', 'e'};
+    blob->Init(data, 5);
+    uint8_t byte = blob->GetByte(2);
+    ASSERT_EQ(byte, 99);
+}
+
+/**
+ * @tc.name: GetLength001
+ * @tc.desc: Buffer GetLength001.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, GetLength001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    uint32_t size = 0;
+    buf->Init(size);
+    unsigned int len = buf->GetLength();
+    ASSERT_EQ(len, 0);
+}
+
+/**
+ * @tc.name: GetLength002
+ * @tc.desc: Buffer GetLength002.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, GetLength002, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    uint32_t size = 3;
+    buf->Init(size);
+    unsigned int len = buf->GetLength();
+    ASSERT_EQ(len, 3);
+}
