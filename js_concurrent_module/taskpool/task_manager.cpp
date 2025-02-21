@@ -1495,4 +1495,54 @@ uint32_t TaskManager::CalculateTaskId(uint64_t id)
     size_t hash = std::hash<uint64_t>{}(id);
     return static_cast<uint32_t>(hash & MAX_UINT32_T);
 }
+
+void TaskManager::ClearDependentTask(uint32_t taskId)
+{
+    HILOG_DEBUG("taskpool:: task:%{public}s ClearDependentTask", std::to_string(taskId).c_str());
+    RemoveDependTaskByTaskId(taskId);
+    DequeuePendingTaskInfo(taskId);
+    std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
+    RemoveDependentTaskByTaskId(taskId);
+}
+
+void TaskManager::RemoveDependTaskByTaskId(uint32_t taskId)
+{
+    std::set<uint32_t> dependTaskIds;
+    {
+        std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+        auto iter = dependTaskInfos_.find(taskId);
+        if (iter == dependTaskInfos_.end()) {
+            return;
+        }
+        dependTaskIds.insert(iter->second.begin(), iter->second.end());
+        dependTaskInfos_.erase(iter);
+    }
+    for (auto dependTaskId : dependTaskIds) {
+        RemoveDependentTaskInfo(dependTaskId, taskId);
+    }
+}
+
+void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
+{
+    auto iter = dependentTaskInfos_.find(taskId);
+    if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
+        HILOG_DEBUG("taskpool:: dependentTaskInfo empty");
+        return;
+    }
+    for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
+        auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
+        RemoveDependencyById(taskId, *taskIdIter);
+        auto id = *taskIdIter;
+        taskIdIter = iter->second.erase(taskIdIter);
+        auto task = GetTask(id);
+        if (task == nullptr) {
+            continue;
+        }
+        if (task->currentTaskInfo_ != nullptr) {
+            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
+        }
+        task->DisposeCanceledTask();
+        RemoveDependentTaskByTaskId(task->taskId_);
+    }
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
