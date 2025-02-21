@@ -61,7 +61,8 @@
                 "eventhandler",
                 "icu",
                 "openssl",
-                "libxml2"
+                "libxml2",
+                "typescript"
             ],
             "third_party": []
         },
