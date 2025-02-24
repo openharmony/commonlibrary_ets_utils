@@ -37,6 +37,8 @@
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
+template void TaskManager::TryExpandWithCheckIdle<true>();
+template void TaskManager::TryExpandWithCheckIdle<false>();
 
 static constexpr int8_t HIGH_PRIORITY_TASK_COUNT = 5;
 static constexpr int8_t MEDIUM_PRIORITY_TASK_COUNT = 5;
@@ -50,6 +52,7 @@ static constexpr int32_t MAX_IDLE_TIME = 30000; // 30000: 30s
 static constexpr uint32_t TRIGGER_INTERVAL = 30000; // 30000: 30s
 static constexpr uint32_t SHRINK_STEP = 4; // 4: try to release 4 threads every time
 static constexpr uint32_t MAX_UINT32_T = 0xFFFFFFFF; // 0xFFFFFFFF: max uint32_t
+static constexpr uint32_t TRIGGER_EXPAND_INTERVAL = 10; // 10: ms, trigger recheck expansion interval
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
@@ -79,13 +82,21 @@ TaskManager::TaskManager()
 TaskManager::~TaskManager()
 {
     HILOG_INFO("taskpool:: ~TaskManager");
-    if (timer_ == nullptr) {
-        HILOG_ERROR("taskpool:: timer_ is nullptr");
+    if (balanceTimer_ == nullptr) {
+        HILOG_ERROR("taskpool:: balanceTimer_ is nullptr");
     } else {
-        uv_timer_stop(timer_);
-        ConcurrentHelper::UvHandleClose(timer_);
-        ConcurrentHelper::UvHandleClose(expandHandle_);
+        uv_timer_stop(balanceTimer_);
+        ConcurrentHelper::UvHandleClose(balanceTimer_);
     }
+
+    if (expandTimer_ == nullptr) {
+        HILOG_ERROR("taskpool:: expandTimer_ is nullptr");
+    } else {
+        uv_timer_stop(expandTimer_);
+        ConcurrentHelper::UvHandleClose(expandTimer_);
+    }
+
+    ConcurrentHelper::UvHandleClose(dispatchHandle_);
 
     if (loop_ != nullptr) {
         uv_stop(loop_);
@@ -284,10 +295,10 @@ void TaskManager::TryTriggerExpand()
     if (UNLIKELY(!isHandleInited_)) {
         NotifyExecuteTask();
         needChecking_ = true;
-        HILOG_DEBUG("taskpool:: the expandHandle_ is nullptr");
+        HILOG_WARN("taskpool:: the dispatchHandle_ is nullptr");
         return;
     }
-    uv_async_send(expandHandle_);
+    uv_async_send(dispatchHandle_);
 }
 
 #if defined(OHOS_PLATFORM)
@@ -452,6 +463,8 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     uint32_t workerCount = workers_.size();
     uint32_t minThread = ConcurrentHelper::IsLowMemory() ? 0 : DEFAULT_MIN_THREADS;
+    // update the maxThreads_ periodically
+    maxThreads_ = ConcurrentHelper::GetMaxThreads();
     if (minThread == 0) {
         HILOG_INFO("taskpool:: the system now is under low memory");
     }
@@ -496,12 +509,12 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     // stop the timer
     if ((workerCount == idleNum && workerCount <= minThread) && timeoutWorkers_.empty()) {
         suspend_ = true;
-        uv_timer_stop(timer_);
+        uv_timer_stop(balanceTimer_);
         HILOG_DEBUG("taskpool:: timer will be suspended");
     }
 }
 
-void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
+void TaskManager::TriggerLoadBalance([[maybe_unused]] const uv_timer_t* req)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.CheckForBlockedWorkers();
@@ -510,16 +523,41 @@ void TaskManager::TriggerLoadBalance(const uv_timer_t* req)
     taskManager.CountTraceForWorker();
 }
 
-void TaskManager::TryExpand()
+void TaskManager::DispatchAndTryExpand([[maybe_unused]] const uv_async_t* req)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.DispatchAndTryExpandInner();
+}
+
+void TaskManager::DispatchAndTryExpandInner()
 {
     // dispatch task in the TaskPoolManager thread
     NotifyExecuteTask();
-    // do not trigger when there are more idleWorkers than tasks
-    uint32_t idleNum = GetIdleWorkers();
-    if (idleNum > GetNonIdleTaskNum()) {
+    // do not check the worker idleTime first
+    TryExpandWithCheckIdle<false>();
+    if (!timerTriggered_ && GetNonIdleTaskNum() != 0) {
+        timerTriggered_ = true;
+        // use timer to check worker idle time after dispatch task
+        // if worker has been blocked or fd is broken, taskpool can expand automatically
+        uv_timer_start(expandTimer_, reinterpret_cast<uv_timer_cb>(TryExpand), TRIGGER_EXPAND_INTERVAL, 0);
+    }
+}
+
+void TaskManager::TryExpand([[maybe_unused]] const uv_timer_t* req)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.TryExpandWithCheckIdle<true>();
+}
+
+template <bool needCheckIdle>
+void TaskManager::TryExpandWithCheckIdle()
+{
+    if (GetNonIdleTaskNum() == 0) {
         return;
     }
-    needChecking_ = false; // do not need to check
+
+    needChecking_ = false;
+    timerTriggered_ = false;
     uint32_t targetNum = ComputeSuitableIdleNum();
     uint32_t workerCount = 0;
     uint32_t idleCount = 0;
@@ -528,18 +566,23 @@ void TaskManager::TryExpand()
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
         workerCount = workers_.size();
         timeoutWorkers = timeoutWorkers_.size();
-        uint64_t currTime = ConcurrentHelper::GetMilliseconds();
-        idleCount = std::count_if(idleWorkers_.begin(), idleWorkers_.end(), [currTime](const auto& worker) {
-            return worker->IsRunnable(currTime);
-        });
+        if constexpr (needCheckIdle) {
+            uint64_t currTime = ConcurrentHelper::GetMilliseconds();
+            idleCount = std::count_if(idleWorkers_.begin(), idleWorkers_.end(), [currTime](const auto& worker) {
+                return worker->IsRunnable(currTime);
+            });
+        } else {
+            idleCount = idleWorkers_.size();
+        }
     }
-    uint32_t maxThreads = std::max(ConcurrentHelper::GetMaxThreads(), DEFAULT_THREADS);
+    uint32_t maxThreads = std::max(maxThreads_, DEFAULT_THREADS);
     maxThreads = (timeoutWorkers == 0) ? maxThreads : maxThreads + 2; // 2: extra threads
     if (workerCount < maxThreads && idleCount < targetNum) {
-        uint32_t step = std::min(maxThreads, targetNum) - idleCount;
-        // Prevent the total number of expanded threads from exceeding maxThreads
-        if (step + workerCount > maxThreads) {
-            step = maxThreads - workerCount;
+        // Prevent the total number of workers from exceeding maxThreads
+        uint32_t step = std::min(std::min(maxThreads, targetNum) - idleCount, maxThreads - workerCount);
+        step = step >= expandingCount_ ? step - expandingCount_ : 0;
+        if (step == 0) {
+            return;
         }
         CreateWorkers(hostEnv_, step);
         HILOG_INFO("taskpool:: maxThreads: %{public}u, created num: %{public}u, total num: %{public}u",
@@ -547,14 +590,8 @@ void TaskManager::TryExpand()
     }
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
-        uv_timer_again(timer_);
+        uv_timer_again(balanceTimer_);
     }
-}
-
-void TaskManager::NotifyExpand(const uv_async_t* req)
-{
-    TaskManager& taskManager = TaskManager::GetInstance();
-    taskManager.TryExpand();
 }
 
 void TaskManager::RunTaskManager()
@@ -564,10 +601,14 @@ void TaskManager::RunTaskManager()
         HILOG_FATAL("taskpool:: new loop failed.");
         return;
     }
-    ConcurrentHelper::UvHandleInit(loop_, expandHandle_, TaskManager::NotifyExpand);
-    timer_ = new uv_timer_t;
-    uv_timer_init(loop_, timer_);
-    uv_timer_start(timer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, TRIGGER_INTERVAL);
+    ConcurrentHelper::UvHandleInit(loop_, dispatchHandle_, TaskManager::DispatchAndTryExpand);
+    balanceTimer_ = new uv_timer_t;
+    uv_timer_init(loop_, balanceTimer_);
+    uv_timer_start(balanceTimer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, TRIGGER_INTERVAL);
+
+    expandTimer_ = new uv_timer_t;
+    uv_timer_init(loop_, expandTimer_);
+
     isHandleInited_ = true;
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
     pthread_setname_np("OS_TaskManager");
@@ -576,7 +617,7 @@ void TaskManager::RunTaskManager()
 #endif
     if (UNLIKELY(needChecking_)) {
         needChecking_ = false;
-        uv_async_send(expandHandle_);
+        uv_async_send(dispatchHandle_);
     }
     uv_run(loop_, UV_RUN_DEFAULT);
     if (loop_ != nullptr) {
@@ -688,6 +729,7 @@ void TaskManager::NotifyWorkerIdle(Worker* worker)
 void TaskManager::NotifyWorkerCreated(Worker* worker)
 {
     NotifyWorkerIdle(worker);
+    expandingCount_--;
 }
 
 void TaskManager::NotifyWorkerAdded(Worker* worker)
@@ -891,6 +933,7 @@ void TaskManager::CreateWorkers(napi_env env, uint32_t num)
 {
     HILOG_DEBUG("taskpool:: CreateWorkers, num:%{public}u", num);
     for (uint32_t i = 0; i < num; i++) {
+        expandingCount_++;
         auto worker = Worker::WorkerConstructor(env);
         NotifyWorkerAdded(worker);
     }
@@ -910,7 +953,7 @@ void TaskManager::RestoreWorker(Worker* worker)
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
-        uv_timer_again(timer_);
+        uv_timer_again(balanceTimer_);
     }
     if (worker->state_ == WorkerState::BLOCKED) {
         // since the worker is blocked, we should add it to the timeout set

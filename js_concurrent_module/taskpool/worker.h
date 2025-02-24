@@ -183,7 +183,8 @@ private:
     void TerminateTask(uint32_t taskId);
     void CloseHandles();
     void PostReleaseSignal();
-    bool IsRunnable(uint64_t currTime);
+    bool IsRunnable(uint64_t currTime) const;
+    void UpdateWorkerWakeUpTime();
 
     static void HandleFunctionException(napi_env env, Task* task);
     static void PerformTask(const uv_async_t* req);
@@ -212,6 +213,7 @@ private:
     std::atomic<bool> idleState_ = true; // true means the worker is idle
     std::atomic<uint64_t> idlePoint_ = ConcurrentHelper::GetMilliseconds();
     std::atomic<uint64_t> startTime_ = ConcurrentHelper::GetMilliseconds();
+    std::atomic<uint64_t> wakeUpTime_ = ConcurrentHelper::GetMilliseconds();
     std::atomic<WorkerState> state_ {WorkerState::IDLE};
     std::atomic<bool> hasExecuted_ = false; // false means this worker hasn't execute any tasks
     Priority priority_ {Priority::DEFAULT};
@@ -227,9 +229,6 @@ private:
     std::unordered_set<uint32_t> longTasksSet_ {};
     std::mutex queueMutex_; // for sendData
     std::unordered_map<napi_env, MsgQueue> msgQueueMap_ {};
-    std::atomic<uint64_t> wakeUpTime_ = ConcurrentHelper::GetMilliseconds();
-    std::atomic<uint64_t> checkCount_ = 0;
-
     friend class TaskManager;
     friend class NativeEngineTest;
 
