@@ -88,10 +88,7 @@ void ConditionVariable::FinishTask(bool finishAll)
         napi_send_event(
             task->GetEnv(),
             [cond = this, task]() {
-                {
-                    std::lock_guard<std::mutex> lock(cond->mtx_);
-                    task->Finish(ConditionTaskFinishReason::NOTIFY);
-                }
+                task->Finish(ConditionTaskFinishReason::NOTIFY);
                 cond->TryRemoveCondition();
             },
             napi_eprio_immediate);
@@ -110,8 +107,8 @@ void ConditionVariable::FindAndFinishTask(ConditionTask *task, ConditionTaskFini
             return;
         }
         tasks_.erase(it);
-        task->Finish(reason);
     }
+    task->Finish(reason);
     TryRemoveCondition();
 }
 
