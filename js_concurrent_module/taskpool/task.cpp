@@ -1160,7 +1160,7 @@ void Task::CancelPendingTask(napi_env env)
     TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
 }
 
-void Task::UpdateTaskExecutedInfo(uint64_t startTime, void* worker)
+bool Task::UpdateTask(uint64_t startTime, void* worker)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateTask", std::to_string(taskId_).c_str());
     if (taskState_ != ExecuteState::CANCELED) {
@@ -1168,7 +1168,7 @@ void Task::UpdateTaskExecutedInfo(uint64_t startTime, void* worker)
     }
     startTime_ = startTime;
     worker_ = worker;
-    isRunning_ = true;
+    return true;
 }
 
 napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* args)
@@ -1693,6 +1693,9 @@ void Task::CancelInner(ExecuteState state)
 {
     ClearDelayedTimers();
     CancelPendingTask(env_);
+    if (HasDependency()) {
+        TaskManager::GetInstance().ClearDependentTask(taskId_);
+    }
     std::list<napi_deferred> deferreds {};
     {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
@@ -1705,14 +1708,14 @@ void Task::CancelInner(ExecuteState state)
             napi_reference_unref(env_, taskRef_, nullptr);
             delete currentTaskInfo_;
             currentTaskInfo_ = nullptr;
-            taskState_ = ExecuteState::FINISHED;
+            isCancelToFinish_ = true;
         }
         if (IsSeqRunnerTask() && state == ExecuteState::CANCELED) {
             DisposeCanceledTask();
             return;
         }
         if (state == ExecuteState::DELAYED) {
-            taskState_ = ExecuteState::FINISHED;
+            isCancelToFinish_ = true;
         }
     }
     std::string error = "taskpool:: task has been canceled";

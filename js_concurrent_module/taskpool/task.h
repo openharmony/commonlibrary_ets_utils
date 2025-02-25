@@ -156,7 +156,7 @@ public:
     bool IsReadyToHandle() const;
     void NotifyPendingTask();
     void CancelPendingTask(napi_env env);
-    void UpdateTaskExecutedInfo(uint64_t startTime, void* worker);
+    bool UpdateTask(uint64_t startTime, void* worker);
     napi_value DeserializeValue(napi_env env, napi_value* func, napi_value* args);
     void StoreTaskDuration();
     bool CanForSequenceRunner(napi_env env);
@@ -240,7 +240,7 @@ public:
 
     bool isMainThreadTask_ {false};
     Priority asyncTaskPriority_ {Priority::DEFAULT};
-    std::atomic<bool> isRunning_ {false};
+    std::atomic<bool> isCancelToFinish_ {false};
 };
 
 struct CallbackInfo {

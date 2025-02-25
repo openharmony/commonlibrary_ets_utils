@@ -149,6 +149,7 @@ public:
     bool CheckTask(uint32_t taskId);
     void BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error);
     uint32_t CalculateTaskId(uint64_t id);
+    void ClearDependentTask(uint32_t taskId);
 
 private:
     TaskManager();
@@ -180,6 +181,8 @@ private:
     std::pair<uint32_t, Priority> GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue, Priority priority);
     void IncreaseNumIfNoIdle(Priority priority);
     void DecreaseNumIfNoIdle(Priority priority);
+    void RemoveDependTaskByTaskId(uint32_t taskId);
+    void RemoveDependentTaskByTaskId(uint32_t taskId);
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};

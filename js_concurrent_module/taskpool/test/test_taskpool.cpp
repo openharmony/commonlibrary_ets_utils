@@ -4832,7 +4832,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest243, testing::ext::TestSize.Level0)
     uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->taskId_ = taskId;
     task->taskState_ = ExecuteState::CANCELED;
-    task->UpdateTaskExecutedInfo(0, nullptr);
+    task->UpdateTask(0, nullptr);
     task->isMainThreadTask_ = false;
     task->SetValid(false);
     task->VerifyAndPostResult(Priority::DEFAULT);
@@ -6229,4 +6229,123 @@ HWTEST_F(NativeEngineTest, TaskpoolTest305, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest306, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskId_ = 306;
+    task->SetHasDependency(true);
+    task->env_ = env;
+    task->CancelInner(ExecuteState::DELAYED);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest307, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t taskId = 307;
+    std::set<uint32_t> taskIds{1};
+    TaskManager::GetInstance().StoreTaskDependency(taskId, taskIds);
+    TaskManager::GetInstance().ClearDependentTask(taskId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest308, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t taskId = 308;
+    uint32_t taskId2 = 1308;
+    std::set<uint32_t> taskIds{taskId2};
+    TaskManager::GetInstance().StoreDependentTaskInfo(taskIds, taskId);
+    TaskManager::GetInstance().ClearDependentTask(taskId2);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest309, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t taskId = 309;
+    Task* task = new Task();
+    task->env_ = env;
+    napi_value obj = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
+    TaskManager::GetInstance().StoreTask(task);
+    std::set<uint32_t> taskIds{taskId};
+    TaskManager::GetInstance().StoreDependentTaskInfo(taskIds, task->taskId_);
+    TaskManager::GetInstance().ClearDependentTask(taskId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest310, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t taskId = 310;
+    Task* task = new Task();
+    task->env_ = env;
+    napi_value obj = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
+    task->currentTaskInfo_ = new TaskInfo();
+    TaskManager::GetInstance().StoreTask(task);
+    std::set<uint32_t> taskIds{taskId};
+    TaskManager::GetInstance().StoreDependentTaskInfo(taskIds, task->taskId_);
+    TaskManager::GetInstance().ClearDependentTask(taskId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest311, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t taskId = 311;
+    uint32_t taskId2 = 1311;
+    std::set<uint32_t> taskIds{taskId2};
+    TaskManager::GetInstance().StoreDependentTaskInfo(taskIds, taskId);
+    TaskManager::GetInstance().RemoveDependentTaskInfo(taskId2, taskId);
+    TaskManager::GetInstance().ClearDependentTask(taskId2);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest312, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value napiTask = CreateTaskObject(env, TaskType::TASK, ExecuteState::FINISHED, true);
+    napi_value argv[] = {napiTask};
+    napi_value result = NativeEngineTest::Execute(env, argv, 1);
+    ASSERT_TRUE(result != nullptr);
+    Task* task = nullptr;
+    napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    napi_value napiTask2 = CreateTaskObject(env, TaskType::TASK, ExecuteState::CANCELED, true);
+    Task* task2 = nullptr;
+    napi_unwrap(env, napiTask2, reinterpret_cast<void**>(&task2));
+    task2->isCancelToFinish_ = true;
+    napi_value argv2[] = {napiTask2};
+    result = NativeEngineTest::Execute(env, argv2, 1);
+    ASSERT_TRUE(result != nullptr);
+    TaskManager::GetInstance().RemoveTask(task2->taskId_);
 }
