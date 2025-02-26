@@ -51,6 +51,10 @@ public:
 
     static tid_t GetCurrentTid(napi_env env);
     static void DumpLocksInfoForThread(tid_t targetTid, std::string &result);
+    static void EmptyExecuteCallback(napi_env env, void *data)
+    {
+        // Do not replace this function with napi_send_event. It can not send event after env start destroying.
+    }
 
     AsyncLockManager() = delete;
     AsyncLockManager(const AsyncLockManager &) = delete;
