@@ -248,6 +248,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
             return nullptr;
         }
+        worker->workerType_ = WorkerType::LIMITED_WORKER;
         g_limitedworkers.push_back(worker);
         HILOG_INFO("worker:: limited workers num %{public}zu", g_limitedworkers.size());
     } else {
