@@ -73,6 +73,7 @@ gen_obj("xml_abc") {
 
 xml_sources = [
   "js_xml.cpp",
+  "js_xml_dynamic.cpp",
   "native_module_xml.cpp",
 ]
 
