@@ -30,6 +30,7 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
       mode_(mode),
       options_(options),
       deferred_(deferred),
+      work_(nullptr),
       timeoutActive_(false)
 {
     // timeout timer initialization: just fill the data fields, do not arm it
@@ -43,6 +44,13 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
     engine->BuildJsStackTrace(creationStacktrace_);
 
     napi_add_env_cleanup_hook(env_, EnvCleanUp, this);
+    napi_value resourceName;
+    napi_create_string_utf8(env, "AsyncLock::AsyncCallback", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_async_work(env_, nullptr, resourceName, AsyncLockManager::EmptyExecuteCallback,
+                                                AsyncAfterWorkCallback, this, &work_);
+    if (status != napi_ok) {
+        HILOG_FATAL("Internal error: cannot create async work");
+    }
 }
 
 void LockRequest::EnvCleanUp(void *arg)
@@ -81,6 +89,22 @@ LockRequest::~LockRequest()
     CleanTimer();
 }
 
+void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_status status, void *data)
+{
+    LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
+    std::unique_lock<std::mutex> lock(lockRequest->lockRequestMutex_);
+    napi_delete_async_work(env, lockRequest->work_);
+    lockRequest->work_ = nullptr;
+    if (lockRequest->env_ == nullptr) {
+        lock.unlock();
+        HILOG_ERROR("AsyncCallback is called after env cleaned up");
+        lockRequest->lock_->CleanUpLockRequestOnCompletion(lockRequest);
+        return;
+    }
+    lock.unlock();
+    lockRequest->CallCallback();
+}
+
 napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
 {
     LockRequest *lockRequest = nullptr;
@@ -96,29 +120,17 @@ napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
 
 void LockRequest::CallCallbackAsync()
 {
-    std::unique_lock<std::mutex> lock(lockRequestMutex_);
+    lockRequestMutex_.lock();
     if (env_ == nullptr) {
         lockRequestMutex_.unlock();
         HILOG_ERROR("Callback is called after env cleaned up");
         lock_->CleanUpLockRequestOnCompletion(this);
         return;
     }
-    napi_status status = napi_send_event(
-        env_,
-        [this]() {
-            std::unique_lock<std::mutex> lock(this->lockRequestMutex_);
-            if (this->env_ == nullptr) {
-                lock.unlock();
-                HILOG_ERROR("AsyncCallback is called after env cleaned up");
-                this->lock_->CleanUpLockRequestOnCompletion(this);
-                return;
-            }
-            lock.unlock();
-            this->CallCallback();
-        },
-        napi_eprio_immediate);
+    napi_status status = napi_queue_async_work(env_, work_);
+    lockRequestMutex_.unlock();
     if (status != napi_ok) {
-        HILOG_FATAL("Internal error: cannot send event");
+        HILOG_FATAL("Internal error: cannot queue async work");
     }
 }
 
