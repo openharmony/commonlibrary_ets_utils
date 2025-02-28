@@ -212,6 +212,238 @@ namespace OHOS::Uri {
         return result;
     }
 
+    static napi_value SetScheme(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URI:: can not get thisVar");
+            return nullptr;
+        }
+        Uri *muri = nullptr;
+        std::string scheme = "";
+        size_t schemeLen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &schemeLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get scheme size");
+            return nullptr;
+        }
+        scheme.reserve(schemeLen);
+        scheme.resize(schemeLen);
+        if (napi_get_value_string_utf8(env, argv[0], scheme.data(), schemeLen + 1, &schemeLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get scheme value");
+            return nullptr;
+        }
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+            HILOG_ERROR("URI:: can not get uri");
+            return nullptr;
+        }
+        if (muri != nullptr) {
+            muri->SetScheme(scheme);
+        }
+        return result;
+    }
+
+    static napi_value SetUserInfo(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URI:: can not get thisVar");
+            return nullptr;
+        }
+        Uri *muri = nullptr;
+        std::string userInfo = "";
+        size_t userInfoLen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &userInfoLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get userInfo size");
+            return nullptr;
+        }
+        userInfo.reserve(userInfoLen);
+        userInfo.resize(userInfoLen);
+        if (napi_get_value_string_utf8(env, argv[0], userInfo.data(), userInfoLen + 1, &userInfoLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get userInfo value");
+            return nullptr;
+        }
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+            HILOG_ERROR("URI:: can not get uri");
+            return nullptr;
+        }
+        if (muri != nullptr) {
+            muri->SetUserInfo(userInfo);
+        }
+        return result;
+    }
+
+    static napi_value SetPath(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URI:: can not get thisVar");
+            return nullptr;
+        }
+        Uri *muri = nullptr;
+        std::string pathStr = "";
+        size_t pathLen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &pathLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get pathStr size");
+            return nullptr;
+        }
+        pathStr.reserve(pathLen);
+        pathStr.resize(pathLen);
+        if (napi_get_value_string_utf8(env, argv[0], pathStr.data(), pathLen + 1, &pathLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get pathStr value");
+            return nullptr;
+        }
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+            HILOG_ERROR("URI:: can not get uri");
+            return nullptr;
+        }
+        if (muri != nullptr) {
+            muri->SetPath(pathStr);
+        }
+        return result;
+    }
+
+    static napi_value SetFragment(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URI:: can not get thisVar");
+            return nullptr;
+        }
+        Uri *muri = nullptr;
+        std::string fragmentStr = "";
+        size_t fragmentLen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &fragmentLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get fragmentStr size");
+            return nullptr;
+        }
+        fragmentStr.reserve(fragmentLen);
+        fragmentStr.resize(fragmentLen);
+        if (napi_get_value_string_utf8(env, argv[0], fragmentStr.data(), fragmentLen + 1, &fragmentLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get fragmentStr value");
+            return nullptr;
+        }
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+            HILOG_ERROR("URI:: can not get uri");
+            return nullptr;
+        }
+        if (muri != nullptr) {
+            muri->SetFragment(fragmentStr);
+        }
+        return result;
+    }
+
+    static napi_value SetQuery(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URI:: can not get thisVar");
+            return nullptr;
+        }
+        Uri *muri = nullptr;
+        std::string queryStr = "";
+        size_t queryLen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &queryLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get queryStr size");
+            return nullptr;
+        }
+        queryStr.reserve(queryLen);
+        queryStr.resize(queryLen);
+        if (napi_get_value_string_utf8(env, argv[0], queryStr.data(), queryLen + 1, &queryLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get queryStr value");
+            return nullptr;
+        }
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+            HILOG_ERROR("URI:: can not get uri");
+            return nullptr;
+        }
+        if (muri != nullptr) {
+            muri->SetQuery(queryStr);
+        }
+        return result;
+    }
+
+    static napi_value SetAuthority(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URI:: can not get thisVar");
+            return nullptr;
+        }
+        Uri *muri = nullptr;
+        std::string authorityStr = "";
+        size_t authorityStrLen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &authorityStrLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get authorityStr size");
+            return nullptr;
+        }
+        authorityStr.reserve(authorityStrLen);
+        authorityStr.resize(authorityStrLen);
+        if (napi_get_value_string_utf8(env, argv[0], authorityStr.data(),
+            authorityStrLen + 1, &authorityStrLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get authorityStr value");
+            return nullptr;
+        }
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+            HILOG_ERROR("URI:: can not get uri");
+            return nullptr;
+        }
+        if (muri != nullptr) {
+            muri->SetAuthority(authorityStr);
+        }
+        return result;
+    }
+
+    static napi_value SetSsp(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        napi_value result = nullptr;
+        size_t argc = 1;
+        napi_value argv[1] = { nullptr };
+        if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+            HILOG_ERROR("URI:: can not get thisVar");
+            return nullptr;
+        }
+        Uri *muri = nullptr;
+        std::string sspStr = "";
+        size_t sspStrLen = 0;
+        if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &sspStrLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get authorityStr size");
+            return nullptr;
+        }
+        sspStr.reserve(sspStrLen);
+        sspStr.resize(sspStrLen);
+        if (napi_get_value_string_utf8(env, argv[0], sspStr.data(), sspStrLen + 1, &sspStrLen) != napi_ok) {
+            HILOG_ERROR("URI:: can not get authorityStr value");
+            return nullptr;
+        }
+        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+            HILOG_ERROR("URI:: can not get uri");
+            return nullptr;
+        }
+        if (muri != nullptr) {
+            muri->SetSsp(sspStr);
+        }
+        return result;
+    }
+
     static napi_value GetLastSegment(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -410,15 +642,15 @@ namespace OHOS::Uri {
             DECLARE_NAPI_FUNCTION("getLastSegment", GetLastSegment),
             DECLARE_NAPI_FUNCTION("addSegment", AddSegment),
             DECLARE_NAPI_FUNCTION("clearQuery", ClearQuery),
-            DECLARE_NAPI_GETTER("scheme", GetScheme),
-            DECLARE_NAPI_GETTER("authority", GetAuthority),
-            DECLARE_NAPI_GETTER("ssp", GetSsp),
-            DECLARE_NAPI_GETTER("userInfo", GetUserinfo),
+            DECLARE_NAPI_GETTER_SETTER("scheme", GetScheme, SetScheme),
+            DECLARE_NAPI_GETTER_SETTER("authority", GetAuthority, SetAuthority),
+            DECLARE_NAPI_GETTER_SETTER("ssp", GetSsp, SetSsp),
+            DECLARE_NAPI_GETTER_SETTER("userInfo", GetUserinfo, SetUserInfo),
             DECLARE_NAPI_GETTER("host", GetHost),
             DECLARE_NAPI_GETTER("port", GetPort),
-            DECLARE_NAPI_GETTER("path", GetPath),
-            DECLARE_NAPI_GETTER("query", GetQuery),
-            DECLARE_NAPI_GETTER("fragment", GetFragment),
+            DECLARE_NAPI_GETTER_SETTER("path", GetPath, SetPath),
+            DECLARE_NAPI_GETTER_SETTER("query", GetQuery, SetQuery),
+            DECLARE_NAPI_GETTER_SETTER("fragment", GetFragment, SetFragment),
             DECLARE_NAPI_GETTER("isFailed", IsFailed),
         };
         NAPI_CALL(env, napi_define_class(env, uriClassName, strlen(uriClassName), UriConstructor,

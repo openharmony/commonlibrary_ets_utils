@@ -570,9 +570,210 @@ namespace OHOS::Uri {
         return normalizeUri;
     }
 
+    std::string Uri::UpdateToString() const
+    {
+        std::string uriStr = "";
+        bool addQuery = false;
+        if (!uriData_.scheme.empty()) {
+            uriStr += uriData_.scheme + ":";
+        }
+        if (uriData_.path.empty()) {
+            uriStr += uriData_.SchemeSpecificPart;
+            addQuery = true;
+        } else {
+            if (!uriData_.host.empty()) {
+                uriStr += "//";
+                if (!uriData_.userInfo.empty()) {
+                    uriStr += uriData_.userInfo + "@";
+                }
+                uriStr += uriData_.host;
+                if (uriData_.port != -1) {
+                    uriStr += ":" + std::to_string(uriData_.port);
+                }
+            } else if (!uriData_.authority.empty()) {
+                uriStr += "//" + uriData_.authority;
+            }
+            if (!uriData_.path.empty()) {
+                uriData_.path[0] == '/' ? (uriStr += uriData_.path) : (uriStr += "/" + uriData_.path);
+            }
+        }
+        if (!uriData_.query.empty() && !addQuery) {
+            uriStr += "?" + uriData_.query;
+        }
+        if (!uriData_.fragment.empty()) {
+            uriStr += "#" + uriData_.fragment;
+        }
+        return uriStr;
+    }
+
     std::string Uri::GetScheme() const
     {
         return uriData_.scheme;
+    }
+
+    void Uri::SetScheme(const std::string_view Scheme)
+    {
+        if ((static_cast<int>(Scheme[0]) >= 0 && static_cast<int>(Scheme[0]) < MAX_BIT_SIZE) &&
+            !g_ruleAlpha.test(Scheme[0])) {
+            errStr_ = "Scheme the first character must be a letter";
+            return;
+        }
+
+        std::string temp = "";
+        size_t pos = Scheme.find(':');
+        if (pos != std::string_view::npos) {
+            temp = std::string(Scheme.substr(0, pos));
+        } else {
+            temp = std::string(Scheme);
+        }
+
+        if (!CheckCharacter(temp, g_ruleScheme, false)) {
+            errStr_ = "scheme does not conform to the rule";
+            return;
+        }
+        uriData_.scheme = temp;
+        inputUri_ = UpdateToString();
+    }
+
+    void Uri::UpdateAuthority()
+    {
+        std::string temp = uriData_.userInfo;
+        if (!uriData_.userInfo.empty()) {
+            temp.append("@");
+        }
+        temp += uriData_.host;
+        if (uriData_.port != -1) {
+            temp += ":" + std::to_string(uriData_.port);
+        }
+        uriData_.authority = temp;
+    }
+
+    void Uri::UpdateSsp()
+    {
+        std::string temp = "";
+        if (!uriData_.authority.empty()) {
+            temp += "//" +  uriData_.authority;
+        }
+        if (!uriData_.path.empty()) {
+            uriData_.path[0] == '/' ? (temp += uriData_.path) : (temp += "/" + uriData_.path);
+        }
+
+        if (!uriData_.query.empty()) {
+            temp += "?" + uriData_.query;
+        }
+        uriData_.SchemeSpecificPart = temp;
+    }
+
+    void Uri::SetUserInfo(const std::string userInfo)
+    {
+        if (uriData_.host.empty() || (!CheckCharacter(userInfo, g_ruleUserInfo, true))) {
+            errStr_ = "userInfo does not conform to the rule";
+            return;
+        }
+        uriData_.userInfo = userInfo;
+        UpdateAuthority();
+        UpdateSsp();
+        inputUri_ = UpdateToString();
+    }
+
+    void Uri::SetPath(const std::string pathStr)
+    {
+        if (!CheckCharacter(pathStr, g_rulePath, true)) {
+            errStr_ = "pathStr does not conform to the rule";
+            return;
+        }
+        uriData_.path = pathStr;
+        UpdateSsp();
+        inputUri_ = UpdateToString();
+    }
+
+    void Uri::SetQuery(const std::string queryStr)
+    {
+        if (!CheckCharacter(queryStr, g_ruleUrlc, true)) {
+            errStr_ = "QueryStr does not conform to the rule";
+            return;
+        }
+        uriData_.query = queryStr;
+        UpdateSsp();
+        inputUri_ = UpdateToString();
+    }
+
+    void Uri::SetFragment(const std::string fragmentStr)
+    {
+        if (!CheckCharacter(fragmentStr, g_ruleUrlc, true)) {
+            errStr_ = "Fragment does not conform to the rule";
+            return;
+        }
+        uriData_.fragment = fragmentStr;
+        inputUri_ = UpdateToString();
+    }
+
+    void Uri::SetAuthority(const std::string authorityStr)
+    {
+        uriData_.port = -1;
+        uriData_.host = "";
+        uriData_.userInfo = "";
+        uriData_.authority = authorityStr;
+        data_ = authorityStr;
+        // find UserInfo
+        size_t pos = data_.find('@');
+        if (pos != std::string::npos) {
+            std::string userStr = data_.substr(0, pos);
+            data_ = data_.substr(pos + 1);
+            if (!CheckCharacter(userStr, g_ruleUserInfo, true)) {
+                errStr_ = "userInfo does not conform to the rule";
+                return;
+            }
+            uriData_.userInfo = userStr;
+        }
+
+        bool isLawfulProt = true;
+        // find port
+        pos = data_.rfind(':');
+        if (pos != std::string::npos) {
+            size_t pos1 = data_.rfind(']');
+            if (pos1 == std::string::npos || pos > pos1) {
+                isLawfulProt = AnalysisPort(pos);
+            }
+            if (!errStr_.empty()) {
+            return;
+            }
+        }
+        AnalysisHost(isLawfulProt);
+        UpdateSsp();
+        inputUri_ = UpdateToString();
+    }
+
+    void Uri::SetSsp(const std::string sspStr)
+    {
+        uriData_.authority = "";
+        uriData_.port = -1;
+        uriData_.host = "";
+        uriData_.userInfo = "";
+        uriData_.query = "";
+        uriData_.path = "";
+        uriData_.SchemeSpecificPart = "";
+        data_ = sspStr;
+        size_t pos = data_.find('?'); // Query
+        if (pos != std::string::npos) {
+            AnalysisQuery(pos);
+        }
+        pos = data_.find("//"); // userInfo path host port ipv4 or ipv6
+        if (pos != std::string::npos && pos == 0) {
+            AssignSchemeSpecificPart();
+            data_ = data_.substr(2); // 2:Intercept the string from the second subscript
+            AnalysisHostAndPath();
+        } else if (data_[0] == '/') {
+            uriData_.path = data_;
+            AssignSchemeSpecificPart();
+            data_ = "";
+        } else {
+            AssignSchemeSpecificPart();
+            uriData_.path = "";
+            uriData_.query = "";
+            data_ = "";
+        }
+        inputUri_ = UpdateToString();
     }
 
     std::string Uri::GetAuthority() const
