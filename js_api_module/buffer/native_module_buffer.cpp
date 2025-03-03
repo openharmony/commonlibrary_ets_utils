@@ -31,7 +31,7 @@ extern const char _binary_buffer_abc_end[];
 
 namespace OHOS::buffer {
 using namespace OHOS::Tools;
-constexpr int32_t API16 {16};
+constexpr int32_t API18 {18};
 enum class ParaType:int32_t {
     NUMBER = 0,
     BUFFER,
@@ -391,7 +391,7 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
         buffer->Init(length);
     } else if (paraType == ParaType::NUMBERS) {
         int32_t apiVersion = ApiHelper::GetApiVersion(env);
-        vector<uint8_t> arr = GetArray(env, argv[1], apiVersion >= API16);
+        vector<uint8_t> arr = GetArray(env, argv[1], apiVersion >= API18);
         buffer->Init(arr.size());
         buffer->SetArray(arr);
     } else if (paraType == ParaType::BUFFER) {
@@ -513,7 +513,7 @@ static napi_value SetArray(napi_env env, napi_callback_info info)
         Buffer *buf = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
         int32_t apiVersion = ApiHelper::GetApiVersion(env);
-        vector<uint8_t> arr = GetArray(env, args[0], apiVersion >= API16);
+        vector<uint8_t> arr = GetArray(env, args[0], apiVersion >= API18);
         buf->SetArray(arr);
     }
     napi_value result = nullptr;
