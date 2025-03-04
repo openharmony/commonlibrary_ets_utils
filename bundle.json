@@ -69,6 +69,7 @@
         },
         "build": {
             "sub_component": [
+                "//commonlibrary/ets_utils/sdk:commonlib_sdk",
                 "//commonlibrary/ets_utils/js_api_module/uri:uri_packages",
                 "//commonlibrary/ets_utils/js_api_module/url:url_packages",
                 "//commonlibrary/ets_utils/js_api_module/convertxml:convertxml_packages",

@@ -1,0 +1,500 @@
+/*
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+export namespace util {
+
+    class UtilHelper {
+
+        static {
+            loadLibrary("ets_sdk_native")
+        }
+    
+        internal static native generateRandomUUID(entropyCache: boolean): string
+    
+        internal static objectToString(obj: Object, full: boolean = false): string {
+            return (new UtilHelper).stringifyObject(obj, '\n', 1, full)
+        }
+    
+        private static isNullObject(obj: NullishType): boolean {
+            return (obj == undefined) || (obj == null)
+        }
+    
+        private static isFunction(obj: Object): boolean {
+            return (typeof obj === 'function')
+        }
+    
+        private static isObject(obj: Object): boolean {
+            return (typeof obj === 'object')
+        }
+    
+        private static isString(obj: Object): boolean {
+            return (typeof obj === 'string')
+        }
+    
+        private static isArray(obj: Object): boolean {
+            return obj instanceof Array
+        }
+    
+        private stringifySubObject(delimiter: string, subObj: NullishType, subObjName: string, depth: number, full: boolean = false): string {
+    
+            if (UtilHelper.isNullObject(subObj)) {
+                return UtilHelper.nullObjectDescription(subObjName) + ',' + delimiter
+            }
+    
+            let strB = new StringBuilder
+    
+            if (UtilHelper.isArray(subObj!)) {
+                strB.append(subObjName + ':' + delimiter + UtilHelper.arrayToString(delimiter + '  ', subObj! as Array<Object>, depth, full))
+            } else if (UtilHelper.isObject(subObj!)) {
+                strB.append(this.subObjectDescription(subObj!, subObjName, this.isCircular(subObj!), delimiter, depth))
+            } else if (UtilHelper.isFunction(subObj!)) {
+                strB.append(UtilHelper.functionDescription(subObj!, delimiter, true, full))
+            } else {
+                strB.append(UtilHelper.simpleObjectDescription(subObj!, subObjName, true))
+            }
+            this.objects.add(subObj!)
+    
+            strB.append(',' + delimiter)
+            return strB.toString()
+        }
+    
+        private objectDescription(obj: Object, delimiter: string = '\n', depth: number = 1, full: boolean = false): string {
+    
+            let strB = new StringBuilder('{ ')
+            let isComplexObject: boolean = false
+    
+            for (const objEntry of Object.entries(obj)) {
+                if (!objEntry) {
+                    continue
+                }
+                isComplexObject = true
+                strB.append(this.stringifySubObject(delimiter, objEntry[1], objEntry[0], depth, full))
+            }
+    
+            if (!isComplexObject) {
+                return JSON.stringify(obj)
+            }
+    
+            return strB.toString().slice(0,- delimiter.length - 1) + ' }'
+        }
+    
+        private subObjectDescription(obj: Object, objName: string, isCircular: boolean, delimiter: string, depth: number): string {
+            if (isCircular) {
+                return objName + ': [Circular]' + delimiter
+            }
+            return objName + ':' + delimiter + this.stringifyObject(obj, delimiter + '  ', depth + 1, true)
+        }
+    
+        private objects = new Set<Object>
+    
+        private isCircular(obj: NullishType): boolean {
+            if (obj == null) {
+                return false
+            }
+    
+            return this.objects.has(obj)
+        }
+    
+        private static nullObjectDescription(objName: string = ''): string {
+            return ((objName != '') ? objName + ': ' : '') + null
+        }
+    
+        private static simpleObjectDescription(obj: Object, objName: string = '', isSub: boolean = false): string {
+            let quotesStr = UtilHelper.isString(obj) ? '\'' : ''
+            return (isSub ? objName + ': ' : '') + quotesStr + obj + quotesStr
+        }
+    
+        private stringifyObject(obj: NullishType, delimiter: string = '\n', depth: number = 1, full: boolean = false): string {
+    
+            if (UtilHelper.isNullObject(obj)) {
+                return UtilHelper.nullObjectDescription()
+            }
+    
+            this.objects.add(obj!)
+            let strB = new StringBuilder
+            if (UtilHelper.isArray(obj!)) {
+                strB.append(UtilHelper.arrayToString(delimiter, obj! as Array<Object>, depth, full))
+            } else if (UtilHelper.isFunction(obj!)) {
+                strB.append(UtilHelper.functionDescription(obj!, delimiter, false, full))
+                if (!full) {
+                    strB = (new StringBuilder).append('{ ').append(strB.toString()).append(' }')
+                }
+            } else if (UtilHelper.isObject(obj!)) {
+                strB.append(this.objectDescription(obj!, delimiter, depth, full))
+            } else {
+                strB.append(UtilHelper.simpleObjectDescription(obj!, ''))
+            }
+            return strB.toString()
+        }
+    
+        private static arrayToString(delimiter: string, arr: Array<Object>, depth: number, full: boolean = false): string {
+            return ('[ ' + UtilHelper.arrayToStringImpl(delimiter, arr, depth, full) + (full ? ('[length]: ' + arr.length) : '') + ' ]')
+        }
+    
+        private static functionDescription(obj: Object, delimiter: string = '\n', isSub: boolean = false, full: boolean = false, inArray: boolean = false): string {
+            let strB = new StringBuilder
+            let functionName = UtilHelper.getName(obj)
+            strB.append((isSub && functionName !== '') ? (functionName + ':' + delimiter) : '');
+    
+            let baseFunctionStr = '[Function: ' + functionName + ']'
+    
+            if (full) {
+                let end = delimiter + (inArray || isSub) ? '  ' : '';
+                let length = UtilHelper.getLength(obj)
+                strB.append('{ ' + baseFunctionStr + end +
+                    '[length]: ' + (length ? length : 0) + ',' + end +
+                    '[name] :\'' + functionName + '\',' + end +
+                    '[prototype]: ' + functionName + ' { [constructor]: [Circular] } }')
+            } else {
+                strB.append(baseFunctionStr)
+            }
+    
+            return strB.toString()
+        }
+    
+        private static arrayToStringImpl(delimiter: string, arr: Array<Object>, depth: number, full: boolean = false): string {
+            if (!arr.length) {
+                return ''
+            }
+    
+            let arrayDelimiter: string = ', '
+    
+            for (let item of arr) {
+                if (!UtilHelper.isNullObject(item) && (UtilHelper.isFunction(item) || UtilHelper.isObject(item) && depth <= 2)) {
+                    arrayDelimiter += delimiter
+                    break
+                }
+            }
+    
+            let strB = new StringBuilder
+            for (let item of arr) {
+                if (UtilHelper.isObject(item)) {
+                    strB.append((new UtilHelper).stringifyObject(item, delimiter + '  ', depth + 1, full))
+                } else if (UtilHelper.isFunction(item)) {
+                    strB.append(UtilHelper.functionDescription(item, delimiter, false, full, true))
+                } else {
+                    strB.append(UtilHelper.simpleObjectDescription(item, full ? UtilHelper.getName(item) : ''))
+                }
+                strB.append(arrayDelimiter)
+            }
+    
+            return strB.toString().slice(0, -arrayDelimiter.length)
+        }
+    
+        private static getName(obj: Object): string {
+            let subObj = UtilHelper.getValue("name", obj)
+            return subObj ? subObj! as string : 'null'
+        }
+    
+        private static getLength(obj: Object): int {
+            let subObj = UtilHelper.getValue("length", obj)
+            return subObj ? subObj! as int : 0
+        }
+    
+        private static getValue(key: string, obj: Object): NullishType {
+            if (!obj) {
+                return null
+            }
+            for (const objEntry of Object.entries(obj)) {
+                if (!objEntry) {
+                    continue
+                }
+                if ((!objEntry[0]) && (objEntry[0] == key)) {
+                    return objEntry[1]
+                }
+            }
+            return null
+        }
+    
+        /**
+          * Remove html tag, css, js of html string to extract the contents
+          * @param {String} html
+          * @return {String} contents of the html
+          */
+        static extractContents(html: string): string {
+            return html
+                .replace(new RegExp("(\n|\r|\t)","gm"), '') // remove linebreaks
+                .replace(new RegExp("<(style|script|link|noscript).*?>.*?<\/(style|script|link|noscript)>","g"), '') // remove css, js blocks
+                .replace(new RegExp("<!--.*?-->","g"), '') // remove comments
+                .replace(new RegExp("<.*?>","g"), '') // remove tags
+                .replace(new RegExp("[\s\!\@\#\$\%\^\&\*\(\)\_\+\-\=\{\}\[\]\:\"\;\'\<\>\?\,\.\/\|\\\`\~]+","g"), '') // remove Chars
+                .trim()
+        }
+    
+        static processArg(flag: string, arg: Object): string {
+            // %c: CSS. This specifier is ignored and will skip any CSS passed in.
+            if (flag == "c" && (arg instanceof String)) {
+                return UtilHelper.extractContents(arg as string)
+            } else if (flag == "s" && !(arg instanceof BigInt)) {
+                if (arg instanceof BigInt || arg instanceof Char) {
+                    throw new Error("invalid flag " + flag + " for arg " + arg as string)
+                }
+                return arg as string
+            } else if (flag == "d") {
+                if (arg instanceof BigInt || arg instanceof Char) {
+                    throw new Error("invalid flag " + flag + " for arg " + arg as string)
+                }
+                return "" + new Number(arg.toString())
+            } else if (flag == "i") {
+                if (arg instanceof BigInt || arg instanceof Char) {
+                    throw new Error("invalid flag " + flag + " for arg " + arg as string)
+                }
+                return "" + parseInt(arg as string, 10)
+            }
+            else if (flag == "f") {
+                if (arg instanceof Char) {
+                    throw new Error("invalid flag " + flag + " for arg " + arg as string)
+                }
+                return "" + parseFloat(arg as string)
+            } else if (flag == "j") {
+                let res = ""
+                try {
+                    res = JSON.stringify(arg)
+                }
+                catch(error) {
+                    if (typeof arg === "object") {
+                        return UtilHelper.objectToString(arg)
+                    } else {
+                        throw new Error("error parse json")
+                    }
+                }
+    
+            return res
+            } else if (flag == "o") {
+                // Object. A string representation of an object
+                // Similar to util.inspect() with options { showHidden: true, showProxy: true }
+                return UtilHelper.objectToString(arg, true)
+            } else if (flag == "O") {
+                // Object. A string representation of an object
+                // Similar to util.inspect() without options
+                return UtilHelper.objectToString(arg)
+            }
+    
+            return "%" + flag
+        }
+    
+        static joinLastArgs(index: int, ...args: Object[]): string {
+            let sb = new StringBuilder
+            for (let i = index; i < args.length; ++i) {
+                sb.append(" ")
+                sb.append(args[i])
+            }
+            let res = sb.toString()
+            return res
+        }
+    
+    }  // class UtilHelper
+
+    export enum Type {
+        BASIC,
+        MIME,
+        BASIC_URL_SAFE,
+        MIME_URL_SAFE,
+    }
+
+    export interface DecodeToStringOptions {
+        stream?: boolean;
+    }
+
+    export class Base64Helper {
+        private static BASE64_CHARS: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        private static BASE64_URL_SAFE_CHARS: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+        private static readonly BYTE_SIZE = 8;
+        private static readonly BASE64_GROUP_SIZE = 6;
+        private static readonly BASE64_MASK = 0x3F;
+        private static readonly LINE_BREAK_FREQUENCY = 76;
+
+        constructor() {}
+
+        private static encodeBase64(bytes: Uint8Array, urlSafe: boolean, mime: boolean): string {
+            let table = urlSafe ? Base64Helper.BASE64_URL_SAFE_CHARS : Base64Helper.BASE64_CHARS;
+            let binaryString: string = "";
+            for (let i = 0; i < bytes.length; i++) {
+                binaryString += String.fromCharCode(bytes[i]);
+            }
+            let encoded: string = "";
+            let buffer: int = 0;
+            let bufferLength: int = 0;
+
+            for (let i = 0; i < binaryString.length; i++) {
+                buffer = (buffer << Base64Helper.BYTE_SIZE) | binaryString.charCodeAt(i);
+                bufferLength += Base64Helper.BYTE_SIZE;
+                while (bufferLength >= Base64Helper.BASE64_GROUP_SIZE) {
+                    bufferLength -= Base64Helper.BASE64_GROUP_SIZE;
+                    encoded += table[(buffer >> bufferLength) & Base64Helper.BASE64_MASK];
+                }
+            }
+
+            if (bufferLength > 0) {
+                encoded += table[(buffer << (Base64Helper.BASE64_GROUP_SIZE - bufferLength)) & Base64Helper.BASE64_MASK];
+            }
+
+            while (encoded.length % 4 !== 0 && !urlSafe) {
+                encoded += "=";
+            }
+
+            if (mime) {
+                encoded = encoded.replace(new RegExp(`(.{${Base64Helper.LINE_BREAK_FREQUENCY}})`, "g"), "$1\r\n");
+            }
+            return encoded;
+        }
+
+        private static decodeBase64(base64: string, urlSafe: boolean): Uint8Array {
+            let table = urlSafe ? Base64Helper.BASE64_URL_SAFE_CHARS : Base64Helper.BASE64_CHARS;
+            let allowedPattern = urlSafe ? "[^A-Za-z0-9\\-_=]" : "[^A-Za-z0-9+/=]";
+            let cleaned: string = base64.replace(new RegExp(allowedPattern, "g"), "");
+            let buffer: int = 0;
+            let bufferLength: int = 0;
+            let bytes: Array<number> = new Array<number>();
+
+            for (let i = 0; i < cleaned.length; i++) {
+                let char: string = cleaned[i];
+                if (char == "=") {
+                    break;
+                }
+                let index: int = table.indexOf(char) as int;
+                if (index == -1) {
+                    continue;
+                }
+                buffer = (buffer << Base64Helper.BASE64_GROUP_SIZE) | index;
+                bufferLength += Base64Helper.BASE64_GROUP_SIZE;
+                if (bufferLength >= Base64Helper.BYTE_SIZE) {
+                    bufferLength -= Base64Helper.BYTE_SIZE;
+                    bytes.push((buffer >> bufferLength) & 0xFF);
+                }
+            }
+            return new Uint8Array(bytes);
+        }
+
+        encodeSync(src: Uint8Array, options: Type = Type.BASIC): Uint8Array {
+            let encoded: string = Base64Helper.encodeBase64(src, options === Type.BASIC_URL_SAFE || options === Type.MIME_URL_SAFE, options === Type.MIME);
+            let result: Uint8Array = new Uint8Array(encoded.length);
+            for (let i: int = 0; i < encoded.length; i++) {
+                result[i] = encoded.charCodeAt(i);
+            }
+            return result;
+        }
+
+        encodeToStringSync(src: Uint8Array, options: Type = Type.BASIC): string {
+            return Base64Helper.encodeBase64(src, options === Type.BASIC_URL_SAFE || options === Type.MIME_URL_SAFE, options === Type.MIME);
+        }
+
+        decodeSync(src: Uint8Array, options: Type = Type.BASIC): Uint8Array {
+            let base64String: string;
+            let charArray: Array<string> = new Array<string>();
+            for (let i: int = 0; i < src.length; i++) {
+                charArray.push(String.fromCharCode(src[i]));
+            }
+            base64String = charArray.join("");
+            if (options === Type.MIME || options === Type.MIME_URL_SAFE) {
+                base64String = base64String.replace(new RegExp("[\\r\\n]", "g"), "");
+            }
+            return Base64Helper.decodeBase64(base64String, options === Type.BASIC_URL_SAFE || options === Type.MIME_URL_SAFE);
+        }
+
+        decodeSync(src: string, options: Type = Type.BASIC): Uint8Array {
+            let newString: string = src;
+            if (options === Type.MIME || options === Type.MIME_URL_SAFE) {
+                newString = src.replace(new RegExp("[\\r\\n]", "g"), "");
+            }
+            return Base64Helper.decodeBase64(newString, options === Type.BASIC_URL_SAFE || options === Type.MIME_URL_SAFE);
+        }
+
+        encode(src: Uint8Array, options: Type = Type.BASIC): Promise<Uint8Array> {
+            return Promise.resolve(this.encodeSync(src, options));
+        }
+
+        decode(src: string, options: Type = Type.BASIC): Promise<Uint8Array> {
+            return Promise.resolve(this.decodeSync(src, options));
+        }
+
+        decode(src: Uint8Array, options: Type = Type.BASIC): Promise<Uint8Array> {
+            return Promise.resolve(this.decodeSync(src, options));
+        }
+
+        encodeToString(src: Uint8Array, options: Type = Type.BASIC): Promise<string> {
+            return Promise.resolve(this.encodeToStringSync(src, options));
+        }
+    }
+
+    /**
+    * The util.format() method returns a formatted string using the first argument as a printf-like
+    * format string which can contain zero or more format specifiers.
+    * Each specifier is replaced with the converted value from the corresponding argument.
+    * Supported specifiers are:
+    * %s: String will be used to convert all values except BigInt, Object and -0. BigInt values will be represented
+    *     with an n and Objects that have no user defined toString function are inspected using util.inspect()
+    *     with options { depth: 0, colors: false, compact: 3 }.
+    * %d: Number will be used to convert all values except BigInt and Char.
+    * %i: parseInt(value, 10) is used for all values except BigInt and Char.
+    * %f: parseFloat(value) is used for all values expect Char.
+    * %j: JSON. Replaced with the string '[Circular]' if the argument contains circular references.
+    * %o: Object. A string representation of an object with generic JavaScript object formatting.
+    *     Similar to util.inspect() with options { showHidden: true, showProxy: true }.
+    *     This will show the full object including non-enumerable properties and proxies.
+    * %O: Object. A string representation of an object with generic JavaScript object formatting.
+    *     Similar to util.inspect() without options. This will show the full object not including non-enumerable
+    *     properties and proxies.
+    * %c: CSS. This specifier is ignored and will skip any CSS passed in.
+    * %%: single percent sign ('%'). This does not consume an argument.
+    *
+    * @param s: <string> A printf-like format string.
+    *
+    * @param args: <Object[]> format params
+    *
+    * @returns Returns: <string> The formatted string
+    */
+    export function format(s: string, ...args: Object[]): string {
+        let preI: int = 0
+        let i: int = 0
+        let argCounter = 0
+        const flags: string = "cdfijoOs"
+        let res = new StringBuilder
+        let ss = ""
+        if (args.length == 0) {
+            return s.replaceAll("%%", "%")
+        }
+
+        while((i = (ss = s.substring(preI, s.length)).search("%") as int) != -1 && (preI + i < s.length - 1) && (argCounter < args.length)) {
+            res.append(s.substring(preI, preI + i))
+            let flagIndex = preI + i + 1
+            //NOTE(ivan-tyulyandin): has to be string due to internal issue 21459
+            let flag: string = s[flagIndex]
+            if (flags.includes(flag)) {
+                res.append(UtilHelper.processArg(flag, args[argCounter]))
+                ++argCounter
+            } else if (flag == "%") {
+                res.append("%")
+            } else {
+                res.append("%" + flag)
+            }
+            preI += i + 2
+        }
+        if (preI < s.length) {
+            res.append(s.substring(preI,s.length))
+        }
+        let strArgsList = UtilHelper.joinLastArgs(argCounter, ...args)
+        let resStr = res.toString()
+        return resStr.length == 0 ? res + strArgsList.slice(1) : res + strArgsList
+    }
+
+    export function generateRandomUUID(entropyCache?: boolean): string {
+        let s = UtilHelper.generateRandomUUID((entropyCache == undefined) ? false : entropyCache)
+        return s
+    }
+
+} // namespace Util
+
