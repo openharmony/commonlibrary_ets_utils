@@ -25,13 +25,15 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
                          const LockOptions &options, napi_deferred deferred)
     : lock_(lock),
       tid_(tid),
+      engine_(reinterpret_cast<NativeEngine *>(env)),
       env_(env),
       callback_(cb),
       mode_(mode),
       options_(options),
       deferred_(deferred),
       work_(nullptr),
-      timeoutActive_(false)
+      timeoutActive_(false),
+      engineId_(engine_->GetId())
 {
     // timeout timer initialization: just fill the data fields, do not arm it
     timeoutTimer_ = new uv_timer_t();
@@ -43,7 +45,7 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
     NativeEngine *engine = reinterpret_cast<NativeEngine *>(env);
     engine->BuildJsStackTrace(creationStacktrace_);
 
-    napi_add_env_cleanup_hook(env_, EnvCleanUp, this);
+    NAPI_CALL_RETURN_VOID(env_, napi_add_env_cleanup_hook(env_, EnvCleanUp, this));
     napi_value resourceName;
     napi_create_string_utf8(env, "AsyncLock::AsyncCallback", NAPI_AUTO_LENGTH, &resourceName);
     napi_status status = napi_create_async_work(env_, nullptr, resourceName, AsyncLockManager::EmptyExecuteCallback,
@@ -121,7 +123,7 @@ napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
 void LockRequest::CallCallbackAsync()
 {
     lockRequestMutex_.lock();
-    if (env_ == nullptr) {
+    if (env_ == nullptr || !NativeEngine::IsAlive(engine_) || engineId_ != engine_->GetId()) {
         lockRequestMutex_.unlock();
         HILOG_ERROR("Callback is called after env cleaned up");
         lock_->CleanUpLockRequestOnCompletion(this);
