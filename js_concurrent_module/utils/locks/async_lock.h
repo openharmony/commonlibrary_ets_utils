@@ -49,6 +49,7 @@ public:
     // When the counter gets 0 the method deletes the instance if possible.
     // Any way you cannot use the instance if the method returns 0.
     uint32_t DecRefCount();
+    bool IsReadyForDeletion();
 
     std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
     std::vector<RequestCreationInfo> GetPendingRequestInfos();
@@ -65,8 +66,6 @@ public:
 private:
     bool CanAcquireLock(LockRequest *lockRequest);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
-    void AsyncDestroy(napi_env env);
-    static void AsyncDestroyCallback(napi_env env, napi_status status, void *data);
     template <bool isAsync>
     void ProcessLockRequest(napi_env env, LockRequest *lockRequest);
     void ProcessPendingLockRequestUnsafe(napi_env env, LockRequest* syncLockRequest = nullptr);
