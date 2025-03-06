@@ -46,6 +46,7 @@
         "ram": "~4096KB",
         "deps": {
             "components": [
+                "runtime_core",
                 "ace_engine",
                 "bounds_checking_function",
                 "napi",
@@ -58,7 +59,9 @@
                 "ffrt",
                 "ipc",
                 "samgr",
-                "eventhandler"
+                "eventhandler",
+                "icu",
+                "openssl"
             ],
             "third_party": [
                 "icu",
