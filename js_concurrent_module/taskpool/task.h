@@ -200,7 +200,7 @@ public:
     std::set<uv_timer_t*> delayedTimers_ {}; // task delayed timer
 
     bool isMainThreadTask_ {false};
-    std::atomic<bool> isRunning_ {false};
+    std::atomic<bool> isCancelToFinish_ {false};
 };
 
 struct CallbackInfo {

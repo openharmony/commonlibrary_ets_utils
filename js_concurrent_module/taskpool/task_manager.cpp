@@ -530,7 +530,7 @@ void TaskManager::TryExpand()
     uint32_t timeoutWorkers = 0;
     {
         std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
-        idleCount = idleWorkers_.size();
+        idleCount = std::min(idleNum, static_cast<uint32_t>(idleWorkers_.size()));
         workerCount = workers_.size();
         timeoutWorkers = timeoutWorkers_.size();
     }
@@ -649,15 +649,19 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     std::list<napi_deferred> deferreds {};
     {
         std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
-        if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+        if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr &&
+            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {
             reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
             task->DecreaseTaskRefCount();
             DecreaseRefCount(env, task->taskId_);
-            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
             deferreds.push_back(task->currentTaskInfo_->deferred);
             napi_reference_unref(env, task->taskRef_, nullptr);
             delete task->currentTaskInfo_;
             task->currentTaskInfo_ = nullptr;
+            task->isCancelToFinish_ = true;
+        }
+        if (state == ExecuteState::DELAYED) {
+            task->isCancelToFinish_ = true;
         }
     }
     std::string error = "taskpool:: task has been canceled";
@@ -777,12 +781,14 @@ void TaskManager::EnqueueTaskId(uint64_t taskId, Priority priority)
     }
 }
 
-void TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
+bool TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
 {
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
     if (!taskQueues_[priority]->EraseWaitingTaskId(taskId)) {
         HILOG_WARN("taskpool:: taskId is not in executeQueue when cancel");
+        return false;
     }
+    return true;
 }
 
 std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
@@ -1608,11 +1614,11 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint64_t taskId, TaskGroup*
         return;
     }
     std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
-    if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr) {
+    if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr &&
+        TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         task->DecreaseTaskRefCount();
         TaskManager::GetInstance().DecreaseRefCount(env, taskId);
-        TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
         if (group->currentGroupInfo_ != nullptr) {
@@ -1654,7 +1660,7 @@ void TaskGroupManager::AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task)
         return;
     } else {
         std::unique_lock<std::shared_mutex> seqRunnerLock(iter->second->seqRunnerMutex_);
-        iter->second->seqRunnerTasks_.push(task);
+        iter->second->seqRunnerTasks_.push_back(task);
     }
 }
 
@@ -1682,7 +1688,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
             return true;
         }
         Task* task = seqRunner->seqRunnerTasks_.front();
-        seqRunner->seqRunnerTasks_.pop();
+        seqRunner->seqRunnerTasks_.pop_front();
         while (task->taskState_ == ExecuteState::CANCELED) {
             DisposeCanceledTask(env, task);
             if (seqRunner->seqRunnerTasks_.empty()) {
@@ -1692,7 +1698,7 @@ bool TaskGroupManager::TriggerSeqRunner(napi_env env, Task* lastTask)
                 return true;
             }
             task = seqRunner->seqRunnerTasks_.front();
-            seqRunner->seqRunnerTasks_.pop();
+            seqRunner->seqRunnerTasks_.pop_front();
         }
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
@@ -1858,5 +1864,13 @@ bool SequenceRunnerManager::IncreaseGlobalSeqRunner(napi_env env, SequenceRunner
         napi_reference_ref(env, seqRunner->seqRunnerRef_, nullptr);
     }
     return true;
+}
+
+void SequenceRunnerManager::RemoveWaitingTask(Task* task)
+{
+    auto seqRunner = TaskGroupManager::GetInstance().GetSeqRunner(task->seqRunnerId_);
+    if (seqRunner != nullptr) {
+        seqRunner->RemoveWaitingTask(task);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -480,7 +480,7 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
     task->taskState_ = ExecuteState::ENDING;
-    task->isRunning_ = false;
+    task->isCancelToFinish_ = false;
     if (task->IsGroupTask()) {
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
     } else if (!task->IsPeriodicTask()) {
@@ -600,9 +600,10 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
-    if (task->IsFunctionTask() || (task->taskState_ != ExecuteState::WAITING &&
-        task->taskState_ != ExecuteState::RUNNING && task->taskState_ != ExecuteState::ENDING && !task->isRunning_)) {
+    if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
+        (task->taskState_ == ExecuteState::CANCELED && task->isCancelToFinish_)) {
         task->taskState_ = ExecuteState::WAITING;
+        task->isCancelToFinish_ = false;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
 }

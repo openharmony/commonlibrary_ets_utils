@@ -694,7 +694,7 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
     groupManager.TriggerSeqRunner(env, task);
     seqRunner->seqRunnerRef_ = CreateReference(env);
     task1->taskState_ = ExecuteState::CANCELED;
-    seqRunner->seqRunnerTasks_.push(task1);
+    seqRunner->seqRunnerTasks_.push_back(task1);
     TaskInfo* taskInfo = new TaskInfo();
     task1->currentTaskInfo_ = taskInfo;
     seqRunner->currentTaskId_ = task->taskId_;
@@ -702,8 +702,8 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
     seqRunner->seqRunnerRef_ = CreateReference(env);
     TaskInfo* taskInfo1 = new TaskInfo();
     task1->currentTaskInfo_ = taskInfo1;
-    seqRunner->seqRunnerTasks_.push(task1);
-    seqRunner->seqRunnerTasks_.push(task);
+    seqRunner->seqRunnerTasks_.push_back(task1);
+    seqRunner->seqRunnerTasks_.push_back(task);
     task->taskState_ = ExecuteState::RUNNING;
     seqRunner->currentTaskId_ = task->taskId_;
     groupManager.TriggerSeqRunner(env, task);
