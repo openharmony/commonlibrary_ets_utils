@@ -20,7 +20,6 @@
 
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
-#include "tools/common_helper.h"
 
 using namespace std;
 
@@ -30,8 +29,6 @@ extern const char _binary_buffer_abc_start[];
 extern const char _binary_buffer_abc_end[];
 
 namespace OHOS::buffer {
-using namespace OHOS::Tools;
-constexpr int32_t API18 {18};
 enum class ParaType:int32_t {
     NUMBER = 0,
     BUFFER,
@@ -207,29 +204,19 @@ static napi_value FromString(napi_env env, napi_callback_info info)
     return result;
 }
 
-static vector<uint8_t> GetArray(napi_env env, napi_value arr, bool apiFlag)
+static vector<uint8_t> GetArray(napi_env env, napi_value arr)
 {
     uint32_t length = 0;
     napi_get_array_length(env, arr, &length);
     napi_value napiNumber = nullptr;
     vector<uint8_t> vec;
-    if (apiFlag) {
-        for (size_t i = 0; i < length; i++) {
-            napi_get_element(env, arr, i, &napiNumber);
-            int32_t num = 0;
-            napi_get_value_int32(env, napiNumber, &num);
-            num = num & 0xFF; // 0xFF : get lower 8-bits
-            vec.push_back(num);
-        }
-    } else {
-        for (size_t i = 0; i < length; i++) {
-            napi_get_element(env, arr, i, &napiNumber);
-            uint32_t num = 0;
-            napi_get_value_uint32(env, napiNumber, &num);
-            // 255 : the max number of one byte unsigned value
-            num = num > 255 ? 0 : num;
-            vec.push_back(num);
-        }
+    for (size_t i = 0; i < length; i++) {
+        napi_get_element(env, arr, i, &napiNumber);
+        uint32_t num = 0;
+        napi_get_value_uint32(env, napiNumber, &num);
+        // 255 : the max number of one byte unsigned value
+        num = num > 255 ? 0 : num;
+        vec.push_back(num);
     }
     return vec;
 }
@@ -271,8 +258,7 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
         return nullptr;
     }
     if (argc == 1) { // Array
-        // The parameter content has been converted and no further processing is required
-        vector<uint8_t> arr = GetArray(env, argv[0], false);
+        vector<uint8_t> arr = GetArray(env, argv[0]);
         blob->Init(arr.data(), arr.size());
     } else { // Blob
         Blob *blobIn = nullptr;
@@ -390,8 +376,7 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
         }
         buffer->Init(length);
     } else if (paraType == ParaType::NUMBERS) {
-        int32_t apiVersion = ApiHelper::GetApiVersion(env);
-        vector<uint8_t> arr = GetArray(env, argv[1], apiVersion >= API18);
+        vector<uint8_t> arr = GetArray(env, argv[1]);
         buffer->Init(arr.size());
         buffer->SetArray(arr);
     } else if (paraType == ParaType::BUFFER) {
@@ -512,8 +497,7 @@ static napi_value SetArray(napi_env env, napi_callback_info info)
     if (isArray) {
         Buffer *buf = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
-        int32_t apiVersion = ApiHelper::GetApiVersion(env);
-        vector<uint8_t> arr = GetArray(env, args[0], apiVersion >= API18);
+        vector<uint8_t> arr = GetArray(env, args[0]);
         buf->SetArray(arr);
     }
     napi_value result = nullptr;
@@ -619,8 +603,7 @@ static napi_value FillNumbers(napi_env env, napi_callback_info info)
 
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
-    // The parameter content has been converted and no further processing is required
-    vector<uint8_t> arr = GetArray(env, args[0], false);
+    vector<uint8_t> arr = GetArray(env, args[0]);
     buf->FillNumber(arr, offset, end);
 
     napi_value result = nullptr;
