@@ -32,6 +32,38 @@ generate_static_abc("ets2abc_commonsdk") {
   device_dst_file = "/system/framework/commonlib_ets_utils.abc"
 }
 
+ets_util_sources = []
+
+ohos_shared_library("commonlib_ets_ani") {
+  include_dirs = [ ets_util_path ]
+
+  configs = []
+  sources = ets_util_sources
+
+  external_deps = [
+    "icu:shared_icuuc",
+    "openssl:libcrypto_shared",
+    "runtime_core:ani",
+  ]
+  if (is_standard_system) {
+    external_deps += [ "hilog:libhilog" ]
+  } else {
+    external_deps += [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
+  external_deps += [ "bounds_checking_function:libsec_shared" ]
+
+  part_name = "ets_utils"
+  subsystem_name = "commonlibrary"
+  output_extension = "so"
+}
+
 group("commonlib_sdk") {
-  deps = [ ":commonlib_ets_utils" ]
+  deps = [
+    ":commonlib_ets_utils",
+    # ":commonlib_ets_ani",
+    # ":commonlib_ets_ani(${host_toolchain})",
+  ]
 }
