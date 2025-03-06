@@ -115,8 +115,8 @@ void AsyncRunnerManager::CancelAsyncRunnerTask(napi_env env, Task* task)
     auto asyncRunner = GetAsyncRunner(task->asyncRunnerId_);
     if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr &&
         TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {
-        task->DecreaseTaskRefCount();
-        TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
+        task->DecreaseTaskLifecycleCount();
+        TaskManager::GetInstance().DecreaseSendDataRefCount(task->env_, task->taskId_);
         if (asyncRunner != nullptr) {
             asyncRunner->TriggerRejectErrorTimer(task, ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, true);
         }

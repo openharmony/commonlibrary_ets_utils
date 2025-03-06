@@ -132,8 +132,8 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint32_t taskId, TaskGroup*
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr &&
         TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
-        task->DecreaseTaskRefCount();
-        TaskManager::GetInstance().DecreaseRefCount(env, taskId);
+        task->DecreaseTaskLifecycleCount();
+        TaskManager::GetInstance().DecreaseSendDataRefCount(env, taskId);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
         if (group->currentGroupInfo_ != nullptr) {

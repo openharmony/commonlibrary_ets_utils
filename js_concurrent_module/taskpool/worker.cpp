@@ -481,7 +481,7 @@ void Worker::PerformTask(const uv_async_t* req)
     task->DecreaseRefCount();
     task->StoreTaskDuration();
     worker->UpdateExecutedInfo();
-    HandleFunctionException(env, task);
+    HandleFunctionResult(env, task);
 }
 
 void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
@@ -511,18 +511,13 @@ void Worker::NotifyHandleTaskResult(Task* task)
     if (!task->IsReadyToHandle()) {
         return;
     }
-    Worker* worker = reinterpret_cast<Worker*>(task->worker_);
-    if (worker != nullptr) {
-        std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
-        auto iter = std::find(worker->currentTaskId_.begin(), worker->currentTaskId_.end(), task->taskId_);
-        if (iter != worker->currentTaskId_.end()) {
-            worker->currentTaskId_.erase(iter);
-        }
-    } else {
+    Worker* worker = reinterpret_cast<Worker*>(task->GetWorker());
+    if (worker == nullptr) {
         HILOG_FATAL("taskpool:: worker is nullptr");
         return;
     }
-    if (!task->VerifyAndPostResult(worker->priority_)) {
+    worker->EraseRunningTaskId(task->GetTaskId());
+    if (!task->VerifyAndPostResult(worker->GetPriority())) {
         if (task->ShouldDeleteTask()) {
             delete task;
         }
@@ -658,7 +653,7 @@ bool Worker::HasLongTask()
     return hasLongTask_;
 }
 
-void Worker::HandleFunctionException(napi_env env, Task* task)
+void Worker::HandleFunctionResult(napi_env env, Task* task)
 {
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -695,5 +690,19 @@ bool Worker::IsRunnable(uint64_t currTime) const
 void Worker::UpdateWorkerWakeUpTime()
 {
     wakeUpTime_ = ConcurrentHelper::GetMilliseconds();
+}
+
+Priority Worker::GetPriority() const
+{
+    return priority_;
+}
+
+void Worker::EraseRunningTaskId(uint32_t taskId)
+{
+    std::lock_guard<std::mutex> lock(currentTaskIdMutex_);
+    auto iter = std::find(currentTaskId_.begin(), currentTaskId_.end(), taskId);
+    if (iter != currentTaskId_.end()) {
+        currentTaskId_.erase(iter);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

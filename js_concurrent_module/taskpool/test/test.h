@@ -27,6 +27,7 @@
 #endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+class Worker;
 class NativeEngineTest : public testing::Test {
 public:
     NativeEngineTest();
@@ -76,7 +77,7 @@ public:
     static void PerformTask(napi_env env);
     static void NotifyHandleTaskResult(napi_env env);
     static void TaskResultCallback(napi_env env);
-    static void HandleFunctionException(napi_env env);
+    static void HandleFunctionResult(napi_env env);
     static void* WorkerConstructor(napi_env env);
     static pid_t GetWorkerTid(uv_timer_t* handle);
     static void WorkerPostTask(napi_env env);
@@ -87,6 +88,9 @@ public:
     static void AddTasksToAsyncRunner(void* asyncData, void* taskData);
     static void RemoveSequenceRunnerByName(std::string name);
     static void RemoveSequenceRunner(uint64_t seqId);
+    static void StoreTaskId(Worker* worker, uint32_t taskId);
+    static void RemoveTaskId(Worker* worker, uint32_t taskId);
+    static bool FindTaskId(Worker* worker, uint32_t taskId);
 
     class ExceptionScope {
     public:

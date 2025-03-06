@@ -206,7 +206,7 @@ void TaskGroup::NotifyGroupTask(napi_env env)
             reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
         }
         task->IncreaseRefCount();
-        TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+        TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
         task->taskState_ = ExecuteState::WAITING;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
