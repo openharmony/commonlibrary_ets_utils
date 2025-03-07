@@ -1627,6 +1627,72 @@ HWTEST_F(NativeEngineTest, decoderUtf8BOM009, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name:  decoderUtf8-BOM010
+ * @tc.desc: Testing the decoding result of UTF-8 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderUtf8BOM010, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderUtf8-BOM010 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string encoding = "utf-8";
+    OHOS::Util::TextDecoder textDecoder(encoding, flags);
+    bool iflag = true;
+    size_t byteLength = 4;
+    void* data = nullptr;
+    bool flag = false;
+    size_t strLength = 2;
+    void* strData = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_value strBuffer = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[4] = {0xE4, 0xBD, 0xA0, 0xE5};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "你");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+    napi_create_arraybuffer(env, strLength, &strData, &strBuffer);
+    unsigned char arrayBuffer[2] = {0xA5, 0xBD};
+    int strRet = memcpy_s(strData, sizeof(arrayBuffer), reinterpret_cast<void*>(arrayBuffer), sizeof(arrayBuffer));
+    ASSERT_EQ(0, strRet);
+    napi_value strResult = nullptr;
+    napi_create_typedarray(env, napi_int8_array, strLength, strBuffer, 0, &strResult);
+    napi_value strString = textDecoder.DecodeToString(env, strResult, flag);
+    size_t strSize = 0;
+    napi_get_value_string_utf16(env, strString, nullptr, 0, &strSize);
+    size_t resultLength = 0;
+    char16_t* temp = nullptr;
+    if (strSize > 0) {
+        temp = new char16_t[strSize + 1]();
+        napi_get_value_string_utf16(env, strString, temp, strSize + 1, &resultLength);
+    }
+    std::string stringResult =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(temp);
+    ASSERT_EQ(stringResult, "好");
+    if (temp != nullptr) {
+        delete []temp;
+        temp = nullptr;
+    }
+}
+
+/**
  * @tc.name: getMinByteSizeTest001 utf-8
  * @tc.desc: get minbyte size with tranTool nullptr.
  * @tc.type: FUNC
@@ -3162,6 +3228,432 @@ HWTEST_F(NativeEngineTest, DecodeToStringWithStream001, testing::ext::TestSize.L
     napi_value result = nullptr;
     napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
     textDecoder.DecodeToString(env, result, iflag);
+}
+
+/**
+ * @tc.name: decoderGBK
+ * @tc.desc: Testing the decoding result of GBK data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderGBK001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderGBK start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string encoding = "GBK";
+    OHOS::Util::TextDecoder textDecoder(encoding, flags);
+    bool iflag = true;
+    size_t byteLength = 4;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[4] = {196, 227, 186, 195};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "你好");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderbig5
+ * @tc.desc: Testing the decoding result of big5 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderbig5001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderbig5 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string encoding = "big5";
+    OHOS::Util::TextDecoder textDecoder(encoding, flags);
+    bool iflag = true;
+    size_t byteLength = 6;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[6] = {166, 173, 164, 87, 166, 110};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "早上好");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decodergb18030
+ * @tc.desc: Testing the decoding result of gb18030 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodergb18030, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodergb18030 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string encoding = "gb18030";
+    OHOS::Util::TextDecoder textDecoder(encoding, flags);
+    bool iflag = true;
+    size_t byteLength = 4;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[4] = {196, 227, 186, 195};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "你好");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decodergbk
+ * @tc.desc: Testing the decoding result of gbk data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodergbk, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodergbk start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string encoding = "gbk";
+    OHOS::Util::TextDecoder textDecoder(encoding, flags);
+    bool iflag = true;
+    size_t byteLength = 4;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[4] = {196, 227, 186, 195};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result);
+    napi_value testString = textDecoder.DecodeToString(env, result, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf16(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char16_t* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char16_t[bufferSize + 1]();
+        napi_get_value_string_utf16(env, testString, ch, bufferSize + 1, &length);
+    }
+    std::string str =
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> {}.to_bytes(ch);
+    ASSERT_EQ(str, "你好");
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderwindows1257
+ * @tc.desc: Testing the decoding result of  windows-1257 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderwindows1257, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderwindows1257 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string str = "windows-1257";
+    OHOS::Util::TextDecoder textDecoder(str, flags);
+    bool iflag = false;
+    size_t byteLength = 4;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[4] = {84, 101, 114, 101};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
+    }
+    ASSERT_STREQ("Tere", ch);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderwindows874
+ * @tc.desc: Testing the decoding result of windows-874 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderwindows874, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderwindows874 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string str = "windows-874";
+    OHOS::Util::TextDecoder textDecoder(str, flags);
+    bool iflag = false;
+    size_t byteLength = 3;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[3] = {0x61, 0x62, 0x63};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
+    }
+    ASSERT_STREQ("abc", ch);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decodermacintosh
+ * @tc.desc: Testing the decoding result of macintosh data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodermacintosh, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodermacintosh start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string str = "macintosh";
+    OHOS::Util::TextDecoder textDecoder(str, flags);
+    bool iflag = false;
+    size_t byteLength = 3;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[3] = {0x61, 0x62, 0x63};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
+    }
+    ASSERT_STREQ("abc", ch);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderkoi8u
+ * @tc.desc: Testing the decoding result of koi8-u data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderkoi8u, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderkoi8u start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string str = "koi8-u";
+    OHOS::Util::TextDecoder textDecoder(str, flags);
+    bool iflag = false;
+    size_t byteLength = 3;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[3] = {0x61, 0x62, 0x63};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
+    }
+    ASSERT_STREQ("abc", ch);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderiso885915
+ * @tc.desc: Testing the decoding result of iso-8859-15 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderiso885915, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderiso885915 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string str = "iso-8859-15";
+    OHOS::Util::TextDecoder textDecoder(str, flags);
+    bool iflag = false;
+    size_t byteLength = 4;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[4] = {72, 111, 108, 97};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
+    }
+    ASSERT_STREQ("Hola", ch);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderwindows1256
+ * @tc.desc: Testing the decoding result of  windows-1256 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderwindows1256, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderwindows1256 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string str = "windows-1256";
+    OHOS::Util::TextDecoder textDecoder(str, flags);
+    bool iflag = false;
+    size_t byteLength = 7;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[7] = {77, 97, 114, 104, 97, 98, 97};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
+    }
+    ASSERT_STREQ("Marhaba", ch);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
+}
+
+/**
+ * @tc.name: decoderwindows1255
+ * @tc.desc: Testing the decoding result of  windows-1255 data with BOM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decoderwindows1255, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decoderwindows1255 start");
+    napi_env env = (napi_env)engine_;
+    int32_t flags = 0;
+    std::string str = "windows-1255";
+    OHOS::Util::TextDecoder textDecoder(str, flags);
+    bool iflag = false;
+    size_t byteLength = 7;
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, byteLength, &data, &resultBuff);
+    unsigned char arr[7] = {77, 101, 114, 104, 97, 98, 97};
+    int ret = memcpy_s(data, sizeof(arr), reinterpret_cast<void*>(arr), sizeof(arr));
+    ASSERT_EQ(0, ret);
+    napi_value result2 = nullptr;
+    napi_create_typedarray(env, napi_int8_array, byteLength, resultBuff, 0, &result2);
+    napi_value testString = textDecoder.DecodeToString(env, result2, iflag);
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, testString, nullptr, 0, &bufferSize);
+    size_t length = 0;
+    char* ch = nullptr;
+    if (bufferSize > 0) {
+        ch = new char[bufferSize + 1]();
+        napi_get_value_string_utf8(env, testString, ch, bufferSize + 1, &length);
+    }
+    ASSERT_STREQ("Merhaba", ch);
+    if (ch != nullptr) {
+        delete []ch;
+        ch = nullptr;
+    }
 }
 
 /**
