@@ -349,6 +349,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         WorkerManager::DecrementWorkerCount(worker->workerType_);
         HILOG_ERROR("worker::Constructor napi_wrap return value is %{public}d", status);
         WorkerDestructor(env, worker, nullptr);
+        CloseHelp::DeletePointer(script, true);
         return nullptr;
     }
     worker->StartExecuteInThread(env, script);
