@@ -612,7 +612,7 @@ private:
     uv_async_t* hostOnAllErrorsSignal_ = nullptr;
     uv_async_t* hostOnGlobalCallSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_async_t debuggerOnPostTaskSignal_ {};
+    uv_async_t* debuggerOnPostTaskSignal_ = nullptr;
     std::mutex debuggerMutex_;
     std::queue<DebuggerPostTask> debuggerQueue_ {};
 #endif

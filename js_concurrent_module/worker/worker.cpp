@@ -1435,8 +1435,7 @@ void Worker::ExecuteInThread(const void* data)
         ConcurrentHelper::UvHandleInit(loop, worker->workerOnMessageSignal_, Worker::WorkerOnMessage, worker);
         ConcurrentHelper::UvHandleInit(loop, worker->workerOnTerminateSignal_, Worker::WorkerOnMessage, worker);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-        uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
-            Worker::HandleDebuggerTask));
+        ConcurrentHelper::UvHandleInit(loop, worker->debuggerOnPostTaskSignal_, Worker::HandleDebuggerTask, worker);
 #endif
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
@@ -1990,7 +1989,7 @@ void Worker::TerminateWorker()
         ConcurrentHelper::UvHandleClose(workerOnTerminateSignal_);
     }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    uv_close(reinterpret_cast<uv_handle_t*>(&debuggerOnPostTaskSignal_), nullptr);
+    ConcurrentHelper::UvHandleClose(debuggerOnPostTaskSignal_);
 #endif
     CloseWorkerCallback();
     uv_loop_t* loop = GetWorkerLoop();
@@ -2559,7 +2558,7 @@ bool Worker::CanCreateWorker(napi_env env, WorkerVersion target)
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void Worker::HandleDebuggerTask(const uv_async_t* req)
 {
-    Worker* worker = DereferenceHelp::DereferenceOf(&Worker::debuggerOnPostTaskSignal_, req);
+    Worker* worker = static_cast<Worker*>(req->data);
     if (worker == nullptr) {
         HILOG_ERROR("worker::worker is null");
         return;
@@ -2578,10 +2577,10 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
         HILOG_ERROR("worker:: worker has been terminated.");
         return;
     }
-    if (!ConcurrentHelper::IsUvClosing(&debuggerOnPostTaskSignal_)) {
+    if (ConcurrentHelper::IsUvActive(debuggerOnPostTaskSignal_)) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
-        uv_async_send(&debuggerOnPostTaskSignal_);
+        uv_async_send(debuggerOnPostTaskSignal_);
     }
 }
 #endif
