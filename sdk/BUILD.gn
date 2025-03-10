@@ -32,7 +32,10 @@ generate_static_abc("ets2abc_commonsdk") {
   device_dst_file = "/system/framework/commonlib_ets_utils.abc"
 }
 
-ets_util_sources = []
+ets_util_sources = [
+  "$ets_util_path/sdk/native/api/ani_textdecoder.cpp",
+  "$ets_util_path/sdk/native/main.cpp",
+]
 
 ohos_shared_library("commonlib_ets_ani") {
   include_dirs = [ ets_util_path ]
@@ -62,8 +65,8 @@ ohos_shared_library("commonlib_ets_ani") {
 
 group("commonlib_sdk") {
   deps = [
+    ":commonlib_ets_ani",
+    ":commonlib_ets_ani(${host_toolchain})",
     ":commonlib_ets_utils",
-    # ":commonlib_ets_ani",
-    # ":commonlib_ets_ani(${host_toolchain})",
   ]
 }

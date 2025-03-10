@@ -304,10 +304,6 @@ export namespace util {
         MIME_URL_SAFE,
     }
 
-    export interface DecodeToStringOptions {
-        stream?: boolean;
-    }
-
     export class Base64Helper {
         private static BASE64_CHARS: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         private static BASE64_URL_SAFE_CHARS: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -668,6 +664,83 @@ export namespace util {
                 return value
             }
         }
+    }
+
+    export interface DecoderOptions {
+        fatal?: boolean;
+        ignoreBOM?: boolean;
+    }
+
+    export interface DecodeToStringOptions {
+        stream?: boolean;
+    }
+
+    const typeErrorCode = 401;
+    class BusinessError extends Error {
+        code: number;
+        constructor(msg: string) {
+            super(msg);
+            this.name = 'BusinessError';
+            this.code = typeErrorCode;
+        }
+    }
+
+    export class TextDecoder {
+
+        static { loadLibrary("commonlib_ets_ani") }
+
+        encoding_: string = "utf-8";
+        fatal_: boolean = false;
+        ignoreBOM_: boolean = false;
+        CONVERTER_FLAGS_FATAL = 0x2;
+        CONVERTER_FLAGS_IGNORE_BOM = 0x4;
+        private nativeDecoder_: long;
+
+        constructor(encoding?: string, options?: DecoderOptions) {
+            let flags = 0;
+            if (encoding) {
+                this.encoding_ = encoding;
+            }
+            if (options) {
+                flags |= options.fatal ? this.CONVERTER_FLAGS_FATAL : 0;
+                flags |= options.ignoreBOM ? this.CONVERTER_FLAGS_IGNORE_BOM : 0;
+                this.fatal_ = options.fatal ?? false;
+                this.ignoreBOM_ = options.ignoreBOM ?? false;
+            }
+            this.bindNativeDecoder(this.encoding_, flags);
+        }
+
+        static create(encoding?: string, options?: DecoderOptions) {
+            if (encoding && options) {
+                return new TextDecoder(encoding, options);
+            } else if (encoding) {
+                return new TextDecoder(encoding);
+            } else {
+                return new TextDecoder();
+            }
+        }
+
+        public decodeToString(input: Uint8Array, options?: DecodeToStringOptions): string {
+            if (input.length === 0) {
+                return '';
+            }
+            return this.decode(input, options?.stream ?? false);
+        }
+
+        get encoding(): string {
+            return this.encoding_;
+        }
+
+        get fatal(): boolean {
+            return this.fatal_;
+        }
+
+        get ignoreBOM(): boolean {
+            return this.ignoreBOM_;
+        }
+
+        private native bindNativeDecoder(encoding: string, flags: int): void;
+        private native decode(input: Uint8Array, decodeWithStream: boolean): string;
     }
 } // namespace Util
 
