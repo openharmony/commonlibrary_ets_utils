@@ -291,8 +291,10 @@ public:
         uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(
             UpdateMainThreadWorkerFlag));
         worker->workerOnMessageSignal_->data = worker;
-        uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
+        worker->debuggerOnPostTaskSignal_ = new uv_async_t;
+        uv_async_init(loop, worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             UpdateWorkerState));
+        worker->debuggerOnPostTaskSignal_->data = worker;
     }
 
     static void SetWorkerRef(Worker *worker, napi_env env)
@@ -1015,9 +1017,10 @@ public:
         worker->SetWorkerEnv(workerEnv);
         uv_loop_t* loop = worker->GetWorkerLoop();
         ASSERT_TRUE(loop != nullptr);
-        uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
+        worker->debuggerOnPostTaskSignal_ = new uv_async_t;
+        uv_async_init(loop, worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
             UpdateMainThreadWorkerFlag));
-        worker->debuggerOnPostTaskSignal_.data = worker;
+        worker->debuggerOnPostTaskSignal_->data = worker;
         std::function<void()> myTask = []() {
             return;
         };
