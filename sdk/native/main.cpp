@@ -17,6 +17,8 @@
 #include <array>
 #include <iostream>
 #include "api/ani_textdecoder.h"
+#include "api/ani_textencoder.h"
+#include "ohos/init_data.h"
 
 namespace OHOS::ETSUtil {
 static std::string ANIStringToStdString(ani_env *env, ani_string ani_str)
@@ -129,6 +131,34 @@ static ani_status BindTextDecoder(ani_env *env)
     return ANI_OK;
 }
 
+[[maybe_unused]] static ani_status BindTextEncoder(ani_env *env)
+{
+    ani_class cls;
+    const char *className = "L@ohos/util/util/TextEncoder;";
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        HILOG_ERROR("Cannot find class '%s'.", className);
+        return ANI_ERROR;
+    }
+    std::array barMethods = {
+        ani_native_function {
+            "doEncodeInto",
+            "Lstd/core/String;Lstd/core/String;:Lescompat/Uint8Array;",
+            reinterpret_cast<void*>(DoEncodeInto),
+        },
+        ani_native_function{
+            "doEncodeInfoUint8Array",
+            "Lstd/core/String;Lstd/core/String;Lescompat/Uint8Array;:L@ohos/util/util/EncodeIntoUint8ArrayInfo;",
+            reinterpret_cast<void*>(DoEncodeIntoUint8Array),
+        },
+    };
+    if (ANI_OK != env->Class_BindNativeMethods(cls, barMethods.data(), barMethods.size())) {
+        HILOG_ERROR("Cannot bind native methods to '%s'.", className);
+        return ANI_ERROR;
+    };
+    SetOhosIcuDirectory();
+    return ANI_OK;
+}
+
 extern "C" {
 ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {
@@ -138,13 +168,16 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
         HILOG_ERROR("Unsupported ANI_VERSION_1");
         return (ani_status)ANI_ERROR;
     }
-
     ani_status status = BindTextDecoder(env);
     if (status != ANI_OK) {
         HILOG_ERROR("BindTextDecoder Failed");
         return status;
     }
-
+    status = BindTextEncoder(env);
+    if (status != ANI_OK) {
+        HILOG_ERROR("BindTextDecoder Failed");
+        return status;
+    }
     *result = ANI_VERSION_1;
     return ANI_OK;
 }
