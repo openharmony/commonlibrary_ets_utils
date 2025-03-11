@@ -17,6 +17,9 @@
 #include <array>
 #include <iostream>
 #include "api/ani_textdecoder.h"
+#include "api/ani_textencoder.h"
+#include "api/ani_uuid.h"
+#include "ohos/init_data.h"
 
 namespace OHOS::ETSUtil {
 static std::string ANIStringToStdString(ani_env *env, ani_string ani_str)
@@ -129,12 +132,40 @@ static ani_status BindTextDecoder(ani_env *env)
     return ANI_OK;
 }
 
+static ani_string GenerateRandomUUID(ani_env *env, ani_boolean entropyCache)
+{
+    bool entropy = entropyCache == ANI_TRUE ? true : false;
+    std::string result = ETSApiUtilHelperGenerateRandomUUID(env, entropy);
+    ani_string aniStr {};
+    env->String_NewUTF8(result.c_str(), result.length(), &aniStr);
+    return aniStr;
+}
+
+static ani_status BindUtilHelper(ani_env *env)
+{
+    static const char *className = "L@ohos/util/util/UtilHelper;";
+    ani_class cls;
+    if (ANI_OK != env->FindClass(className, &cls)) {
+        std::cerr << "Not found '" << className << "'" << std::endl;
+        return ANI_ERROR;
+    }
+
+    std::array methods = {
+        ani_native_function {"generateRandomUUID", "Z:Lstd/core/String;", reinterpret_cast<void *>(GenerateRandomUUID)},
+    };
+
+    if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
+        HILOG_ERROR("UtilHelper:: Cannot bind native methods to className : %s\n", className);
+        return ANI_ERROR;
+    }
+    return ANI_OK;
+}
+
 extern "C" {
 ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {
     ani_env *env;
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &env)) {
-        std::cerr << "Unsupported ANI_VERSION_1" << std::endl;
         HILOG_ERROR("Unsupported ANI_VERSION_1");
         return (ani_status)ANI_ERROR;
     }
@@ -142,6 +173,12 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
     ani_status status = BindTextDecoder(env);
     if (status != ANI_OK) {
         HILOG_ERROR("BindTextDecoder Failed");
+        return status;
+    }
+
+    status = BindUtilHelper(env);
+    if (status != ANI_OK) {
+        HILOG_ERROR("BindUtilHelper Failed");
         return status;
     }
 

@@ -34,7 +34,9 @@ generate_static_abc("ets2abc_commonsdk") {
 
 ets_util_sources = [
   "$ets_util_path/sdk/native/api/ani_textdecoder.cpp",
-  "$ets_util_path/sdk/native/main.cpp",
+  "$ets_util_path/sdk/native/api/ani_textencoder.cpp",
+  "$ets_util_path/sdk/native/api/ani_textencoder_helper.cpp",
+  "$ets_util_path/sdk/native/api/ani_uuid.cpp",
 ]
 
 ohos_shared_library("commonlib_ets_ani") {
