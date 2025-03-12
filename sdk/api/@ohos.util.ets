@@ -742,5 +742,82 @@ export namespace util {
         private native bindNativeDecoder(encoding: string, flags: int): void;
         private native decode(input: Uint8Array, decodeWithStream: boolean): string;
     }
+
+    export interface EncodeIntoUint8ArrayInfo {
+        read: int;
+        written: int;
+    }
+
+    class EncodeIntoUint8ArrayInfoInner implements EncodeIntoUint8ArrayInfo {
+        read: int;
+        written: int;
+        constructor(outRead: int, outWritten: int) {
+            this.read = outRead;
+            this.written = outWritten;
+        }
+    }
+
+    export class TextEncoder {
+        static { loadLibrary("commonlib_ets_ani"); }
+        private encoding: string = "utf-8";
+
+        constructor(inputEncoding?: string)
+        {
+            if (!inputEncoding) {
+                this.encoding = "utf-8";
+                return;
+            }
+            let tempString: string = inputEncoding.toLowerCase();
+            let flag: boolean = TextEncoder.checkEncodingFormat(tempString);
+            if (!flag) {
+                throw new Error(`Wrong encoding format, the current '${inputEncoding}' format is not support.`);
+            }
+            this.encoding = tempString;
+        }
+
+        static create(inputEncoding?: string): TextEncoder
+        {
+            return new TextEncoder(inputEncoding);
+        }
+
+        encodeInto(inputString: string): Uint8Array
+        {
+            if (inputString === '') {
+                return new Uint8Array(0);
+            }
+            return TextEncoder.doEncodeInto(inputString, this.encoding);
+        }
+
+        encodeIntoUint8Array(inputString: string, dest: Uint8Array): EncodeIntoUint8ArrayInfo
+        {
+            return TextEncoder.doEncodeInfoUint8Array(inputString, this.encoding, dest);
+        }
+
+        private static checkEncodingFormat(encoding: string): boolean
+        {
+            const knownEncodings: string[] = [
+                "utf-8", "utf-16be", "utf-16le", "gbk", "gb2312", "gb18030", "ibm866",
+                "iso-8859-1", "iso-8859-2", "iso-8859-3", "iso-8859-4", "iso-8859-5", "iso-8859-6",
+                "iso-8859-7", "iso-8859-8", "iso-8859-8-i", "iso-8859-10", "iso-8859-13",
+                "iso-8859-14", "iso-8859-15", "koi8-r", "koi8-u", "macintosh",
+                "windows-874", "windows-1250", "windows-1251", "windows-1252",
+                "windows-1253", "windows-1254", "windows-1255", "windows-1256",
+                "windows-1257", "windows-1258", "big5", "euc-jp", "iso-2022-jp",
+                "shift_jis", "euc-kr", "x-mac-cyrillic"
+            ];
+            for (const enc of knownEncodings) {
+                if (enc == encoding) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static native doEncodeInto(
+            inputString: string, inputEncoding: string): Uint8Array;
+
+        private static native doEncodeInfoUint8Array(
+            inputString: string, inputEncoding: string, destArray: Uint8Array): EncodeIntoUint8ArrayInfo;
+    }
 } // namespace Util
 
