@@ -71,14 +71,6 @@ public:
         return tranTool_.get();
     }
     /**
-     * Determine whether it is the flag of BOM.
-     */
-    bool IsBomFlag() const
-    {
-        int32_t temp = label_ & static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
-        return temp == static_cast<int32_t>(ConverterFlags::BOM_SEEN_FLG);
-    }
-    /**
      * Determine whether it is Unicode.
      */
     bool IsUnicode() const

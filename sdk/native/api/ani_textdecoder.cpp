@@ -23,19 +23,19 @@ UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag)
 {
     UConverter *conv = ucnv_open(encStr_.c_str(), &codeflag);
     if (U_FAILURE(codeflag)) {
-        HILOG_ERROR("Unable to create a UConverter object: %s\n", u_errorName(codeflag));
+        HILOG_ERROR("TextDecoder:: Unable to create a UConverter object %{public}s", u_errorName(codeflag));
         return nullptr;
     }
     ucnv_setFromUCallBack(conv, UCNV_FROM_U_CALLBACK_SUBSTITUTE, NULL, NULL, NULL, &codeflag);
     if (U_FAILURE(codeflag)) {
-        HILOG_ERROR("Unable to set the from Unicode callback function");
+        HILOG_ERROR("TextDecoder:: Unable to set the from Unicode callback function");
         ucnv_close(conv);
         return nullptr;
     }
 
     ucnv_setToUCallBack(conv, UCNV_TO_U_CALLBACK_SUBSTITUTE, NULL, NULL, NULL, &codeflag);
     if (U_FAILURE(codeflag)) {
-        HILOG_ERROR("Unable to set the to Unicode callback function");
+        HILOG_ERROR("TextDecoder:: Unable to set the to Unicode callback function");
         ucnv_close(conv);
         return nullptr;
     }
@@ -145,19 +145,19 @@ ani_object TextDecoder::ThrowError(ani_env *env, std::string message)
     static const char *className = "L@ohos/util/util/BusinessError;";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        HILOG_ERROR("Not found %s", className);
+        HILOG_ERROR("TextDecoder:: Not found %{public}s", className);
         return nullptr;
     }
 
     ani_method errorCtor;
     if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "Lstd/core/String;:V", &errorCtor)) {
-        HILOG_ERROR("Class_FindMethod <ctor> Failed");
+        HILOG_ERROR("TextDecoder:: Class_FindMethod <ctor> Failed");
         return nullptr;
     }
 
     ani_object errorObj;
     if (ANI_OK != env->Object_New(cls, errorCtor, &errorObj, errString)) {
-        HILOG_ERROR("Object_New Array Faild");
+        HILOG_ERROR("TextDecoder:: Object_New Array Faild");
     }
     return errorObj;
 }
