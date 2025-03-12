@@ -294,9 +294,7 @@ void AsyncRunner::TriggerRejectErrorTimer(Task* task, int32_t errCode, bool isWa
 void AsyncRunner::TriggerWaitingTask()
 {
     std::unique_lock<std::shared_mutex> lock(waitingTasksMutex_);
-    if (runningCount_ > 0) {
-        runningCount_.fetch_sub(1);
-    }
+    DecreaseRunningCount();
     Task* task = nullptr;
     while (runningCount_ < runningCapacity_) {
         if (waitingTasks_.empty()) {
@@ -352,20 +350,10 @@ bool AsyncRunner::CheckGlobalRunnerParams(napi_env env, uint32_t runningCapacity
     return true;
 }
 
-void AsyncRunner::HostEnvCleanupHook(void* data)
+void AsyncRunner::DecreaseRunningCount()
 {
-    if (data == nullptr) {
-        HILOG_ERROR("taskpool:: asyncRunner cleanupHook arg is nullptr");
-        return;
-    }
-    AsyncRunner* runner = reinterpret_cast<AsyncRunner*>(data);
-    if (runner == nullptr) {
-        HILOG_ERROR("taskpool:: asyncRunner cleanupHook is nullptr");
-        return;
-    }
-    runner->runningCount_ = 0;
-    if (runner->refCount_ > 0) {
-        runner->refCount_--;
+    if (runningCount_ > 0) {
+        runningCount_.fetch_sub(1);
     }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
