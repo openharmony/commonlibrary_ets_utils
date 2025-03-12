@@ -235,6 +235,28 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
     delete identity;
 }
 
+void AsyncLockManager::CheckAndRemoveLock(AsyncLock *lock)
+{
+    std::unique_lock<std::mutex> guard(lockMutex);
+    if (!lock->IsReadyForDeletion()) {
+        return;
+    }
+    uint32_t id = lock->GetLockId();
+    if (id == 0) {
+        std::string name = lock->GetLockName();
+        auto it = lockMap.find(name);
+        if (it != lockMap.end()) {
+            lockMap.erase(it);
+        }
+    } else {
+        auto it = anonymousLockMap.find(id);
+        if (it != anonymousLockMap.end()) {
+            anonymousLockMap.erase(it);
+        }
+    }
+    delete lock;
+}
+
 napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME("Async lockAsync");

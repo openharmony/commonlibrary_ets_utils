@@ -100,6 +100,7 @@ private:
     AsyncLock* lock_;
     tid_t tid_;
     std::string creationStacktrace_;
+    NativeEngine *engine_;
     napi_env env_;
     napi_ref callback_;
     LockMode mode_;
@@ -110,6 +111,7 @@ private:
     bool timeoutActive_;
     napi_threadsafe_function stopTimerTsfn_{nullptr};
     std::mutex lockRequestMutex_;
+    uint64_t engineId_;
 };
 
 struct RequestTimeoutData {
