@@ -15,13 +15,14 @@
 
 #include "ani_uuid.h"
 #include "tools/log.h"
+
+#include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <array>
-#include <sstream>
-#include <securec.h>
-#include <sys/types.h>
 #include <random>
+#include <securec.h>
+#include <sstream>
+#include <sys/types.h>
 
 namespace OHOS::ETSUtil {
 
@@ -41,31 +42,7 @@ S GenRandUint()
     return range(randomGenerator);
 }
 
-ani_object ThrowError(ani_env *env, std::string message)
-{
-    ani_string errString;
-    env->String_NewUTF8(message.c_str(), message.size(), &errString);
-    static const char *className = "L@ohos/util/util/BusinessError;";
-    ani_class cls;
-    if (ANI_OK != env->FindClass(className, &cls)) {
-        HILOG_ERROR("Not found %s", className);
-        return nullptr;
-    }
-
-    ani_method errorCtor;
-    if (ANI_OK != env->Class_FindMethod(cls, "<ctor>", "Lstd/core/String;:V", &errorCtor)) {
-        HILOG_ERROR("Class_FindMethod <ctor> Failed");
-        return nullptr;
-    }
-
-    ani_object errorObj;
-    if (ANI_OK != env->Object_New(cls, errorCtor, &errorObj, errString)) {
-        HILOG_ERROR("Object_New Array Faild");
-    }
-    return errorObj;
-}
-
-std::string GenUuid4(ani_env *env)
+std::string GenUuid(ani_env *env)
 {
     std::array<char, UUID_LEN> uuidStr = {0};
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
@@ -74,12 +51,11 @@ std::string GenUuid4(ani_env *env)
         GenRandUint<uint16_t>(), (GenRandUint<uint16_t>() & NULL_FOUR_HIGH_BITS_IN_16) | RFC4122_UUID_VERSION_MARKER,
         (GenRandUint<uint16_t>() & NULL_TWO_HIGH_BITS_IN_16) | RFC4122_UUID_RESERVED_BITS, GenRandUint<uint64_t>());
     if ((n < 0) || (n > static_cast<int>(UUID_LEN))) {
-        env->ThrowError(static_cast<ani_error>(ThrowError(env, "GenerateRandomUUID failed")));
+        HILOG_ERROR("UUID:: GenerateRandomUUID failed");
         return std::string();
     }
     std::stringstream res;
     res << uuidStr.data();
-
     return res.str();
 }
 
@@ -87,7 +63,7 @@ std::string ETSApiUtilHelperGenerateRandomUUID(ani_env *env, bool entropyCache)
 {
     static std::string lastGeneratedUUID;
     if (entropyCache != true || lastGeneratedUUID.empty()) {
-        lastGeneratedUUID = GenUuid4(env);
+        lastGeneratedUUID = GenUuid(env);
     }
     return lastGeneratedUUID;
 }
