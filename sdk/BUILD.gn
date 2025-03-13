@@ -36,6 +36,7 @@ ets_util_sources = [
   "$ets_util_path/sdk/native/api/ani_textdecoder.cpp",
   "$ets_util_path/sdk/native/api/ani_textencoder.cpp",
   "$ets_util_path/sdk/native/api/ani_textencoder_helper.cpp",
+  "$ets_util_path/sdk/native/api/ani_uuid.cpp",
   "$ets_util_path/sdk/native/main.cpp",
 ]
 

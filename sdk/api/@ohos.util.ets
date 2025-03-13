@@ -18,7 +18,7 @@ export namespace util {
     class UtilHelper {
 
         static {
-            loadLibrary("ets_sdk_native")
+            loadLibrary("commonlib_ets_ani")
         }
     
         internal static native generateRandomUUID(entropyCache: boolean): string
