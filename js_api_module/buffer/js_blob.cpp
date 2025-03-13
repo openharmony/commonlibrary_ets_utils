@@ -40,7 +40,12 @@ void Blob::Init(Blob *blob, int start)
         if (raw_ == nullptr) {
             HILOG_FATAL("Blob:: constructor malloc failed");
         } else {
-            if (start >= blob->length_ || start < 0) {
+            if (start < 0) {
+                HILOG_ERROR("Blob:: start position error");
+                return;
+            }
+            unsigned int uStart = static_cast<unsigned int>(start);
+            if (uStart >= blob->length_) {
                 HILOG_ERROR("Blob:: start position error");
                 return;
             }
