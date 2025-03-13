@@ -568,9 +568,10 @@ void TaskManager::TryExpandWithCheckIdle()
         timeoutWorkers = timeoutWorkers_.size();
         if constexpr (needCheckIdle) {
             uint64_t currTime = ConcurrentHelper::GetMilliseconds();
-            idleCount = std::count_if(idleWorkers_.begin(), idleWorkers_.end(), [currTime](const auto& worker) {
-                return worker->IsRunnable(currTime);
-            });
+            idleCount = static_cast<uint32_t>(std::count_if(idleWorkers_.begin(), idleWorkers_.end(),
+                [currTime](const auto& worker) {
+                    return worker->IsRunnable(currTime);
+                }));
         } else {
             idleCount = idleWorkers_.size();
         }
