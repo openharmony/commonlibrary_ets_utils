@@ -61,7 +61,7 @@ ani_object NewUint8Array(ani_env *env, const char* signature, Args... args)
         "Internal failure: env->FindClass()");
     ani_method arrayCtor;
     ANI_RETURN_NULLPTR_ON_FAILURE(env->Class_FindMethod(arrayClass, "<ctor>", signature, &arrayCtor),
-        "Internal failure: env->Class_FindMethod() with signature '%s'.", signature);
+        "Internal failure: env->Class_FindMethod() with signature %{public}s", signature);
     ani_object res;
     ANI_RETURN_NULLPTR_ON_FAILURE(env->Object_New(arrayClass, arrayCtor, &res, args...),
         "Internal failure: env->Object_New()");
@@ -112,7 +112,8 @@ std::optional<WriteEncodedDataResult> OtherEncode(
                          nullptr, true, &codeFlag);
         // Note: U_BUFFER_OVERFLOW_ERROR is expected result when the output buffer is small.
         if (codeFlag != U_ZERO_ERROR && codeFlag != U_BUFFER_OVERFLOW_ERROR) {
-            HILOG_ERROR("Failure when converting to encoding '%s': %s.", cvt.encoding, u_errorName(codeFlag));
+            HILOG_ERROR("TextEncoder:: Failure when converting to encoding %{public}s%{public}s",
+                cvt.encoding, u_errorName(codeFlag));
             return std::nullopt;
         }
         // todo: nInputCharsConsumes is probably incorrect
@@ -199,12 +200,12 @@ std::optional<WriteEncodedDataResult> WriteEncodedData(
         std::string_view inputPrefix = ani_helper::Utf8GetPrefix(
             utf8InputString, destSizeBytes, &nInputCharsConsumed, &ok);
         if (!ok) {
-            HILOG_ERROR("Failure during reading UTF-8 input.");
+            HILOG_ERROR("TextEncoder:: Failure during reading UTF-8 input.");
             return std::nullopt;
         }
         size_t resultSizeBytes = inputPrefix.length();
         if (EOK != memcpy_s(dest, destSizeBytes, inputPrefix.data(), resultSizeBytes)) {
-            HILOG_ERROR("Failure during memcpy_s.");
+            HILOG_ERROR("TextEncoder:: Failure during memcpy_s.");
             return std::nullopt;
         }
         return WriteEncodedDataResult{nInputCharsConsumed, resultSizeBytes};
@@ -217,7 +218,7 @@ std::optional<WriteEncodedDataResult> WriteEncodedData(
         std::u16string u16Str = ani_helper::Utf8ToUtf16LE(
             utf8InputString, resultLengthLimit, &nInputCharsConsumed, &ok);
         if (!ok) {
-            HILOG_ERROR("Failure during conversion from UTF-8 to UTF-16.");
+            HILOG_ERROR("TextEncoder:: Failure during conversion from UTF-8 to UTF-16.");
             return std::nullopt;
         }
         if (encoding == "utf-16be") {
@@ -225,7 +226,7 @@ std::optional<WriteEncodedDataResult> WriteEncodedData(
         }
         size_t resultSizeBytes = u16Str.length() * 2; // 2 : 2 bytes per u16 character
         if (EOK != memcpy_s(dest, destSizeBytes, u16Str.data(), resultSizeBytes)) {
-            HILOG_ERROR("Failure during memcpy_s");
+            HILOG_ERROR("TextEncoder:: Failure during memcpy_s");
             return std::nullopt;
         }
         return WriteEncodedDataResult{nInputCharsConsumed, resultSizeBytes};
@@ -248,7 +249,7 @@ ani_object DoEncodeInto(ani_env *env, [[maybe_unused]] ani_object object, ani_st
             return nullptr; // todo: Exception
         }
         if (EOK != memcpy_s(arrInfo->bufferData, arrInfo->bufferLength, inputString.data(), inputString.length())) {
-            HILOG_ERROR("Failure during memcpy_s.");
+            HILOG_ERROR("TextEncoder:: Failure during memcpy_s.");
             return nullptr; // todo: Exception
         }
         return arrInfo->arrayObject;
@@ -258,7 +259,7 @@ ani_object DoEncodeInto(ani_env *env, [[maybe_unused]] ani_object object, ani_st
         bool ok = false;
         std::u16string utf16Str = ani_helper::Utf8ToUtf16LE(inputString, &ok);
         if (!ok) {
-            HILOG_ERROR("Failure during conversion from UTF-8 to UTF-16.");
+            HILOG_ERROR("TextEncoder:: Failure during conversion from UTF-8 to UTF-16.");
             return nullptr; // todo: Exception handling
         }
         if (encodingStr == "utf-16be") {
@@ -271,7 +272,7 @@ ani_object DoEncodeInto(ani_env *env, [[maybe_unused]] ani_object object, ani_st
             return nullptr; // todo: Exception
         }
         if (EOK != memcpy_s(arrInfo->bufferData, arrInfo->bufferLength, utf16Str.data(), sizeBytes)) {
-            HILOG_ERROR("Failure during memcpy_s.");
+            HILOG_ERROR("TextEncoder:: Failure during memcpy_s.");
             return nullptr; // todo: Exception
         }
         return arrInfo->arrayObject;
@@ -295,7 +296,7 @@ ani_object DoEncodeIntoUint8Array(
     if (ANI_OK != env->Object_GetFieldByName_Int(destObj, "byteLengthInt", &byteLength) ||
         ANI_OK != env->Object_GetFieldByName_Int(destObj, "byteOffsetInt", &byteOffset) ||
         ANI_OK != env->Object_GetFieldByName_Ref(destObj, "buffer", &buffer)) {
-        HILOG_ERROR("Internal error: Failed to get byteLength, byteOffset, buffer from Uint8Array.");
+        HILOG_ERROR("TextEncoder:: Failed to get byteLength, byteOffset, buffer from Uint8Array.");
         return nullptr; // todo: Exception handling
     }
     std::optional<ArrayBufferInfos> bufInfo = GetBufferInfo(env, static_cast<ani_arraybuffer>(buffer));
@@ -311,19 +312,19 @@ ani_object DoEncodeIntoUint8Array(
     ani_class resultClass;
     const char *resultClassName = "L@ohos/util/util/EncodeIntoUint8ArrayInfoInner;";
     if (ANI_OK != env->FindClass(resultClassName, &resultClass)) {
-        HILOG_ERROR("Internal error: Failed to get class '%s'.", resultClassName);
+        HILOG_ERROR("TextEncoder:: Failed to get class %{public}s", resultClassName);
         return nullptr; // todo: Exception handling
     }
     ani_method resultCtor;
     if (ANI_OK != env->Class_FindMethod(resultClass, "<ctor>", "II:V", &resultCtor)) {
-        HILOG_ERROR("Internal error: Failed to get constructor of class '%s'.", resultClassName);
+        HILOG_ERROR("TextEncoder:: Failed to get constructor of class %{public}s", resultClassName);
         return nullptr; // todo: Exception handling
     }
     ani_object res;
     if (ANI_OK != env->Object_New(resultClass, resultCtor, &res,
                                   static_cast<ani_int>(writeRes->nInputCharsConsumed),
                                   static_cast<ani_int>(writeRes->resultSizeBytes))) {
-        HILOG_ERROR("Internal error: Failed to construct object of class '%s'.", resultClassName);
+        HILOG_ERROR("TextEncoder:: Failed to construct object of class %{public}s", resultClassName);
         return nullptr; // todo: Exception handling
     }
     return res;

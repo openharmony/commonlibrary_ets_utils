@@ -70,7 +70,7 @@ static void GetUint8ArrayInfo(ani_env *env, ani_object array, void* &data, int32
         std::string fieldName = std::string{propName} + "Int";
         ani_status retCode = env->Object_GetFieldByName_Int(array, fieldName.c_str(), &value);
         if (retCode != ANI_OK) {
-            HILOG_ERROR("TextDecoder:: env->Object_GetFieldByName_Int fieldName: %s\n", fieldName.c_str());
+            HILOG_ERROR("TextDecoder:: env->Object_GetFieldByName_Int fieldName %{public}s", fieldName.c_str());
             return;
         }
         vec.push_back(value);
@@ -115,7 +115,7 @@ static ani_status BindTextDecoder(ani_env *env)
     static const char *className = "L@ohos/util/util/TextDecoder;";
     ani_class cls;
     if (ANI_OK != env->FindClass(className, &cls)) {
-        std::cerr << "Not found '" << className << "'" << std::endl;
+        HILOG_ERROR("TextDecoder:: Not found %{public}s", className);
         return ANI_ERROR;
     }
 
@@ -125,7 +125,7 @@ static ani_status BindTextDecoder(ani_env *env)
     };
 
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
-        HILOG_ERROR("TextDecoder:: Cannot bind native methods to className : %s\n", className);
+        HILOG_ERROR("TextDecoder:: Cannot bind native methods to className %{public}s", className);
         return ANI_ERROR;
     }
     return ANI_OK;
@@ -136,7 +136,7 @@ static ani_status BindTextDecoder(ani_env *env)
     ani_class cls;
     const char *className = "L@ohos/util/util/TextEncoder;";
     if (ANI_OK != env->FindClass(className, &cls)) {
-        HILOG_ERROR("Cannot find class '%s'.", className);
+        HILOG_ERROR("TextEncoder:: Not found %{public}s", className);
         return ANI_ERROR;
     }
     std::array barMethods = {
@@ -152,9 +152,9 @@ static ani_status BindTextDecoder(ani_env *env)
         },
     };
     if (ANI_OK != env->Class_BindNativeMethods(cls, barMethods.data(), barMethods.size())) {
-        HILOG_ERROR("Cannot bind native methods to '%s'.", className);
+        HILOG_ERROR("TextEncoder:: Cannot bind native methods to %{public}s", className);
         return ANI_ERROR;
-    };
+    }
     SetOhosIcuDirectory();
     return ANI_OK;
 }
@@ -164,18 +164,17 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
 {
     ani_env *env;
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &env)) {
-        std::cerr << "Unsupported ANI_VERSION_1" << std::endl;
         HILOG_ERROR("Unsupported ANI_VERSION_1");
         return (ani_status)ANI_ERROR;
     }
     ani_status status = BindTextDecoder(env);
     if (status != ANI_OK) {
-        HILOG_ERROR("BindTextDecoder Failed");
+        HILOG_ERROR("TextDecoder:: BindTextDecoder Failed");
         return status;
     }
     status = BindTextEncoder(env);
     if (status != ANI_OK) {
-        HILOG_ERROR("BindTextDecoder Failed");
+        HILOG_ERROR("TextEncoder:: BindTextEncoder Failed");
         return status;
     }
     *result = ANI_VERSION_1;
