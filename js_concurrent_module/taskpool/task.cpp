@@ -1542,6 +1542,9 @@ bool Task::ShouldDeleteTask(bool needUnref)
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (!IsValid()) {
         HILOG_WARN("taskpool:: task is invalid");
+        if (IsAsyncRunnerTask()) {
+            AsyncRunnerManager::GetInstance().DecreaseRunningCount(asyncRunnerId_);
+        }
         TaskManager::GetInstance().RemoveTask(taskId_);
         return true;
     }

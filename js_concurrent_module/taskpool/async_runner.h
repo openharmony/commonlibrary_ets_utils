@@ -30,13 +30,13 @@ public:
     static napi_value AsyncRunnerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
     static AsyncRunner* CreateGlobalRunner(const std::string& name, uint32_t runningCapacity, uint32_t waitingCapacity);
-    static void HostEnvCleanupHook(void* data);
     bool RemoveWaitingTask(Task* task, bool isReject = true);
     void TriggerRejectErrorTimer(Task* task, int32_t errCode, bool isWaiting = false);
     void TriggerWaitingTask();
     uint64_t DecreaseAsyncCount();
     void IncreaseAsyncCount();
     bool CheckGlobalRunnerParams(napi_env env, uint32_t runningCapacity, uint32_t waitingCapacity);
+    void DecreaseRunningCount();
 
 private:
     AsyncRunner(const AsyncRunner &) = delete;
