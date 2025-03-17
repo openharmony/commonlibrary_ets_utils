@@ -888,7 +888,7 @@ export namespace uri {
   const TypeErrorCodeId: number = 401;
   const SyntaxErrorCodeId: number = 10200002;
 
-  export class BusinessError extends Error {
+  class BusinessError extends Error {
     code: number;
     constructor(msg: string) {
       super(msg);
