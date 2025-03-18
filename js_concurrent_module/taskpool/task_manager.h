@@ -98,14 +98,10 @@ public:
     // for countTrace for worker
     void CountTraceForWorker();
 
-    std::shared_ptr<CallbackInfo> GetCallbackInfo(uint32_t taskId);
     void RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo);
-    void IncreaseRefCount(uint32_t taskId);
-    void DecreaseRefCount(napi_env env, uint32_t taskId);
-    napi_value NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task);
-    MsgQueue* GetMessageQueue(const uv_async_t* req);
-    MsgQueue* GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInfo);
-    void ResetCallbackInfoWorker(const std::shared_ptr<CallbackInfo>& callbackInfo);
+    void IncreaseSendDataRefCount(uint32_t taskId);
+    void DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* task = nullptr);
+    void ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, Task* task);
 
     // for task dependency
     bool IsDependendByTaskId(uint32_t taskId);
@@ -137,16 +133,17 @@ public:
     void ReleaseCallBackInfo(Task* task);
 
     void UpdateSystemAppFlag();
+
     bool IsSystemApp() const
     {
         return isSystemApp_;
     }
+
     bool EnableFfrt() const
     {
         return globalEnableFfrtFlag_ || (isSystemApp_ && !disableFfrtFlag_);
     }
 
-    bool CheckTask(uint32_t taskId);
     void BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error);
     uint32_t CalculateTaskId(uint64_t id);
     void ClearDependentTask(uint32_t taskId);

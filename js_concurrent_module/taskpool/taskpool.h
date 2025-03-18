@@ -34,10 +34,7 @@ struct TaskMessage {
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
-    static void ExecuteCallback(const uv_async_t* req);
-    static void ExecuteCallbackTask(CallbackInfo* callbackInfo);
-    static void HandleTaskResult(const uv_async_t* req);
-    static void HandleTaskResultCallback(Task* task);
+    static void HandleTaskResult(Task* task);
 
 private:
     TaskPool() = delete;
@@ -57,31 +54,35 @@ private:
     static napi_value ExecutePeriodically(napi_env env, napi_callback_info cbinfo);
     static void PeriodicTaskCallback(uv_timer_t* handle);
 
+    static void HandleTaskResultInner(Task* task);
     static void UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success);
     static void ExecuteTask(napi_env env, Task* task, Priority priority = Priority::DEFAULT);
     static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority);
 
     static void TriggerTask(Task* task);
     static void TriggerTimer(napi_env env, Task* task, int32_t period);
-    static void ExecuteCallbackInner(MsgQueue& msgQueue);
     static bool CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint32_t& priority, int32_t& delayTime,
                                    Task*& task);
     static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t& period, uint32_t& priority,
                                         Task*& task);
+    static void ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResultInfo* resultInfo);
     friend class TaskManager;
     friend class NativeEngineTest;
 };
 
 class CallbackScope {
 public:
-    CallbackScope(napi_env env, napi_env workerEnv, uint32_t taskId, napi_status& status): env_(env),
-        workerEnv_(workerEnv), taskId_(taskId)
+    CallbackScope(napi_env env, TaskResultInfo* resultInfo, napi_status& status)
     {
+        env_ = env;
+        workerEnv_ = resultInfo->workerEnv;
+        taskId_ = resultInfo->taskId;
         status = napi_open_handle_scope(env_, &scope_);
     }
+
     ~CallbackScope()
     {
-        TaskManager::GetInstance().DecreaseRefCount(env_, taskId_);
+        TaskManager::GetInstance().DecreaseSendDataRefCount(env_, taskId_);
         if (workerEnv_ != nullptr) {
             auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
             workerEngine->DecreaseListeningCounter();

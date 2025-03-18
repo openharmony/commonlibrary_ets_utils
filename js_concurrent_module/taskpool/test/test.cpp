@@ -462,7 +462,7 @@ void NativeEngineTest::InitTaskManager(napi_env env)
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.globalEnableFfrtFlag_ = true;
     taskManager.InitTaskManager(taskEnv);
-    taskManager.DecreaseRefCount(env, 0);
+    taskManager.DecreaseSendDataRefCount(env, 0);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
 }
@@ -560,7 +560,6 @@ void NativeEngineTest::ReleaseTaskData(napi_env env)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
-    task->onResultSignal_ = nullptr;
     task->taskType_ = TaskType::FUNCTION_TASK;
     taskManager.StoreTask(task);
     taskManager.ReleaseTaskData(env, task);
@@ -598,7 +597,6 @@ void NativeEngineTest::CheckTask(napi_env env)
     Task* task1 = new Task();
     taskManager.StoreTask(task1);
     taskManager.RemoveTask(task1->taskId_);
-    taskManager.CheckTask(task1->taskId_);
 
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     TaskGroup* group = new TaskGroup();
@@ -829,7 +827,6 @@ void NativeEngineTest::NotifyHandleTaskResult(napi_env env)
     task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->env_ = worker->workerEnv_;
     uv_loop_t* loop = worker->GetWorkerLoop();
-    ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, NativeEngineTest::foo, task);
     Task* task1 = new Task();
     task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     worker->currentTaskId_.push_back(task1->taskId_);
@@ -846,7 +843,7 @@ void NativeEngineTest::TaskResultCallback(napi_env env)
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     Task* task = new Task();
     task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
-    task->env_ = worker->workerEnv_;
+    task->env_ = env;
     task->taskRefCount_.fetch_add(1);
     task->worker_ = worker;
     task->cpuTime_ = UINT64_ZERO;
@@ -873,25 +870,19 @@ void NativeEngineTest::TaskResultCallback(napi_env env)
     worker->TerminateTask(task->taskId_);
 }
 
-void NativeEngineTest::HandleFunctionException(napi_env env)
+void NativeEngineTest::HandleFunctionResult(napi_env env)
 {
     ExceptionScope scope(env);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->workerEnv_ = workerEnv;
     Task* task = new Task();
     task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
-    task->env_ = workerEnv;
-    TaskResultInfo* resultInfo = new TaskResultInfo(env, workerEnv, task->taskId_, nullptr);
-    TaskManager::GetInstance().NotifyCallbackExecute(env, resultInfo, task);
+    task->env_ = env;
     task->IncreaseRefCount();
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onResultSignal_, NativeEngineTest::foo, task);
     task->worker_ = worker;
-    Worker::HandleFunctionException(env, task);
+    Worker::HandleFunctionResult(env, task);
     task->IncreaseRefCount();
-    Worker::HandleFunctionException(env, task);
+    Worker::HandleFunctionResult(env, task);
 }
 
 void* NativeEngineTest::WorkerConstructor(napi_env env)
@@ -977,5 +968,26 @@ void NativeEngineTest::RemoveSequenceRunnerByName(std::string name)
 void NativeEngineTest::RemoveSequenceRunner(uint64_t seqId)
 {
     SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqId);
+}
+
+void NativeEngineTest::StoreTaskId(Worker* worker, uint32_t taskId)
+{
+    auto& container = worker->currentTaskId_;
+    container.push_back(taskId);
+}
+
+void NativeEngineTest::RemoveTaskId(Worker* worker, uint32_t taskId)
+{
+    auto& container = worker->currentTaskId_;
+    auto iter = std::find(container.begin(), container.end(), taskId);
+    if (iter != container.end()) {
+        container.erase(iter);
+    }
+}
+
+bool NativeEngineTest::FindTaskId(Worker* worker, uint32_t taskId)
+{
+    auto& container = worker->currentTaskId_;
+    return std::find(container.begin(), container.end(), taskId) != container.end();
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

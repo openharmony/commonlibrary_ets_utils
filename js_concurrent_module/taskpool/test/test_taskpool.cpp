@@ -413,22 +413,31 @@ HWTEST_F(NativeEngineTest, TaskpoolTest023, testing::ext::TestSize.Level0)
 
 HWTEST_F(NativeEngineTest, TaskpoolTest024, testing::ext::TestSize.Level0)
 {
-    MessageQueue<int*> mesQueue;
-    int testData = 42;
-    mesQueue.EnQueue(&testData);
-
-    auto result = mesQueue.DeQueue();
-    ASSERT_EQ(testData, *result);
+    auto task = new Task();
+    task->taskId_ = 99;
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto worker = static_cast<Worker*>(WorkerConstructor(env));
+    NativeEngineTest::StoreTaskId(worker, task->taskId_);
+    auto res = NativeEngineTest::FindTaskId(worker, task->taskId_);
+    ASSERT_TRUE(res == true);
+    NativeEngineTest::RemoveTaskId(worker, task->taskId_);
+    res = NativeEngineTest::FindTaskId(worker, task->taskId_);
+    ASSERT_TRUE(res == false);
+    delete task;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest025, testing::ext::TestSize.Level0)
 {
-    MessageQueue<std::string> mesQueue;
-    ASSERT_EQ(mesQueue.IsEmpty(), true);
-
-    std::string testStr = "hello";
-    mesQueue.EnQueue(testStr);
-    ASSERT_EQ(mesQueue.IsEmpty(), false);
+    auto task = new Task();
+    task->taskId_ = 99;
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto worker = static_cast<Worker*>(WorkerConstructor(env));
+    auto res = NativeEngineTest::FindTaskId(worker, task->taskId_);
+    ASSERT_TRUE(res == false);
+    NativeEngineTest::RemoveTaskId(worker, task->taskId_);
+    res = NativeEngineTest::FindTaskId(worker, task->taskId_);
+    ASSERT_TRUE(res == false);
+    delete task;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest026, testing::ext::TestSize.Level0)
@@ -566,18 +575,27 @@ HWTEST_F(NativeEngineTest, TaskpoolTest037, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
-    uint32_t taskId = 16;
-    std::shared_ptr<CallbackInfo> res = taskManager.GetCallbackInfo(taskId);
-    ASSERT_EQ(res, nullptr);
+    uint32_t taskId = 99;
+    auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
+    taskManager.RegisterCallback(env, taskId, callbackInfo);
+    auto res = callbackInfo->refCount;
+    ASSERT_EQ(res, 1);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest038, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
-    uint32_t taskId = 16;
-    taskManager.RegisterCallback(env, taskId, nullptr);
-    ASSERT_EQ(taskId, 16);
+    uint32_t taskId = 100;
+    std::weak_ptr<CallbackInfo> wptr;
+    {
+        auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
+        wptr = callbackInfo;
+        taskManager.RegisterCallback(env, taskId, callbackInfo);
+        taskManager.DecreaseSendDataRefCount(env, taskId);
+    }
+    bool res = wptr.expired();
+    ASSERT_EQ(res, true);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest039, testing::ext::TestSize.Level0)
@@ -585,7 +603,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest039, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 17;
-    taskManager.IncreaseRefCount(taskId);
+    taskManager.IncreaseSendDataRefCount(taskId);
     ASSERT_EQ(taskId, 17);
 }
 
@@ -594,7 +612,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest040, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 18;
-    taskManager.DecreaseRefCount(env, taskId);
+    taskManager.DecreaseSendDataRefCount(env, taskId);
     ASSERT_EQ(taskId, 18);
 }
 
@@ -1012,8 +1030,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest073, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
     taskManager.StoreTask(task);
-    bool res = taskManager.CheckTask(task->taskId_);
-    ASSERT_TRUE(res == true);
+    task = taskManager.GetTask(task->taskId_);
+    ASSERT_TRUE(task != nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest074, testing::ext::TestSize.Level0)
@@ -1367,9 +1385,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest093, testing::ext::TestSize.Level0)
     cb = nullptr;
     napi_value result = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, nullptr, &cb);
-    napi_call_function(env, global, cb, 1, argv, &result);
-    auto res = taskManager.GetCallbackInfo(pointer->taskId_);
-    ASSERT_TRUE(res != nullptr);
+    napi_call_function(env, task, cb, 1, argv, &result);
+    ASSERT_TRUE(result != nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest094, testing::ext::TestSize.Level0)
@@ -2017,24 +2034,15 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     
-    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
-    uv_async_t* req = new uv_async_t;
-    req->data = cbInfo;
-    
-    TaskPool::ExecuteCallback(req);
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref);
     ASSERT_TRUE(true);
 
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
-    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
-    worker->Enqueue(env, resultInfo);
-    TaskResultInfo* resultInfo2 = nullptr;
-    worker->Enqueue(env, resultInfo2);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, args);
     
     TaskManager &taskManager = TaskManager::GetInstance();
     taskManager.RegisterCallback(env, taskId, nullptr);
-    cbInfo->worker = worker;
-    TaskPool::ExecuteCallback(req);
     ASSERT_TRUE(true);
 }
 
@@ -2048,14 +2056,13 @@ HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     
-    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref);
     uv_async_t* req = new uv_async_t;
     req->data = cbInfo;
 
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
-    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
-    worker->Enqueue(env, resultInfo);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, args);
     
     TaskManager &taskManager = TaskManager::GetInstance();
     auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
@@ -2065,10 +2072,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
     napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funValue);
     napi_value argv[] = {funValue};
     napi_ref callbackRef = NapiHelper::CreateReference(env, argv[0], 1);
-    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
+    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
     taskManager.RegisterCallback(env, taskId, callbackInfo);
-    cbInfo->worker = worker;
-    TaskPool::ExecuteCallback(req);
     ASSERT_TRUE(true);
 }
 
@@ -2082,7 +2087,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     
-    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref);
     uv_async_t* req = new uv_async_t;
     req->data = cbInfo;
 
@@ -2098,8 +2103,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     void* serializationArgs = nullptr;
     napi_serialize_inner(env, argsArray, undefined, undefined, true, false, &serializationArgs);
-    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, serializationArgs);
-    worker->Enqueue(env, resultInfo);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, serializationArgs);
     
     TaskManager &taskManager = TaskManager::GetInstance();
     auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
@@ -2109,10 +2113,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funValue);
     napi_value argv1[] = {funValue};
     napi_ref callbackRef = NapiHelper::CreateReference(env, argv1[0], 1);
-    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef, task);
+    std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
     taskManager.RegisterCallback(env, taskId, callbackInfo);
-    cbInfo->worker = worker;
-    TaskPool::ExecuteCallback(req);
     ASSERT_TRUE(true);
 }
 
@@ -2126,16 +2128,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest134, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     
-    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
-    TaskPool::ExecuteCallbackTask(cbInfo);
-    ASSERT_TRUE(true);
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref);
+    ASSERT_TRUE(cbInfo->refCount == 1);
 
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
-    TaskResultInfo* resultInfo = new TaskResultInfo(env, env, taskId, args);
-    worker->Enqueue(env, resultInfo);
-    cbInfo->worker = worker;
-    TaskPool::ExecuteCallbackTask(cbInfo);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, args);
     ASSERT_TRUE(true);
 }
 
@@ -4204,7 +4202,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest214, testing::ext::TestSize.Level0)
     NativeEngineTest::StoreTaskDependency(env);
     NativeEngineTest::RemoveTaskDependency(env);
     NativeEngineTest::ReleaseTaskData(env);
-    NativeEngineTest::CheckTask(env);
     NativeEngineTest::CancelGroupTask(env);
     NativeEngineTest::TriggerSeqRunner(env);
     NativeEngineTest::UpdateGroupState(env);
@@ -4331,7 +4328,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest217_1, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest217_2, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    NativeEngineTest::HandleFunctionException(env);
+    NativeEngineTest::HandleFunctionResult(env);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4550,7 +4547,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest226, testing::ext::TestSize.Level0)
     Task* task = nullptr;
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
     task->taskType_ = TaskType::GROUP_COMMON_TASK;
-    TaskPool::HandleTaskResultCallback(task);
+    TaskPool::HandleTaskResult(task);
     ASSERT_TRUE(true);
 }
 
@@ -4569,7 +4566,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest227, testing::ext::TestSize.Level0)
     napi_create_uint32(env, 1, &num);
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, num, 1);
     task->onExecutionFailedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
-    TaskPool::HandleTaskResultCallback(task);
+    TaskPool::HandleTaskResult(task);
     ASSERT_TRUE(true);
 }
 
@@ -4593,7 +4590,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest228, testing::ext::TestSize.Level0)
     napi_status status = napi_serialize_inner(env, num, undefined, undefined,
                                               true, false, &resultData);
     task->result_ = resultData;
-    TaskPool::HandleTaskResultCallback(task);
+    TaskPool::HandleTaskResult(task);
     ASSERT_TRUE(true);
 }
 
@@ -4607,15 +4604,15 @@ HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     
-    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref, task);
+    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref);
 
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
-    TaskResultInfo* resultInfo = new TaskResultInfo(nullptr, env, taskId, args);
-    worker->Enqueue(env, resultInfo);
-    cbInfo->worker = worker;
-    TaskPool::ExecuteCallbackTask(cbInfo);
-    ASSERT_TRUE(true);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, args);
+    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest230, testing::ext::TestSize.Level0)
@@ -4684,10 +4681,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest233, testing::ext::TestSize.Level0)
     bool res = task->ShouldDeleteTask();
     ASSERT_TRUE(res);
     task->SetValid(true);
-    task->refCount_ = 1;
+    task->lifecycleCount_ = 1;
     res = task->ShouldDeleteTask();
     ASSERT_TRUE(res == false);
-    ASSERT_TRUE(task->refCount_ == 0);
+    ASSERT_TRUE(task->lifecycleCount_ == 0);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest234, testing::ext::TestSize.Level0)
@@ -4771,7 +4768,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest239, testing::ext::TestSize.Level0)
     task->taskType_ = TaskType::FUNCTION_TASK;
     napi_value obj = NapiHelper::CreateObject(env);
     task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
-    task->refCount_.fetch_add(1);
+    task->lifecycleCount_.fetch_add(1);
     napi_add_env_cleanup_hook(env, Task::CleanupHookFunc, task);
     Task::TaskDestructor(env, task,  nullptr);
     napi_value exception = nullptr;
@@ -4786,7 +4783,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest240, testing::ext::TestSize.Level0)
     Task* task = new Task();
     uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->taskId_ = taskId;
-    task->onResultSignal_ = nullptr;
     auto loop = NapiHelper::GetLibUV(env);
     ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_, NativeEngineTest::foo, task);
     task->taskType_ = TaskType::FUNCTION_TASK;
@@ -4838,7 +4834,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest243, testing::ext::TestSize.Level0)
     task->VerifyAndPostResult(Priority::DEFAULT);
     task->SetValid(true);
     task->VerifyAndPostResult(Priority::DEFAULT);
-    task->onResultSignal_ = nullptr;
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -5515,7 +5510,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest273, testing::ext::TestSize.Level0)
     napi_create_int32(env, 1, &num);
     napi_ref callbackRef = NapiHelper::CreateReference(env, num, 1);
     task->onExecutionFailedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
-    TaskPool::HandleTaskResultCallback(task);
+    TaskPool::HandleTaskResult(task);
     ASSERT_TRUE(true);
 }
 

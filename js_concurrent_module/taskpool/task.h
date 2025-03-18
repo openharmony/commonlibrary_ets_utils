@@ -26,6 +26,7 @@
 
 #include "helper/concurrent_helper.h"
 #include "napi/native_api.h"
+#include "napi/native_node_api.h"
 #include "utils.h"
 #include "tools/log.h"
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
@@ -40,6 +41,7 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
 
+extern const std::unordered_map<Priority, napi_event_priority> g_napiPriorityMap;
 enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING};
 enum TaskType {
     TASK,
@@ -55,7 +57,7 @@ struct GroupInfo;
 class Worker;
 struct TaskInfo {
     napi_deferred deferred = nullptr;
-    Priority priority {Priority::DEFAULT};
+    Priority priority = Priority::DEFAULT;
     void* serializationFunction = nullptr;
     void* serializationArguments = nullptr;
 };
@@ -93,8 +95,9 @@ struct DiscardTaskMessage {
 
 class Task {
 public:
-    Task(napi_env env, TaskType taskType, std::string name);
     Task() = default;
+    Task(napi_env env, TaskType taskType, const char* name) : env_(env), taskType_(taskType), name_(name) {}
+
     ~Task() = default;
 
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
@@ -168,8 +171,8 @@ public:
     bool HasDependency() const;
     void TryClearHasDependency();
     void ClearDelayedTimers();
-    void IncreaseTaskRefCount();
-    void DecreaseTaskRefCount();
+    void IncreaseTaskLifecycleCount();
+    void DecreaseTaskLifecycleCount();
     bool ShouldDeleteTask(bool needUnref = true);
     bool VerifyAndPostResult(Priority priority);
     bool CheckStartExecution(Priority priority);
@@ -185,6 +188,9 @@ public:
     void DiscardInner(DiscardTaskMessage* message);
     void ReleaseData();
     void DisposeCanceledTask();
+    Worker* GetWorker() const;
+    napi_env GetEnv() const;
+    uint32_t GetTaskId() const;
 
 private:
     Task(const Task &) = delete;
@@ -206,7 +212,6 @@ public:
     TaskInfo* currentTaskInfo_ {};
     std::list<TaskInfo*> pendingTaskInfos_ {}; // for a common task executes multiple times
     void* result_ = nullptr;
-    uv_async_t* onResultSignal_ = nullptr;
     std::atomic<bool> success_ {true};
     std::atomic<uint64_t> startTime_ {};
     std::atomic<uint64_t> cpuTime_ {};
@@ -220,7 +225,7 @@ public:
     bool defaultTransfer_ {true};
     bool defaultCloneSendable_ {false};
     std::atomic<bool> isValid_ {true};
-    std::atomic<uint32_t> refCount_ {false}; // when refCount_ is 0, the task pointer can be deleted
+    std::atomic<uint32_t> lifecycleCount_ {0}; // when lifecycleCount_ is 0, the task pointer can be deleted
     uv_async_t* onStartExecutionSignal_ = nullptr;
     uv_async_t* onStartCancelSignal_ = nullptr;
     uv_async_t* onStartDiscardSignal_ = nullptr;
@@ -244,39 +249,23 @@ public:
 };
 
 struct CallbackInfo {
-    CallbackInfo(napi_env env, uint32_t count, napi_ref ref, Task* task)
-        : hostEnv(env), refCount(count), callbackRef(ref), task(task), onCallbackSignal(nullptr), worker(nullptr) {}
+    CallbackInfo(napi_env env, uint32_t count, napi_ref ref)
+        : hostEnv(env), refCount(count), callbackRef(ref) {}
     ~CallbackInfo()
     {
         napi_delete_reference(hostEnv, callbackRef);
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-        if (task == nullptr) {
-            return;
-        }
-        if (!task->IsMainThreadTask() && onCallbackSignal != nullptr) {
-            Common::Helper::ConcurrentHelper::UvHandleClose(onCallbackSignal);
-        }
-#else
-        if (onCallbackSignal != nullptr) {
-            Common::Helper::ConcurrentHelper::UvHandleClose(onCallbackSignal);
-        }
-#endif
     }
 
     napi_env hostEnv;
     uint32_t refCount;
     napi_ref callbackRef;
-    Task* task;
-    uv_async_t* onCallbackSignal;
-    Worker* worker;
 };
 
 struct TaskResultInfo {
-    TaskResultInfo(napi_env env, napi_env curEnv, uint32_t id, void* args) : hostEnv(env), workerEnv(curEnv),
-        taskId(id), serializationArgs(args) {}
+    TaskResultInfo(napi_env workerEnv, uint32_t taskId, void* args)
+        : workerEnv(workerEnv), taskId(taskId), serializationArgs(args) {}
     ~TaskResultInfo() = default;
 
-    napi_env hostEnv;
     napi_env workerEnv;
     uint32_t taskId;
     void* serializationArgs;

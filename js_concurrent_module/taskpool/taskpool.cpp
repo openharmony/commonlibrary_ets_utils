@@ -104,71 +104,37 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 }
 
 // ---------------------------------- SendData ---------------------------------------
-void TaskPool::ExecuteCallback(const uv_async_t* req)
+void TaskPool::ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResultInfo* resultInfo)
 {
-    auto* msgQueue = TaskManager::GetInstance().GetMessageQueue(req);
-    if (msgQueue == nullptr) {
-        HILOG_WARN("taskpool:: msgQueue is nullptr");
+    ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
+    napi_status status = napi_ok;
+    auto env = callbackInfo->hostEnv;
+    CallbackScope callbackScope(env, resultInfo, status);
+    if (status != napi_ok) {
+        HILOG_ERROR("napi_open_handle_scope failed");
         return;
     }
-    ExecuteCallbackInner(*msgQueue);
-}
-
-void TaskPool::ExecuteCallbackTask(CallbackInfo* callbackInfo)
-{
-    auto* msgQueue = TaskManager::GetInstance().GetMessageQueueFromCallbackInfo(callbackInfo);
-    if (msgQueue == nullptr) {
-        HILOG_WARN("taskpool:: msgQueue is nullptr");
+    auto func = NapiHelper::GetReferenceValue(env, callbackInfo->callbackRef);
+    napi_value args;
+    napi_value result;
+    status = napi_deserialize(env, resultInfo->serializationArgs, &args);
+    napi_delete_serialization_data(env, resultInfo->serializationArgs);
+    if (status != napi_ok || args == nullptr) {
+        std::string errMessage = "taskpool:: failed to serialize function";
+        HILOG_ERROR("%{public}s in SendData", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         return;
     }
-    ExecuteCallbackInner(*msgQueue);
-}
-
-void TaskPool::ExecuteCallbackInner(MsgQueue& msgQueue)
-{
-    while (!msgQueue.IsEmpty()) {
-        auto resultInfo = msgQueue.DeQueue();
-        if (resultInfo == nullptr) {
-            HILOG_DEBUG("taskpool:: resultInfo is nullptr");
-            continue;
-        }
-        ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
-        napi_status status = napi_ok;
-        CallbackScope callbackScope(resultInfo->hostEnv, resultInfo->workerEnv, resultInfo->taskId, status);
-        if (status != napi_ok) {
-            HILOG_ERROR("napi_open_handle_scope failed");
-            return;
-        }
-        auto env = resultInfo->hostEnv;
-        auto callbackInfo = TaskManager::GetInstance().GetCallbackInfo(resultInfo->taskId);
-        if (callbackInfo == nullptr) {
-            HILOG_ERROR("taskpool:: the callback in SendData is not registered on the host side");
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_REGISTERED);
-            continue;
-        }
-        TaskManager::GetInstance().ResetCallbackInfoWorker(callbackInfo);
-        auto func = NapiHelper::GetReferenceValue(env, callbackInfo->callbackRef);
-        napi_value args;
-        napi_value result;
-        status = napi_deserialize(env, resultInfo->serializationArgs, &args);
-        napi_delete_serialization_data(env, resultInfo->serializationArgs);
-        if (status != napi_ok || args == nullptr) {
-            std::string errMessage = "taskpool:: failed to serialize function";
-            HILOG_ERROR("%{public}s in SendData", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
-            continue;
-        }
-        uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
-        napi_value argsArray[argsNum];
-        for (size_t i = 0; i < argsNum; i++) {
-            argsArray[i] = NapiHelper::GetElement(env, args, i);
-        }
-        napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
-        if (NapiHelper::IsExceptionPending(env)) {
-            napi_value exception = nullptr;
-            napi_get_and_clear_last_exception(env, &exception);
-            HILOG_ERROR("taskpool:: an exception has occurred in napi_call_function");
-        }
+    uint32_t argsNum = NapiHelper::GetArrayLength(env, args);
+    napi_value argsArray[argsNum];
+    for (size_t i = 0; i < argsNum; i++) {
+        argsArray[i] = NapiHelper::GetElement(env, args, i);
+    }
+    napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, &result);
+    if (NapiHelper::IsExceptionPending(env)) {
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        HILOG_ERROR("taskpool:: an exception has occurred in napi_call_function");
     }
 }
 // ---------------------------------- SendData ---------------------------------------
@@ -293,7 +259,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
             HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
             return;
         }
-        TaskManager::GetInstance().IncreaseRefCount(taskMessage->taskId);
+        TaskManager::GetInstance().IncreaseSendDataRefCount(taskMessage->taskId);
         task->IncreaseRefCount();
         napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
         TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, taskMessage->priority);
@@ -421,15 +387,10 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     return promise;
 }
 
-void TaskPool::HandleTaskResult(const uv_async_t* req)
+void TaskPool::HandleTaskResult(Task* task)
 {
     HILOG_DEBUG("taskpool:: HandleTaskResult task");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    auto task = static_cast<Task*>(req->data);
-    if (task == nullptr) { // LCOV_EXCL_BR_LINE
-        HILOG_FATAL("taskpool:: HandleTaskResult task is null");
-        return;
-    }
     if (!task->IsMainThreadTask()) {
         if (task->ShouldDeleteTask(false)) {
             delete task;
@@ -439,11 +400,11 @@ void TaskPool::HandleTaskResult(const uv_async_t* req)
             napi_remove_env_cleanup_hook(task->env_, Task::CleanupHookFunc, task);
         }
     }
-    task->DecreaseTaskRefCount();
-    HandleTaskResultCallback(task);
+    task->DecreaseTaskLifecycleCount();
+    HandleTaskResultInner(task);
 }
 
-void TaskPool::HandleTaskResultCallback(Task* task)
+void TaskPool::HandleTaskResultInner(Task* task)
 {
     napi_handle_scope scope = nullptr;
     NAPI_CALL_RETURN_VOID(task->env_, napi_open_handle_scope(task->env_, &scope));
@@ -503,7 +464,7 @@ void TaskPool::TriggerTask(Task* task)
     if (task->IsGroupTask()) {
         return;
     }
-    TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
+    TaskManager::GetInstance().DecreaseSendDataRefCount(task->env_, task->taskId_);
     task->taskState_ = ExecuteState::FINISHED;
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
@@ -535,7 +496,7 @@ void TaskPool::TriggerTask(Task* task)
 void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateGroupInfoByResult", std::to_string(task->taskId_).c_str());
-    TaskManager::GetInstance().DecreaseRefCount(task->env_, task->taskId_);
+    TaskManager::GetInstance().DecreaseSendDataRefCount(task->env_, task->taskId_);
     task->taskState_ = ExecuteState::FINISHED;
     napi_reference_unref(env, task->taskRef_, nullptr);
     if (task->IsGroupCommonTask()) {
@@ -603,7 +564,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         + ", " + std::to_string(priority);
     HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     task->IncreaseRefCount();
-    TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+    TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
         (task->taskState_ == ExecuteState::CANCELED && task->isCancelToFinish_)) {
         task->taskState_ = ExecuteState::WAITING;
@@ -690,7 +651,7 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
         ConcurrentHelper::UvHandleClose(task->timer_);
         return;
     }
-    TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+    TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
 
     if (!task->isFirstTaskInfo_) {
         napi_status status = napi_ok;

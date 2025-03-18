@@ -214,7 +214,7 @@ void AsyncRunner::ExecuteTaskImmediately(AsyncRunner* asyncRunner, Task* task)
     HILOG_DEBUG("taskpool:: task %{public}s in asyncRunner %{public}s immediately.",
                 std::to_string(task->taskId_).c_str(), std::to_string(asyncRunner->asyncRunnerId_).c_str());
     task->IncreaseRefCount();
-    TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+    TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     task->taskState_ = ExecuteState::WAITING;
     TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->asyncTaskPriority_);
 }
@@ -305,7 +305,7 @@ void AsyncRunner::TriggerWaitingTask()
         waitingTasks_.pop_front();
         runningCount_.fetch_add(1);
         task->IncreaseRefCount();
-        TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
+        TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
         task->taskState_ = ExecuteState::WAITING;
         HILOG_DEBUG("taskpool:: Trig task %{public}s in asyncRunner %{public}s.",
                     std::to_string(task->taskId_).c_str(), std::to_string(asyncRunnerId_).c_str());

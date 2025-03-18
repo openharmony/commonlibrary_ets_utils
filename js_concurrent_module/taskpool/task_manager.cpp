@@ -54,6 +54,7 @@ static constexpr uint32_t SHRINK_STEP = 4; // 4: try to release 4 threads every 
 static constexpr uint32_t MAX_UINT32_T = 0xFFFFFFFF; // 0xFFFFFFFF: max uint32_t
 static constexpr uint32_t TRIGGER_EXPAND_INTERVAL = 10; // 10: ms, trigger recheck expansion interval
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
+static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -809,7 +810,7 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
         HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
-    task->IncreaseTaskRefCount();
+    task->IncreaseTaskLifecycleCount();
     if (task->onEnqueuedCallBackInfo_ != nullptr) {
         task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_);
     }
@@ -977,18 +978,7 @@ void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_pt
     callbackTable_[taskId] = callbackInfo;
 }
 
-std::shared_ptr<CallbackInfo> TaskManager::GetCallbackInfo(uint32_t taskId)
-{
-    std::lock_guard<std::mutex> lock(callbackMutex_);
-    auto iter = callbackTable_.find(taskId);
-    if (iter == callbackTable_.end() || iter->second == nullptr) {
-        HILOG_ERROR("taskpool:: the callback does not exist");
-        return nullptr;
-    }
-    return iter->second;
-}
-
-void TaskManager::IncreaseRefCount(uint32_t taskId)
+void TaskManager::IncreaseSendDataRefCount(uint32_t taskId)
 {
     if (taskId == 0) { // do not support func
         return;
@@ -1001,7 +991,7 @@ void TaskManager::IncreaseRefCount(uint32_t taskId)
     iter->second->refCount++;
 }
 
-void TaskManager::DecreaseRefCount(napi_env env, uint32_t taskId)
+void TaskManager::DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* task)
 {
     if (taskId == 0) { // do not support func
         return;
@@ -1012,85 +1002,52 @@ void TaskManager::DecreaseRefCount(napi_env env, uint32_t taskId)
         return;
     }
 
-    auto task = GetTask(taskId);
     if (task != nullptr && !task->IsValid()) {
         callbackTable_.erase(iter);
         return;
     }
 
-    iter->second->refCount--;
-    if (iter->second->refCount == 0) {
+    if (--iter->second->refCount == 0) {
         callbackTable_.erase(iter);
     }
 }
 
-void TaskManager::ResetCallbackInfoWorker(const std::shared_ptr<CallbackInfo>& callbackInfo)
+void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, Task* task)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
-    callbackInfo->worker = nullptr;
-}
-
-napi_value TaskManager::NotifyCallbackExecute(napi_env env, TaskResultInfo* resultInfo, Task* task)
-{
-    HILOG_DEBUG("taskpool:: task:%{public}s NotifyCallbackExecute", std::to_string(task->taskId_).c_str());
-    std::lock_guard<std::mutex> lock(callbackMutex_);
-    auto iter = callbackTable_.find(task->taskId_);
+    auto iter = callbackTable_.find(task->GetTaskId());
     if (iter == callbackTable_.end() || iter->second == nullptr) {
         HILOG_ERROR("taskpool:: the callback in SendData is not registered on the host side");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_REGISTERED);
         delete resultInfo;
-        return nullptr;
+        return;
     }
-    Worker* worker = static_cast<Worker*>(task->worker_);
-    worker->Enqueue(task->env_, resultInfo);
     auto callbackInfo = iter->second;
-    callbackInfo->refCount++;
-    callbackInfo->worker = worker;
+    ++callbackInfo->refCount;
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->IncreaseListeningCounter();
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (task->IsMainThreadTask()) {
-        HITRACE_HELPER_METER_NAME("NotifyCallbackExecute: PostTask");
-        auto onCallbackTask = [callbackInfo]() {
-            TaskPool::ExecuteCallbackTask(callbackInfo.get());
-        };
-        TaskManager::GetInstance().PostTask(onCallbackTask, "TaskPoolOnCallbackTask", worker->priority_);
-    } else {
-        callbackInfo->onCallbackSignal->data = callbackInfo.get();
-        uv_async_send(callbackInfo->onCallbackSignal);
+    std::weak_ptr<CallbackInfo> info = callbackInfo;
+    auto onCallbackTask = [info, resultInfo]([[maybe_unused]] void* data) {
+        auto callbackInfo = info.lock();
+        if (callbackInfo == nullptr) {
+            HILOG_ERROR("taskpool:: callbackInfo may have been released");
+            delete resultInfo;
+            return;
+        }
+        TaskPool::ExecuteOnReceiveDataCallback(callbackInfo.get(), resultInfo);
+    };
+    auto worker = task->GetWorker();
+    auto hostEnv = task->GetEnv();
+    auto priority = g_napiPriorityMap.at(worker->GetPriority());
+    uint64_t handleId = 0;
+    napi_status status = napi_send_cancelable_event(hostEnv, onCallbackTask, nullptr, priority,
+                                                    &handleId, ON_CALLBACK_STR);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool:: failed to send event to the host side");
+        --callbackInfo->refCount;
+        workerEngine->DecreaseListeningCounter();
+        delete resultInfo;
     }
-#else
-    callbackInfo->onCallbackSignal->data = callbackInfo.get();
-    uv_async_send(callbackInfo->onCallbackSignal);
-#endif
-    return nullptr;
-}
-
-MsgQueue* TaskManager::GetMessageQueue(const uv_async_t* req)
-{
-    std::lock_guard<std::mutex> lock(callbackMutex_);
-    auto info = static_cast<CallbackInfo*>(req->data);
-    if (info == nullptr || info->worker == nullptr) {
-        HILOG_WARN("taskpool:: info or worker is nullptr");
-        return nullptr;
-    }
-    auto worker = info->worker;
-    MsgQueue* queue = nullptr;
-    worker->Dequeue(info->hostEnv, queue);
-    return queue;
-}
-
-MsgQueue* TaskManager::GetMessageQueueFromCallbackInfo(CallbackInfo* callbackInfo)
-{
-    std::lock_guard<std::mutex> lock(callbackMutex_);
-    if (callbackInfo == nullptr || callbackInfo->worker == nullptr) {
-        HILOG_WARN("taskpool:: callbackInfo or worker is nullptr");
-        return nullptr;
-    }
-    auto worker = callbackInfo->worker;
-    MsgQueue* queue = nullptr;
-    worker->Dequeue(callbackInfo->hostEnv, queue);
-    return queue;
 }
 // ---------------------------------- SendData ---------------------------------------
 
@@ -1385,7 +1342,10 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
     if (task->IsFunctionTask() || task->IsGroupFunctionTask()) {
         return;
     }
-    DecreaseRefCount(env, taskId);
+    if (!task->IsMainThreadTask()) {
+        task->SetValid(false);
+    }
+    DecreaseSendDataRefCount(env, taskId, task);
     RemoveTaskDuration(taskId);
     RemovePendingTaskInfo(taskId);
     ReleaseCallBackInfo(task);
@@ -1515,13 +1475,6 @@ bool TaskManager::PostTask(std::function<void()> task, const char* taskName, Pri
     return mainThreadHandler_->PostTask(task, taskName, 0, TASK_EVENTHANDLER_PRIORITY_MAP.at(priority));
 }
 #endif
-
-bool TaskManager::CheckTask(uint32_t taskId)
-{
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
-    auto item = tasks_.find(taskId);
-    return item != tasks_.end();
-}
 
 void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error)
 {

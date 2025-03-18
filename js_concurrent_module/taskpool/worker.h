@@ -25,7 +25,6 @@
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
-#include "message_queue.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"
@@ -38,7 +37,6 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 using namespace Commonlibrary::Concurrent::Common::Helper;
 using namespace Commonlibrary::Platform;
-using MsgQueue = MessageQueue<TaskResultInfo*>;
 
 enum class WorkerState { IDLE, RUNNING, BLOCKED };
 
@@ -59,25 +57,13 @@ public:
 
     void NotifyExecuteTask();
 
-    void Enqueue(napi_env env, TaskResultInfo* resultInfo)
-    {
-        std::lock_guard<std::mutex> lock(queueMutex_);
-        msgQueueMap_[env].EnQueue(resultInfo);
-    }
-
-    void Dequeue(napi_env env, MsgQueue*& queue)
-    {
-        std::lock_guard<std::mutex> lock(queueMutex_);
-        auto item = msgQueueMap_.find(env);
-        if (item != msgQueueMap_.end()) {
-            queue = &(item->second);
-        }
-    }
-
     void NotifyTaskBegin();
     // the function will only be called when the task is finished or
     // exits abnormally, so we can not put it in the scope directly
     void NotifyTaskFinished();
+
+    Priority GetPriority() const;
+
     static void NotifyTaskResult(napi_env env, Task* task, napi_value result);
     static void NotifyHandleTaskResult(Task* task);
 
@@ -130,7 +116,6 @@ private:
             uv_run(loop, UV_RUN_DEFAULT);
         } else {
             HILOG_ERROR("taskpool:: Worker loop is nullptr when start worker loop");
-            return;
         }
     }
 
@@ -185,8 +170,9 @@ private:
     void PostReleaseSignal();
     bool IsRunnable(uint64_t currTime) const;
     void UpdateWorkerWakeUpTime();
+    void EraseRunningTaskId(uint32_t taskId);
 
-    static void HandleFunctionException(napi_env env, Task* task);
+    static void HandleFunctionResult(napi_env env, Task* task);
     static void PerformTask(const uv_async_t* req);
     static void TaskResultCallback(napi_env env, napi_value result, bool success, void* data);
     static void ReleaseWorkerHandles(const uv_async_t* req);
@@ -220,15 +206,12 @@ private:
     pid_t tid_ = 0;
     std::vector<uint32_t> currentTaskId_ {};
     std::mutex currentTaskIdMutex_;
-    MessageQueue<TaskResultInfo*> hostMessageQueue_ {};
     uint64_t lastCpuTime_ = 0;
     uint32_t idleCount_ = 0;
     std::atomic<bool> hasLongTask_ = false;
     std::atomic<bool> isExecutingLongTask_ = false;
     std::mutex longMutex_;
     std::unordered_set<uint32_t> longTasksSet_ {};
-    std::mutex queueMutex_; // for sendData
-    std::unordered_map<napi_env, MsgQueue> msgQueueMap_ {};
     friend class TaskManager;
     friend class NativeEngineTest;
 
