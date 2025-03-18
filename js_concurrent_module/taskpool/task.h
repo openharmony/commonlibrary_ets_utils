@@ -22,6 +22,7 @@
 #include <set>
 #include <shared_mutex>
 #include <string>
+#include <unordered_map>
 #include <uv.h>
 
 #include "helper/concurrent_helper.h"
