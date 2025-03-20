@@ -138,6 +138,9 @@ void Task::CleanupHookFunc(void* arg)
         return;
     }
     Task* task = static_cast<Task*>(arg);
+    if (task->IsSeqRunnerTask()) {
+        SequenceRunnerManager::GetInstance().RemoveWaitingTask(task);
+    }
     std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
     if (task->onResultSignal_ != nullptr) {
         uv_close(reinterpret_cast<uv_handle_t*>(task->onResultSignal_), nullptr);
@@ -1113,12 +1116,12 @@ bool Task::UpdateTask(uint64_t startTime, void* worker)
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateTask", std::to_string(taskId_).c_str());
     if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
         HILOG_INFO("taskpool:: task has been canceled, taskId %{public}s", std::to_string(taskId_).c_str());
+        isCancelToFinish_ = true;
         return false;
     }
     taskState_ = ExecuteState::RUNNING;
     startTime_ = startTime;
     worker_ = worker;
-    isRunning_ = true;
     return true;
 }
 

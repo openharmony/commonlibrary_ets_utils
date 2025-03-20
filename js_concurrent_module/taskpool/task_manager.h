@@ -62,7 +62,7 @@ public:
     void RemoveTask(uint64_t taskId);
     Task* GetTask(uint64_t taskId);
     void EnqueueTaskId(uint64_t taskId, Priority priority = Priority::DEFAULT);
-    void EraseWaitingTaskId(uint64_t taskId, Priority priority);
+    bool EraseWaitingTaskId(uint64_t taskId, Priority priority);
     std::pair<uint64_t, Priority> DequeueTaskId();
     void CancelTask(napi_env env, uint64_t taskId);
     void CancelSeqRunnerTask(napi_env env, Task* task);
@@ -299,6 +299,7 @@ public:
     bool TriggerGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner);
     void GlobalSequenceRunnerDestructor(napi_env env, SequenceRunner *seqRunner);
     bool IncreaseGlobalSeqRunner(napi_env env, SequenceRunner* seqRunner);
+    void RemoveWaitingTask(Task* task);
 
 private:
     SequenceRunnerManager(const SequenceRunnerManager &) = delete;
