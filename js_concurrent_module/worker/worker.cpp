@@ -1463,10 +1463,6 @@ void Worker::ExecuteInThread(const void* data)
 bool Worker::PrepareForWorkerInstance()
 {
     std::string rawFileName = script_;
-    uint8_t* scriptContent = nullptr;
-    size_t scriptContentSize = 0;
-    std::vector<uint8_t> content;
-    std::string workerAmi;
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop() || isHostEnvExited_) {
@@ -1489,17 +1485,12 @@ bool Worker::PrepareForWorkerInstance()
         if (isRelativePath_) {
             rawFileName = fileName_;
         }
-        if (!hostEngine->GetAbcBuffer(rawFileName.c_str(), &scriptContent, &scriptContentSize, content, workerAmi)) {
-            HILOG_ERROR("worker:: GetAbcBuffer error");
-            return false;
-        }
     }
     // add timer interface
     Timer::RegisterTime(workerEnv_);
-    HILOG_DEBUG("worker:: stringContent size is %{public}zu", scriptContentSize);
     napi_value execScriptResult = nullptr;
-    napi_status status = napi_run_actor(workerEnv_, scriptContent, scriptContentSize,
-        workerAmi.c_str(), &execScriptResult, const_cast<char*>(script_.c_str()));
+    napi_status status = napi_run_actor(workerEnv_, const_cast<char*>(rawFileName.c_str()),
+                                        const_cast<char*>(script_.c_str()),  &execScriptResult);
     if (status != napi_ok || execScriptResult == nullptr) {
         // An exception occurred when running the script.
         HILOG_ERROR("worker:: run script exception occurs, will handle exception");
