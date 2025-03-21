@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-;
-
 /**
  * Represents a node in the linked list.
  */

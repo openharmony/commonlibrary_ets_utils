@@ -15,21 +15,54 @@ import("//build/config/components/ets_frontend/ets2abc_config.gni")
 import("//build/ohos.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
-ohos_prebuilt_etc("commonlib_ets_utils") {
+ohos_prebuilt_etc("commonlib_ets_utils_api") {
   source = "$target_out_dir/commonlib_ets_utils.abc"
   module_install_dir = "framework"
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
-  deps = [ ":ets2abc_commonsdk" ]
+  deps = [ ":commonlib_ets_utils" ]
 }
 
-generate_static_abc("ets2abc_commonsdk") {
-  arktsconfig = "$ets_util_path/sdk/arktsconfig.json"
-  dst_file = "$target_out_dir/commonlib_ets_utils.abc"
-  out_puts = [ "$target_out_dir/commonlib_ets_utils.abc" ]
-  cache_path = "$target_out_dir/cache"
+generate_static_abc("commonlib_ets_utils") {
+  base_url = "./api"
+  files = [
+    "./api/@ohos.buffer.ets",
+    "./api/@ohos.uri.ets",
+    "./api/@ohos.url.ets",
+    "./api/@ohos.util.ArrayList.ets",
+    "./api/@ohos.util.Deque.ets",
+    "./api/@ohos.util.HashMap.ets",
+    "./api/@ohos.util.HashSet.ets",
+    "./api/@ohos.util.json.ets",
+    "./api/@ohos.util.LightWeightMap.ets",
+    "./api/@ohos.util.LightWeightSet.ets",
+    "./api/@ohos.util.LinkedList.ets",
+    "./api/@ohos.util.List.ets",
+    "./api/@ohos.util.PlainArray.ets",
+    "./api/@ohos.util.Queue.ets",
+    "./api/@ohos.util.Stack.ets",
+    "./api/@ohos.util.ets",
+    "./api/@ohos.util.TreeMap.ets",
+    "./api/@ohos.util.TreeSet.ets",
+    "./api/@ohos.xml.ets",
+  ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/commonlib_ets_utils.abc"
+}
+
+ohos_prebuilt_etc("commonsdk_arkts_etc") {
+  source = "$target_out_dir/commonsdk_arkts.abc"
+  module_install_dir = "framework"
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+  deps = [ ":commonsdk_arkts" ]
+}
+
+generate_static_abc("commonsdk_arkts") {
+  base_url = "./arkts"
+  files = [ "./arkts/@arkts.math.Decimal.ets" ]
+  is_boot_abc = "True"
+  device_dst_file = "/system/framework/commonsdk_arkts.abc"
 }
 
 ets_util_sources = [
@@ -69,6 +102,7 @@ ohos_shared_library("commonlib_ets_ani") {
 group("commonlib_sdk") {
   deps = [
     ":commonlib_ets_ani",
-    ":commonlib_ets_utils",
+    ":commonlib_ets_utils_api",
+    ":commonsdk_arkts_etc",
   ]
 }
