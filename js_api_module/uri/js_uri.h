@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <regex>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -159,6 +160,40 @@ namespace OHOS::Uri {
          */
         std::string ClearQuery() const;
 
+        /**
+         * Sets the protocol part of the URI.
+         */
+        void SetScheme(const std::string_view Scheme);
+
+        /**
+         * Sets the user information part of the URI.
+         */
+        void SetUserInfo(const std::string userInfo);
+
+        /**
+         * Sets the path portion of the URI.
+         */
+        void SetPath(const std::string pathStr);
+
+        /**
+         * Sets the query portion of the URI.
+         */
+        void SetQuery(const std::string queryStr);
+
+        /**
+         * Sets the fragment part of the URI.
+         */
+        void SetFragment(const std::string fragmentStr);
+
+        /**
+         * Sets the permission component part of this URI.
+         */
+        void SetAuthority(const std::string authorityStr);
+
+        /**
+         * Sets the decoding scheme-specific part of the URI.
+         */
+        void SetSsp(const std::string sspStr);
     private:
         void PreliminaryWork() const;
         void AnalysisUri();
@@ -177,6 +212,9 @@ namespace OHOS::Uri {
         bool AnalysisPort(size_t pos);
         bool AnalysisIPV4();
 
+        std::string UpdateToString() const;
+        void UpdateAuthority();
+        void UpdateSsp();
         std::string Split(const std::string &path) const;
         std::string BuildUriString(const std::string str, const std::string param) const;
 

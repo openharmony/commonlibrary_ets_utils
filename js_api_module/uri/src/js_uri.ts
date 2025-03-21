@@ -310,6 +310,27 @@ class URI {
   get scheme(): string | null {
     return this.uricalss.scheme;
   }
+ 
+  set scheme(input: string | null) {
+    if (input === null || input.length === 0) {
+      return;
+    }
+    this.uricalss.scheme = input;
+  }
+
+  set path(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.path = encodeURI(input);
+  }
+
+  set ssp(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.ssp = encodeURI(input);
+  }
 
   get authority(): string | null {
     if (this.uricalss.authority === null) {
@@ -327,6 +348,13 @@ class URI {
     } else {
       return this.decodeSafelyInner(thisAuthority);
     }
+  }
+
+  set authority(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.authority = encodeURI(input);
   }
 
   get ssp(): string {
@@ -348,6 +376,13 @@ class URI {
     return this.uricalss.userInfo === null ? null : this.decodeSafelyInner(this.uricalss.userInfo);
   }
 
+  set userInfo(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.userInfo = encodeURIComponent(input);
+  }
+
   get host(): string | null {
     return this.uricalss.host;
   }
@@ -364,8 +399,64 @@ class URI {
     return this.uricalss.query === null ? null : this.decodeSafelyInner(this.uricalss.query);
   }
 
+  set query(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.query = encodeURIComponent(input);
+  }
+
   get fragment(): string | null {
     return this.uricalss.fragment === null ? null : this.decodeSafelyInner(this.uricalss.fragment);
+  }
+
+  set fragment(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.fragment = encodeURIComponent(input);
+  }
+
+  set encodedUserInfo(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.userInfo = input;
+  }
+
+  set encodedPath(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.path = input;
+  }
+
+  set encodedQuery(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.query = input;
+  }
+
+  set encodedFragment(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.fragment = input;
+  }
+
+  set encodedAuthority(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.authority = input;
+  }
+
+  set encodedSSP(input: string | null) {
+    if (input === null) {
+      return;
+    }
+    this.uricalss.ssp = input;
   }
 
   get encodedUserInfo(): string | null {

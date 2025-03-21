@@ -944,3 +944,261 @@ HWTEST_F(NativeEngineTest, ModuleTest003, testing::ext::TestSize.Level0)
     res = GetStringUtf8(env, result);
     ASSERT_STREQ(res.c_str(), "http://name:word@www.uritest.com:99/path/abc#fagment");
 }
+
+HWTEST_F(NativeEngineTest, ModuleTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "testuserinfo";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "userInfo", newValue);
+    napi_value uriProperty = nullptr;
+    napi_get_named_property(env, instance, "userInfo", &uriProperty);
+    std::string res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "testuserinfo");
+
+    input1 = "testuserinfo<";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "userInfo", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "userInfo", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "testuserinfo");
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "httpstest:ss";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "scheme", newValue);
+    napi_value uriProperty = nullptr;
+    napi_get_named_property(env, instance, "scheme", &uriProperty);
+    std::string res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "httpstest");
+
+    input1 = "https";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "scheme", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "scheme", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "https");
+
+    input1 = "2https";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "scheme", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "scheme", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "https");
+
+    input1 = "htt<ps";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "scheme", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "scheme", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "https");
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "testpath";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "path", newValue);
+    napi_value uriProperty = nullptr;
+    napi_get_named_property(env, instance, "path", &uriProperty);
+    std::string res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "testpath");
+
+    input1 = "testpath<";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "path", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "path", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "testpath");
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "key=value";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "query", newValue);
+    napi_value uriProperty = nullptr;
+    napi_get_named_property(env, instance, "query", &uriProperty);
+    std::string res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "key=value");
+
+    input1 = "key=valu<e";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "query", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "query", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "key=value");
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "aasdfq";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "fragment", newValue);
+    napi_value uriProperty = nullptr;
+    napi_get_named_property(env, instance, "fragment", &uriProperty);
+    std::string res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "aasdfq");
+
+    input1 = "#aasdfq";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "fragment", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "fragment", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "aasdfq");
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "userinfo@www.test.cn:89";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "authority", newValue);
+    napi_value uriProperty = nullptr;
+    napi_get_named_property(env, instance, "authority", &uriProperty);
+    std::string res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "userinfo@www.test.cn:89");
+
+    input1 = "useri<nfo@www.test.cn:89";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "authority", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "authority", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "useri<nfo@www.test.cn:89");
+}
+
+HWTEST_F(NativeEngineTest, ModuleTest010, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+    napi_value uriClass = nullptr;
+    napi_value constructorArgs[1] =  { 0 };
+    std::string input = "http://username:password@www.baidu.com:99/path/path?query#fagment";
+    napi_create_string_utf8(env, input.c_str(), input.size(), &constructorArgs[0]);
+    napi_get_named_property(env, exports, "Uri", &uriClass);
+    napi_value instance = nullptr;
+    napi_new_instance(env, uriClass, 1, constructorArgs, &instance);
+
+    std::string input1 = "//usc@www.test321.cn:996?key=1";
+    napi_value newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "ssp", newValue);
+    napi_value uriProperty = nullptr;
+    napi_get_named_property(env, instance, "ssp", &uriProperty);
+    std::string res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "//usc@www.test321.cn:996?key=1");
+
+    input1 = "/usc@www.test321.cn:996?key=1";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "ssp", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "ssp", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "/usc@www.test321.cn:996?key=1");
+
+    input1 = "usc@www.test321.cn:996?key=1";
+    newValue = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &newValue);
+    napi_set_named_property(env, instance, "ssp", newValue);
+    uriProperty = nullptr;
+    napi_get_named_property(env, instance, "ssp", &uriProperty);
+    res = GetStringUtf8(env, uriProperty);
+    ASSERT_STREQ(res.c_str(), "usc@www.test321.cn:996?key=1");
+}
