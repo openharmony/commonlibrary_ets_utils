@@ -1385,8 +1385,6 @@ HWTEST_F(WorkersTest, PostMessageToHostTest001, testing::ext::TestSize.Level0)
     req->data = worker;
     Worker::HostOnMessage(req);
 
-    worker->EraseWorker();
-    ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
 }
