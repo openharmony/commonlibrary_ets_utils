@@ -25,7 +25,6 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
-    HILOG_INFO("taskpool:: Import taskpool");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     napi_value taskClass = nullptr;
     NAPI_CALL(env, napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor,
