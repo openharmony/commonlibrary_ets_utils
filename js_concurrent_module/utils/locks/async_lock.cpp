@@ -229,19 +229,8 @@ uint32_t AsyncLock::IncRefCount()
 
 uint32_t AsyncLock::DecRefCount()
 {
-    asyncLockMutex_.lock();
-    uint32_t count = --refCount_;
-    if (count == 0) {
-        // No refs to the instance. We can delete it right now if there are no more lock requests.
-        // In case there are some lock requests, the last processed lock request will delete the instance.
-        if (pendingList_.size() == 0 && heldList_.size() == 0) {
-            asyncLockMutex_.unlock();
-            delete this;
-            return 0;
-        }
-    }
-    asyncLockMutex_.unlock();
-    return count;
+    std::unique_lock<std::mutex> lock(asyncLockMutex_);
+    return --refCount_;
 }
 
 std::vector<RequestCreationInfo> AsyncLock::GetSatisfiedRequestInfos()
