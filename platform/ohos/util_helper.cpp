@@ -258,6 +258,7 @@ namespace Commonlibrary::Platform {
         napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
         char *writeResult = static_cast<char*>(data);
         if (writeResult == nullptr) {
+            FreedMemory(originalBuffer);
             HILOG_ERROR("textencoder::writeResult is nullptr");
             return;
         }
@@ -270,6 +271,7 @@ namespace Commonlibrary::Platform {
             buffer = UnicodeConversion(encoding, originalBuffer, inputSize);
             outLens = buffer.length();
             if (memcpy_s(writeResult, outLens, reinterpret_cast<char*>(buffer.data()), outLens) != EOK) {
+                FreedMemory(originalBuffer);
                 HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
                 return;
             }
@@ -278,6 +280,7 @@ namespace Commonlibrary::Platform {
                 buffer = UnicodeConversion(encoding, originalBuffer + shifting, inputSize);
                 if (memcpy_s(writeResult + resultShifting, buffer.length(),
                              reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
+                    FreedMemory(originalBuffer);
                     HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
                     return;
                 }
@@ -293,6 +296,7 @@ namespace Commonlibrary::Platform {
             outLens += buffer.length();
             if (memcpy_s(writeResult + resultShifting, buffer.length(),
                          reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
+                FreedMemory(originalBuffer);
                 HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
                 return;
             }
@@ -428,6 +432,7 @@ namespace Commonlibrary::Platform {
 
         size_t writeLength = bufferResult.length() * 2; // 2:multiple
         if (memcpy_s(writeResult, writeLength, reinterpret_cast<char*>(bufferResult.data()), writeLength) != EOK) {
+            FreedMemory(originalBuffer);
             HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
             return;
         }
