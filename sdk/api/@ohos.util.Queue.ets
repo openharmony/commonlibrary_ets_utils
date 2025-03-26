@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Deque } from "./@ohos.util.Deque";
+import Deque from "@ohos.util.Deque";
 
 export class Queue<T> implements Iterable<T> {
     private buffer: Deque<T>;

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { TreeMap } from "./@ohos.util.TreeMap";
- 
+import TreeMap from "@ohos.util.TreeMap";
+
 export interface ReadonlyTreeSet<T> extends Iterable<T> {
     /**
      * Return the number of elements in the TreeSet

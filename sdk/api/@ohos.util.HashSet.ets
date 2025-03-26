@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { HashMap } from "./@ohos.util.HashMap";
+import HashMap from "@ohos.util.HashMap";
 
 interface ReadonlyHashSet<T> extends Iterable<T> {
     /**

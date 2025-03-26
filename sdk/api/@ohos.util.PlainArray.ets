@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-import { LightWeightMap } from "./@ohos.util.LightWeightMap";
+import LightWeightMap from '@ohos.util.LightWeightMap';
 
 /**
  * The PlainArray class is a collection of key-value pairs.
  */
-export class PlainArray<T> implements Iterable<[number, T]> {
+export default class PlainArray<T> implements Iterable<[number, T]> {
     private buckets: LightWeightMap<number, T>;
 
     /**

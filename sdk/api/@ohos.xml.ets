@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { buffer } from "./@ohos.buffer";
+import  buffer  from '@ohos.buffer';
 
 export namespace xml {
 
