@@ -39,7 +39,6 @@ AsyncRunner* AsyncRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_valu
         if (iter == globalAsyncRunner_.end()) {
             asyncRunner = AsyncRunner::CreateGlobalRunner(name, runningCapacity, waitingCapacity);
             globalAsyncRunner_.emplace(name, asyncRunner);
-            napi_add_env_cleanup_hook(env, AsyncRunner::HostEnvCleanupHook, asyncRunner);
         } else {
             asyncRunner = iter->second;
             bool res = asyncRunner->CheckGlobalRunnerParams(env, runningCapacity, waitingCapacity);
@@ -160,6 +159,17 @@ bool AsyncRunnerManager::UnrefAndDestroyRunner(AsyncRunner* asyncRunner)
     }
     RemoveAsyncRunner(asyncRunner->asyncRunnerId_);
     delete asyncRunner;
+    asyncRunner = nullptr;
     return true;
+}
+
+void AsyncRunnerManager::DecreaseRunningCount(uint64_t asyncRunnerId)
+{
+    std::unique_lock<std::mutex> lock(asyncRunnersMutex_);
+    auto iter = asyncRunners_.find(asyncRunnerId);
+    if (iter == asyncRunners_.end()) {
+        return;
+    }
+    iter->second->DecreaseRunningCount();
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

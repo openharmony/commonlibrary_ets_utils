@@ -38,6 +38,7 @@ public:
     void RemoveWaitingTask(Task* task);
     bool FindRunnerAndRef(uint64_t asyncRunnerId);
     bool UnrefAndDestroyRunner(AsyncRunner* asyncRunner);
+    void DecreaseRunningCount(uint64_t asyncRunnerId);
 
 private:
     AsyncRunnerManager() = default;
