@@ -1532,8 +1532,6 @@ export namespace buffer {
             return (src as TypedArray).join('')
         } else if (src instanceof DataView) {
             return buffer.from((src as DataView).buffer as ArrayBuffer).toString()
-        } else if (src instanceof Blob) {
-            return (src as Blob).toString()
         }
         return ""
     }
@@ -1670,10 +1668,19 @@ export namespace buffer {
          * @returns {Promise}
          */
         text(): Promise<string> {
-            return Promise.resolve(this.toString())
+            return Promise.resolve(this.getString())
         }
 
-        size: number 
+        /**
+         * Returns a promise that fulfills with an <ArrayBuffer> containing a copy of the Blob data.
+         *
+         * @returns {Promise}
+         */
+        arrayBuffer(): Promise<ArrayBuffer> {
+            return Promise.resolve(this.toArrayBuffer())
+        }
+
+        size: number
 
         /**
          * The content-type of the Blob.
@@ -1683,7 +1690,12 @@ export namespace buffer {
         private arr: ArrSrcType
         private typeKey: string = 'string'
 
-        override toString(): string {
+        private toArrayBuffer(): ArrayBuffer {
+            const str = this.getString()
+            return ArrayBuffer.from(str, "utf-8", ArrayBuffer.bytesLength(str, "utf-8"))
+        }
+
+        private getString(): string {
             let str = ''
             let b = new StringBuilder()
             switch (this.typeKey) {
@@ -1700,7 +1712,7 @@ export namespace buffer {
                     (this.arr as Array<DataView>).forEach((value: DataView) => { b.append(toString(value)) })
                 } break
                 case "Blob": {
-                    (this.arr as Array<Blob>).forEach((value: Blob) => { b.append(toString(value)) })
+                    (this.arr as Array<Blob>).forEach((value: Blob) => { b.append(value.getString()) })
                 } break
             }
             return b.toString()
