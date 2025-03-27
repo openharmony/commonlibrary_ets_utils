@@ -277,6 +277,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
                 "the number of limiteworkers exceeds the maximum.");
+            CloseHelp::DeletePointer(workerParams, false);
             return nullptr;
         }
 
@@ -287,6 +288,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             HILOG_ERROR("worker:: create worker error");
             WorkerManager::DecrementWorkerCount(WorkerType::LIMITED_WORKER);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
+            CloseHelp::DeletePointer(workerParams, false);
             return nullptr;
         }
         worker->workerType_ = WorkerType::LIMITED_WORKER;
@@ -299,6 +301,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             HILOG_ERROR("worker:: IncrementWorkerCount failed");
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
                 "the number of workers exceeds the maximum.");
+            CloseHelp::DeletePointer(workerParams, false);
             return nullptr;
         }
 
@@ -309,6 +312,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             HILOG_ERROR("worker:: create worker error");
             WorkerManager::DecrementWorkerCount(workerType);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION, "create worker error");
+            CloseHelp::DeletePointer(workerParams, false);
             return nullptr;
         }
         worker->workerType_ = workerType;
