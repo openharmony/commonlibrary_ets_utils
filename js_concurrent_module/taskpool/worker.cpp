@@ -517,7 +517,8 @@ void Worker::NotifyHandleTaskResult(Task* task)
         return;
     }
     worker->EraseRunningTaskId(task->GetTaskId());
-    if (!task->VerifyAndPostResult(worker->GetPriority())) {
+    auto priority = worker->GetPriority();
+    if (!Task::VerifyAndPostResult(task, priority)) {
         if (task->ShouldDeleteTask()) {
             delete task;
         }

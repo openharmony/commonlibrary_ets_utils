@@ -137,6 +137,7 @@ public:
     static void CleanupHookFunc(void* arg);
     static void Cancel(const uv_async_t* req);
     static void DiscardTask(const uv_async_t* req);
+    static bool VerifyAndPostResult(Task* task, Priority priority);
 
     void StoreTaskId(uint32_t taskId);
     napi_value GetTaskInfoPromise(napi_env env, napi_value task, TaskType taskType = TaskType::COMMON_TASK,
@@ -175,7 +176,6 @@ public:
     void IncreaseTaskLifecycleCount();
     void DecreaseTaskLifecycleCount();
     bool ShouldDeleteTask(bool needUnref = true);
-    bool VerifyAndPostResult(Priority priority);
     bool CheckStartExecution(Priority priority);
     bool IsValid();
     void SetValid(bool isValid);

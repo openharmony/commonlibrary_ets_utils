@@ -1482,24 +1482,28 @@ void Task::ClearDelayedTimers()
     TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
 }
 
-bool Task::VerifyAndPostResult(Priority priority)
+bool Task::VerifyAndPostResult(Task* task, Priority priority)
 {
-    auto onResultTask = [taskId = taskId_]([[maybe_unused]] void* data) {
-        Task* task = TaskManager::GetInstance().GetTask(taskId);
-        if (task == nullptr) { // LCOV_EXCL_BR_LINE
-            return;
-        }
-        TaskPool::HandleTaskResult(task);
-    };
-
-    if (!IsMainThreadTask() && !IsValid()) {
+    if (!task->IsMainThreadTask() && !task->IsValid()) {
         return false;
     }
+
+    auto taskId = task->GetTaskId();
+    auto onResultTask = [taskId]([[maybe_unused]] void* data) {
+        Task* hostTask = TaskManager::GetInstance().GetTask(taskId);
+        if (hostTask == nullptr) { // LCOV_EXCL_BR_LINE
+            return;
+        }
+        TaskPool::HandleTaskResult(hostTask);
+    };
+
     auto napiPrio = g_napiPriorityMap.at(priority);
     uint64_t handleId = 0;
-    napi_status status = napi_send_cancelable_event(env_, onResultTask, nullptr, napiPrio, &handleId, ON_RESULT_STR);
-    if (status != napi_ok && !IsMainThreadTask()) {
-        HILOG_ERROR("taskpool:: failed to send event for task:%{public}s", std::to_string(taskId_).c_str());
+    napi_status status = napi_send_cancelable_event(task->GetEnv(), onResultTask, nullptr, napiPrio,
+                                                    &handleId, ON_RESULT_STR);
+    // should nerver access any data of the task when status is napi_ok
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool:: failed to send event for task:%{public}s", std::to_string(taskId).c_str());
         return false;
     }
     return true;
