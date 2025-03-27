@@ -4831,9 +4831,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest243, testing::ext::TestSize.Level0)
     task->UpdateTask(0, nullptr);
     task->isMainThreadTask_ = false;
     task->SetValid(false);
-    task->VerifyAndPostResult(Priority::DEFAULT);
+    Task::VerifyAndPostResult(task, Priority::DEFAULT);
     task->SetValid(true);
-    task->VerifyAndPostResult(Priority::DEFAULT);
+    Task::VerifyAndPostResult(task, Priority::DEFAULT);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4846,7 +4846,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest244, testing::ext::TestSize.Level0)
     uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->taskId_ = taskId;
     task->isMainThreadTask_ = true;
-    task->VerifyAndPostResult(Priority::DEFAULT);
+    Task::VerifyAndPostResult(task, Priority::DEFAULT);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
