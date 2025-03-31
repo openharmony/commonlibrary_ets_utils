@@ -456,9 +456,10 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
-        napiTaskResult = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
+        napiTaskResult = task->IsAsyncRunnerTask() ?
+            ErrorHelper::NewError(task->env_, ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED) :
+            ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
     } else if (status != napi_ok) {
-        HILOG_ERROR("taskpool: failed to deserialize result");
         strTrace += ", performResult : DeserializeFailed";
         taskLog += ", DeserializeFailed";
     } else if (task->success_) {
@@ -494,7 +495,6 @@ void TaskPool::HandleTaskResultCallback(Task* task)
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
     TriggerTask(task);
-    HILOG_DEBUG("taskpool:: %{public}s", strTrace.c_str());
 }
 
 void TaskPool::TriggerTask(Task* task)
