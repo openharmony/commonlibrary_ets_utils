@@ -218,8 +218,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     // check 1st param is string
     if (!NapiHelper::IsString(env, args[0])) {
         HILOG_ERROR("worker:: the type of Worker 1st param must be string");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of the first param must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be string.");
         return nullptr;
     }
     WorkerParams* workerParams = nullptr;
@@ -235,8 +234,8 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
         if (static_cast<int>(g_limitedworkers.size()) >= MAX_LIMITEDWORKERS) {
             HILOG_ERROR("worker:: the number of limiteworkers exceeds the maximum");
-            ErrorHelper::ThrowError(env,
-                ErrorHelper::ERR_WORKER_INITIALIZATION, "the number of limiteworkers exceeds the maximum.");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
+                "the number of limiteworkers exceeds the maximum.");
             return nullptr;
         }
 
@@ -257,8 +256,8 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         std::lock_guard<std::mutex> lock(g_workersMutex);
         if (static_cast<int>(g_workers.size()) >= maxWorkers) {
             HILOG_ERROR("worker:: the number of workers exceeds the maximum");
-            ErrorHelper::ThrowError(env,
-                ErrorHelper::ERR_WORKER_INITIALIZATION, "the number of workers exceeds the maximum.");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INITIALIZATION,
+                "the number of workers exceeds the maximum.");
             return nullptr;
         }
 
@@ -293,7 +292,11 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             ErrorHelper::ERR_WORKER_INVALID_FILEPATH, "the file path is invaild, maybe path is null.");
         return nullptr;
     }
-    napi_add_env_cleanup_hook(env, HostEnvCleanCallback, worker);
+    if (limitSign) {
+        napi_add_env_cleanup_hook(env, LimitedWorkerHostEnvCleanCallback, worker);
+    } else {
+        napi_add_env_cleanup_hook(env, WorkerHostEnvCleanCallback, worker);
+    }
     napi_wrap(env, thisVar, worker, WorkerDestructor, nullptr, &worker->workerRef_);
     worker->StartExecuteInThread(env, script);
     return thisVar;
@@ -302,7 +305,11 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
 void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
 {
     Worker* worker = reinterpret_cast<Worker*>(data);
-    napi_remove_env_cleanup_hook(env, HostEnvCleanCallback, worker);
+    if (worker->isLimitedWorker_) {
+        napi_remove_env_cleanup_hook(env, LimitedWorkerHostEnvCleanCallback, worker);
+    } else {
+        napi_remove_env_cleanup_hook(env, WorkerHostEnvCleanCallback, worker);
+    }
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     if (worker->isHostEnvExited_) {
         HILOG_INFO("worker:: host env exit.");
@@ -325,7 +332,7 @@ void Worker::WorkerDestructor(napi_env env, void *data, void *hint)
     worker->TerminateInner();
 }
 
-void Worker::HostEnvCleanCallback(void *data)
+void Worker::WorkerHostEnvCleanCallback(void* data)
 {
     Worker* worker = reinterpret_cast<Worker*>(data);
     if (worker == nullptr) {
@@ -336,6 +343,25 @@ void Worker::HostEnvCleanCallback(void *data)
         HILOG_INFO("worker:: worker is terminated when host env exit.");
         return;
     }
+    HostEnvCleanCallbackInner(worker);
+}
+
+void Worker::LimitedWorkerHostEnvCleanCallback(void* data)
+{
+    Worker* limitedWorker = static_cast<Worker*>(data);
+    if (limitedWorker == nullptr) {
+        HILOG_INFO("worker:: limitedWorker is nullptr when host env exit.");
+        return;
+    }
+    if (!IsValidLimitedWorker(limitedWorker)) {
+        HILOG_INFO("worker:: limitedWorker is terminated when host env exit.");
+        return;
+    }
+    HostEnvCleanCallbackInner(limitedWorker);
+}
+
+void Worker::HostEnvCleanCallbackInner(Worker* worker)
+{
     std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
     worker->isHostEnvExited_ = true;
 #if defined(ENABLE_WORKER_EVENTHANDLER)
@@ -375,8 +401,7 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
         if (NapiHelper::IsNotUndefined(env, typeValue)) {
             if (!NapiHelper::IsString(env, typeValue)) {
                 CloseHelp::DeletePointer(workerParams, false);
-                WorkerThrowError(env, ErrorHelper::TYPE_ERROR,
-                    "the type of type's value must be string.");
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of type's value must be string.");
                 return nullptr;
             }
             char* typeStr = NapiHelper::GetChars(env, typeValue);
@@ -417,8 +442,7 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "Worker messageObject must be not null with postMessage");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker messageObject must be not null with postMessage");
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];
@@ -440,8 +464,7 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     if (argc >= NUM_WORKER_ARGS) {
         if (!NapiHelper::IsArray(env, argv[1])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "the type of the transfer list must be an array.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the transfer list must be an array.");
             return nullptr;
         }
         serializeStatus = napi_serialize_inner(env, argv[0], argv[1], undefined, false, defaultClone, &data);
@@ -498,8 +521,7 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc != NUM_WORKER_ARGS) {
-        ErrorHelper::ThrowError(env,
-            ErrorHelper::TYPE_ERROR, "the number of parameters must be 2.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters must be 2.");
         return nullptr;
     }
     // check 1st param is string
@@ -509,8 +531,7 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of instanceName must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of instanceName must be string.");
         return nullptr;
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);
@@ -530,8 +551,7 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc > 1) {
-        ErrorHelper::ThrowError(env,
-            ErrorHelper::TYPE_ERROR, "the number of the parameters must be 1 or 0.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of the parameters must be 1 or 0.");
         return nullptr;
     }
     napi_value thisVar = nullptr;
@@ -552,8 +572,7 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
     }
     // check 1st param is string
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of instanceName must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of instanceName must be string.");
         return nullptr;
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);
@@ -582,8 +601,7 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_WORKER_ARGS) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of listener parameters is not less than 2.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of listener parameters is not less than 2.");
         return nullptr;
     }
     // check 1st param is string
@@ -593,8 +611,7 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of listener first param must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of listener first param must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsCallable(env, args[1])) {
@@ -631,8 +648,7 @@ napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of parameters is not less than 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters is not less than 1.");
         return nullptr;
     }
     // check 1st param is string
@@ -716,8 +732,7 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
 
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
     if (!NapiHelper::IsString(env, typeValue)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of event type must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of event type must be string.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -846,8 +861,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_GLOBAL_CALL_ARGS) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of parameters must be equal or more than 3.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters must be equal or more than 3.");
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -868,18 +882,15 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     }
 
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of instanceName must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of instanceName must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsString(env, args[1])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of methodname must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of methodname must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsNumber(env, args[2])) { // 2: the index of argument "timeout"
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of timeout must be number.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of timeout must be number.");
         return nullptr;
     }
 
@@ -1016,8 +1027,8 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_WORKER_ARGS) {
-        ErrorHelper::ThrowError(env,
-            ErrorHelper::TYPE_ERROR, "worker listener param count must be more than WORKPARAMNUM.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "worker listener param count must be more than WORKPARAMNUM.");
         return nullptr;
     }
 
@@ -1078,8 +1089,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
 
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
     if (!NapiHelper::IsString(env, typeValue)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of worker event must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of worker event must be string.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -1246,7 +1256,7 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
             HILOG_ERROR("worker:: the file path is invaild, can't find the file : %{public}s.", script);
             CloseHelp::DeletePointer(script, true);
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_INVALID_FILEPATH,
-                                    "the file path is invaild, can't find the file.");
+                "the file path is invaild, can't find the file.");
             return;
         }
     }
@@ -1914,6 +1924,16 @@ bool Worker::IsValidWorker(Worker* worker)
     std::lock_guard<std::mutex> lock(g_workersMutex);
     std::list<Worker*>::iterator it = std::find(g_workers.begin(), g_workers.end(), worker);
     if (it == g_workers.end()) {
+        return false;
+    }
+    return true;
+}
+
+bool Worker::IsValidLimitedWorker(Worker* limitedWorker)
+{
+    std::lock_guard<std::mutex> lock(g_limitedworkersMutex);
+    std::list<Worker*>::iterator it = std::find(g_limitedworkers.begin(), g_limitedworkers.end(), limitedWorker);
+    if (it == g_limitedworkers.end()) {
         return false;
     }
     return true;

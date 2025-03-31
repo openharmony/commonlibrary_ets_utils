@@ -951,6 +951,11 @@ public:
     static void ClearWorkerHandle(Worker* worker)
     {
         worker->CloseHostHandle();
+        if (worker->isLimitedWorker_) {
+            napi_remove_env_cleanup_hook(worker->hostEnv_, Worker::LimitedWorkerHostEnvCleanCallback, worker);
+        } else {
+            napi_remove_env_cleanup_hook(worker->hostEnv_, Worker::WorkerHostEnvCleanCallback, worker);
+        }
     }
 protected:
     static thread_local NativeEngine *engine_;
@@ -3489,6 +3494,7 @@ HWTEST_F(WorkersTest, WorkerTest046, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
+    SetLimitedWorker(worker, false);
     ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
     ASSERT_TRUE(result != nullptr);
