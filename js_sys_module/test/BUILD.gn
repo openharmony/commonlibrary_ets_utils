@@ -14,7 +14,7 @@ import("//build/test.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 if (is_standard_system) {
-  module_output_path = "jsapi_sys/process"
+  module_output_path = "ets_utils/ets_utils/js_sys_module/process"
 }
 
 ohos_unittest("test_process_unittest") {
