@@ -5486,3 +5486,87 @@ HWTEST_F(WorkersTest, MaxLimitTest005, testing::ext::TestSize.Level0)
     workerChecker->DeleteWorkerList();
     arkRuntimeChecker->DeleteArkRuntimeList();
 }
+
+HWTEST_F(WorkersTest, ParseTransferListArgTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value transferArray;
+    napi_create_array_with_length(env, 0, &transferArray);
+
+    bool isValid = false;
+    std::string str = "ParseTransferListArgTest001";
+    napi_value result = Worker::ParseTransferListArg(env, transferArray, isValid, str);
+
+    ASSERT_TRUE(isValid);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+}
+
+HWTEST_F(WorkersTest, ParseTransferListArgTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+    napi_value transferArray;
+    napi_create_array_with_length(env, 0, &transferArray);
+    napi_set_named_property(env, obj, "transfer", transferArray);
+
+    bool isValid = false;
+    std::string str = "ParseTransferListArgTest002";
+    napi_value result = Worker::ParseTransferListArg(env, obj, isValid, str);
+
+    ASSERT_TRUE(isValid);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+}
+
+HWTEST_F(WorkersTest, ParseTransferListArgTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+    napi_value invalidTransfer;
+    napi_create_int32(env, 123, &invalidTransfer);
+    napi_set_named_property(env, obj, "transfer", invalidTransfer);
+
+    bool isValid = false;
+    std::string str = "ParseTransferListArgTest003";
+    Worker::ParseTransferListArg(env, obj, isValid, str);
+
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(WorkersTest, ParseTransferListArgTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value invalidArg;
+    napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalidArg);
+
+    bool isValid = false;
+    std::string str = "ParseTransferListArgTest004";
+    Worker::ParseTransferListArg(env, invalidArg, isValid, str);
+
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(WorkersTest, ParseTransferListArgTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+
+    bool isValid = false;
+    std::string str = "ParseTransferListArgTest005";
+    napi_value result = Worker::ParseTransferListArg(env, obj, isValid, str);
+
+    ASSERT_TRUE(isValid);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_undefined);
+}

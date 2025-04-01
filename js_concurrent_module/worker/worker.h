@@ -392,6 +392,9 @@ public:
     static WorkerParams* CheckWorkerArgs(napi_env env, napi_value argsValue,
         WorkerVersion version = WorkerVersion::NONE);
 
+    static napi_value ParseTransferListArg(napi_env env, napi_value secondArg, bool& isValid,
+        const std::string& errMsg);
+
     static WorkerPriority GetPriorityArg(napi_env env, napi_value argsValue);
 
     static void WorkerThrowError(napi_env env, int32_t errCode, const char* errMessage = nullptr);
