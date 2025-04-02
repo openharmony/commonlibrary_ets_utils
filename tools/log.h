@@ -22,8 +22,6 @@
 #include <cstring>
 #include <string>
 
-#include "utils/macros.h"
-
 #include "hilog/log.h"
 
 #undef LOG_DOMAIN
