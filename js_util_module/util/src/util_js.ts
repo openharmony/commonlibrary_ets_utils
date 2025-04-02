@@ -1817,7 +1817,7 @@ class Aspect {
   }
 
   private static checkParameters(targetClass: Object, methodName: string, isStatic: boolean): void {
-    if (!(targetClass instanceof Object)) {
+    if (typeof (targetClass as Object) === 'undefined') {
       let error = new BusinessError(`Parameter error. The type of ${targetClass} must be Object`);
       throw error;
     }
