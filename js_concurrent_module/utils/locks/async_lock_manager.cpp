@@ -218,21 +218,32 @@ napi_value AsyncLockManager::Request(napi_env env, napi_callback_info cbinfo)
 
 void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] void *hint)
 {
-    AsyncLockIdentity *identity = reinterpret_cast<AsyncLockIdentity *>(data);
+    std::unique_ptr<AsyncLockIdentity> identity(reinterpret_cast<AsyncLockIdentity *>(data));
     std::unique_lock<std::mutex> guard(lockMutex);
     if (identity->isAnonymous) {
         // no way to have >1 reference to an anonymous lock
         auto it = anonymousLockMap.find(identity->id);
-        if ((it != anonymousLockMap.end()) && (it->second->DecRefCount() == 0)) {
-            anonymousLockMap.erase(it);
+        if ((it == anonymousLockMap.end())) {
+            return;
         }
+        AsyncLock *asyncLock = it->second;
+        if (!asyncLock->IsReadyForDeletion()) {
+            return;
+        }
+        anonymousLockMap.erase(it);
+        delete asyncLock;
     } else {
         auto it = lockMap.find(identity->name);
-        if ((it != lockMap.end()) && (it->second->DecRefCount() == 0)) {
-            lockMap.erase(it);
+        if ((it == lockMap.end())) {
+            return;
         }
+        AsyncLock *asyncLock = it->second;
+        if (!asyncLock->IsReadyForDeletion()) {
+            return;
+        }
+        lockMap.erase(it);
+        delete asyncLock;
     }
-    delete identity;
 }
 
 void AsyncLockManager::CheckAndRemoveLock(AsyncLock *lock)
