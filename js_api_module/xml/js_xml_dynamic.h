@@ -32,7 +32,7 @@ namespace OHOS::xml {
     enum ErrorCodeEnum {
         BUFFER_OVERFLOW = 10200062,
         ILLEGAL_POSITION = 10200063,
-        NO_ELEMENT_MATCH = 10200064
+        NO_ELEMENT_MATCH = 10200065
     };
 
     class XmlDynamicSerializer {
