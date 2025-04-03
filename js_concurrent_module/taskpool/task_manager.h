@@ -26,6 +26,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "dfx_hisys_event.h"
 #include "napi/native_api.h"
 #include "sequence_runner.h"
 #include "task.h"
@@ -147,6 +148,8 @@ public:
     void BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error);
     uint32_t CalculateTaskId(uint64_t id);
     void ClearDependentTask(uint32_t taskId);
+    void UvReportHisysEvent(Worker* worker, std::string methodName, std::string funName, std::string message,
+                            int32_t code);
 
 private:
     TaskManager();
@@ -180,6 +183,9 @@ private:
     void DecreaseNumIfNoIdle(Priority priority);
     void RemoveDependTaskByTaskId(uint32_t taskId);
     void RemoveDependentTaskByTaskId(uint32_t taskId);
+    void CheckTasksAndReportHisysEvent();
+    void WorkerAliveAndReport(Worker* worker);
+    void WriteHisysForFfrtAndUv(Worker* worker, HisyseventParams* hisyseventParams);
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};
@@ -225,6 +231,8 @@ private:
     std::atomic<bool> needChecking_ = false;
     std::atomic<bool> isHandleInited_ = false;
     std::atomic<uint32_t> timerTriggered_ = false;
+    std::atomic<uint64_t> preDequeneTime_ = 0;
+    std::atomic<uint64_t> reportTime_ = 0;
 
     // for task priority
     uint32_t highPrioExecuteCount_ = 0;
