@@ -496,6 +496,41 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
     return workerParams;
 }
 
+napi_value Worker::ParseTransferListArg(napi_env env, napi_value secondArg, bool& isValid, const std::string& errMsg)
+{
+    isValid = false;
+    napi_value transferList = NapiHelper::GetUndefinedValue(env);
+    bool isArray = NapiHelper::IsArray(env, secondArg);
+    bool isObject = !isArray && NapiHelper::IsObject(env, secondArg);
+    if (isArray) {
+        transferList = secondArg;
+        isValid = true;
+        return transferList;
+    }
+
+    if (isObject) {
+        napi_value transferProp;
+        napi_status status = napi_get_named_property(env, secondArg, "transfer", &transferProp);
+        if (status != napi_ok) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Failed to access transfer property");
+            return nullptr;
+        }
+
+        if (NapiHelper::IsNotUndefined(env, transferProp)) {
+            if (!NapiHelper::IsArray(env, transferProp)) {
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMsg.c_str());
+                return nullptr;
+            }
+            transferList = transferProp;
+        }
+        isValid = true;
+        return transferList;
+    }
+
+    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMsg.c_str());
+    return nullptr;
+}
+
 WorkerPriority Worker::GetPriorityArg(napi_env env, napi_value argsValue)
 {
     napi_value priorityValue = NapiHelper::GetNameProperty(env, argsValue, "priority");
@@ -551,12 +586,16 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
     napi_status serializeStatus = napi_ok;
     bool defaultClone = cloneSendable ? true : false;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value transferList = undefined;
+    std::string errMessage = "the type of the transfer list must be an array.";
     if (argc >= NUM_WORKER_ARGS) {
-        if (!NapiHelper::IsArray(env, argv[1])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the transfer list must be an array.");
+        bool isValidTransfer = false;
+        napi_value secondArg = argv[1];
+        transferList = ParseTransferListArg(env, secondArg, isValidTransfer, errMessage);
+        if (transferList == nullptr || !isValidTransfer) {
             return nullptr;
         }
-        serializeStatus = napi_serialize_inner(env, argv[0], argv[1], undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner(env, argv[0], transferList, undefined, false, defaultClone, &data);
     } else {
         serializeStatus = napi_serialize_inner(env, argv[0], undefined, undefined, false, defaultClone, &data);
     }
@@ -925,14 +964,17 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
     napi_status serializeStatus = napi_ok;
     bool defaultClone = cloneSendable ? true : false;
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value transferList = undefined;
+    std::string errMessage = "Transfer list must be an Array";
     if (argc >= NUM_WORKER_ARGS) {
-        if (!NapiHelper::IsArray(env, argv[1])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Transfer list must be an Array");
+        bool isValidTransfer = false;
+        napi_value secondArg = argv[1];
+        transferList = ParseTransferListArg(env, secondArg, isValidTransfer, errMessage);
+        if (transferList == nullptr || !isValidTransfer) {
             return nullptr;
         }
-        serializeStatus = napi_serialize_inner(env, argv[0], argv[1], undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner(env, argv[0], transferList, undefined, false, defaultClone, &data);
     } else {
-        napi_value undefined = NapiHelper::GetUndefinedValue(env);
         serializeStatus = napi_serialize_inner(env, argv[0], undefined, undefined, false, defaultClone, &data);
     }
 
