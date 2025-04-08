@@ -44,6 +44,7 @@ public:
     static napi_value Constructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Request(napi_env env, napi_callback_info cbinfo);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
+    static void CheckAndRemoveLock(AsyncLock *lock);
 
     static napi_value LockAsync(napi_env env, napi_callback_info cbinfo);
     static napi_value Query(napi_env env, napi_callback_info cbinfo);
