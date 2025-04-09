@@ -670,6 +670,7 @@ export namespace util {
     }
 
     const percentRate = 100;
+    const maxInt = 2147483647;
     export class LRUCache<K, V> {
         private cache: Map<K, V>;
         // Default current size
@@ -698,7 +699,7 @@ export namespace util {
         }
 
         private checkCapacityIsIllegal(capacity: number): boolean {
-            return !(Number.isInteger(capacity) && capacity > 0);
+            return (capacity > maxInt || capacity <= 0 || (capacity % 1) != 0);
         }
 
         private getLRUKey(): K {
