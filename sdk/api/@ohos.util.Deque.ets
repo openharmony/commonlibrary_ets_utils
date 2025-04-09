@@ -13,6 +13,10 @@
  * limitations under the License.
  */
 
+import { BusinessError } from "@ohos.base";
+
+const outOfBoundsErrorCode: number = 10200001;
+
 export class Deque<T> implements Iterable<T> {
     private readonly DEFAULT_CAPACITY = 8;
     internal capacity: int = this.DEFAULT_CAPACITY;
@@ -203,6 +207,50 @@ export class Deque<T> implements Iterable<T> {
         this.front = 0;
         this.capacity = newCap;
         this.buffer = newBuffer;
+    }
+
+    /**
+     * Gets the element at the specified index.
+     *
+     * @param index - The index of the element to retrieve.
+     *
+     * @returns The element at the specified index.
+     * @throws { BusinessError } 10200001 - The value of "index" is out of range. It must be >= 0 && <= 2147483647.
+     */
+    public $_get(index: number): T {
+        if (index >= this.length || index < 0) {
+            let err = new BusinessError();
+            err.code = outOfBoundsErrorCode;
+            err.name='BusinessError';
+            err.message = `The value of \"index\" is out of range. It must be >= 0 && <= ${Int.MAX_VALUE}. Received value is: ${index}`;
+            throw err;
+        }
+
+        return this.buffer[this.getRealIndex(index)];
+    }
+
+    /**
+     * Sets the element at the specified index.
+     *
+     * @param index - The index of the element to set.
+     *
+     * @param val - The value to set at the specified index.
+     * @throws { BusinessError } 10200001 - The value of "index" is out of range. It must be >= 0 && <= 2147483647.
+     */
+    public $_set(index: number, val: T): void {
+        if (index >= this.length || index < 0) {
+            let err = new BusinessError();
+            err.code = outOfBoundsErrorCode;
+            err.name='BusinessError';
+            err.message = `The value of \"index\" is out of range. It must be >= 0 && <= ${Int.MAX_VALUE}. Received value is: ${index}`;
+            throw err;
+        }
+
+        this.buffer[this.getRealIndex(index)] = val;
+    }
+
+    private getRealIndex(index: number): number {
+        return (this.front + index) % this.capacity;
     }
 }
 

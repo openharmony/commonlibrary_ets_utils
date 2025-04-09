@@ -25,13 +25,6 @@ export class ArrayList<T> implements Iterable<T> {
         return this.buffer.length;
     }
 
-    set length(newLen: number) {
-        if (newLen > Int.MAX_VALUE) {
-            throw new RangeError("The value of index is out of range.");
-        }
-        this.buffer.length = newLen;
-    }
-
     /**
      * Creates a new instance of ArrayList.
      */
@@ -152,7 +145,7 @@ export class ArrayList<T> implements Iterable<T> {
         for (let i: int = index as int + 1; i < this.length; i++) {
             this.buffer[i - 1] = this.buffer[i];
         }
-        this.length--;
+        this.buffer.length--;
 
         return delItem;
     }
@@ -189,7 +182,7 @@ export class ArrayList<T> implements Iterable<T> {
             this.buffer[i] = this.buffer[j];
         }
 
-        this.length -= toIndex - fromIndex;
+        this.buffer.length -= toIndex - fromIndex;
     }
 
     /**
