@@ -19,7 +19,9 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 
 int32_t DfxHisysEvent::WriteFfrtAndUv(HisyseventParams* hisyseventParams)
 {
-    int32_t ret = HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::ARKTS_TASKPOOL,
+    int32_t ret = -1;
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+    ret = HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::ARKTS_TASKPOOL,
         "ARK_FFRT_UV",
         OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
         "PID", hisyseventParams->pid,
@@ -32,6 +34,7 @@ int32_t DfxHisysEvent::WriteFfrtAndUv(HisyseventParams* hisyseventParams)
         "WAIT_TIME", std::to_string(hisyseventParams->waitTime));
     delete hisyseventParams;
     hisyseventParams = nullptr;
+#endif
     return ret;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -16,7 +16,10 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_DFX_HISYS_EVENT_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_DFX_HISYS_EVENT_H
 
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
 #include "hisysevent.h"
+#endif
+#include <string>
 
 struct HisyseventParams {
     std::string methodName;
