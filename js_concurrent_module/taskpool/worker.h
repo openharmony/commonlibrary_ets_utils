@@ -71,6 +71,10 @@ public:
     bool IsLoopActive();
     uint64_t GetWaitTime();
 #endif
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+    bool IsNeedReport(uint64_t intervalTime);
+    void IncreaseReportCount();
+#endif
 
 private:
     explicit Worker(napi_env env) : hostEnv_(env) {};
@@ -218,6 +222,9 @@ private:
 #if defined(ENABLE_TASKPOOL_FFRT)
     void* ffrtTaskHandle_ = nullptr;
     uint32_t initActiveHandleNum_ = 0;
+#endif
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+    std::atomic<int32_t> reportCount_ = 0;
 #endif
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

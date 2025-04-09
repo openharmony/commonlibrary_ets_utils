@@ -17,6 +17,7 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 taskpool_sources = [
   "async_runner.cpp",
   "async_runner_manager.cpp",
+  "dfx_hisys_event.cpp",
   "native_module_taskpool.cpp",
   "sequence_runner.cpp",
   "sequence_runner_manager.cpp",
@@ -94,6 +95,7 @@ ohos_shared_library("taskpool") {
     defines += [
       "ENABLE_TASKPOOL_EVENTHANDLER",
       "ENABLE_TASKPOOL_FFRT",
+      "ENABLE_TASKPOOL_HISYSEVENT",
     ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
@@ -124,7 +126,10 @@ ohos_shared_library("taskpool") {
     external_deps += [ "hilog:libhilog" ]
   }
 
-  external_deps += [ "hitrace:hitrace_meter" ]
+  external_deps += [
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
+  ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
@@ -153,12 +158,16 @@ ohos_source_set("taskpool_static") {
   deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
   defines = []
 
-  external_deps = [ "hilog:libhilog" ]
+  external_deps = [
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+  ]
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
     defines += [
       "ENABLE_TASKPOOL_EVENTHANDLER",
       "ENABLE_TASKPOOL_FFRT",
+      "ENABLE_TASKPOOL_HISYSEVENT",
     ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
