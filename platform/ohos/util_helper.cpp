@@ -26,14 +26,14 @@ namespace Commonlibrary::Platform {
             HILOG_ERROR("Unable to create a UConverter object: %s\n", u_errorName(codeflag));
             return NULL;
         }
-        ucnv_setFromUCallBack(conv, UCNV_FROM_U_CALLBACK_SUBSTITUTE, NULL, NULL, NULL, &codeflag);
+        ucnv_setFromUCallBack(conv, UCNV_FROM_U_CALLBACK_SUBSTITUTE, nullptr, nullptr, nullptr, &codeflag);
         if (U_FAILURE(codeflag)) {
             HILOG_ERROR("Unable to set the from Unicode callback function");
             ucnv_close(conv);
             return NULL;
         }
 
-        ucnv_setToUCallBack(conv, UCNV_TO_U_CALLBACK_SUBSTITUTE, NULL, NULL, NULL, &codeflag);
+        ucnv_setToUCallBack(conv, UCNV_TO_U_CALLBACK_SUBSTITUTE, nullptr, nullptr, nullptr, &codeflag);
         if (U_FAILURE(codeflag)) {
             HILOG_ERROR("Unable to set the to Unicode callback function");
             ucnv_close(conv);
