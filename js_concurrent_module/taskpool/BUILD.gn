@@ -103,6 +103,7 @@ ohos_shared_library("taskpool") {
       "c_utils:utils",
       "eventhandler:libeventhandler",
       "ffrt:libffrt",
+      "hisysevent:libhisysevent",
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
@@ -126,10 +127,7 @@ ohos_shared_library("taskpool") {
     external_deps += [ "hilog:libhilog" ]
   }
 
-  external_deps += [
-    "hisysevent:libhisysevent",
-    "hitrace:hitrace_meter",
-  ]
+  external_deps += [ "hitrace:hitrace_meter" ]
 
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
@@ -158,10 +156,7 @@ ohos_source_set("taskpool_static") {
   deps = [ "${ets_util_path}/js_sys_module/timer:timer" ]
   defines = []
 
-  external_deps = [
-    "hilog:libhilog",
-    "hisysevent:libhisysevent",
-  ]
+  external_deps = [ "hilog:libhilog" ]
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
     defines += [
@@ -175,6 +170,7 @@ ohos_source_set("taskpool_static") {
       "c_utils:utils",
       "eventhandler:libeventhandler",
       "ffrt:libffrt",
+      "hisysevent:libhisysevent",
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",

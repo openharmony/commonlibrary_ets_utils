@@ -46,7 +46,6 @@ ohos_unittest("test_taskpool_unittest") {
     "googletest:gmock_main",
     "googletest:gtest_main",
     "hilog:libhilog",
-    "hisysevent:libhisysevent",
     "icu:shared_icuuc",
     "libuv:uv",
     "libxml2:libxml2",
@@ -59,7 +58,10 @@ ohos_unittest("test_taskpool_unittest") {
       "ENABLE_TASKPOOL_FFRT",
       "ENABLE_TASKPOOL_HISYSEVENT",
     ]
-    external_deps += [ "ffrt:libffrt" ]
+    external_deps += [
+      "ffrt:libffrt",
+      "hisysevent:libhisysevent",
+    ]
   }
 }
 
