@@ -880,6 +880,21 @@ export namespace util {
         }
     }
 
+    class TextDecoderCleaner {
+        private nativePtr: long = 0;
+        constructor(nativePtr:long) {
+            this.nativePtr = nativePtr;
+        }
+        native clean(): void
+    }
+
+    export function callback(cleaner: TextDecoderCleaner): void {
+        cleaner.clean();
+    }
+
+    let destroyRegister = new FinalizationRegistry<TextDecoderCleaner>(callback)
+    let unregisterToken = new object()
+
     export class TextDecoder {
 
         static { loadLibrary("commonlib_ets_ani") }
@@ -890,6 +905,7 @@ export namespace util {
         CONVERTER_FLAGS_FATAL = 0x2;
         CONVERTER_FLAGS_IGNORE_BOM = 0x4;
         private nativeDecoder_: long;
+        private cleaner: TextDecoderCleaner | null = null;
 
         constructor(encoding?: string, options?: TextDecoderOptions) {
             let flags = 0;
@@ -903,6 +919,12 @@ export namespace util {
                 this.ignoreBOM_ = options.ignoreBOM ?? false;
             }
             this.bindNativeDecoder(this.encoding_, flags);
+            this.registerCleaner(this.nativeDecoder_);
+        }
+
+        registerCleaner(nativePtr: long): void {
+            this.cleaner = new TextDecoderCleaner(nativePtr);
+            destroyRegister.register(this, this.cleaner!, unregisterToken);
         }
 
         static create(encoding?: string, options?: TextDecoderOptions): TextDecoder {
@@ -1019,4 +1041,3 @@ export namespace util {
             input: string, inputEncoding: string, destArray: Uint8Array): EncodeIntoUint8ArrayInfo;
     }
 } // namespace Util
-
