@@ -18,7 +18,7 @@ import LightWeightMap from '@ohos.util.LightWeightMap';
 /**
  * The PlainArray class is a collection of key-value pairs.
  */
-export default class PlainArray<T> implements Iterable<[number, T]> {
+export default class PlainArray<T> implements Iterable<[Number, T]> {
     private buckets: LightWeightMap<number, T>;
 
     /**
@@ -243,7 +243,7 @@ export default class PlainArray<T> implements Iterable<[number, T]> {
     /*
      * Returns an iterator object containing a key-value pair
      */
-    override $_iterator(): IterableIterator<[number, T]> {
+    override $_iterator(): IterableIterator<[Number, T]> {
         return this.buckets.$_iterator();
     }
 }
