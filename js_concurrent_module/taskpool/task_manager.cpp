@@ -622,10 +622,7 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     }
 
     if (task->IsPeriodicTask()) {
-        napi_reference_unref(env, task->taskRef_, nullptr);
-        task->CancelPendingTask(env);
-        uv_timer_stop(task->timer_);
-        ConcurrentHelper::UvHandleClose(task->timer_);
+        task->taskState_.exchange(ExecuteState::CANCELED);
         return;
     } else if (task->IsSeqRunnerTask()) {
         CancelSeqRunnerTask(env, task);
