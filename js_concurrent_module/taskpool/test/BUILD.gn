@@ -54,8 +54,14 @@ ohos_unittest("test_taskpool_unittest") {
   ]
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
-    defines = [ "ENABLE_TASKPOOL_FFRT" ]
-    external_deps += [ "ffrt:libffrt" ]
+    defines = [
+      "ENABLE_TASKPOOL_FFRT",
+      "ENABLE_TASKPOOL_HISYSEVENT",
+    ]
+    external_deps += [
+      "ffrt:libffrt",
+      "hisysevent:libhisysevent",
+    ]
   }
 }
 
