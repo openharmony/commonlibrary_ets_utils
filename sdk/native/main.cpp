@@ -104,6 +104,18 @@ static ani_string Decode(ani_env *env, ani_object object, ani_object typedArray,
     return nullptr;
 }
 
+static void clean(ani_env *env, ani_object object)
+{
+    ani_long ptr;
+    if (ANI_OK != env->Object_GetFieldByName_Long(object, "nativePtr", &ptr)) {
+        return;
+    }
+    auto decodedPtr = reinterpret_cast<TextDecoder*>(ptr);
+    if (decodedPtr != nullptr) {
+        delete decodedPtr;
+    }
+}
+
 static void BindNativeDecoder(ani_env *env, ani_object object, ani_string ani_encoding, ani_int flags)
 {
     std::string stringEncoding = ANIStringToStdString(env, ani_encoding);
@@ -120,13 +132,29 @@ static ani_status BindTextDecoder(ani_env *env)
         return ANI_ERROR;
     }
 
+    static const char *cleanerName = "L@ohos/util/util/TextDecoderCleaner;";
+    ani_class cleanercls;
+    if (ANI_OK != env->FindClass(cleanerName, &cleanercls)) {
+        HILOG_ERROR("TextDecoder:: Not found %{public}s", cleanerName);
+        return ANI_ERROR;
+    }
+
     std::array methods = {
         ani_native_function {"bindNativeDecoder", "Lstd/core/String;I:V", reinterpret_cast<void *>(BindNativeDecoder)},
         ani_native_function {"decode", "Lescompat/Uint8Array;Z:Lstd/core/String;", reinterpret_cast<void *>(Decode)},
     };
 
+    std::array cleanerMethods = {
+        ani_native_function {"clean", nullptr, reinterpret_cast<void *>(clean) },
+    };
+
     if (ANI_OK != env->Class_BindNativeMethods(cls, methods.data(), methods.size())) {
         HILOG_ERROR("TextDecoder:: Cannot bind native methods to className %{public}s", className);
+        return ANI_ERROR;
+    }
+
+    if (ANI_OK != env->Class_BindNativeMethods(cleanercls, cleanerMethods.data(), cleanerMethods.size())) {
+        HILOG_ERROR("TextDecoder:: Cannot bind native CleanerMethods to className %{public}s", cleanerName);
         return ANI_ERROR;
     }
     return ANI_OK;
