@@ -215,7 +215,7 @@ export namespace xml {
         }
 
         private processServiceTag(regexp: RegExp, type: EventType) {
-            let m : NullishType
+            let m : RegExpExecArray | null
             let pos: number = 0
             while (m = regexp.exec(this.strXml_.substr(pos))) {
                 pos = m!.index + 1
