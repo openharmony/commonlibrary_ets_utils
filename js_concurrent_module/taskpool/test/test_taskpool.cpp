@@ -2578,6 +2578,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest147, testing::ext::TestSize.Level0)
     ASSERT_TRUE(true);
 
     task->taskState_ = ExecuteState::CANCELED;
+    task->env_ = env;
+    napi_value obj = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    task->timer_ = new uv_timer_t;
+    uv_timer_init(loop, task->timer_);
     handle->data = task;
     NativeEngineTest::PeriodicTaskCallback(handle);
     ASSERT_TRUE(true);

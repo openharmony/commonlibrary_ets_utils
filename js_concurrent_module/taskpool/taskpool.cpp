@@ -680,6 +680,10 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
         return;
     } else if (task->taskState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: the periodic task has been canceled");
+        napi_reference_unref(task->env_, task->taskRef_, nullptr);
+        task->CancelPendingTask(task->env_);
+        uv_timer_stop(task->timer_);
+        ConcurrentHelper::UvHandleClose(task->timer_);
         return;
     }
     TaskManager::GetInstance().IncreaseRefCount(task->taskId_);
