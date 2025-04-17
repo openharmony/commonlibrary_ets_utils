@@ -372,6 +372,10 @@ namespace OHOS::Util {
         unsigned char *inputEncode = nullptr;
         inputEncode = static_cast<unsigned char*>(resultData);
         CreateEncodePromise(env, inputEncode, length, valueType);
+        if (stdEncodeInfo_ == nullptr) {
+            HILOG_ERROR("Base64:: Encode return promise failed, stdEncodeInfo_ is nullptr");
+            return nullptr;
+        }
         return stdEncodeInfo_->promise;
     }
     
@@ -389,6 +393,10 @@ namespace OHOS::Util {
         unsigned char *inputEncode = nullptr;
         inputEncode = static_cast<unsigned char*>(resultData);
         CreateEncodeToStringPromise(env, inputEncode, length, valueType);
+        if (stdEncodeInfo_ == nullptr) {
+            HILOG_ERROR("Base64:: EncodeToString return promise failed, stdEncodeInfo_ is nullptr");
+            return nullptr;
+        }
         return stdEncodeInfo_->promise;
     }
 
@@ -414,7 +422,11 @@ namespace OHOS::Util {
     void Base64::CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType)
     {
         napi_value resourceName = nullptr;
-        stdEncodeInfo_ = new EncodeInfo();
+        stdEncodeInfo_ = new (std::nothrow) EncodeInfo();
+        if (stdEncodeInfo_ == nullptr) {
+            HILOG_ERROR("Base64:: memory allocation failed, stdEncodeInfo_ is nullptr");
+            return;
+        }
         stdEncodeInfo_->sinputEncode = inputDecode;
         stdEncodeInfo_->slength = length;
         stdEncodeInfo_->valueType = valueType;
@@ -601,13 +613,21 @@ namespace OHOS::Util {
             FreeMemory(inputString);
             return nullptr;
         }
+        if (stdDecodeInfo_ == nullptr) {
+            HILOG_ERROR("Base64:: Decode return promise failed, stdDecodeInfo_ is nullptr");
+            return nullptr;
+        }
         return stdDecodeInfo_->promise;
     }
 
     void Base64::CreateDecodePromise(napi_env env, char *inputDecode, size_t length, Type valueType)
     {
         napi_value resourceName = nullptr;
-        stdDecodeInfo_ = new DecodeInfo();
+        stdDecodeInfo_ = new (std::nothrow) DecodeInfo();
+        if (stdDecodeInfo_ == nullptr) {
+            HILOG_ERROR("Base64:: memory allocation failed, stdDecodeInfo_ is nullptr");
+            return;
+        }
         stdDecodeInfo_->sinputDecode = inputDecode;
         stdDecodeInfo_->slength = length;
         stdDecodeInfo_->env = env;
