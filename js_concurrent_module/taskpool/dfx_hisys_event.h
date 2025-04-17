@@ -21,6 +21,8 @@
 #endif
 #include <string>
 
+namespace Commonlibrary::Concurrent::TaskPoolModule {
+
 struct HisyseventParams {
     std::string methodName;
     std::string funName;
@@ -31,8 +33,6 @@ struct HisyseventParams {
     int32_t pid;
     int32_t tid;
 };
-
-namespace Commonlibrary::Concurrent::TaskPoolModule {
 
 class DfxHisysEvent {
 public:
