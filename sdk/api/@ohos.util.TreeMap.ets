@@ -347,11 +347,11 @@ export class TreeMap<K, V> implements ReadonlyTreeMap<K, V> {
         let entry = this.rootEntry;
 
         while(entry !== undefined) {
-            if (this.comparator!(key, entry!.key)) {
+            if (this.comparator!(entry!.key, key) >= 0) {
+                entry = entry!.right;
+            } else {
                 resultEntry = entry;
                 entry = entry!.left;
-            } else {
-                entry = entry!.right;
             }
         }
 
@@ -391,7 +391,7 @@ export class TreeMap<K, V> implements ReadonlyTreeMap<K, V> {
         let entry = this.rootEntry;
 
         while(entry !== undefined) {
-            if (this.comparator!(entry!.key, key)) {
+            if (this.comparator!(entry!.key, key) > 0) {
                 resultEntry = entry;
                 entry = entry!.right;
             } else {
