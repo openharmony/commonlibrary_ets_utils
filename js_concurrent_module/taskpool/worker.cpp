@@ -590,11 +590,9 @@ void Worker::ResetWorkerPriority()
             if (ffrt::this_task::update_qos(WORKERPRIORITY_FFRTQOS_MAP.at(Priority::HIGH)) != 0) {
                 SetWorkerPriority(Priority::HIGH);
             }
+            priority_ = Priority::HIGH;
 #endif
-        } else {
-            SetWorkerPriority(Priority::HIGH);
         }
-        priority_ = Priority::HIGH;
     }
 }
 
