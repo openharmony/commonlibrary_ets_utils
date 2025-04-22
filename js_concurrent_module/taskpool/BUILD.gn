@@ -17,6 +17,7 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 taskpool_sources = [
   "async_runner.cpp",
   "async_runner_manager.cpp",
+  "dfx_hisys_event.cpp",
   "native_module_taskpool.cpp",
   "sequence_runner.cpp",
   "sequence_runner_manager.cpp",
@@ -94,6 +95,7 @@ ohos_shared_library("taskpool") {
     defines += [
       "ENABLE_TASKPOOL_EVENTHANDLER",
       "ENABLE_TASKPOOL_FFRT",
+      "ENABLE_TASKPOOL_HISYSEVENT",
     ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
@@ -101,6 +103,7 @@ ohos_shared_library("taskpool") {
       "c_utils:utils",
       "eventhandler:libeventhandler",
       "ffrt:libffrt",
+      "hisysevent:libhisysevent",
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
@@ -159,6 +162,7 @@ ohos_source_set("taskpool_static") {
     defines += [
       "ENABLE_TASKPOOL_EVENTHANDLER",
       "ENABLE_TASKPOOL_FFRT",
+      "ENABLE_TASKPOOL_HISYSEVENT",
     ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
@@ -166,6 +170,7 @@ ohos_source_set("taskpool_static") {
       "c_utils:utils",
       "eventhandler:libeventhandler",
       "ffrt:libffrt",
+      "hisysevent:libhisysevent",
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
