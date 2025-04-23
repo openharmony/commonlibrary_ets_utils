@@ -15,6 +15,7 @@
 
 #include "async_lock_manager.h"
 #include "helper/hitrace_helper.h"
+#include "js_concurrent_module/utils/locks/lock_request.h"
 #include "js_concurrent_module/utils/locks/weak_wrap.h"
 #include "tools/log.h"
 
@@ -32,20 +33,15 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
       options_(options),
       deferred_(deferred),
       work_(nullptr),
-      timeoutActive_(false),
       engineId_(engine_->GetId())
 {
-    // timeout timer initialization: just fill the data fields, do not arm it
-    timeoutTimer_ = new uv_timer_t();
-    uv_timer_init(NapiHelper::GetLibUV(env), timeoutTimer_);
-    RequestTimeoutData *data = new RequestTimeoutData(lock, this);
-    timeoutTimer_->data = data;
-
     // saving the creation point (file, function and line) for future use
     NativeEngine *engine = reinterpret_cast<NativeEngine *>(env);
     engine->BuildJsStackTrace(creationStacktrace_);
 
-    NAPI_CALL_RETURN_VOID(env_, napi_add_env_cleanup_hook(env_, EnvCleanUp, this));
+    AddEnvCleanupHook();
+    InitTimer();
+
     napi_value resourceName;
     napi_create_string_utf8(env, "AsyncLock::AsyncCallback", NAPI_AUTO_LENGTH, &resourceName);
     napi_status status = napi_create_async_work(env_, nullptr, resourceName, AsyncLockManager::EmptyExecuteCallback,
@@ -55,55 +51,20 @@ LockRequest::LockRequest(AsyncLock *lock, tid_t tid, napi_env env, napi_ref cb, 
     }
 }
 
-void LockRequest::EnvCleanUp(void *arg)
-{
-    LockRequest *lockRequest = static_cast<LockRequest *>(arg);
-    std::unique_lock<std::mutex> guard(lockRequest->lockRequestMutex_);
-    napi_delete_reference(lockRequest->env_, lockRequest->callback_);
-    lockRequest->callback_ = nullptr;
-    lockRequest->env_ = nullptr;
-    lockRequest->CleanTimer();
-}
-
-void LockRequest::CleanTimer()
-{
-    if (stopTimerTsfn_ != nullptr) {
-        NAPI_CALL_RETURN_VOID(env_, napi_release_threadsafe_function(stopTimerTsfn_, napi_tsfn_abort));
-        stopTimerTsfn_ = nullptr;
-    }
-    RequestTimeoutData *data = static_cast<RequestTimeoutData *>(timeoutTimer_->data);
-    delete data;
-    timeoutTimer_->data = nullptr;
-    uv_close(reinterpret_cast<uv_handle_t *>(timeoutTimer_), DeallocateTimeoutTimerCallback);
-}
-
 void LockRequest::DeallocateTimeoutTimerCallback(uv_handle_t* handle)
 {
     delete handle;
 }
 
-LockRequest::~LockRequest()
-{
-    std::unique_lock<std::mutex> guard(lockRequestMutex_);
-    if (env_ == nullptr) {
-        return;
-    }
-    CleanTimer();
-}
-
 void LockRequest::AsyncAfterWorkCallback(napi_env env, [[maybe_unused]] napi_status status, void *data)
 {
     LockRequest* lockRequest = reinterpret_cast<LockRequest *>(data);
-    std::unique_lock<std::mutex> lock(lockRequest->lockRequestMutex_);
-    napi_delete_async_work(env, lockRequest->work_);
-    lockRequest->work_ = nullptr;
-    if (lockRequest->env_ == nullptr) {
-        lock.unlock();
+    if (lockRequest->envIsInvalid_) {
         HILOG_ERROR("AsyncCallback is called after env cleaned up");
+        lockRequest->Release();
         lockRequest->lock_->CleanUpLockRequestOnCompletion(lockRequest);
         return;
     }
-    lock.unlock();
     lockRequest->CallCallback();
 }
 
@@ -113,6 +74,7 @@ napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
 
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, nullptr, reinterpret_cast<void **>(&lockRequest)));
     HITRACE_HELPER_METER_NAME("AsyncLock FinallyCallback, " + lockRequest->GetLockInfo());
+    lockRequest->Release();
     lockRequest->lock_->CleanUpLockRequestOnCompletion(lockRequest);
 
     napi_value undefined;
@@ -122,15 +84,12 @@ napi_value LockRequest::FinallyCallback(napi_env env, napi_callback_info info)
 
 void LockRequest::CallCallbackAsync()
 {
-    lockRequestMutex_.lock();
-    if (env_ == nullptr || !NativeEngine::IsAlive(engine_) || engineId_ != engine_->GetId()) {
-        lockRequestMutex_.unlock();
+    if (!NativeEngine::IsAlive(engine_) || engineId_ != engine_->GetId()) {
         HILOG_ERROR("Callback is called after env cleaned up");
         lock_->CleanUpLockRequestOnCompletion(this);
         return;
     }
     napi_status status = napi_queue_async_work(env_, work_);
-    lockRequestMutex_.unlock();
     if (status != napi_ok) {
         HILOG_FATAL("Internal error: cannot queue async work");
     }
@@ -139,10 +98,9 @@ void LockRequest::CallCallbackAsync()
 void LockRequest::CallCallback()
 {
     HITRACE_HELPER_METER_NAME("AsyncLock Callback, " + GetLockInfo());
-    napi_remove_env_cleanup_hook(env_, EnvCleanUp, this);
+    RemoveEnvCleanupHook();
     if (AbortIfNeeded()) {
-        napi_delete_reference(env_, callback_);
-        callback_ = nullptr;
+        Release();
         lock_->CleanUpLockRequestOnCompletion(this);
         return;
     }
@@ -150,8 +108,6 @@ void LockRequest::CallCallback()
     NAPI_CALL_RETURN_VOID(env_, napi_get_reference_value(env_, callback_, &cb));
     napi_value result;
     napi_status status = napi_call_function(env_, nullptr, cb, 0, nullptr, &result);
-    napi_delete_reference(env_, callback_);
-    callback_ = nullptr;
     if (status == napi_ok) {
         napi_resolve_deferred(env_, deferred_, result);
 
@@ -175,21 +131,8 @@ void LockRequest::CallCallback()
         napi_get_and_clear_last_exception(env_, &err);
         napi_reject_deferred(env_, deferred_, err);
     }
+    Release();
     lock_->CleanUpLockRequestOnCompletion(this);
-}
-
-void LockRequest::OnSatisfied(napi_env env)
-{
-    if (timeoutActive_) {
-        DisarmTimeoutTimer(env);
-    }
-}
-
-void LockRequest::OnQueued(napi_env env, uint32_t timeoutMillis)
-{
-    if (timeoutMillis > 0) {
-        ArmTimeoutTimer(env, timeoutMillis);
-    }
 }
 
 bool LockRequest::AbortIfNeeded()
@@ -210,53 +153,18 @@ bool LockRequest::AbortIfNeeded()
     return true;
 }
 
-void LockRequest::ArmTimeoutTimer(napi_env env, uint32_t timeoutMillis)
-{
-    timeoutActive_ = true;
-    uv_update_time(NapiHelper::GetLibUV(env));
-    uv_timer_start(timeoutTimer_, TimeoutCallback, timeoutMillis, 0);
-    napi_value resourceName = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, "stopTimerTsfn", NAPI_AUTO_LENGTH, &resourceName));
-    NAPI_CALL_RETURN_VOID(env, napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
-                                                               nullptr, timeoutTimer_, StopTimer, &stopTimerTsfn_));
-    // NOTE: handle the abortsignal functionality in the future
-    // NOTE: need to check call results for 0
-}
-
-void LockRequest::DisarmTimeoutTimer(napi_env env)
-{
-    std::unique_lock<std::mutex> guard(lockRequestMutex_);
-    if (stopTimerTsfn_ == nullptr) {
-        return;
-    }
-    NAPI_CALL_RETURN_VOID(env, napi_call_threadsafe_function(stopTimerTsfn_, new WeakWrap<LockRequest>(GetWeakPtr()),
-                                                             napi_tsfn_blocking));
-    timeoutActive_ = false;
-}
-
-void LockRequest::StopTimer(napi_env env, napi_value jsCallback, void *context, void *data)
-{
-    WeakWrap<LockRequest> *weakRequest = static_cast<WeakWrap<LockRequest> *>(data);
-    if (weakRequest->GetWeakPtr().expired() || uv_is_closing(static_cast<uv_handle_t *>(context))) {
-        delete weakRequest;
-        return;
-    }
-    uv_timer_stop(static_cast<uv_timer_t *>(context));
-    delete weakRequest;
-}
-
 void LockRequest::TimeoutCallback(uv_timer_t *handle)
 {
-    RequestTimeoutData *data = static_cast<RequestTimeoutData*>(handle->data);
-    if (data == nullptr) {
-        // fail! something terribly bad happened!
-        HILOG_FATAL("Internal error: unable to handle the AsyncLock timeout");
+    LockRequest *lockRequest = static_cast<LockRequest *>(handle->data);
+    if (!lockRequest->lock_->CleanUpLockRequest(lockRequest)) {
         return;
     }
+    lockRequest->RemoveEnvCleanupHook();
+
     // Check deadlocks and form the rejector value with or w/o the warning. It is required to be done
     // first in order to obtain the actual data.
     std::string error;
-    AsyncLockManager::DumpLocksInfoForThread(AsyncLockManager::GetCurrentTid(data->request->env_), error);
+    AsyncLockManager::DumpLocksInfoForThread(AsyncLockManager::GetCurrentTid(lockRequest->env_), error);
 
     // NOTE: both AsyncLock and LockRequest might be deleted here, but at this point we imply that
     // AsyncLock exists, later on we we will handle the case when it does not
@@ -265,17 +173,12 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
     // We might have the race with the lock acquirer function here and the request will be
     // already deleted if the race is won by the acquirer. So we should firstly make sure that
     // the race is won by us and then call the request's methods
+    lockRequest->HandleRequestTimeout(std::move(error));
 
-    bool success = data->lock->CleanUpLockRequestOnTimeout(data->request);
-    if (!success) {
-        return;
-    }
-    data->request->HandleRequestTimeout(std::move(error));
-    AsyncLock *lock = data->lock;
-    napi_env env = data->request->env_;
-    napi_remove_env_cleanup_hook(env, EnvCleanUp, data->request);
-    // will delete 'data' too
-    delete data->request;
+    AsyncLock *lock = lockRequest->lock_;
+    napi_env env = lockRequest->env_;
+    lockRequest->Release();
+    delete lockRequest;
     lock->ProcessPendingLockRequest(env);
 }
 
@@ -284,8 +187,6 @@ void LockRequest::HandleRequestTimeout(std::string &&errorMessage)
     HILOG_ERROR("AsyncLock lockAsync() timed out! Information: %s", errorMessage.c_str());
     // here we imply that there are no races already and the timeout function should do its job
     // by rejecting the associated promise with an BusinessError instance.
-    napi_delete_reference(env_, callback_);
-    callback_ = nullptr;
 
     napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env_, &scope);
@@ -309,6 +210,82 @@ std::string LockRequest::GetLockInfo() const
         strTrace += "lockId: " + std::to_string(lock_->GetLockId());
     }
     return strTrace;
+}
+
+void LockRequest::EnvCleanup(void *arg)
+{
+    LockRequest *lockRequest = static_cast<LockRequest *>(arg);
+    lockRequest->envIsInvalid_ = true;
+    if (!lockRequest->lock_->CleanUpLockRequest(lockRequest)) {
+        return;
+    }
+
+    AsyncLock *lock = lockRequest->lock_;
+    napi_env env = lockRequest->env_;
+    lockRequest->Release();
+    delete lockRequest;
+    lock->ProcessPendingLockRequest(env);
+}
+
+void LockRequest::InitTimer()
+{
+    if (options_.timeoutMillis <= 0) {
+        return;
+    }
+    timeoutTimer_ = new uv_timer_t();
+    uv_loop_t *loop = NapiHelper::GetLibUV(env_);
+
+    int status = uv_timer_init(loop, timeoutTimer_);
+    if (status != 0) {
+        HILOG_FATAL("Internal error: unable to initialize the AsyncLock timeout timer %{public}d", status);
+        return;
+    }
+
+    uv_update_time(loop);
+    timeoutTimer_->data = this;
+    status = uv_timer_start(timeoutTimer_, TimeoutCallback, options_.timeoutMillis, 0);
+    if (status != 0) {
+        HILOG_FATAL("Internal error: unable to start the AsyncLock timeout timer %{public}d", status);
+    }
+}
+
+void LockRequest::StopTimer()
+{
+    if (timeoutTimer_ == nullptr) {
+        return;
+    }
+    int status = uv_timer_stop(static_cast<uv_timer_t *>(timeoutTimer_));
+    if (status != 0) {
+        HILOG_FATAL("Internal error: unable to stop the AsyncLock timeout timer %{public}d", status);
+    }
+}
+
+void LockRequest::CloseTimer()
+{
+    if (timeoutTimer_ == nullptr) {
+        return;
+    }
+    uv_close(reinterpret_cast<uv_handle_t *>(timeoutTimer_), [](uv_handle_t *handle) { delete handle; });
+    timeoutTimer_ = nullptr;
+}
+
+void LockRequest::AddEnvCleanupHook()
+{
+    NAPI_CALL_RETURN_VOID(env_, napi_add_env_cleanup_hook(env_, EnvCleanup, this));
+}
+
+void LockRequest::RemoveEnvCleanupHook()
+{
+    NAPI_CALL_RETURN_VOID(env_, napi_remove_env_cleanup_hook(env_, EnvCleanup, this));
+}
+
+void LockRequest::Release()
+{
+    CloseTimer();
+    NAPI_CALL_RETURN_VOID(env_, napi_delete_reference(env_, callback_));
+    callback_ = nullptr;
+    NAPI_CALL_RETURN_VOID(env_, napi_delete_async_work(env_, work_));
+    work_ = nullptr;
 }
 
 } // namespace Commonlibrary::Concurrent::LocksModule

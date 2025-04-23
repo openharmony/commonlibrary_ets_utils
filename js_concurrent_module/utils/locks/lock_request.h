@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_UTILS_LOCKS_LOCK_REQUEST_H
 #define JS_CONCURRENT_MODULE_UTILS_LOCKS_LOCK_REQUEST_H
 
+#include <atomic>
 #include <memory>
 #include <queue>
 #include <string>
@@ -45,7 +46,6 @@ class LockRequest : public std::enable_shared_from_this<LockRequest> {
 public:
     LockRequest(AsyncLock* lock, tid_t tid, napi_env env, napi_ref cb, LockMode mode, const LockOptions &options,
         napi_deferred deferred);
-    ~LockRequest();
 
     std::weak_ptr<LockRequest> GetWeakPtr()
     {
@@ -80,22 +80,26 @@ public:
     void CallCallbackAsync();
     void CallCallback();
 
-    void OnQueued(napi_env env, uint32_t timeoutMillis);
-    void OnSatisfied(napi_env env);
-
 private:
     bool AbortIfNeeded();
     void ArmTimeoutTimer(napi_env env, uint32_t timeoutMillis);
     void DisarmTimeoutTimer(napi_env env);
     void HandleRequestTimeout(std::string &&errorMessage);
     std::string GetLockInfo() const;
-    void CleanTimer();
     static void AsyncAfterWorkCallback(napi_env env, napi_status status, void *data);
     static napi_value FinallyCallback(napi_env env, napi_callback_info info);
     static void TimeoutCallback(uv_timer_t *handle);
     static void DeallocateTimeoutTimerCallback(uv_handle_t* handle);
-    static void EnvCleanUp(void* arg);
-    static void StopTimer(napi_env env, napi_value jsCallback, void* context, void* data);
+    static void EnvCleanup(void *arg);
+
+    void InitTimer();
+    void StopTimer();
+    void CloseTimer();
+
+    void AddEnvCleanupHook();
+    void RemoveEnvCleanupHook();
+
+    void Release();
 
     AsyncLock* lock_;
     tid_t tid_;
@@ -107,17 +111,9 @@ private:
     LockOptions options_;
     napi_deferred deferred_;
     napi_async_work work_;
-    uv_timer_t *timeoutTimer_;
-    bool timeoutActive_;
-    napi_threadsafe_function stopTimerTsfn_{nullptr};
-    std::mutex lockRequestMutex_;
+    uv_timer_t *timeoutTimer_ {nullptr};
     uint64_t engineId_;
-};
-
-struct RequestTimeoutData {
-    RequestTimeoutData(AsyncLock* l, LockRequest* r): lock(l), request(r) {}
-    AsyncLock* lock;
-    LockRequest* request;
+    std::atomic_bool envIsInvalid_ {false};
 };
 
 }  // namespace Commonlibrary::Concurrent::LocksModule
