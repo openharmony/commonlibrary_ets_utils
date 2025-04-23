@@ -30,6 +30,8 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
 using namespace Commonlibrary::Platform;
+static constexpr uint32_t WORKER_ALIVE_TIME = 1800000; // 1800000: 30min
+static constexpr int32_t MAX_REPORT_TIMES = 3;
 
 Worker::PriorityScope::PriorityScope(Worker* worker, Priority taskPriority) : worker_(worker)
 {
@@ -309,7 +311,11 @@ void Worker::ReleaseWorkerThreadContent()
 void Worker::NotifyExecuteTask()
 {
     if (LIKELY(performTaskSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
-        uv_async_send(performTaskSignal_);
+        int ret = uv_async_send(performTaskSignal_);
+        if (ret != 0) {
+            TaskManager::GetInstance().UvReportHisysEvent(this, "NotifyExecuteTask", "uv_async_send",
+                "uv send performTaskSignal_ failed", ret);
+        }
     }
 }
 
@@ -477,6 +483,7 @@ void Worker::NotifyHandleTaskResult(Task* task)
             worker->currentTaskId_.erase(iter);
         }
     } else {
+        TaskManager::GetInstance().UvReportHisysEvent(nullptr, "NotifyHandleTaskResult", "", "worker is nullptr", -1);
         HILOG_FATAL("taskpool:: worker is nullptr");
         return;
     }
@@ -492,16 +499,22 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     if (env == nullptr) { // LCOV_EXCL_BR_LINE
-        HILOG_FATAL("taskpool:: TaskResultCallback engine is null");
+        std::string error = "TaskResultCallback engine is null";
+        TaskManager::GetInstance().UvReportHisysEvent(nullptr, "TaskResultCallback", "", error, -1);
+        HILOG_FATAL("taskpool:: %{public}s", error.c_str());
         return;
     }
     if (data == nullptr) { // LCOV_EXCL_BR_LINE
-        HILOG_FATAL("taskpool:: data is nullptr");
+        std::string error = "data is nullptr";
+        TaskManager::GetInstance().UvReportHisysEvent(nullptr, "TaskResultCallback", "", error, -1);
+        HILOG_FATAL("taskpool:: %{public}s", error.c_str());
         return;
     }
     Task* task = static_cast<Task*>(data);
     auto taskId = reinterpret_cast<uint64_t>(task);
     if (TaskManager::GetInstance().GetTask(taskId) == nullptr) {
+        std::string error = "task is nullptr, taskId: " + std::to_string(task->taskId_);
+        TaskManager::GetInstance().UvReportHisysEvent(nullptr, "TaskResultCallback", "", error, -1);
         HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
@@ -620,4 +633,22 @@ void Worker::HandleFunctionException(napi_env env, Task* task)
     }
     NotifyHandleTaskResult(task);
 }
+
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+bool Worker::IsNeedReport(uint64_t intervalTime)
+{
+    if (reportCount_ >= MAX_REPORT_TIMES) {
+        return false;
+    }
+    if (intervalTime < (reportCount_ + 1) * WORKER_ALIVE_TIME) {
+        return false;
+    }
+    return true;
+}
+
+void Worker::IncreaseReportCount()
+{
+    reportCount_++;
+}
+#endif
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

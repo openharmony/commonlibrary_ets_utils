@@ -53,6 +53,7 @@ static constexpr int32_t MAX_IDLE_TIME = 30000; // 30000: 30s
 static constexpr uint32_t TRIGGER_INTERVAL = 30000; // 30000: 30s
 static constexpr uint32_t SHRINK_STEP = 4; // 4: try to release 4 threads every time
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
+static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -370,12 +371,10 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
                 std::chrono::steady_clock::now().time_since_epoch()).count());
             if (!isWorkerLoopActive) {
                 freeList_.emplace_back(worker);
-            } else if ((currTime - workerWaitTime) > IDLE_THRESHOLD * TRIGGER_INTERVAL) {
-                freeList_.emplace_back(worker);
-                HILOG_INFO("taskpool:: worker in ffrt epoll wait more than 2 intervals, force to free.");
             } else {
                 auto waitTime = std::to_string(workerWaitTime);
                 HILOG_INFO("taskpool:: worker uv alive, will free 2 intervals, time: %{public}s.", waitTime.c_str());
+                WorkerAliveAndReport(worker);
             }
             continue;
         }
@@ -455,6 +454,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     std::lock_guard<RECURSIVE_MUTEX> lock(workersMutex_);
     uint32_t workerCount = workers_.size();
     uint32_t minThread = ConcurrentHelper::IsLowMemory() ? 0 : DEFAULT_MIN_THREADS;
+    CheckTasksAndReportHisysEvent();
     if (minThread == 0) {
         HILOG_INFO("taskpool:: the system now is under low memory");
     }
@@ -841,6 +841,7 @@ std::pair<uint64_t, Priority> TaskManager::GetTaskByPriority(const std::unique_p
         return std::make_pair(0, priority);
     }
     DecreaseNumIfNoIdle(priority);
+    preDequeneTime_ = ConcurrentHelper::GetMilliseconds();
     return std::make_pair(taskId, priority);
 }
 
@@ -1869,5 +1870,89 @@ void SequenceRunnerManager::RemoveWaitingTask(Task* task)
     if (seqRunner != nullptr) {
         seqRunner->RemoveWaitingTask(task);
     }
+}
+
+void TaskManager::WriteHisysForFfrtAndUv(Worker* worker, HisyseventParams* hisyseventParams)
+{
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+    if (!EnableFfrt() || hisyseventParams == nullptr) {
+        return;
+    }
+    int32_t tid = 0;
+    if (worker != nullptr) {
+        auto loop = worker->GetWorkerLoop();
+        uint64_t loopAddress = reinterpret_cast<uint64_t>(loop);
+        hisyseventParams->message += "; current runningLoop: " + std::to_string(loopAddress);
+        tid = worker->tid_;
+    }
+    hisyseventParams->tid = tid;
+    hisyseventParams->pid = getpid();
+    hisyseventParams->message += "; idleWorkers num: " + std::to_string(idleWorkers_.size());
+    hisyseventParams->message += "; workers num: " + std::to_string(workers_.size());
+    int32_t ret = DfxHisysEvent::WriteFfrtAndUv(hisyseventParams);
+    if (ret < 0) {
+        HILOG_WARN("taskpool:: HisyseventWrite failed, ret: %{public}s", std::to_string(ret).c_str());
+    }
+#endif
+}
+
+void TaskManager::CheckTasksAndReportHisysEvent()
+{
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+    if (!EnableFfrt()) {
+        return;
+    }
+    uint64_t currTime = ConcurrentHelper::GetMilliseconds();
+    auto taskNum = GetTaskNum();
+    if (taskNum == 0 || currTime - preDequeneTime_ < UNEXECUTE_TASK_TIME || preDequeneTime_ < reportTime_) {
+        return;
+    }
+    std::string message = "Task scheduling timeout, total task num:" + std::to_string(taskNum);
+    HisyseventParams* hisyseventParams = new HisyseventParams();
+    hisyseventParams->methodName = "CheckTasksAndReportHisysEvent";
+    hisyseventParams->funName = "";
+    hisyseventParams->logType = "ffrt";
+    hisyseventParams->code = DfxHisysEvent::TASK_TIMEOUT;
+    hisyseventParams->message = message;
+    WriteHisysForFfrtAndUv(nullptr, hisyseventParams);
+    reportTime_ = currTime;
+#endif
+}
+
+void TaskManager::WorkerAliveAndReport(Worker* worker)
+{
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+    uint64_t workerWaitTime = worker->GetWaitTime();
+    uint64_t currTime = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
+    uint64_t intervalTime = currTime - workerWaitTime;
+    if (!worker->IsNeedReport(intervalTime)) {
+        return;
+    }
+    std::string message = "worker uv alive, may have handle leak";
+    HisyseventParams* hisyseventParams = new HisyseventParams();
+    hisyseventParams->methodName = "WorkerAliveAndReport";
+    hisyseventParams->funName = "";
+    hisyseventParams->logType = "ffrt";
+    hisyseventParams->code = DfxHisysEvent::WORKER_ALIVE;
+    hisyseventParams->message = message;
+    hisyseventParams->waitTime = intervalTime;
+    WriteHisysForFfrtAndUv(worker, hisyseventParams);
+    worker->IncreaseReportCount();
+#endif
+}
+
+void TaskManager::UvReportHisysEvent(Worker* worker, std::string methodName, std::string funName, std::string message,
+                                     int32_t code)
+{
+#if defined(ENABLE_TASKPOOL_HISYSEVENT)
+    HisyseventParams* hisyseventParams = new HisyseventParams();
+    hisyseventParams->methodName = methodName;
+    hisyseventParams->funName = funName;
+    hisyseventParams->logType = "uv";
+    hisyseventParams->code = code;
+    hisyseventParams->message = message;
+    WriteHisysForFfrtAndUv(worker, hisyseventParams);
+#endif
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

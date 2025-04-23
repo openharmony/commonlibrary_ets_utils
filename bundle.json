@@ -44,11 +44,15 @@
         "adapted_system_type": ["standard"],
         "rom": "1400KB",
         "ram": "~4096KB",
+        "hisysevent_config": [
+            "//commonlibrary/ets_utils/hisysevent.yaml"
+        ],
         "deps": {
             "components": [
                 "bounds_checking_function",
                 "napi",
                 "hilog",
+                "hisysevent",
                 "hitrace",
                 "init",
                 "qos_manager",
