@@ -726,7 +726,7 @@ bool Worker::IsNeedReport(uint64_t intervalTime)
     if (reportCount_ >= MAX_REPORT_TIMES) {
         return false;
     }
-    if (intervalTime < (reportCount_ + 1) * WORKER_ALIVE_TIME) {
+    if (intervalTime < static_cast<uint64_t>(reportCount_.load() + 1) * WORKER_ALIVE_TIME) {
         return false;
     }
     return true;
