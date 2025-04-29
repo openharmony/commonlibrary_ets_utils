@@ -26,7 +26,8 @@ public:
     static std::string Trim(napi_env env, std::string strXmltrim);
     static std::string GetNodeType(napi_env env, const xmlElementType enumType);
     static void GetPrevNodeList(napi_env env, xmlNodePtr curNode);
-    static void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag);
+    static void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
+                                  bool &bFlag, char *curContent);
     static void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject);
     static void DealSpaces(napi_env env, const napi_value napiObj);
     static void SetDefaultKey(napi_env env, size_t i, const std::string strRecv);
@@ -55,10 +56,11 @@ void CxmlTest::GetPrevNodeList(napi_env env, xmlNodePtr curNode)
     convert.GetPrevNodeList(env, curNode);
 }
 
-void CxmlTest::SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag)
+void CxmlTest::SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
+                                 bool &bFlag, char *curContent)
 {
     ConvertXml convert(env);
-    convert.SetXmlElementType(env, curNode, elementsObject, bFlag);
+    convert.SetXmlElementType(env, curNode, elementsObject, bFlag, curContent);
 }
 
 void CxmlTest::SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject)

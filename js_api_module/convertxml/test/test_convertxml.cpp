@@ -702,11 +702,15 @@ HWTEST_F(NativeEngineTest, SetXmlElementTypeTest001, testing::ext::TestSize.Leve
     curNode1->name =  reinterpret_cast<const xmlChar *>("Hello world!");
     curNode1->content = const_cast<xmlChar *>(reinterpret_cast<const xmlChar *>("Hello world!"));
     bool flag = false;
-    CxmlTest::SetXmlElementType(env, curNode1, elementsObject, flag);
+    char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode1));
+    CxmlTest::SetXmlElementType(env, curNode1, elementsObject, flag, curContent);
     flag = false;
     curNode1->type = XML_COMMENT_NODE;
-    CxmlTest::SetXmlElementType(env, curNode1, elementsObject, flag);
+    CxmlTest::SetXmlElementType(env, curNode1, elementsObject, flag, curContent);
     delete curNode1;
+    if (curContent != nullptr) {
+        xmlFree(reinterpret_cast<void*>(curContent));
+    }
     ASSERT_TRUE(flag);
 }
 

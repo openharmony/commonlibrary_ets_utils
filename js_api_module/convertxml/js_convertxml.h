@@ -123,10 +123,12 @@ namespace OHOS::Xml {
 
     private:
         void SetAttributes(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject) const;
-        void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
+        void SetXmlElementType(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
+                               bool &bFlag, char *curContent) const;
         void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
                          const std::string parentName = "") const;
-        void SetEndInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject, bool &bFlag) const;
+        void SetEndInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject,
+                        bool &bFlag, char *curContent) const;
         void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
                         int flag = 0, const std::string parentName = "");
         std::string GetNodeType(const xmlElementType enumType) const;
