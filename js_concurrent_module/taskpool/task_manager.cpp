@@ -827,29 +827,32 @@ bool TaskManager::EraseWaitingTaskId(uint32_t taskId, Priority priority)
 
 std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()
 {
-    std::lock_guard<std::mutex> lock(taskQueuesMutex_);
-    auto& highTaskQueue = taskQueues_[Priority::HIGH];
-    if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
-        highPrioExecuteCount_++;
-        return GetTaskByPriority(highTaskQueue, Priority::HIGH);
-    }
-    highPrioExecuteCount_ = 0;
+    bool isChoose = IsChooseIdle();
+    {
+        std::lock_guard<std::mutex> lock(taskQueuesMutex_);
+        auto& highTaskQueue = taskQueues_[Priority::HIGH];
+        if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
+            highPrioExecuteCount_++;
+            return GetTaskByPriority(highTaskQueue, Priority::HIGH);
+        }
+        highPrioExecuteCount_ = 0;
 
-    auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
-    if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
-        mediumPrioExecuteCount_++;
-        return GetTaskByPriority(mediumTaskQueue, Priority::MEDIUM);
-    }
-    mediumPrioExecuteCount_ = 0;
+        auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
+        if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
+            mediumPrioExecuteCount_++;
+            return GetTaskByPriority(mediumTaskQueue, Priority::MEDIUM);
+        }
+        mediumPrioExecuteCount_ = 0;
 
-    auto& lowTaskQueue = taskQueues_[Priority::LOW];
-    if (!lowTaskQueue->IsEmpty()) {
-        return GetTaskByPriority(lowTaskQueue, Priority::LOW);
-    }
+        auto& lowTaskQueue = taskQueues_[Priority::LOW];
+        if (!lowTaskQueue->IsEmpty()) {
+            return GetTaskByPriority(lowTaskQueue, Priority::LOW);
+        }
 
-    auto& idleTaskQueue = taskQueues_[Priority::IDLE];
-    if (highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() && !idleTaskQueue->IsEmpty() && IsChooseIdle()) {
-        return GetTaskByPriority(idleTaskQueue, Priority::IDLE);
+        auto& idleTaskQueue = taskQueues_[Priority::IDLE];
+        if (highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() && !idleTaskQueue->IsEmpty() && isChoose) {
+            return GetTaskByPriority(idleTaskQueue, Priority::IDLE);
+        }
     }
     return std::make_pair(0, Priority::LOW);
 }
