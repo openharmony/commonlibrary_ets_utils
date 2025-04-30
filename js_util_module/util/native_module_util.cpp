@@ -344,6 +344,17 @@ namespace OHOS::Util {
         return result;
     }
 
+    static napi_value GetMainThreadStackTrace(napi_env env, [[maybe_unused]] napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        std::string stackTraceStr;
+        engine->GetMainThreadStackTrace(env, stackTraceStr);
+        napi_value result = nullptr;
+        size_t tempLen = stackTraceStr.size();
+        napi_create_string_utf8(env, stackTraceStr.c_str(), tempLen, &result);
+        return result;
+    }
+
     static napi_value TextdecoderConstructor(napi_env env, napi_callback_info info)
     {
         size_t tempArgc = 0;
@@ -1785,7 +1796,8 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("randomUUID", RandomUUID),
             DECLARE_NAPI_FUNCTION("randomBinaryUUID", RandomBinaryUUID),
             DECLARE_NAPI_FUNCTION("parseUUID", ParseUUID),
-            DECLARE_NAPI_FUNCTION("getHash", GetHash)
+            DECLARE_NAPI_FUNCTION("getHash", GetHash),
+            DECLARE_NAPI_FUNCTION("getMainThreadStackTrace", GetMainThreadStackTrace)
         };
         NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
         TextcoderInit(env, exports);
