@@ -643,6 +643,9 @@ void TaskManager::CancelTask(napi_env env, uint64_t taskId)
     }
     task->ClearDelayedTimers();
     task->CancelPendingTask(env);
+    if (task->HasDependency()) {
+        ClearDependentTask(task->taskId_);
+    }
     std::list<napi_deferred> deferreds {};
     {
         std::lock_guard<RECURSIVE_MUTEX> lock(task->taskMutex_);
@@ -790,29 +793,32 @@ bool TaskManager::EraseWaitingTaskId(uint64_t taskId, Priority priority)
 
 std::pair<uint64_t, Priority> TaskManager::DequeueTaskId()
 {
-    std::lock_guard<std::mutex> lock(taskQueuesMutex_);
-    auto& highTaskQueue = taskQueues_[Priority::HIGH];
-    if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
-        highPrioExecuteCount_++;
-        return GetTaskByPriority(highTaskQueue, Priority::HIGH);
-    }
-    highPrioExecuteCount_ = 0;
+    bool isChoose = IsChooseIdle();
+    {
+        std::lock_guard<std::mutex> lock(taskQueuesMutex_);
+        auto& highTaskQueue = taskQueues_[Priority::HIGH];
+        if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
+            highPrioExecuteCount_++;
+            return GetTaskByPriority(highTaskQueue, Priority::HIGH);
+        }
+        highPrioExecuteCount_ = 0;
 
-    auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
-    if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
-        mediumPrioExecuteCount_++;
-        return GetTaskByPriority(mediumTaskQueue, Priority::MEDIUM);
-    }
-    mediumPrioExecuteCount_ = 0;
+        auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
+        if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
+            mediumPrioExecuteCount_++;
+            return GetTaskByPriority(mediumTaskQueue, Priority::MEDIUM);
+        }
+        mediumPrioExecuteCount_ = 0;
 
-    auto& lowTaskQueue = taskQueues_[Priority::LOW];
-    if (!lowTaskQueue->IsEmpty()) {
-        return GetTaskByPriority(lowTaskQueue, Priority::LOW);
-    }
+        auto& lowTaskQueue = taskQueues_[Priority::LOW];
+        if (!lowTaskQueue->IsEmpty()) {
+            return GetTaskByPriority(lowTaskQueue, Priority::LOW);
+        }
 
-    auto& idleTaskQueue = taskQueues_[Priority::IDLE];
-    if (highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() && !idleTaskQueue->IsEmpty() && IsChooseIdle()) {
-        return GetTaskByPriority(idleTaskQueue, Priority::IDLE);
+        auto& idleTaskQueue = taskQueues_[Priority::IDLE];
+        if (highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() && !idleTaskQueue->IsEmpty() && isChoose) {
+            return GetTaskByPriority(idleTaskQueue, Priority::IDLE);
+        }
     }
     return std::make_pair(0, Priority::LOW);
 }
@@ -1508,6 +1514,59 @@ void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> def
     napi_value message = ErrorHelper::NewError(env, 0, error.c_str());
     for (auto deferred : deferreds) {
         napi_reject_deferred(env, deferred, message);
+    }
+}
+
+void TaskManager::ClearDependentTask(uint64_t taskId)
+{
+    HILOG_DEBUG("taskpool:: task:%{public}s ClearDependentTask", std::to_string(taskId).c_str());
+    RemoveDependTaskByTaskId(taskId);
+    DequeuePendingTaskInfo(taskId);
+    std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
+    RemoveDependentTaskByTaskId(taskId);
+}
+
+void TaskManager::RemoveDependTaskByTaskId(uint64_t taskId)
+{
+    std::set<uint64_t> dependTaskIds;
+    {
+        std::unique_lock<std::shared_mutex> lock(dependTaskInfosMutex_);
+        auto iter = dependTaskInfos_.find(taskId);
+        if (iter == dependTaskInfos_.end()) {
+            return;
+        }
+        dependTaskIds.insert(iter->second.begin(), iter->second.end());
+        dependTaskInfos_.erase(iter);
+    }
+    for (auto dependTaskId : dependTaskIds) {
+        RemoveDependentTaskInfo(dependTaskId, taskId);
+    }
+}
+
+void TaskManager::RemoveDependentTaskByTaskId(uint64_t taskId)
+{
+    auto iter = dependentTaskInfos_.find(taskId);
+    if (iter == dependentTaskInfos_.end() || iter->second.empty()) {
+        HILOG_DEBUG("taskpool:: dependentTaskInfo empty");
+        return;
+    }
+    for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
+        auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
+        RemoveDependencyById(taskId, *taskIdIter);
+        auto id = *taskIdIter;
+        taskIdIter = iter->second.erase(taskIdIter);
+        auto task = GetTask(id);
+        if (task == nullptr) {
+            continue;
+        }
+        if (task->currentTaskInfo_ != nullptr) {
+            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
+        }
+        reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
+        napi_reference_unref(task->env_, task->taskRef_, nullptr);
+        delete task->currentTaskInfo_;
+        task->currentTaskInfo_ = nullptr;
+        RemoveDependentTaskByTaskId(task->taskId_);
     }
 }
 

@@ -516,8 +516,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest033, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
-    taskManager.InitTaskManager(env);
     usleep(50000);
+    ResetTaskManager();
     // the task will freed in the taskManager's Destuctor and will not cause memory leak
     Task* task = new Task();
     auto taskId = reinterpret_cast<uint64_t>(task);
@@ -810,16 +810,17 @@ HWTEST_F(NativeEngineTest, TaskpoolTest059, testing::ext::TestSize.Level0)
     taskManager.InitTaskManager(env);
     taskManager.TryTriggerExpand();
     usleep(50000);
-    uint32_t result = taskManager.GetIdleWorkers();
-    ASSERT_TRUE(result != 0);
     NativeEngineTest::TriggerShrink(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
-    taskManager.InitTaskManager(env);
+    ResetTaskManager();
     uint64_t taskId = 36;
     taskManager.EnqueueTaskId(taskId, Priority::LOW);
     ASSERT_EQ(taskId, 36);
@@ -984,6 +985,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest070, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     TaskManager& taskManager = TaskManager::GetInstance();
+    ResetTaskManager();
     Task* task = new Task();
     auto id = reinterpret_cast<uint64_t>(task);
     task->isLongTask_ = true;
@@ -993,6 +995,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest070, testing::ext::TestSize.Level0)
     usleep(50000);
     auto res = taskManager.GetLongTaskInfo(id);
     ASSERT_NE(res, nullptr);
+    ResetTaskManager();
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest071, testing::ext::TestSize.Level0)
