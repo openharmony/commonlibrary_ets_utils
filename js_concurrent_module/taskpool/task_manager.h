@@ -147,6 +147,8 @@ public:
     void BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error);
     uint32_t CalculateTaskId(uint64_t id);
     void ClearDependentTask(uint32_t taskId);
+    napi_value CancelError(napi_env env, int32_t errCode, const char* errMessage = nullptr,
+                           napi_value result = nullptr);
 
 private:
     TaskManager();

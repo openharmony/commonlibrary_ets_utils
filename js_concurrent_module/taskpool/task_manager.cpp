@@ -1481,7 +1481,7 @@ void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> def
     if (deferreds.empty()) {
         return;
     }
-    napi_value message = ErrorHelper::NewError(env, 0, error.c_str());
+    napi_value message = CancelError(env, 0, error.c_str());
     for (auto deferred : deferreds) {
         napi_reject_deferred(env, deferred, message);
     }
@@ -1541,5 +1541,50 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
         task->DisposeCanceledTask();
         RemoveDependentTaskByTaskId(task->taskId_);
     }
+}
+
+napi_value TaskManager::CancelError(napi_env env, int32_t errCode, const char* errMessage, napi_value result)
+{
+    std::string errTitle = "";
+    napi_value concurrentError = nullptr;
+
+    napi_value code = nullptr;
+    napi_create_uint32(env, errCode, &code);
+
+    napi_value name = nullptr;
+    std::string errName = "BusinessError";
+
+    if (errCode == ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED) {
+        errTitle = "The asyncRunner task has been canceled.";
+    }
+    
+    napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
+    napi_value msg = nullptr;
+    if (errMessage == nullptr) {
+        napi_create_string_utf8(env, errTitle.c_str(), NAPI_AUTO_LENGTH, &msg);
+    } else {
+        napi_create_string_utf8(env, (errTitle + std::string(errMessage)).c_str(), NAPI_AUTO_LENGTH, &msg);
+    }
+
+    napi_create_error(env, nullptr, msg, &concurrentError);
+    napi_set_named_property(env, concurrentError, "code", code);
+    napi_set_named_property(env, concurrentError, "name", name);
+    napi_value data = nullptr;
+    napi_create_object(env, &data);
+    napi_value resultValue = nullptr;
+    napi_value errorValue = msg;
+    napi_get_undefined(env, &resultValue);
+    if (result != nullptr) {
+        napi_value error = NapiHelper::GetNameProperty(env, result, "error");
+        if (NapiHelper::IsNotUndefined(env, error)) {
+            errorValue = error;
+        } else {
+            resultValue = result;
+        }
+    }
+    napi_set_named_property(env, data, "result", resultValue);
+    napi_set_named_property(env, data, "error", errorValue);
+    napi_set_named_property(env, concurrentError, "data", data);
+    return concurrentError;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
