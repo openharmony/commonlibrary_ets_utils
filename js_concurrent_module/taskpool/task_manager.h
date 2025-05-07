@@ -152,6 +152,7 @@ public:
 
     bool CheckTask(uint64_t taskId);
     void BatchRejectDeferred(napi_env env, std::list<napi_deferred> deferreds, std::string error);
+    void ClearDependentTask(uint64_t taskId);
     void UvReportHisysEvent(Worker* worker, std::string methodName, std::string funName, std::string message,
                             int32_t code);
 
@@ -183,6 +184,8 @@ private:
     std::pair<uint64_t, Priority> GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue, Priority priority);
     void IncreaseNumIfNoIdle(Priority priority);
     void DecreaseNumIfNoIdle(Priority priority);
+    void RemoveDependTaskByTaskId(uint64_t taskId);
+    void RemoveDependentTaskByTaskId(uint64_t taskId);
     void CheckTasksAndReportHisysEvent();
     void WorkerAliveAndReport(Worker* worker);
     void WriteHisysForFfrtAndUv(Worker* worker, HisyseventParams* hisyseventParams);

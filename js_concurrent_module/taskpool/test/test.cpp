@@ -913,4 +913,14 @@ pid_t NativeEngineTest::GetWorkerTid(uv_timer_t* handle)
     Worker* worker = reinterpret_cast<Worker*>(handle->data);
     return worker->tid_;
 }
+
+void NativeEngineTest::ResetTaskManager()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.workers_.clear();
+    taskManager.idleWorkers_.clear();
+    taskManager.timeoutWorkers_.clear();
+    taskManager.highPrioExecuteCount_ = 0;
+    taskManager.mediumPrioExecuteCount_ = 0;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

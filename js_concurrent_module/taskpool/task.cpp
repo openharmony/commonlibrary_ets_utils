@@ -1114,12 +1114,9 @@ void Task::CancelPendingTask(napi_env env)
 bool Task::UpdateTask(uint64_t startTime, void* worker)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateTask", std::to_string(taskId_).c_str());
-    if (taskState_ == ExecuteState::CANCELED) { // task may have been canceled
-        HILOG_INFO("taskpool:: task has been canceled, taskId %{public}s", std::to_string(taskId_).c_str());
-        isCancelToFinish_ = true;
-        return false;
+    if (taskState_ != ExecuteState::CANCELED) { // task may have been canceled
+        taskState_ = ExecuteState::RUNNING;
     }
-    taskState_ = ExecuteState::RUNNING;
     startTime_ = startTime;
     worker_ = worker;
     return true;
