@@ -216,7 +216,11 @@ napi_value DoParseUUID(napi_env env, napi_value src)
     }
     void *data = nullptr;
     napi_value arrayBuffer = nullptr;
-    napi_create_arraybuffer(env, outLen, &data, &arrayBuffer);
+    status = napi_create_arraybuffer(env, outLen, &data, &arrayBuffer);
+    if (status != napi_ok) {
+        HILOG_ERROR("DoParseUUID:: create arraybuffer failed!");
+        return nullptr;
+    }
     unsigned char *count = static_cast<unsigned char*>(data);
     for (size_t i = 0; !buffer.empty() && i < outLen; i++) {
         *count = ConvertBits(buffer);
