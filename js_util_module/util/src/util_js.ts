@@ -30,6 +30,7 @@ interface HelpUtil {
   randomBinaryUUID(entropyCache?: boolean): Uint8Array;
   parseUUID(uuid: string): Uint8Array;
   getHash(obj: object): number;
+  getMainThreadStackTrace(): string;
 }
 
 type AnyType = Object | null | undefined;
@@ -602,6 +603,11 @@ function parseUUID(uuid: string): Uint8Array {
 
 function getHash(obj: object): number {
   let result: number = helpUtil.getHash(obj);
+  return result;
+}
+
+function getMainThreadStackTrace(): string {
+  let result: string = helpUtil.getMainThreadStackTrace();
   return result;
 }
 
@@ -1928,6 +1934,7 @@ export default {
   generateRandomBinaryUUID: randomBinaryUUID,
   parseUUID: parseUUID,
   getHash: getHash,
+  getMainThreadStackTrace: getMainThreadStackTrace,
   TextEncoder: textEncoder,
   TextDecoder: TextDecoder,
   Base64: base64,
