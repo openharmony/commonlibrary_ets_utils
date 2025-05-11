@@ -33,6 +33,7 @@ container_names = [
   "lightweightmap",
   "lightweightset",
   "plainarray",
+  "fastbuffer",
 ]
 
 # compile .ts to .js.
@@ -110,7 +111,6 @@ template("container_lib") {
       debug = false
     }
     include_dirs = [
-      "//third_party/node/src",
       "//commonlibrary/ets_utils/js_util_module/container/" + name,
       ets_util_path,
     ]
