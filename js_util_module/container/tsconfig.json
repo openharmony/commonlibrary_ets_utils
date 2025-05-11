@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
-    "target": "es6",
-    "module": "es6", 
+    "target": "es2020",
+    "module": "es2020", 
     "rootDir": "./",
     // "outFile": "./",                 /* Specify a file that bundles all outputs into one JavaScript file. If `declaration` is true, also designates a file that bundles all .d.ts output. */
     "outDir": "./jscode",      /* Specify an output folder for all emitted files. */
