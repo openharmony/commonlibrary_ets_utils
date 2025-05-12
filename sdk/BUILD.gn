@@ -101,8 +101,8 @@ ohos_shared_library("commonlib_ets_ani") {
 
 group("commonlib_sdk") {
   deps = [
-    ":commonlib_ets_ani",
-    ":commonlib_ets_utils_api",
-    ":commonsdk_arkts_etc",
+    #":commonlib_ets_ani",
+    #":commonlib_ets_utils_api",
+    #":commonsdk_arkts_etc",
   ]
 }
