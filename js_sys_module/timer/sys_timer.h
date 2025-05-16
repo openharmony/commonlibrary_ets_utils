@@ -81,6 +81,7 @@ private:
     static void DeleteTimer(uint32_t tId, TimerCallbackInfo* callbackInfo);
     static napi_value SetTimeOutFaker(napi_env env, napi_callback_info cbinfo, bool repeat);
     static void CleanUpHook(void* data);
+    static void CleanUpTimeData(void* data);
 
 #define DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION_WITH_DATA(name, func, data)                   \
     {                                                                                        \

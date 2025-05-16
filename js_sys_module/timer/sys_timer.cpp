@@ -81,15 +81,23 @@ void Timer::CleanUpHook(void* data)
     that->env_ = nullptr;
 }
 
+void Timer::CleanUpTimeData(void* data)
+{
+    auto that = reinterpret_cast<TimeData*>(data);
+    delete that;
+}
+
 bool Timer::RegisterTime(napi_env env)
 {
     if (env == nullptr) {
         return false;
     }
-    thread_local auto data = new TimeData();
+    auto data = new TimeData();
     data->env_ = env;
     data->func_ = SetTimeoutInner;
     napi_add_env_cleanup_hook(env, CleanUpHook, data);
+
+    napi_add_cleanup_finalizer(env, CleanUpTimeData, data);
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION_WITH_DATA("setTimeout", SetTimeout, data),
