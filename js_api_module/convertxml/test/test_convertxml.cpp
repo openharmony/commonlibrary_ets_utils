@@ -653,8 +653,10 @@ HWTEST_F(NativeEngineTest, GetNodeTypeTest001, testing::ext::TestSize.Level1)
     CxmlTest::GetNodeType(env, enumType);
     enumType = XML_DOCUMENT_FRAG_NODE;
     CxmlTest::GetNodeType(env, enumType);
+#ifdef LIBXML_DOCB_ENABLED
     enumType = XML_DOCB_DOCUMENT_NODE;
     CxmlTest::GetNodeType(env, enumType);
+#endif
     enumType = XML_XINCLUDE_END;
     res = CxmlTest::GetNodeType(env, enumType);
     ASSERT_STREQ(res.c_str(), "");
