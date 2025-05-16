@@ -2330,22 +2330,26 @@ HWTEST_F(NativeEngineTest, TaskpoolTest140, testing::ext::TestSize.Level0)
     uv_timer_t* handle = new uv_timer_t;
     uv_timer_init(loop, handle);
     TaskMessage* taskMessage = new TaskMessage();
-    auto func = [](napi_env environment, napi_callback_info info) -> napi_value {
-        return nullptr;
-    };
-    size_t argc = 1;
-    napi_value funcValue = nullptr;
-    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
-    napi_value* args = new napi_value[argc];
-    ObjectScope<napi_value> objScope(args, true);
-    napi_value taskName = NapiHelper::CreateEmptyString(env);
-    napi_value obj = NapiHelper::CreateObject(env);
-    Task* task = Task::GenerateTask(env, obj, funcValue, taskName, args, argc);
-    
+    Task* task = new Task();
+    task->env_ = env;
+    TaskManager::GetInstance().StoreTask(task);
     taskMessage->taskId = task->taskId_;
     handle->data = taskMessage;
     NativeEngineTest::DelayTask(handle);
-    ASSERT_TRUE(true);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    uv_loop_t* loop2 = NapiHelper::GetLibUV(env);
+    uv_update_time(loop2);
+    uv_timer_t* handle2 = new uv_timer_t;
+    uv_timer_init(loop2, handle2);
+    TaskMessage* taskMessage2 = new TaskMessage();
+    Task* task2 = new Task();
+    taskMessage2->taskId = task2->taskId_;
+    handle2->data = taskMessage2;
+    NativeEngineTest::DelayTask(handle2);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest141, testing::ext::TestSize.Level0)

@@ -500,11 +500,12 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     bool defaultTransfer = true;
     bool defaultCloneSendable = false;
-    napi_status status = napi_serialize_inner(env, result, undefined, undefined,
-                                              defaultTransfer, defaultCloneSendable, &resultData);
+    std::string errString = "";
+    napi_status status = napi_serialize_inner_with_error(env, result, undefined, undefined, defaultTransfer,
+                                                         defaultCloneSendable, &resultData, errString);
     if ((status != napi_ok || resultData == nullptr) && task->success_) {
         task->success_ = false;
-        std::string errMessage = "taskpool: failed to serialize result.";
+        std::string errMessage = "taskpool: failed to serialize result.\nSerialize error: " + errString;
         HILOG_ERROR("%{public}s", errMessage.c_str());
         napi_value err = ErrorHelper::NewError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
         NotifyTaskResult(env, task, err);
