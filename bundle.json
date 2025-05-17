@@ -46,7 +46,6 @@
         "ram": "~4096KB",
         "deps": {
             "components": [
-                "runtime_core",
                 "ace_engine",
                 "bounds_checking_function",
                 "napi",
@@ -70,7 +69,6 @@
         "build": {
             "sub_component": [
                 "//commonlibrary/ets_utils/base_sdk:base_sdk_ets",
-                "//commonlibrary/ets_utils/sdk:commonlib_sdk",
                 "//commonlibrary/ets_utils/js_api_module/uri:uri_packages",
                 "//commonlibrary/ets_utils/js_api_module/url:url_packages",
                 "//commonlibrary/ets_utils/js_api_module/convertxml:convertxml_packages",
