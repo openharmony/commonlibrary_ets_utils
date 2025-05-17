@@ -1297,30 +1297,25 @@ namespace OHOS::xml {
             result.append(text_);
         }
         bool bFlag = true;
+        size_t delimLen = delimiter.length();
         while (bFlag) {
-            if (position_ + (delimiter).length() > max_) {
-                if (start < position_ && returnText) {
-                    result.append(strXml_, start, position_ - start);
-                }
-                if (!DealLength(delimiter.length())) {
-                    type = TagEnum::COMMENT;
+            if (position_ + delimLen > max_) {
+                    xmlPullParserError_ = "Cannot find the '" + delimiter + "' in xml string.";
                     return "";
-                }
-                start = position_;
             }
             size_t i = 0;
-            for (; i < delimiter.length(); i++) {
+            for (; i < delimLen; i++) {
                 if (strXml_[position_ + i] != delimiter[i]) {
                     position_++;
                     break;
                 }
             }
-            if (i == delimiter.length()) {
+            if (i == delimLen) {
                 bFlag = false;
             }
         }
         size_t end = position_;
-        position_ += delimiter.length();
+        position_ += delimLen;
         if (!returnText) {
             return "";
         } else {
