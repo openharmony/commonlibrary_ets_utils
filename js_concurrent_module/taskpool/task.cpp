@@ -1768,7 +1768,12 @@ void Task::DiscardInner(DiscardTaskMessage* message)
         HILOG_DEBUG("taskpool:: discard task is nullptr.");
         return;
     }
-    napi_value error = ErrorHelper::NewError(task->env_, message->errCode);
+    napi_value error = nullptr;
+    if (message->errCode == ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED) {
+        error = TaskManager::GetInstance().CancelError(task->env_, message->errCode);
+    } else {
+        error = ErrorHelper::NewError(task->env_, message->errCode);
+    }
     napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, error);
     DisposeCanceledTask();
     TaskManager::GetInstance().RemoveTask(message->taskId);

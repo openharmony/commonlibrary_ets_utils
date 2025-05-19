@@ -105,7 +105,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
             CancelGroupTask(env, taskId, taskGroup);
         }
         if (taskGroup->currentGroupInfo_->finishedTaskNum == taskGroup->taskNum_) {
-            napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
+            napi_value error = TaskManager::GetInstance().CancelError(env, 0, "taskpool:: taskGroup has been canceled");
             taskGroup->RejectResult(env, error);
             return;
         }
@@ -115,7 +115,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
         for (size_t i = 0; i < taskGroup->taskIds_.size(); i++) {
             engine->DecreaseSubEnvCounter();
         }
-        napi_value error = ErrorHelper::NewError(env, 0, "taskpool:: taskGroup has been canceled");
+        napi_value error = TaskManager::GetInstance().CancelError(env, 0, "taskpool:: taskGroup has been canceled");
         taskGroup->RejectResult(env, error);
     }
 }
