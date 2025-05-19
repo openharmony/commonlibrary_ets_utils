@@ -249,7 +249,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
             HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
             return;
         }
-        napi_value error = ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
+        napi_value error = TaskManager::GetInstance().CancelError(task->env_, 0, "taskpool:: task has been canceled");
         napi_reject_deferred(task->env_, taskMessage->deferred, error);
     } else {
         HILOG_INFO("taskpool:: DelayTask taskId %{public}s", std::to_string(taskMessage->taskId).c_str());
@@ -416,9 +416,9 @@ void TaskPool::HandleTaskResultInner(Task* task)
     std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
-        napiTaskResult = task->IsAsyncRunnerTask() ?
-            ErrorHelper::NewError(task->env_, ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED) :
-            ErrorHelper::NewError(task->env_, 0, "taskpool:: task has been canceled");
+        napiTaskResult = task->IsAsyncRunnerTask() ? TaskManager::GetInstance().CancelError(task->env_,
+            ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, nullptr, napiTaskResult) :
+            TaskManager::GetInstance().CancelError(task->env_, 0, "taskpool:: task has been canceled", napiTaskResult);
     } else if (status != napi_ok) {
         strTrace += ", performResult : DeserializeFailed";
         taskLog += ", DeserializeFailed";

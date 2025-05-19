@@ -150,6 +150,8 @@ public:
     void ClearDependentTask(uint32_t taskId);
     void UvReportHisysEvent(Worker* worker, std::string methodName, std::string funName, std::string message,
                             int32_t code);
+    napi_value CancelError(napi_env env, int32_t errCode, const char* errMessage = nullptr,
+                           napi_value result = nullptr);
 
 private:
     TaskManager();

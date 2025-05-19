@@ -6353,3 +6353,20 @@ HWTEST_F(NativeEngineTest, TaskpoolTest312, testing::ext::TestSize.Level0)
     ASSERT_TRUE(result != nullptr);
     TaskManager::GetInstance().RemoveTask(task2->taskId_);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest313, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value result = nullptr;
+    napi_create_string_utf8(env, "test313", NAPI_AUTO_LENGTH, &result);
+    napi_value error = TaskManager::GetInstance().CancelError(env, 0, nullptr, result);
+    ASSERT_TRUE(NapiHelper::IsNotUndefined(env, error));
+
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_value result2 = nullptr;
+    napi_create_string_utf8(env, "this is error", NAPI_AUTO_LENGTH, &result2);
+    napi_set_named_property(env, obj, "error", result2);
+    error = TaskManager::GetInstance().CancelError(env, 0, nullptr, obj);
+    ASSERT_TRUE(NapiHelper::IsNotUndefined(env, error));
+}
