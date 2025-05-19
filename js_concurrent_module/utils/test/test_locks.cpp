@@ -257,7 +257,6 @@ TEST_F(LocksTest, SharedLockSingle)
 
     LockOptions options;
     lock->LockAsync(env, callback_ref, LOCK_MODE_SHARED, options);
-    Loop(LOOP_ONCE);
     ASSERT_TRUE(isCalled);
 }
 
@@ -324,7 +323,6 @@ TEST_F(LocksTest, SharedLockMulti)
         LockOptions options;
         barrier.arrive_and_wait();
         lockPtr->LockAsync(env, callback_ref, LOCK_MODE_SHARED, options);
-        Loop(LOOP_ONCE);
         LocksTest::DestroyEngine();
     });
     napi_env env = GetEnv();
@@ -334,7 +332,6 @@ TEST_F(LocksTest, SharedLockMulti)
 
     LockOptions options;
     lock->LockAsync(env, callback_ref, LOCK_MODE_SHARED, options);
-    Loop(LOOP_ONCE);
     t.join();
     ASSERT_FALSE(callbackData.fail);
     ASSERT_EQ(callbackData.callCount, 2U);
@@ -539,12 +536,10 @@ TEST_F(LocksTest, SharedModeWithEnvDestroyed)
         bool isPromise {false};
         ASSERT_CHECK_CALL(napi_is_promise(env, result, &isPromise));
         ASSERT_TRUE(isPromise);
-        Loop(LOOP_ONCE);
 
         LocksTest::DestroyEngine();
     });
 
-    Loop(LOOP_ONCE);
     t.join();
     ASSERT_EQ(callbackData.callCount, 2U);
 }
@@ -615,7 +610,6 @@ TEST_F(LocksTest, TimeoutLockWithEnvDestroyedTest)
         napi_value result;
         ASSERT_CHECK_CALL(napi_call_function(env, lock, lockAsync, argc, args, &result));
 
-        Loop(LOOP_ONCE);
         LocksTest::Sleep();
         callbackData.end.arrive_and_wait();
         LocksTest::DestroyEngine();

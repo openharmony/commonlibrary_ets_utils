@@ -39,7 +39,7 @@ public:
 
     napi_value LockAsync(napi_env env, napi_ref cb, LockMode mode, const LockOptions &options);
     void CleanUpLockRequestOnCompletion(LockRequest* lockRequest);
-    bool CleanUpLockRequestOnTimeout(LockRequest* lockRequest);
+    bool CleanUpLockRequest(LockRequest *lockRequest);
     napi_status FillLockState(napi_env env, napi_value held, napi_value pending);
     void ProcessPendingLockRequest(napi_env env, LockRequest* syncLockRequest = nullptr);
 

@@ -37,6 +37,10 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     napi_value promise;
     napi_deferred deferred;
     napi_create_promise(env, &deferred, &promise);
+    if (!NativeEngine::IsAlive(reinterpret_cast<NativeEngine *>(env))) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "env is not alive");
+        return nullptr;
+    }
     LockRequest *lockRequest =
         new LockRequest(this, AsyncLockManager::GetCurrentTid(env), env, cb, mode, options, deferred);
     std::unique_lock<std::mutex> lock(asyncLockMutex_);
@@ -45,7 +49,6 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
         NAPI_CALL(env, napi_create_string_utf8(env, "The lock is acquired", NAPI_AUTO_LENGTH, &err));
         napi_reject_deferred(env, deferred, err);
     } else {
-        lockRequest->OnQueued(env, options.timeoutMillis);
         pendingList_.push_back(lockRequest);
         ProcessPendingLockRequestUnsafe(env, lockRequest);
     }
@@ -78,7 +81,7 @@ void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
     ProcessPendingLockRequestUnsafe(env);
 }
 
-bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
+bool AsyncLock::CleanUpLockRequest(LockRequest *lockRequest)
 {
     std::unique_lock<std::mutex> lock(asyncLockMutex_);
     auto it = std::find(pendingList_.begin(), pendingList_.end(), lockRequest);
@@ -94,7 +97,6 @@ bool AsyncLock::CleanUpLockRequestOnTimeout(LockRequest* lockRequest)
 template <bool isAsync>
 void AsyncLock::ProcessLockRequest(napi_env env, LockRequest *lockRequest)
 {
-    lockRequest->OnSatisfied(env);
     heldList_.push_back(lockRequest);
     pendingList_.pop_front();
     asyncLockMutex_.unlock();
