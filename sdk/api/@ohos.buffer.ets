@@ -947,8 +947,8 @@ export namespace buffer {
             let val: number = 0;
             let multiplier = 1 << (8 * (byteLength - 1));
             for (let i = 0; i < byteLength; i++) {
-                const byte = view.getUint8(offset + i);
-                val += byte * multiplier;
+                const byteVal = view.getUint8(offset + i);
+                val += byteVal * multiplier;
                 multiplier >>= 8;
             }
             const signBit = 1 << (8 * byteLength - 1);
@@ -992,8 +992,8 @@ export namespace buffer {
             let val: number = 0;
             let multiplier = 1;
             for (let i = 0; i < byteLength; i++) {
-                const byte = view.getUint8(offset + i);
-                val += byte * multiplier;
+                const byteVal = view.getUint8(offset + i);
+                val += byteVal * multiplier;
                 multiplier <<= 8;
             }
             if (val >= (1 << (8 * byteLength - 1))) {
