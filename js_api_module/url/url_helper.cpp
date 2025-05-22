@@ -49,12 +49,12 @@ std::string EncodePercentEncoding(const std::string_view inputString, const uint
 // 110XXXXX 10XXXXXXX
 // 1110XXXX 10XXXXXXX 10XXXXXXX
 // 11110XXX 10XXXXXXX 10XXXXXXX 10XXXXXXXX
-bool CheckUTF8Enble(const std::string_view inputString, size_t i, char currentChar, int count, char* chars)
+bool CheckUTF8Enble(const std::string_view inputString, size_t i, char currentChar, size_t count, char* chars)
 {
-    if (count <= 0) {
+    if (count == 0) {
         return false;
     }
-    int index = count - 1;
+    size_t index = count - 1;
     chars[index] = currentChar;
     char charactor;
     while (i < inputString.size() && index > 0) {
@@ -86,7 +86,7 @@ std::string DecodePercentEncoding(const std::string_view inputString)
     while (i < inputString.size()) {
         // convert to decimal characters and append to the result
         if (PercentCharDecodable(inputString, i, ch)) {
-            auto length = GetCharLength(ch);
+            size_t length = GetCharLength(ch);
             if (CheckUTF8Enble(inputString, i + HEX_PAIR_LENGTH + 1, ch, length, chars)) {
                 AppendChars(result, i, length, chars);
             } else {
