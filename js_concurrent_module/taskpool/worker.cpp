@@ -441,8 +441,8 @@ void Worker::PerformTask(const uv_async_t* req)
         worker->NotifyTaskFinished();
         return;
     }
-    if (task->IsGroupTask() && (!TaskGroupManager::GetInstance().UpdateGroupState(task->groupId_))) {
-        return;
+    if (task->IsGroupTask()) {
+        TaskGroupManager::GetInstance().UpdateGroupState(task->groupId_);
     }
     if (task->IsLongTask()) {
         worker->UpdateLongTaskInfo(task);
