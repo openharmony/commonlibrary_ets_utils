@@ -588,6 +588,7 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value transferList = undefined;
     std::string errMessage = "the type of the transfer list must be an array.";
+    std::string serializeErr = "";
     if (argc >= NUM_WORKER_ARGS) {
         bool isValidTransfer = false;
         napi_value secondArg = argv[1];
@@ -595,13 +596,16 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
         if (transferList == nullptr || !isValidTransfer) {
             return nullptr;
         }
-        serializeStatus = napi_serialize_inner(env, argv[0], transferList, undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, defaultClone,
+                                                          &data, serializeErr);
     } else {
-        serializeStatus = napi_serialize_inner(env, argv[0], undefined, undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner_with_error(env, argv[0], undefined, undefined, false, defaultClone,
+                                                          &data, serializeErr);
     }
     if (serializeStatus != napi_ok || data == nullptr) {
         worker->HostOnMessageErrorInner();
-        WorkerThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        serializeErr = "failed to serialize message.\nSerialize error: " + serializeErr;
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, serializeErr.c_str());
         return nullptr;
     }
     worker->PostMessageInner(data);
@@ -966,6 +970,7 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     napi_value transferList = undefined;
     std::string errMessage = "Transfer list must be an Array";
+    std::string serializeErr = "";
     if (argc >= NUM_WORKER_ARGS) {
         bool isValidTransfer = false;
         napi_value secondArg = argv[1];
@@ -973,14 +978,17 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
         if (transferList == nullptr || !isValidTransfer) {
             return nullptr;
         }
-        serializeStatus = napi_serialize_inner(env, argv[0], transferList, undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, defaultClone,
+                                                          &data, serializeErr);
     } else {
-        serializeStatus = napi_serialize_inner(env, argv[0], undefined, undefined, false, defaultClone, &data);
+        serializeStatus = napi_serialize_inner_with_error(env, argv[0], undefined, undefined, false, defaultClone,
+                                                          &data, serializeErr);
     }
 
     if (serializeStatus != napi_ok || data == nullptr) {
         worker->WorkerOnMessageErrorInner();
-        WorkerThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        serializeErr = "failed to serialize message.\nSerialize error: " + serializeErr;
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, serializeErr.c_str());
         return nullptr;
     }
     worker->PostMessageToHostInner(data);
@@ -1048,9 +1056,12 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     // meaningless to copy sendable object when call globalObject
     bool defaultClone = true;
     bool defaultTransfer = false;
-    serializeStatus = napi_serialize_inner(env, argsArray, undefined, undefined, defaultTransfer, defaultClone, &data);
+    std::string serializeErr = "";
+    serializeStatus = napi_serialize_inner_with_error(env, argsArray, undefined, undefined, defaultTransfer,
+                                                      defaultClone, &data, serializeErr);
     if (serializeStatus != napi_ok || data == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        serializeErr = "failed to serialize message.\nSerialize error: " + serializeErr;
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, serializeErr.c_str());
         return nullptr;
     }
     worker->hostGlobalCallQueue_.Push(worker->globalCallId_, data);
