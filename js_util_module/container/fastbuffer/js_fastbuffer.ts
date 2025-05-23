@@ -68,6 +68,7 @@ enum RangeErrorCategories {
 };
 
 const UINT32MAX = 4294967296;
+const MAX_LENGTH: number = Math.pow(2, 32);
 
 class ErrorMessage {
   public errorNumber: number = 0;
@@ -297,49 +298,97 @@ interface FastBuffer {
 }
 
 class FastBuffer extends FastBufferInner {
-  constructor (value: number | FastBuffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | Array<number> | string,
+  constructor(value: number | FastBuffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | Array<number> | string,
     byteOffsetOrEncoding?: number | string, length?: number) {
       super(value, byteOffsetOrEncoding, length);
   }
 
   toString(encoding: string = 'utf8', start: number = 0, end: number = this.length): string {
-    if (encoding === null) {
+    if (!encoding) {
       encoding = 'utf8';
     }
-    let enc = normalizeEncoding(encoding);
-    if (!enc) {
-      throw typeErrorForEncoding(encoding, 'encoding');
-    }
+    let enc = encoding.toLowerCase();
     start = isNaN(start) ? 0 : (Number(start) < 0 ? 0 : Number(start));
     end = isNaN(end) ? 0 : Number(end);
-    let bufLength = this.length;
-    if (start >= bufLength || start > end) {
+    if (start >= this.length || start > end) {
       return '';
     }
-    end = end > bufLength ? bufLength : end;
     return super.toString(enc, start, end);
+  }
+
+  indexOf(value: string | number | FastBuffer | Uint8Array, byteOffset: number = 0, encoding: string = 'utf8'): number {
+    if (typeof byteOffset === 'string') {
+      encoding = byteOffset;
+    }
+    if (typeof byteOffset !== 'number') {
+      byteOffset = 0;
+    }
+    if (!encoding) {
+      encoding = 'utf8';
+    }
+    encoding = encoding.toLowerCase();
+    return super.indexOf(value, byteOffset, encoding);
+  }
+
+  lastIndexOf(value: string | number | FastBuffer | Uint8Array, byteOffset: number = this.length,
+    encoding: string = 'utf8'): number {
+    if (typeof value === 'string') {
+      if (value.length === 0) {
+        return -1;
+      }
+      if (typeof byteOffset === null) {
+        byteOffset = 0;
+      }
+      if (encoding === null) {
+        encoding = 'utf8';
+      }
+      encoding = encoding.toLowerCase();
+      let str = this.toString(encoding);
+      byteOffset = byteOffset < 0 ? str.length + byteOffset : byteOffset;
+      return str.lastIndexOf(value, byteOffset);
+    }
+    if (typeof byteOffset === 'string') {
+      encoding = byteOffset;
+    }
+    if (typeof byteOffset !== 'number') {
+      byteOffset = 0;
+    }
+    if (!encoding) {
+      encoding = 'utf8';
+    }
+    encoding = encoding.toLowerCase();
+    return super.lastIndexOf(value, byteOffset, encoding);
   }
 
   copy(target: FastBuffer | Uint8Array, targetStart: number = 0, sourceStart: number = 0,
     sourceEnd: number = this.length): number {
-      typeErrorCheck(target, ['FastBuffer', 'Uint8Array'], 'target');
-      targetStart = isNaN(targetStart) ? 0 : Number(targetStart);
-      sourceStart = isNaN(sourceStart) ? 0 : Number(sourceStart);
-      sourceEnd = isNaN(sourceEnd) ? this.length : Number(sourceEnd);
-      rangeLeftErrorCheck(targetStart, 'targetStart', 0);
-      rangeLeftErrorCheck(sourceStart, 'sourceStart', 0);
-      rangeLeftErrorCheck(sourceEnd, 'sourceEnd', 0);
-      if (targetStart >= target.length) {
-        return 0;
-      }
-      if (sourceEnd <= sourceStart || sourceStart >= this.length) {
-        return 0;
-      }
-      super.copy(target, targetStart, sourceStart, sourceEnd);
+    targetStart = isNaN(targetStart) ? 0 : Number(targetStart);
+    sourceStart = isNaN(sourceStart) ? 0 : Number(sourceStart);
+    sourceEnd = isNaN(sourceEnd) ? this.length : Number(sourceEnd);
+    rangeLeftErrorCheck(targetStart, 'targetStart', 0);
+    rangeLeftErrorCheck(sourceStart, 'sourceStart', 0);
+    rangeLeftErrorCheck(sourceEnd, 'sourceEnd', 0);
+    if (targetStart >= target.length) {
+      return 0;
+    }
+    if (sourceEnd <= sourceStart || sourceStart >= this.length) {
+      return 0;
+    }
+    return super.copy(target, targetStart, sourceStart, sourceEnd);
+  }
+
+  fill(value: string | FastBuffer | Uint8Array | number, offset: number = 0, end: number = this.length,
+    encoding: string = 'utf8'): FastBuffer {
+          rangeErrorCheck(offset, 'offset', 0, UINT32MAX);
+    rangeErrorCheck(end, 'end', 0, this.length);
+    if (offset > end - 1) {
+      return this;
+    }
+    return super.fill(value, offset, end, encoding);
   }
 
   compare(target: FastBuffer | Uint8Array, targetStart: number = 0, targetEnd: number = target.length,
-    sourceStart: number = 0, sourceEnd: number = this.length): 1 | 0 | -1 {
+    sourceStart: number = 0, sourceEnd: number = this.length): 0 | 1 | -1 {
     if (targetStart === null) {
       targetStart = 0;
     }
@@ -357,10 +406,6 @@ class FastBuffer extends FastBufferInner {
     typeErrorCheck(targetEnd, ['number'], 'targetEnd');
     typeErrorCheck(sourceStart, ['number'], 'sourceStart');
     typeErrorCheck(sourceEnd, ['number'], 'sourceEnd');
-    rangeErrorCheck(targetStart, 'targetStart', 0, UINT32MAX);
-    rangeErrorCheck(sourceStart, 'sourceStart', 0, UINT32MAX);
-    rangeErrorCheck(targetEnd, 'targetEnd', 0, target.length);
-    rangeErrorCheck(sourceEnd, 'sourceEnd', 0, this.length);
     if (sourceStart >= sourceEnd) {
       return (targetStart >= targetEnd ? 0 : -1);
     }
@@ -370,108 +415,26 @@ class FastBuffer extends FastBufferInner {
     return super.compare(target, targetStart, targetEnd, sourceStart, sourceEnd);
   }
 
-  fill(value: string | FastBuffer | Uint8Array | number, offset: number = 0, end: number = this.length,
-    encoding: string = 'utf8'): FastBuffer {
-    if (this.length === 0) {
-      return this;
-    }
-    if (offset === null) {
-      offset = 0;
-    }
-    if (end === null) {
-      end = this.length;
-    }
-    if (encoding === null) {
-      encoding = 'utf8';
-    }
-    if (arguments.length === twoBytes) {
-      if (typeof offset === 'string') {
-        encoding = offset;
-        offset = 0;
-      }
-    } else if (arguments.length === 3) {
-      if (typeof end === 'string') {
-        encoding = end;
-        end = this.length;
-      }
-    }
-    if (typeof offset !== 'number') {
-      typeErrorCheck(offset, ['number'], 'offset');
-    }
-    if (typeof end === 'number') {
-      typeErrorCheck(end, ['number'], 'end');
-    }
-    if (typeof encoding !== 'string') {
-      typeErrorCheck(encoding, ['string'], 'encoding');
-    }
-    return super.fill(value, offset, end, encoding);
-  }
-
-  indexOf(value: string | number | FastBuffer | Uint8Array, byteOffset: number = 0, encoding: string = 'utf8'): number {
-    typeErrorCheck(value, ['string', 'number', 'FastBuffer', 'Uint8Array'], 'value');
-    const length = this.length;
-    if (typeof byteOffset === 'string') {
-      encoding = byteOffset;
-    }
-    if (typeof byteOffset !== 'number') {
-      byteOffset = 0;
-    }
-    if (encoding === null) {
-      encoding = 'utf8';
-    }
-    encoding = encodingTypeErrorCheck(encoding);
-    if (byteOffset > length) {
-      return -1;
-    }
-    if (byteOffset < 0) {
-      let offsetResult = Math.abs(byteOffset);
-      if (offsetResult > length) {
-        byteOffset = 0;
-      } else {
-        byteOffset = length - offsetResult;
-      }
-    }
-    return super.indexOf(value, byteOffset, encoding);
-  }
-
-  lastIndexOf(value: string | number | FastBuffer | Uint8Array, byteOffset: number = this.length,
-    encoding: string = 'utf8'): number {
-    typeErrorCheck(value, ['string', 'number', 'FastBuffer', 'Uint8Array'], 'value');
-    if (typeof byteOffset === 'string') {
-      encoding = byteOffset;
-    }
-    if (typeof byteOffset !== 'number') {
-      byteOffset = 0;
-    }
-    if (encoding === null) {
-      encoding = 'utf8';
-    }
-    encoding = encodingTypeErrorCheck(encoding);
-    if (byteOffset > length) {
-      return -1;
-    }
-    if (byteOffset < 0) {
-      let offsetResult = Math.abs(byteOffset);
-      if (offsetResult > length) {
-        byteOffset = 0;
-      } else {
-        byteOffset = length - offsetResult;
-      }
-    }
-    return super.lastIndexOf(value, byteOffset, encoding);
-  }
-
   toJSON(): Object {
     if (this.length <= 0) {
       return { type: 'FastBuffer', data: [] };
     }
-    let data = JSON.stringify(this);
+    let data = new Array<number>;
+    let len = this.length;
+    for (let i = 0; i < len; i++) {
+      data.push(this[i]);
+    }
     return { type: 'FastBuffer', data: data };
   }
 
-  subarray(start?: number, end?: number): FastBuffer {
-    rangeErrorCheck(start, 'start', 0, this.length);
-    rangeErrorCheck(end, 'end', start, this.length);
+  subarray(start: number = 0, end: number = this.length): FastBuffer {
+    let newBuf: FastBuffer = new FastBuffer(0);
+    start = isNaN(start) ? 0 : Number(start);
+    end = isNaN(end) ? 0 : Number(end);
+    end = (end > this.length) ? this.length : end;
+    if (start < 0 || end < 0 || end <= start) {
+      return newBuf;
+    }
     return new FastBuffer(this.buffer, start, end - start);
   }
 
@@ -524,25 +487,33 @@ class FastBuffer extends FastBufferInner {
   }
 }
 
+function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
+  offsetOrEncoding?: number | string, length?: number): FastBuffer {
+  offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
+  const maxLength: number = value.byteLength - offsetOrEncoding;
+  if (length === undefined) {
+    length = maxLength;
+  } else {
+    length = isNaN(Number(length)) ? 0 : Number(length);
+  }
+  rangeErrorCheck(offsetOrEncoding, 'byteOffset', 0, value.byteLength);
+  rangeErrorCheck(length, 'length', 0, maxLength);
+  return new FastBuffer(value, offsetOrEncoding, length);
+}
+
 function from(value: FastBuffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | string | object | Array<number>,
   offsetOrEncoding?: number | string, length?: number): FastBuffer {
-  if (value === null || value === undefined) {
-    throw typeError(value, 'value', ['FastBuffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object']);
-  }
-  if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
-    if (typeof offsetOrEncoding != 'number') {
-      throw typeError(offsetOrEncoding, 'offset', ['Number']);
+  if (typeof value === 'string') {
+    if (!offsetOrEncoding || typeof offsetOrEncoding === 'number') {
+      offsetOrEncoding = 'utf8';
     }
-    rangeErrorCheck(offsetOrEncoding, 'offset', 0, UINT32MAX);
-    rangeErrorCheck(length, 'length', 0, UINT32MAX);
-    return new FastBuffer(value, offsetOrEncoding, length);
+    return fromString(value, offsetOrEncoding);
   }
   if (value instanceof FastBuffer || value instanceof Uint8Array || value instanceof Array) {
     return new FastBuffer(value);
   }
-  let encoding = checkEncodeing(value, offsetOrEncoding);
-  if (typeof value === 'string') {
-    return fromString(value, encoding);
+  if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
+    return createBufferFromArrayBuffer(value, offsetOrEncoding, length);
   }
   if (typeof value === 'object' && value !== null) {
     const valueOf = value.valueOf && value.valueOf();
@@ -552,67 +523,17 @@ function from(value: FastBuffer | Uint8Array | ArrayBuffer | SharedArrayBuffer |
     }
     if (typeof value[Symbol.toPrimitive] === 'function') {
       const primitive = value[Symbol.toPrimitive]('string');
-      if (typeof primitive === 'string') {
-        return fromString(primitive, encoding);
+      if (typeof primitive === 'string' && typeof offsetOrEncoding === 'string') {
+        return fromString(primitive, offsetOrEncoding);
       }
     }
   }
-  throw typeError(value, 'value', ['FastBuffer', 'ArrayBuffer', 'Array', 'Array-like']);
-}
-
-function Fill(buffer: FastBuffer, value: string | FastBuffer | Uint8Array | number, offset: number = 0,
-  end: number = buffer.length, encoding: string = 'utf8') {
-    let length = buffer.length;
-    if (length === 0) {
-      return buffer;
-    }
-    const normalizedEncoding = encodingTypeErrorCheck(encoding);
-    rangeErrorCheck(offset, 'offset', 0, length);
-    rangeErrorCheck(end, 'end', offset, length);
-    buffer.fill(value, offset, end, normalizedEncoding);
-}
-
-function alloc(size: number, fill?: string | FastBuffer | number, encoding?: string): FastBuffer {
-  sizeErrorCheck(size, 'size', ['number'], 0, UINT32MAX);
-  const buf = new FastBuffer(size);
-  Fill(buf, 0);
-  if (arguments.length === twoBytes && fill !== undefined && fill !== 0) {
-    Fill(buf, fill);
-  } else if (arguments.length === 3) { // 3 is array->maxIndex
-    if (encoding === undefined || encoding === null) {
-      encoding = 'utf-8';
-    }
-    if (getTypeName(encoding) !== 'string') {
-      throw typeError(encoding, 'encoding', ['string']);
-    }
-    if (fill !== undefined && fill !== 0) {
-      Fill(buf, fill, 0, buf.length, encoding);
-    }
-  }
-  return buf;
-}
-
-function allocUninitialized(size: number): FastBuffer {
-  sizeErrorCheck(size, 'size', ['number'], 0, UINT32MAX);
-  const buf = new FastBuffer(size);
-  return buf;
+  throw typeError(value, 'value', ['FastBuffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object']);
 }
 
 function typeErrorForSize(param: unknown, paramName: string, excludedTypes: string[]): BusinessError {
   let msg = new ErrorMessage(errorMap.typeError, paramName).setSizeTypeInfo(excludedTypes, param).getString();
   return new BusinessError(msg, errorMap.typeError);
-}
-
-function typeErrorCheck(param: unknown, types: string[], paramName: string): void {
-  let typeName = getTypeName(param);
-  if (!types.includes(typeName)) {
-    throw typeError(param, paramName, types);
-  }
-}
-
-function bufferSizeError(size: string): BusinessError {
-  let msg = new ErrorMessage(errorMap.bufferSizeError).setSizeInfo(size).getString();
-  return new BusinessError(msg, errorMap.bufferSizeError);
 }
 
 function sizeErrorCheck(param: unknown, paramName: string, types: string[],
@@ -630,48 +551,37 @@ function sizeErrorCheck(param: unknown, paramName: string, types: string[],
   }
 }
 
-function checkEncodeing(value: string | object, offsetOrEncoding: string | number | undefined): string {
-  if (typeof value === 'string' || typeof value[Symbol.toPrimitive] === 'function') {
-    offsetOrEncoding = offsetOrEncoding ? offsetOrEncoding : 'utf8';
-    if (typeof offsetOrEncoding === 'number') {
-      offsetOrEncoding = 'utf8';
+function alloc(size: number, fill?: string | FastBuffer | number, encoding?: string): FastBuffer {
+  sizeErrorCheck(size, 'size', ['number'], 0, MAX_LENGTH);
+  const buf = new FastBuffer(size);
+  if (arguments.length === twoBytes && fill !== undefined && fill !== 0) {
+    buf.fill(fill);
+    return buf;
+  } else if (arguments.length === 3) { // 3 is array->maxIndex
+    if (!encoding) {
+      encoding = 'utf-8';
     }
-    return encodingTypeErrorCheck(offsetOrEncoding);
+    buf.fill(fill, 0, buf.length, encoding);
+    return buf;
   }
-  return '';
+  buf.fill(0);
+  return buf;
 }
 
-function normalizeEncoding(enc: string): string | undefined {
-  enc = enc.toLowerCase();
-  if (bufferEncoding.includes(enc)) {
-    if (enc === 'ucs2' || enc === 'ucs-2' || enc === 'utf-16le') {
-      enc = 'utf16le';
-    }
-    if (enc === 'utf-8') {
-      enc = 'utf8';
-    }
-    return enc;
-  } else {
-    return undefined;
-  }
+function allocUninitialized(size: number): FastBuffer {
+  sizeErrorCheck(size, 'size', ['number'], 0, MAX_LENGTH);
+  const buf = new FastBuffer(size);
+  return buf;
+}
+
+function bufferSizeError(size: string): BusinessError {
+  let msg = new ErrorMessage(errorMap.bufferSizeError).setSizeInfo(size).getString();
+  return new BusinessError(msg, errorMap.bufferSizeError);
 }
 
 function typeError(param: unknown, paramName: string, excludedTypes: string[]): BusinessError {
   let msg = new ErrorMessage(errorMap.typeError, paramName).setTypeInfo(excludedTypes, param).getString();
   return new BusinessError(msg, errorMap.typeError);
-}
-
-function typeErrorForEncoding(param: unknown, paramName: string): BusinessError {
-  let msg = new ErrorMessage(errorMap.typeError, paramName).setEncodingTypeInfo(['BufferEncoding'], param).getString();
-  return new BusinessError(msg, errorMap.typeError);
-}
-
-function encodingTypeErrorCheck(encoding: string): string {
-  const normalizedEncoding = normalizeEncoding(encoding);
-  if (normalizedEncoding === undefined) {
-    throw typeErrorForEncoding(encoding, 'encoding');
-  }
-  return normalizedEncoding;
 }
 
 function rangeErrorCheck(param: number, paramName: string,
@@ -700,13 +610,7 @@ function rangeError(paramName: string, rangeLeft: string | bigint | number, rang
 }
 
 function fromString(value: string, encoding: string): FastBuffer {
-  if (encoding === 'base64') {
-    value = value.replace(/[\r\n]/g, '');
-  }
-  let enc = normalizeEncoding(encoding);
-  if (!enc) {
-    throw typeErrorForEncoding(encoding, 'encoding');
-  }
+  let enc = encoding.toLowerCase();
   return new FastBuffer(value, enc);
 }
 
@@ -724,31 +628,21 @@ function alignPool(): void {
 }
 
 function allocUninitializedFromPool(size: number): FastBuffer {
-  sizeErrorCheck(size, 'size', ['number'], 0, UINT32MAX);
-  if (!pool) {
-    createPool();
-  }
-  if (size < (poolSize >>> 1)) {
-    if (size > (poolSize - poolOffset)) {
-      createPool();
-    }
-    const b = new FastBuffer(pool, poolOffset, size);
-    poolOffset += size;
-    alignPool();
-    return b;
-  }
+  sizeErrorCheck(size, 'size', ['number'], 0, MAX_LENGTH);
+  // Coming soon
+  // if (!pool) {
+  //   createPool();
+  // }
+  // if (size < (poolSize >>> 1)) {
+  //   if (size > (poolSize - poolOffset)) {
+  //     createPool();
+  //   }
+  //   const b = new FastBuffer(pool, poolOffset, size);
+  //   poolOffset += size;
+  //   alignPool();
+  //   return b;
+  // }
   return new FastBuffer(size);
-}
-
-function isTypedArray(self: unknown): boolean {
-  let typeArr = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
-    Int32Array, Uint32Array, Float32Array, Float64Array];
-  for (let i = 0, len = typeArr.length; i < len; i++) {
-    if (self instanceof typeArr[i]) {
-      return true;
-    }
-  }
-  return false;
 }
 
 function getBase64ByteLength(str: string): number {
@@ -784,7 +678,7 @@ function getUtf8ByteLength(str: string): number {
   return byteLength;
 }
 
-function GetByteLength(str: string, type: string): number {
+function getEncodingByteLength(str: string, type: string): number {
   type = type.toLowerCase();
   switch (type) {
     case 'utf8':
@@ -811,32 +705,46 @@ function GetByteLength(str: string, type: string): number {
   }
 }
 
+function isTypedArray(self: unknown): boolean {
+  let typeArr = [Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
+    Int32Array, Uint32Array, Float32Array, Float64Array];
+  for (let i = 0, len = typeArr.length; i < len; i++) {
+    if (self instanceof typeArr[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function byteLength(string: string | BackingType, encoding: string = 'utf8'): number {
-  if (typeof string === 'string' || isTypedArray(string) || string instanceof DataView ||
-      string instanceof ArrayBuffer || string instanceof SharedArrayBuffer || string instanceof FastBuffer) {
     if (string instanceof FastBuffer) {
       return string.length;
     } else if (typeof string === 'string') {
       if (string.length === 0) {
         return 0;
       }
-      if (encoding === null) {
+      if (!encoding) {
         encoding = 'utf8';
       }
-      return GetByteLength(string, encoding);
+      return getEncodingByteLength(string, encoding);
     } else {
-      return string.byteLength;
+        if (isTypedArray(string) || string instanceof DataView ||
+          string instanceof ArrayBuffer || string instanceof SharedArrayBuffer) {
+          return string.byteLength;
+        }
+        throw typeError(string, 'string', ['string', 'FastBuffer', 'ArrayBuffer']);
     }
-  } else {
-    throw typeError(string, 'string', ['string', 'FastBuffer', 'ArrayBuffer']);
-  }
 }
+
 
 function isBuffer(obj: Object): boolean {
   return obj instanceof FastBuffer;
 }
 
 function isEncoding(enc: string): boolean {
+  if (!enc) {
+    return false;
+  }
   enc = enc.toLowerCase();
   if (bufferEncoding.includes(enc)) {
     return true;
@@ -864,12 +772,18 @@ function compare(buf1: FastBuffer | Uint8Array, buf2: FastBuffer | Uint8Array): 
 
   let tempBuf: FastBuffer;
   if (buf1 instanceof FastBuffer) {
-    tempBuf = new FastBuffer(buf1, 0, buf1.length);
+    return buf1.compare(buf2, 0, buf2.length, 0, buf1.length);
   } else {
     tempBuf = new FastBuffer(buf1);
+    return tempBuf.compare(buf2, 0, buf2.length, 0, tempBuf.length);
   }
-  
-  return tempBuf.compare(buf2, 0, buf2.length, 0, buf1.length);
+}
+
+function typeErrorCheck(param: unknown, types: string[], paramName: string): void {
+  let typeName = getTypeName(param);
+  if (!types.includes(typeName)) {
+    throw typeError(param, paramName, types);
+  }
 }
 
 function concat(list: FastBuffer[] | Uint8Array[], totalLength?: number): FastBuffer {
