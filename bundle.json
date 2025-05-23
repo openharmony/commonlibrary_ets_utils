@@ -77,6 +77,7 @@
                 "//commonlibrary/ets_utils/js_api_module/convertxml:convertxml_packages",
                 "//commonlibrary/ets_utils/js_api_module/xml:xml_packages",
                 "//commonlibrary/ets_utils/js_api_module/buffer:buffer_packages",
+                "//commonlibrary/ets_utils/js_api_module/fastbuffer:fastbuffer_packages",
                 "//commonlibrary/ets_utils/js_concurrent_module/utils:utils_packages",
                 "//commonlibrary/ets_utils/js_concurrent_module/taskpool:taskpool_packages",
                 "//commonlibrary/ets_utils/js_concurrent_module/worker:worker_packages",
