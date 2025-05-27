@@ -417,8 +417,8 @@ void TaskPool::HandleTaskResultInner(Task* task)
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
         napiTaskResult = task->IsAsyncRunnerTask() ? TaskManager::GetInstance().CancelError(task->env_,
-            ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, nullptr, napiTaskResult) :
-            TaskManager::GetInstance().CancelError(task->env_, 0, "taskpool:: task has been canceled", napiTaskResult);
+            ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, nullptr, napiTaskResult, task->success_) :
+            TaskManager::GetInstance().CancelError(task->env_, 0, nullptr, napiTaskResult, task->success_);
     } else if (status != napi_ok) {
         strTrace += ", performResult : DeserializeFailed";
         taskLog += ", DeserializeFailed";
