@@ -3236,6 +3236,7 @@ HWTEST_F(NativeEngineTest, SetAttributesDynamicTest001, testing::ext::TestSize.L
 {
     napi_env env = (napi_env)engine_;
     OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.SetAttributes("importance", "high");
     xmlSerializer.StartElement("note");
     xmlSerializer.SetAttributes("importance1", "high1");
     xmlSerializer.SetAttributes("importance2", "high2");
@@ -3299,6 +3300,7 @@ HWTEST_F(NativeEngineTest, EndElementDynamicTest001, testing::ext::TestSize.Leve
 {
     napi_env env = (napi_env)engine_;
     OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.EndElement();
     xmlSerializer.StartElement("note2");
     xmlSerializer.SetAttributes("importance", "high");
     xmlSerializer.EndElement();
@@ -3335,6 +3337,39 @@ HWTEST_F(NativeEngineTest, SetNamespaceDynamicTest001, testing::ext::TestSize.Le
     ASSERT_STREQ(pBuffer.get(), strEnd.c_str());
 }
 
+/* @tc.name: SetNamespaceDynamicTest002
+ * @tc.desc: Test whether write the namespace of the current element tag successfully when type is "isStart".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetNamespaceDynamicTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetNamespace("h", "http://www.w3.org/TR/html4/");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
+/* @tc.name: SetNamespaceDynamicTest003
+ * @tc.desc: Test whether write the namespace of the current element tag successfully when type is "isAttri".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetNamespaceDynamicTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetNamespace("h", "http://www.w3.org/TR/html4/");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
 /* @tc.name: SetCommentDynamicTest001
  * @tc.desc: Test write the comment successfully.
  * @tc.type: FUNC
@@ -3354,11 +3389,44 @@ HWTEST_F(NativeEngineTest, SetCommentDynamicTest001, testing::ext::TestSize.Leve
     ASSERT_STREQ(pBuffer.get(), "<!--Hello, World!-->\r\n<note/>");
 }
 
-/* @tc.name: SetCDATADynamicTest001
+/* @tc.name: SetCommentDynamicTest002
+ * @tc.desc: Test write the comment successfully when type is "isStart".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCommentDynamicTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetComment("Hello, World!");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
+/* @tc.name: SetCommentDynamicTest003
+ * @tc.desc: Test write the comment successfully when type is "isAttri".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCommentDynamicTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetComment("Hello, World!");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
+/* @tc.name: SetCDataDynamicTest001
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDATADynamicTest001, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDataDynamicTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
@@ -3368,6 +3436,39 @@ HWTEST_F(NativeEngineTest, SetCDATADynamicTest001, testing::ext::TestSize.Level0
     memset_s(pBuffer.get(), size, 0, size);
     xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
     ASSERT_STREQ(pBuffer.get(), "<![CDATA[]]]]><![CDATA[>]]>");
+}
+
+/* @tc.name: SetCDataDynamicTest002
+ * @tc.desc: Test whether Writes the CDATA successfully when type is "isStart".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDataDynamicTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetCData("]]>");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
+/* @tc.name: SetCDataDynamicTest003
+ * @tc.desc: Test whether Writes the CDATA successfully when type is "isAttri".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetCDataDynamicTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetCData("]]>");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
 }
 
 /* @tc.name: SetTextDynamicTest001
@@ -3408,4 +3509,111 @@ HWTEST_F(NativeEngineTest, SetDocTypeDynamicTest001, testing::ext::TestSize.Leve
     xmlSerializer.GetXmlBuffer(pBuffer.get(), size);
     ASSERT_STREQ(pBuffer.get(),
                  "<note>\r\n  <!DOCTYPE root SYSTEM \"http://www.test.org/test.dtd\">\r\n</note>");
+}
+
+/* @tc.name: SetDocTypeDynamicTest002
+ * @tc.desc: Test whether rites the DOCTYPE successfully when type is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetDocTypeDynamicTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.SetDocType("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
+/* @tc.name: SetDocTypeDynamicTest003
+ * @tc.desc: Test whether writes the DOCTYPE successfully when type is "isAttri".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetDocTypeDynamicTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.SetAttributes("importance", "high");
+    xmlSerializer.SetDocType("root SYSTEM \"http://www.test.org/test.dtd\"");
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
+/* @tc.name: WriteEscapedDynamicTest001
+ * @tc.desc: Test whether the special characters have been escaped successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, WriteEscapedDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    std::string EscapedStr = "\'\"&>< ";
+    xmlSerializer.WriteEscaped(EscapedStr);
+    xmlSerializer.EndElement();
+
+    size_t length = xmlSerializer.GetXmlBufferLength();
+    ASSERT_GT(length, 0);
+}
+
+/* @tc.name: DealNapiStrValueDynamicTest001
+ * @tc.desc: Test whether the JavaScript string has been converted successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealNapiStrValueDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value inputNapiStr = nullptr;
+    std::string inputStr = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><todo>Work</todo>";
+    napi_create_string_utf8(env, inputStr.c_str(), inputStr.size(), &inputNapiStr);
+
+    std::string outputStr = "";
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.DealNapiStrValue(env, inputNapiStr, outputStr);
+    ASSERT_STREQ(inputStr.c_str(), outputStr.c_str());
+}
+
+/* @tc.name: DealNapiStrValueDynamicTest002
+ * @tc.desc: Test Exception Handling for Failed JavaScript String Conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DealNapiStrValueDynamicTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value inputNapiStr = nullptr;
+    std::string inputStr = "";
+    napi_create_string_utf8(env, inputStr.c_str(), inputStr.size(), &inputNapiStr);
+
+    std::string outputStr = "";
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.DealNapiStrValue(env, inputNapiStr, outputStr);
+    ASSERT_STREQ(inputStr.c_str(), outputStr.c_str());
+
+    xmlSerializer.DealNapiStrValue(env, nullptr, outputStr);
+}
+
+/* @tc.name: GetXmlBufferDynamicTest001
+ * @tc.desc: Test whether the buffer is successfully retrieved when input parameters are invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetXmlBufferDynamicTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
+    xmlSerializer.StartElement("note");
+    xmlSerializer.EndElement();
+
+    size_t size = xmlSerializer.GetXmlBufferLength() + 1;
+    bool ret = xmlSerializer.GetXmlBuffer(nullptr, size);
+    ASSERT_FALSE(ret);
+
+    auto pBuffer = std::make_unique<char[]>(1);
+    memset_s(pBuffer.get(), 1, 0, 1);
+    ret = xmlSerializer.GetXmlBuffer(pBuffer.get(), 1);
+    ASSERT_FALSE(ret);
 }
