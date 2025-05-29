@@ -30,6 +30,7 @@ namespace OHOS::xml {
     constexpr uint32_t MAX_XML_LENGTH = 100000;
     constexpr uint32_t INIT_XML_LENGTH = 8 * 1024;
     enum ErrorCodeEnum {
+        NO_ERROR = 0,
         BUFFER_OVERFLOW = 10200062,
         ILLEGAL_POSITION = 10200063,
         NO_ELEMENT_MATCH = 10200065
@@ -175,7 +176,7 @@ namespace OHOS::xml {
         int32_t curNspNum {0};
         int32_t elementNum_ {0};
         size_t depth_ {0};
-        ErrorCodeEnum errorCode_;
+        ErrorCodeEnum errorCode_ = ErrorCodeEnum::NO_ERROR;
         napi_env env_ {nullptr};
         std::string xmlSerializerError_ {""};
         std::string encoding_ {""};
