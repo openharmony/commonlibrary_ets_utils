@@ -1630,7 +1630,8 @@ void TaskManager::UvReportHisysEvent(Worker* worker, std::string methodName, std
 #endif
 }
 
-napi_value TaskManager::CancelError(napi_env env, int32_t errCode, const char* errMessage, napi_value result)
+napi_value TaskManager::CancelError(napi_env env, int32_t errCode, const char* errMessage, napi_value result,
+                                    bool success)
 {
     std::string errTitle = "";
     napi_value concurrentError = nullptr;
@@ -1643,6 +1644,10 @@ napi_value TaskManager::CancelError(napi_env env, int32_t errCode, const char* e
 
     if (errCode == ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED) {
         errTitle = "The asyncRunner task has been canceled.";
+    }
+
+    if (errCode == 0 && errMessage == nullptr) {
+        errTitle = "taskpool:: task has been canceled";
     }
     
     napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
@@ -1662,9 +1667,14 @@ napi_value TaskManager::CancelError(napi_env env, int32_t errCode, const char* e
     napi_value errorValue = msg;
     napi_get_undefined(env, &resultValue);
     if (result != nullptr) {
+        bool isError = false;
+        napi_is_error(env, result, &isError);
         napi_value error = NapiHelper::GetNameProperty(env, result, "error");
         if (NapiHelper::IsNotUndefined(env, error)) {
             errorValue = error;
+        } else if (isError && !success) {
+            napi_value errMsg = NapiHelper::GetNameProperty(env, result, "message");
+            errorValue = errMsg;
         } else {
             resultValue = result;
         }
