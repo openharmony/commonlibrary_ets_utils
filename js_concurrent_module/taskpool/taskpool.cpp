@@ -296,8 +296,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    if (!task->IsExecuted() || task->taskState_ == ExecuteState::CANCELED ||
-        task->taskState_ == ExecuteState::FINISHED) {
+    if (!task->IsExecuted() || task->IsRealyCanceled() || task->taskState_ == ExecuteState::FINISHED) {
         task->taskState_ = ExecuteState::DELAYED;
     }
     task->UpdateTaskType(TaskType::COMMON_TASK);
@@ -565,7 +564,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
-        (task->taskState_ == ExecuteState::CANCELED && task->isCancelToFinish_)) {
+        task->IsRealyCanceled()) {
         task->taskState_ = ExecuteState::WAITING;
         task->isCancelToFinish_ = false;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);

@@ -1856,4 +1856,9 @@ uint32_t Task::GetTaskId() const
 {
     return taskId_;
 }
+
+bool Task::IsRealyCanceled()
+{
+    return taskState_ == ExecuteState::CANCELED && isCancelToFinish_;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

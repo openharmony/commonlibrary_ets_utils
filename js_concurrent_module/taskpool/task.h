@@ -192,6 +192,7 @@ public:
     Worker* GetWorker() const;
     napi_env GetEnv() const;
     uint32_t GetTaskId() const;
+    bool IsRealyCanceled();
 
 private:
     Task(const Task &) = delete;
