@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 import { registerArkTS } from './arkts.ets';
+import { registerArkUI } from './arkui.ets';
 
 export function registerMain(){
     registerArkTS();
+    registerArkUI();
 }
