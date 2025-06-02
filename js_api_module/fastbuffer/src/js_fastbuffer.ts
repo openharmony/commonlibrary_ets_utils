@@ -67,8 +67,9 @@ enum RangeErrorCategories {
   LEFT
 };
 
-const UINT32MAX = 4294967296;
-const MAX_LENGTH: number = Math.pow(2, 32);
+const UINT32MAX = 4294967295;
+const INT64_MAX = 2n ** 63n - 1n;
+const UINT64_MAX = 2n ** 64n - 1n;
 
 class ErrorMessage {
   public errorNumber: number = 0;
@@ -332,21 +333,6 @@ class FastBuffer extends FastBufferInner {
 
   lastIndexOf(value: string | number | FastBuffer | Uint8Array, byteOffset: number = this.length,
     encoding: string = 'utf8'): number {
-    if (typeof value === 'string') {
-      if (value.length === 0) {
-        return -1;
-      }
-      if (typeof byteOffset === null) {
-        byteOffset = 0;
-      }
-      if (encoding === null) {
-        encoding = 'utf8';
-      }
-      encoding = encoding.toLowerCase();
-      let str = this.toString(encoding);
-      byteOffset = byteOffset < 0 ? str.length + byteOffset : byteOffset;
-      return str.lastIndexOf(value, byteOffset);
-    }
     if (typeof byteOffset === 'string') {
       encoding = byteOffset;
     }
@@ -365,25 +351,11 @@ class FastBuffer extends FastBufferInner {
     targetStart = isNaN(targetStart) ? 0 : Number(targetStart);
     sourceStart = isNaN(sourceStart) ? 0 : Number(sourceStart);
     sourceEnd = isNaN(sourceEnd) ? this.length : Number(sourceEnd);
-    rangeLeftErrorCheck(targetStart, 'targetStart', 0);
-    rangeLeftErrorCheck(sourceStart, 'sourceStart', 0);
-    rangeLeftErrorCheck(sourceEnd, 'sourceEnd', 0);
-    if (targetStart >= target.length) {
-      return 0;
-    }
-    if (sourceEnd <= sourceStart || sourceStart >= this.length) {
-      return 0;
-    }
     return super.copy(target, targetStart, sourceStart, sourceEnd);
   }
 
   fill(value: string | FastBuffer | Uint8Array | number, offset: number = 0, end: number = this.length,
     encoding: string = 'utf8'): FastBuffer {
-          rangeErrorCheck(offset, 'offset', 0, UINT32MAX);
-    rangeErrorCheck(end, 'end', 0, this.length);
-    if (offset > end - 1) {
-      return this;
-    }
     return super.fill(value, offset, end, encoding);
   }
 
@@ -402,16 +374,6 @@ class FastBuffer extends FastBufferInner {
       sourceEnd = this.length;
     }
     typeErrorCheck(target, ['FastBuffer', 'Uint8Array'], 'target');
-    typeErrorCheck(targetStart, ['number'], 'targetStart');
-    typeErrorCheck(targetEnd, ['number'], 'targetEnd');
-    typeErrorCheck(sourceStart, ['number'], 'sourceStart');
-    typeErrorCheck(sourceEnd, ['number'], 'sourceEnd');
-    if (sourceStart >= sourceEnd) {
-      return (targetStart >= targetEnd ? 0 : -1);
-    }
-    if (targetStart >= targetEnd) {
-      return 1;
-    }
     return super.compare(target, targetStart, targetEnd, sourceStart, sourceEnd);
   }
 
@@ -436,6 +398,38 @@ class FastBuffer extends FastBufferInner {
       return newBuf;
     }
     return new FastBuffer(this.buffer, start, end - start);
+  }
+
+  writeBigInt64BE(value: bigint, offset: number = 0): number {
+    if (typeof value !== "bigint") {
+      throw typeError(value, 'value', ['bigint']);
+    }
+    rangeErrorCheck(value, 'value', -INT64_MAX, INT64_MAX);
+    return super.writeBigInt64BE(value, offset);
+  }
+
+  writeBigInt64LE(value: bigint, offset: number = 0): number {
+    if (typeof value !== "bigint") {
+      throw typeError(value, 'value', ['bigint']);
+    }
+    rangeErrorCheck(value, 'value', -INT64_MAX, INT64_MAX);
+    return super.writeBigInt64LE(value, offset);
+  }
+  
+  writeBigUInt64BE(value: bigint, offset: number = 0): number {
+    if (typeof value !== "bigint") {
+      throw typeError(value, 'value', ['bigint']);
+    }
+    rangeErrorCheck(value, 'value', 0, UINT64_MAX);
+    return super.writeBigUInt64BE(value, offset);
+  }
+
+  writeBigUInt64LE(value: bigint, offset: number = 0): number {
+    if (typeof value !== "bigint") {
+      throw typeError(value, 'value', ['bigint']);
+    }
+    rangeErrorCheck(value, 'value', 0, UINT64_MAX);
+    return super.writeBigUInt64LE(value, offset);
   }
 
   swap16(): FastBuffer {
@@ -531,28 +525,12 @@ function from(value: FastBuffer | Uint8Array | ArrayBuffer | SharedArrayBuffer |
   throw typeError(value, 'value', ['FastBuffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object']);
 }
 
-function typeErrorForSize(param: unknown, paramName: string, excludedTypes: string[]): BusinessError {
-  let msg = new ErrorMessage(errorMap.typeError, paramName).setSizeTypeInfo(excludedTypes, param).getString();
-  return new BusinessError(msg, errorMap.typeError);
-}
-
-function sizeErrorCheck(param: unknown, paramName: string, types: string[],
-  rangeLeft: number, rangeRight: number): void {
-  let typeName = getTypeName(param);
-  if (!types.includes(typeName)) {
-    throw typeErrorForSize(param, paramName, types);
-  }
-  if (Number(param) < rangeLeft || Number(param) > rangeRight) {
-    let typeString = types.join(', ');
-    typeString = typeString.replace(',', ' or');
-    let msg = 'Parameter error. The type of "' + paramName + '" must be ' + typeString +
-      ' and the value cannot be negative. Received value is: ' + Number(param).toString();
+function alloc(size: number, fill?: string | FastBuffer | number, encoding?: string): FastBuffer {
+  if (size < 0 || size > UINT32MAX) {
+    let msg = 'Parameter error. The type of "size" must be ' + 'number' +
+      ' and the value cannot be negative. Received value is: ' + Number(size).toString();
     throw new BusinessError(msg, errorMap.typeError);
   }
-}
-
-function alloc(size: number, fill?: string | FastBuffer | number, encoding?: string): FastBuffer {
-  sizeErrorCheck(size, 'size', ['number'], 0, MAX_LENGTH);
   const buf = new FastBuffer(size);
   if (arguments.length === twoBytes && fill !== undefined && fill !== 0) {
     buf.fill(fill);
@@ -569,7 +547,11 @@ function alloc(size: number, fill?: string | FastBuffer | number, encoding?: str
 }
 
 function allocUninitialized(size: number): FastBuffer {
-  sizeErrorCheck(size, 'size', ['number'], 0, MAX_LENGTH);
+  if (size < 0 || size > UINT32MAX) {
+    let msg = 'Parameter error. The type of "size" must be ' + 'number' +
+      ' and the value cannot be negative. Received value is: ' + Number(size).toString();
+    throw new BusinessError(msg, errorMap.typeError);
+  }
   const buf = new FastBuffer(size);
   return buf;
 }
@@ -584,22 +566,11 @@ function typeError(param: unknown, paramName: string, excludedTypes: string[]): 
   return new BusinessError(msg, errorMap.typeError);
 }
 
-function rangeErrorCheck(param: number, paramName: string,
-                         rangeLeft: number, rangeRight: number): void {
+function rangeErrorCheck(param: number | bigint, paramName: string,
+                         rangeLeft: number | bigint, rangeRight: number | bigint): void {
   if (param < rangeLeft || param > rangeRight) {
     throw rangeError(paramName, rangeLeft, rangeRight, param);
   }
-}
-
-function rangeLeftErrorCheck(param: number, paramName: string, rangeLeft: number): void {
-  if (param < rangeLeft) {
-    throw rangeLeftError(paramName, rangeLeft, param);
-  }
-}
-
-function rangeLeftError(paramName: string, rangeLeft: number, receivedValue: number): BusinessError {
-  let msg = new ErrorMessage(errorMap.rangeError, paramName).setRangeLeftInfo(rangeLeft, receivedValue).getString();
-  return new BusinessError(msg, errorMap.rangeError);
 }
 
 function rangeError(paramName: string, rangeLeft: string | bigint | number, rangeRight: string | bigint | number,
@@ -628,20 +599,11 @@ function alignPool(): void {
 }
 
 function allocUninitializedFromPool(size: number): FastBuffer {
-  sizeErrorCheck(size, 'size', ['number'], 0, MAX_LENGTH);
-  // Coming soon
-  // if (!pool) {
-  //   createPool();
-  // }
-  // if (size < (poolSize >>> 1)) {
-  //   if (size > (poolSize - poolOffset)) {
-  //     createPool();
-  //   }
-  //   const b = new FastBuffer(pool, poolOffset, size);
-  //   poolOffset += size;
-  //   alignPool();
-  //   return b;
-  // }
+  if (size < 0 || size > UINT32MAX) {
+    let msg = 'Parameter error. The type of "size" must be ' + 'number' +
+      ' and the value cannot be negative. Received value is: ' + Number(size).toString();
+    throw new BusinessError(msg, errorMap.typeError);
+  }
   return new FastBuffer(size);
 }
 

@@ -1,0 +1,151 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/components/ace_engine/ace_gen_obj.gni")
+import("//build/config/components/ets_frontend/es2abc_config.gni")
+import("//build/ohos.gni")
+import("//commonlibrary/ets_utils/ets_utils_config.gni")
+
+# compile .ts to .js.
+action("build_ts_js") {
+  script = "${ets_util_path}/js_api_module/build_ts_js.py"
+
+  outFile_Path = target_out_dir + "/" + current_cpu
+  args = [
+    "--dst-file",
+    rebase_path(target_out_dir + "/js_fastbuffer.js"),
+    "--module-path",
+    rebase_path("/commonlibrary/ets_utils/js_api_module/fastbuffer"),
+    "--out-file",
+    rebase_path(outFile_Path + "/js_fastbuffer.js"),
+    "--out-filePath",
+    rebase_path(outFile_Path),
+    "--relative-path",
+    rebase_path("//", root_build_dir),
+  ]
+  outputs = [ target_out_dir + "/js_fastbuffer.js" ]
+}
+
+config("fastbuffer_config") {
+  cflags_cc = [
+    "-std=c++17",
+    "-Wno-deprecated-declarations",
+  ]
+}
+
+base_output_path = get_label_info(":js_fastbuffer", "target_out_dir")
+gen_obj("js_fastbuffer") {
+  input = "$target_out_dir/js_fastbuffer.js"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    js_fastbuffer_obj_path = base_output_path + "/fastbuffer.c"
+  } else {
+    js_fastbuffer_obj_path = base_output_path + "/fastbuffer.o"
+  }
+  output = js_fastbuffer_obj_path
+  snapshot_dep = [ ":build_ts_js" ]
+}
+
+# compile .js to .abc.
+es2abc_gen_abc("gen_fastbuffer_abc") {
+  extra_visibility = [ ":*" ]
+  src_js = rebase_path(target_out_dir + "/js_fastbuffer.js")
+  dst_file = rebase_path(target_out_dir + "/fastbuffer.abc")
+  in_puts = [ target_out_dir + "/js_fastbuffer.js" ]
+  out_puts = [ target_out_dir + "/fastbuffer.abc" ]
+  extra_args = [ "--module" ]
+  extra_dependencies = [ ":build_ts_js" ]
+}
+
+abc_output_path = get_label_info(":fastbuffer_abc", "target_out_dir")
+gen_obj("fastbuffer_abc") {
+  input = "$target_out_dir/fastbuffer.abc"
+  if (use_mac || use_mingw_win || use_ios || use_linux) {
+    fastbuffer_abc_obj_path = abc_output_path + "/fastbuffer_abc.c"
+  } else {
+    fastbuffer_abc_obj_path = abc_output_path + "/fastbuffer_abc.o"
+  }
+  output = fastbuffer_abc_obj_path
+  snapshot_dep = [ ":gen_fastbuffer_abc" ]
+}
+
+fastbuffer_sources = [
+  "native_module_fastbuffer.cpp",
+]
+
+ohos_shared_library("fastbuffer") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  deps = [ ":fastbuffer_static" ]
+  external_deps = [ "hilog:libhilog" ]
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+
+  relative_install_dir = "module"
+}
+
+ohos_source_set("fastbuffer_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  include_dirs = [
+    "include",
+    ets_util_path,
+  ]
+
+  sources = fastbuffer_sources
+
+  deps = [
+    ":gen_obj_src_fastbuffer_abc",
+    ":gen_obj_src_js_fastbuffer",
+  ]
+
+  configs = [ ":fastbuffer_config" ]
+
+  if (is_arkui_x) {
+    include_dirs += [
+      "$plugins_root/hilog/include",
+      "$plugins_root/interfaces",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+    ]
+    if (target_os == "android") {
+      defines = [ "ANDROID_PLATFORM" ]
+    } else if (target_os == "ios") {
+      defines = [ "IOS_PLATFORM" ]
+    }
+    deps += [
+      "$plugins_root/libs/icu:icu_${target_os}",
+      "$plugins_root/libs/napi:napi_${target_os}",
+      "$plugins_root/libs/securec:sec_${target_os}",
+    ]
+  } else {
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "hilog:libhilog",
+      "icu:shared_icuuc",
+      "napi:ace_napi",
+    ]
+  }
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+}
+
+group("fastbuffer_packages") {
+  public_deps = [ ":fastbuffer" ]
+}

@@ -33,7 +33,6 @@ container_names = [
   "lightweightmap",
   "lightweightset",
   "plainarray",
-  "fastbuffer",
 ]
 
 # compile .ts to .js.
