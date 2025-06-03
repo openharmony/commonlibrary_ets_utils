@@ -44,6 +44,8 @@ static constexpr uint32_t DEFAULT_TIMEOUT = 5000;
 static constexpr uint32_t GLOBAL_CALL_ID_MAX = 4294967295;
 static constexpr size_t GLOBAL_CALL_MAX_COUNT = 65535;
 static constexpr uint32_t THREAD_NAME_MAX_LENGTH = 15;
+std::atomic<bool> Worker::wokerOnMessageInitState_ = false;
+std::atomic<bool> Worker::wokerOnTerminateInitState_ = false;
 
 #ifdef ENABLE_QOS
 static const std::unordered_map<WorkerPriority, OHOS::QOS::QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
@@ -1490,8 +1492,14 @@ void Worker::ExecuteInThread(const void* data)
 
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
-        ConcurrentHelper::UvHandleInit(loop, worker->workerOnMessageSignal_, Worker::WorkerOnMessage, worker);
-        ConcurrentHelper::UvHandleInit(loop, worker->workerOnTerminateSignal_, Worker::WorkerOnMessage, worker);
+        if (ConcurrentHelper::UvHandleInit(loop, worker->workerOnMessageSignal_,
+                                           Worker::WorkerOnMessage, worker) == 0) {
+            wokerOnMessageInitState_ = true;
+        }
+        if (ConcurrentHelper::UvHandleInit(loop, worker->workerOnTerminateSignal_,
+                                           Worker::WorkerOnMessage, worker) == 0) {
+            wokerOnTerminateInitState_ = true;
+        }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         ConcurrentHelper::UvHandleInit(loop, worker->debuggerOnPostTaskSignal_, Worker::HandleDebuggerTask, worker);
 #endif
@@ -1957,9 +1965,13 @@ void Worker::PostMessageInner(MessageDataType data)
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
     if (data == nullptr) {
         HILOG_INFO("worker:: host post nullptr to worker.");
-        ConcurrentHelper::UvCheckAndAsyncSend(workerOnTerminateSignal_);
+        if (wokerOnTerminateInitState_) {
+            ConcurrentHelper::UvCheckAndAsyncSend(workerOnTerminateSignal_);
+        }
     } else {
-        ConcurrentHelper::UvCheckAndAsyncSend(workerOnMessageSignal_);
+        if (wokerOnMessageInitState_) {
+            ConcurrentHelper::UvCheckAndAsyncSend(workerOnMessageSignal_);
+        }
     }
 }
 
