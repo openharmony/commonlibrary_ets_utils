@@ -391,7 +391,7 @@ inline std::uint8_t HexToDecimal(unsigned char hexChar)
 
 inline void AppendChars(std::string& result, size_t& i, size_t length, char* chars)
 {
-    for (size_t j = length; j-- > 0; ) {
+    for (size_t j = length; j-- > 0;) {
         result += chars[j];
         i += (HEX_PAIR_LENGTH + 1);
     }
