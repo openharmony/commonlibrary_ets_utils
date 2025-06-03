@@ -1604,7 +1604,7 @@ void Worker::HostOnMessageInner()
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
     ContainerScope containerScope(engine, scopeId_);
     if (!containerScope.IsInitialized()) {
-        HILOG_WARN("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
+        HILOG_DEBUG("worker:: InitContainerScopeFunc error when HostOnMessageInner begin(only stage model)");
     }
 
     napi_value obj = NapiHelper::GetReferenceValue(hostEnv_, workerRef_);
