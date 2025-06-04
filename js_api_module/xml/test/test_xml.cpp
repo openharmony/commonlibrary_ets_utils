@@ -72,6 +72,40 @@ napi_value Method(napi_env env, napi_callback_info info)
     return result;
 }
 
+napi_value AttrWithTagFunc(napi_env env, napi_callback_info info)
+{
+    napi_value thisVar = nullptr;
+    size_t argc = 0;
+    napi_value args[3] = { 0 }; // 3:three args
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+
+    std::string tagName = "";
+    size_t tagNameSize = 0;
+    napi_get_value_string_utf8(env, args[0], nullptr, 0, &tagNameSize);
+    tagName.reserve(tagNameSize + 1);
+    tagName.resize(tagNameSize);
+    napi_get_value_string_utf8(env, args[0], tagName.data(), tagNameSize + 1, &tagNameSize);
+
+    std::string attribute = "";
+    size_t attributeSize = 0;
+    napi_get_value_string_utf8(env, args[1], nullptr, 0, &attributeSize);
+    attribute.reserve(attributeSize + 1);
+    attribute.resize(attributeSize);
+    napi_get_value_string_utf8(env, args[1], attribute.data(), attributeSize + 1, &attributeSize);
+
+    std::string value = "";
+    size_t valueSize = 0;
+    napi_get_value_string_utf8(env, args[2], nullptr, 0, &valueSize); // 2:the third arg
+    value.reserve(valueSize + 1);
+    value.resize(valueSize);
+    napi_get_value_string_utf8(env, args[2], value.data(), valueSize + 1, &valueSize); // 2:the third arg
+    g_testStr += tagName + ' ' + attribute + ' ' + value + ' ';
+    napi_value result = nullptr;
+    napi_get_boolean(env, true, &result);
+    return result;
+}
+
 napi_value TokenValueCallbackFunction(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -1614,6 +1648,45 @@ HWTEST_F(NativeEngineTest, XmlParseTest0012, testing::ext::TestSize.Level0)
     xmlPullParser.DealOptionInfo(env, object);
     xmlPullParser.Parse(env, options, true);
     ASSERT_STREQ(g_testStr.c_str(), "");
+}
+
+/* @tc.name: XmlParseTest0013
+ * @tc.desc: Parse attributes and values
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlParseTest0013, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string strXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE note [\n<!ENTITY foo \"baa\">]>"
+        "<note importance=\"high\" logged=\"true\">"
+        "<![CDATA[\r\nfuncrion matchwo(a,6)\r\n{\r\nreturn 1;\r\n}\r\n]]>"
+        "<!--Hello, World!-->    <company>John &amp; Hans</company>    <title>Happy</title>"
+        "<title>Happy</title>    <todo>Work</todo>    <todo>Play</todo>    <?go there?>"
+        "<a><b/></a>    <h:table xmlns:h=\"http://www.w3.org/TR/html4/\">        <h:tr>"
+        "        <h:td>Apples</h:td>            <h:td>Bananas</h:td>        </h:tr>"
+        "</h:table></note>";
+    g_testStr = "";
+    OHOS::xml::XmlPullParser xmlPullParser(env, strXml, "utf-8");
+    napi_value options = nullptr;
+    napi_create_object(env, &options);
+    const char* docType = "supportDoctype";
+    const char* nameSpace = "ignoreNameSpace";
+    const char* attributeWithTag = "attributeWithTagCallbackFunction";
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value docTypeValue = nullptr;
+    napi_value nameSpaceVlaue = nullptr;
+    napi_get_boolean(env, false, &docTypeValue);
+    napi_get_boolean(env, false, &nameSpaceVlaue);
+    napi_value funcValue = nullptr;
+    std::string cbName = "AttrWithTagFunc";
+    napi_create_function(env, cbName.c_str(), cbName.size(), AttrWithTagFunc, nullptr, &funcValue);
+    napi_set_named_property(env, object, docType, docTypeValue);
+    napi_set_named_property(env, object, nameSpace, nameSpaceVlaue);
+    napi_set_named_property(env, object, attributeWithTag, funcValue);
+    xmlPullParser.DealOptionInfo(env, object);
+    xmlPullParser.Parse(env, options, true);
+    ASSERT_STREQ(g_testStr.c_str(), "note importance high note logged true ");
 }
 
 /* @tc.name: Xmlfunctest001
