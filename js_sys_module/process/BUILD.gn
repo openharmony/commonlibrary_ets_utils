@@ -59,8 +59,6 @@ ohos_source_set("process_static") {
   deps = []
   if (is_arkui_x) {
     include_dirs += [
-      "//third_party/icu/icu4c/source/common",
-      "//third_party/node/src",
       "$napi_root/interfaces/kits",
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",

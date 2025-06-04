@@ -97,8 +97,6 @@ ohos_source_set("convertxml_static") {
   }
   include_dirs = [
     "include",
-    "//third_party/icu/icu4c/source/common",
-    "//third_party/node/src",
     ets_util_path,
   ]
 

@@ -20,10 +20,7 @@ ohos_shared_library("dfx") {
     cfi_cross_dso = true
     debug = false
   }
-  include_dirs = [
-    "include",
-    "//third_party/node/src",
-  ]
+  include_dirs = [ "include" ]
   sources = [ "native_module_dfx.cpp" ]
   external_deps = [
     "icu:shared_icuuc",

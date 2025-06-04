@@ -24,7 +24,6 @@ ohos_unittest("test_taskpool_unittest") {
   include_dirs = [
     js_concurrent_module_common,
     "${ets_util_path}/js_concurrent_module/taskpool",
-    "//third_party/node/src",
     platform_root,
     ets_util_path,
   ]

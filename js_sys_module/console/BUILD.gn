@@ -95,7 +95,7 @@ ohos_source_set("console_static") {
     "console.cpp",
   ]
 
-  deps = []
+  external_deps = [ "napi:ace_napi" ]
 
   defines = []
 
@@ -104,15 +104,12 @@ ohos_source_set("console_static") {
       "$plugins_root/hilog/include",
       "$plugins_root/interfaces",
     ]
-    deps += [ "$plugins_root/libs/napi:napi_${target_os}" ]
     if (target_os == "android") {
       defines += [ "ANDROID_PLATFORM" ]
     }
     if (target_os == "ios") {
       defines += [ "IOS_PLATFORM" ]
     }
-  } else {
-    deps += [ "$napi_root:ace_napi" ]
   }
 
   subsystem_name = "commonlibrary"
