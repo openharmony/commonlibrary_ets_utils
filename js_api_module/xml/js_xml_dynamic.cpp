@@ -89,7 +89,7 @@ namespace OHOS::xml {
             strXml_.append(out_);
         } else {
             errorCode_ = ErrorCodeEnum::BUFFER_OVERFLOW;
-            xmlSerializerError_ = "The length has exceeded the upper limit";
+            xmlSerializerError_ = "The cumulative length of xml has exceeded the upper limit 100000.";
             ErrorHelper::ThrowError(env_, errorCode_, xmlSerializerError_.c_str());
         }
     }
@@ -97,7 +97,7 @@ namespace OHOS::xml {
     void XmlDynamicSerializer::SetDeclaration()
     {
         if (strXml_.length() > 0) {
-            xmlSerializerError_ = "illegal position for xml";
+            xmlSerializerError_ = "illegal position for xml.";
             errorCode_ = ErrorCodeEnum::ILLEGAL_POSITION;
             ErrorHelper::ThrowError(env_, errorCode_, xmlSerializerError_.c_str());
             return;
@@ -163,7 +163,7 @@ namespace OHOS::xml {
     {
         out_ = "";
         if (type_ != "isStart" && type_ != "isAttri") {
-            xmlSerializerError_ = "illegal position for xml";
+            xmlSerializerError_ = "illegal position for xml.";
             errorCode_ = ErrorCodeEnum::ILLEGAL_POSITION;
             ErrorHelper::ThrowError(env_, errorCode_, xmlSerializerError_.c_str());
             return;
@@ -180,7 +180,7 @@ namespace OHOS::xml {
     void XmlDynamicSerializer::EndElement()
     {
         if (elementNum_ < 1) {
-            xmlSerializerError_ = "There is no match between the startElement and the endElement";
+            xmlSerializerError_ = "There is no match between the startElement and the endElement.";
             errorCode_ = ErrorCodeEnum::NO_ELEMENT_MATCH;
             ErrorHelper::ThrowError(env_, errorCode_, xmlSerializerError_.c_str());
             return;

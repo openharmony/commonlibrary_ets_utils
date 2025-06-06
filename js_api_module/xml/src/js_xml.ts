@@ -244,7 +244,7 @@ class XmlDynamicSerializer {
         throw new BusinessError(`Parameter error.The type of ${encoding} must be string`);
       }
       if (encoding.toLowerCase() !== 'utf-8') {
-        throw new BusinessError('Parameter error.Just support utf-8', EncodingErrorCode);
+        throw new BusinessError('Incorrect encoding format, only support utf-8.', EncodingErrorCode);
       }
     }
     this.xmlSerializerClass = new XML.XmlDynamicSerializer(input);
@@ -263,7 +263,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${name} must be string`);
     }
     if (name.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     if (typeof value !== 'string') {
       throw new BusinessError(`Parameter error.The type of ${value} must be string`);
@@ -276,7 +276,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${name} must be string`);
     }
     if (name.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     this.xmlSerializerClass.addEmptyElement(name);
   }
@@ -290,7 +290,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${name} must be string`);
     }
     if (name.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     this.xmlSerializerClass.startElement(name);
   }
@@ -307,7 +307,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${ns} must be string`);
     }
     if (prefix.length === 0 || ns.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     this.xmlSerializerClass.setNamespace(prefix, ns);
   }
@@ -317,7 +317,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${text} must be string`);
     }
     if (text.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     this.xmlSerializerClass.setComment(text);
   }
@@ -327,7 +327,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${text} must be string`);
     }
     if (text.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     this.xmlSerializerClass.setCDATA(text);
   }
@@ -337,7 +337,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${text} must be string`);
     }
     if (text.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     this.xmlSerializerClass.setText(text);
   }
@@ -347,7 +347,7 @@ class XmlDynamicSerializer {
       throw new BusinessError(`Parameter error.The type of ${text} must be string`);
     }
     if (text.length === 0) {
-      throw new BusinessError('Parameter error. Parameter cannot be empty', EmptyErrorCode);
+      throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     this.xmlSerializerClass.setDocType(text);
   }
