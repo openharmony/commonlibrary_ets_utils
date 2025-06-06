@@ -148,11 +148,11 @@ function containIllegalCode(str: string): Boolean {
   const unpairedSurrogateRe =
     /(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])/;
   const regex = new RegExp(unpairedSurrogateRe);
-  return regex.test(str)
+  return regex.test(str);
 }
 
 function fixIllegalString(str: string):string {
-  if(containIllegalCode(str)){
+  if(containIllegalCode(str)) {
     return UrlInterface.fixUSVstring(str);
   } else {
     return str;
@@ -600,7 +600,7 @@ class URL {
     }
   }
 
-  static setParamsFromNativeUrl(nativeUrl: NativeUrl, urlHelper:URL) {
+  static setParamsFromNativeUrl(nativeUrl: NativeUrl, urlHelper:URL): void {
     urlHelper.search_ = nativeUrl.search;
     urlHelper.username_ = nativeUrl.username;
     urlHelper.password_ = nativeUrl.password;
@@ -642,7 +642,7 @@ class URL {
     let urlHelper = new URL();
     urlHelper.c_info = nativeUrl;
     if (nativeUrl.onOrOff) {
-      URL.setParamsFromNativeUrl(nativeUrl,urlHelper);
+      URL.setParamsFromNativeUrl(nativeUrl, urlHelper);
     } else {
       let err : BusinessError = new BusinessError('Syntax Error. Invalid Url string');
       err.code = syntaxErrorCodeId;
