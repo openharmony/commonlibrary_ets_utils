@@ -12,12 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { registerArkTS } from './arkts.ets';
-import { registerArkUI } from './arkui.ets';
-import { registerAbilityKit } from './abilitykit.ets';
+import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerMain(){
-    registerArkTS();
-    registerArkUI();
-    registerAbilityKit();
+export function registerAbilityKit() {
+  registerStaticCB('AbilityKit.UIAbilityContext', 'application.UIAbilityContext', 'UIAbilityContext', 'transferStatic');
+  registerDynamicCB('AbilityKit.UIAbilityContext', 'application.UIAbilityContext', 'UIAbilityContext', 'transferDynamic');
 }
