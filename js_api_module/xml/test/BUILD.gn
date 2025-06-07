@@ -23,7 +23,6 @@ ohos_unittest("test_xml_unittest") {
 
   include_dirs = [
     "${ets_util_path}/js_api_module/xml",
-    "//third_party/node/src",
     ets_util_path,
   ]
 

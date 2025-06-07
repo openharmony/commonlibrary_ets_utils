@@ -24,7 +24,6 @@ ohos_unittest("test_worker_unittest") {
   include_dirs = [
     js_concurrent_module_common,
     "${ets_util_path}/js_concurrent_module/worker",
-    "//third_party/node/src",
     ets_util_path,
   ]
 

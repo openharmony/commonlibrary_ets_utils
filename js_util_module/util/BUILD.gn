@@ -115,7 +115,6 @@ ohos_source_set("util_static") {
     debug = false
   }
   include_dirs = [
-    "//third_party/node/src",
     platform_root,
     ets_util_path,
   ]

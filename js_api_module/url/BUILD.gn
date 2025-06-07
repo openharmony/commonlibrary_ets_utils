@@ -100,7 +100,6 @@ ohos_source_set("url_static") {
   }
   include_dirs = [
     "include",
-    "//third_party/node/src",
     ets_util_path,
   ]
 
@@ -126,7 +125,6 @@ ohos_source_set("url_static") {
       "$plugins_root/libs/securec:sec_${target_os}",
     ]
   } else {
-    include_dirs += [ "//third_party/icu/icu4c/source/common" ]
     if (is_standard_system) {
       external_deps = [ "hilog:libhilog" ]
     } else {

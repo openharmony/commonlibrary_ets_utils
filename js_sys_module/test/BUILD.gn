@@ -21,7 +21,6 @@ ohos_unittest("test_process_unittest") {
   module_out_path = module_output_path
   include_dirs = [
     "${ets_util_path}/js_sys_module/process",
-    "//third_party/node/src",
     ets_util_path,
   ]
 
