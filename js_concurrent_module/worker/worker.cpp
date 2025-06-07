@@ -51,6 +51,8 @@ static const std::unordered_map<WorkerPriority, OHOS::QOS::QosLevel> WORKERPRIOR
     {WorkerPriority::MEDIUM, OHOS::QOS::QosLevel::QOS_DEFAULT},
     {WorkerPriority::LOW, OHOS::QOS::QosLevel::QOS_UTILITY},
     {WorkerPriority::IDLE, OHOS::QOS::QosLevel::QOS_BACKGROUND},
+    {WorkerPriority::DEADLINE, OHOS::QOS::QosLevel::QOS_DEADLINE_REQUEST},
+    {WorkerPriority::VIP, OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE},
 };
 #endif
 
@@ -541,8 +543,8 @@ WorkerPriority Worker::GetPriorityArg(napi_env env, napi_value argsValue)
 
     int32_t priority = static_cast<int32_t>(WorkerPriority::INVALID);
     napi_get_value_int32(env, priorityValue, static_cast<int32_t*>(&priority));
-    if (priority < static_cast<int32_t>(WorkerPriority::HIGH) ||
-        priority > static_cast<int32_t>(WorkerPriority::IDLE)) {
+    if (priority <= static_cast<int32_t>(WorkerPriority::INVALID) ||
+        priority >= static_cast<int32_t>(WorkerPriority::MAX)) {
         HILOG_ERROR("worker:: GetPriorityArg error, value not in scope");
         return WorkerPriority::INVALID;
     }

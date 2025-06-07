@@ -36,7 +36,7 @@
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
-enum class WorkerPriority { INVALID = -1, HIGH = 0, MEDIUM, LOW, IDLE };
+enum class WorkerPriority { INVALID = -1, HIGH = 0, MEDIUM, LOW, IDLE, DEADLINE, VIP, MAX };
 
 class Worker {
 public:
