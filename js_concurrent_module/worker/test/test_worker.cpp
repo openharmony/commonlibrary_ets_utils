@@ -5196,7 +5196,17 @@ HWTEST_F(WorkersTest, QOSTest002, testing::ext::TestSize.Level0)
     ret = Worker::GetPriorityArg(env, object);
     ASSERT_NE(ret, WorkerPriority::INVALID);
 
-    napi_create_int32(env, 4, &intValue);
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::DEADLINE), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, static_cast<int32_t>(WorkerPriority::VIP), &intValue);
+    napi_set_named_property(env, object, "priority", intValue);
+    ret = Worker::GetPriorityArg(env, object);
+    ASSERT_NE(ret, WorkerPriority::INVALID);
+
+    napi_create_int32(env, 6, &intValue);
     napi_set_named_property(env, object, "priority", intValue);
     ret = Worker::GetPriorityArg(env, object);
     ASSERT_EQ(ret, WorkerPriority::INVALID);
