@@ -5580,3 +5580,111 @@ HWTEST_F(WorkersTest, ParseTransferListArgTest005, testing::ext::TestSize.Level0
     ASSERT_TRUE(isValid);
     ASSERT_CHECK_VALUE_TYPE(env, result, napi_undefined);
 }
+
+HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+
+    bool callbackCalled = false;
+    std::function<void(napi_env)> callback = [&callbackCalled](napi_env env) {
+        callbackCalled = true;
+    };
+
+    worker->RegisterCallbackForWorkerEnv(callback);
+    ASSERT_FALSE(callbackCalled);
+
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    worker->SetWorkerEnv(workerEnv);
+
+    ASSERT_TRUE(callbackCalled);
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    worker->SetWorkerEnv(workerEnv);
+
+    bool callbackCalled = false;
+    std::function<void(napi_env)> callback = [&callbackCalled](napi_env env) {
+        callbackCalled = true;
+    };
+
+    worker->RegisterCallbackForWorkerEnv(callback);
+    ASSERT_TRUE(callbackCalled);
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+
+    std::vector<int> executionOrder;
+
+    worker->RegisterCallbackForWorkerEnv([&executionOrder](napi_env) {
+        executionOrder.push_back(1);
+    });
+
+    worker->RegisterCallbackForWorkerEnv([&executionOrder](napi_env) {
+        executionOrder.push_back(2);
+    });
+
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    worker->SetWorkerEnv(workerEnv);
+
+    ASSERT_EQ(executionOrder.size(), 2u);
+    ASSERT_EQ(executionOrder[0], 1);
+    ASSERT_EQ(executionOrder[1], 2);
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+
+    napi_env capturedEnv = nullptr;
+    worker->RegisterCallbackForWorkerEnv([&capturedEnv](napi_env env) {
+        capturedEnv = env;
+    });
+
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    worker->SetWorkerEnv(workerEnv);
+
+    ASSERT_EQ(capturedEnv, workerEnv);
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+
+    napi_env workerEnv = nullptr;
+    napi_create_runtime(env, &workerEnv);
+    worker->SetWorkerEnv(workerEnv);
+
+    UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
+
+    bool callbackCalled = false;
+    worker->RegisterCallbackForWorkerEnv([&callbackCalled](napi_env) {
+        callbackCalled = true;
+    });
+
+    ASSERT_TRUE(callbackCalled);
+    delete worker;
+}
