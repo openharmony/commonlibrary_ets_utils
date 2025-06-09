@@ -452,8 +452,9 @@ public:
     void SetWorkerEnv(napi_env workerEnv)
     {
         workerEnv_ = workerEnv;
-        if (workerEnvCallback_) {
-            workerEnvCallback_(workerEnv_);
+        std::unique_lock<std::mutex> lock(workerEnvCallbackQueueMutex_);
+        for (; !workerEnvCallbackQueue_.empty(); workerEnvCallbackQueue_.pop()) {
+            workerEnvCallbackQueue_.front()(workerEnv_);
         }
     }
 
@@ -498,9 +499,12 @@ public:
 
     void RegisterCallbackForWorkerEnv(std::function<void (napi_env)> callback)
     {
-        workerEnvCallback_ = callback;
+        std::unique_lock<std::mutex> lock(workerEnvCallbackQueueMutex_);
+        workerEnvCallbackQueue_.push(callback);
         if (workerEnv_ != nullptr) {
-            workerEnvCallback_(workerEnv_);
+            for (; !workerEnvCallbackQueue_.empty(); workerEnvCallbackQueue_.pop()) {
+                workerEnvCallbackQueue_.front()(workerEnv_);
+            }
         }
     }
 
@@ -645,7 +649,8 @@ private:
 
     std::condition_variable cv_;
     std::atomic<bool> globalCallSuccess_ = true;
-    std::function<void(napi_env)> workerEnvCallback_;
+    std::mutex workerEnvCallbackQueueMutex_;
+    std::queue<std::function<void(napi_env)> > workerEnvCallbackQueue_;
 
     bool isMainThreadWorker_ = true;
     bool isNewVersion_ = true;
