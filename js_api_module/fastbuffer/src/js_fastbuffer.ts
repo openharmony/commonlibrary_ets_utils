@@ -401,7 +401,7 @@ class FastBuffer extends FastBufferInner {
   }
 
   writeBigInt64BE(value: bigint, offset: number = 0): number {
-    if (typeof value !== "bigint") {
+    if (typeof value !== 'bigint') {
       throw typeError(value, 'value', ['bigint']);
     }
     rangeErrorCheck(value, 'value', -INT64_MAX, INT64_MAX);
@@ -409,7 +409,7 @@ class FastBuffer extends FastBufferInner {
   }
 
   writeBigInt64LE(value: bigint, offset: number = 0): number {
-    if (typeof value !== "bigint") {
+    if (typeof value !== 'bigint') {
       throw typeError(value, 'value', ['bigint']);
     }
     rangeErrorCheck(value, 'value', -INT64_MAX, INT64_MAX);
@@ -417,7 +417,7 @@ class FastBuffer extends FastBufferInner {
   }
   
   writeBigUInt64BE(value: bigint, offset: number = 0): number {
-    if (typeof value !== "bigint") {
+    if (typeof value !== 'bigint') {
       throw typeError(value, 'value', ['bigint']);
     }
     rangeErrorCheck(value, 'value', 0, UINT64_MAX);
@@ -425,7 +425,7 @@ class FastBuffer extends FastBufferInner {
   }
 
   writeBigUInt64LE(value: bigint, offset: number = 0): number {
-    if (typeof value !== "bigint") {
+    if (typeof value !== 'bigint') {
       throw typeError(value, 'value', ['bigint']);
     }
     rangeErrorCheck(value, 'value', 0, UINT64_MAX);
