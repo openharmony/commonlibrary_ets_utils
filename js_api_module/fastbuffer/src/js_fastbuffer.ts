@@ -46,14 +46,16 @@ const ERROR_CODES = {
   TYPE_ERROR: 401, // 401: TYPE_ ERROR code value
   RANGE_ERROR: 10200001, // 10200001: RANGE_ERROR code value
   BUFFER_SIZE_ERROR: 10200009, // 10200009: BUFFER_SIZE_ERROR code value
-  PROPERTY_TYPE_ERROR: 10200013 // 10200013: TYPE_ ERROR code value
+  PROPERTY_TYPE_ERROR: 10200013, // 10200013: TYPE_ ERROR code value
+  ARRAY_BUFFER_IS_NULL_OR_DETACHED: 10200068 // 10200013: TYPE_ ERROR code value
 };
 
 let errorMap = {
   'typeError': ERROR_CODES.TYPE_ERROR,
   'rangeError': ERROR_CODES.RANGE_ERROR,
   'bufferSizeError': ERROR_CODES.BUFFER_SIZE_ERROR,
-  'typeErrorForProperty': ERROR_CODES.PROPERTY_TYPE_ERROR
+  'typeErrorForProperty': ERROR_CODES.PROPERTY_TYPE_ERROR,
+  'arrayBufferIsDetachedError': ERROR_CODES.ARRAY_BUFFER_IS_NULL_OR_DETACHED
 };
 
 enum TypeErrorCategories {
@@ -484,13 +486,19 @@ class FastBuffer extends FastBufferInner {
 function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
   offsetOrEncoding?: number | string, length?: number): FastBuffer {
   offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
-  const maxLength: number = value.byteLength - offsetOrEncoding;
+  let valueLength = 0;
+  try {
+    valueLength = value.byteLength;
+  } catch(e) {
+    throw new BusinessError('The underlying ArrayBuffer is null or detached.', errorMap.arrayBufferIsDetachedError);
+  }
+  const maxLength: number = valueLength - offsetOrEncoding;
   if (length === undefined) {
     length = maxLength;
   } else {
     length = isNaN(Number(length)) ? 0 : Number(length);
   }
-  rangeErrorCheck(offsetOrEncoding, 'byteOffset', 0, value.byteLength);
+  rangeErrorCheck(offsetOrEncoding, 'byteOffset', 0, valueLength);
   rangeErrorCheck(length, 'length', 0, maxLength);
   return new FastBuffer(value, offsetOrEncoding, length);
 }
