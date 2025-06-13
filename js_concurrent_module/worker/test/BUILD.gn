@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
 
 if (is_standard_system) {
-  module_output_path = "js_concurrent_module/worker"
+  module_output_path = "ets_utils/ets_utils/js_concurrent_module/worker"
 }
 
 ohos_unittest("test_worker_unittest") {
