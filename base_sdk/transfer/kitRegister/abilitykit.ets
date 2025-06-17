@@ -17,4 +17,13 @@ import { registerStaticCB, registerDynamicCB } from '../register.ets';
 export function registerAbilityKit() {
   registerStaticCB('AbilityKit.UIAbilityContext', 'application.UIAbilityContext', 'UIAbilityContext', 'transferStatic');
   registerDynamicCB('AbilityKit.UIAbilityContext', 'application.UIAbilityContext', 'UIAbilityContext', 'transferDynamic');
+
+  registerStaticCB('AbilityKit.Context', 'application.Context', 'Context', 'transferStatic');
+  registerDynamicCB('AbilityKit.Context', 'application.Context', 'Context', 'transferDynamic');
+
+  registerStaticCB('AbilityKit.ApplicationContext', 'application.ApplicationContext', 'ApplicationContext', 'transferStatic');
+  registerDynamicCB('AbilityKit.ApplicationContext', 'application.ApplicationContext', 'ApplicationContext', 'transferDynamic');
+
+  registerStaticCB('AbilityKit.AbilityStageContext', 'application.AbilityStageContext', 'AbilityStageContext', 'transferStatic');
+  registerDynamicCB('AbilityKit.AbilityStageContext', 'application.AbilityStageContext', 'AbilityStageContext', 'transferDynamic');
 }
