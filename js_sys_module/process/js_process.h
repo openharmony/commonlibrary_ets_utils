@@ -36,7 +36,7 @@ namespace OHOS::JsSysModule::Process {
         /**
          * Process destructor.
          */
-        virtual ~Process() {}
+        ~Process() {}
 
         /**
          * Get process uid.
@@ -241,7 +241,7 @@ namespace OHOS::JsSysModule::Process {
         /**
          * Process destructor.
          */
-        virtual ~ProcessManager() {}
+        ~ProcessManager() {}
 
         /**
          * Determine whether the uid belongs to the application.

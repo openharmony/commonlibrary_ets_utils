@@ -92,7 +92,7 @@ namespace OHOS::Xml {
         /**
          * The destructor of the ConvertXml.
          */
-        virtual ~ConvertXml() {}
+        ~ConvertXml() {}
 
         /**
          * To convert XML text to JavaScript object.

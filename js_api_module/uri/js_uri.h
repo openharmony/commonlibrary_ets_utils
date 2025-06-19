@@ -51,7 +51,7 @@ namespace OHOS::Uri {
         /**
          * The destructor of the Uri.
          */
-        virtual ~Uri() {}
+        ~Uri() {}
 
         /**
          * Tests whether this URI is equivalent to other URI objects.

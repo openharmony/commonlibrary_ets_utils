@@ -300,7 +300,7 @@ namespace OHOS::Url {
         /**
          * The destructor of the url
          */
-        virtual ~URL() {}
+        ~URL() {}
 
     private:
         UrlData urlData_;
@@ -316,9 +316,9 @@ namespace OHOS::Url {
         explicit URLSearchParams() {}
 
         /**
-         * Virtual destructor of URLSearchParams
+         * The destructor of URLSearchParams
          */
-        virtual ~URLSearchParams() {}
+        ~URLSearchParams() {}
 
         /**
          * Returns a Boolean that indicates whether a parameter with the specified name exists.

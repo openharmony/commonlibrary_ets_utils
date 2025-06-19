@@ -131,7 +131,7 @@ namespace OHOS::JsSysModule::Process {
         /**
          * ChildProcess destructor.
          */
-        virtual ~ChildProcess();
+        ~ChildProcess();
 
     private:
         static void ReadStdOut(napi_env env, void* data);
