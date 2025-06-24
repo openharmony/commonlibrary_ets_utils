@@ -6378,3 +6378,20 @@ HWTEST_F(NativeEngineTest, TaskpoolTest313, testing::ext::TestSize.Level0)
     error = TaskManager::GetInstance().CancelError(env, 0, nullptr, obj);
     ASSERT_TRUE(NapiHelper::IsNotUndefined(env, error));
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest314, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    uint32_t taskId = taskManager.CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    task->taskId_ = taskId;
+    task->isValid_ = false;
+    task->asyncTaskPriority_ = Priority::IDLE;
+    void* data = reinterpret_cast<void*>(task);
+    NativeEngineTest::PerformTask(env, data);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
