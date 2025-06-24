@@ -579,6 +579,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest037, testing::ext::TestSize.Level0)
     auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
     taskManager.RegisterCallback(env, taskId, callbackInfo);
     auto res = callbackInfo->refCount;
+    taskManager.DecreaseSendDataRefCount(env, taskId);
     ASSERT_EQ(res, 1);
 }
 
@@ -2043,6 +2044,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     
     TaskManager &taskManager = TaskManager::GetInstance();
     taskManager.RegisterCallback(env, taskId, nullptr);
+    taskManager.DecreaseSendDataRefCount(env, taskId);
     ASSERT_TRUE(true);
 }
 
@@ -2074,6 +2076,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
     napi_ref callbackRef = NapiHelper::CreateReference(env, argv[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
     taskManager.RegisterCallback(env, taskId, callbackInfo);
+    taskManager.DecreaseSendDataRefCount(env, taskId, task);
     ASSERT_TRUE(true);
 }
 
@@ -2115,6 +2118,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     napi_ref callbackRef = NapiHelper::CreateReference(env, argv1[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
     taskManager.RegisterCallback(env, taskId, callbackInfo);
+    taskManager.DecreaseSendDataRefCount(env, taskId, task);
     ASSERT_TRUE(true);
 }
 
