@@ -1361,7 +1361,7 @@ void Worker::ClearGlobalCallObject()
 
 void Worker::StartExecuteInThread(napi_env env, const char* script)
 {
-    HILOG_INFO("worker:: Start execute in the thread!");
+    HILOG_DEBUG("worker:: Start execute in the thread!");
     // 1. init hostHandle in host loop
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     if (loop == nullptr) {
