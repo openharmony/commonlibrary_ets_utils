@@ -1105,3 +1105,459 @@ HWTEST_F(NativeEngineTest, DoParseUUIDTest061, testing::ext::TestSize.Level0)
     napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
     ASSERT_EQ(length, 16);
 }
+
+/* @tc.name: DoParseUUIDTest062
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest062, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100062", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest063
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest063, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100063", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest064
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest064, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100064", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest065
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest065, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100065", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest066
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest066, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100066", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest067
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest067, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100067", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest068
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest068, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100068", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest069
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest069, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100069", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest070
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest070, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100070", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest071
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest071, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100071", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest072
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest072, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100072", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest073
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest073, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100073", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest074
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest074, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100074", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest075
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest075, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100075", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest076
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest076, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100076", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest077
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest077, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100077", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest078
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest078, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100078", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest079
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest079, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100079", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest080
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest080, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100080", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest081
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest081, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100081", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest082
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest082, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100082", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest083
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest083, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100083", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest084
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest084, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100084", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
+
+/* @tc.name: DoParseUUIDTest085
+ * @tc.desc: Parse a UUID from the string standard representation as described in the RFC 4122 version 4.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DoParseUUIDTest085, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "84bdf796-66cc-4655-9b89-d6218d100085", NAPI_AUTO_LENGTH, &src);
+    napi_value arr = OHOS::Util::DoParseUUID(env, src);
+    napi_typedarray_type type = napi_int8_array;
+    size_t byteOffset = 0;
+    size_t length = 0;
+    void* resultData = nullptr;
+    napi_value resultBuffer = nullptr;
+    napi_get_typedarray_info(env, arr, &type, &length, &resultData, &resultBuffer, &byteOffset);
+    ASSERT_EQ(length, 16);
+}
