@@ -137,6 +137,11 @@ TaskManager::~TaskManager()
 void TaskManager::CountTraceForWorker()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    CountTraceForWorkerWithoutLock();
+}
+
+inline void TaskManager::CountTraceForWorkerWithoutLock()
+{
     int64_t threadNum = static_cast<int64_t>(workers_.size());
     int64_t idleWorkers = static_cast<int64_t>(idleWorkers_.size());
     int64_t timeoutWorkers = static_cast<int64_t>(timeoutWorkers_.size());
@@ -744,7 +749,7 @@ void TaskManager::NotifyWorkerRunning(Worker* worker)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     idleWorkers_.erase(worker);
-    CountTraceForWorker();
+    CountTraceForWorkerWithoutLock();
 }
 
 uint32_t TaskManager::GetRunningWorkers()
@@ -850,7 +855,8 @@ std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()
         }
 
         auto& idleTaskQueue = taskQueues_[Priority::IDLE];
-        if (highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() && !idleTaskQueue->IsEmpty() && isChoose) {
+        if (!IsPerformIdle() && highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() && !idleTaskQueue->IsEmpty() &&
+            isChoose) {
             return GetTaskByPriority(idleTaskQueue, Priority::IDLE);
         }
     }
@@ -860,15 +866,9 @@ std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()
 bool TaskManager::IsChooseIdle()
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-    for (auto& worker : workers_) {
-        if (worker->state_ == WorkerState::IDLE) {
-            // If worker->state_ is WorkerState::IDLE, it means that the worker is free
-            continue;
-        }
-        // If there is a worker running a task, do not take the idle task.
+    if (workers_.size() != idleWorkers_.size()) {
         return false;
     }
-    // Only when all workers are free, will idle task be taken.
     return true;
 }
 
@@ -882,6 +882,9 @@ std::pair<uint32_t, Priority> TaskManager::GetTaskByPriority(const std::unique_p
     }
     DecreaseNumIfNoIdle(priority);
     preDequeneTime_ = ConcurrentHelper::GetMilliseconds();
+    if (priority == Priority::IDLE && taskId != 0) {
+        SetIsPerformIdle(true);
+    }
     return std::make_pair(taskId, priority);
 }
 
@@ -1683,5 +1686,15 @@ napi_value TaskManager::CancelError(napi_env env, int32_t errCode, const char* e
     napi_set_named_property(env, data, "error", errorValue);
     napi_set_named_property(env, concurrentError, "data", data);
     return concurrentError;
+}
+
+void TaskManager::SetIsPerformIdle(bool performIdle)
+{
+    isPerformIdle_ = performIdle;
+}
+
+bool TaskManager::IsPerformIdle() const
+{
+    return isPerformIdle_;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

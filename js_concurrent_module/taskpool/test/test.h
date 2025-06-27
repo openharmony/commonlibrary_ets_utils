@@ -75,6 +75,7 @@ public:
     static void ReleaseWorkerHandles(napi_env env);
     static void DebuggerOnPostTask(napi_env env);
     static void PerformTask(napi_env env);
+    static void PerformTask(napi_env env, void* data);
     static void NotifyHandleTaskResult(napi_env env);
     static void TaskResultCallback(napi_env env);
     static void HandleFunctionResult(napi_env env);

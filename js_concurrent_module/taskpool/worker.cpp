@@ -59,6 +59,9 @@ Worker::RunningScope::~RunningScope()
     }
     worker_->NotifyIdle();
     worker_->idleState_ = true;
+    if (worker_->priority_ == Priority::IDLE) {
+        TaskManager::GetInstance().SetIsPerformIdle(false);
+    }
 }
 
 Worker* Worker::WorkerConstructor(napi_env env)
@@ -412,16 +415,15 @@ bool Worker::UpdateWorkerState(WorkerState expect, WorkerState desired)
 
 void Worker::PerformTask(const uv_async_t* req)
 {
+    auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
+    if (taskInfo.first == 0) {
+        return;
+    }
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
     auto worker = static_cast<Worker*>(req->data);
     worker->UpdateWorkerWakeUpTime();
     napi_env env = worker->workerEnv_;
     TaskManager::GetInstance().NotifyWorkerRunning(worker);
-    auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
-    if (taskInfo.first == 0) {
-        worker->NotifyIdle();
-        return;
-    }
     RunningScope runningScope(worker);
     WorkerRunningScope workerRunningScope(env);
     PriorityScope priorityScope(worker, taskInfo.second);

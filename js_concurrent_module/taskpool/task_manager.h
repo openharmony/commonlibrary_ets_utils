@@ -98,6 +98,7 @@ public:
 
     // for countTrace for worker
     void CountTraceForWorker();
+    void CountTraceForWorkerWithoutLock();
 
     void RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo);
     void IncreaseSendDataRefCount(uint32_t taskId);
@@ -152,6 +153,8 @@ public:
                             int32_t code);
     napi_value CancelError(napi_env env, int32_t errCode, const char* errMessage = nullptr,
                            napi_value result = nullptr, bool success = false);
+    void SetIsPerformIdle(bool performIdle);
+    bool IsPerformIdle() const;
 
 private:
     TaskManager();
@@ -255,6 +258,7 @@ private:
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
 #endif
+    std::atomic<bool> isPerformIdle_ = false;
 
     friend class TaskGroupManager;
     friend class NativeEngineTest;
