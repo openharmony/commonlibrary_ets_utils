@@ -16,10 +16,12 @@ import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
 import { registerAbilityKit } from './abilitykit.ets';
 import { registerArkWeb } from './arkweb.ets';
+import { registerCommonEventManager } from './basicServicesKit.ets'
 
 export function registerMain(){
     registerArkTS();
     registerArkUI();
     registerAbilityKit();
     registerArkWeb();
+    registerCommonEventManager();
 }
