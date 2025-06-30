@@ -44,7 +44,7 @@ public:
         std::string moduleName = "";
         std::string bundleName = "";
         if (script.find(PAG_TAG) == 0 || script.find(NAME_SPACE_TAG) != std::string::npos) {
-            HILOG_INFO("worker:: the HAR path cannot be verified");
+            HILOG_DEBUG("worker:: the HAR path cannot be verified");
             return true;
         }
 
