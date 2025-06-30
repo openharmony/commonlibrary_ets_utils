@@ -49,6 +49,12 @@ static const std::map<Priority, int> WORKERPRIORITY_FFRTQOS_MAP = {
 };
 #endif
 
+struct ThreadInfo {
+    Priority priority {Priority::DEFAULT};
+    pid_t tid = 0;
+    std::vector<uint32_t> currentTaskId {};
+};
+
 class Worker {
 public:
     using DebuggerPostTask = std::function<void()>;
