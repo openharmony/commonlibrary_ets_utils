@@ -1001,22 +1001,45 @@ void NativeEngineTest::PerformTask(napi_env env, void* data)
             id = taskManager.taskQueues_[i]->DequeueTaskId();
         }
     }
-    taskManager.workers_.clear();
-    taskManager.idleWorkers_.clear();
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     napi_env workerEnv = nullptr;
     napi_create_runtime(env, &workerEnv);
     worker->workerEnv_ = workerEnv;
-    taskManager.workers_.insert(worker);
-    taskManager.idleWorkers_.insert(worker);
     Task* task = reinterpret_cast<Task*>(data);
     taskManager.StoreTask(task);
     taskManager.SetIsPerformIdle(false);
     taskManager.taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
-
     uv_async_t* req = new uv_async_t;
     req->data = worker;
     Worker::PerformTask(req);
     usleep(100000); // 100000: is sleep 100ms
+}
+
+void NativeEngineTest::GetIdleTaskByPriority(napi_env env)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    uint32_t id = 0;
+    for (size_t i = 0; i < taskManager.taskQueues_.size(); i++) {
+        id = taskManager.taskQueues_[i]->DequeueTaskId();
+        while (id != 0) {
+            id = taskManager.taskQueues_[i]->DequeueTaskId();
+        }
+    }
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    auto& taskQueue = taskManager.taskQueues_[Priority::IDLE];
+    taskQueue->EnqueueTaskId(task->taskId_);
+    taskManager.GetTaskByPriority(taskQueue, Priority::IDLE);
+    taskManager.SetIsPerformIdle(false);
+    taskManager.tasks_.clear();
+    delete task;
+}
+
+void NativeEngineTest::WorkerRunningScope(napi_env env)
+{
+    Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
+    worker->priority_ = Priority::IDLE;
+    worker->workerEnv_ = env;
+    Worker::RunningScope runningScope(worker);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
