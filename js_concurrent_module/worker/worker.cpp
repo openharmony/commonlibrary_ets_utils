@@ -1417,42 +1417,6 @@ void Worker::StartExecuteInThread(napi_env env, const char* script)
     CloseHelp::DeletePointer(script, true);
 }
 
-napi_env Worker::CreateWorkerEnv()
-{
-    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-    if (HostIsStop() || isHostEnvExited_) {
-        HILOG_ERROR("worker:: host thread is stop");
-        return nullptr;
-    }
-    napi_env env = GetHostEnv();
-    if (env == nullptr) {
-        HILOG_ERROR("worker:: host env is nullptr");
-        return nullptr;
-    }
-    napi_env workerEnv = nullptr;
-    if (isLimitedWorker_) {
-        napi_create_limit_runtime(env, &workerEnv);
-    } else {
-        napi_create_runtime(env, &workerEnv);
-    }
-    if (workerEnv == nullptr) {
-        HILOG_ERROR("worker:: Worker create runtime error");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
-        return nullptr;
-    }
-    if (isLimitedWorker_) {
-        reinterpret_cast<NativeEngine*>(workerEnv)->MarkRestrictedWorkerThread();
-    } else {
-        // mark worker env is workerThread
-        reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
-    }
-    // for load balance in taskpool
-    reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
-
-    SetWorkerEnv(workerEnv);
-    return workerEnv;
-}
-
 void Worker::ExecuteInThread(const void* data)
 {
     HITRACE_HELPER_START_TRACE(__PRETTY_FUNCTION__);
@@ -1460,20 +1424,44 @@ void Worker::ExecuteInThread(const void* data)
 #ifdef ENABLE_QOS
     worker->SetQOSLevel();
 #endif
-    // 1. create a runtime
-    napi_env workerEnv = worker->CreateWorkerEnv();
-    if (workerEnv == nullptr) {
-        HILOG_ERROR("worker:: create workerEnv failed");
-        worker->EraseWorker();
-        CloseHelp::DeletePointer(worker, false);
-        return;
+    // 1. create a runtime, nativeengine
+    napi_env workerEnv = nullptr;
+    {
+        std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+        if (worker->HostIsStop() || worker->isHostEnvExited_) {
+            HILOG_ERROR("worker:: host thread is stop");
+            worker->EraseWorker();
+            CloseHelp::DeletePointer(worker, false);
+            return;
+        }
+        napi_env env = worker->GetHostEnv();
+        if (worker->isLimitedWorker_) {
+            napi_create_limit_runtime(env, &workerEnv);
+        } else {
+            napi_create_runtime(env, &workerEnv);
+        }
+        if (workerEnv == nullptr) {
+            HILOG_ERROR("worker:: Worker create runtime error");
+            worker->EraseWorker();
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
+            return;
+        }
+        if (worker->isLimitedWorker_) {
+            reinterpret_cast<NativeEngine*>(workerEnv)->MarkRestrictedWorkerThread();
+        } else {
+            // mark worker env is workerThread
+            reinterpret_cast<NativeEngine*>(workerEnv)->MarkWorkerThread();
+        }
+        // for load balance in taskpool
+        reinterpret_cast<NativeEngine*>(env)->IncreaseSubEnvCounter();
+
+        worker->SetWorkerEnv(workerEnv);
     }
 
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
         HILOG_ERROR("worker:: Worker loop is nullptr");
         worker->EraseWorker();
-        CloseHelp::DeletePointer(worker, false);
         return;
     }
     reinterpret_cast<NativeEngine*>(workerEnv)->RegisterNapiUncaughtExceptionHandler(
@@ -1527,21 +1515,14 @@ void Worker::ExecuteInThread(const void* data)
         HITRACE_HELPER_FINISH_TRACE;
     }
     worker->ReleaseWorkerThreadContent();
-    if (!worker->IsPublishWorkerOverSignal()) {
-        CloseHelp::DeletePointer(worker, false);
-    }
-}
-
-bool Worker::IsPublishWorkerOverSignal()
-{
-    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-    EraseWorker();
-    if (HostIsStop() || isHostEnvExited_) {
+    std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+    worker->EraseWorker();
+    if (worker->HostIsStop() || worker->isHostEnvExited_) {
         HILOG_INFO("worker:: host is stopped");
-        return false;
+        CloseHelp::DeletePointer(worker, false);
+    } else {
+        worker->PublishWorkerOverSignal();
     }
-    PublishWorkerOverSignal();
-    return true;
 }
 
 bool Worker::PrepareForWorkerInstance()

@@ -522,9 +522,6 @@ public:
     {
         qosUpdatedCallback_ = callback;
     }
-
-    napi_env CreateWorkerEnv();
-
 private:
     void WorkerOnMessageInner();
     void HostOnMessageInner();
@@ -589,8 +586,6 @@ private:
     void IncreaseGlobalCallId();
 
     void ClearHostMessage(napi_env env);
-
-    bool IsPublishWorkerOverSignal();
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
