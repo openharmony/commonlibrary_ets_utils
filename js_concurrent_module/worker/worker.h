@@ -576,6 +576,7 @@ private:
     MarkedMessageQueue hostGlobalCallQueue_ {};
     MessageQueue workerGlobalCallQueue_ {};
     MessageQueue errorQueue_ {};
+    std::atomic<bool> workerOnMessageInitState_ {false};
 
     uv_async_t* workerOnMessageSignal_ = nullptr;
     uv_async_t* hostOnMessageSignal_ = nullptr;

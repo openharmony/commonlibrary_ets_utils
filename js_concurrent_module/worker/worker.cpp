@@ -1333,7 +1333,11 @@ void Worker::ExecuteInThread(const void* data)
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
         worker->workerOnMessageSignal_ = new uv_async_t;
-        uv_async_init(loop, worker->workerOnMessageSignal_, reinterpret_cast<uv_async_cb>(Worker::WorkerOnMessage));
+        int32_t initState = uv_async_init(loop, worker->workerOnMessageSignal_,
+            reinterpret_cast<uv_async_cb>(Worker::WorkerOnMessage));
+        if (initState == 0) {
+            worker->workerOnMessageInitState_ = true;
+        }
         worker->workerOnMessageSignal_->data = worker;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         uv_async_init(loop, &worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
@@ -1776,7 +1780,8 @@ void Worker::PostMessageInner(MessageDataType data)
     }
     workerMessageQueue_.EnQueue(data);
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
-    if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_)) {
+    if (workerOnMessageSignal_ != nullptr && !uv_is_closing((uv_handle_t*)workerOnMessageSignal_) &&
+        workerOnMessageInitState_) {
         uv_async_send(workerOnMessageSignal_);
     }
 }
