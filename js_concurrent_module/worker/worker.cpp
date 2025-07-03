@@ -1437,8 +1437,14 @@ void Worker::ExecuteInThread(const void* data)
 
     // 2. add some preparation for the worker
     if (worker->PrepareForWorkerInstance()) {
-        ConcurrentHelper::UvHandleInit(loop, worker->workerOnMessageSignal_, Worker::WorkerOnMessage, worker);
-        ConcurrentHelper::UvHandleInit(loop, worker->workerOnTerminateSignal_, Worker::WorkerOnMessage, worker);
+        if (ConcurrentHelper::UvHandleInit(loop, worker->workerOnMessageSignal_,
+                                           Worker::WorkerOnMessage, worker) == 0) {
+            worker->workerOnMessageInitState_ = true;
+        }
+        if (ConcurrentHelper::UvHandleInit(loop, worker->workerOnTerminateSignal_,
+                                           Worker::WorkerOnMessage, worker) == 0) {
+            worker->workerOnTerminateInitState_ = true;
+        }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
         ConcurrentHelper::UvHandleInit(loop, worker->debuggerOnPostTaskSignal_, Worker::HandleDebuggerTask, worker);
 #endif
@@ -1913,9 +1919,13 @@ void Worker::PostMessageInner(MessageDataType data)
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
     if (data == nullptr) {
         HILOG_INFO("worker:: host post nullptr to worker.");
-        ConcurrentHelper::UvCheckAndAsyncSend(workerOnTerminateSignal_);
+        if (workerOnTerminateInitState_) {
+            ConcurrentHelper::UvCheckAndAsyncSend(workerOnTerminateSignal_);
+        }
     } else {
-        ConcurrentHelper::UvCheckAndAsyncSend(workerOnMessageSignal_);
+        if (workerOnMessageInitState_) {
+            ConcurrentHelper::UvCheckAndAsyncSend(workerOnMessageSignal_);
+        }
     }
 }
 

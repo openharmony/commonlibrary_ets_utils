@@ -604,6 +604,8 @@ private:
     MessageQueue workerGlobalCallQueue_ {};
     MessageQueue errorQueue_ {};
     MessageQueue exceptionQueue_ {};
+    std::atomic<bool> workerOnMessageInitState_ {false};
+    std::atomic<bool> workerOnTerminateInitState_ {false};
 
     uv_async_t* workerOnMessageSignal_ = nullptr;
     uv_async_t* workerOnTerminateSignal_ = nullptr;
