@@ -5688,3 +5688,12 @@ HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest005, testing::ext::TestSiz
     ASSERT_TRUE(callbackCalled);
     delete worker;
 }
+
+HWTEST_F(WorkersTest, CreateWorkerEnvTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    Worker* worker = new Worker(env, nullptr);
+    napi_env workerEnv = worker->CreateWorkerEnv();
+    ASSERT_NE(workerEnv, nullptr);
+    delete worker;
+}
