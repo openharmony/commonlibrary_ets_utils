@@ -71,7 +71,7 @@ export namespace transfer {
 
     function getMethod(filePath: string, className: string, methodName: string): Method {
         className = filePath + '.' + className;
-        let linker = Class.ofCaller().getLinker();
+        let linker = Class.ofCaller()!.getLinker();
         let classType: ClassType | undefined = linker.getType(className) as ClassType;
         if (!classType) {
             throw new BusinessError(transferErrorCodeId,
