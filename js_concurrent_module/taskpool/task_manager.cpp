@@ -155,35 +155,42 @@ napi_value TaskManager::GetThreadInfos(napi_env env)
 {
     napi_value threadInfos = nullptr;
     napi_create_array(env, &threadInfos);
+    std::unordered_set<std::unique_ptr<ThreadInfo>> threadInfoSet {};
     {
         std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-        int32_t i = 0;
         for (auto& worker : workers_) {
             if (worker->workerEnv_ == nullptr) {
                 continue;
             }
-            napi_value tid = NapiHelper::CreateUint32(env, static_cast<uint32_t>(worker->tid_));
-            napi_value priority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(worker->priority_));
-
-            napi_value taskId = nullptr;
-            napi_create_array(env, &taskId);
-            int32_t j = 0;
-            {
-                std::lock_guard<std::mutex> lock(worker->currentTaskIdMutex_);
-                for (auto& currentId : worker->currentTaskId_) {
-                    napi_value id = NapiHelper::CreateUint32(env, currentId);
-                    napi_set_element(env, taskId, j, id);
-                    j++;
-                }
+            auto threadInfo = std::make_unique<ThreadInfo>();
+            threadInfo->tid = worker->tid_;
+            threadInfo->priority = worker->priority_;
+            for (auto& id : worker->currentTaskId_) {
+                threadInfo->currentTaskId.emplace_back(id);
             }
-            napi_value threadInfo = nullptr;
-            napi_create_object(env, &threadInfo);
-            napi_set_named_property(env, threadInfo, "tid", tid);
-            napi_set_named_property(env, threadInfo, "priority", priority);
-            napi_set_named_property(env, threadInfo, "taskIds", taskId);
-            napi_set_element(env, threadInfos, i, threadInfo);
-            i++;
+            threadInfoSet.emplace(std::move(threadInfo));
         }
+    }
+    int32_t i = 0;
+    for (auto& info : threadInfoSet) {
+        napi_value tid = NapiHelper::CreateUint32(env, static_cast<uint32_t>(info->tid));
+        napi_value priority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(info->priority));
+
+        napi_value taskId = nullptr;
+        napi_create_array(env, &taskId);
+        int32_t j = 0;
+        for (auto& currentId : info->currentTaskId) {
+            napi_value id = NapiHelper::CreateUint32(env, currentId);
+            napi_set_element(env, taskId, j, id);
+            j++;
+        }
+        napi_value threadInfo = nullptr;
+        napi_create_object(env, &threadInfo);
+        napi_set_named_property(env, threadInfo, "tid", tid);
+        napi_set_named_property(env, threadInfo, "priority", priority);
+        napi_set_named_property(env, threadInfo, "taskIds", taskId);
+        napi_set_element(env, threadInfos, i, threadInfo);
+        i++;
     }
     return threadInfos;
 }
@@ -192,32 +199,41 @@ napi_value TaskManager::GetTaskInfos(napi_env env)
 {
     napi_value taskInfos = nullptr;
     napi_create_array(env, &taskInfos);
+    std::unordered_set<std::unique_ptr<TaskCurrentInfo>> taskCurrentInfoSet {};
     {
         std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
-        int32_t i = 0;
         for (const auto& [_, task] : tasks_) {
             if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::DELAYED ||
                 task->taskState_ == ExecuteState::FINISHED) {
                 continue;
             }
-            napi_value taskInfoValue = NapiHelper::CreateObject(env);
-            napi_value taskId = NapiHelper::CreateUint32(env, task->taskId_);
-            napi_value name = nullptr;
-            napi_create_string_utf8(env, task->name_.c_str(), task->name_.size(), &name);
-            napi_set_named_property(env, taskInfoValue, "name", name);
-            ExecuteState state = task->taskState_;
-            uint64_t duration = 0;
-            if (state == ExecuteState::RUNNING || state == ExecuteState::ENDING) {
-                duration = ConcurrentHelper::GetMilliseconds() - task->startTime_;
-            }
-            napi_value stateValue = NapiHelper::CreateUint32(env, static_cast<uint32_t>(state));
-            napi_set_named_property(env, taskInfoValue, "taskId", taskId);
-            napi_set_named_property(env, taskInfoValue, "state", stateValue);
-            napi_value durationValue = NapiHelper::CreateUint32(env, duration);
-            napi_set_named_property(env, taskInfoValue, "duration", durationValue);
-            napi_set_element(env, taskInfos, i, taskInfoValue);
-            i++;
+            auto taskCurrentInfo = std::make_unique<TaskCurrentInfo>();
+            taskCurrentInfo->taskId = task->taskId_;
+            taskCurrentInfo->name = task->name_;
+            taskCurrentInfo->taskState = task->taskState_;
+            taskCurrentInfo->startTime = task->startTime_;
+            taskCurrentInfoSet.emplace(std::move(taskCurrentInfo));
         }
+    }
+    int32_t index = 0;
+    for (auto& info : taskCurrentInfoSet) {
+        napi_value taskInfoValue = NapiHelper::CreateObject(env);
+        napi_value taskId = NapiHelper::CreateUint32(env, info->taskId);
+        napi_value name = nullptr;
+        napi_create_string_utf8(env, info->name.c_str(), info->name.size(), &name);
+        napi_set_named_property(env, taskInfoValue, "name", name);
+        ExecuteState state = info->taskState;
+        uint64_t duration = 0;
+        if (state == ExecuteState::RUNNING || state == ExecuteState::ENDING) {
+            duration = ConcurrentHelper::GetMilliseconds() - info->startTime;
+        }
+        napi_value stateValue = NapiHelper::CreateUint32(env, static_cast<uint32_t>(state));
+        napi_set_named_property(env, taskInfoValue, "taskId", taskId);
+        napi_set_named_property(env, taskInfoValue, "state", stateValue);
+        napi_value durationValue = NapiHelper::CreateUint32(env, duration);
+        napi_set_named_property(env, taskInfoValue, "duration", durationValue);
+        napi_set_element(env, taskInfos, index, taskInfoValue);
+        index++;
     }
     return taskInfos;
 }

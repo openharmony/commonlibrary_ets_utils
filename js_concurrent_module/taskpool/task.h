@@ -63,6 +63,13 @@ struct TaskInfo {
     void* serializationArguments = nullptr;
 };
 
+struct TaskCurrentInfo {
+    std::string name {};
+    uint32_t taskId {};
+    ExecuteState taskState {ExecuteState::NOT_FOUND};
+    uint64_t startTime {};
+};
+
 struct ListenerCallBackInfo {
     ListenerCallBackInfo(napi_env env, napi_ref callbackRef, napi_value taskError) : env_(env),
         callbackRef_(callbackRef), taskError_(taskError) {}
