@@ -370,7 +370,8 @@ namespace OHOS::xml {
         void ParseText();
         void ParseCdect();
         std::string XmlPullParserError() const;
-        bool ParseAttri(napi_env env, napi_value thisVar) const;
+        bool ParseTag(napi_env env, napi_value thisVar) const;
+        bool ParseAttri(napi_env env, napi_value thisVar, napi_value attriFun) const;
         bool ParseToken(napi_env env, napi_value thisVar) const;
         void ParseNspFunction();
         void ParseNspFunc(size_t &i, const std::string &attrName, bool &any);
@@ -387,11 +388,16 @@ namespace OHOS::xml {
         void DealWhiteSpace(unsigned char c);
         friend class XmlTest;
     private:
+        bool HandleTagFunc(napi_env env, napi_value thisVar);
+        bool HandleTokenFunc(napi_env env, napi_value thisVar);
+        bool HandleAttrWithTagFunc(napi_env env, napi_value thisVar);
+        bool HandleAttrFunc(napi_env env, napi_value thisVar);
         bool bDoctype_ {};
         bool bIgnoreNS_ {};
         bool bStartDoc_ {true};
         napi_value tagFunc_ {nullptr};
         napi_value attrFunc_ {nullptr};
+        napi_value attrWithTagFunc_ {nullptr};
         napi_value tokenFunc_ {nullptr};
         napi_env env_ {nullptr};
         TagText tagText_;
