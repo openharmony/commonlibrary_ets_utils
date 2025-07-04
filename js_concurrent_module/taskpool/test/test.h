@@ -94,6 +94,7 @@ public:
     static bool FindTaskId(Worker* worker, uint32_t taskId);
     static void GetIdleTaskByPriority(napi_env env);
     static void WorkerRunningScope(napi_env env);
+    static void SetNonIdleTaskNum(uint32_t num);
 
     class ExceptionScope {
     public:

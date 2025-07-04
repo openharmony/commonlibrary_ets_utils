@@ -415,12 +415,15 @@ bool Worker::UpdateWorkerState(WorkerState expect, WorkerState desired)
 
 void Worker::PerformTask(const uv_async_t* req)
 {
+    auto worker = static_cast<Worker*>(req->data);
     auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
     if (taskInfo.first == 0) {
+        if (TaskManager::GetInstance().GetNonIdleTaskNum() != 0) {
+            worker->NotifyExecuteTask();
+        }
         return;
     }
     uint64_t startTime = ConcurrentHelper::GetMilliseconds();
-    auto worker = static_cast<Worker*>(req->data);
     worker->UpdateWorkerWakeUpTime();
     napi_env env = worker->workerEnv_;
     TaskManager::GetInstance().NotifyWorkerRunning(worker);

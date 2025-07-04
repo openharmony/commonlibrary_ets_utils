@@ -155,6 +155,7 @@ public:
                            napi_value result = nullptr, bool success = false);
     void SetIsPerformIdle(bool performIdle);
     bool IsPerformIdle() const;
+    uint32_t GetNonIdleTaskNum();
 
 private:
     TaskManager();
@@ -182,7 +183,6 @@ private:
     static void TriggerLoadBalance(const uv_timer_t* req);
 
     bool IsChooseIdle();
-    uint32_t GetNonIdleTaskNum();
     std::pair<uint32_t, Priority> GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue, Priority priority);
     void IncreaseNumIfNoIdle(Priority priority);
     void DecreaseNumIfNoIdle(Priority priority);

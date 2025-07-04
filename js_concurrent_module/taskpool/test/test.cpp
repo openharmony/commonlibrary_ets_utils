@@ -1006,9 +1006,11 @@ void NativeEngineTest::PerformTask(napi_env env, void* data)
     napi_create_runtime(env, &workerEnv);
     worker->workerEnv_ = workerEnv;
     Task* task = reinterpret_cast<Task*>(data);
-    taskManager.StoreTask(task);
-    taskManager.SetIsPerformIdle(false);
-    taskManager.taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
+    if (task != nullptr) {
+        taskManager.StoreTask(task);
+        taskManager.SetIsPerformIdle(false);
+        taskManager.taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
+    }
     uv_async_t* req = new uv_async_t;
     req->data = worker;
     Worker::PerformTask(req);
@@ -1041,5 +1043,11 @@ void NativeEngineTest::WorkerRunningScope(napi_env env)
     worker->priority_ = Priority::IDLE;
     worker->workerEnv_ = env;
     Worker::RunningScope runningScope(worker);
+}
+
+void NativeEngineTest::SetNonIdleTaskNum(uint32_t num)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.nonIdleTaskNum_ = num;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
