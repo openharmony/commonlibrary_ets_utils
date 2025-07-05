@@ -15,12 +15,12 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerArkUI() {
-    registerStaticCB("ArkUI.NavDestinationInfo", "@ohos.observer", "observer.NavDestinationInfo", "transferStatic");
-    registerDynamicCB("ArkUI.NavDestinationInfo", "@ohos.observer", "observer.NavDestinationInfo", "transferDynamic");
+    registerStaticCB("ArkUI.NavDestinationInfo", "@ohos.arkui.observer", "uiObserver.NavDestinationInfoImpl", "transferStatic");
+    registerDynamicCB("ArkUI.NavDestinationInfo", "@ohos.arkui.observer", "uiObserver.NavDestinationInfoImpl", "transferDynamic");
 
-    registerStaticCB("ArkUI.NavigationInfo", "@ohos.observer", "observer.NavigationInfo", "transferStatic");
-    registerDynamicCB("ArkUI.NavigationInfo", "@ohos.observer", "observer.NavigationInfo", "transferDynamic");
+    registerStaticCB("ArkUI.NavigationInfo", "@ohos.arkui.observer", "uiObserver.NavigationInfoImpl", "transferStatic");
+    registerDynamicCB("ArkUI.NavigationInfo", "@ohos.arkui.observer", "uiObserver.NavigationInfoImpl", "transferDynamic");
 
-    registerStaticCB("ArkUI.RouterPageInfo", "@ohos.observer", "observer.RouterPageInfo", "transferStatic");
-    registerDynamicCB("ArkUI.RouterPageInfo", "@ohos.observer", "observer.RouterPageInfo", "transferDynamic");
+    registerStaticCB("ArkUI.RouterPageInfo", "@ohos.arkui.observer", "uiObserver.RouterPageInfo", "transferStatic");
+    registerDynamicCB("ArkUI.RouterPageInfo", "@ohos.arkui.observer", "uiObserver.RouterPageInfo", "transferDynamic");
 }
