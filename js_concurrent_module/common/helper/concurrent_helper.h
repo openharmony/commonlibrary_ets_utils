@@ -79,11 +79,12 @@ public:
         return millisecs.count();
     }
 
-    static void UvHandleInit(uv_loop_t* loop, uv_async_t*& handle, UvCallback func, void* data = nullptr)
+    static int32_t UvHandleInit(uv_loop_t* loop, uv_async_t*& handle, UvCallback func, void* data = nullptr)
     {
         handle = new uv_async_t;
         handle->data = data;
-        uv_async_init(loop, handle, reinterpret_cast<uv_async_cb>(func));
+        int32_t initState = uv_async_init(loop, handle, reinterpret_cast<uv_async_cb>(func));
+        return initState;
     }
 
     template<typename T>
