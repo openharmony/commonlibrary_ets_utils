@@ -33,22 +33,25 @@ AsyncRunner* AsyncRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_valu
                                                          uint32_t runningCapacity, uint32_t waitingCapacity)
 {
     AsyncRunner *asyncRunner = nullptr;
+    uint64_t asyncRunnerId = 0;
     {
         std::unique_lock<std::mutex> lock(globalAsyncRunnerMutex_);
         auto iter = globalAsyncRunner_.find(name);
         if (iter == globalAsyncRunner_.end()) {
             asyncRunner = AsyncRunner::CreateGlobalRunner(name, runningCapacity, waitingCapacity);
             globalAsyncRunner_.emplace(name, asyncRunner);
+            return asyncRunner;
         } else {
             asyncRunner = iter->second;
             bool res = asyncRunner->CheckGlobalRunnerParams(env, runningCapacity, waitingCapacity);
             if (!res) {
                 return nullptr;
             }
-            if (!FindRunnerAndRef(asyncRunner->asyncRunnerId_)) {
-                return nullptr;
-            }
+            asyncRunnerId = asyncRunner->asyncRunnerId_;
         }
+    }
+    if (!FindRunnerAndRef(asyncRunnerId)) {
+        return nullptr;
     }
 
     return asyncRunner;
@@ -150,14 +153,16 @@ bool AsyncRunnerManager::FindRunnerAndRef(uint64_t asyncRunnerId)
 
 bool AsyncRunnerManager::UnrefAndDestroyRunner(AsyncRunner* asyncRunner)
 {
-    std::unique_lock<std::mutex> lock(asyncRunnersMutex_);
-    if (asyncRunner->DecreaseAsyncCount() != 0) {
-        return false;
+    {
+        std::unique_lock<std::mutex> lock(asyncRunnersMutex_);
+        if (asyncRunner->DecreaseAsyncCount() != 0) {
+            return false;
+        }
+        RemoveAsyncRunner(asyncRunner->asyncRunnerId_);
     }
     if (asyncRunner->isGlobalRunner_) {
         RemoveGlobalAsyncRunner(asyncRunner->name_);
     }
-    RemoveAsyncRunner(asyncRunner->asyncRunnerId_);
     delete asyncRunner;
     asyncRunner = nullptr;
     return true;
