@@ -60,6 +60,7 @@ public:
         }
         if (isArray_) {
             delete[] data_;
+            data_ = nullptr;
         } else {
             delete data_;
             data_ = nullptr;
