@@ -41,14 +41,14 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "env is not alive");
         return nullptr;
     }
-    LockRequest *lockRequest =
-        new LockRequest(this, AsyncLockManager::GetCurrentTid(env), env, cb, mode, options, deferred);
     std::unique_lock<std::mutex> lock(asyncLockMutex_);
-    if (!CanAcquireLock(lockRequest) && options.isAvailable) {
+    if (!CanAcquireLock(mode) && options.isAvailable) {
         napi_value err;
         NAPI_CALL(env, napi_create_string_utf8(env, "The lock is acquired", NAPI_AUTO_LENGTH, &err));
         napi_reject_deferred(env, deferred, err);
     } else {
+        LockRequest *lockRequest =
+            new LockRequest(this, AsyncLockManager::GetCurrentTid(env), env, cb, mode, options, deferred);
         pendingList_.push_back(lockRequest);
         ProcessPendingLockRequestUnsafe(env, lockRequest);
     }
@@ -124,7 +124,7 @@ void AsyncLock::ProcessPendingLockRequest(napi_env env, LockRequest* syncLockReq
 void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest *syncLockRequest)
 {
     LockRequest *lockRequest = pendingList_.front();
-    if (!CanAcquireLock(lockRequest)) {
+    if (!CanAcquireLock(lockRequest->GetMode())) {
         return;
     }
     lockStatus_ = lockRequest->GetMode();
@@ -145,12 +145,12 @@ void AsyncLock::ProcessPendingLockRequestUnsafe(napi_env env, LockRequest *syncL
     }
 }
 
-bool AsyncLock::CanAcquireLock(LockRequest *lockRequest)
+bool AsyncLock::CanAcquireLock(LockMode mode)
 {
     if (heldList_.empty()) {
         return true;
     }
-    if (lockRequest->GetMode() == LOCK_MODE_SHARED && lockStatus_ == LOCK_MODE_SHARED) {
+    if (mode == LOCK_MODE_SHARED && lockStatus_ == LOCK_MODE_SHARED) {
         return true;
     }
     if (lockStatus_ == LOCK_MODE_UNLOCK) {
