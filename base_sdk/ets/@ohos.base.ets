@@ -14,22 +14,22 @@
  */
 
 export class BusinessError<T = void> extends Error {
-  code: number;
-  data?: T;
+    code: number;
+    data?: T;
 
-  constructor() {
-    super();
-    this.code = 0;
-  }
+    constructor() {
+        super();
+        this.code = 0;
+    }
 
-  constructor(code: number, error: Error) {
-    super(error.name, error.message, new ErrorOptions(error.cause));
-    this.code = code;
-  }
+    constructor(code: number, error: Error) {
+        super(error.name, error.message, {cause: error.cause as Object} as ErrorOptions);
+        this.code = code;
+    }
 
-  constructor(code: number, data: T, error: Error) {
-    super(error.name, error.message, new ErrorOptions(error.cause));
-    this.code = code;
-    this.data = data;
-  }
+    constructor(code: number, data: T, error: Error) {
+        super(error.name, error.message, {cause: error.cause as Object} as ErrorOptions);
+        this.code = code;
+        this.data = data;
+    }
 }
