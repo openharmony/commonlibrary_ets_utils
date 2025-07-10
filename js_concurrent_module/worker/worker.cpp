@@ -130,11 +130,15 @@ void Worker::InitPriorityObject(napi_env env, napi_value exports)
     napi_value mediumPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::MEDIUM));
     napi_value lowPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::LOW));
     napi_value idlePriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::IDLE));
+    napi_value deadlinePriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::DEADLINE));
+    napi_value vipPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerPriority::VIP));
     napi_property_descriptor exportPriority[] = {
         DECLARE_NAPI_PROPERTY("HIGH", highPriority),
         DECLARE_NAPI_PROPERTY("MEDIUM", mediumPriority),
         DECLARE_NAPI_PROPERTY("LOW", lowPriority),
         DECLARE_NAPI_PROPERTY("IDLE", idlePriority),
+        DECLARE_NAPI_PROPERTY("DEADLINE", deadlinePriority),
+        DECLARE_NAPI_PROPERTY("VIP", vipPriority)
     };
     napi_define_properties(env, priorityObj, sizeof(exportPriority) / sizeof(exportPriority[0]), exportPriority);
 
