@@ -371,7 +371,7 @@ namespace OHOS::Util {
         }
         unsigned char *inputEncode = nullptr;
         inputEncode = static_cast<unsigned char*>(resultData);
-        CreateEncodePromise(env, inputEncode, length, valueType);
+        CreateEncodePromise(env, inputEncode, length, valueType, src);
         if (stdEncodeInfo_ == nullptr) {
             HILOG_ERROR("Base64:: Encode return promise failed, stdEncodeInfo_ is nullptr");
             return nullptr;
@@ -392,15 +392,16 @@ namespace OHOS::Util {
         }
         unsigned char *inputEncode = nullptr;
         inputEncode = static_cast<unsigned char*>(resultData);
-        CreateEncodeToStringPromise(env, inputEncode, length, valueType);
-        if (stdEncodeInfo_ == nullptr) {
-            HILOG_ERROR("Base64:: EncodeToString return promise failed, stdEncodeInfo_ is nullptr");
+        CreateEncodeToStringPromise(env, inputEncode, length, valueType, src);
+        if (stdEncodeToStringInfo_ == nullptr) {
+            HILOG_ERROR("Base64:: EncodeToString return promise failed, stdEncodeToStringInfo_ is nullptr");
             return nullptr;
         }
-        return stdEncodeInfo_->promise;
+        return stdEncodeToStringInfo_->promise;
     }
 
-    void Base64::CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType)
+    void Base64::CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length,
+                                     Type valueType, napi_value arrayBuffer)
     {
         napi_value resourceName = nullptr;
         stdEncodeInfo_ = new (std::nothrow) EncodeInfo();
@@ -408,9 +409,9 @@ namespace OHOS::Util {
             HILOG_ERROR("Base64:: memory allocation failed, stdEncodeInfo_ is nullptr");
             return;
         }
+        napi_create_reference(env, arrayBuffer, 1, &stdEncodeInfo_->arrayRef);
         stdEncodeInfo_->sinputEncode = inputDecode;
         stdEncodeInfo_->slength = length;
-        stdEncodeInfo_->env = env;
         stdEncodeInfo_->valueType = valueType;
         napi_create_promise(env, &stdEncodeInfo_->deferred, &stdEncodeInfo_->promise);
         napi_create_string_utf8(env, "ReadStdEncode", NAPI_AUTO_LENGTH, &resourceName);
@@ -419,22 +420,24 @@ namespace OHOS::Util {
         napi_queue_async_work_with_qos(env, stdEncodeInfo_->worker, napi_qos_user_initiated);
     }
 
-    void Base64::CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType)
+    void Base64::CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length,
+                                             Type valueType, napi_value arrayBuffer)
     {
         napi_value resourceName = nullptr;
-        stdEncodeInfo_ = new (std::nothrow) EncodeInfo();
-        if (stdEncodeInfo_ == nullptr) {
-            HILOG_ERROR("Base64:: memory allocation failed, stdEncodeInfo_ is nullptr");
+        stdEncodeToStringInfo_ = new (std::nothrow) EncodeInfo();
+        if (stdEncodeToStringInfo_ == nullptr) {
+            HILOG_ERROR("Base64:: memory allocation failed, stdEncodeToStringInfo_ is nullptr");
             return;
         }
-        stdEncodeInfo_->sinputEncode = inputDecode;
-        stdEncodeInfo_->slength = length;
-        stdEncodeInfo_->valueType = valueType;
-        napi_create_promise(env, &stdEncodeInfo_->deferred, &stdEncodeInfo_->promise);
+        napi_create_reference(env, arrayBuffer, 1, &stdEncodeToStringInfo_->arrayRef);
+        stdEncodeToStringInfo_->sinputEncode = inputDecode;
+        stdEncodeToStringInfo_->slength = length;
+        stdEncodeToStringInfo_->valueType = valueType;
+        napi_create_promise(env, &stdEncodeToStringInfo_->deferred, &stdEncodeToStringInfo_->promise);
         napi_create_string_utf8(env, "ReadStdEncodeToString", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env, nullptr, resourceName, ReadStdEncodeToString, EndStdEncodeToString,
-                               reinterpret_cast<void*>(stdEncodeInfo_), &stdEncodeInfo_->worker);
-        napi_queue_async_work_with_qos(env, stdEncodeInfo_->worker, napi_qos_user_initiated);
+                               reinterpret_cast<void*>(stdEncodeToStringInfo_), &stdEncodeToStringInfo_->worker);
+        napi_queue_async_work_with_qos(env, stdEncodeToStringInfo_->worker, napi_qos_user_initiated);
     }
 
     unsigned char *EncodeAchieves(napi_env env, EncodeInfo *encodeInfo)
@@ -453,11 +456,11 @@ namespace OHOS::Util {
             ret = new unsigned char[outputLen + 1];
             if (memset_s(ret, outputLen + 1, '\0', outputLen + 1) != EOK) {
                 FreeMemory(ret);
-                napi_throw_error(encodeInfo->env, "-1", "ret path memset_s failed");
+                HILOG_ERROR("Base64:: EncodeAchieves ret path memset_s failed");
                 return nullptr;
             }
         } else {
-            napi_throw_error(encodeInfo->env, "-2", "outputLen is error !");
+            HILOG_ERROR("Base64:: EncodeAchieves outputLen is error");
             return nullptr;
         }
         if (ret == nullptr) {
@@ -532,6 +535,7 @@ namespace OHOS::Util {
         if (memcpy_s(data, bufferSize,
             reinterpret_cast<const void*>(stdEncodeInfo->sinputEncoding), bufferSize) != EOK) {
             HILOG_ERROR("Base64:: copy ret to arraybuffer error");
+            napi_delete_reference(env, stdEncodeInfo->arrayRef);
             napi_delete_async_work(env, stdEncodeInfo->worker);
             napi_close_handle_scope(env, scope);
             return;
@@ -539,6 +543,7 @@ namespace OHOS::Util {
         napi_value result = nullptr;
         napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
         napi_resolve_deferred(env, stdEncodeInfo->deferred, result);
+        napi_delete_reference(env, stdEncodeInfo->arrayRef);
         napi_delete_async_work(env, stdEncodeInfo->worker);
         napi_close_handle_scope(env, scope);
         delete[] stdEncodeInfo->sinputEncoding;
@@ -564,6 +569,7 @@ namespace OHOS::Util {
         napi_value resultStr = nullptr;
         napi_create_string_utf8(env, encString, strlen(encString), &resultStr);
         napi_resolve_deferred(env, stdEncodeInfo->deferred, resultStr);
+        napi_delete_reference(env, stdEncodeInfo->arrayRef);
         napi_delete_async_work(env, stdEncodeInfo->worker);
         napi_close_handle_scope(env, scope);
         delete[] stdEncodeInfo->sinputEncoding;
@@ -602,10 +608,10 @@ namespace OHOS::Util {
                 return nullptr;
             }
             napi_get_value_string_utf8(env, src, inputString, prolen + 1, &prolen);
-            CreateDecodePromise(env, inputString, prolen, valueType);
+            CreateDecodePromise(env, inputString, prolen, valueType, src);
         } else if (type == napi_typedarray_type::napi_uint8_array && length > 0) {
             inputDecode = static_cast<char*>(resultData);
-            CreateDecodePromise(env, inputDecode, length, valueType);
+            CreateDecodePromise(env, inputDecode, length, valueType, src);
         } else {
             std::string errMsg =
                 "Parameter error. The type of Parameter must be Uint8Array or string and the length greater than 0.";
@@ -620,7 +626,7 @@ namespace OHOS::Util {
         return stdDecodeInfo_->promise;
     }
 
-    void Base64::CreateDecodePromise(napi_env env, char *inputDecode, size_t length, Type valueType)
+    void Base64::CreateDecodePromise(napi_env env, char *inputDecode, size_t length, Type valueType, napi_value src)
     {
         napi_value resourceName = nullptr;
         stdDecodeInfo_ = new (std::nothrow) DecodeInfo();
@@ -630,8 +636,8 @@ namespace OHOS::Util {
         }
         stdDecodeInfo_->sinputDecode = inputDecode;
         stdDecodeInfo_->slength = length;
-        stdDecodeInfo_->env = env;
         stdDecodeInfo_->valueType = valueType;
+        napi_create_reference(env, src, 1, &stdDecodeInfo_->srcRef);
         napi_create_promise(env, &stdDecodeInfo_->deferred, &stdDecodeInfo_->promise);
         napi_create_string_utf8(env, "ReadStdDecode", NAPI_AUTO_LENGTH, &resourceName);
         napi_create_async_work(env, nullptr, resourceName, ReadStdDecode, EndStdDecode,
@@ -697,11 +703,11 @@ namespace OHOS::Util {
             retDecode = new unsigned char[retLen + 1];
             if (memset_s(retDecode, retLen + 1, '\0', retLen + 1) != EOK) {
                 FreeMemory(retDecode);
-                napi_throw_error(decodeInfo->env, "-1", "decode retDecode memset_s failed");
+                HILOG_ERROR("Base64:: DecodeAchieves retDecode memset_s failed");
                 return nullptr;
             }
         } else {
-            napi_throw_error(decodeInfo->env, "-2", "retLen is error !");
+            HILOG_ERROR("Base64:: DecodeAchieves retLen is error");
             return nullptr;
         }
         if (decodeInfo->valueType == Type::BASIC_URL_SAFE || decodeInfo->valueType == Type::MIME_URL_SAFE) {
@@ -782,6 +788,7 @@ namespace OHOS::Util {
             napi_value error = Tools::ErrorHelper::CreateError(env, errCode, errMessage);
             napi_reject_deferred(env, stdDecodeInfo->deferred, error);
             napi_delete_async_work(env, stdDecodeInfo->worker);
+            napi_delete_reference(env, stdDecodeInfo->srcRef);
             napi_close_handle_scope(env, scope);
             return;
         }
@@ -789,6 +796,7 @@ namespace OHOS::Util {
         napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result);
         napi_resolve_deferred(env, stdDecodeInfo->deferred, result);
         napi_delete_async_work(env, stdDecodeInfo->worker);
+        napi_delete_reference(env, stdDecodeInfo->srcRef);
         napi_close_handle_scope(env, scope);
         delete[] stdDecodeInfo->sinputDecoding;
         delete stdDecodeInfo;

@@ -47,7 +47,7 @@ namespace OHOS::Util {
         unsigned char *sinputEncoding = nullptr;
         size_t slength = 0;
         size_t soutputLen = 0;
-        napi_env env;
+        napi_ref arrayRef = nullptr;
         Type valueType = BASIC;
     };
 
@@ -60,7 +60,7 @@ namespace OHOS::Util {
         size_t slength = 0;
         size_t decodeOutLen = 0;
         size_t retLen = 0;
-        napi_env env;
+        napi_ref srcRef = nullptr;
         Type valueType = BASIC;
     };
 
@@ -151,10 +151,13 @@ namespace OHOS::Util {
         const unsigned char *inputEncode_ = nullptr;
         const char *inputDecode_ = nullptr;
         unsigned char *retDecode = nullptr;
-        void CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType);
-        void CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length, Type valueType);
-        void CreateDecodePromise(napi_env env, char *inputDecode, size_t length, Type valueType);
+        void CreateEncodePromise(napi_env env, unsigned char *inputDecode, size_t length,
+                                 Type valueType, napi_value arrayBuffer);
+        void CreateEncodeToStringPromise(napi_env env, unsigned char *inputDecode, size_t length,
+                                         Type valueType, napi_value arrayBuffer);
+        void CreateDecodePromise(napi_env env, char *inputDecode, size_t length, Type valueType, napi_value src);
         EncodeInfo *stdEncodeInfo_ = nullptr;
+        EncodeInfo *stdEncodeToStringInfo_ = nullptr;
         DecodeInfo *stdDecodeInfo_ = nullptr;
         static void ReadStdEncode(napi_env env, void *data);
         static void EndStdEncode(napi_env env, napi_status status, void *buffer);
