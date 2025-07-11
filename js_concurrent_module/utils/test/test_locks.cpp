@@ -726,6 +726,5 @@ TEST_F(LocksTest, PendingSharedRequestAfterGC)
     TriggerGC();
 
     Loop(LOOP_ONCE);
-    Loop(LOOP_ONCE);
     ASSERT_EQ(callbackData.callCount, 2U);
 }

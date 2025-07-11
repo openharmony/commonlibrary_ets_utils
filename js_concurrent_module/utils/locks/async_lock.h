@@ -64,7 +64,7 @@ public:
     }
 
 private:
-    bool CanAcquireLock(LockRequest *lockRequest);
+    bool CanAcquireLock(LockMode mode);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
     template <bool isAsync>
     void ProcessLockRequest(napi_env env, LockRequest *lockRequest);
