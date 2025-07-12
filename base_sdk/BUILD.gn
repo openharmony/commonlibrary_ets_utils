@@ -41,6 +41,7 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/arkweb.ets",
     "./transfer/kitRegister/registerMain.ets",
     "./transfer/kitRegister/basicServicesKit.ets",
+    "./transfer/kitRegister/osAccount.ets",
   ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/base_transfer.abc"
