@@ -351,16 +351,20 @@ public:
         worker->AddGlobalCallObject(instanceName, ref);
         ASSERT_FALSE(worker->RemoveGlobalCallObject(messageStr));
         ASSERT_TRUE(worker->RemoveGlobalCallObject(instanceName));
-        napi_env workerEnv = nullptr;
-        napi_create_runtime(env, &workerEnv);
-        worker->workerEnv_ = workerEnv;
-        worker->isRelativePath_ = true;
-        worker->PrepareForWorkerInstance();
-        UpdateHostState(worker, Worker::HostState::INACTIVE);
-        worker->PrepareForWorkerInstance();
-        worker->EraseWorker();
-        ClearWorkerHandle(worker);
-        Worker::ExecuteInThread(reinterpret_cast<void*>(worker));
+        std::thread t([&env, &worker] {
+            napi_env workerEnv = nullptr;
+            napi_create_runtime(env, &workerEnv);
+            worker->workerEnv_ = workerEnv;
+            worker->isRelativePath_ = true;
+            worker->PrepareForWorkerInstance();
+            UpdateHostState(worker, Worker::HostState::INACTIVE);
+            worker->PrepareForWorkerInstance();
+            worker->EraseWorker();
+            ClearWorkerHandle(worker);
+            Worker::ExecuteInThread(reinterpret_cast<void*>(worker));
+            delete reinterpret_cast<NativeEngine*>(workerEnv);
+        });
+        t.join();
     }
 
     static void TestHostOnMessageInner(Worker *worker, napi_env env)
@@ -749,28 +753,32 @@ public:
         Worker::WorkerOnMessage(req);
         delete req;
         UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-        napi_env workerEnv = nullptr;
-        napi_create_runtime(env, &workerEnv);
-        worker->workerEnv_ = workerEnv;
-        worker->WorkerOnMessageInner();
         MessageDataType data = nullptr;
         napi_value undefined = NapiHelper::GetUndefinedValue(env);
         napi_serialize_inner(env, undefined, undefined, undefined, false, true, &data);
         worker->workerMessageQueue_.EnQueue(data);
-        std::string funcName = "onmessage";
-        auto func = [](napi_env env, napi_callback_info info) -> napi_value {
-            return nullptr;
-        };
-        napi_value funcValue = nullptr;
-        napi_create_function(workerEnv, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
-        napi_value obj = NapiHelper::CreateObject(workerEnv);
-        napi_set_named_property(workerEnv, obj, funcName.c_str(), funcValue);
-        napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
-        worker->workerPort_ = ref;
-        worker->WorkerOnMessageInner();
-        SetCloseWorkerProp(worker, workerEnv);
-        worker->workerMessageQueue_.EnQueue(nullptr);
-        worker->WorkerOnMessageInner();
+        std::thread t([&env, &worker] {
+            napi_env workerEnv = nullptr;
+            napi_create_runtime(env, &workerEnv);
+            worker->workerEnv_ = workerEnv;
+            worker->WorkerOnMessageInner();
+            std::string funcName = "onmessage";
+            auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+                return nullptr;
+            };
+            napi_value funcValue = nullptr;
+            napi_create_function(workerEnv, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
+            napi_value obj = NapiHelper::CreateObject(workerEnv);
+            napi_set_named_property(workerEnv, obj, funcName.c_str(), funcValue);
+            napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
+            worker->workerPort_ = ref;
+            worker->WorkerOnMessageInner();
+            SetCloseWorkerProp(worker, workerEnv);
+            worker->workerMessageQueue_.EnQueue(nullptr);
+            worker->WorkerOnMessageInner();
+            delete reinterpret_cast<NativeEngine*>(workerEnv);
+        });
+        t.join();
     }
 
     static void HandleEventListeners(Worker *worker, napi_env env)
@@ -803,43 +811,47 @@ public:
         napi_value exception = nullptr;
         napi_get_and_clear_last_exception(env, &exception);
         ASSERT_TRUE(exception != nullptr);
-        napi_env workerEnv = nullptr;
-        napi_create_runtime(env, &workerEnv);
-        worker->workerEnv_ = workerEnv;
-        worker->HandleException();
-        ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
-        std::string funcName = "onerror";
-        auto func = [](napi_env env, napi_callback_info info) -> napi_value {
-            return nullptr;
-        };
-        napi_value funcValue = nullptr;
-        napi_create_function(workerEnv, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
-        napi_value obj = NapiHelper::CreateObject(workerEnv);
-        napi_set_named_property(workerEnv, obj, funcName.c_str(), funcValue);
-        napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
-        worker->workerPort_ = ref;
-        uv_loop_t* loop = worker->GetWorkerLoop();
-        ASSERT_TRUE(loop != nullptr);
-        worker->hostOnErrorSignal_ = new uv_async_t;
-        uv_async_init(loop, worker->hostOnErrorSignal_,
-                      reinterpret_cast<uv_async_cb>(UpdateMainThreadWorkerFlag));
-        worker->hostOnErrorSignal_->data = worker;
-        worker->isMainThreadWorker_ = false;
-        worker->HandleException();
-        worker->isMainThreadWorker_ = true;
-        worker->isLimitedWorker_ = true;
-        ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
-        worker->HandleException();
-        worker->isLimitedWorker_ = false;
-        ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
-        worker->HandleException();
-        ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
-        napi_get_and_clear_last_exception(workerEnv, &exception);
-        worker->hostEnv_ = nullptr;
-        worker->HandleUncaughtException(exception);
-        worker->hostEnv_ = env;
-        UpdateHostState(worker, Worker::HostState::INACTIVE);
-        worker->HandleUncaughtException(exception);
+        std::thread t([&env, &worker] {
+            napi_env workerEnv = nullptr;
+            napi_create_runtime(env, &workerEnv);
+            worker->workerEnv_ = workerEnv;
+            worker->HandleException();
+            ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
+            std::string funcName = "onerror";
+            auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+                return nullptr;
+            };
+            napi_value funcValue = nullptr;
+            napi_create_function(workerEnv, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
+            napi_value obj = NapiHelper::CreateObject(workerEnv);
+            napi_set_named_property(workerEnv, obj, funcName.c_str(), funcValue);
+            napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
+            worker->workerPort_ = ref;
+            uv_loop_t* loop = worker->GetWorkerLoop();
+            ASSERT_TRUE(loop != nullptr);
+            worker->hostOnErrorSignal_ = new uv_async_t;
+            uv_async_init(loop, worker->hostOnErrorSignal_, reinterpret_cast<uv_async_cb>(UpdateMainThreadWorkerFlag));
+            worker->hostOnErrorSignal_->data = worker;
+            worker->isMainThreadWorker_ = false;
+            worker->HandleException();
+            worker->isMainThreadWorker_ = true;
+            worker->isLimitedWorker_ = true;
+            ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
+            worker->HandleException();
+            worker->isLimitedWorker_ = false;
+            ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
+            worker->HandleException();
+            ErrorHelper::ThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING, "Worker create runtime error");
+            napi_value exception = nullptr;
+            napi_get_and_clear_last_exception(workerEnv, &exception);
+            worker->hostEnv_ = nullptr;
+            worker->HandleUncaughtException(exception);
+            worker->hostEnv_ = env;
+            UpdateHostState(worker, Worker::HostState::INACTIVE);
+            worker->HandleUncaughtException(exception);
+            delete reinterpret_cast<NativeEngine*>(workerEnv);
+        });
+        t.join();
     }
 
     static void PostMessageToHostInner(Worker *worker, napi_env env)
@@ -878,35 +890,39 @@ public:
         worker->AddListenerInner(env, "onmessage", listener);
         worker->RemoveListenerInner(env, "onmessage", nullptr);
 
-        napi_env workerEnv = nullptr;
-        napi_create_runtime(env, &workerEnv);
-        worker->workerEnv_ = workerEnv;
-        std::string errorFuncName = "onerror";
-        auto errorFunc = [](napi_env env, napi_callback_info info) -> napi_value {
-            return nullptr;
-        };
-        napi_value errorFuncValue = nullptr;
-        napi_create_function(workerEnv, errorFuncName.c_str(), NAPI_AUTO_LENGTH,
-                             errorFunc, nullptr, &errorFuncValue);
-        napi_value obj = NapiHelper::CreateObject(workerEnv);
-        napi_set_named_property(workerEnv, obj, "onerror", errorFuncValue);
-        napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
-        worker->workerPort_ = ref;
-        worker->CallWorkerFunction(0, nullptr, "onerror", true);
-        worker->CallWorkerFunction(0, nullptr, "onerror", false);
+        std::thread t([&env, &worker] {
+            napi_env workerEnv = nullptr;
+            napi_create_runtime(env, &workerEnv);
+            worker->workerEnv_ = workerEnv;
+            std::string errorFuncName = "onerror";
+            auto errorFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+                return nullptr;
+            };
+            napi_value errorFuncValue = nullptr;
+            napi_create_function(workerEnv, errorFuncName.c_str(), NAPI_AUTO_LENGTH,
+                                 errorFunc, nullptr, &errorFuncValue);
+            napi_value obj = NapiHelper::CreateObject(workerEnv);
+            napi_set_named_property(workerEnv, obj, "onerror", errorFuncValue);
+            napi_ref ref = NapiHelper::CreateReference(workerEnv, obj, 1);
+            worker->workerPort_ = ref;
+            worker->CallWorkerFunction(0, nullptr, "onerror", true);
+            worker->CallWorkerFunction(0, nullptr, "onerror", false);
 
-        std::string undefinedFuncName = "OnMessageError";
-        auto undefinedFunc = [](napi_env env, napi_callback_info info) -> napi_value {
-            return NapiHelper::GetUndefinedValue(env);
-        };
-        napi_value undefinedFuncValue = nullptr;
-        napi_create_function(workerEnv, undefinedFuncName.c_str(), NAPI_AUTO_LENGTH,
-                             undefinedFunc, nullptr, &undefinedFuncValue);
-        napi_value obj2 = NapiHelper::CreateObject(workerEnv);
-        napi_set_named_property(workerEnv, obj2, "OnMessageError", undefinedFuncValue);
-        napi_ref ref2 = NapiHelper::CreateReference(workerEnv, obj2, 1);
-        worker->workerPort_ = ref2;
-        worker->CallWorkerFunction(0, nullptr, "OnMessageError", true);
+            std::string undefinedFuncName = "OnMessageError";
+            auto undefinedFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+                return NapiHelper::GetUndefinedValue(env);
+            };
+            napi_value undefinedFuncValue = nullptr;
+            napi_create_function(workerEnv, undefinedFuncName.c_str(), NAPI_AUTO_LENGTH,
+                                 undefinedFunc, nullptr, &undefinedFuncValue);
+            napi_value obj2 = NapiHelper::CreateObject(workerEnv);
+            napi_set_named_property(workerEnv, obj2, "OnMessageError", undefinedFuncValue);
+            napi_ref ref2 = NapiHelper::CreateReference(workerEnv, obj2, 1);
+            worker->workerPort_ = ref2;
+            worker->CallWorkerFunction(0, nullptr, "OnMessageError", true);
+            delete reinterpret_cast<NativeEngine*>(workerEnv);
+        });
+        t.join();
     }
 
     static void ParentPortAddListenerInnerTest(Worker *worker, napi_env env)
@@ -1004,30 +1020,34 @@ public:
     
     static void DebuggerOnPostTask(Worker* worker, napi_env env)
     {
-        napi_env workerEnv = nullptr;
-        napi_create_runtime(env, &workerEnv);
-        auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
-        workerEngine->CheckAndSetWorkerVersion(WorkerVersion::NONE, WorkerVersion::NEW);
-        workerEngine->MarkWorkerThread();
-        Worker::CanCreateWorker(workerEnv, WorkerVersion::NEW);
-        Worker::WorkerThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING,
-            "host thread maybe is over when CallHostFunction");
-        napi_value exception = nullptr;
-        napi_get_and_clear_last_exception(workerEnv, &exception);
-        worker->SetWorkerEnv(workerEnv);
-        uv_loop_t* loop = worker->GetWorkerLoop();
-        ASSERT_TRUE(loop != nullptr);
-        worker->debuggerOnPostTaskSignal_ = new uv_async_t;
-        uv_async_init(loop, worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
-            UpdateMainThreadWorkerFlag));
-        worker->debuggerOnPostTaskSignal_->data = worker;
-        std::function<void()> myTask = []() {
-            return;
-        };
-        UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
-        worker->DebuggerOnPostTask(std::move(myTask));
-        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-        worker->DebuggerOnPostTask(std::move(myTask));
+        std::thread t([&env, &worker] {
+            napi_env workerEnv = nullptr;
+            napi_create_runtime(env, &workerEnv);
+            auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
+            workerEngine->CheckAndSetWorkerVersion(WorkerVersion::NONE, WorkerVersion::NEW);
+            workerEngine->MarkWorkerThread();
+            Worker::CanCreateWorker(workerEnv, WorkerVersion::NEW);
+            Worker::WorkerThrowError(workerEnv, ErrorHelper::ERR_WORKER_NOT_RUNNING,
+                "host thread maybe is over when CallHostFunction");
+            napi_value exception = nullptr;
+            napi_get_and_clear_last_exception(workerEnv, &exception);
+            worker->SetWorkerEnv(workerEnv);
+            uv_loop_t* loop = worker->GetWorkerLoop();
+            ASSERT_TRUE(loop != nullptr);
+            worker->debuggerOnPostTaskSignal_ = new uv_async_t;
+            uv_async_init(loop, worker->debuggerOnPostTaskSignal_, reinterpret_cast<uv_async_cb>(
+                UpdateMainThreadWorkerFlag));
+            worker->debuggerOnPostTaskSignal_->data = worker;
+            std::function<void()> myTask = []() {
+                return;
+            };
+            UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
+            worker->DebuggerOnPostTask(std::move(myTask));
+            UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+            worker->DebuggerOnPostTask(std::move(myTask));
+            delete reinterpret_cast<NativeEngine*>(workerEnv);
+        });
+        t.join();
     }
 
     static void CloseHostHandle(Worker* worker, napi_env env)
@@ -1092,8 +1112,6 @@ napi_value Worker_Constructor(napi_env env, napi_value global)
 
     napi_call_function(env, global, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
     uv_sleep(SELLP_MS);
-    napi_env newEnv = nullptr;
-    napi_create_runtime(env, &newEnv);
     return result;
 }
 
@@ -1171,10 +1189,10 @@ napi_value WorkerChecker::CreateWorker(bool limited, napi_env workerEnv, napi_va
     napi_value cb = nullptr;
     if (!limited) {
         napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-            Worker::ThreadWorkerConstructor, nullptr, &cb);
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
     } else {
         napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-            Worker::LimitedWorkerConstructor, nullptr, &cb);
+                             Worker::LimitedWorkerConstructor, nullptr, &cb);
     }
     napi_value result = nullptr;
     napi_value argv[2] = { nullptr };
@@ -1649,23 +1667,26 @@ HWTEST_F(WorkersTest, ParentPortRemoveAllListenerTest001, testing::ext::TestSize
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value argv[1] = {nullptr};
-    std::string message = "host";
-    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
-    std::string funcName = "ParentPortRemoveAllListener";
-    napi_value cb = nullptr;
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[1] = {nullptr};
+        std::string message = "host";
+        napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
+        std::string funcName = "ParentPortRemoveAllListener";
+        napi_value cb = nullptr;
 
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortRemoveAllListener, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortRemoveAllListener, worker, &cb);
+        WorkersTest::UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
@@ -1682,31 +1703,34 @@ HWTEST_F(WorkersTest, ParentPortDispatchEventTest001, testing::ext::TestSize.Lev
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
 
-    napi_value argv[1] = {nullptr};
-    napi_value objresult = nullptr;
-    napi_create_object(workerEnv, &objresult);
-    napi_value cb = nullptr;
-    std::string funcName = "ParentPortDispatchEvent";
-    napi_value messageKey = nullptr;
-    const char* messageKeyStr = "type";
-    napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &messageKey);
-    napi_value messageValue = nullptr;
-    const char* messageValueStr = "message";
-    napi_create_string_latin1(workerEnv, messageValueStr, strlen(messageValueStr), &messageValue);
-    napi_set_property(workerEnv, objresult, messageKey, messageValue);
-    argv[0] = objresult;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortDispatchEvent, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+        napi_value argv[1] = {nullptr};
+        napi_value objresult = nullptr;
+        napi_create_object(workerEnv, &objresult);
+        napi_value cb = nullptr;
+        std::string funcName = "ParentPortDispatchEvent";
+        napi_value messageKey = nullptr;
+        const char* messageKeyStr = "type";
+        napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &messageKey);
+        napi_value messageValue = nullptr;
+        const char* messageValueStr = "message";
+        napi_create_string_latin1(workerEnv, messageValueStr, strlen(messageValueStr), &messageValue);
+        napi_set_property(workerEnv, objresult, messageKey, messageValue);
+        argv[0] = objresult;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortDispatchEvent, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
@@ -1723,30 +1747,32 @@ HWTEST_F(WorkersTest, ParentPortRemoveEventListenerTest001, testing::ext::TestSi
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
 
-    napi_value argv[2] = {nullptr};
-    std::string message = "host";
-    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
-    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
-        return nullptr;
-    };
-    std::string funcName = "ParentPortRemoveEventListener";
-    napi_value cb = nullptr;
-    napi_value funcValue = nullptr;
-    napi_create_function(workerEnv, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
-    argv[1] = funcValue;
-
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortRemoveEventListener, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+        napi_value argv[2] = {nullptr};
+        std::string message = "host";
+        napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
+        auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+            return nullptr;
+        };
+        std::string funcName = "ParentPortRemoveEventListener";
+        napi_value cb = nullptr;
+        napi_value funcValue = nullptr;
+        napi_create_function(workerEnv, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
+        argv[1] = funcValue;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortRemoveEventListener, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
@@ -1763,28 +1789,29 @@ HWTEST_F(WorkersTest, GlobalCallTest001, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-
-    napi_value argv[3] = {nullptr};
-    std::string instanceName = "host";
-    std::string methodName = "postMessage";
-    int32_t timeout = 300;
-    napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
-    napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
-    napi_create_int32(workerEnv, timeout, &argv[2]);
-
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        int32_t timeout = 300;
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
+        napi_create_int32(workerEnv, timeout, &argv[2]);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::GlobalCall, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     uv_async_t* req = new uv_async_t;
     req->data = worker;
     Worker::HostOnGlobalCall(req);
@@ -1846,11 +1873,14 @@ HWTEST_F(WorkersTest, WorkerTest001, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value exports = nullptr;
-    napi_create_object(workerEnv, &exports);
-    Worker::InitWorker(workerEnv, exports);
+    std::thread t([&env, &worker] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value exports = nullptr;
+        napi_create_object(workerEnv, &exports);
+        Worker::InitWorker(workerEnv, exports);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     result = Worker_Terminate(env, global);
@@ -1919,90 +1949,99 @@ HWTEST_F(WorkersTest, WorkerTest003, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, WorkerTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-
-    std::string funcName = "LimitedWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::LimitedWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    std::string type = "classic";
-    std::string name = "WorkerThread";
-    napi_value typeValue = nullptr;
-    napi_value nameValue = nullptr;
-    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    uv_sleep(200);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    worker->EraseWorker();
-    ClearWorkerHandle(worker);
-    result = Worker_Terminate(workerEnv, workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "LimitedWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::LimitedWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        std::string type = "classic";
+        std::string name = "WorkerThread";
+        napi_value typeValue = nullptr;
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        Worker* worker = nullptr;
+        napi_unwrap(workerEnv, result, reinterpret_cast<void**>(&worker));
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+        result = Worker_Terminate(workerEnv, workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    std::string type = "classic";
-    std::string name = "WorkerThread";
-    napi_value typeValue = nullptr;
-    napi_value nameValue = nullptr;
-    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    napi_value priorityValue = nullptr;
-    napi_create_uint32(workerEnv, static_cast<int32_t>(WorkerPriority::HIGH), &priorityValue);
-    napi_set_named_property(workerEnv, object, "priority", priorityValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    bool qosUpdated = false;
-    worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
-    uv_sleep(200);
-    ASSERT_TRUE(qosUpdated);
-    worker->EraseWorker();
-    ClearWorkerHandle(worker);
-    result = Worker_Terminate(workerEnv, workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        std::string type = "classic";
+        std::string name = "WorkerThread";
+        napi_value typeValue = nullptr;
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        napi_value priorityValue = nullptr;
+        napi_create_uint32(workerEnv, static_cast<int32_t>(WorkerPriority::HIGH), &priorityValue);
+        napi_set_named_property(workerEnv, object, "priority", priorityValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        Worker* worker = nullptr;
+        napi_unwrap(workerEnv, result, reinterpret_cast<void**>(&worker));
+        bool qosUpdated = false;
+        worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
+        uv_sleep(200);
+        ASSERT_TRUE(qosUpdated);
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+        result = Worker_Terminate(workerEnv, workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, WorkerTest006, testing::ext::TestSize.Level0)
@@ -2221,9 +2260,12 @@ HWTEST_F(WorkersTest, CloseWorkerTest002, testing::ext::TestSize.Level0)
     std::string funcName = "CloseWorker";
     napi_value cb = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), Worker::CloseWorker, worker, &cb);
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    SetCloseWorkerProp(worker, workerEnv);
+    std::thread t([&env, &worker] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        SetCloseWorkerProp(worker, workerEnv);
+    });
+    t.join();
     napi_call_function(env, global, cb, 0, nullptr, &result);
     worker->EraseWorker();
     ClearWorkerHandle(worker);
@@ -2242,189 +2284,204 @@ HWTEST_F(WorkersTest, InitWorkerTest001, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, InitWorkerTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    std::string type = "classic";
-    std::string name = "WorkerThread";
-    napi_value typeValue = nullptr;
-    napi_value nameValue = nullptr;
-    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    uv_sleep(200);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    ASSERT_TRUE(worker != nullptr);
-    worker->SetWorkerEnv(workerEnv);
-    NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
-    workerEngine->MarkRestrictedWorkerThread();
-    napi_value exports = nullptr;
-    napi_create_object(env, &exports);
-    Worker::InitWorker(workerEnv, exports);
-    worker->EraseWorker();
-    ClearWorkerHandle(worker);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        std::string type = "classic";
+        std::string name = "WorkerThread";
+        napi_value typeValue = nullptr;
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        Worker* worker = nullptr;
+        napi_unwrap(workerEnv, result, reinterpret_cast<void**>(&worker));
+        ASSERT_TRUE(worker != nullptr);
+        worker->SetWorkerEnv(workerEnv);
+        NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
+        workerEngine->MarkRestrictedWorkerThread();
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        Worker::InitWorker(workerEnv, exports);
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, InitWorkerTest003, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    std::string type = "classic";
-    std::string name = "WorkerThread";
-    napi_value typeValue = nullptr;
-    napi_value nameValue = nullptr;
-    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-
-    uv_sleep(200);
-    Worker* worker = new Worker(env, nullptr);
-    napi_wrap(env, result, worker, nullptr, nullptr, nullptr);
-    worker->SetWorkerEnv(workerEnv);
-    NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
-    workerEngine->MarkTaskPoolThread();
-    napi_value exports = nullptr;
-    napi_create_object(env, &exports);
-    Worker::InitWorker(workerEnv, exports);
-    worker->EraseWorker();
-    ClearWorkerHandle(worker);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        std::string type = "classic";
+        std::string name = "WorkerThread";
+        napi_value typeValue = nullptr;
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        Worker* worker = new Worker(workerEnv, nullptr);
+        napi_wrap(workerEnv, result, worker, nullptr, nullptr, nullptr);
+        NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
+        workerEngine->MarkTaskPoolThread();
+        napi_value exports = nullptr;
+        napi_create_object(workerEnv, &exports);
+        Worker::InitWorker(workerEnv, exports);
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, InitWorkerTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    std::string type = "classic";
-    std::string name = "WorkerThread";
-    napi_value typeValue = nullptr;
-    napi_value nameValue = nullptr;
-    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-
-    uv_sleep(200);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    worker->SetWorkerEnv(workerEnv);
-    NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
-    workerEngine->MarkWorkerThread();
-    napi_value exports = nullptr;
-    napi_create_object(workerEnv, &exports);
-    Worker::InitWorker(workerEnv, exports);
-    worker->EraseWorker();
-    ClearWorkerHandle(worker);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        std::string type = "classic";
+        std::string name = "WorkerThread";
+        napi_value typeValue = nullptr;
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        Worker* worker = nullptr;
+        napi_unwrap(workerEnv, result, reinterpret_cast<void**>(&worker));
+        NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
+        workerEngine->MarkWorkerThread();
+        napi_value exports = nullptr;
+        napi_create_object(workerEnv, &exports);
+        Worker::InitWorker(workerEnv, exports);
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, InitWorkerTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "LimitedWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::LimitedWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    std::string type = "classic";
-    std::string name = "WorkerThread";
-    napi_value typeValue = nullptr;
-    napi_value nameValue = nullptr;
-    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-
-    uv_sleep(200);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    worker->SetWorkerEnv(workerEnv);
-    NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
-    workerEngine->MarkRestrictedWorkerThread();
-    napi_value exports = nullptr;
-    napi_create_object(workerEnv, &exports);
-    Worker::InitWorker(workerEnv, exports);
-    worker->EraseWorker();
-    ClearWorkerHandle(worker);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "LimitedWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::LimitedWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        std::string type = "classic";
+        std::string name = "WorkerThread";
+        napi_value typeValue = nullptr;
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        Worker* worker = nullptr;
+        napi_unwrap(workerEnv, result, reinterpret_cast<void**>(&worker));
+        worker->SetWorkerEnv(workerEnv);
+        NativeEngine* workerEngine = reinterpret_cast<NativeEngine*>(workerEnv);
+        workerEngine->MarkRestrictedWorkerThread();
+        napi_value exports = nullptr;
+        napi_create_object(workerEnv, &exports);
+        Worker::InitWorker(workerEnv, exports);
+        worker->EraseWorker();
+        ClearWorkerHandle(worker);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, ConstructorTest001, testing::ext::TestSize.Level0)
@@ -2509,96 +2566,124 @@ HWTEST_F(WorkersTest, ConstructorTest003, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, ConstructorTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &result);
-    uv_sleep(200);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result == nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &result);
+        uv_sleep(200);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        ASSERT_TRUE(result == nullptr);
+        if (result == nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, ConstructorTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    int32_t script = 200;
-    napi_create_int32(workerEnv, script, &argv[0]);
-    std::string type = "classic";
-    std::string name = "WorkerThread";
-    napi_value typeValue = nullptr;
-    napi_value nameValue = nullptr;
-    napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    uv_sleep(200);
-    ASSERT_TRUE(result == nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        int32_t script = 200;
+        napi_create_int32(workerEnv, script, &argv[0]);
+        std::string type = "classic";
+        std::string name = "WorkerThread";
+        napi_value typeValue = nullptr;
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv, name.c_str(), name.length(), &nameValue);
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        uv_sleep(200);
+        ASSERT_TRUE(result == nullptr);
+        if (result == nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, ConstructorTest006, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    auto engine = reinterpret_cast<NativeEngine*>(workerEnv);
-    engine->CheckAndSetWorkerVersion(WorkerVersion::NONE, WorkerVersion::OLD);
-    Worker::ThreadWorkerConstructor(workerEnv, nullptr);
-    napi_value exception = nullptr;
-    napi_get_and_clear_last_exception(workerEnv, &exception);
-    ASSERT_TRUE(exception != nullptr);
-    engine->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NEW);
-    Worker::WorkerConstructor(workerEnv, nullptr);
-    napi_get_and_clear_last_exception(workerEnv, &exception);
-    ASSERT_TRUE(exception != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        auto engine = reinterpret_cast<NativeEngine*>(workerEnv);
+        engine->CheckAndSetWorkerVersion(WorkerVersion::NONE, WorkerVersion::OLD);
+        Worker::ThreadWorkerConstructor(workerEnv, nullptr);
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(workerEnv, &exception);
+        ASSERT_TRUE(exception != nullptr);
+        engine->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NEW);
+        Worker::WorkerConstructor(workerEnv, nullptr);
+        napi_get_and_clear_last_exception(workerEnv, &exception);
+        ASSERT_TRUE(exception != nullptr);
+        if (exception != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, ConstructorTest007, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    std::string funcName = "WorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    argv[1] = nullptr;
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    uv_sleep(200);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        std::string funcName = "WorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        argv[1] = nullptr;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -2607,22 +2692,29 @@ HWTEST_F(WorkersTest, ConstructorTest007, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, ConstructorTest008, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    std::string funcName = "WorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[3] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-    argv[1] = nullptr;
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    uv_sleep(200);
-    ASSERT_TRUE(result != nullptr);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        std::string funcName = "WorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[3] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        argv[1] = nullptr;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -2631,32 +2723,33 @@ HWTEST_F(WorkersTest, ConstructorTest008, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, ConstructorTest009, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    std::string funcName = "WorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    argv[0] = NapiHelper::CreateEmptyString(workerEnv);
-    std::string type = "classic";
-    napi_value typeValue = nullptr;
-    napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
-    napi_value nameValue = NapiHelper::CreateEmptyString(workerEnv);;
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-
-    napi_set_named_property(workerEnv, object, "name", nameValue);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[1] = object;
-
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    uv_sleep(200);
-    ASSERT_TRUE(result != nullptr);
+    bool success = true;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        std::string funcName = "WorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        argv[0] = NapiHelper::CreateEmptyString(workerEnv);
+        std::string type = "classic";
+        napi_value typeValue = nullptr;
+        napi_create_string_utf8(workerEnv, type.c_str(), type.length(), &typeValue);
+        napi_value nameValue = NapiHelper::CreateEmptyString(workerEnv);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "name", nameValue);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[1] = object;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        uv_sleep(200);
+        ASSERT_TRUE(result != nullptr);
+    });
+    t.join();
+    ASSERT_TRUE(success);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3476,19 +3569,21 @@ HWTEST_F(WorkersTest, WorkerTest040, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::GlobalCall, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -3507,26 +3602,28 @@ HWTEST_F(WorkersTest, WorkerTest041, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value argv[3] = {nullptr};
-    std::string instanceName = "host";
-    std::string methodName = "postMessage";
-    int32_t timeout = 300;
-    napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
-    napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
-    napi_create_int32(workerEnv, timeout, &argv[2]);
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, nullptr, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        int32_t timeout = 300;
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
+        napi_create_int32(workerEnv, timeout, &argv[2]);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::GlobalCall, nullptr, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3545,26 +3642,28 @@ HWTEST_F(WorkersTest, WorkerTest042, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value argv[3] = {nullptr};
-    std::string instanceName = "host";
-    std::string methodName = "postMessage";
-    int32_t timeout = 300;
-    napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
-    napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
-    napi_create_int32(workerEnv, timeout, &argv[2]);
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        int32_t timeout = 300;
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
+        napi_create_int32(workerEnv, timeout, &argv[2]);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::GlobalCall, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3583,26 +3682,28 @@ HWTEST_F(WorkersTest, WorkerTest043, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value argv[3] = {nullptr};
-    std::string instanceName = "host";
-    std::string methodName = "postMessage";
-    int32_t timeout = 300;
-    napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
-    napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[2]);
-    napi_create_int32(workerEnv, timeout, &argv[1]);
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        int32_t timeout = 300;
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[2]);
+        napi_create_int32(workerEnv, timeout, &argv[1]);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::GlobalCall, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3621,28 +3722,28 @@ HWTEST_F(WorkersTest, WorkerTest044, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-
-    napi_value argv[3] = {nullptr};
-    std::string instanceName = "host";
-    std::string methodName = "postMessage";
-    std::string timeout = "timeout";
-    napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
-    napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
-    napi_create_string_utf8(workerEnv, timeout.c_str(), timeout.length(), &argv[2]);
-
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        std::string timeout = "timeout";
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
+        napi_create_string_utf8(workerEnv, timeout.c_str(), timeout.length(), &argv[2]);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::GlobalCall, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3661,29 +3762,29 @@ HWTEST_F(WorkersTest, WorkerTest045, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-
-    napi_value argv[3] = {nullptr};
-    std::string instanceName = "host";
-    std::string methodName = "postMessage";
-    int32_t timeout = 300;
-    napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
-    napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
-    napi_create_int32(workerEnv, timeout, &argv[2]);
-
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    UpdateHostState(worker, Worker::HostState::INACTIVE);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        int32_t timeout = 300;
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
+        napi_create_int32(workerEnv, timeout, &argv[2]);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::GlobalCall, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        UpdateHostState(worker, Worker::HostState::INACTIVE);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3702,39 +3803,40 @@ HWTEST_F(WorkersTest, WorkerTest046, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-
-    napi_value argv[3] = {nullptr};
-    std::string instanceName = "host";
-    std::string methodName = "postMessage";
-    int32_t timeout = 300;
-    napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
-    napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
-    napi_create_int32(workerEnv, timeout, &argv[2]);
-
-    std::string funcName = "GlobalCall";
-    napi_value cb = nullptr;
-    napi_value callResult = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::GlobalCall, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    SetMainThread(worker, true);
-    SetLimitedWorker(worker, false);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        int32_t timeout = 300;
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
+        napi_create_int32(workerEnv, timeout, &argv[2]);
+        std::string funcName = "GlobalCall";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::GlobalCall, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        SetMainThread(worker, true);
+        SetLimitedWorker(worker, false);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(workerEnv, &exception);
+        ASSERT_TRUE(exception != nullptr);
+        SetMainThread(worker, false);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+        napi_get_and_clear_last_exception(workerEnv, &exception);
+        ASSERT_TRUE(exception != nullptr);
+        SetMainThread(worker, true);
+        SetLimitedWorker(worker, true);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     napi_value exception = nullptr;
-    napi_get_and_clear_last_exception(env, &exception);
-    ASSERT_TRUE(exception == nullptr);
-    SetMainThread(worker, false);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
-    napi_get_and_clear_last_exception(env, &exception);
-    ASSERT_TRUE(exception == nullptr);
-    SetMainThread(worker, true);
-    SetLimitedWorker(worker, true);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     worker->EraseWorker();
@@ -4078,17 +4180,20 @@ HWTEST_F(WorkersTest, WorkerTest058, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value cb = nullptr;
-    std::string funcName = "ParentPortDispatchEvent";
-    napi_value callResult = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortDispatchEvent, worker, &cb);
-    napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value cb = nullptr;
+        std::string funcName = "ParentPortDispatchEvent";
+        napi_value callResult = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortDispatchEvent, worker, &cb);
+        napi_call_function(workerEnv, workerGlobal, cb, 0, nullptr, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -4107,21 +4212,23 @@ HWTEST_F(WorkersTest, WorkerTest059, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-
-    napi_value argv[1] = {nullptr};
-    napi_value cb = nullptr;
-    std::string funcName = "ParentPortDispatchEvent";
-    const char* messageKeyStr = "type";
-    napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &argv[0]);
-    napi_value callResult = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortDispatchEvent, worker, &cb);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[1] = {nullptr};
+        napi_value cb = nullptr;
+        std::string funcName = "ParentPortDispatchEvent";
+        const char* messageKeyStr = "type";
+        napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &argv[0]);
+        napi_value callResult = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortDispatchEvent, worker, &cb);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -4140,28 +4247,29 @@ HWTEST_F(WorkersTest, WorkerTest060, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-
-    napi_value argv[1] = {nullptr};
-
-    napi_value cb = nullptr;
-    std::string funcName = "ParentPortDispatchEvent";
-    napi_value typeValue = nullptr;
-    uint32_t type = 100; //test 100
-    napi_create_uint32(env, type, &typeValue);
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-    napi_set_named_property(workerEnv, object, "type", typeValue);
-    argv[0] = object;
-    napi_value callResult = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortDispatchEvent, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[1] = {nullptr};
+        napi_value cb = nullptr;
+        std::string funcName = "ParentPortDispatchEvent";
+        napi_value typeValue = nullptr;
+        uint32_t type = 100; //test 100
+        napi_create_uint32(env, type, &typeValue);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_set_named_property(workerEnv, object, "type", typeValue);
+        argv[0] = object;
+        napi_value callResult = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortDispatchEvent, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -4180,29 +4288,32 @@ HWTEST_F(WorkersTest, WorkerTest061, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value argv[1] = {nullptr};
-    napi_value objresult = nullptr;
-    napi_create_object(workerEnv, &objresult);
-    napi_value cb = nullptr;
-    std::string funcName = "ParentPortDispatchEvent";
-    napi_value messageKey = nullptr;
-    const char* messageKeyStr = "type";
-    napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &messageKey);
-    napi_value messageValue = nullptr;
-    const char* messageValueStr = "message";
-    napi_create_string_latin1(workerEnv, messageValueStr, strlen(messageValueStr), &messageValue);
-    napi_set_property(workerEnv, objresult, messageKey, messageValue);
-    argv[0] = objresult;
-    napi_value callResult = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortDispatchEvent, nullptr, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[1] = {nullptr};
+        napi_value objresult = nullptr;
+        napi_create_object(workerEnv, &objresult);
+        napi_value cb = nullptr;
+        std::string funcName = "ParentPortDispatchEvent";
+        napi_value messageKey = nullptr;
+        const char* messageKeyStr = "type";
+        napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &messageKey);
+        napi_value messageValue = nullptr;
+        const char* messageValueStr = "message";
+        napi_create_string_latin1(workerEnv, messageValueStr, strlen(messageValueStr), &messageValue);
+        napi_set_property(workerEnv, objresult, messageKey, messageValue);
+        argv[0] = objresult;
+        napi_value callResult = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortDispatchEvent, nullptr, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -4221,30 +4332,32 @@ HWTEST_F(WorkersTest, WorkerTest062, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-
-    napi_value argv[1] = {nullptr};
-    napi_value objresult = nullptr;
-    napi_create_object(workerEnv, &objresult);
-    napi_value cb = nullptr;
-    std::string funcName = "ParentPortDispatchEvent";
-    napi_value messageKey = nullptr;
-    const char* messageKeyStr = "type";
-    napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &messageKey);
-    napi_value messageValue = nullptr;
-    const char* messageValueStr = "message";
-    napi_create_string_latin1(workerEnv, messageValueStr, strlen(messageValueStr), &messageValue);
-    napi_set_property(workerEnv, objresult, messageKey, messageValue);
-    argv[0] = objresult;
-    napi_value callResult = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortDispatchEvent, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[1] = {nullptr};
+        napi_value objresult = nullptr;
+        napi_create_object(workerEnv, &objresult);
+        napi_value cb = nullptr;
+        std::string funcName = "ParentPortDispatchEvent";
+        napi_value messageKey = nullptr;
+        const char* messageKeyStr = "type";
+        napi_create_string_latin1(workerEnv, messageKeyStr, strlen(messageKeyStr), &messageKey);
+        napi_value messageValue = nullptr;
+        const char* messageValueStr = "message";
+        napi_create_string_latin1(workerEnv, messageValueStr, strlen(messageValueStr), &messageValue);
+        napi_set_property(workerEnv, objresult, messageKey, messageValue);
+        argv[0] = objresult;
+        napi_value callResult = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortDispatchEvent, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -4418,23 +4531,25 @@ HWTEST_F(WorkersTest, WorkerTest068, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value argv[1] = {nullptr};
-    std::string message = "host";
-    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
-    std::string funcName = "ParentPortRemoveAllListener";
-    napi_value cb = nullptr;
-
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortRemoveAllListener, nullptr, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
-    napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[1] = {nullptr};
+        std::string message = "host";
+        napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
+        std::string funcName = "ParentPortRemoveAllListener";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortRemoveAllListener, nullptr, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_call_function(workerEnv, nullptr, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -4453,23 +4568,25 @@ HWTEST_F(WorkersTest, WorkerTest069, testing::ext::TestSize.Level0)
     result = Worker_Constructor(env, global);
     Worker* worker = nullptr;
     napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-    // ------- workerEnv---------
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    napi_value argv[1] = {nullptr};
-    std::string message = "host";
-    napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
-    std::string funcName = "ParentPortRemoveAllListener";
-    napi_value cb = nullptr;
-
-    napi_value callResult = nullptr;
-    // ------- workerEnv---------
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
-                         Worker::ParentPortRemoveAllListener, worker, &cb);
-    UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    std::thread t([&env, &worker] {
+        // ------- workerEnv---------
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[1] = {nullptr};
+        std::string message = "host";
+        napi_create_string_utf8(workerEnv, message.c_str(), message.length(), &argv[0]);
+        std::string funcName = "ParentPortRemoveAllListener";
+        napi_value cb = nullptr;
+        napi_value callResult = nullptr;
+        // ------- workerEnv---------
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ParentPortRemoveAllListener, worker, &cb);
+        UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+    });
+    t.join();
     worker->EraseWorker();
     ClearWorkerHandle(worker);
     napi_value exception = nullptr;
@@ -4911,7 +5028,7 @@ HWTEST_F(WorkersTest, WorkerTest092, testing::ext::TestSize.Level0)
     ASSERT_TRUE(result != nullptr);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest093, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest093, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4922,7 +5039,7 @@ HWTEST_F(NativeEngineTest, WorkerTest093, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "postMessage", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest094, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest094, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4933,7 +5050,7 @@ HWTEST_F(NativeEngineTest, WorkerTest094, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "postMessageWithSharedSendable", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest095, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest095, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4944,7 +5061,7 @@ HWTEST_F(NativeEngineTest, WorkerTest095, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "callGlobalCallObjectMethod", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest096, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest096, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4955,7 +5072,7 @@ HWTEST_F(NativeEngineTest, WorkerTest096, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "close", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest097, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest097, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4966,7 +5083,7 @@ HWTEST_F(NativeEngineTest, WorkerTest097, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "cancelTasks", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest098, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest098, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4977,7 +5094,7 @@ HWTEST_F(NativeEngineTest, WorkerTest098, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "addEventListener", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest099, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest099, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4988,7 +5105,7 @@ HWTEST_F(NativeEngineTest, WorkerTest099, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "dispatchEvent", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest100, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest100, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -4999,7 +5116,7 @@ HWTEST_F(NativeEngineTest, WorkerTest100, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "removeEventListener", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest101, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest101, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func = nullptr;
@@ -5010,7 +5127,7 @@ HWTEST_F(NativeEngineTest, WorkerTest101, testing::ext::TestSize.Level0)
     ASSERT_TRUE(napi_set_named_property(env, globalObj, "removeAllListener", func) == napi_ok);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest102, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest102, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func1 = nullptr;
@@ -5051,7 +5168,7 @@ HWTEST_F(NativeEngineTest, WorkerTest102, testing::ext::TestSize.Level0)
     ASSERT_TRUE(isEqual);
 }
 
-HWTEST_F(NativeEngineTest, WorkerTest103, testing::ext::TestSize.Level0)
+HWTEST_F(WorkersTest, WorkerTest103, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value func1 = nullptr;
@@ -5215,286 +5332,339 @@ HWTEST_F(WorkersTest, QOSTest002, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, QOSTest003, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-    napi_value priorityValue = nullptr;
-    napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
-    napi_set_named_property(workerEnv, object, "priority", priorityValue);
-    argv[1] = object;
-
-    TryCatch tryCatch(workerEnv);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    ASSERT_TRUE(tryCatch.HasCaught());
-    tryCatch.ClearException();
-    ArkNativeEngine* engine = (ArkNativeEngine*)workerEnv;
-    if (!engine->lastException_.IsEmpty()) {
-        engine->lastException_.Empty();
-    }
-    std::string strpriority = "kkk";
-    napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
-    napi_set_named_property(workerEnv, object, "priority", priorityValue);
-    TryCatch tryCatch2(workerEnv);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    ASSERT_TRUE(tryCatch2.HasCaught());
-    tryCatch2.ClearException();
-    if (!engine->lastException_.IsEmpty()) {
-        engine->lastException_.Empty();
-    }
-    Worker_Terminate(workerEnv, workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_value priorityValue = nullptr;
+        napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
+        napi_set_named_property(workerEnv, object, "priority", priorityValue);
+        argv[1] = object;
+        TryCatch tryCatch(workerEnv);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        ASSERT_TRUE(tryCatch.HasCaught());
+        tryCatch.ClearException();
+        ArkNativeEngine* engine = (ArkNativeEngine*)workerEnv;
+        if (!engine->lastException_.IsEmpty()) {
+            engine->lastException_.Empty();
+        }
+        std::string strpriority = "kkk";
+        napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
+        napi_set_named_property(workerEnv, object, "priority", priorityValue);
+        TryCatch tryCatch2(workerEnv);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        ASSERT_TRUE(tryCatch2.HasCaught());
+        tryCatch2.ClearException();
+        if (!engine->lastException_.IsEmpty()) {
+            engine->lastException_.Empty();
+        }
+        Worker_Terminate(workerEnv, workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
+        success = true;
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, QOSTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
-    std::string funcName = "ThreadWorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::ThreadWorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-    argv[1] = object;
-
-    WorkerPriority priority[] =
-        {WorkerPriority::HIGH, WorkerPriority::MEDIUM, WorkerPriority::LOW, WorkerPriority::IDLE};
-    for (int k = 0; k < sizeof(priority) / sizeof(priority[0]); k++)
-    {
-        napi_value priorityValue = nullptr;
-        napi_create_uint32(workerEnv, static_cast<int32_t>(priority[k]), &priorityValue);
-        napi_set_named_property(workerEnv, object, "priority", priorityValue);
-        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::OLD, WorkerVersion::NONE);
+        std::string funcName = "ThreadWorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(),
+                             Worker::ThreadWorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        argv[1] = object;
+        WorkerPriority priority[] =
+            {WorkerPriority::HIGH, WorkerPriority::MEDIUM, WorkerPriority::LOW, WorkerPriority::IDLE};
+        for (int k = 0; k < sizeof(priority) / sizeof(priority[0]); k++) {
+            napi_value priorityValue = nullptr;
+            napi_create_uint32(workerEnv, static_cast<int32_t>(priority[k]), &priorityValue);
+            napi_set_named_property(workerEnv, object, "priority", priorityValue);
+            napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+            ASSERT_TRUE(result != nullptr);
+            Worker* worker = nullptr;
+            napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+            bool qosUpdated = false;
+            worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
+            uv_sleep(200);
+            ASSERT_TRUE(qosUpdated);
+            worker->EraseWorker();
+            ClearWorkerHandle(worker);
+        }
+        result = Worker_Terminate(workerEnv, workerGlobal);
+        NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
         ASSERT_TRUE(result != nullptr);
-        Worker* worker = nullptr;
-        napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-        bool qosUpdated = false;
-        worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
-        uv_sleep(200);
-        ASSERT_TRUE(qosUpdated);
-        worker->EraseWorker();
-        ClearWorkerHandle(worker);
-    }
-    result = Worker_Terminate(workerEnv, workerGlobal);
-    NativeEngine::GetMainThreadEngine()->CheckAndSetWorkerVersion(WorkerVersion::NEW, WorkerVersion::OLD);
-    ASSERT_TRUE(result != nullptr);
+        if (result != nullptr) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, QOSTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    napi_value workerGlobal = nullptr;
-    napi_get_global(workerEnv, &workerGlobal);
-    std::string funcName = "WorkerConstructor";
-    napi_value cb = nullptr;
-    napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = { nullptr };
-    std::string script = "entry/ets/workers/@worker.ts";
-    napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
-
-    napi_value object = nullptr;
-    napi_create_object(workerEnv, &object);
-    napi_value priorityValue = nullptr;
-    napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
-    napi_set_named_property(workerEnv, object, "priority", priorityValue);
-    argv[1] = object;
-
-    TryCatch tryCatch(workerEnv);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    ASSERT_FALSE(tryCatch.HasCaught());
-
-    std::string strpriority = "kkk";
-    napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
-    napi_set_named_property(workerEnv, object, "priority", priorityValue);
-    TryCatch tryCatch2(workerEnv);
-    napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
-    ASSERT_FALSE(tryCatch2.HasCaught());
-    uv_sleep(200);
+    bool success = false;
+    std::thread t([&env, &success] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        std::string funcName = "WorkerConstructor";
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, funcName.c_str(), funcName.size(), Worker::WorkerConstructor, nullptr, &cb);
+        napi_value result = nullptr;
+        napi_value argv[2] = { nullptr };
+        std::string script = "entry/ets/workers/@worker.ts";
+        napi_create_string_utf8(workerEnv, script.c_str(), script.length(), &argv[0]);
+        napi_value object = nullptr;
+        napi_create_object(workerEnv, &object);
+        napi_value priorityValue = nullptr;
+        napi_create_uint32(workerEnv, static_cast<int32_t>(-1), &priorityValue);
+        napi_set_named_property(workerEnv, object, "priority", priorityValue);
+        argv[1] = object;
+        TryCatch tryCatch(workerEnv);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        ASSERT_FALSE(tryCatch.HasCaught());
+        std::string strpriority = "kkk";
+        napi_create_string_utf8(workerEnv, strpriority.c_str(), strpriority.length(), &priorityValue);
+        napi_set_named_property(workerEnv, object, "priority", priorityValue);
+        TryCatch tryCatch2(workerEnv);
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
+        ASSERT_FALSE(tryCatch2.HasCaught());
+        uv_sleep(200);
+        success = true;
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest0010, testing::ext::TestSize.Level0)
 {
-    auto checker = std::make_shared<WorkerChecker>();
-    checker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
-    int32_t failed = checker->GetFailedCount();
-    checker->DeleteWorkerList();
-    ASSERT_EQ(failed, NUM_10);
+    bool success = false;
+    std::thread t([&success] {
+        auto checker = std::make_shared<WorkerChecker>();
+        checker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
+        int32_t failed = checker->GetFailedCount();
+        checker->DeleteWorkerList();
+        ASSERT_EQ(failed, NUM_10);
+        if (failed == NUM_10) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
+\
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest0011, testing::ext::TestSize.Level0)
 {
-    auto checker = std::make_shared<WorkerChecker>();
-    checker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_1);
-    int32_t failed = checker->GetFailedCount();
-    ASSERT_EQ(failed, 0);
-
-    auto checker2 = std::make_shared<WorkerChecker>();
-    checker2->CreateWorkerList(false, NUM_1);
-    failed = checker2->GetFailedCount();
-    ASSERT_EQ(failed, 0);
-
-    auto checker3 = std::make_shared<WorkerChecker>();
-    checker3->CreateWorkerList(false, NUM_1);
-    failed = checker3->GetFailedCount();
-    ASSERT_EQ(failed, NUM_1);
-    checker3->DeleteWorkerList();
-
-    checker2->DeleteWorkerList();
-    auto checker4 = std::make_shared<WorkerChecker>();
-    checker4->CreateWorkerList(false, NUM_1);
-    failed = checker4->GetFailedCount();
-    ASSERT_EQ(failed, 0);
-    checker4->DeleteWorkerList();
-
-    checker->DeleteWorkerList();
+    bool success = false;
+    std::thread t([&success] {
+        auto checker = std::make_shared<WorkerChecker>();
+        checker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_1);
+        int32_t failed = checker->GetFailedCount();
+        ASSERT_EQ(failed, 0);
+        auto checker2 = std::make_shared<WorkerChecker>();
+        checker2->CreateWorkerList(false, NUM_1);
+        failed = checker2->GetFailedCount();
+        ASSERT_EQ(failed, 0);
+        auto checker3 = std::make_shared<WorkerChecker>();
+        checker3->CreateWorkerList(false, NUM_1);
+        failed = checker3->GetFailedCount();
+        ASSERT_EQ(failed, NUM_1);
+        checker3->DeleteWorkerList();
+        checker2->DeleteWorkerList();
+        auto checker4 = std::make_shared<WorkerChecker>();
+        checker4->CreateWorkerList(false, NUM_1);
+        failed = checker4->GetFailedCount();
+        ASSERT_EQ(failed, 0);
+        checker4->DeleteWorkerList();
+        checker->DeleteWorkerList();
+        success = true;
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest0020, testing::ext::TestSize.Level0)
 {
-    auto checker = std::make_shared<ArkRuntimeChecker>();
-    checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
-    int32_t failed = checker->GetFailedCount();
-    checker->DeleteArkRuntimeList();
-    ASSERT_EQ(failed, NUM_10);
+    bool success = false;
+    std::thread t([&success] {
+        auto checker = std::make_shared<ArkRuntimeChecker>();
+        checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+        int32_t failed = checker->GetFailedCount();
+        checker->DeleteArkRuntimeList();
+        ASSERT_EQ(failed, NUM_10);
+        if (failed == NUM_10) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest0021, testing::ext::TestSize.Level0)
 {
-    auto checker = std::make_shared<ArkRuntimeChecker>();
-    checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT - NUM_1);
-    int32_t failed = checker->GetFailedCount();
-    ASSERT_EQ(failed, 0);
-
-    auto checker2 = std::make_shared<ArkRuntimeChecker>();
-    checker2->CreateArkRuntimeList(NUM_10);
-    failed = checker2->GetFailedCount();
-    ASSERT_EQ(failed, NUM_10 - NUM_1);
-
-    auto checker3 = std::make_shared<ArkRuntimeChecker>();
-    checker3->CreateArkRuntimeList(NUM_1);
-    failed = checker3->GetFailedCount();
-    ASSERT_EQ(failed, NUM_1);
-
-    checker3->DeleteArkRuntimeList();
-    checker2->DeleteArkRuntimeList();
-
-    auto checker4 = std::make_shared<ArkRuntimeChecker>();
-    checker4->CreateArkRuntimeList(NUM_1);
-    failed = checker4->GetFailedCount();
-    ASSERT_EQ(failed, 0);
-    checker4->DeleteArkRuntimeList();
-
-    checker->DeleteArkRuntimeList();
+    bool success = false;
+    std::thread t([&success] {
+        auto checker = std::make_shared<ArkRuntimeChecker>();
+        checker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT - NUM_1);
+        int32_t failed = checker->GetFailedCount();
+        ASSERT_EQ(failed, 0);
+        auto checker2 = std::make_shared<ArkRuntimeChecker>();
+        checker2->CreateArkRuntimeList(NUM_10);
+        failed = checker2->GetFailedCount();
+        ASSERT_EQ(failed, NUM_10 - NUM_1);
+        auto checker3 = std::make_shared<ArkRuntimeChecker>();
+        checker3->CreateArkRuntimeList(NUM_1);
+        failed = checker3->GetFailedCount();
+        ASSERT_EQ(failed, NUM_1);
+        checker3->DeleteArkRuntimeList();
+        checker2->DeleteArkRuntimeList();
+        auto checker4 = std::make_shared<ArkRuntimeChecker>();
+        checker4->CreateArkRuntimeList(NUM_1);
+        failed = checker4->GetFailedCount();
+        ASSERT_EQ(failed, 0);
+        checker4->DeleteArkRuntimeList();
+        checker->DeleteArkRuntimeList();
+        success = true;
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest0030, testing::ext::TestSize.Level0)
 {
-    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
-    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
-    int32_t failed1 = arkRuntimeChecker->GetFailedCount();
-    auto workerChecker = std::make_shared<WorkerChecker>();
-    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT);
-    int32_t failed2 = workerChecker->GetFailedCount();
-    workerChecker->DeleteWorkerList();
-    ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
-    arkRuntimeChecker->DeleteArkRuntimeList();
-    ASSERT_EQ(failed1, NUM_10);
+    bool success = false;
+    std::thread t([&success] {
+        auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+        arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+        int32_t failed1 = arkRuntimeChecker->GetFailedCount();
+        auto workerChecker = std::make_shared<WorkerChecker>();
+        workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT);
+        int32_t failed2 = workerChecker->GetFailedCount();
+        workerChecker->DeleteWorkerList();
+        ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
+        arkRuntimeChecker->DeleteArkRuntimeList();
+        ASSERT_EQ(failed1, NUM_10);
+        if (failed1 == NUM_10) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest0031, testing::ext::TestSize.Level0)
 {
-    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
-    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
-    int32_t failed1 = arkRuntimeChecker->GetFailedCount();
-    auto workerChecker2 = std::make_shared<WorkerChecker>();
-    workerChecker2->CreateWorkerList(false, MAX_JSTHREAD_COUNT - MAX_ARKRUNTIME_COUNT - NUM_10);
-    int32_t failed2 = workerChecker2->GetFailedCount();
-
-    auto workerChecker3 = std::make_shared<WorkerChecker>();
-    workerChecker3->CreateWorkerList(true, NUM_10 + NUM_1);
-    int32_t failed3 = workerChecker3->GetFailedCount();
-    ASSERT_EQ(failed3, NUM_1);
-    workerChecker3->DeleteWorkerList();
-
-    workerChecker2->DeleteWorkerList();
-    ASSERT_EQ(failed2, 0);
-    arkRuntimeChecker->DeleteArkRuntimeList();
-    ASSERT_EQ(failed1, NUM_10);
+    bool success = false;
+    std::thread t([&success] {
+        auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+        arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT + NUM_10);
+        int32_t failed1 = arkRuntimeChecker->GetFailedCount();
+        auto workerChecker2 = std::make_shared<WorkerChecker>();
+        workerChecker2->CreateWorkerList(false, MAX_JSTHREAD_COUNT - MAX_ARKRUNTIME_COUNT - NUM_10);
+        int32_t failed2 = workerChecker2->GetFailedCount();
+        auto workerChecker3 = std::make_shared<WorkerChecker>();
+        workerChecker3->CreateWorkerList(true, NUM_10 + NUM_1);
+        int32_t failed3 = workerChecker3->GetFailedCount();
+        ASSERT_EQ(failed3, NUM_1);
+        workerChecker3->DeleteWorkerList();
+        workerChecker2->DeleteWorkerList();
+        ASSERT_EQ(failed2, 0);
+        arkRuntimeChecker->DeleteArkRuntimeList();
+        ASSERT_EQ(failed1, NUM_10);
+        if (failed1 == NUM_10) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest004, testing::ext::TestSize.Level0)
 {
-    auto workerChecker = std::make_shared<WorkerChecker>();
-    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
-    int32_t failed1 = workerChecker->GetFailedCount();
-    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
-    arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT);
-    int32_t failed2 = arkRuntimeChecker->GetFailedCount();
-    workerChecker->DeleteWorkerList();
-    ASSERT_EQ(failed1, NUM_10);
-    arkRuntimeChecker->DeleteArkRuntimeList();
-    ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
+    bool success = false;
+    std::thread t([&success] {
+        auto workerChecker = std::make_shared<WorkerChecker>();
+        workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT + NUM_10);
+        int32_t failed1 = workerChecker->GetFailedCount();
+        auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+        arkRuntimeChecker->CreateArkRuntimeList(MAX_ARKRUNTIME_COUNT);
+        int32_t failed2 = arkRuntimeChecker->GetFailedCount();
+        workerChecker->DeleteWorkerList();
+        ASSERT_EQ(failed1, NUM_10);
+        arkRuntimeChecker->DeleteArkRuntimeList();
+        ASSERT_EQ(failed2, MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT);
+        if (failed2 == (MAX_WORKERS_COUNT + MAX_ARKRUNTIME_COUNT - MAX_JSTHREAD_COUNT)) {
+            success = true;
+        }
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, MaxLimitTest005, testing::ext::TestSize.Level0)
 {
-    auto workerChecker = std::make_shared<WorkerChecker>();
-    workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_10);
-    int32_t failed1 = workerChecker->GetFailedCount();
-    ASSERT_EQ(failed1, 0);
-
-    auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
-    arkRuntimeChecker->CreateArkRuntimeList(MAX_JSTHREAD_COUNT - MAX_WORKERS_COUNT + NUM_10 - NUM_1);
-    int32_t failed2 = arkRuntimeChecker->GetFailedCount();
-    ASSERT_EQ(failed2, 0);
-
-    auto arkRuntimeChecker2 = std::make_shared<ArkRuntimeChecker>();
-    arkRuntimeChecker2->CreateArkRuntimeList(NUM_10);
-    failed2 = arkRuntimeChecker2->GetFailedCount();
-    ASSERT_EQ(failed2, NUM_10 - NUM_1);
-    arkRuntimeChecker2->DeleteArkRuntimeList();
-
-    auto arkRuntimeChecker3 = std::make_shared<ArkRuntimeChecker>();
-    arkRuntimeChecker3->CreateArkRuntimeList(NUM_1);
-    failed2 = arkRuntimeChecker3->GetFailedCount();
-    ASSERT_EQ(failed2, 0);
-
-    auto arkRuntimeChecker4 = std::make_shared<ArkRuntimeChecker>();
-    arkRuntimeChecker4->CreateArkRuntimeList(NUM_1);
-    failed2 = arkRuntimeChecker4->GetFailedCount();
-    ASSERT_EQ(failed2, NUM_1);
-
-    arkRuntimeChecker3->DeleteArkRuntimeList();
-    arkRuntimeChecker4->DeleteArkRuntimeList();
-
-    workerChecker->DeleteWorkerList();
-    arkRuntimeChecker->DeleteArkRuntimeList();
+    bool success = false;
+    std::thread t([&success] {
+        auto workerChecker = std::make_shared<WorkerChecker>();
+        workerChecker->CreateWorkerList(false, MAX_WORKERS_COUNT - NUM_10);
+        int32_t failed1 = workerChecker->GetFailedCount();
+        ASSERT_EQ(failed1, 0);
+        auto arkRuntimeChecker = std::make_shared<ArkRuntimeChecker>();
+        arkRuntimeChecker->CreateArkRuntimeList(MAX_JSTHREAD_COUNT - MAX_WORKERS_COUNT + NUM_10 - NUM_1);
+        int32_t failed2 = arkRuntimeChecker->GetFailedCount();
+        ASSERT_EQ(failed2, 0);
+        auto arkRuntimeChecker2 = std::make_shared<ArkRuntimeChecker>();
+        arkRuntimeChecker2->CreateArkRuntimeList(NUM_10);
+        failed2 = arkRuntimeChecker2->GetFailedCount();
+        ASSERT_EQ(failed2, NUM_10 - NUM_1);
+        arkRuntimeChecker2->DeleteArkRuntimeList();
+        auto arkRuntimeChecker3 = std::make_shared<ArkRuntimeChecker>();
+        arkRuntimeChecker3->CreateArkRuntimeList(NUM_1);
+        failed2 = arkRuntimeChecker3->GetFailedCount();
+        ASSERT_EQ(failed2, 0);
+        auto arkRuntimeChecker4 = std::make_shared<ArkRuntimeChecker>();
+        arkRuntimeChecker4->CreateArkRuntimeList(NUM_1);
+        failed2 = arkRuntimeChecker4->GetFailedCount();
+        ASSERT_EQ(failed2, NUM_1);
+        arkRuntimeChecker3->DeleteArkRuntimeList();
+        arkRuntimeChecker4->DeleteArkRuntimeList();
+        workerChecker->DeleteWorkerList();
+        arkRuntimeChecker->DeleteArkRuntimeList();
+        success = true;
+    });
+    t.join();
+    ASSERT_TRUE(success);
 }
 
 HWTEST_F(WorkersTest, ParseTransferListArgTest001, testing::ext::TestSize.Level0)
@@ -5595,9 +5765,12 @@ HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest001, testing::ext::TestSiz
     worker->RegisterCallbackForWorkerEnv(callback);
     ASSERT_FALSE(callbackCalled);
 
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->SetWorkerEnv(workerEnv);
+    std::thread t([&env, &worker] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->SetWorkerEnv(workerEnv);
+    });
+    t.join();
 
     ASSERT_TRUE(callbackCalled);
     delete worker;
@@ -5609,9 +5782,12 @@ HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest002, testing::ext::TestSiz
     Worker* worker = new Worker(env, nullptr);
     ASSERT_NE(worker, nullptr);
 
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->SetWorkerEnv(workerEnv);
+    std::thread t([&env, &worker] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->SetWorkerEnv(workerEnv);
+    });
+    t.join();
 
     bool callbackCalled = false;
     std::function<void(napi_env)> callback = [&callbackCalled](napi_env env) {
@@ -5639,9 +5815,12 @@ HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest003, testing::ext::TestSiz
         executionOrder.push_back(2);
     });
 
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->SetWorkerEnv(workerEnv);
+    std::thread t([&env, &worker] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->SetWorkerEnv(workerEnv);
+    });
+    t.join();
 
     ASSERT_EQ(executionOrder.size(), 2u);
     ASSERT_EQ(executionOrder[0], 1);
@@ -5660,11 +5839,14 @@ HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest004, testing::ext::TestSiz
         capturedEnv = env;
     });
 
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->SetWorkerEnv(workerEnv);
+    std::thread t([&env, &worker, &capturedEnv] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->SetWorkerEnv(workerEnv);
+        ASSERT_EQ(capturedEnv, workerEnv);
+    });
+    t.join();
 
-    ASSERT_EQ(capturedEnv, workerEnv);
     delete worker;
 }
 
@@ -5674,9 +5856,12 @@ HWTEST_F(WorkersTest, RegisterCallbackForWorkerEnvTest005, testing::ext::TestSiz
     Worker* worker = new Worker(env, nullptr);
     ASSERT_NE(worker, nullptr);
 
-    napi_env workerEnv = nullptr;
-    napi_create_runtime(env, &workerEnv);
-    worker->SetWorkerEnv(workerEnv);
+    std::thread t([&env, &worker] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->SetWorkerEnv(workerEnv);
+    });
+    t.join();
 
     UpdateWorkerState(worker, Worker::RunnerState::TERMINATED);
 
