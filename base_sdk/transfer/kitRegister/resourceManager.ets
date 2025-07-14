@@ -12,10 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { registerArkTS } from './arkts.ets';
-import { registerResourceManager } from './resourceManager.ets';
+import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerMain(){
-    registerArkTS();
-    registerResourceManager();
+export function registerResourceManager() {
+    registerStaticCB('resourceManager.ResourceManager', "@ohos.resourceManager", "resourceManager.ResourceManager", "transferStatic");
+    registerDynamicCB('resourceManager.ResourceManager', "@ohos.resourceManager", "resourceManager.ResourceManager", "transferDynamic");
 }
