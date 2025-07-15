@@ -13,9 +13,11 @@
  * limitations under the License.
  */
 import { registerArkTS } from './arkts.ets';
+import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets'
 
 export function registerMain(){
     registerArkTS();
+    registerArkWeb();
     registerCommonEventManager();
 }
