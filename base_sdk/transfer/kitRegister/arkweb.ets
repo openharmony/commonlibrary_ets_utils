@@ -15,6 +15,9 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerArkWeb() {
+    registerStaticCB('ArkWeb.ScreenCaptureHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferScreenCaptureHandlerStatic');
+    registerDynamicCB('ArkWeb.ScreenCaptureHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferScreenCaptureHandlerDynamic');
+
     registerStaticCB('ArkWeb.FileSelectorParam', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorParamStatic');
     registerDynamicCB('ArkWeb.FileSelectorParam', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorParamDynamic');
 
