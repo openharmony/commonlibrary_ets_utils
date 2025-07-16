@@ -29,4 +29,25 @@ export function registerArkWeb() {
 
     registerStaticCB('ArkWeb.WebContextMenuResult', 'arkui.component.web', 'ArkWebTransfer', 'transferWebContextMenuResultStatic');
     registerDynamicCB('ArkWeb.WebContextMenuResult', 'arkui.component.web', 'ArkWebTransfer', 'transferWebContextMenuResultDynamic');
+
+    registerStaticCB('ArkWeb.HttpAuthHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferHttpAuthHandlerToStatic');
+    registerDynamicCB('ArkWeb.HttpAuthHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferHttpAuthHandlerToDynamic');
+
+    registerStaticCB('ArkWeb.WebResourceResponse', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceReponseToStatic');
+    registerDynamicCB('ArkWeb.WebResourceResponse', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceReponseToDynamic');
+
+    registerStaticCB('ArkWeb.WebResourceRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceRequestToStatic');
+    registerDynamicCB('ArkWeb.WebResourceRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceRequestToDynamic');
+
+    registerStaticCB('ArkWeb.ConsoleMessage', 'arkui.component.web', 'ArkWebTransfer', 'transferConsoleMessageToStatic');
+    registerDynamicCB('ArkWeb.ConsoleMessage', 'arkui.component.web', 'ArkWebTransfer', 'transferConsoleMessageToDynamic');
+
+    registerStaticCB('ArkWeb.DataResubmissionHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferDataResubmissionHandlerToStatic');
+    registerDynamicCB('ArkWeb.DataResubmissionHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferDataResubmissionHandlerToDynamic');
+
+    registerStaticCB('ArkWeb.ClientAuthenticationHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferClientAuthenticationHandlerToStatic');
+    registerDynamicCB('ArkWeb.ClientAuthenticationHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferClientAuthenticationHandlerToDynamic');
+
+    registerStaticCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToStatic');
+    registerDynamicCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToDynamic');
 }
