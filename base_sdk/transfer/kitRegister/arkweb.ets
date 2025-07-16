@@ -24,6 +24,9 @@ export function registerArkWeb() {
     registerStaticCB('ArkWeb.JsResult', 'arkui.component.web', 'ArkWebTransfer', 'transferJsResultStatic');
     registerDynamicCB('ArkWeb.JsResult', 'arkui.component.web', 'ArkWebTransfer', 'transferJsResultDynamic');
 
+    registerStaticCB('ArkWeb.EventResult', 'arkui.component.web', 'ArkWebTransfer', 'transferEventResultStatic');
+    registerDynamicCB('ArkWeb.EventResult', 'arkui.component.web', 'ArkWebTransfer', 'transferEventResultDynamic');
+
     registerStaticCB('ArkWeb.FileSelectorResult', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorResultStatic');
     registerDynamicCB('ArkWeb.FileSelectorResult', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorResultDynamic');
 
