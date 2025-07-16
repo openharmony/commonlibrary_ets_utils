@@ -1512,7 +1512,13 @@ void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> def
 uint32_t TaskManager::CalculateTaskId(uint64_t id)
 {
     size_t hash = std::hash<uint64_t>{}(id);
-    return static_cast<uint32_t>(hash & MAX_UINT32_T);
+    uint64_t taskId = static_cast<uint64_t>(hash & MAX_UINT32_T);
+    while (taskId == 0) {
+        ++taskId;
+        hash = std::hash<uint64_t>{}(taskId);
+        taskId = static_cast<uint64_t>(hash & MAX_UINT32_T);
+    }
+    return static_cast<uint32_t>(taskId);
 }
 
 void TaskManager::ClearDependentTask(uint32_t taskId)

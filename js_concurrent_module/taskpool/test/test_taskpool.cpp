@@ -6572,3 +6572,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest322, testing::ext::TestSize.Level0)
     sequenceRunnerManager.SequenceRunnerDestructor(seqRunner);
     delete task;
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest323, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    uint32_t taskId = taskManager.CalculateTaskId(0);
+    ASSERT_TRUE(taskId != 0);
+}
