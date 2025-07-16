@@ -1050,4 +1050,12 @@ void NativeEngineTest::SetNonIdleTaskNum(uint32_t num)
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.nonIdleTaskNum_ = num;
 }
+
+void NativeEngineTest::EnqueueTaskIdToQueue(void* data)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = reinterpret_cast<Task*>(data);
+    auto& taskQueue = taskManager.taskQueues_[task->asyncTaskPriority_];
+    taskQueue->EnqueueTaskId(task->taskId_);
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
