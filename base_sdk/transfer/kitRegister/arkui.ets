@@ -23,4 +23,10 @@ export function registerArkUI() {
 
     registerStaticCB("ArkUI.RouterPageInfo", "@ohos.arkui.observer", "uiObserver.RouterPageInfo", "transferStatic");
     registerDynamicCB("ArkUI.RouterPageInfo", "@ohos.arkui.observer", "uiObserver.RouterPageInfo", "transferDynamic");
+
+    registerStaticCB("ArkUI.Matrix4", "@ohos.matrix4", "matrix4.Matrix4TransitInner", "matrixTransferStatic");
+    registerDynamicCB("ArkUI.Matrix4", "@ohos.matrix4", "matrix4.Matrix4TransitInner", "matrixTransferDynamic");
+
+    registerStaticCB("ArkUI.Animator", "@ohos.animator", "AnimatorResultInner", "animatorTransferStatic");
+    registerDynamicCB("ArkUI.Animator", "@ohos.animator", "AnimatorResultInner", "animatorTransferDynamic");
 }
