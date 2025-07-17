@@ -12,12 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { registerArkTS } from './arkts.ets';
+import { registerAbilityKit } from './abilitykit.ets';
 import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets'
 
 export function registerMain(){
     registerArkTS();
+    registerAbilityKit();
     registerArkWeb();
     registerCommonEventManager();
 }
