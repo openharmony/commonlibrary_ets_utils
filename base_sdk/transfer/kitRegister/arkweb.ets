@@ -21,6 +21,9 @@ export function registerArkWeb() {
     registerStaticCB('ArkWeb.FileSelectorParam', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorParamStatic');
     registerDynamicCB('ArkWeb.FileSelectorParam', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorParamDynamic');
 
+    registerStaticCB('ArkWeb.JsGeolocation', 'arkui.component.web', 'ArkWebTransfer', 'transferJsGeolocationStatic');
+    registerDynamicCB('ArkWeb.JsGeolocation', 'arkui.component.web', 'ArkWebTransfer', 'transferJsGeolocationDynamic');
+
     registerStaticCB('ArkWeb.JsResult', 'arkui.component.web', 'ArkWebTransfer', 'transferJsResultStatic');
     registerDynamicCB('ArkWeb.JsResult', 'arkui.component.web', 'ArkWebTransfer', 'transferJsResultDynamic');
 
