@@ -33,29 +33,34 @@ SequenceRunnerManager& SequenceRunnerManager::GetInstance()
 SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, size_t argc,
                                                                const std::string& name, uint32_t priority)
 {
-    std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
     SequenceRunner* seqRunner = nullptr;
-    auto iter = globalSeqRunner_.find(name);
-    if (iter == globalSeqRunner_.end()) {
-        Priority priorityVal = Priority::DEFAULT;
-        if (argc == 2) { // 2: The number of parameters is 2.
-            priorityVal = static_cast<Priority>(priority);
+    uint64_t seqRunnerId = 0;
+    {
+        std::unique_lock<std::mutex> lock(globalSeqRunnerMutex_);
+        auto iter = globalSeqRunner_.find(name);
+        if (iter == globalSeqRunner_.end()) {
+            Priority priorityVal = Priority::DEFAULT;
+            if (argc == 2) { // 2: The number of parameters is 2.
+                priorityVal = static_cast<Priority>(priority);
+            }
+            seqRunner = new SequenceRunner(priorityVal, name, true);
+            globalSeqRunner_.emplace(name, seqRunner);
+            return seqRunner;
+        } else {
+            seqRunner = iter->second;
+            if (priority != seqRunner->priority_) {
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority can not changed.");
+                return nullptr;
+            }
+            seqRunnerId = seqRunner->seqRunnerId_;
+            if (seqRunner->seqRunnerTasks_.empty()) {
+                seqRunner->currentTaskId_ = 0;
+            }
         }
-        seqRunner = new SequenceRunner(priorityVal, name, true);
-        globalSeqRunner_.emplace(name, seqRunner);
-    } else {
-        seqRunner = iter->second;
-        if (priority != seqRunner->priority_) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority can not changed.");
-            return nullptr;
-        }
-        if (!FindRunnerAndRef(seqRunner->seqRunnerId_)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: seqRunner not exist.");
-            return nullptr;
-        }
-        if (seqRunner->seqRunnerTasks_.empty()) {
-            seqRunner->currentTaskId_ = 0;
-        }
+    }
+    if (!FindRunnerAndRef(seqRunnerId)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: seqRunner not exist.");
+        return nullptr;
     }
 
     return seqRunner;
@@ -158,14 +163,16 @@ bool SequenceRunnerManager::FindRunnerAndRef(uint64_t seqRunnerId)
 
 bool SequenceRunnerManager::UnrefAndDestroyRunner(SequenceRunner* seqRunner)
 {
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    if (seqRunner->DecreaseSeqCount() != 0) {
-        return false;
+    {
+        std::unique_lock<std::mutex> lock(seqRunnersMutex_);
+        if (seqRunner->DecreaseSeqCount() != 0) {
+            return false;
+        }
+        RemoveSequenceRunner(seqRunner->seqRunnerId_);
     }
     if (seqRunner->isGlobalRunner_) {
         RemoveSequenceRunnerByName(seqRunner->seqName_);
     }
-    RemoveSequenceRunner(seqRunner->seqRunnerId_);
     delete seqRunner;
     return true;
 }

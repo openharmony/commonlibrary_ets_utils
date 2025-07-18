@@ -6530,3 +6530,45 @@ HWTEST_F(NativeEngineTest, TaskpoolTest320, testing::ext::TestSize.Level0)
     delete task;
     delete task2;
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest321, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
+    SequenceRunner* seqRunner = new SequenceRunner();
+    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    sequenceRunnerManager.StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
+    Task* task = new Task();
+    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    sequenceRunnerManager.RemoveWaitingTask(task);
+    sequenceRunnerManager.SequenceRunnerDestructor(seqRunner);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest322, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
+    napi_value thisVar = nullptr;
+    size_t argc = 1;
+    uint32_t priority = 1;
+    std::string name = "TaskpoolTest322";
+    SequenceRunner* seqRunner = sequenceRunnerManager.CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
+    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    Task* task = new Task();
+    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    seqRunner->AddTask(task);
+    sequenceRunnerManager.CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+    seqRunner->RemoveWaitingTask(task);
+    sequenceRunnerManager.StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
+    sequenceRunnerManager.SequenceRunnerDestructor(seqRunner);
+    delete task;
+}
