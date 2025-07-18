@@ -155,6 +155,7 @@ private:
         PriorityScope(Worker* worker, Priority taskPriority);
         ~PriorityScope()
         {
+            worker_->ResetPerformIdleState();
             worker_->ResetWorkerPriority();
         }
 
@@ -192,6 +193,7 @@ private:
     void InitFfrtInfo();
     void InitLoopHandleNum();
 #endif
+    void ResetPerformIdleState();
 
     napi_env hostEnv_ {nullptr};
     napi_env workerEnv_ {nullptr};

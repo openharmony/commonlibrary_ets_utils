@@ -797,17 +797,19 @@ uint32_t TaskManager::GetNonIdleTaskNum()
     return nonIdleTaskNum_;
 }
 
-void TaskManager::IncreaseNumIfNoIdle(Priority priority)
+void TaskManager::IncreaseTaskNum(Priority priority)
 {
+    totalTaskNum_.fetch_add(1);
     if (priority != Priority::IDLE) {
-        ++nonIdleTaskNum_;
+        nonIdleTaskNum_.fetch_add(1);
     }
 }
 
-void TaskManager::DecreaseNumIfNoIdle(Priority priority)
+void TaskManager::DecreaseTaskNum(Priority priority)
 {
+    totalTaskNum_.fetch_sub(1);
     if (priority != Priority::IDLE) {
-        --nonIdleTaskNum_;
+        nonIdleTaskNum_.fetch_sub(1);
     }
 }
 
@@ -821,7 +823,7 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
 {
     {
         std::lock_guard<std::mutex> lock(taskQueuesMutex_);
-        IncreaseNumIfNoIdle(priority);
+        IncreaseTaskNum(priority);
         taskQueues_[priority]->EnqueueTaskId(taskId);
     }
     TryTriggerExpand();
@@ -843,6 +845,7 @@ bool TaskManager::EraseWaitingTaskId(uint32_t taskId, Priority priority)
         HILOG_WARN("taskpool:: taskId is not in executeQueue when cancel");
         return false;
     }
+    DecreaseTaskNum(priority);
     return true;
 }
 
@@ -892,11 +895,11 @@ std::pair<uint32_t, Priority> TaskManager::GetTaskByPriority(const std::unique_p
     Priority priority)
 {
     uint32_t taskId = taskQueue->DequeueTaskId();
+    DecreaseTaskNum(priority);
     if (IsDependendByTaskId(taskId)) {
         EnqueuePendingTaskInfo(taskId, priority);
         return std::make_pair(0, priority);
     }
-    DecreaseNumIfNoIdle(priority);
     preDequeneTime_ = ConcurrentHelper::GetMilliseconds();
     if (priority == Priority::IDLE && taskId != 0) {
         SetIsPerformIdle(true);
@@ -1718,5 +1721,10 @@ void TaskManager::SetIsPerformIdle(bool performIdle)
 bool TaskManager::IsPerformIdle() const
 {
     return isPerformIdle_;
+}
+
+uint32_t TaskManager::GetTotalTaskNum() const
+{
+    return totalTaskNum_;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
