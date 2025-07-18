@@ -259,7 +259,14 @@ napi_value Task::GetTaskInfoPromise(napi_env env, napi_value task, TaskType task
         return nullptr;
     }
     UpdateTaskType(taskType);
-    return NapiHelper::CreatePromise(env, &taskInfo->deferred);
+    napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
+    if (promise == nullptr) { // LOCV_EXCL_BR_LINE
+        std::string err = "create promise failed, maybe has exception.";
+        HILOG_ERROR("taskpool:: %{public}s", err.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        return nullptr;
+    }
+    return promise;
 }
 
 TaskInfo* Task::GetTaskInfo(napi_env env, napi_value napiTask, Priority priority)
