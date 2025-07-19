@@ -59,4 +59,13 @@ export function registerArkWeb() {
 
     registerStaticCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToStatic');
     registerDynamicCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToDynamic');
+
+    registerStaticCB('ArkWeb.PermissionRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferPermissionRequestStatic');
+    registerDynamicCB('ArkWeb.PermissionRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferPermissionRequestDynamic');
+
+    registerStaticCB('ArkWeb.WebKeyboardController', 'arkui.component.web', 'ArkWebTransfer', 'transferWebKeyboardControllerStatic');
+    registerDynamicCB('ArkWeb.WebKeyboardController', 'arkui.component.web', 'ArkWebTransfer', 'transferWebKeyboardControllerDynamic');
+
+    registerStaticCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerStatic');
+    registerDynamicCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerDynamic');
 }
