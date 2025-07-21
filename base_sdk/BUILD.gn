@@ -37,6 +37,7 @@ generate_static_abc("base_transfer") {
     "./transfer/@ohos.transfer.ets",
     "./transfer/register.ets",
     "./transfer/kitRegister/abilitykit.ets",
+    "./transfer/kitRegister/arkui.ets",
     "./transfer/kitRegister/arkts.ets",
     "./transfer/kitRegister/arkweb.ets",
     "./transfer/kitRegister/registerMain.ets",
