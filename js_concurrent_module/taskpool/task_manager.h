@@ -100,7 +100,8 @@ public:
     void CountTraceForWorker();
     void CountTraceForWorkerWithoutLock();
 
-    void RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo);
+    void RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo,
+        const std::string& type);
     void IncreaseSendDataRefCount(uint32_t taskId);
     void DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* task = nullptr);
     void ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, Task* task);

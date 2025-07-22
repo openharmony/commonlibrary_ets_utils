@@ -577,7 +577,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest037, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 99;
     auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
-    taskManager.RegisterCallback(env, taskId, callbackInfo);
+    taskManager.RegisterCallback(env, taskId, callbackInfo, "TaskpoolTest037");
     auto res = callbackInfo->refCount;
     taskManager.DecreaseSendDataRefCount(env, taskId);
     ASSERT_EQ(res, 1);
@@ -592,7 +592,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest038, testing::ext::TestSize.Level0)
     {
         auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
         wptr = callbackInfo;
-        taskManager.RegisterCallback(env, taskId, callbackInfo);
+        taskManager.RegisterCallback(env, taskId, callbackInfo, "TaskpoolTest038");
         taskManager.DecreaseSendDataRefCount(env, taskId);
     }
     bool res = wptr.expired();
@@ -1347,21 +1347,40 @@ HWTEST_F(NativeEngineTest, TaskpoolTest091, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, TaskpoolTest092, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    napi_value global = NapiHelper::CreateObject(env);
-    napi_value argv[2] = {};
+    napi_value thisObj = nullptr;
+    napi_create_object(env, &thisObj);
+
+    napi_value taskIdValue = nullptr;
+    napi_create_uint32(env, 1, &taskIdValue);
+    napi_set_named_property(env, thisObj, "taskId", taskIdValue);
+
     std::string funcName = "OnReceiveData";
     napi_value cb = nullptr;
     napi_value result = nullptr;
-    napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, nullptr, &cb);
-    napi_call_function(env, global, cb, 0, argv, &result);
+
+    napi_value listenerFunc = nullptr;
+    napi_create_function(env, "listener", NAPI_AUTO_LENGTH, [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value undefined;
+        napi_get_undefined(env, &undefined);
+        return undefined;
+    }, nullptr, &listenerFunc);
+
+    napi_value argv1[2] = { listenerFunc, nullptr };
+    napi_create_object(env, &argv1[1]);
+
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, env, &cb);
+    napi_call_function(env, thisObj, cb, 2, argv1, &result);
+
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ExceptionScope scope(env);
-    argv[0] = nullptr;
-    argv[1] = nullptr;
+
+    napi_value argv2[2] = { listenerFunc, nullptr };
+    napi_create_object(env, &argv2[1]);
+
     result = nullptr;
-    napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, nullptr, &cb);
-    napi_call_function(env, global, cb, 2, argv, &result);
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::OnReceiveData, env, &cb);
+    napi_call_function(env, thisObj, cb, 2, argv2, &result);
     ASSERT_TRUE(result == nullptr);
 }
 
@@ -2032,21 +2051,21 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     Task* task = new Task();
     uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->taskId_ = taskId;
+
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
-    
-    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref);
-    ASSERT_TRUE(true);
+    std::shared_ptr<CallbackInfo> cbInfo = std::make_shared<CallbackInfo>(env, 1, ref);
 
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, args);
-    
-    TaskManager &taskManager = TaskManager::GetInstance();
-    taskManager.RegisterCallback(env, taskId, nullptr);
+
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.RegisterCallback(env, taskId, cbInfo, "TaskpoolTest131");
     taskManager.DecreaseSendDataRefCount(env, taskId);
     ASSERT_TRUE(true);
 }
+
 
 HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
 {
@@ -2075,7 +2094,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest132, testing::ext::TestSize.Level0)
     napi_value argv[] = {funValue};
     napi_ref callbackRef = NapiHelper::CreateReference(env, argv[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
-    taskManager.RegisterCallback(env, taskId, callbackInfo);
+    taskManager.RegisterCallback(env, taskId, callbackInfo, "TaskpoolTest132");
     taskManager.DecreaseSendDataRefCount(env, taskId, task);
     ASSERT_TRUE(true);
 }
@@ -2117,7 +2136,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest133, testing::ext::TestSize.Level0)
     napi_value argv1[] = {funValue};
     napi_ref callbackRef = NapiHelper::CreateReference(env, argv1[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
-    taskManager.RegisterCallback(env, taskId, callbackInfo);
+    taskManager.RegisterCallback(env, taskId, callbackInfo, "TaskpoolTest133");
     taskManager.DecreaseSendDataRefCount(env, taskId, task);
     ASSERT_TRUE(true);
 }
@@ -3498,7 +3517,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest183, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ListenerCallBackInfo* cbInfo = new ListenerCallBackInfo(env, nullptr, nullptr);
 
-    Task::ExecuteListenerCallback(cbInfo);
+    Task* task = new Task();
+    auto taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    Task::ExecuteListenerCallback(cbInfo, taskId);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -3507,13 +3528,13 @@ HWTEST_F(NativeEngineTest, TaskpoolTest183, testing::ext::TestSize.Level0)
     GetSendableFunction(env, "foo", func);
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, func, 1);
     cbInfo = new ListenerCallBackInfo(env, callbackRef, nullptr);
-    Task::ExecuteListenerCallback(cbInfo);
+    Task::ExecuteListenerCallback(cbInfo, taskId);
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 
     napi_value error = NapiHelper::CreateObject(env);
     cbInfo = new ListenerCallBackInfo(env, callbackRef, error);
-    Task::ExecuteListenerCallback(cbInfo);
+    Task::ExecuteListenerCallback(cbInfo, taskId);
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
