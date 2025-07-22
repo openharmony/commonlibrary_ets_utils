@@ -26,4 +26,10 @@ export function registerAbilityKit() {
 
   registerStaticCB('AbilityKit.AbilityStageContext', 'application.AbilityStageContext', 'AbilityStageContext', 'transferStatic');
   registerDynamicCB('AbilityKit.AbilityStageContext', 'application.AbilityStageContext', 'AbilityStageContext', 'transferDynamic');
+
+  registerStaticCB('AbilityKit.Caller', 'application.Caller', 'CallerImpl', 'transferStatic');
+  registerDynamicCB('AbilityKit.Caller', 'application.Caller', 'CallerImpl', 'transferDynamic');
+
+  registerStaticCB('AbilityKit.Callee', 'application.Callee', 'CalleeImpl', 'transferStatic');
+  registerDynamicCB('AbilityKit.Callee', 'application.Callee', 'CalleeImpl', 'transferDynamic');
 }
