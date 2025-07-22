@@ -440,7 +440,7 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
         napi_get_cb_info(env, cbinfo, &argc, nullptr, &thisVar, nullptr);
         napi_value id = NapiHelper::GetNameProperty(env, thisVar, "taskId");
         uint32_t taskId = NapiHelper::GetUint32Value(env, id);
-        TaskManager::GetInstance().RegisterCallback(env, taskId, nullptr);
+        TaskManager::GetInstance().RegisterCallback(env, taskId, nullptr, "OnReceiveData: Cancel listener");
         return nullptr;
     }
 
@@ -464,7 +464,7 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     }
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     std::shared_ptr<CallbackInfo> callbackInfo = std::make_shared<CallbackInfo>(env, 1, callbackRef);
-    TaskManager::GetInstance().RegisterCallback(env, taskId, callbackInfo);
+    TaskManager::GetInstance().RegisterCallback(env, taskId, callbackInfo, "OnReceiveData: Add listener");
     return nullptr;
 }
 
@@ -736,7 +736,7 @@ void Task::StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo)
     }
 }
 
-void Task::ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo)
+void Task::ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo, uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task ExecuteListenerCallback");
     if (listenerCallBackInfo == nullptr) { // LCOV_EXCL_BR_LINE
@@ -750,6 +750,10 @@ void Task::ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo)
         HILOG_INFO("taskpool:: ExecuteListenerCallback func is null");
         return;
     }
+
+    std::string callbackType = listenerCallBackInfo->type_;
+    HITRACE_HELPER_METER_NAME("ExecuteListenerCallback: type = " + callbackType + ", taskId = " +
+        std::to_string(taskId));
 
     napi_value result;
     napi_value args = listenerCallBackInfo->taskError_;
@@ -801,6 +805,7 @@ napi_value Task::OnEnqueued(napi_env env, napi_callback_info cbinfo)
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onEnqueuedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onEnqueuedCallBackInfo_->type_ = "onEnqueued";
     return nullptr;
 }
 
@@ -839,6 +844,7 @@ napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onStartExecutionCallBackInfo_->type_ = "onStartExecution";
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
     if (!task->IsMainThreadTask()) {
         auto loop = NapiHelper::GetLibUV(env);
@@ -889,6 +895,7 @@ napi_value Task::OnExecutionFailed(napi_env env, napi_callback_info cbinfo)
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onExecutionFailedCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onExecutionFailedCallBackInfo_->type_ = "onExecutionFailed";
     return nullptr;
 }
 
@@ -927,6 +934,7 @@ napi_value Task::OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo)
 
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onExecutionSucceededCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task->onExecutionSucceededCallBackInfo_->type_ = "onExecutionSucceeded";
     return nullptr;
 }
 

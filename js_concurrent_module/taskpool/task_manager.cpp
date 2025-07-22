@@ -832,7 +832,7 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
     }
     task->IncreaseTaskLifecycleCount();
     if (task->onEnqueuedCallBackInfo_ != nullptr) {
-        task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_);
+        task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_, taskId);
     }
 }
 
@@ -994,9 +994,13 @@ void TaskManager::RestoreWorker(Worker* worker)
 }
 
 // ---------------------------------- SendData ---------------------------------------
-void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo)
+void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo,
+                                   const std::string& type)
 {
     std::lock_guard<std::mutex> lock(callbackMutex_);
+    if (callbackInfo != nullptr) {
+        callbackInfo->type = type;
+    }
     callbackTable_[taskId] = callbackInfo;
 }
 

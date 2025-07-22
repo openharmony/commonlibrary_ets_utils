@@ -107,6 +107,9 @@ void TaskPool::ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResu
 {
     ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
     napi_status status = napi_ok;
+    std::string traceLabel = "ExecuteOnReceiveDataCallback type: " + callbackInfo->type +
+                             ", taskId: " + std::to_string(resultInfo->taskId);
+    HITRACE_HELPER_METER_NAME(traceLabel);
     auto env = callbackInfo->hostEnv;
     CallbackScope callbackScope(env, resultInfo, status);
     if (status != napi_ok) {
@@ -442,13 +445,13 @@ void TaskPool::HandleTaskResultInner(Task* task)
         if (success) {
             napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
             if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
-                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_);
+                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_, task->taskId_);
             }
         } else {
             napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
             if (task->onExecutionFailedCallBackInfo_ != nullptr) {
                 task->onExecutionFailedCallBackInfo_->taskError_ = napiTaskResult;
-                task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_);
+                task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_, task->taskId_);
             }
         }
     }
@@ -528,7 +531,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         for (uint32_t taskId : taskGroup->taskIds_) {
             auto task = TaskManager::GetInstance().GetTask(taskId);
             if (task != nullptr && task->onExecutionSucceededCallBackInfo_ != nullptr) {
-                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_);
+                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_, task->taskId_);
             }
         }
     } else {
@@ -540,7 +543,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         auto task = iter != taskGroup->taskIds_.end() ? TaskManager::GetInstance().GetTask(*iter) : nullptr;
         if (task != nullptr && task->onExecutionFailedCallBackInfo_ != nullptr) {
             task->onExecutionFailedCallBackInfo_->taskError_ = res;
-            task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_);
+            task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_, task->taskId_);
         }
     }
     taskGroup->groupState_ = ExecuteState::FINISHED;

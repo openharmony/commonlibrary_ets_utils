@@ -80,6 +80,7 @@ struct ListenerCallBackInfo {
     napi_env env_;
     napi_ref callbackRef_;
     napi_value taskError_;
+    std::string type_;
 };
 
 struct CancelTaskMessage {
@@ -140,7 +141,7 @@ public:
     static void ThrowNoDependencyError(napi_env env);
     static void StartExecutionCallback(const uv_async_t* req);
     static void StartExecutionTask(ListenerCallBackInfo* listenerCallBackInfo);
-    static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo);
+    static void ExecuteListenerCallback(ListenerCallBackInfo* listenerCallBackInfo, uint32_t taskId);
     static void CleanupHookFunc(void* arg);
     static void Cancel(const uv_async_t* req);
     static void DiscardTask(const uv_async_t* req);
@@ -268,6 +269,7 @@ struct CallbackInfo {
     napi_env hostEnv;
     uint32_t refCount;
     napi_ref callbackRef;
+    std::string type;
 };
 
 struct TaskResultInfo {
