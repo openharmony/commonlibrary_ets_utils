@@ -1058,4 +1058,21 @@ void NativeEngineTest::EnqueueTaskIdToQueue(void* data)
     auto& taskQueue = taskManager.taskQueues_[task->asyncTaskPriority_];
     taskQueue->EnqueueTaskId(task->taskId_);
 }
+
+void NativeEngineTest::DecreaseTaskNum()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.nonIdleTaskNum_ = 1;
+    taskManager.DecreaseTaskNum(Priority::IDLE);
+    taskManager.nonIdleTaskNum_ = 0;
+    taskManager.DecreaseTaskNum(Priority::HIGH);
+}
+
+void NativeEngineTest::ResetPerformIdleState(napi_env env)
+{
+    Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
+    worker->priority_ = Priority::IDLE;
+    worker->workerEnv_ = env;
+    worker->ResetPerformIdleState();
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

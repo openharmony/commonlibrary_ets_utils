@@ -6602,3 +6602,23 @@ HWTEST_F(NativeEngineTest, TaskpoolTest323, testing::ext::TestSize.Level0)
     uint32_t taskId = taskManager.CalculateTaskId(0);
     ASSERT_TRUE(taskId != 0);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest324, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    NativeEngineTest::DecreaseTaskNum();
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest325, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    NativeEngineTest::ResetPerformIdleState(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}

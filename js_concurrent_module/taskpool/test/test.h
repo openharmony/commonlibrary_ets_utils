@@ -96,6 +96,8 @@ public:
     static void WorkerRunningScope(napi_env env);
     static void SetNonIdleTaskNum(uint32_t num);
     static void EnqueueTaskIdToQueue(void* data);
+    static void DecreaseTaskNum();
+    static void ResetPerformIdleState(napi_env env);
 
     class ExceptionScope {
     public:

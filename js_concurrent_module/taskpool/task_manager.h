@@ -157,6 +157,7 @@ public:
     void SetIsPerformIdle(bool performIdle);
     bool IsPerformIdle() const;
     uint32_t GetNonIdleTaskNum();
+    uint32_t GetTotalTaskNum() const;
 
 private:
     TaskManager();
@@ -185,8 +186,8 @@ private:
 
     bool IsChooseIdle();
     std::pair<uint32_t, Priority> GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue, Priority priority);
-    void IncreaseNumIfNoIdle(Priority priority);
-    void DecreaseNumIfNoIdle(Priority priority);
+    void IncreaseTaskNum(Priority priority);
+    void DecreaseTaskNum(Priority priority);
     void RemoveDependTaskByTaskId(uint32_t taskId);
     void RemoveDependentTaskByTaskId(uint32_t taskId);
     void CheckTasksAndReportHisysEvent();
@@ -232,6 +233,7 @@ private:
     std::atomic<uint32_t> retryCount_ = 0;
     std::atomic<uint32_t> expandingCount_ = 0;
     std::atomic<uint32_t> nonIdleTaskNum_ = 0;
+    std::atomic<uint32_t> totalTaskNum_ = 0;
     std::atomic<uint32_t> totalExecCount_ = 0;
     std::atomic<uint64_t> totalExecTime_ = 0;
     std::atomic<bool> needChecking_ = false;

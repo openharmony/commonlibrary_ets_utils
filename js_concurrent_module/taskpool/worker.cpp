@@ -59,9 +59,6 @@ Worker::RunningScope::~RunningScope()
     }
     worker_->NotifyIdle();
     worker_->idleState_ = true;
-    if (worker_->priority_ == Priority::IDLE) {
-        TaskManager::GetInstance().SetIsPerformIdle(false);
-    }
 }
 
 Worker* Worker::WorkerConstructor(napi_env env)
@@ -418,7 +415,7 @@ void Worker::PerformTask(const uv_async_t* req)
     auto worker = static_cast<Worker*>(req->data);
     auto taskInfo = TaskManager::GetInstance().DequeueTaskId();
     if (taskInfo.first == 0) {
-        if (TaskManager::GetInstance().GetNonIdleTaskNum() != 0) {
+        if (TaskManager::GetInstance().GetTotalTaskNum() != 0) {
             worker->NotifyExecuteTask();
         }
         return;
@@ -743,4 +740,11 @@ void Worker::IncreaseReportCount()
     reportCount_++;
 }
 #endif
+
+void Worker::ResetPerformIdleState()
+{
+    if (priority_ == Priority::IDLE) {
+        TaskManager::GetInstance().SetIsPerformIdle(false);
+    }
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
