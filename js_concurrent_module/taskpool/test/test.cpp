@@ -1075,4 +1075,10 @@ void NativeEngineTest::ResetPerformIdleState(napi_env env)
     worker->workerEnv_ = env;
     worker->ResetPerformIdleState();
 }
+
+void NativeEngineTest::SetTotalTaskNum(uint32_t num)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.totalTaskNum_ = num;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

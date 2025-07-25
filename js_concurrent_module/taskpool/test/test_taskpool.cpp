@@ -6622,3 +6622,15 @@ HWTEST_F(NativeEngineTest, TaskpoolTest325, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest326, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    NativeEngineTest::SetTotalTaskNum(0);
+    void* data = nullptr;
+    NativeEngineTest::PerformTask(env, data);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}

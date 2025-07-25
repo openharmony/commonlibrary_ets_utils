@@ -98,6 +98,7 @@ public:
     static void EnqueueTaskIdToQueue(void* data);
     static void DecreaseTaskNum();
     static void ResetPerformIdleState(napi_env env);
+    static void SetTotalTaskNum(uint32_t num);
 
     class ExceptionScope {
     public:
