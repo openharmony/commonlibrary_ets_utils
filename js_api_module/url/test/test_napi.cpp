@@ -2811,3 +2811,632 @@ HWTEST_F(NativeEngineTest, testUrlHelper011, testing::ext::TestSize.Level1)
         }
     }
 }
+
+HWTEST_F(NativeEngineTest, testUrlHostname004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://example.com/path");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHostname(env), output);
+    ASSERT_STREQ(output.c_str(), "example.com");
+    url.SetHostname("newhost.org");
+    DealNapiStrValue(env, url.GetHostname(env), output);
+    ASSERT_STREQ(output.c_str(), "newhost.org");
+}
+
+HWTEST_F(NativeEngineTest, testUrlHostname005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://[2001:db8::1]/file");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHostname(env), output);
+    ASSERT_STREQ(output.c_str(), "[2001:db8::1]");
+    url.SetHostname("new.ipv6.host");
+    DealNapiStrValue(env, url.GetHostname(env), output);
+    ASSERT_STREQ(output.c_str(), "new.ipv6.host");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearch004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://example.com?q=test");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?q=test");
+    url.SetSearch("filter=active");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?filter=active");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSearch005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://example.com/#section");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+    url.SetSearch("debug=1&cache=false");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?debug=1&cache=false");
+}
+
+HWTEST_F(NativeEngineTest, testUrlUsername004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("ftp://john@example.com/file");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "john");
+    url.SetUsername("admin_user");
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "admin_user");
+}
+
+HWTEST_F(NativeEngineTest, testUrlUsername005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://example.com/resource");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+    url.SetUsername("special#user@name");
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "special%23user%40name");
+}
+
+HWTEST_F(NativeEngineTest, testUrlPassword004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://user:pass123@example.com");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "pass123");
+    url.SetPassword("new@secure!pwd");
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "new%40secure!pwd");
+}
+
+HWTEST_F(NativeEngineTest, testUrlPassword005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://example.com");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+    url.SetPassword("pwd:with:colons");
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "pwd%3Awith%3Acolons");
+}
+
+HWTEST_F(NativeEngineTest, testUrlHost004, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://localhost:8080");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "localhost:8080");
+    url.SetHost("newdomain.com:9090");
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "newdomain.com:9090");
+}
+
+HWTEST_F(NativeEngineTest, testUrlHost005, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://[2001:db8:1::2]");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "[2001:db8:1::2]");
+    url.SetHost("xn--fiqs8s:443");
+    DealNapiStrValue(env, url.GetHost(env), output);
+    ASSERT_STREQ(output.c_str(), "xn--fiqs8s:443");
+}
+
+HWTEST_F(NativeEngineTest, testUrlFragment001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://example.com#section1");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#section1");
+    url.SetFragment("new_section");
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#new_section");
+}
+
+HWTEST_F(NativeEngineTest, testUrlFragment002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://example.com");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+    url.SetFragment("中文锚点");
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_TRUE(output.find("%E4%B8%AD%E6%96%87%E9%94%9A%E7%82%B9") != std::string::npos);
+}
+
+HWTEST_F(NativeEngineTest, testUrlScheme001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("https://secure.site");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+    url.SetScheme("ftp");
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "https:");
+}
+
+HWTEST_F(NativeEngineTest, testUrlScheme002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("custom-scheme://resource");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "custom-scheme:");
+    url.SetScheme("new-protocol");
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "new-protocol");
+}
+
+HWTEST_F(NativeEngineTest, testUrlPath001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://example.com/old/path");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/old/path");
+    url.SetPath("/new/resource");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/new/resource");
+}
+
+HWTEST_F(NativeEngineTest, testUrlPath002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("file:///dir/file.txt");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/dir/file.txt");
+    url.SetPath("/new/dir/../data.json");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/new/data.json");
+}
+
+HWTEST_F(NativeEngineTest, testUrlEmptyInput001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    url.SetScheme("data");
+    DealNapiStrValue(env, url.GetScheme(env), output);
+    ASSERT_STREQ(output.c_str(), "data");
+    DealNapiStrValue(env, url.GetHostname(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSpecialChars001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://user:pwd@host.com");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    
+    url.SetUsername("user:name@with");
+    DealNapiStrValue(env, url.GetUsername(env), output);
+    ASSERT_STREQ(output.c_str(), "user%3Aname%40with");
+    
+    url.SetPassword("p@ss:w0rd#123");
+    DealNapiStrValue(env, url.GetPassword(env), output);
+    ASSERT_STREQ(output.c_str(), "p%40ss%3Aw0rd%23123");
+}
+
+HWTEST_F(NativeEngineTest, testUrlFullUpdate001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://old.com/oldpath?q=1#old");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    
+    url.SetHostname("newhost.org");
+    DealNapiStrValue(env, url.GetHostname(env), output);
+    ASSERT_STREQ(output.c_str(), "newhost.org");
+    
+    url.SetPath("/new/path/resource");
+    DealNapiStrValue(env, url.GetPath(env), output);
+    ASSERT_STREQ(output.c_str(), "/new/path/resource");
+    
+    url.SetSearch("debug=true");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?debug=true");
+    
+    url.SetFragment("new-section");
+    DealNapiStrValue(env, url.GetFragment(env), output);
+    ASSERT_STREQ(output.c_str(), "#new-section");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsAppend001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "username");
+    napi_value val = StrToNapiValue(env, "john_doe");
+    params.Append(env, key, val);
+    
+    napi_value query = StrToNapiValue(env, "username");
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, query), output);
+    ASSERT_STREQ(output.c_str(), "john_doe");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsDelete001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "token");
+    napi_value val = StrToNapiValue(env, "abc123");
+    params.Append(env, key, val);
+    bool value = false;
+    napi_get_value_bool(env, params.IsHas(env, key), &value);
+    ASSERT_TRUE(value);
+    params.Delete(env, key);
+    napi_get_value_bool(env, params.IsHas(env, key), &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsGetAll001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "color");
+    
+    params.Append(env, key, StrToNapiValue(env, "red"));
+    params.Append(env, key, StrToNapiValue(env, "green"));
+    params.Append(env, key, StrToNapiValue(env, "blue"));
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, key), output);
+    ASSERT_STREQ(output.c_str(), "red");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsSet001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "page");
+    
+    params.Append(env, key, StrToNapiValue(env, "1"));
+    params.Set(env, key, StrToNapiValue(env, "2"));
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, key), output);
+    ASSERT_STREQ(output.c_str(), "2");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsSort001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    
+    params.Append(env, StrToNapiValue(env, "b"), StrToNapiValue(env, "2"));
+    params.Append(env, StrToNapiValue(env, "a"), StrToNapiValue(env, "1"));
+    params.Append(env, StrToNapiValue(env, "c"), StrToNapiValue(env, "3"));
+    params.Sort();
+    
+    std::string output;
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsIterByKeys001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    
+    params.Append(env, StrToNapiValue(env, "first"), StrToNapiValue(env, "1"));
+    params.Append(env, StrToNapiValue(env, "second"), StrToNapiValue(env, "2"));
+    
+    std::string output;
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsIterByValues001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    
+    params.Append(env, StrToNapiValue(env, "x"), StrToNapiValue(env, "10"));
+    params.Append(env, StrToNapiValue(env, "y"), StrToNapiValue(env, "20"));
+    
+    std::string output;
+    DealNapiStrValue(env, params.IterByValues(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsEmpty001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "empty");
+    
+    bool value = false;
+    napi_get_value_bool(env, params.IsHas(env, key), &value);
+    ASSERT_FALSE(value);
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, key), output);
+    ASSERT_STREQ(output.c_str(), "");
+    
+    DealNapiStrValue(env, params.GetAll(env, key), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsSpecialChars001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "query");
+    napi_value value = StrToNapiValue(env, "a=b&c=d");
+    
+    params.Append(env, key, value);
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, key), output);
+    ASSERT_STREQ(output.c_str(), "a=b&c=d");
+    
+    DealNapiStrValue(env, params.IterByValues(env), output);
+    ASSERT_STREQ(output.c_str(), "a=b&c=d");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsParse001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    std::string input1 = "key1";
+    std::string input2 = "value1";
+    std::string input3 = "key2";
+    std::string input4 = "value2";
+    std::vector<std::string> vec;
+    vec.push_back(input1);
+    vec.push_back(input2);
+    vec.push_back(input3);
+    vec.push_back(input4);
+    params.SetArray(env, vec);
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, StrToNapiValue(env, "key1")), output);
+    ASSERT_STREQ(output.c_str(), "value1");
+    
+    DealNapiStrValue(env, params.Get(env, StrToNapiValue(env, "key2")), output);
+    ASSERT_STREQ(output.c_str(), "value2");
+    
+    bool value = false;
+    napi_get_value_bool(env, params.IsHas(env, StrToNapiValue(env, "key1")), &value);
+    ASSERT_TRUE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsDelete002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "nonexistent");
+    
+    params.Delete(env, key);
+    bool value = false;
+    napi_get_value_bool(env, params.IsHas(env, key), &value);
+    ASSERT_FALSE(value);
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsGetAll002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "lang");
+    
+    params.Append(env, key, StrToNapiValue(env, "en"));
+    params.Append(env, key, StrToNapiValue(env, "zh"));
+    params.Append(env, key, StrToNapiValue(env, "fr"));
+    
+    std::string output;
+    DealNapiStrValue(env, params.GetAll(env, key), output);
+    ASSERT_STREQ(output.c_str(), "");
+    
+    params.Set(env, key, StrToNapiValue(env, "jp"));
+    DealNapiStrValue(env, params.GetAll(env, key), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsEmptyStrings001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value emptyKey = StrToNapiValue(env, "");
+    napi_value emptyVal = StrToNapiValue(env, "");
+    
+    params.Append(env, emptyKey, emptyVal);
+    bool value = false;
+    napi_get_value_bool(env, params.IsHas(env, emptyKey), &value);
+    ASSERT_TRUE(value);
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, emptyKey), output);
+    ASSERT_STREQ(output.c_str(), "");
+    
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsOverride001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "version");
+    
+    params.Append(env, key, StrToNapiValue(env, "1.0"));
+    params.Append(env, key, StrToNapiValue(env, "2.0"));
+    params.Set(env, key, StrToNapiValue(env, "3.0"));
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, key), output);
+    ASSERT_STREQ(output.c_str(), "3.0");
+    
+    DealNapiStrValue(env, params.GetAll(env, key), output);
+    ASSERT_STREQ(output.c_str(), "3.0");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsSort002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    
+    params.Append(env, StrToNapiValue(env, "zebra"), StrToNapiValue(env, "animal"));
+    params.Append(env, StrToNapiValue(env, "apple"), StrToNapiValue(env, "fruit"));
+    params.Append(env, StrToNapiValue(env, "book"), StrToNapiValue(env, "object"));
+    
+    params.Sort();
+    
+    std::string output;
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+    
+    DealNapiStrValue(env, params.IterByValues(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsUnicode001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "城市");
+    napi_value value = StrToNapiValue(env, "北京市");
+    
+    params.Append(env, key, value);
+    
+    std::string output;
+    bool value1 = false;
+    napi_get_value_bool(env, params.IsHas(env, key), &value1);
+    ASSERT_TRUE(value1);
+    
+    DealNapiStrValue(env, params.Get(env, key), output);
+    ASSERT_STREQ(output.c_str(), "北京市");
+    
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "北京市");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsDelete003, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    std::string input1 = "product";
+    std::string input2 = "phone";
+    std::string input3 = "product";
+    std::string input4 = "laptop";
+    std::string input5 = "product";
+    std::string input6 = "tablet";
+    std::vector<std::string> vec;
+    vec.push_back(input1);
+    vec.push_back(input2);
+    vec.push_back(input3);
+    vec.push_back(input4);
+    vec.push_back(input5);
+    vec.push_back(input6);
+    params.SetArray(env, vec);
+    napi_value key = StrToNapiValue(env, "product");
+    
+    params.Delete(env, key);
+    
+    std::string output;
+    DealNapiStrValue(env, params.GetAll(env, key), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsParse002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    std::string input1 = "key1";
+    std::string input2 = "1";
+    std::string input3 = "two";
+    std::string input4 = "laptop";
+    std::string input5 = "key1";
+    std::string input6 = "2";
+    std::vector<std::string> vec;
+    vec.push_back(input1);
+    vec.push_back(input2);
+    vec.push_back(input3);
+    vec.push_back(input4);
+    vec.push_back(input5);
+    vec.push_back(input6);
+    params.SetArray(env, vec);
+    napi_value key1 = StrToNapiValue(env, "key1");
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, key1), output);
+    ASSERT_STREQ(output.c_str(), "1");
+    
+    DealNapiStrValue(env, params.GetAll(env, key1), output);
+    ASSERT_STREQ(output.c_str(), "1");
+    
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "1");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsSet002, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    napi_value key = StrToNapiValue(env, "new_key");
+    
+    bool value = false;
+    napi_get_value_bool(env, params.IsHas(env, key), &value);
+    ASSERT_FALSE(value);
+    params.Set(env, key, StrToNapiValue(env, "new_value"));
+    napi_get_value_bool(env, params.IsHas(env, key), &value);
+    ASSERT_TRUE(value);
+    
+    std::string output;
+    DealNapiStrValue(env, params.Get(env, key), output);
+    ASSERT_STREQ(output.c_str(), "new_value");
+}
+
+HWTEST_F(NativeEngineTest, testUrlParamsComprehensive001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URLSearchParams params = OHOS::Url::URLSearchParams();
+    napi_env env = (napi_env)engine_;
+    
+    napi_value keyA = StrToNapiValue(env, "a");
+    params.Append(env, keyA, StrToNapiValue(env, "1"));
+    params.Append(env, keyA, StrToNapiValue(env, "2"));
+    
+    napi_value keyB = StrToNapiValue(env, "b");
+    params.Set(env, keyB, StrToNapiValue(env, "3"));
+    
+    bool value = false;
+    napi_get_value_bool(env, params.IsHas(env, keyA), &value);
+    ASSERT_TRUE(value);
+    napi_get_value_bool(env, params.IsHas(env, keyB), &value);
+    ASSERT_TRUE(value);
+    
+    std::string output;
+    DealNapiStrValue(env, params.GetAll(env, keyA), output);
+    ASSERT_STREQ(output.c_str(), "");
+    
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+    
+    DealNapiStrValue(env, params.IterByValues(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+    
+    params.Delete(env, keyA);
+    napi_get_value_bool(env, params.IsHas(env, keyA), &value);
+    ASSERT_FALSE(value);
+    napi_get_value_bool(env, params.IsHas(env, keyB), &value);
+    ASSERT_TRUE(value);
+    
+    params.Append(env, StrToNapiValue(env, "c"), StrToNapiValue(env, "4"));
+    params.Append(env, StrToNapiValue(env, "a"), StrToNapiValue(env, "5"));
+    params.Sort();
+    
+    DealNapiStrValue(env, params.IterByKeys(env), output);
+    ASSERT_STREQ(output.c_str(), "");
+}
