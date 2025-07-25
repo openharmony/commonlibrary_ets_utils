@@ -30,3 +30,24 @@ ohos_prebuilt_etc("base_sdk_ets") {
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 }
+
+generate_static_abc("base_transfer") {
+  base_url = "./transfer"
+  files = [
+    "./transfer/@ohos.transfer.ets",
+    "./transfer/register.ets",
+    "./transfer/kitRegister/arkts.ets",
+    "./transfer/kitRegister/registerMain.ets",
+    "./transfer/kitRegister/arkui.ets",
+  ]
+  is_boot_abc = "True"
+  device_dst_file = "/system/framework/base_transfer.abc"
+}
+
+ohos_prebuilt_etc("base_transfer_ets") {
+  source = "$target_out_dir/base_transfer.abc"
+  module_install_dir = "framework"
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
+  deps = [ ":base_transfer" ]
+}
