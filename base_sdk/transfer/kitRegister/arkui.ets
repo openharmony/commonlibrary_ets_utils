@@ -29,4 +29,28 @@ export function registerArkUI() {
 
     registerStaticCB("ArkUI.Animator", "@ohos.animator", "AnimatorResultInner", "animatorTransferStatic");
     registerDynamicCB("ArkUI.Animator", "@ohos.animator", "AnimatorResultInner", "animatorTransferDynamic"); 
+ 
+    registerStaticCB("ArkUI.FrameNode", "arkui.handwritten.transfer.FrameNodeTransfer", "FrameNodeTransfer", "transferStatic");
+    registerDynamicCB("ArkUI.FrameNode", "arkui.handwritten.transfer.FrameNodeTransfer", "FrameNodeTransfer", "transferDynamic");
+    
+    registerStaticCB("ArkUI.UIContext", "arkui.handwritten.transfer.UIContextTransfer", "UIContextTransfer", "transferStatic");
+    registerDynamicCB("ArkUI.UIContext", "arkui.handwritten.transfer.UIContextTransfer", "UIContextTransfer", "transferDynamic");
+    
+    registerStaticCB("ArkUI.LengthMetrics", "arkui.handwritten.transfer.LengthMetricsTransfer", "LengthMetricsTransfer", "transferStatic");
+    registerDynamicCB("ArkUI.LengthMetrics", "arkui.handwritten.transfer.LengthMetricsTransfer", "LengthMetricsTransfer", "transferDynamic");
+    
+    registerStaticCB("ArkUI.ShapeClip", "arkui.handwritten.transfer.ShapeClipTransfer", "ShapeClipTransfer", "transferStatic");
+    registerDynamicCB("ArkUI.ShapeClip", "arkui.handwritten.transfer.ShapeClipTransfer", "ShapeClipTransfer", "transferDynamic");
+    
+    registerStaticCB("ArkUI.ColorMetrics", "arkui.handwritten.transfer.ColorMetricsTransfer", "ColorMetricsTransfer", "transferStatic");
+    registerDynamicCB("ArkUI.ColorMetrics", "arkui.handwritten.transfer.ColorMetricsTransfer", "ColorMetricsTransfer", "transferDynamic");
+    
+    registerStaticCB("ArkUI.ShapeMask", "arkui.handwritten.transfer.ShapeMaskTransfer", "ShapeMaskTransfer", "transferStatic");
+    registerDynamicCB("ArkUI.ShapeMask", "arkui.handwritten.transfer.ShapeMaskTransfer", "ShapeMaskTransfer", "transferDynamic");
+
+    registerStaticCB("Global.Resource", "arkui.handwritten.transfer.ResourceTransfer", "ResourceTransfer", "transferStatic");
+    registerDynamicCB("Global.Resource", "arkui.handwritten.transfer.ResourceTransfer", "ResourceTransfer", "transferDynamic");
+
+    registerStaticCB("ArkUI.RenderNode", "arkui.handwritten.transfer.RenderNodeTransfer", "RenderNodeTransfer", "transferStatic");
+    registerDynamicCB("ArkUI.RenderNode", "arkui.handwritten.transfer.RenderNodeTransfer", "RenderNodeTransfer", "transferDynamic");
 }
