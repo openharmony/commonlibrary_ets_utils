@@ -68,4 +68,10 @@ export function registerArkWeb() {
 
     registerStaticCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerStatic');
     registerDynamicCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerDynamic');
+
+    registerStaticCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToStatic');
+    registerDynamicCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToDynamic');
+
+    registerStaticCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToStatitc');
+    registerDynamicCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToDynamic');
 }
