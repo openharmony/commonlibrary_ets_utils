@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { registerStaticCB, registerDynamicCB } from '../rpc.ets';
+import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerRpc() {
   registerStaticCB('rpc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'transferStatic');
