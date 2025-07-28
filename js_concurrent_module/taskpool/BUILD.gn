@@ -96,6 +96,7 @@ ohos_shared_library("taskpool") {
       "ENABLE_TASKPOOL_EVENTHANDLER",
       "ENABLE_TASKPOOL_FFRT",
       "ENABLE_TASKPOOL_HISYSEVENT",
+      "ENABLE_CONCURRENCY_INTEROP",
     ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
@@ -107,7 +108,10 @@ ohos_shared_library("taskpool") {
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
+      "runtime_core:ani",
+      "runtime_core:libarkruntime",
     ]
+    sources += [ "../common/helper/hybrid_concurrent_helper.cpp" ]
   }
 
   if (is_ohos && is_standard_system && !is_arkui_x &&
@@ -163,6 +167,7 @@ ohos_source_set("taskpool_static") {
       "ENABLE_TASKPOOL_EVENTHANDLER",
       "ENABLE_TASKPOOL_FFRT",
       "ENABLE_TASKPOOL_HISYSEVENT",
+      "ENABLE_CONCURRENCY_INTEROP",
     ]
     external_deps += [
       "bundle_framework:appexecfwk_base",
@@ -174,7 +179,10 @@ ohos_source_set("taskpool_static") {
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
+      "runtime_core:ani",
+      "runtime_core:libarkruntime",
     ]
+    sources += [ "../common/helper/hybrid_concurrent_helper.cpp" ]
   }
 
   if (is_arkui_x) {
