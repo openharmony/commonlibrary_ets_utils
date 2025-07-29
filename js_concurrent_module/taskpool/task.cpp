@@ -1696,6 +1696,7 @@ void Task::CancelInner(ExecuteState state)
         TaskManager::GetInstance().ClearDependentTask(taskId_);
     }
     std::list<napi_deferred> deferreds {};
+    std::string error = "taskpool:: task has been canceled";
     {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr &&
@@ -1710,14 +1711,17 @@ void Task::CancelInner(ExecuteState state)
             isCancelToFinish_ = true;
         }
         if (IsSeqRunnerTask() && state == ExecuteState::CANCELED) {
+            if (currentTaskInfo_ != nullptr) {
+                deferreds.push_back(currentTaskInfo_->deferred);
+                error = "taskpool:: sequenceRunner task has been canceled";
+            }
             DisposeCanceledTask();
-            return;
         }
         if (state == ExecuteState::DELAYED) {
             isCancelToFinish_ = true;
         }
     }
-    std::string error = "taskpool:: task has been canceled";
+    
     TaskManager::GetInstance().BatchRejectDeferred(env_, deferreds, error);
 }
 
