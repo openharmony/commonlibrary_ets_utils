@@ -683,7 +683,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
         return taskGroup->CancelGroupTask(env, task->taskId_);
     }
     if (task->IsPeriodicTask()) {
-        task->taskState_.exchange(ExecuteState::CANCELED);
+        task->UpdateTaskStateToCanceled();
         return;
     }
     if (task->IsSeqRunnerTask()) {

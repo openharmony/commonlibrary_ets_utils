@@ -201,6 +201,12 @@ public:
     napi_env GetEnv() const;
     uint32_t GetTaskId() const;
     bool IsRealyCanceled();
+    bool UpdateTaskStateToWaiting();
+    bool UpdateTaskStateToRunning();
+    bool UpdateTaskStateToCanceled();
+    bool UpdateTaskStateToFinished();
+    bool UpdateTaskStateToDelayed();
+    bool UpdateTaskStateToEnding();
 
 private:
     Task(const Task &) = delete;

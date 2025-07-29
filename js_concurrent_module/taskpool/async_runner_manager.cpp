@@ -106,14 +106,18 @@ void AsyncRunnerManager::RemoveGlobalAsyncRunner(const std::string& name)
 void AsyncRunnerManager::CancelAsyncRunnerTask(napi_env env, Task* task)
 {
     std::string errMsg = "";
-    if (task->taskState_ == ExecuteState::FINISHED || task->taskState_ == ExecuteState::ENDING) {
-        errMsg = "AsyncRunner task has been executed.";
-        HILOG_ERROR("taskpool:: %{public}s", errMsg.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
-        return;
-    }
+    ExecuteState state = ExecuteState::NOT_FOUND;
+    {
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        if (task->taskState_ == ExecuteState::FINISHED || task->taskState_ == ExecuteState::ENDING) {
+            errMsg = "AsyncRunner task has been executed.";
+            HILOG_ERROR("taskpool:: %{public}s", errMsg.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
+            return;
+        }
 
-    ExecuteState state = task->taskState_.exchange(ExecuteState::CANCELED);
+        state = task->taskState_.exchange(ExecuteState::CANCELED);
+    }
     task->CancelPendingTask(env);
     auto asyncRunner = GetAsyncRunner(task->asyncRunnerId_);
     if (state == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr &&

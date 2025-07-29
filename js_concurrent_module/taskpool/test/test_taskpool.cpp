@@ -6587,7 +6587,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest322, testing::ext::TestSize.Level0)
     sequenceRunnerManager.CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
-    ASSERT_TRUE(exception != nullptr);
+    ASSERT_TRUE(exception == nullptr);
     seqRunner->RemoveWaitingTask(task);
     sequenceRunnerManager.StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
     sequenceRunnerManager.SequenceRunnerDestructor(seqRunner);
@@ -6690,4 +6690,134 @@ HWTEST_F(NativeEngineTest, TaskpoolTest329, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest330, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
+    task->taskRef_ = ref;
+    TaskInfo* taskInfo = new TaskInfo();
+    task->pendingTaskInfos_.push_back(taskInfo);
+    task->isPeriodicTask_ = true;
+    task->NotifyPendingTask();
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    Task* task2 = new Task();
+    task2->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
+    napi_value thisValue2 = NapiHelper::CreateObject(env);
+    napi_ref ref2 = NapiHelper::CreateReference(env, thisValue2, 0);
+    task2->taskRef_ = ref;
+    TaskInfo* taskInfo2 = new TaskInfo();
+    task2->pendingTaskInfos_.push_back(taskInfo2);
+    task2->taskState_ = ExecuteState::CANCELED;
+    task2->NotifyPendingTask();
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    Task* task3 = new Task();
+    TaskInfo* taskInfo3 = new TaskInfo();
+    task3->pendingTaskInfos_.push_back(taskInfo3);
+    task3->taskState_ = ExecuteState::CANCELED;
+    task3->isPeriodicTask_ = true;
+    task3->NotifyPendingTask();
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+    delete task2;
+    delete task3;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest331, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    task->taskState_ = ExecuteState::FINISHED;
+    bool flag = task->UpdateTaskStateToWaiting();
+    ASSERT_FALSE(flag);
+
+    task->taskType_ = TaskType::COMMON_TASK;
+    task->isPeriodicTask_ = true;
+    flag = task->UpdateTaskStateToWaiting();
+    ASSERT_TRUE(flag);
+
+    task->taskState_ = ExecuteState::NOT_FOUND;
+    flag = task->UpdateTaskStateToWaiting();
+    ASSERT_TRUE(flag);
+
+    task->taskState_ = ExecuteState::CANCELED;
+    flag = task->UpdateTaskStateToWaiting();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::ENDING;
+    task->isPeriodicTask_ = false;
+    flag = task->UpdateTaskStateToWaiting();
+    ASSERT_FALSE(flag);
+
+    flag = task->UpdateTaskStateToCanceled();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::NOT_FOUND;
+    flag = task->UpdateTaskStateToCanceled();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::CANCELED;
+    flag = task->UpdateTaskStateToCanceled();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::FINISHED;
+    flag = task->UpdateTaskStateToCanceled();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::WAITING;
+    flag = task->UpdateTaskStateToCanceled();
+    ASSERT_TRUE(flag);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest332, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskType_ = TaskType::COMMON_TASK;
+    task->taskState_ = ExecuteState::CANCELED;
+    task->isCancelToFinish_ = true;
+    bool flag = task->UpdateTaskStateToDelayed();
+    ASSERT_TRUE(flag);
+
+    task->taskState_ = ExecuteState::RUNNING;
+    task->isCancelToFinish_ = false;
+    flag = task->UpdateTaskStateToEnding();
+    ASSERT_TRUE(flag);
+
+    task->taskState_ = ExecuteState::CANCELED;
+    task->isPeriodicTask_ = true;
+    flag = task->UpdateTaskStateToEnding();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::WAITING;
+    task->isPeriodicTask_ = false;
+    flag = task->UpdateTaskStateToEnding();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::CANCELED;
+    flag = task->UpdateTaskStateToDelayed();
+    ASSERT_FALSE(flag);
+
+    task->taskState_ = ExecuteState::WAITING;
+    task->isPeriodicTask_ = true;
+    flag = task->UpdateTaskStateToDelayed();
+    ASSERT_FALSE(flag);
+    delete task;
 }

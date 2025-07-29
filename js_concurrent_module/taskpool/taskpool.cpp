@@ -299,9 +299,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    if (!task->IsExecuted() || task->IsRealyCanceled() || task->taskState_ == ExecuteState::FINISHED) {
-        task->taskState_ = ExecuteState::DELAYED;
-    }
+    task->UpdateTaskStateToDelayed();
     task->UpdateTaskType(TaskType::COMMON_TASK);
 
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
@@ -437,7 +435,7 @@ void TaskPool::HandleTaskResultInner(Task* task)
     }
     reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
     bool success = ((status == napi_ok) && (task->taskState_ != ExecuteState::CANCELED)) && (task->success_);
-    task->taskState_ = ExecuteState::ENDING;
+    task->UpdateTaskStateToEnding();
     task->isCancelToFinish_ = false;
     if (task->IsGroupTask()) {
         UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
@@ -466,7 +464,7 @@ void TaskPool::TriggerTask(Task* task)
         return;
     }
     TaskManager::GetInstance().DecreaseSendDataRefCount(task->env_, task->taskId_);
-    task->taskState_ = ExecuteState::FINISHED;
+    task->UpdateTaskStateToFinished();
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
         if (!SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
@@ -498,7 +496,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
 {
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateGroupInfoByResult", std::to_string(task->taskId_).c_str());
     TaskManager::GetInstance().DecreaseSendDataRefCount(task->env_, task->taskId_);
-    task->taskState_ = ExecuteState::FINISHED;
+    task->UpdateTaskStateToFinished();
     napi_reference_unref(env, task->taskRef_, nullptr);
     if (task->IsGroupCommonTask()) {
         delete task->currentTaskInfo_;
@@ -566,9 +564,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
-    if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
-        task->IsRealyCanceled()) {
-        task->taskState_ = ExecuteState::WAITING;
+    if (task->UpdateTaskStateToWaiting()) {
         task->isCancelToFinish_ = false;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
@@ -672,8 +668,7 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
 
     task->IncreaseRefCount();
     HILOG_INFO("taskpool:: PeriodicTaskCallback taskId %{public}s", std::to_string(task->taskId_).c_str());
-    if (task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED) {
-        task->taskState_ = ExecuteState::WAITING;
+    if (task->UpdateTaskStateToWaiting()) {
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->periodicTaskPriority_);
     }
 }
