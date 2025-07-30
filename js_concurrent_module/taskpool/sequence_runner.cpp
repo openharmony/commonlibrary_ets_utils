@@ -205,49 +205,39 @@ void SequenceRunner::AddTask(Task* task)
 
 void SequenceRunner::TriggerTask(napi_env env)
 {
-    std::list<napi_deferred> deferreds {};
-    {
-        std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-        if (seqRunnerTasks_.empty()) {
-            currentTaskId_ = 0;
-            return;
-        }
-        Task* task = seqRunnerTasks_.front();
-        seqRunnerTasks_.pop_front();
-        bool isEmpty = false;
-        while (task->taskState_ == ExecuteState::CANCELED) {
-            if (refCount_ > 0) {
-                refCount_--;
-            }
-            if (task->currentTaskInfo_ != nullptr) {
-                deferreds.push_back(task->currentTaskInfo_->deferred);
-            }
-            if (task->IsSameEnv(env)) {
-                task->CancelInner(ExecuteState::CANCELED);
-            } else {
-                CancelTaskMessage* message = new CancelTaskMessage(ExecuteState::CANCELED, task->taskId_);
-                task->TriggerCancel(message);
-            }
-            
-            if (seqRunnerTasks_.empty()) {
-                HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty in cancel loop.",
-                            std::to_string(seqRunnerId_).c_str());
-                currentTaskId_ = 0;
-                isEmpty = true;
-                break;
-            }
-            task = seqRunnerTasks_.front();
-            seqRunnerTasks_.pop_front();
-        }
-        if (!isEmpty) {
-            currentTaskId_ = task->taskId_;
-            task->IncreaseRefCount();
-            task->taskState_ = ExecuteState::WAITING;
-            HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
-                        std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId_).c_str());
-            TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority_);
-        }
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    if (seqRunnerTasks_.empty()) {
+        currentTaskId_ = 0;
+        return;
     }
-    TaskManager::GetInstance().BatchRejectDeferred(env, deferreds, "taskpool:: sequenceRunner task has been canceled");
+    Task* task = seqRunnerTasks_.front();
+    seqRunnerTasks_.pop_front();
+    bool isEmpty = false;
+    while (task->taskState_ == ExecuteState::CANCELED) {
+        if (refCount_ > 0) {
+            refCount_--;
+        }
+
+        CancelTaskMessage* message = new CancelTaskMessage(ExecuteState::CANCELED, task->taskId_);
+        task->TriggerCancel(message);
+
+        if (seqRunnerTasks_.empty()) {
+            HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty in cancel loop.",
+                        std::to_string(seqRunnerId_).c_str());
+            currentTaskId_ = 0;
+            isEmpty = true;
+            break;
+        }
+        task = seqRunnerTasks_.front();
+        seqRunnerTasks_.pop_front();
+    }
+    if (!isEmpty) {
+        currentTaskId_ = task->taskId_;
+        task->IncreaseRefCount();
+        task->taskState_ = ExecuteState::WAITING;
+        HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
+                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId_).c_str());
+        TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority_);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

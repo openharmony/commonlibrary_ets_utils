@@ -46,7 +46,6 @@ private:
 
     // <<name1, seqRunner>, <name2, seqRunner>, ...>
     std::unordered_map<std::string, SequenceRunner*> globalSeqRunner_ {};
-    std::mutex globalSeqRunnerMutex_;
     // <seqRunnerId, SequenceRunner>
     std::unordered_map<uint64_t, SequenceRunner*> seqRunners_ {};
     std::mutex seqRunnersMutex_;

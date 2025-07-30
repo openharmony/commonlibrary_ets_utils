@@ -6634,3 +6634,60 @@ HWTEST_F(NativeEngineTest, TaskpoolTest326, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest327, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskId_ = 327;
+    task->env_ = env;
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    napi_value obj = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
+    task->CancelInner(ExecuteState::CANCELED);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest328, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskId_ = 328;
+    task->env_ = env;
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    napi_value obj = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
+    TaskInfo* taskInfo = new TaskInfo();
+    NapiHelper::CreatePromise(env, &taskInfo->deferred);
+    task->currentTaskInfo_ = taskInfo;
+    task->CancelInner(ExecuteState::CANCELED);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest329, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    task->env_ = env;
+    task->taskState_ = ExecuteState::CANCELED;
+    TaskInfo* taskInfo = new TaskInfo();
+    task->currentTaskInfo_ = taskInfo;
+    SequenceRunner* seqRunner = new SequenceRunner();
+    uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
+    task->seqRunnerId_ = seqRunnerId;
+    seqRunner->seqRunnerTasks_.push_back(task);
+    seqRunner->DecreaseSeqCount();
+    seqRunner->TriggerTask(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
