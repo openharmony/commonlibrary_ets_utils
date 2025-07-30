@@ -12,21 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-import { registerArkTS } from './arkts.ets';
-import { registerArkUI } from './arkui.ets';
-import { registerAbilityKit } from './abilitykit.ets';
-import { registerOsAccount } from './osAccount.ets';
-import { registerArkWeb } from './arkweb.ets';
-import { registerCommonEventManager } from './basicServicesKit.ets'
-import { registerResourceManager } from './resourceManager.ets';
-
-export function registerMain(){
-    registerArkTS();
-    registerArkUI();
-    registerAbilityKit();
-    registerOsAccount();
-    registerArkWeb();
-    registerCommonEventManager();
-    registerResourceManager();
+export function registerOsAccount() {
+  registerStaticCB('BasicServicesKit.IInputData', '@ohos.account.transfer.osAccount', 'Transfer', 'iInputDataTransferStatic');
+  registerDynamicCB('BasicServicesKit.IInputData', '@ohos.account.transfer.osAccount', 'Transfer', 'iInputDataTransferDynamic');
 }
