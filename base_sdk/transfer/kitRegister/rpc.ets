@@ -12,21 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-import { registerArkTS } from './arkts.ets';
-import { registerArkUI } from './arkui.ets';
-import { registerAbilityKit } from './abilitykit.ets';
-import { registerOsAccount } from './osAccount.ets';
-import { registerArkWeb } from './arkweb.ets';
-import { registerCommonEventManager } from './basicServicesKit.ets'
-import { registerRpc } from './rpc.ets';
-
-export function registerMain(){
-    registerArkTS();
-    registerArkUI();
-    registerAbilityKit();
-    registerOsAccount();
-    registerArkWeb();
-    registerCommonEventManager();
-    registerRpc();
+export function registerRpc() {
+  registerStaticCB('rpc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'transferStatic');
+  registerDynamicCB('rpc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'transferDynamic');
 }
