@@ -16,6 +16,7 @@ import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
 import { registerWindow } from './window.ets';
 import { registerAbilityKit } from './abilitykit.ets';
+import { registerGraphics } from './graphics.ets';
 import { registerOsAccount } from './osAccount.ets';
 import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets';
@@ -36,6 +37,7 @@ export function registerMain(){
     registerArkUI();
     registerWindow();
     registerAbilityKit();
+    registerGraphics();
     registerOsAccount();
     registerArkWeb();
     registerCommonEventManager();
