@@ -40,6 +40,7 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/arkui.ets",
     "./transfer/kitRegister/arkts.ets",
     "./transfer/kitRegister/arkweb.ets",
+    "./transfer/kitRegister/graphics.ets",
     "./transfer/kitRegister/registerMain.ets",
     "./transfer/kitRegister/basicServicesKit.ets",
     "./transfer/kitRegister/osAccount.ets",
