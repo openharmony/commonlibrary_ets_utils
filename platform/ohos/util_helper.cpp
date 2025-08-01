@@ -61,7 +61,7 @@ namespace Commonlibrary::Platform {
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter* converter = ucnv_open(encoding.c_str(), &codeflag);
         if (U_FAILURE(codeflag)) {
-            HILOG_ERROR("textencoder::ucnv_open failed !");
+            HILOG_ERROR("TextEncoder:: ucnv_open failed !");
             return "";
         }
 
@@ -71,15 +71,20 @@ namespace Commonlibrary::Platform {
         size_t len = limit * sizeof(char);
         char *targetArray = nullptr;
         if (limit > 0) {
-            targetArray = new char[limit + 1];
+            targetArray = new (std::nothrow) char[limit + 1];
+            if (targetArray == nullptr) {
+                HILOG_ERROR("TextEncoder:: UnicodeConversion memory allocation failed, targetArray is nullptr");
+                ucnv_close(converter);
+                return "";
+            }
             if (memset_s(targetArray, len + sizeof(char), 0, len + sizeof(char)) != EOK) {
-                HILOG_ERROR("textencoder::encode targetArray memset_s failed");
+                HILOG_ERROR("TextEncoder:: encode targetArray memset_s failed");
                 ucnv_close(converter);
                 FreedMemory(targetArray);
                 return "";
             }
         } else {
-            HILOG_ERROR("textencoder::limit is error");
+            HILOG_ERROR("TextEncoder:: limit is error");
             ucnv_close(converter);
             return "";
         }
@@ -88,12 +93,12 @@ namespace Commonlibrary::Platform {
         const char *targetLimit = targetArray + limit;
         const UChar *sourceLimit = source + u_strlen(source);
         if (sourceLimit == nullptr) {
-            HILOG_ERROR("textencoder::sourceLimit is nullptr");
+            HILOG_ERROR("TextEncoder:: sourceLimit is nullptr");
             return "";
         }
         ucnv_fromUnicode(converter, &target, targetLimit, &source, sourceLimit, nullptr, true, &codeflag);
         if (U_FAILURE(codeflag)) {
-            HILOG_ERROR("textencoder::ucnv_fromUnicode conversion failed.");
+            HILOG_ERROR("TextEncoder:: ucnv_fromUnicode conversion failed.");
             ucnv_close(converter);
             FreedMemory(targetArray);
             return "";
@@ -124,7 +129,7 @@ namespace Commonlibrary::Platform {
             outLens = outLen;
             napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
             if (memcpy_s(data, outLen, reinterpret_cast<void*>(u16Str.data()), outLen) != EOK) {
-                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                HILOG_FATAL("TextEncoder:: copy buffer to arraybuffer error");
                 return;
             }
         } else if (encoding == "utf-16be") {
@@ -136,7 +141,7 @@ namespace Commonlibrary::Platform {
             outLens = outLen;
             napi_create_arraybuffer(env, outLen, &data, arrayBuffer);
             if (memcpy_s(data, outLen, reinterpret_cast<void*>(u16LEStr.data()), outLen) != EOK) {
-                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                HILOG_FATAL("TextEncoder:: copy buffer to arraybuffer error");
                 return;
             }
         } else {
@@ -149,7 +154,7 @@ namespace Commonlibrary::Platform {
         UErrorCode codeflag = U_ZERO_ERROR;
         UConverter* converter = ucnv_open(encoding.c_str(), &codeflag);
         if (U_FAILURE(codeflag)) {
-            HILOG_ERROR("textencoder::ucnv_open failed !");
+            HILOG_ERROR("TextEncoder:: ucnv_open failed !");
             return 0;
         }
 
@@ -250,7 +255,7 @@ namespace Commonlibrary::Platform {
         napi_get_value_string_utf16(env, src, nullptr, 0, &inputSize);
         char16_t *originalBuffer = ApplyMemory(inputSize);
         if (originalBuffer == nullptr) {
-            HILOG_ERROR("textencoder::originalBuffer is nullptr");
+            HILOG_ERROR("TextEncoder:: originalBuffer is nullptr");
             return;
         }
         napi_get_value_string_utf16(env, src, originalBuffer, inputSize + 1, &inputSize);
@@ -259,7 +264,7 @@ namespace Commonlibrary::Platform {
         char *writeResult = static_cast<char*>(data);
         if (writeResult == nullptr) {
             FreedMemory(originalBuffer);
-            HILOG_ERROR("textencoder::writeResult is nullptr");
+            HILOG_ERROR("TextEncoder:: writeResult is nullptr");
             return;
         }
         std::string buffer = "";
@@ -272,7 +277,7 @@ namespace Commonlibrary::Platform {
             outLens = buffer.length();
             if (memcpy_s(writeResult, outLens, reinterpret_cast<char*>(buffer.data()), outLens) != EOK) {
                 FreedMemory(originalBuffer);
-                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                HILOG_FATAL("TextEncoder:: copy buffer to arraybuffer error");
                 return;
             }
         } else {
@@ -281,7 +286,7 @@ namespace Commonlibrary::Platform {
                 if (memcpy_s(writeResult + resultShifting, buffer.length(),
                              reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
                     FreedMemory(originalBuffer);
-                    HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                    HILOG_FATAL("TextEncoder:: copy buffer to arraybuffer error");
                     return;
                 }
                 resultShifting +=  buffer.length();
@@ -297,7 +302,7 @@ namespace Commonlibrary::Platform {
             if (memcpy_s(writeResult + resultShifting, buffer.length(),
                          reinterpret_cast<char*>(buffer.data()), buffer.length()) != EOK) {
                 FreedMemory(originalBuffer);
-                HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+                HILOG_FATAL("TextEncoder:: copy buffer to arraybuffer error");
                 return;
             }
         }
@@ -310,12 +315,12 @@ namespace Commonlibrary::Platform {
         size_t bufferSize = 0;
 
         if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
-            HILOG_ERROR("textencoder::can not get src size");
+            HILOG_ERROR("TextEncoder:: can not get src size");
             return u"";
         }
         buffer.resize(bufferSize);
         if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
-            HILOG_ERROR("textencoder::can not get src value");
+            HILOG_ERROR("TextEncoder:: can not get src value");
             return u"";
         }
         std::u16string u16Str = Utf8ToUtf16BE(buffer);
@@ -364,7 +369,7 @@ namespace Commonlibrary::Platform {
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
         char16_t *originalBuffer = ApplyMemory(inputSize);
         if (originalBuffer == nullptr) {
-            HILOG_ERROR("textencoder::originalBuffer is nullptr");
+            HILOG_ERROR("TextEncoder:: originalBuffer is nullptr");
             return;
         }
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
@@ -404,7 +409,7 @@ namespace Commonlibrary::Platform {
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, nullptr, 0, &inputSize);
         char16_t *originalBuffer = ApplyMemory(inputSize);
         if (originalBuffer == nullptr) {
-            HILOG_ERROR("textencoder::originalBuffer is nullptr");
+            HILOG_ERROR("TextEncoder:: originalBuffer is nullptr");
             return;
         }
         napi_get_value_string_utf16(encodeInfo.env, encodeInfo.src, originalBuffer, inputSize + 1, &inputSize);
@@ -433,7 +438,7 @@ namespace Commonlibrary::Platform {
         size_t writeLength = bufferResult.length() * 2; // 2:multiple
         if (memcpy_s(writeResult, writeLength, reinterpret_cast<char*>(bufferResult.data()), writeLength) != EOK) {
             FreedMemory(originalBuffer);
-            HILOG_FATAL("textencoder::copy buffer to arraybuffer error");
+            HILOG_FATAL("TextEncoder:: copy buffer to arraybuffer error");
             return;
         }
         *nchars = static_cast<int32_t>(i);
@@ -445,7 +450,11 @@ namespace Commonlibrary::Platform {
     {
         char16_t *originalBuffer = nullptr;
         if (inputSize > 0) {
-            originalBuffer = new char16_t[inputSize + 1];
+            originalBuffer = new (std::nothrow) char16_t[inputSize + 1];
+            if (originalBuffer == nullptr) {
+                HILOG_ERROR("TextEncoder:: originalBuffer memory allocation failed, originalBuffer is nullptr");
+                return nullptr;
+            }
             if (memset_s(originalBuffer, inputSize + 1, u'\0', inputSize + 1) != EOK) {
                 HILOG_ERROR("encode originalBuffer memset_s failed");
                 FreedMemory(originalBuffer);
