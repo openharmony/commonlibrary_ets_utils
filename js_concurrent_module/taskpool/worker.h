@@ -21,6 +21,9 @@
 #if defined(ENABLE_TASKPOOL_FFRT)
 #include "cpp/task.h"
 #endif
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "helper/hybrid_concurrent_helper.h"
+#endif
 #include "helper/concurrent_helper.h"
 #include "helper/error_helper.h"
 #include "helper/napi_helper.h"
@@ -225,6 +228,9 @@ private:
 #endif
 #if defined(ENABLE_TASKPOOL_HISYSEVENT)
     std::atomic<int32_t> reportCount_ = 0;
+#endif
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    ani_env* aniEnv_ = nullptr;
 #endif
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
