@@ -39,6 +39,7 @@ ohos_unittest("test_util_unittest") {
     "../../util/js_uuid.cpp",
     "test_ark.cpp",
     "test_util.cpp",
+    "test_uuid.cpp",
   ]
 
   external_deps = [
