@@ -44,6 +44,8 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/resourceManager.ets",
     "./transfer/kitRegister/basicServicesKit.ets",
     "./transfer/kitRegister/osAccount.ets",
+    "./transfer/kitRegister/rpc.ets",
+    "./transfer/kitRegister/window.ets",
   ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/base_transfer.abc"

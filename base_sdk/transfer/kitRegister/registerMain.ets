@@ -15,18 +15,22 @@
 
 import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
+import { registerWindow } from './window.ets';
 import { registerAbilityKit } from './abilitykit.ets';
 import { registerOsAccount } from './osAccount.ets';
 import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets'
 import { registerResourceManager } from './resourceManager.ets';
+import { registerRpc } from './rpc.ets';
 
 export function registerMain(){
     registerArkTS();
     registerArkUI();
+    registerWindow();
     registerAbilityKit();
     registerOsAccount();
     registerArkWeb();
     registerCommonEventManager();
     registerResourceManager();
+    registerRpc();
 }
