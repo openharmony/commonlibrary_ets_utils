@@ -15,6 +15,6 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerResourceManager() {
-    registerStaticCB('LocalizationKit.ResourceManager', '@ohos.resourceManager', 'resourceManager', 'transferStatic');
-    registerDynamicCB('LocalizationKit.ResourceManager', '@ohos.resourceManager', 'resourceManager', 'transferDynamic');
+    registerStaticCB('LocalizationKit.ResourceManager', '@ohos.resourceManager', 'resourceManager', 'transferToStaticResource');
+    registerDynamicCB('LocalizationKit.ResourceManager', '@ohos.resourceManager', 'resourceManager', 'transferToDynamicResource');
 }
