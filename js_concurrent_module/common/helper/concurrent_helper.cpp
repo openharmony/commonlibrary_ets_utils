@@ -95,4 +95,4 @@ bool ConcurrentHelper::IsModerateMemory()
     return false;
 #endif
 }
-} // namespace Commonlibrary::Concurrent::TaskPoolModule
+} // namespace Commonlibrary::Concurrent::Common::Helper

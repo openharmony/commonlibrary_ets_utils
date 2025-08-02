@@ -47,6 +47,14 @@ ohos_unittest("test_worker_unittest") {
     "libuv:uv",
     "napi:ace_napi",
   ]
+
+  if (is_ohos && is_standard_system && !is_arkui_x) {
+    defines = [ "ENABLE_CONCURRENCY_INTEROP" ]
+    external_deps += [
+      "runtime_core:ani",
+      "runtime_core:libarkruntime",
+    ]
+  }
 }
 
 group("unittest") {
