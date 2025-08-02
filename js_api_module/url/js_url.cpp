@@ -1805,7 +1805,7 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return nullptr;
         }
-        name.reserve(nameSize);
+        name.reserve(nameSize + 1);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get buffer value");
@@ -1836,7 +1836,7 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return nullptr;
         }
-        name.reserve(nameSize);
+        name.reserve(nameSize + 1);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get buffer value");
@@ -1871,7 +1871,7 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return;
         }
-        name.reserve(nameSize);
+        name.reserve(nameSize + 1);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get buffer value");
@@ -1884,7 +1884,7 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get temp size");
             return;
         }
-        value.reserve(valueSize);
+        value.reserve(valueSize + 1);
         value.resize(valueSize);
         if (napi_get_value_string_utf8(env, temp, value.data(), valueSize + 1, &valueSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get temp value");
@@ -1902,7 +1902,7 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get buffer size");
             return;
         }
-        name.reserve(nameSize);
+        name.reserve(nameSize + 1);
         name.resize(nameSize);
         if (napi_get_value_string_utf8(env, buffer, name.data(), nameSize + 1, &nameSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get buffer value");
@@ -1950,6 +1950,7 @@ namespace OHOS::Url {
             return nullptr;
         }
         std::string buf = "";
+        buf.reserve(bufferSize + 1);
         buf.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, buf.data(), bufferSize + 1, &bufferSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get name value");
@@ -1976,7 +1977,7 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get name size");
             return;
         }
-        buffer.reserve(bufferSize);
+        buffer.reserve(bufferSize + 1);
         buffer.resize(bufferSize);
         if (napi_get_value_string_utf8(env, name, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get name value");
@@ -1989,7 +1990,7 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get value size");
             return;
         }
-        temp.reserve(tempSize);
+        temp.reserve(tempSize + 1);
         temp.resize(tempSize);
         if (napi_get_value_string_utf8(env, value, temp.data(), tempSize + 1, &tempSize) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get value value");

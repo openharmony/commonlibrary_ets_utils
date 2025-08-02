@@ -313,6 +313,7 @@ namespace Commonlibrary::Platform {
             HILOG_ERROR("textencoder::can not get src size");
             return u"";
         }
+        buffer.reserve(bufferSize + 1);
         buffer.resize(bufferSize);
         if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
             HILOG_ERROR("textencoder::can not get src value");

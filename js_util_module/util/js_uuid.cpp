@@ -208,6 +208,7 @@ napi_value DoParseUUID(napi_env env, napi_value src)
         HILOG_ERROR("DoParseUUID:: can not get src size");
         return nullptr;
     }
+    buffer.reserve(bufferSize + 1);
     buffer.resize(bufferSize);
     status = napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize);
     if (status != napi_ok) {
