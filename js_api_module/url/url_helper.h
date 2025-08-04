@@ -389,14 +389,14 @@ inline std::uint8_t HexToDecimal(unsigned char hexChar)
     }
 }
 
-inline void AppendChars(std::string& result, size_t& i, size_t length, char* chars)
+inline void AppendChars(std::string& result, size_t& i, size_t length, unsigned char* chars)
 {
     for (size_t j = length; j-- > 0;) {
         result += chars[j];
         i += (HEX_PAIR_LENGTH + 1);
     }
 }
-inline bool PercentCharDecodable(const std::string_view inputString, size_t i, char& ch)
+inline bool PercentCharDecodable(const std::string_view inputString, size_t i, unsigned char& ch)
 {
     if (inputString[i] == '%' && i + HEX_PAIR_LENGTH < inputString.size() && std::isxdigit(inputString[i + 1]) &&
         std::isxdigit(inputString[i + HEX_PAIR_LENGTH])) {
@@ -406,7 +406,7 @@ inline bool PercentCharDecodable(const std::string_view inputString, size_t i, c
     return false;
 }
 
-inline size_t GetCharLength(char ch)
+inline size_t GetCharLength(unsigned char ch)
 {
     if ((ch & 0x80) == 0) {               // 0x80 mean 0XXXXXXX
         return 1;                         // 1 char length,0XXXXXXX
