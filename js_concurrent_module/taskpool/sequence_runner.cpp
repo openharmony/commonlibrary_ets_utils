@@ -149,7 +149,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
         seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
-        task->taskState_ = ExecuteState::WAITING;
+        task->UpdateTaskStateToWaiting();
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
         HILOG_INFO("taskpool:: add taskId: %{public}s to seqRunner %{public}s.",

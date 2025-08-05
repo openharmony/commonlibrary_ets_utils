@@ -1135,6 +1135,12 @@ void Task::NotifyPendingTask()
                     std::to_string(taskId_).c_str());
         return;
     }
+    if (IsPeriodicTask() && taskState_ == ExecuteState::CANCELED) {
+        currentTaskInfo_ = nullptr;
+        HILOG_DEBUG("taskpool:: task:%{public}s NotifyPendingTask end, periodicTask is canceled",
+                    std::to_string(taskId_).c_str());
+        return;
+    }
     currentTaskInfo_ = pendingTaskInfos_.front();
     pendingTaskInfos_.pop_front();
     taskState_ = ExecuteState::WAITING;
@@ -1169,9 +1175,7 @@ void Task::CancelPendingTask(napi_env env)
 bool Task::UpdateTask(uint64_t startTime, void* worker)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s UpdateTask", std::to_string(taskId_).c_str());
-    if (taskState_ != ExecuteState::CANCELED) {
-        taskState_ = ExecuteState::RUNNING;
-    }
+    UpdateTaskStateToRunning();
     startTime_ = startTime;
     worker_ = worker;
     return true;
@@ -1872,5 +1876,87 @@ uint32_t Task::GetTaskId() const
 bool Task::IsRealyCanceled()
 {
     return taskState_ == ExecuteState::CANCELED && isCancelToFinish_;
+}
+
+bool Task::UpdateTaskStateToWaiting()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (IsAsyncRunnerTask() || IsSeqRunnerTask()) {
+        if (taskState_ == ExecuteState::NOT_FOUND) {
+            taskState_ = ExecuteState::WAITING;
+            return true;
+        }
+        return false;
+    }
+    if (IsPeriodicTask()) {
+        if (taskState_ == ExecuteState::NOT_FOUND || taskState_ == ExecuteState::FINISHED) {
+            taskState_ = ExecuteState::WAITING;
+            return true;
+        }
+        return false;
+    }
+    if (taskState_ == ExecuteState::NOT_FOUND || taskState_ == ExecuteState::FINISHED ||
+        IsRealyCanceled()) {
+        taskState_ = ExecuteState::WAITING;
+        return true;
+    }
+    return false;
+}
+
+bool Task::UpdateTaskStateToRunning()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (taskState_ != ExecuteState::CANCELED) {
+        taskState_ = ExecuteState::RUNNING;
+        return true;
+    }
+    return false;
+}
+
+bool Task::UpdateTaskStateToCanceled()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (IsPeriodicTask()) {
+        taskState_ = ExecuteState::CANCELED;
+        return true;
+    }
+    if (taskState_ == ExecuteState::NOT_FOUND || taskState_ == ExecuteState::FINISHED ||
+        taskState_ == ExecuteState::CANCELED || taskState_ == ExecuteState::ENDING) {
+        taskState_ = ExecuteState::WAITING;
+        return false;
+    }
+    taskState_ = ExecuteState::CANCELED;
+    return true;
+}
+
+bool Task::UpdateTaskStateToFinished()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (taskState_ == ExecuteState::ENDING) {
+        taskState_ = ExecuteState::FINISHED;
+        return true;
+    }
+    return false;
+}
+
+bool Task::UpdateTaskStateToDelayed()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (!IsExecuted() || IsRealyCanceled() || taskState_ == ExecuteState::FINISHED) {
+        taskState_ = ExecuteState::DELAYED;
+        return true;
+    }
+    return false;
+}
+
+bool Task::UpdateTaskStateToEnding()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (taskState_ == ExecuteState::RUNNING ||
+        (taskState_ == ExecuteState::CANCELED && !IsPeriodicTask())) {
+        taskState_ = ExecuteState::ENDING;
+        return true;
+    }
+    return false;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

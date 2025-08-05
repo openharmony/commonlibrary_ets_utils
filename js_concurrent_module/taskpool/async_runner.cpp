@@ -215,7 +215,7 @@ void AsyncRunner::ExecuteTaskImmediately(AsyncRunner* asyncRunner, Task* task)
                 std::to_string(task->taskId_).c_str(), std::to_string(asyncRunner->asyncRunnerId_).c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
-    task->taskState_ = ExecuteState::WAITING;
+    task->UpdateTaskStateToWaiting();
     TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->asyncTaskPriority_);
 }
 
