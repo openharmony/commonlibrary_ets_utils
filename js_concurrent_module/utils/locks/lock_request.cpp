@@ -156,10 +156,6 @@ bool LockRequest::AbortIfNeeded()
 void LockRequest::TimeoutCallback(uv_timer_t *handle)
 {
     LockRequest *lockRequest = static_cast<LockRequest *>(handle->data);
-    if (!lockRequest->lock_->CleanUpLockRequest(lockRequest)) {
-        return;
-    }
-    lockRequest->RemoveEnvCleanupHook();
 
     // Check deadlocks and form the rejector value with or w/o the warning. It is required to be done
     // first in order to obtain the actual data.
@@ -173,6 +169,12 @@ void LockRequest::TimeoutCallback(uv_timer_t *handle)
     // We might have the race with the lock acquirer function here and the request will be
     // already deleted if the race is won by the acquirer. So we should firstly make sure that
     // the race is won by us and then call the request's methods
+
+    if (!lockRequest->lock_->CleanUpLockRequest(lockRequest)) {
+        return;
+    }
+    lockRequest->RemoveEnvCleanupHook();
+
     lockRequest->HandleRequestTimeout(std::move(error));
 
     AsyncLock *lock = lockRequest->lock_;
