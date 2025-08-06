@@ -561,12 +561,14 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     HITRACE_HELPER_METER_NAME(strTrace);
     std::string taskLog = "Task Allocation: " + std::to_string(task->taskId_)
         + ", " + std::to_string(priority);
-    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     if (task->UpdateTaskStateToWaiting()) {
+        HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
         task->isCancelToFinish_ = false;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
+    } else {
+        HILOG_WARN("taskpool:: %{public}s, not enqueue", taskLog.c_str());
     }
 }
 
