@@ -468,8 +468,8 @@ void TaskPool::TriggerTask(Task* task)
     // seqRunnerTask will trigger the next
     if (task->IsSeqRunnerTask()) {
         if (!SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
-            HILOG_ERROR("taskpool:: task %{public}s trigger in seqRunner %{public}s failed",
-                        std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
+            HILOG_WARN("taskpool:: task %{public}s trigger in seqRunner %{public}s failed",
+                std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
         }
     } else if (task->IsCommonTask()) {
         task->NotifyPendingTask();
