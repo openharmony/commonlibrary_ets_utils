@@ -2812,7 +2812,7 @@ void Worker::HostOnAllErrorsInner()
     napi_value callback = NapiHelper::GetNameProperty(hostEnv_, obj, "onAllErrors");
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
     if (!isCallable) {
-        HILOG_INFO("worker:: worker may not register onAllErrors.");
+        HILOG_DEBUG("worker:: worker may not register onAllErrors.");
         exceptionQueue_.Clear(hostEnv_);
         return;
     }
