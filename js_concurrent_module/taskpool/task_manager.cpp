@@ -134,13 +134,13 @@ TaskManager::~TaskManager()
     CountTraceForWorker();
 }
 
-void TaskManager::CountTraceForWorker()
+void TaskManager::CountTraceForWorker(bool needLog)
 {
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
-    CountTraceForWorkerWithoutLock();
+    CountTraceForWorkerWithoutLock(needLog);
 }
 
-inline void TaskManager::CountTraceForWorkerWithoutLock()
+inline void TaskManager::CountTraceForWorkerWithoutLock(bool needLog)
 {
     int64_t threadNum = static_cast<int64_t>(workers_.size());
     int64_t idleWorkers = static_cast<int64_t>(idleWorkers_.size());
@@ -149,6 +149,7 @@ inline void TaskManager::CountTraceForWorkerWithoutLock()
     HITRACE_HELPER_COUNT_TRACE("threadNum", threadNum);
     HITRACE_HELPER_COUNT_TRACE("runningThreadNum", threadNum - idleWorkers);
     HITRACE_HELPER_COUNT_TRACE("idleThreadNum", idleWorkers);
+    AddCountTraceForWorkerLog(needLog, threadNum, idleWorkers, timeoutWorkers);
 }
 
 napi_value TaskManager::GetThreadInfos(napi_env env)
@@ -483,7 +484,6 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     uint32_t workerCount = workers_.size();
     uint32_t minThread = ConcurrentHelper::IsLowMemory() ? 0 : DEFAULT_MIN_THREADS;
-    CheckTasksAndReportHisysEvent();
     // update the maxThreads_ periodically
     maxThreads_ = ConcurrentHelper::GetMaxThreads();
     if (minThread == 0) {
@@ -541,7 +541,7 @@ void TaskManager::TriggerLoadBalance([[maybe_unused]] const uv_timer_t* req)
     taskManager.CheckForBlockedWorkers();
     uint32_t targetNum = taskManager.ComputeSuitableThreadNum();
     taskManager.NotifyShrink(targetNum);
-    taskManager.CountTraceForWorker();
+    taskManager.CountTraceForWorker(true);
 }
 
 void TaskManager::DispatchAndTryExpand([[maybe_unused]] const uv_async_t* req)
@@ -574,6 +574,7 @@ template <bool needCheckIdle>
 void TaskManager::TryExpandWithCheckIdle()
 {
     if (GetNonIdleTaskNum() == 0) {
+        HILOG_INFO("taskpool:: no need to create worker");
         return;
     }
 
@@ -912,6 +913,11 @@ void TaskManager::NotifyExecuteTask()
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
         // When there are only idle tasks and workers executing them, it is not triggered
+        HILOG_INFO("taskpool:: not notify execute task");
+        return;
+    }
+    if (idleWorkers_.size() == 0) {
+        HILOG_INFO("taskpool:: idleWorkers is 0");
         return;
     }
 
@@ -1730,5 +1736,15 @@ bool TaskManager::IsPerformIdle() const
 uint32_t TaskManager::GetTotalTaskNum() const
 {
     return totalTaskNum_;
+}
+
+void TaskManager::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int64_t idleThreadNum,
+                                            int64_t timeoutThreadNum)
+{
+    if (needLog) {
+        HILOG_INFO("taskpool:: threads: %{public}s, running: %{public}s, idle: %{public}s, timeout: %{public}s",
+            std::to_string(threadNum).c_str(), std::to_string(threadNum - idleThreadNum).c_str(),
+            std::to_string(idleThreadNum).c_str(), std::to_string(timeoutThreadNum).c_str());
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

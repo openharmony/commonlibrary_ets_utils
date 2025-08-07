@@ -6821,3 +6821,19 @@ HWTEST_F(NativeEngineTest, TaskpoolTest332, testing::ext::TestSize.Level0)
     ASSERT_FALSE(flag);
     delete task;
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest333, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value napiTask = CreateTaskObject(env, TaskType::TASK, ExecuteState::RUNNING, true);
+    napi_value argv[] = {napiTask};
+    napi_value result = NativeEngineTest::Execute(env, argv, 1);
+    ASSERT_TRUE(result != nullptr);
+    Task* task = nullptr;
+    napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
