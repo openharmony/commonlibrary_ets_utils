@@ -411,25 +411,9 @@ void TaskPool::HandleTaskResultInner(Task* task)
     napi_status status = napi_deserialize(task->env_, task->result_, &napiTaskResult);
     napi_delete_serialization_data(task->env_, task->result_);
 
-    // tag for trace parse: Task PerformTask End
-    std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
-    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
-    if (task->taskState_ == ExecuteState::CANCELED) {
-        strTrace += ", performResult : IsCanceled";
-        napiTaskResult = task->IsAsyncRunnerTask() ? TaskManager::GetInstance().CancelError(task->env_,
-            ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, nullptr, napiTaskResult, task->success_) :
-            TaskManager::GetInstance().CancelError(task->env_, 0, nullptr, napiTaskResult, task->success_);
-    } else if (status != napi_ok) {
-        strTrace += ", performResult : DeserializeFailed";
-        taskLog += ", DeserializeFailed";
-    } else if (task->success_) {
-        strTrace += ", performResult : Successful";
-    } else {
-        strTrace += ", performResult : Unsuccessful";
-        taskLog += ", Unsuccessful";
-    }
-    HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
+    bool isCancel = false;
+    RecordTaskResultLog(task, status, napiTaskResult, isCancel);
+
     if (napiTaskResult == nullptr) {
         napi_get_undefined(task->env_, &napiTaskResult);
     }
@@ -454,10 +438,10 @@ void TaskPool::HandleTaskResultInner(Task* task)
         }
     }
     NAPI_CALL_RETURN_VOID(task->env_, napi_close_handle_scope(task->env_, scope));
-    TriggerTask(task);
+    TriggerTask(task, isCancel);
 }
 
-void TaskPool::TriggerTask(Task* task)
+void TaskPool::TriggerTask(Task* task, bool isCancel)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s TriggerTask", std::to_string(task->taskId_).c_str());
     if (task->IsGroupTask()) {
@@ -472,6 +456,9 @@ void TaskPool::TriggerTask(Task* task)
                         std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
         }
     } else if (task->IsCommonTask()) {
+        if (!isCancel) {
+            TaskManager::GetInstance().NotifyDependencyTaskInfo(task->taskId_);
+        }
         task->NotifyPendingTask();
     } else if (task->IsAsyncRunnerTask()) {
         if (!AsyncRunnerManager::GetInstance().TriggerAsyncRunner(task->env_, task)) {
@@ -643,30 +630,29 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
         HILOG_DEBUG("taskpool:: the current task is not a periodic task");
         return;
     } else if (task->taskState_ == ExecuteState::CANCELED) {
-        HILOG_DEBUG("taskpool:: the periodic task has been canceled");
-        napi_reference_unref(task->env_, task->taskRef_, nullptr);
-        task->CancelPendingTask(task->env_);
-        uv_timer_stop(task->timer_);
-        ConcurrentHelper::UvHandleClose(task->timer_);
+        if (task->currentTaskInfo_ == nullptr) {
+            HILOG_DEBUG("taskpool:: the periodic task has been canceled");
+            napi_reference_unref(task->env_, task->taskRef_, nullptr);
+            task->CancelPendingTask(task->env_);
+            uv_timer_stop(task->timer_);
+            ConcurrentHelper::UvHandleClose(task->timer_);
+        }
         return;
     }
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
 
-    if (!task->isFirstTaskInfo_) {
-        napi_status status = napi_ok;
-        HandleScope scope(task->env_, status);
-        if (status != napi_ok) {
-            HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
-            return;
-        }
-        napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
-        TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, task->periodicTaskPriority_);
-        if (taskInfo == nullptr) {
-            HILOG_DEBUG("taskpool:: the periodic task taskInfo is nullptr");
-            return;
-        }
+    napi_status status = napi_ok;
+    HandleScope scope(task->env_, status);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+        return;
     }
-    task->isFirstTaskInfo_ = false;
+    napi_value napiTask = NapiHelper::GetReferenceValue(task->env_, task->taskRef_);
+    TaskInfo* taskInfo = task->GetTaskInfo(task->env_, napiTask, task->periodicTaskPriority_);
+    if (taskInfo == nullptr) {
+        HILOG_DEBUG("taskpool:: the periodic task taskInfo is nullptr");
+        return;
+    }
 
     task->IncreaseRefCount();
     HILOG_INFO("taskpool:: PeriodicTaskCallback taskId %{public}s", std::to_string(task->taskId_).c_str());
@@ -691,12 +677,17 @@ napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo
 
     periodicTask->periodicTaskPriority_ = static_cast<Priority>(priority);
     napi_value napiTask = NapiHelper::GetReferenceValue(env, periodicTask->taskRef_);
-    TaskInfo* taskInfo = periodicTask->GetTaskInfo(env, napiTask, periodicTask->periodicTaskPriority_);
-    if (taskInfo == nullptr) {
+    auto [func, args, transferList, cloneList] = Task::GetSerializeParams(env, napiTask);
+    if (func == nullptr || args == nullptr) {
         return nullptr;
     }
-
-    periodicTask->isFirstTaskInfo_ = true; // periodic task first Generate TaskInfo
+    std::tuple<napi_value, napi_value, bool, bool> params = {
+        transferList, cloneList, periodicTask->defaultTransfer_, periodicTask->defaultCloneSendable_
+    };
+    auto [serFunction, serArguments] = Task::GetSerializeResult(env, func, args, params);
+    if (serFunction == nullptr || serArguments == nullptr) { // LOCV_EXCL_BR_LINE
+        return nullptr;
+    }
 
     TriggerTimer(env, periodicTask, period);
     return nullptr;
@@ -810,5 +801,29 @@ bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, 
     }
     
     return true;
+}
+
+void TaskPool::RecordTaskResultLog(Task* task, napi_status status, napi_value& napiTaskResult, bool& isCancel)
+{
+    // tag for trace parse: Task PerformTask End
+    std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
+    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
+    if (task->taskState_ == ExecuteState::CANCELED) {
+        strTrace += ", performResult : IsCanceled";
+        napiTaskResult = task->IsAsyncRunnerTask() ? TaskManager::GetInstance().CancelError(task->env_,
+            ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, nullptr, napiTaskResult, task->success_) :
+            TaskManager::GetInstance().CancelError(task->env_, 0, nullptr, napiTaskResult, task->success_);
+        isCancel = true;
+    } else if (status != napi_ok) {
+        strTrace += ", performResult : DeserializeFailed";
+        taskLog += ", DeserializeFailed";
+    } else if (task->success_) {
+        strTrace += ", performResult : Successful";
+    } else {
+        strTrace += ", performResult : Unsuccessful";
+        taskLog += ", Unsuccessful";
+    }
+    HITRACE_HELPER_METER_NAME(strTrace);
+    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

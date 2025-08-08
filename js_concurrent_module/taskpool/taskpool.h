@@ -59,13 +59,14 @@ private:
     static void ExecuteTask(napi_env env, Task* task, Priority priority = Priority::DEFAULT);
     static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority);
 
-    static void TriggerTask(Task* task);
+    static void TriggerTask(Task* task, bool isCancel);
     static void TriggerTimer(napi_env env, Task* task, int32_t period);
     static bool CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint32_t& priority, int32_t& delayTime,
                                    Task*& task);
     static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t& period, uint32_t& priority,
                                         Task*& task);
     static void ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResultInfo* resultInfo);
+    static void RecordTaskResultLog(Task* task, napi_status status, napi_value& napiTaskResult, bool& isCancel);
     friend class TaskManager;
     friend class NativeEngineTest;
 };
