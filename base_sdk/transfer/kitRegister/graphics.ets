@@ -15,6 +15,6 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerGraphics() {
-    registerStaticCB('graphics.FontCollection', '@ohos.graphics.text', 'text', 'transferStatic');
-    registerDynamicCB('graphics.FontCollection', '@ohos.graphics.text', 'text', 'transferDynamic');
+    registerStaticCB('graphics.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferStatic');
+    registerDynamicCB('graphics.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferDynamic');
 }
