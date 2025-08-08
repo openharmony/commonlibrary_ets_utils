@@ -116,7 +116,7 @@ bool SequenceRunnerManager::TriggerSeqRunner(napi_env env, Task* lastTask)
         return false;
     }
     if (UnrefAndDestroyRunner(seqRunner)) {
-        HILOG_ERROR("taskpool:: trigger seqRunner is removed.");
+        HILOG_WARN("taskpool:: trigger seqRunner is removed.");
         return false;
     }
     if (seqRunner->currentTaskId_ != lastTask->taskId_) {
