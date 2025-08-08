@@ -131,7 +131,6 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
     napi_value argv[1];
     napi_get_cb_info(env, cbinfo, &argc, argv, nullptr, nullptr);
     if (argc < 1) {
-        HILOG_ERROR("the number of params must be one");
         return nullptr;
     }
 
@@ -151,7 +150,8 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         }
         TimerCallbackInfo* callbackInfo = iter->second;
         if (callbackInfo->env_ != env) {
-            HILOG_ERROR("Timer is deleting by another thread, please check js code. TimerID:%{public}u", tId);
+            HILOG_ERROR("The timer was not created in current thread and cannot be deleted, please check js code." \
+                " TimerID:%{public}u", tId);
         } else {
             timerTable.erase(tId);
             Helper::CloseHelp::DeletePointer(callbackInfo, false);
