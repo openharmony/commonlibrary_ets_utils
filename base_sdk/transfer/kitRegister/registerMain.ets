@@ -22,6 +22,7 @@ import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets'
 import { registerResourceManager } from './resourceManager.ets';
 import { registerRpc } from './rpc.ets';
+import { registerScene3D } from './scene3d.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -33,4 +34,5 @@ export function registerMain(){
     registerCommonEventManager();
     registerResourceManager();
     registerRpc();
+    registerScene3D();
 }
