@@ -33,6 +33,6 @@ static napi_module g_taskPoolModule = {
  */
 extern "C" __attribute__((constructor)) void TaskPoolRegister()
 {
-    HILOG_INFO("taskpool:: Import taskpool");
+    HILOG_DEBUG("taskpool:: Import taskpool");
     napi_module_register(&g_taskPoolModule);
 }

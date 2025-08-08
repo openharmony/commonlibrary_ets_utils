@@ -262,7 +262,7 @@ uint32_t TaskManager::ComputeSuitableIdleNum()
         uint32_t result = std::ceil(durationPerTask * GetNonIdleTaskNum() / MAX_TASK_DURATION);
         targetNum = std::min(result, GetNonIdleTaskNum());
     }
-    return targetNum;
+    return targetNum | 1;
 }
 
 void TaskManager::CheckForBlockedWorkers()
