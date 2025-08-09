@@ -23,6 +23,7 @@ import { registerCommonEventManager } from './basicServicesKit.ets'
 import { registerResourceManager } from './resourceManager.ets';
 import { registerRpc } from './rpc.ets';
 import { registerScene3D } from './scene3d.ets';
+import { registerImageKit } from './imageKit.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -35,4 +36,5 @@ export function registerMain(){
     registerResourceManager();
     registerRpc();
     registerScene3D();
+    registerImageKit();
 }
