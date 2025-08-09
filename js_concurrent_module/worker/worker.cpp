@@ -2867,8 +2867,6 @@ void Worker::DetachWorkerFromAniVm()
     if (status != ANI_OK) {
         HILOG_ERROR("worker:: DetachCurrentThread failed.");
     }
-    delete aniEnv_;
-    aniEnv_ = nullptr;
 }
 #endif
 

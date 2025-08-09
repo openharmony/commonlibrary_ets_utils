@@ -1739,8 +1739,6 @@ void TaskManager::DetachWorkerFromAniVm(Worker* worker)
     if (status != ANI_OK) {
         HILOG_ERROR("taskpool:: DetachCurrentThread failed.");
     }
-    delete worker->aniEnv_;
-    worker->aniEnv_ = nullptr;
 }
 #endif
 
