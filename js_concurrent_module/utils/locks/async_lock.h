@@ -64,6 +64,7 @@ public:
     }
 
 private:
+    bool CanAcquireLockUnsafe(LockMode mode);
     bool CanAcquireLock(LockMode mode);
     napi_value CreateLockInfo(napi_env env, const LockRequest *rq);
     template <bool isAsync>
