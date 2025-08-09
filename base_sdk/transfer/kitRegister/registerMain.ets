@@ -19,7 +19,8 @@ import { registerWindow } from './window.ets';
 import { registerAbilityKit } from './abilitykit.ets';
 import { registerOsAccount } from './osAccount.ets';
 import { registerArkWeb } from './arkweb.ets';
-import { registerCommonEventManager } from './basicServicesKit.ets'
+import { registerCommonEventManager } from './basicServicesKit.ets';
+import { registerResourceManager } from './resourceManager.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -29,4 +30,5 @@ export function registerMain(){
     registerOsAccount();
     registerArkWeb();
     registerCommonEventManager();
+    registerResourceManager();
 }
