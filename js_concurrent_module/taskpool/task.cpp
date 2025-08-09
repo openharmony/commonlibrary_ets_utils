@@ -264,22 +264,11 @@ napi_value Task::GetTaskInfoPromise(napi_env env, napi_value task, TaskType task
 
 TaskInfo* Task::GetTaskInfo(napi_env env, napi_value napiTask, Priority priority)
 {
-    napi_value func = NapiHelper::GetNameProperty(env, napiTask, FUNCTION_STR);
-    napi_value args = NapiHelper::GetNameProperty(env, napiTask, ARGUMENTS_STR);
+    auto [func, args, transferList, cloneList] = GetSerializeParams(env, napiTask);
     if (func == nullptr || args == nullptr) {
-        std::string errMessage = "taskpool:: task value is error";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
-    napi_value transferList = NapiHelper::GetUndefinedValue(env);
-    if (NapiHelper::HasNameProperty(env, napiTask, TRANSFERLIST_STR)) {
-        transferList = NapiHelper::GetNameProperty(env, napiTask, TRANSFERLIST_STR);
-    }
-    napi_value cloneList = NapiHelper::GetUndefinedValue(env);
-    if (NapiHelper::HasNameProperty(env, napiTask, CLONE_LIST_STR)) {
-        cloneList = NapiHelper::GetNameProperty(env, napiTask, CLONE_LIST_STR);
-    }
+
     TaskInfo* pendingInfo = GenerateTaskInfo(env, func, args, transferList, cloneList, priority,
                                              defaultTransfer_, defaultCloneSendable_);
     if (pendingInfo == nullptr) {
@@ -1077,29 +1066,13 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
                                  bool defaultTransfer, bool defaultCloneSendable)
 {
     HILOG_DEBUG("taskpool:: task GenerateTaskInfo");
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    void* serializationFunction = nullptr;
-    std::string errString = "";
-    napi_status status = napi_serialize_inner_with_error(env, func, undefined, undefined, defaultTransfer,
-                                                         defaultCloneSendable, &serializationFunction, errString);
-    std::string errMessage = "";
-    if (status != napi_ok || serializationFunction == nullptr) {
-        errMessage = "taskpool: failed to serialize function.\nSerialize error: " + errString;
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_CONCURRENT_FUNCTION, errMessage.c_str());
+    std::tuple<napi_value, napi_value, bool, bool> params = {
+        transferList, cloneList, defaultTransfer, defaultCloneSendable
+    };
+    auto [serializationFunction, serializationArguments] = GetSerializeResult(env, func, args, params);
+    if (serializationFunction == nullptr || serializationArguments == nullptr) {
         return nullptr;
     }
-    void* serializationArguments = nullptr;
-    errMessage = "";
-    status = napi_serialize_inner_with_error(env, args, transferList, cloneList, defaultTransfer,
-                                             defaultCloneSendable, &serializationArguments, errString);
-    if (status != napi_ok || serializationArguments == nullptr) {
-        errMessage = "taskpool: failed to serialize arguments.\nSerialize error: " + errString;
-        HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
-        return nullptr;
-    }
-
     TaskInfo* taskInfo = new TaskInfo();
     taskInfo->serializationFunction = serializationFunction;
     taskInfo->serializationArguments = serializationArguments;
@@ -1126,7 +1099,6 @@ bool Task::IsReadyToHandle() const
 void Task::NotifyPendingTask()
 {
     HILOG_DEBUG("taskpool:: task:%{public}s NotifyPendingTask", std::to_string(taskId_).c_str());
-    TaskManager::GetInstance().NotifyDependencyTaskInfo(taskId_);
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     delete currentTaskInfo_;
     if (pendingTaskInfos_.empty()) {
@@ -1958,5 +1930,55 @@ bool Task::UpdateTaskStateToEnding()
         return true;
     }
     return false;
+}
+
+std::tuple<napi_value, napi_value, napi_value, napi_value> Task::GetSerializeParams(napi_env env, napi_value napiTask)
+{
+    napi_value func = NapiHelper::GetNameProperty(env, napiTask, FUNCTION_STR);
+    napi_value args = NapiHelper::GetNameProperty(env, napiTask, ARGUMENTS_STR);
+    if (func == nullptr || args == nullptr) {
+        std::string errMessage = "taskpool:: task value is error";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return {nullptr, nullptr, nullptr, nullptr};
+    }
+    napi_value transferList = NapiHelper::GetUndefinedValue(env);
+    if (NapiHelper::HasNameProperty(env, napiTask, TRANSFERLIST_STR)) {
+        transferList = NapiHelper::GetNameProperty(env, napiTask, TRANSFERLIST_STR);
+    }
+    napi_value cloneList = NapiHelper::GetUndefinedValue(env);
+    if (NapiHelper::HasNameProperty(env, napiTask, CLONE_LIST_STR)) {
+        cloneList = NapiHelper::GetNameProperty(env, napiTask, CLONE_LIST_STR);
+    }
+    return {func, args, transferList, cloneList};
+}
+
+std::tuple<void*, void*> Task::GetSerializeResult(napi_env env, napi_value func, napi_value args,
+                                                  std::tuple<napi_value, napi_value, bool, bool> transferAndCloneParams)
+{
+    auto [transferList, cloneList, defaultTransfer, defaultCloneSendable] = transferAndCloneParams;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    void* serializationFunction = nullptr;
+    std::string errString = "";
+    napi_status status = napi_serialize_inner_with_error(env, func, undefined, undefined, defaultTransfer,
+                                                         defaultCloneSendable, &serializationFunction, errString);
+    std::string errMessage = "";
+    if (status != napi_ok || serializationFunction == nullptr) {
+        errMessage = "taskpool: failed to serialize function.\nSerialize error: " + errString;
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_CONCURRENT_FUNCTION, errMessage.c_str());
+        return {nullptr, nullptr};
+    }
+    void* serializationArguments = nullptr;
+    errMessage = "";
+    status = napi_serialize_inner_with_error(env, args, transferList, cloneList, defaultTransfer,
+                                             defaultCloneSendable, &serializationArguments, errString);
+    if (status != napi_ok || serializationArguments == nullptr) { // LOCV_EXCL_BR_LINE
+        errMessage = "taskpool: failed to serialize arguments.\nSerialize error: " + errString;
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, errMessage.c_str());
+        return {nullptr, nullptr};
+    }
+    return {serializationFunction, serializationArguments};
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

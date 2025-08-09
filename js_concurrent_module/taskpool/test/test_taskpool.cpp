@@ -6837,3 +6837,48 @@ HWTEST_F(NativeEngineTest, TaskpoolTest333, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest334, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskType_ = TaskType::COMMON_TASK;
+    task->taskState_ = ExecuteState::ENDING;
+    task->isPeriodicTask_ = true;
+    task->env_ = env;
+    task->taskId_ = 334;
+    void* data = reinterpret_cast<void*>(task);
+    NativeEngineTest::TriggerTask(data, false);
+    delete task;
+
+    Task* task2 = new Task();
+    task2->taskType_ = TaskType::COMMON_TASK;
+    task2->taskState_ = ExecuteState::ENDING;
+    task2->isPeriodicTask_ = true;
+    task2->env_ = env;
+    task2->taskId_ = 3341;
+    void* data2 = reinterpret_cast<void*>(task2);
+    NativeEngineTest::TriggerTask(data2, true);
+    delete task2;
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest335, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uv_timer_t* handle = new uv_timer_t;
+    Task* task = new Task();
+    task->isPeriodicTask_ = true;
+    task->taskState_ = ExecuteState::CANCELED;
+    task->env_ = env;
+    task->currentTaskInfo_ = new TaskInfo();
+    handle->data = task;
+    NativeEngineTest::PeriodicTaskCallback(handle);
+    delete handle;
+    delete task;
+    ASSERT_TRUE(true);
+}

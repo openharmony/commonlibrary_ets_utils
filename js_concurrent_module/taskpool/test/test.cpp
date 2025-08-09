@@ -1081,4 +1081,10 @@ void NativeEngineTest::SetTotalTaskNum(uint32_t num)
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.totalTaskNum_ = num;
 }
+
+void NativeEngineTest::TriggerTask(void* data, bool isCancel)
+{
+    Task* task = reinterpret_cast<Task*>(data);
+    TaskPool::TriggerTask(task, isCancel);
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

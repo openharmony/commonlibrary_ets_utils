@@ -22,6 +22,7 @@
 #include <set>
 #include <shared_mutex>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <uv.h>
 
@@ -207,6 +208,10 @@ public:
     bool UpdateTaskStateToFinished();
     bool UpdateTaskStateToDelayed();
     bool UpdateTaskStateToEnding();
+    static std::tuple<napi_value, napi_value, napi_value, napi_value> GetSerializeParams(napi_env env,
+                                                                                         napi_value napiTask);
+    static std::tuple<void*, void*> GetSerializeResult(napi_env env, napi_value func, napi_value args,
+        std::tuple<napi_value, napi_value, bool, bool> transferAndCloneParams);
 
 private:
     Task(const Task &) = delete;
@@ -252,8 +257,6 @@ public:
 
     // for periodic task
     bool isPeriodicTask_ {false};
-    // periodic task first Generate TaskInfo
-    std::atomic<bool> isFirstTaskInfo_ {false};
     uv_timer_t* timer_ {nullptr};
     Priority periodicTaskPriority_ {Priority::DEFAULT};
 
