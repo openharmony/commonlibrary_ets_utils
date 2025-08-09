@@ -17,4 +17,6 @@ import { registerStaticCB, registerDynamicCB } from '../register.ets';
 export function registerWindow() {
     registerStaticCB('window.WindowStage', '@ohos.window', 'window.WindowStageInternal', 'transferStatic');
     registerDynamicCB('window.WindowStage', '@ohos.window', 'window.WindowStageInternal', 'transferDynamic');
+    registerStaticCB('window.Window', '@ohos.window', 'window.WindowInternal', 'transferStatic');
+    registerDynamicCB('window.Window', '@ohos.window', 'window.WindowInternal', 'transferDynamic');
 }
