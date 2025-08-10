@@ -1539,11 +1539,12 @@ void Worker::ExecuteInThread(const void* data)
 bool Worker::IsPublishWorkerOverSignal()
 {
     std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
-    EraseWorker();
     if (HostIsStop() || isHostEnvExited_) {
         HILOG_INFO("worker:: host is stopped");
+        EraseWorker();
         return false;
     }
+    EraseWorker();
     PublishWorkerOverSignal();
     return true;
 }
