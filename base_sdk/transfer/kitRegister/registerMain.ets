@@ -24,6 +24,7 @@ import { registerResourceManager } from './resourceManager.ets';
 import { registerRpc } from './rpc.ets';
 import { registerScene3D } from './scene3d.ets';
 import { registerImageKit } from './imageKit.ets';
+import { registerPasteboard } from './pasteboard.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -37,4 +38,5 @@ export function registerMain(){
     registerRpc();
     registerScene3D();
     registerImageKit();
+    registerPasteboard();
 }
