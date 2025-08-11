@@ -466,7 +466,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     // update the maxThreads_ periodically
     maxThreads_ = ConcurrentHelper::GetMaxThreads();
     if (minThread == 0) {
-        HILOG_INFO("taskpool:: the system now is under low memory");
+        HILOG_INFO("taskpool:: low memory");
     }
     if (workerCount > minThread && workerCount > targetNum) {
         targetNum = std::max(minThread, targetNum);
