@@ -1082,6 +1082,13 @@ void NativeEngineTest::SetTotalTaskNum(uint32_t num)
     taskManager.totalTaskNum_ = num;
 }
 
+void NativeEngineTest::ExecuteOnReceiveDataCallback(void* callbackInfo, void* resultInfo)
+{
+    CallbackInfo* cbInfo = reinterpret_cast<CallbackInfo*>(callbackInfo);
+    TaskResultInfo* resInfo = reinterpret_cast<TaskResultInfo*>(resultInfo);
+    TaskPool::ExecuteOnReceiveDataCallback(cbInfo, resInfo);
+}
+
 void NativeEngineTest::TriggerTask(void* data, bool isCancel)
 {
     Task* task = reinterpret_cast<Task*>(data);

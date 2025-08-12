@@ -2048,9 +2048,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
-    Task* task = new Task();
-    uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
-    task->taskId_ = taskId;
+    Task* task1 = new Task();
+    uint32_t taskId1 = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
+    task1->taskId_ = taskId1;
 
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
@@ -2058,11 +2058,20 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
 
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     void* args = nullptr;
-    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, args);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId1, args);
+
+    NativeEngineTest::ExecuteOnReceiveDataCallback(cbInfo.get(), resultInfo);
 
     TaskManager& taskManager = TaskManager::GetInstance();
-    taskManager.RegisterCallback(env, taskId, cbInfo, "TaskpoolTest131");
-    taskManager.DecreaseSendDataRefCount(env, taskId);
+    taskManager.RegisterCallback(env, taskId1, cbInfo, "TaskpoolTest131-1");
+    taskManager.DecreaseSendDataRefCount(env, taskId1);
+
+    Task* task2 = new Task();
+    uint32_t taskId2 = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
+    task2->taskId_ = taskId2;
+
+    taskManager.RegisterCallback(env, taskId2, cbInfo, "TaskpoolTest131-2");
+    taskManager.DecreaseSendDataRefCount(env, taskId2);
     ASSERT_TRUE(true);
 }
 
