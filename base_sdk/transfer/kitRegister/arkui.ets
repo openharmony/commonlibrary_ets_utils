@@ -28,23 +28,23 @@ export function registerArkUI() {
     registerDynamicCB('ArkUI.Matrix4', '@ohos.matrix4', 'matrix4.Matrix4TransitInner', 'matrixTransferDynamic');
 
     registerStaticCB('ArkUI.Animator', '@ohos.animator', 'AnimatorResultInner', 'animatorTransferStatic');
-    registerDynamicCB('ArkUI.Animator', '@ohos.animator', 'AnimatorResultInner', 'animatorTransferDynamic'); 
- 
+    registerDynamicCB('ArkUI.Animator', '@ohos.animator', 'AnimatorResultInner', 'animatorTransferDynamic');
+
     registerStaticCB('ArkUI.FrameNode', 'arkui.handwritten.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.FrameNode', 'arkui.handwritten.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferDynamic');
-    
+
     registerStaticCB('ArkUI.UIContext', 'arkui.handwritten.transfer.UIContextTransfer', 'UIContextTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.UIContext', 'arkui.handwritten.transfer.UIContextTransfer', 'UIContextTransfer', 'transferDynamic');
-    
+
     registerStaticCB('ArkUI.LengthMetrics', 'arkui.handwritten.transfer.LengthMetricsTransfer', 'LengthMetricsTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.LengthMetrics', 'arkui.handwritten.transfer.LengthMetricsTransfer', 'LengthMetricsTransfer', 'transferDynamic');
-    
+
     registerStaticCB('ArkUI.ShapeClip', 'arkui.handwritten.transfer.ShapeClipTransfer', 'ShapeClipTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.ShapeClip', 'arkui.handwritten.transfer.ShapeClipTransfer', 'ShapeClipTransfer', 'transferDynamic');
-    
+
     registerStaticCB('ArkUI.ColorMetrics', 'arkui.handwritten.transfer.ColorMetricsTransfer', 'ColorMetricsTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.ColorMetrics', 'arkui.handwritten.transfer.ColorMetricsTransfer', 'ColorMetricsTransfer', 'transferDynamic');
-    
+
     registerStaticCB('ArkUI.ShapeMask', 'arkui.handwritten.transfer.ShapeMaskTransfer', 'ShapeMaskTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.ShapeMask', 'arkui.handwritten.transfer.ShapeMaskTransfer', 'ShapeMaskTransfer', 'transferDynamic');
 
@@ -83,4 +83,10 @@ export function registerArkUI() {
 
     registerStaticCB('ArkUI.ScrollableTargetInfo', 'arkui.component.gesture', 'ScrollableTargetInfoTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.ScrollableTargetInfo', 'arkui.component.gesture', 'ScrollableTargetInfoTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.DrawableDescriptor', '@ohos.arkui.drawableDescriptor', 'DrawableDescriptor', 'transferStatic');
+    registerDynamicCB('ArkUI.DrawableDescriptor', '@ohos.arkui.drawableDescriptor', 'DrawableDescriptor', 'transferDynamic');
+    
+    registerStaticCB('ArkUI.ColorFilter', 'arkui.component.units', 'ColorFilter', 'transferStatic');
+    registerDynamicCB('ArkUI.ColorFilter', 'arkui.component.units', 'ColorFilter', 'transferDynamic');
 }
