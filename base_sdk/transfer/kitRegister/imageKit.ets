@@ -32,4 +32,7 @@ export function registerImageKit() {
 
   registerStaticCB('ImageKit.ImageCreator', '@ohos.multimedia.image', 'image', 'imageCreatorTransferStatic');
   registerDynamicCB('ImageKit.ImageCreator', '@ohos.multimedia.image', 'image', 'imageCreatorTransferDynamic');
+
+  registerStaticCB('ImageKit.PixelMap', '@ohos.multimedia.image', 'image', 'pixelMapTransferStatic');
+  registerDynamicCB('ImageKit.PixelMap', '@ohos.multimedia.image', 'image', 'pixelMapTransferDynamic');
 }
