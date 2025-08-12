@@ -30,7 +30,8 @@ ani_vm* ANIHelper::GetAniVm()
 
 void ANIHelper::InitializeAniVm()
 {
-    const int flag = OHOS::system::GetIntParameter<int>("persist.commonlibrary.concurrencysupportinterop", 0);
+    // default support interop
+    const int flag = OHOS::system::GetIntParameter<int>("persist.commonlibrary.concurrencysupportinterop", 1);
     globalEnableConcurrencyInteropFlag = (flag != 0);
     const std::string logMsg = globalEnableConcurrencyInteropFlag
         ? "worker and taskpool support interop."
