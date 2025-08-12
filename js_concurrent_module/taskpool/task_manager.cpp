@@ -834,8 +834,15 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
         return;
     }
     task->IncreaseTaskLifecycleCount();
-    if (task->onEnqueuedCallBackInfo_ != nullptr) {
-        task->ExecuteListenerCallback(task->onEnqueuedCallBackInfo_, taskId);
+    ListenerCallBackInfo* info = nullptr;
+    {
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        info = task->onEnqueuedCallBackInfo_;
+    }
+    if (info != nullptr) {
+        task->ExecuteListenerCallback(info, taskId);
+    } else { // LOCV_EXCL_BR_LINE
+        HILOG_WARN("taskpool:: onEnqueuedCallBackInfo is null");
     }
 }
 
@@ -1009,6 +1016,8 @@ void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_pt
     std::lock_guard<std::mutex> lock(callbackMutex_);
     if (callbackInfo != nullptr) {
         callbackInfo->type = type;
+    } else { // LOCV_EXCL_BR_LINE
+        HILOG_WARN("taskpool:: callbackInfo is null.");
     }
     callbackTable_[taskId] = callbackInfo;
 }

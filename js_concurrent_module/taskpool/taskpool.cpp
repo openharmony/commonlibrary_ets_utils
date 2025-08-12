@@ -107,8 +107,8 @@ void TaskPool::ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResu
 {
     ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
     napi_status status = napi_ok;
-    std::string traceLabel = "ExecuteOnReceiveDataCallback type: " + callbackInfo->type +
-                             ", taskId: " + std::to_string(resultInfo->taskId);
+    std::string traceLabel = "ExecuteOnReceiveDataCallback type: " + callbackInfo->type
+        + ", taskId: " + std::to_string(resultInfo->taskId);
     HITRACE_HELPER_METER_NAME(traceLabel);
     auto env = callbackInfo->hostEnv;
     CallbackScope callbackScope(env, resultInfo, status);
@@ -519,7 +519,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
                 task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_, task->taskId_);
             }
         }
-    } else {
+    } else { // LOCV_EXCL_BR_LINE
         napi_value res = nullptr;
         napi_get_element(env, resArr, groupInfo->GetFailedIndex(), &res);
         napi_reject_deferred(env, groupInfo->deferred, res);
@@ -799,7 +799,7 @@ bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, 
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the second param must be task.");
         return false;
     }
-    
+
     return true;
 }
 

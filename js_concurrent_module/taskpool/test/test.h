@@ -99,6 +99,7 @@ public:
     static void DecreaseTaskNum();
     static void ResetPerformIdleState(napi_env env);
     static void SetTotalTaskNum(uint32_t num);
+    static void ExecuteOnReceiveDataCallback(void* callbackInfo, void* resultInfo);
     static void TriggerTask(void* data, bool isCancel);
 
     class ExceptionScope {
