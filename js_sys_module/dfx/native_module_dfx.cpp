@@ -101,7 +101,7 @@ namespace OHOS::JsSysModule::Dfx {
             HILOG_ERROR("can not get argv size");
             return nullptr;
         }
-        tempStr.reserve(tempStrsize);
+        tempStr.reserve(tempStrsize + 1);
         tempStr.resize(tempStrsize);
         if (napi_get_value_string_utf8(env, argv, tempStr.data(), tempStrsize + 1, &tempStrsize) != napi_ok) {
             HILOG_ERROR("can not get argv value");

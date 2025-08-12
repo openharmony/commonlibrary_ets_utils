@@ -35,6 +35,7 @@ namespace OHOS::Uri {
             std::string type = "";
             size_t typelen = 0;
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
+            type.reserve(typelen + 1);
             type.resize(typelen);
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type.data(), typelen + 1, &typelen));
             object = new (std::nothrow) Uri(type);
@@ -171,11 +172,13 @@ namespace OHOS::Uri {
         std::string key = "";
         size_t keyLen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &keyLen));
+        key.reserve(keyLen + 1);
         key.resize(keyLen);
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], key.data(), keyLen + 1, &keyLen));
         std::string value = "";
         size_t valueLen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], nullptr, 0, &valueLen));
+        value.reserve(valueLen + 1);
         value.resize(valueLen);
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], value.data(), valueLen + 1, &valueLen));
         std::string temp = muri->AddQueryValue(key, value);
@@ -200,6 +203,7 @@ namespace OHOS::Uri {
         std::string segment = "";
         size_t segmentLen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &segmentLen));
+        segment.reserve(segmentLen + 1);
         segment.resize(segmentLen);
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], segment.data(), segmentLen + 1, &segmentLen));
         std::string temp = muri->AddSegment(segment);
@@ -229,7 +233,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get scheme size");
             return nullptr;
         }
-        scheme.reserve(schemeLen);
+        scheme.reserve(schemeLen + 1);
         scheme.resize(schemeLen);
         if (napi_get_value_string_utf8(env, argv[0], scheme.data(), schemeLen + 1, &schemeLen) != napi_ok) {
             HILOG_ERROR("URI:: can not get scheme value");
@@ -262,7 +266,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get userInfo size");
             return nullptr;
         }
-        userInfo.reserve(userInfoLen);
+        userInfo.reserve(userInfoLen + 1);
         userInfo.resize(userInfoLen);
         if (napi_get_value_string_utf8(env, argv[0], userInfo.data(), userInfoLen + 1, &userInfoLen) != napi_ok) {
             HILOG_ERROR("URI:: can not get userInfo value");
@@ -295,7 +299,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get pathStr size");
             return nullptr;
         }
-        pathStr.reserve(pathLen);
+        pathStr.reserve(pathLen + 1);
         pathStr.resize(pathLen);
         if (napi_get_value_string_utf8(env, argv[0], pathStr.data(), pathLen + 1, &pathLen) != napi_ok) {
             HILOG_ERROR("URI:: can not get pathStr value");
@@ -328,7 +332,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get fragmentStr size");
             return nullptr;
         }
-        fragmentStr.reserve(fragmentLen);
+        fragmentStr.reserve(fragmentLen + 1);
         fragmentStr.resize(fragmentLen);
         if (napi_get_value_string_utf8(env, argv[0], fragmentStr.data(), fragmentLen + 1, &fragmentLen) != napi_ok) {
             HILOG_ERROR("URI:: can not get fragmentStr value");
@@ -361,7 +365,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get queryStr size");
             return nullptr;
         }
-        queryStr.reserve(queryLen);
+        queryStr.reserve(queryLen + 1);
         queryStr.resize(queryLen);
         if (napi_get_value_string_utf8(env, argv[0], queryStr.data(), queryLen + 1, &queryLen) != napi_ok) {
             HILOG_ERROR("URI:: can not get queryStr value");
@@ -394,7 +398,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get authorityStr size");
             return nullptr;
         }
-        authorityStr.reserve(authorityStrLen);
+        authorityStr.reserve(authorityStrLen + 1);
         authorityStr.resize(authorityStrLen);
         if (napi_get_value_string_utf8(env, argv[0], authorityStr.data(),
             authorityStrLen + 1, &authorityStrLen) != napi_ok) {
@@ -428,7 +432,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get authorityStr size");
             return nullptr;
         }
-        sspStr.reserve(sspStrLen);
+        sspStr.reserve(sspStrLen + 1);
         sspStr.resize(sspStrLen);
         if (napi_get_value_string_utf8(env, argv[0], sspStr.data(), sspStrLen + 1, &sspStrLen) != napi_ok) {
             HILOG_ERROR("URI:: can not get authorityStr value");
