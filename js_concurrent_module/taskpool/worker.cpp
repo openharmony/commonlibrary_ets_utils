@@ -90,7 +90,7 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 
     TaskManager::GetInstance().RemoveWorker(worker);
     HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
-    HILOG_INFO("taskpool:: the thread is idle and will be released, and the total num is %{public}u now",
+    HILOG_INFO("taskpool:: release idle thread, total num is %{public}u",
         TaskManager::GetInstance().GetThreadNum());
     // when there is no active handle, worker loop will stop automatically.
     worker->CloseHandles();

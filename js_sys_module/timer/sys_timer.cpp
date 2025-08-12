@@ -155,7 +155,7 @@ napi_value Timer::ClearTimer(napi_env env, napi_callback_info cbinfo)
         } else {
             timerTable.erase(tId);
             Helper::CloseHelp::DeletePointer(callbackInfo, false);
-            HILOG_INFO("DeleteTimer ID: %{public}u, count: %{public}u", tId, ++deleteTimerCount);
+            HILOG_INFO("ID: %{public}u, cnt: %{public}u", tId, ++deleteTimerCount);
 #ifdef ENABLE_HITRACE_HELPER_METER
             HITRACE_HELPER_METER_NAME("DeleteTimer ID: " + std::to_string(tId) + ", count: "
                 + std::to_string(deleteTimerCount));
