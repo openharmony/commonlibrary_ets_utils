@@ -126,7 +126,7 @@ ohos_source_set("timer_static") {
 
   if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {
     if (is_arkui_x) {
-      deps += [ "$ace_root/frameworks/core:ace_container_scope_static" ]
+      deps += [ "ace_engine:ace_container_scope_static" ]
     } else {
       external_deps += [ "ace_engine:ace_container_scope" ]
       external_deps += [ "hitrace:hitrace_meter" ]
