@@ -1079,10 +1079,10 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         if (worker->isMainThreadWorker_ && !worker->isLimitedWorker_) {
             worker->PostWorkerGlobalCallTask();
         } else {
-            uv_async_send(worker->hostOnGlobalCallSignal_);
+            ConcurrentHelper::UvCheckAndAsyncSend(worker->hostOnGlobalCallSignal_);
         }
 #else
-        uv_async_send(worker->hostOnGlobalCallSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(worker->hostOnGlobalCallSignal_);
 #endif
     } else {
         HILOG_ERROR("worker:: worker host engine is nullptr when callGloballCallObjectMethod.");
@@ -1521,7 +1521,7 @@ void Worker::ExecuteInThread(const void* data)
 #endif
         worker->UpdateWorkerState(RUNNING);
         // in order to invoke worker send before subThread start
-        uv_async_send(worker->workerOnMessageSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(worker->workerOnMessageSignal_);
         HITRACE_HELPER_FINISH_TRACE;
         // 3. start worker loop
         worker->Loop();
@@ -1544,7 +1544,6 @@ bool Worker::IsPublishWorkerOverSignal()
         EraseWorker();
         return false;
     }
-    EraseWorker();
     PublishWorkerOverSignal();
     return true;
 }
@@ -1648,6 +1647,7 @@ void Worker::HostOnMessageInner()
         // receive close signal.
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker received close signal");
+            liveStatusLock_.lock();
 #if defined(ENABLE_WORKER_EVENTHANDLER)
             if ((!isMainThreadWorker_ || isLimitedWorker_) && !isHostEnvExited_) {
                 CloseHostHandle();
@@ -1657,6 +1657,7 @@ void Worker::HostOnMessageInner()
                 CloseHostHandle();
             }
 #endif
+            liveStatusLock_.unlock();
             CloseHostCallback();
             return;
         }
@@ -2088,6 +2089,7 @@ void Worker::TerminateWorker()
 void Worker::PublishWorkerOverSignal()
 {
     if (HostIsStop()) {
+        EraseWorker();
         return;
     }
     // post nullptr tell host worker is not running
@@ -2096,11 +2098,12 @@ void Worker::PublishWorkerOverSignal()
     if (isMainThreadWorker_ && !isLimitedWorker_) {
         PostWorkerOverTask();
     } else {
-        uv_async_send(hostOnMessageSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
     }
 #else
-    uv_async_send(hostOnMessageSignal_);
+    ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
 #endif
+    EraseWorker();
 }
 
 #if defined(ENABLE_WORKER_EVENTHANDLER)
@@ -2326,10 +2329,10 @@ void Worker::HandleUncaughtException(napi_value exception)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             PostWorkerErrorTask();
         } else {
-            uv_async_send(hostOnErrorSignal_);
+            ConcurrentHelper::UvCheckAndAsyncSend(hostOnErrorSignal_);
         }
 #else
-        uv_async_send(hostOnErrorSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(hostOnErrorSignal_);
 #endif
     }
 }
@@ -2351,10 +2354,10 @@ void Worker::PostMessageToHostInner(MessageDataType data)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             PostWorkerMessageTask();
         } else {
-            uv_async_send(hostOnMessageSignal_);
+            ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
         }
 #else
-        uv_async_send(hostOnMessageSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
 #endif
     } else {
         HILOG_ERROR("worker:: worker host engine is nullptr when PostMessageToHostInner.");
@@ -2665,7 +2668,7 @@ void Worker::DebuggerOnPostTask(std::function<void()>&& task)
     if (ConcurrentHelper::IsUvActive(debuggerOnPostTaskSignal_)) {
         std::lock_guard<std::mutex> lock(debuggerMutex_);
         debuggerQueue_.push(std::move(task));
-        uv_async_send(debuggerOnPostTaskSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(debuggerOnPostTaskSignal_);
     }
 }
 #endif
@@ -2682,15 +2685,19 @@ void Worker::CloseHostHandle()
 {
     if (ConcurrentHelper::IsUvActive(hostOnMessageSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnMessageSignal_);
+        hostOnMessageSignal_ = nullptr;
     }
     if (ConcurrentHelper::IsUvActive(hostOnErrorSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnErrorSignal_);
+        hostOnErrorSignal_ = nullptr;
     }
     if (ConcurrentHelper::IsUvActive(hostOnAllErrorsSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnAllErrorsSignal_);
+        hostOnAllErrorsSignal_ = nullptr;
     }
     if (ConcurrentHelper::IsUvActive(hostOnGlobalCallSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
+        hostOnGlobalCallSignal_ = nullptr;
     }
 }
 
@@ -2786,10 +2793,10 @@ void Worker::HandleWorkerUncaughtException(napi_env env, napi_value exception)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             PostWorkerExceptionTask();
         } else {
-            uv_async_send(hostOnAllErrorsSignal_);
+            ConcurrentHelper::UvCheckAndAsyncSend(hostOnAllErrorsSignal_);
         }
 #else
-        uv_async_send(hostOnAllErrorsSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(hostOnAllErrorsSignal_);
 #endif
     }
 }
