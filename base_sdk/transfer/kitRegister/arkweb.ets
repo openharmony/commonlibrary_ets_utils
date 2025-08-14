@@ -68,4 +68,7 @@ export function registerArkWeb() {
 
     registerStaticCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerStatic');
     registerDynamicCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerDynamic');
+
+    registerStaticCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToStatic');
+    registerDynamicCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToDynamic');
 }
