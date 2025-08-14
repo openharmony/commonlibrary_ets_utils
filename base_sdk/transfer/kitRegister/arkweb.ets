@@ -60,6 +60,12 @@ export function registerArkWeb() {
     registerStaticCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToStatic');
     registerDynamicCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToDynamic');
 
+    registerStaticCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToStatic');
+    registerDynamicCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToDynamic');
+
+    registerStaticCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToStatic');
+    registerDynamicCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToDynamic');
+
     registerStaticCB('ArkWeb.PermissionRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferPermissionRequestStatic');
     registerDynamicCB('ArkWeb.PermissionRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferPermissionRequestDynamic');
 
