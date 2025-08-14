@@ -1577,7 +1577,7 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
-        auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
+        DequeuePendingTaskInfo(*taskIdIter);
         RemoveDependencyById(taskId, *taskIdIter);
         auto id = *taskIdIter;
         taskIdIter = iter->second.erase(taskIdIter);
@@ -1585,10 +1585,18 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
         if (task == nullptr) {
             continue;
         }
-        if (task->currentTaskInfo_ != nullptr) {
-            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
+        // 1. The task is in taskQueues_, need remove.
+        // 2. The task has not been executed yet, need remove.
+        if (task->currentTaskInfo_ != nullptr && EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {
+            delete task->currentTaskInfo_;
+            task->currentTaskInfo_ = nullptr;
         }
-        task->DisposeCanceledTask();
+        if (task->currentTaskInfo_ == nullptr) {
+            reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
+            task->DecreaseTaskLifecycleCount();
+            DecreaseSendDataRefCount(task->env_, task->taskId_, task);
+            napi_reference_unref(task->env_, task->taskRef_, nullptr);
+        }
         RemoveDependentTaskByTaskId(task->taskId_);
     }
 }
