@@ -17,4 +17,12 @@ import { registerStaticCB, registerDynamicCB } from '../register.ets';
 export function registerGraphics() {
     registerStaticCB('graphics.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferStatic');
     registerDynamicCB('graphics.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferDynamic');
+    registerStaticCB('graphics.ParagraphBuilder', '@ohos.graphics.text', 'text.ParagraphBuilder', 'transferStatic');
+    registerDynamicCB('graphics.ParagraphBuilder', '@ohos.graphics.text', 'text.ParagraphBuilder', 'transferDynamic');
+    registerStaticCB('graphics.Paragraph', '@ohos.graphics.text', 'text.Paragraph', 'transferStatic');
+    registerDynamicCB('graphics.Paragraph', '@ohos.graphics.text', 'text.Paragraph', 'transferDynamic');
+    registerStaticCB('graphics.TextLine', '@ohos.graphics.text', 'text.TextLine', 'transferStatic');
+    registerDynamicCB('graphics.TextLine', '@ohos.graphics.text', 'text.TextLine', 'transferDynamic');
+    registerStaticCB('graphics.Run', '@ohos.graphics.text', 'text.Run', 'transferStatic');
+    registerDynamicCB('graphics.Run', '@ohos.graphics.text', 'text.Run', 'transferDynamic');
 }
