@@ -156,6 +156,10 @@ public:
     void SetIsPerformIdle(bool performIdle);
     bool IsPerformIdle() const;
 
+    // for taskpool support interop
+    void AttachWorkerToAniVm(Worker* worker);
+    void DetachWorkerFromAniVm(Worker* worker);
+
 private:
     TaskManager();
     ~TaskManager();

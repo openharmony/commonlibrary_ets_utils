@@ -14,7 +14,7 @@
  */
 
 export class BusinessError<T = void> extends Error {
-    code: number;
+    code: int;
     data?: T;
 
     constructor() {
@@ -22,12 +22,12 @@ export class BusinessError<T = void> extends Error {
         this.code = 0;
     }
 
-    constructor(code: number, error: Error) {
+    constructor(code: int, error: Error) {
         super(error.name, error.message, {cause: error.cause as Object} as ErrorOptions);
         this.code = code;
     }
 
-    constructor(code: number, data: T, error: Error) {
+    constructor(code: int, data: T, error: Error) {
         super(error.name, error.message, {cause: error.cause as Object} as ErrorOptions);
         this.code = code;
         this.data = data;
