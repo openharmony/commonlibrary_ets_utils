@@ -56,10 +56,13 @@ ohos_unittest("test_taskpool_unittest") {
     defines = [
       "ENABLE_TASKPOOL_FFRT",
       "ENABLE_TASKPOOL_HISYSEVENT",
+      "ENABLE_CONCURRENCY_INTEROP",
     ]
     external_deps += [
       "ffrt:libffrt",
       "hisysevent:libhisysevent",
+      "runtime_core:ani",
+      "runtime_core:libarkruntime",
     ]
   }
 }

@@ -72,6 +72,9 @@ export function registerArkWeb() {
     registerStaticCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToStatic');
     registerDynamicCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToDynamic');
 
-    registerStaticCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToStatitc');
+    registerStaticCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToStatic');
     registerDynamicCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToDynamic');
+
+    registerStaticCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToStatic');
+    registerDynamicCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToDynamic');
 }

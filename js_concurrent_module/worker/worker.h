@@ -21,6 +21,9 @@
 #include <map>
 #include <mutex>
 
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "helper/hybrid_concurrent_helper.h"
+#endif
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "message_queue.h"
@@ -587,6 +590,9 @@ private:
 
     void ClearHostMessage(napi_env env);
 
+    void AttachWorkerEnvToAniVm();
+    void DetachWorkerFromAniVm();
+
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
     void DebuggerOnPostTask(std::function<void()>&& task);
@@ -660,6 +666,10 @@ private:
     std::shared_ptr<WorkerWrapper> workerWrapper_ = nullptr;
     WorkerPriority workerPriority_ = WorkerPriority::INVALID;
     std::function<void()> qosUpdatedCallback_;
+
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    ani_env* aniEnv_ = nullptr;
+#endif
 
     friend class WorkersTest;
 };
