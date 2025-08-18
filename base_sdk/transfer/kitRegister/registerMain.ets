@@ -21,6 +21,8 @@ import { registerOsAccount } from './osAccount.ets';
 import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets';
 import { registerResourceManager } from './resourceManager.ets';
+import { registerDisplay } from './display.ets';
+import { registerScreen } from './screen.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -31,4 +33,6 @@ export function registerMain(){
     registerArkWeb();
     registerCommonEventManager();
     registerResourceManager();
+    registerDisplay();
+    registerScreen();
 }
