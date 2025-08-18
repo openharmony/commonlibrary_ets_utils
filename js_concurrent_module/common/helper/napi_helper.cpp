@@ -321,7 +321,10 @@ napi_value NapiHelper::CreateObject(napi_env env)
 napi_value NapiHelper::CreatePromise(napi_env env, napi_deferred* deferred)
 {
     napi_value promise = nullptr;
-    napi_create_promise(env, deferred, &promise);
+    napi_status status = napi_create_promise(env, deferred, &promise);
+    if (status != napi_ok || !IsNotUndefined(env, promise)) {
+        return nullptr;
+    }
     return promise;
 }
 

@@ -234,6 +234,16 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     napi_value promise = NapiHelper::CreatePromise(env, &task->currentTaskInfo_->deferred);
+    if (promise == nullptr) { // LOCV_EXCL_BR_LINE
+        task->ReleaseData();
+        TaskManager::GetInstance().RemoveTask(task->GetTaskId());
+        delete task;
+        task = nullptr;
+        std::string err = "create promise failed, maybe has exception.";
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        HILOG_ERROR("taskpool:: Execute %{public}s", err.c_str());
+        return nullptr;
+    }
     ExecuteTask(env, task);
     return promise;
 }
@@ -302,14 +312,22 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     task->UpdateTaskStateToDelayed();
     task->UpdateTaskType(TaskType::COMMON_TASK);
 
-    uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    uv_update_time(loop);
-    uv_timer_t* timer = new uv_timer_t;
-    uv_timer_init(loop, timer);
     TaskMessage* taskMessage = new TaskMessage();
     taskMessage->priority = static_cast<Priority>(priority);
     taskMessage->taskId = task->taskId_;
     napi_value promise = NapiHelper::CreatePromise(env, &taskMessage->deferred);
+    if (promise == nullptr) { // LOCV_EXCL_BR_LINE
+        delete taskMessage;
+        taskMessage = nullptr;
+        std::string err = "create promise failed, maybe has exception.";
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        HILOG_ERROR("taskpool:: ExecuteDelayed %{public}s", err.c_str());
+        return nullptr;
+    }
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+    uv_timer_t* timer = new uv_timer_t;
+    uv_timer_init(loop, timer);
     timer->data = taskMessage;
 
     std::string strTrace = "ExecuteDelayed: taskId: " + std::to_string(task->taskId_);
@@ -352,6 +370,16 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     napi_ref arrRef = NapiHelper::CreateReference(env, resArr, 1);
     groupInfo->resArr = arrRef;
     napi_value promise = NapiHelper::CreatePromise(env, &groupInfo->deferred);
+    if (promise == nullptr) { // LOCV_EXCL_BR_LINE
+        napi_reference_unref(env, taskGroup->groupRef_, nullptr);
+        napi_delete_reference(env, groupInfo->resArr);
+        delete groupInfo;
+        groupInfo = nullptr;
+        std::string err = "create promise failed, maybe has exception.";
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        HILOG_ERROR("taskpool:: ExecuteGroup %{public}s", err.c_str());
+        return nullptr;
+    }
     {
         std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
         if (taskGroup->taskNum_ == 0) {
