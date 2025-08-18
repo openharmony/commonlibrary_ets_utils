@@ -16,7 +16,7 @@
 import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
 import { registerAbilityKit } from './abilitykit.ets';
-import { registerGraphics } from './graphics.ets';
+import { registerArkGraphics2D } from './arkGraphics2D.ets';
 import { registerOsAccount } from './osAccount.ets';
 import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets'
@@ -25,7 +25,7 @@ export function registerMain(){
     registerArkTS();
     registerArkUI();
     registerAbilityKit();
-    registerGraphics();
+    registerArkGraphics2D();
     registerOsAccount();
     registerArkWeb();
     registerCommonEventManager();
