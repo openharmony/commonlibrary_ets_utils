@@ -15,14 +15,18 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerArkGraphics2D() {
-    registerStaticCB('arkGraphics2D.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferStatic');
-    registerDynamicCB('arkGraphics2D.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferDynamic');
-    registerStaticCB('arkGraphics2D.ParagraphBuilder', '@ohos.graphics.text', 'text.ParagraphBuilder', 'transferStatic');
-    registerDynamicCB('arkGraphics2D.ParagraphBuilder', '@ohos.graphics.text', 'text.ParagraphBuilder', 'transferDynamic');
-    registerStaticCB('arkGraphics2D.Paragraph', '@ohos.graphics.text', 'text.Paragraph', 'transferStatic');
-    registerDynamicCB('arkGraphics2D.Paragraph', '@ohos.graphics.text', 'text.Paragraph', 'transferDynamic');
-    registerStaticCB('arkGraphics2D.TextLine', '@ohos.graphics.text', 'text.TextLine', 'transferStatic');
-    registerDynamicCB('arkGraphics2D.TextLine', '@ohos.graphics.text', 'text.TextLine', 'transferDynamic');
-    registerStaticCB('arkGraphics2D.Run', '@ohos.graphics.text', 'text.Run', 'transferStatic');
-    registerDynamicCB('arkGraphics2D.Run', '@ohos.graphics.text', 'text.Run', 'transferDynamic');
+    registerStaticCB('ArkGraphics2D.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferStatic');
+    registerDynamicCB('ArkGraphics2D.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferDynamic');
+
+    registerStaticCB('ArkGraphics2D.ParagraphBuilder', '@ohos.graphics.text', 'text.ParagraphBuilder', 'transferStatic');
+    registerDynamicCB('ArkGraphics2D.ParagraphBuilder', '@ohos.graphics.text', 'text.ParagraphBuilder', 'transferDynamic');
+
+    registerStaticCB('ArkGraphics2D.Paragraph', '@ohos.graphics.text', 'text.Paragraph', 'transferStatic');
+    registerDynamicCB('ArkGraphics2D.Paragraph', '@ohos.graphics.text', 'text.Paragraph', 'transferDynamic');
+
+    registerStaticCB('ArkGraphics2D.TextLine', '@ohos.graphics.text', 'text.TextLine', 'transferStatic');
+    registerDynamicCB('ArkGraphics2D.TextLine', '@ohos.graphics.text', 'text.TextLine', 'transferDynamic');
+
+    registerStaticCB('ArkGraphics2D.Run', '@ohos.graphics.text', 'text.Run', 'transferStatic');
+    registerDynamicCB('ArkGraphics2D.Run', '@ohos.graphics.text', 'text.Run', 'transferDynamic');
 }
