@@ -26,6 +26,8 @@ import { registerScene3D } from './scene3d.ets';
 import { registerImageKit } from './imageKit.ets';
 import { registerPasteboard } from './pasteboard.ets';
 import { registerCameraKit } from './cameraKit.ets';
+import { registerDisplay } from './display.ets';
+import { registerScreen } from './screen.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -41,4 +43,6 @@ export function registerMain(){
     registerImageKit();
     registerPasteboard();
     registerCameraKit();
+    registerDisplay();
+    registerScreen();
 }

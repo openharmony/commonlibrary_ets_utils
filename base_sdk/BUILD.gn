@@ -50,6 +50,8 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/imageKit.ets",
     "./transfer/kitRegister/pasteboard.ets",
     "./transfer/kitRegister/cameraKit.ets",
+    "./transfer/kitRegister/display.ets",
+    "./transfer/kitRegister/screen.ets",
   ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/base_transfer.abc"
