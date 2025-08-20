@@ -23,6 +23,7 @@ import { registerCommonEventManager } from './basicServicesKit.ets';
 import { registerResourceManager } from './resourceManager.ets';
 import { registerDisplay } from './display.ets';
 import { registerScreen } from './screen.ets';
+import { registerImageKit } from './imageKit.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -35,4 +36,5 @@ export function registerMain(){
     registerResourceManager();
     registerDisplay();
     registerScreen();
+    registerImageKit();
 }
