@@ -24,6 +24,7 @@ import { registerResourceManager } from './resourceManager.ets';
 import { registerDisplay } from './display.ets';
 import { registerScreen } from './screen.ets';
 import { registerImageKit } from './imageKit.ets';
+import { registerCameraKit } from './cameraKit.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -37,4 +38,5 @@ export function registerMain(){
     registerDisplay();
     registerScreen();
     registerImageKit();
+    registerCameraKit();
 }
