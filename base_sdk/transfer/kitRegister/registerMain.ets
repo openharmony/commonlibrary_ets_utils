@@ -29,6 +29,7 @@ import { registerCameraKit } from './cameraKit.ets';
 import { registerDisplay } from './display.ets';
 import { registerScreen } from './screen.ets';
 import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
+import { registerUDMF } from './udmf.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -47,4 +48,5 @@ export function registerMain(){
     registerDisplay();
     registerScreen();
     registerMediaLibraryKit();
+    registerUDMF();
 }
