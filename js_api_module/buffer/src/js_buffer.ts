@@ -1963,7 +1963,7 @@ function concat(list: Buffer[] | Uint8Array[], totalLength?: number): Buffer {
 
   rangeErrorCheck(totalLength, 'totalLength', 0, UINT32MAX);
 
-  let buffer = allocUninitializedFromPool(totalLength);
+  let buffer = alloc(totalLength);
   let offset = 0;
   for (let i = 0, len = list.length; i < len; i++) {
     const buf = list[i];
