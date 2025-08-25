@@ -1103,11 +1103,9 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     } else {
         HILOG_INFO("worker:: no waiting time limitation in debug mode.");
         std::unique_lock lock(worker->globalCallMutex_);
-        if (worker->cv_.wait(lock, [worker]() {
+        worker->cv_.wait(lock, [worker]() {
             return !worker->workerGlobalCallQueue_.IsEmpty() || !worker->globalCallSuccess_;
-        })) {    
-            HILOG_WARN("worker:: callGlobalCallObjectMethod may fail.");
-        }
+        }); 
     }
     worker->IncreaseGlobalCallId();
     if (!worker->globalCallSuccess_) {
