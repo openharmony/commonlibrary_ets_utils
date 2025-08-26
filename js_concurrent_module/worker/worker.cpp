@@ -1550,6 +1550,8 @@ bool Worker::IsPublishWorkerOverSignal()
 
 bool Worker::PrepareForWorkerInstance()
 {
+    // set worker thread name
+    ApplyNameSetting();
     std::string rawFileName = script_;
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
@@ -1585,8 +1587,6 @@ bool Worker::PrepareForWorkerInstance()
         HandleException();
         return false;
     }
-
-    ApplyNameSetting();
     return true;
 }
 
