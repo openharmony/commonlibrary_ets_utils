@@ -30,6 +30,7 @@ import { registerDisplay } from './display.ets';
 import { registerScreen } from './screen.ets';
 import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
 import { registerUDMF } from './udmf.ets';
+import { registerBackup } from './coreFileKitBackup.ets'
 
 export function registerMain(){
     registerArkTS();
@@ -49,4 +50,5 @@ export function registerMain(){
     registerScreen();
     registerMediaLibraryKit();
     registerUDMF();
+    registerBackup();
 }
