@@ -1988,4 +1988,18 @@ std::tuple<void*, void*> Task::GetSerializeResult(napi_env env, napi_value func,
     }
     return {serializationFunction, serializationArguments};
 }
+
+void Task::TriggerEnqueueCallback()
+{
+    ListenerCallBackInfo *info = nullptr;
+    {
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        info = onEnqueuedCallBackInfo_;
+    }
+    if (info != nullptr) {
+        ExecuteListenerCallback(info, taskId_);
+    } else { // LOCV_EXCL_BR_LINE
+        HILOG_WARN("taskpool:: onEnqueuedCallBackInfo is null");
+    }
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
