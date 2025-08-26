@@ -489,8 +489,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest029, testing::ext::TestSize.Level0)
     TaskGroup taskGroup;
     taskGroup.NotifyGroupTask(env);
     TaskManager &taskManager = TaskManager::GetInstance();
-    uint32_t taskId = 11;
-    ASSERT_EQ(taskId, 11);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest030, testing::ext::TestSize.Level0)
@@ -499,8 +500,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest030, testing::ext::TestSize.Level0)
     TaskGroup taskGroup;
     taskGroup.CancelPendingGroup(env);
     TaskManager &taskManager = TaskManager::GetInstance();
-    uint32_t taskId = 12;
-    ASSERT_EQ(taskId, 12);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest031, testing::ext::TestSize.Level0)
@@ -519,7 +521,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest032, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 14;
     taskManager.RemoveTask(taskId);
-    ASSERT_EQ(taskId, 14);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest033, testing::ext::TestSize.Level0)
@@ -560,7 +564,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest035, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t step = 8;
     taskManager.GetIdleWorkersList(step);
-    ASSERT_EQ(step, 8);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest036, testing::ext::TestSize.Level0)
@@ -605,7 +611,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest039, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 17;
     taskManager.IncreaseSendDataRefCount(taskId);
-    ASSERT_EQ(taskId, 17);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest040, testing::ext::TestSize.Level0)
@@ -614,7 +622,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest040, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 18;
     taskManager.DecreaseSendDataRefCount(env, taskId);
-    ASSERT_EQ(taskId, 18);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest041, testing::ext::TestSize.Level0)
@@ -632,7 +642,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest042, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 20;
     taskManager.NotifyDependencyTaskInfo(taskId);
-    ASSERT_EQ(taskId, 20);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest043, testing::ext::TestSize.Level0)
@@ -687,7 +699,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest047, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 24;
     taskManager.RemovePendingTaskInfo(taskId);
-    ASSERT_EQ(taskId, 24);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest048, testing::ext::TestSize.Level0)
@@ -697,7 +711,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest048, testing::ext::TestSize.Level0)
     uint32_t taskId = 25;
     std::set<uint32_t> dependTaskIdSet;
     taskManager.StoreDependentTaskInfo(dependTaskIdSet, taskId);
-    ASSERT_EQ(taskId, 25);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest049, testing::ext::TestSize.Level0)
@@ -707,8 +723,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest049, testing::ext::TestSize.Level0)
     uint32_t taskId = 26;
     uint32_t dependentTaskId = 26;
     taskManager.RemoveDependentTaskInfo(dependentTaskId, taskId);
-    ASSERT_EQ(taskId, 26);
-    ASSERT_EQ(dependentTaskId, 26);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest050, testing::ext::TestSize.Level0)
@@ -719,9 +736,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest050, testing::ext::TestSize.Level0)
     uint64_t totalDuration = 25;
     uint64_t cpuDuration = 8;
     taskManager.StoreTaskDuration(taskId, totalDuration, cpuDuration);
-    ASSERT_EQ(taskId, 27);
-    ASSERT_EQ(totalDuration, 25);
-    ASSERT_EQ(cpuDuration, 8);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest051, testing::ext::TestSize.Level0)
@@ -731,7 +748,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest051, testing::ext::TestSize.Level0)
     uint32_t taskId = 28;
     std::string str = "testTaskpool";
     taskManager.GetTaskDuration(taskId, str);
-    ASSERT_EQ(taskId, 28);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest052, testing::ext::TestSize.Level0)
@@ -740,24 +759,32 @@ HWTEST_F(NativeEngineTest, TaskpoolTest052, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t taskId = 29;
     taskManager.RemoveTaskDuration(taskId);
-    ASSERT_EQ(taskId, 29);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest053, testing::ext::TestSize.Level0)
 {
+    napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
     uint64_t groupId = 30;
     TaskGroup* group = taskGroupManager.GetTaskGroup(groupId);
     taskGroupManager.StoreTaskGroup(groupId, group);
-    ASSERT_EQ(groupId, 30);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest054, testing::ext::TestSize.Level0)
 {
+    napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
     uint64_t groupId = 31;
     taskGroupManager.RemoveTaskGroup(groupId);
-    ASSERT_EQ(groupId, 31);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest055, testing::ext::TestSize.Level0)
@@ -766,7 +793,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest055, testing::ext::TestSize.Level0)
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
     uint64_t groupId = 32;
     taskGroupManager.CancelGroup(env, groupId);
-    ASSERT_EQ(groupId, 32);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest056, testing::ext::TestSize.Level0)
@@ -776,15 +805,20 @@ HWTEST_F(NativeEngineTest, TaskpoolTest056, testing::ext::TestSize.Level0)
     uint32_t taskId = 33;
     TaskGroup* group = taskGroupManager.GetTaskGroup(taskId);
     taskGroupManager.CancelGroupTask(env, taskId, group);
-    ASSERT_EQ(taskId, 33);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest057, testing::ext::TestSize.Level0)
 {
+    napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
     uint64_t groupId = 34;
     taskGroupManager.UpdateGroupState(groupId);
-    ASSERT_EQ(groupId, 34);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest058, testing::ext::TestSize.Level0)
@@ -800,7 +834,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest058, testing::ext::TestSize.Level0)
     SequenceRunner sequenceRunner;
     sequenceRunnerManager.StoreSequenceRunner(seqRunnerId, &sequenceRunner);
     NativeEngineTest::RemoveSequenceRunner(seqRunnerId);
-    ASSERT_EQ(seqRunnerId, 35);
     SequenceRunner* res = sequenceRunnerManager.GetSeqRunner(seqRunnerId);
     ASSERT_EQ(res, nullptr);
 }
@@ -825,7 +858,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
     ResetTaskManager();
     uint32_t taskId = 36;
     taskManager.EnqueueTaskId(taskId, Priority::LOW);
-    ASSERT_EQ(taskId, 36);
 
     std::pair<uint32_t, Priority> result = taskManager.DequeueTaskId();
     ASSERT_TRUE(result.first == 36);
@@ -833,7 +865,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
 
     taskId = 37;
     taskManager.EnqueueTaskId(taskId, Priority::IDLE);
-    ASSERT_EQ(taskId, 37);
 
     result = taskManager.DequeueTaskId();
     ASSERT_TRUE(result.first == 37);
@@ -841,6 +872,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
     result = taskManager.DequeueTaskId();
     ASSERT_TRUE(result.first == 0);
     ASSERT_TRUE(result.second == Priority::LOW);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest061, testing::ext::TestSize.Level0)
