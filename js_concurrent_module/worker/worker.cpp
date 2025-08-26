@@ -1105,7 +1105,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         std::unique_lock lock(worker->globalCallMutex_);
         worker->cv_.wait(lock, [worker]() {
             return !worker->workerGlobalCallQueue_.IsEmpty() || !worker->globalCallSuccess_;
-        }); 
+        });
     }
     worker->IncreaseGlobalCallId();
     if (!worker->globalCallSuccess_) {
