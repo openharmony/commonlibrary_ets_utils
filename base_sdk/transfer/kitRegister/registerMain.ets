@@ -25,6 +25,7 @@ import { registerDisplay } from './display.ets';
 import { registerScreen } from './screen.ets';
 import { registerImageKit } from './imageKit.ets';
 import { registerCameraKit } from './cameraKit.ets';
+import { registerPasteboard } from './pasteboard.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -39,4 +40,5 @@ export function registerMain(){
     registerScreen();
     registerImageKit();
     registerCameraKit();
+    registerPasteboard();
 }
