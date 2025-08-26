@@ -1090,7 +1090,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    {
+    if (!reinterpret_cast<NativeEngine*>(env)->GetIsDebugModeEnabled()) {
         std::unique_lock lock(worker->globalCallMutex_);
         if (!worker->cv_.wait_for(lock, std::chrono::milliseconds(timeout), [worker]() {
             return !worker->workerGlobalCallQueue_.IsEmpty() || !worker->globalCallSuccess_;
@@ -1100,6 +1100,12 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_GLOBAL_CALL_TIMEOUT);
             return nullptr;
         }
+    } else { // LOCV_EXCL_BR_LINE
+        HILOG_INFO("worker:: no waiting time limitation in debug mode.");
+        std::unique_lock lock(worker->globalCallMutex_);
+        worker->cv_.wait(lock, [worker]() {
+            return !worker->workerGlobalCallQueue_.IsEmpty() || !worker->globalCallSuccess_;
+        });
     }
     worker->IncreaseGlobalCallId();
     if (!worker->globalCallSuccess_) {
