@@ -3626,8 +3626,8 @@ HWTEST_F(NativeEngineTest, WriteEscapedDynamicTest001, testing::ext::TestSize.Le
     napi_env env = (napi_env)engine_;
     OHOS::xml::XmlDynamicSerializer xmlSerializer(env);
     xmlSerializer.StartElement("note");
-    std::string EscapedStr = "\'\"&>< ";
-    xmlSerializer.WriteEscaped(EscapedStr);
+    std::string escapedStr = "\'\"&>< ";
+    xmlSerializer.WriteEscaped(escapedStr);
     xmlSerializer.EndElement();
 
     size_t length = xmlSerializer.GetXmlBufferLength();
