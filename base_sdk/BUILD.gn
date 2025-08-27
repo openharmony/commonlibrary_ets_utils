@@ -50,6 +50,7 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/imageKit.ets",
     "./transfer/kitRegister/cameraKit.ets",
     "./transfer/kitRegister/pasteboard.ets",
+    "./transfer/kitRegister/effectKit.ets",
     "./transfer/kitRegister/mediaLibraryKit.ets",
   ]
   is_boot_abc = "True"
