@@ -15,16 +15,16 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerBackup() {
-  registerStaticCB('CoreFileKit.IncrementalBackupSession', '@ohos.backup.transfer.backup', 'IncrementalBackupTransfer',
+  registerStaticCB('CoreFileKit.IncrementalBackupSession', '@ohos.backup.transfer.backup', 'IncrBackupSessionTransfer',
     'transferStatic');
-  registerStaticCB('CoreFileKit.IncrementalBackupSession', '@ohos.backup.transfer.backup', 'IncrementalBackupTransfer',
+  registerDynamicCB('CoreFileKit.IncrementalBackupSession', '@ohos.backup.transfer.backup', 'IncrBackupSessionTransfer',
     'transferDynamic');
   registerStaticCB('CoreFileKit.BackupSession', '@ohos.backup.transfer.backup', 'BackupSessionTransfer',
     'transferStatic');
-  registerStaticCB('CoreFileKit.BackupSession', '@ohos.backup.transfer.backup', 'BackupSessionTransfer',
+  registerDynamicCB('CoreFileKit.BackupSession', '@ohos.backup.transfer.backup', 'BackupSessionTransfer',
     'transferDynamic');
   registerStaticCB('CoreFileKit.RestoreSession', '@ohos.backup.transfer.backup', 'RestoreSessionTransfer',
     'transferStatic');
-  registerStaticCB('CoreFileKit.RestoreSession', '@ohos.backup.transfer.backup', 'RestoreSessionTransfer',
+  registerDynamicCB('CoreFileKit.RestoreSession', '@ohos.backup.transfer.backup', 'RestoreSessionTransfer',
     'transferDynamic');
 }
