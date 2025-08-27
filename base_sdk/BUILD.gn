@@ -55,6 +55,7 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/mediaLibraryKit.ets",
     "./transfer/kitRegister/udmf.ets",
     "./transfer/kitRegister/coreFileKitBackup.ets",
+    "./transfer/kitRegister/effectKit.ets",
   ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/base_transfer.abc"
