@@ -31,6 +31,7 @@ import { registerScreen } from './screen.ets';
 import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
 import { registerUDMF } from './udmf.ets';
 import { registerBackup } from './coreFileKitBackup.ets'
+import { registerEffectKit } from './effectKit.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -51,4 +52,5 @@ export function registerMain(){
     registerMediaLibraryKit();
     registerUDMF();
     registerBackup();
+    registerEffectKit();
 }
