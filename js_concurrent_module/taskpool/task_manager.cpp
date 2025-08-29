@@ -55,6 +55,7 @@ static constexpr uint32_t MAX_UINT32_T = 0xFFFFFFFF; // 0xFFFFFFFF: max uint32_t
 static constexpr uint32_t TRIGGER_EXPAND_INTERVAL = 10; // 10: ms, trigger recheck expansion interval
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
 static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
+static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
@@ -834,15 +835,20 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
         return;
     }
     task->IncreaseTaskLifecycleCount();
-    ListenerCallBackInfo* info = nullptr;
-    {
-        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        info = task->onEnqueuedCallBackInfo_;
-    }
-    if (info != nullptr) {
-        task->ExecuteListenerCallback(info, taskId);
-    } else { // LOCV_EXCL_BR_LINE
-        HILOG_WARN("taskpool:: onEnqueuedCallBackInfo is null");
+    if (task->IsSeqRunnerTask() || task->IsAsyncRunnerTask()) {
+        auto onEnqueueTask = [taskId]([[maybe_unused]] void *data) {
+            Task *task = TaskManager::GetInstance().GetTask(taskId);
+            if (task == nullptr) {
+                HILOG_WARN("taskpool:: task is null");
+                return;
+            }
+            task->TriggerEnqueueCallback();
+        };
+        auto napiPrio = g_napiPriorityMap.at(priority);
+        uint64_t handleId = 0;
+        napi_send_cancelable_event(task->GetEnv(), onEnqueueTask, nullptr, napiPrio, &handleId, ON_ENQUEUE_STR);
+    } else {
+        task->TriggerEnqueueCallback();
     }
 }
 

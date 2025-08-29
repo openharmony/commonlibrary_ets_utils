@@ -6945,3 +6945,55 @@ HWTEST_F(NativeEngineTest, TaskpoolTest336, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest337, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    Task *task1 = new Task();
+    TaskInfo *taskInfo1 = new TaskInfo();
+    task1->currentTaskInfo_ = taskInfo1;
+    task1->taskType_ = TaskType::SEQRUNNER_TASK;
+    task1->taskState_ = ExecuteState::WAITING;
+    taskManager.StoreTask(task1);
+    NativeEngineTest::EnqueueTaskIdToQueue(reinterpret_cast<void *>(task1));
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    taskManager.RemoveTask(task1->taskId_);
+    delete task1;
+
+    Task *task2 = new Task();
+    TaskInfo *taskInfo2 = new TaskInfo();
+    task2->currentTaskInfo_ = taskInfo2;
+    task2->taskType_ = TaskType::COMMON_TASK;
+    task2->taskState_ = ExecuteState::WAITING;
+    taskManager.StoreTask(task2);
+    NativeEngineTest::EnqueueTaskIdToQueue(reinterpret_cast<void *>(task2));
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    taskManager.RemoveTask(task2->taskId_);
+    delete task2;
+
+    Task *task3 = new Task();
+    TaskInfo *taskInfo3 = new TaskInfo();
+    task3->currentTaskInfo_ = taskInfo3;
+    task3->taskType_ = TaskType::SEQRUNNER_TASK;
+    task3->taskState_ = ExecuteState::WAITING;
+    taskManager.StoreTask(task3);
+    taskManager.EnqueueTaskId(task3->taskId_);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    Task *task4 = new Task();
+    TaskInfo *taskInfo4 = new TaskInfo();
+    task4->currentTaskInfo_ = taskInfo4;
+    task4->taskType_ = TaskType::ASYNCRUNNER_TASK;
+    task4->taskState_ = ExecuteState::WAITING;
+    taskManager.StoreTask(task4);
+    taskManager.EnqueueTaskId(task4->taskId_);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
