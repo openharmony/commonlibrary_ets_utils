@@ -575,7 +575,7 @@ template <bool needCheckIdle>
 void TaskManager::TryExpandWithCheckIdle()
 {
     if (GetNonIdleTaskNum() == 0) {
-        HILOG_INFO("taskpool:: no need to create worker");
+        HILOG_INFO("taskpool:: no need expand");
         return;
     }
 
@@ -926,7 +926,7 @@ void TaskManager::NotifyExecuteTask()
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
         // When there are only idle tasks and workers executing them, it is not triggered
-        HILOG_INFO("taskpool:: not notify execute task");
+        HILOG_INFO("taskpool:: no need notify");
         return;
     }
     if (idleWorkers_.size() == 0) {
