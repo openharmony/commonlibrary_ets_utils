@@ -1999,7 +1999,7 @@ void Task::TriggerEnqueueCallback()
     if (info != nullptr) {
         ExecuteListenerCallback(info, taskId_);
     } else { // LOCV_EXCL_BR_LINE
-        HILOG_WARN("taskpool:: onEnqueuedCallBackInfo is null");
+        HILOG_DEBUG("taskpool:: onEnqueuedCallBackInfo is null");
     }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
