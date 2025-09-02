@@ -584,9 +584,6 @@ void NativeEngineTest::ReleaseTaskData(napi_env env)
     taskManager.ReleaseCallBackInfo(task2);
     task2->isMainThreadTask_ = false;
     taskManager.ReleaseCallBackInfo(task2);
-    auto loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_, NativeEngineTest::foo, task2);
-    taskManager.ReleaseCallBackInfo(task2);
 }
 
 void NativeEngineTest::CheckTask(napi_env env)

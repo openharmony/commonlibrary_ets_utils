@@ -145,7 +145,6 @@ void Task::CleanupHookFunc(void* arg)
     {
         std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
         ConcurrentHelper::UvHandleClose(task->onStartCancelSignal_);
-        ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
         ConcurrentHelper::UvHandleClose(task->onStartDiscardSignal_);
         if (task->IsFunctionTask()) {
             task->SetValid(false);
@@ -505,7 +504,7 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     }
 
     TaskResultInfo* resultInfo = new TaskResultInfo(env, task->GetTaskId(), serializationArgs);
-    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task);
+    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->GetTaskId());
     return nullptr;
 }
 
@@ -841,17 +840,6 @@ napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, args[0], 1);
     task->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
     task->onStartExecutionCallBackInfo_->type_ = "onStartExecution";
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (!task->IsMainThreadTask()) {
-        auto loop = NapiHelper::GetLibUV(env);
-        ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_,
-            Task::StartExecutionCallback, task->onStartExecutionCallBackInfo_);
-    }
-#else
-    auto loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_,
-        Task::StartExecutionCallback, task->onStartExecutionCallBackInfo_);
-#endif
 
     return nullptr;
 }
@@ -1550,28 +1538,10 @@ bool Task::CheckStartExecution(Priority priority)
             Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
         };
         TaskManager::GetInstance().PostTask(onStartExecutionTask, "TaskPoolOnStartExecutionTask", priority);
-    } else {
-        if (onStartExecutionSignal_ == nullptr) {
-            return true;
-        }
-        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-        if (!IsValid()) {
-            return false;
-        }
-        ConcurrentHelper::UvCheckAndAsyncSend(onStartExecutionSignal_);
-    }
-    return true;
-#else
-    if (onStartExecutionSignal_ == nullptr) {
         return true;
     }
-    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-    if (!IsValid()) {
-        return false;
-    }
-    ConcurrentHelper::UvCheckAndAsyncSend(onStartExecutionSignal_);
-    return true;
 #endif
+    return TaskManager::GetInstance().ExecuteTaskStartExecution(taskId_, priority);
 }
 
 void Task::SetValid(bool isValid)

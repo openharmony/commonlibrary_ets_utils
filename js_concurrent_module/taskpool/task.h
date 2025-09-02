@@ -249,7 +249,6 @@ public:
     bool defaultCloneSendable_ {false};
     std::atomic<bool> isValid_ {true};
     std::atomic<uint32_t> lifecycleCount_ {0}; // when lifecycleCount_ is 0, the task pointer can be deleted
-    uv_async_t* onStartExecutionSignal_ = nullptr;
     uv_async_t* onStartCancelSignal_ = nullptr;
     uv_async_t* onStartDiscardSignal_ = nullptr;
     ListenerCallBackInfo* onEnqueuedCallBackInfo_ = nullptr;
