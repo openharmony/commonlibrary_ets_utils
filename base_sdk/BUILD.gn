@@ -53,6 +53,9 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/display.ets",
     "./transfer/kitRegister/screen.ets",
     "./transfer/kitRegister/mediaLibraryKit.ets",
+    "./transfer/kitRegister/udmf.ets",
+    "./transfer/kitRegister/coreFileKitBackup.ets",
+    "./transfer/kitRegister/effectKit.ets",
     "./transfer/kitRegister/drawing.ets",
   ]
   is_boot_abc = "True"
