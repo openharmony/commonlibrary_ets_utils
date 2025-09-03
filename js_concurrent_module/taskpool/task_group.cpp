@@ -125,11 +125,13 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         }
         task->groupId_ = groupId;
         napi_status status = napi_wrap(env, napiTask, task, Task::TaskDestructor, nullptr, nullptr);
-        if (status != napi_ok) {
+        if (status != napi_ok) { // LOCV_EXCL_BR_LINE
             HILOG_ERROR("taskpool::AddTask napi_wrap return value is %{public}d", status);
-            TaskManager::GetInstance().RemoveTask(task->taskId_);
-            delete task;
-            task = nullptr;
+            task->SetValid(false);
+            if (TaskManager::GetInstance().RemoveTask(task->taskId_)) {
+                delete task;
+                task = nullptr;
+            }
             return nullptr;
         }
         napi_create_reference(env, napiTask, 1, &task->taskRef_);

@@ -132,6 +132,7 @@ TaskManager::~TaskManager()
             task = nullptr;
         }
         tasks_.clear();
+        runningTasks_.clear();
     }
     CountTraceForWorker();
 }
@@ -1391,11 +1392,6 @@ void TaskManager::TerminateTask(uint32_t taskId)
 
 void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTask)
 {
-    uint32_t taskId = task->taskId_;
-    if (shouldDeleteTask) {
-        RemoveTask(taskId);
-    }
-
     task->ReleaseData();
     task->CancelPendingTask(env);
 
@@ -1407,6 +1403,7 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
     if (!task->IsMainThreadTask()) {
         task->SetValid(false);
     }
+    uint32_t taskId = task->taskId_;
     DecreaseSendDataRefCount(env, taskId, task);
     RemoveTaskDuration(taskId);
     RemovePendingTaskInfo(taskId);
@@ -1466,10 +1463,23 @@ void TaskManager::StoreTask(Task* task)
     tasks_.emplace(taskId, task);
 }
 
-void TaskManager::RemoveTask(uint32_t taskId)
+bool TaskManager::RemoveTask(uint32_t taskId)
 {
     std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    bool res = true;
+    auto runningIter = runningTasks_.find(taskId);
+    if (runningIter != runningTasks_.end()) {
+        res = false;
+    }
+    runningTasks_.erase(taskId);
     tasks_.erase(taskId);
+    return res;
+}
+
+void TaskManager::RemoveRunningTask(uint32_t taskId)
+{
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    runningTasks_.erase(taskId);
 }
 
 Task* TaskManager::GetTask(uint32_t taskId)
@@ -1479,6 +1489,17 @@ Task* TaskManager::GetTask(uint32_t taskId)
     if (iter == tasks_.end()) {
         return nullptr;
     }
+    return iter->second;
+}
+
+Task* TaskManager::GetTaskForPerform(uint32_t taskId)
+{
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    auto iter = tasks_.find(taskId);
+    if (iter == tasks_.end()) {
+        return nullptr;
+    }
+    runningTasks_.emplace(taskId, iter->second);
     return iter->second;
 }
 
@@ -1588,10 +1609,10 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
         if (task->currentTaskInfo_ != nullptr && EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {
             delete task->currentTaskInfo_;
             task->currentTaskInfo_ = nullptr;
+            task->DecreaseTaskLifecycleCount();
         }
         if (task->currentTaskInfo_ == nullptr) {
             reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
-            task->DecreaseTaskLifecycleCount();
             DecreaseSendDataRefCount(task->env_, task->taskId_, task);
             napi_reference_unref(task->env_, task->taskRef_, nullptr);
         }

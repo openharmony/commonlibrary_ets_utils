@@ -430,7 +430,7 @@ void Worker::PerformTask(const uv_async_t* req)
     RunningScope runningScope(worker);
     WorkerRunningScope workerRunningScope(env);
     PriorityScope priorityScope(worker, taskInfo.second);
-    Task* task = TaskManager::GetInstance().GetTask(taskInfo.first);
+    Task* task = TaskManager::GetInstance().GetTaskForPerform(taskInfo.first);
     if (task == nullptr) {
         HILOG_DEBUG("taskpool:: task has been released");
         return;
