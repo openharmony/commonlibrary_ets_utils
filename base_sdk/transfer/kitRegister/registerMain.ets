@@ -33,6 +33,7 @@ import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
 import { registerUDMF } from './udmf.ets';
 import { registerBackup } from './coreFileKitBackup.ets'
 import { registerEffectKit } from './effectKit.ets';
+import { registerDrawing } from './drawing.ets'
 
 export function registerMain(){
     registerArkTS();
@@ -55,4 +56,5 @@ export function registerMain(){
     registerUDMF();
     registerBackup();
     registerEffectKit();
+    registerDrawing();
 }
