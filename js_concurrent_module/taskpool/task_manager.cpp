@@ -56,6 +56,7 @@ static constexpr uint32_t TRIGGER_EXPAND_INTERVAL = 10; // 10: ms, trigger reche
 [[maybe_unused]] static constexpr uint32_t IDLE_THRESHOLD = 2; // 2: 2 intervals later will release the thread
 static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
+static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
@@ -1062,10 +1063,24 @@ void TaskManager::DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* 
     }
 }
 
-void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, Task* task)
+void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint32_t taskId)
 {
+    auto task = GetTask(taskId);
+    if (task == nullptr) {
+        HILOG_ERROR("taskpool:: the task is nullptr");
+        delete resultInfo;
+        return;
+    }
+    napi_env hostEnv = nullptr;
+    napi_event_priority priority = napi_eprio_high;
+    {
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        auto worker = task->GetWorker();
+        hostEnv = task->GetEnv();
+        priority = g_napiPriorityMap.at(worker->GetPriority());
+    }
     std::lock_guard<std::mutex> lock(callbackMutex_);
-    auto iter = callbackTable_.find(task->GetTaskId());
+    auto iter = callbackTable_.find(taskId);
     if (iter == callbackTable_.end() || iter->second == nullptr) {
         HILOG_ERROR("taskpool:: the callback in SendData is not registered on the host side");
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_NOT_REGISTERED);
@@ -1086,9 +1101,6 @@ void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, Task
         }
         TaskPool::ExecuteOnReceiveDataCallback(callbackInfo.get(), resultInfo);
     };
-    auto worker = task->GetWorker();
-    auto hostEnv = task->GetEnv();
-    auto priority = g_napiPriorityMap.at(worker->GetPriority());
     uint64_t handleId = 0;
     napi_status status = napi_send_cancelable_event(hostEnv, onCallbackTask, nullptr, priority,
                                                     &handleId, ON_CALLBACK_STR);
@@ -1439,26 +1451,6 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
         delete task->onExecutionSucceededCallBackInfo_;
         task->onExecutionSucceededCallBackInfo_ = nullptr;
     }
-
-#if defined(ENABLE_TASKPOOL_EVENTHANDLER)
-    if (!task->IsMainThreadTask() && task->onStartExecutionSignal_ != nullptr) {
-        if (!ConcurrentHelper::IsUvClosing(task->onStartExecutionSignal_)) {
-            ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
-        } else {
-            delete task->onStartExecutionSignal_;
-            task->onStartExecutionSignal_ = nullptr;
-        }
-    }
-#else
-    if (task->onStartExecutionSignal_ != nullptr) {
-        if (!ConcurrentHelper::IsUvClosing(task->onStartExecutionSignal_)) {
-            ConcurrentHelper::UvHandleClose(task->onStartExecutionSignal_);
-        } else {
-            delete task->onStartExecutionSignal_;
-            task->onStartExecutionSignal_ = nullptr;
-        }
-    }
-#endif
 }
 
 void TaskManager::StoreTask(Task* task)
@@ -1769,5 +1761,39 @@ void TaskManager::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int
             std::to_string(threadNum).c_str(), std::to_string(threadNum - idleThreadNum).c_str(),
             std::to_string(idleThreadNum).c_str(), std::to_string(timeoutThreadNum).c_str());
     }
+}
+
+bool TaskManager::ExecuteTaskStartExecution(uint32_t taskId, Priority priority)
+{
+    Task* task = GetTask(taskId);
+    if (task == nullptr) {
+        return false;
+    }
+    std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+    if (!task->IsValid()) {
+        return false;
+    }
+    if (task->onStartExecutionCallBackInfo_ == nullptr) {
+        return true;
+    }
+    auto hostEnv = task->GetEnv();
+    auto workerEngine = reinterpret_cast<NativeEngine*>(hostEnv);
+    workerEngine->IncreaseListeningCounter();
+    auto onStartTask = [taskId]([[maybe_unused]] void* data) {
+        Task* task = TaskManager::GetInstance().GetTask(taskId);
+        if (task == nullptr || task->onStartExecutionCallBackInfo_ == nullptr) {
+            return;
+        }
+        Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
+    };
+    auto napiPrio = g_napiPriorityMap.at(priority);
+    uint64_t handleId = 0;
+    napi_status status = napi_send_cancelable_event(hostEnv, onStartTask, nullptr, napiPrio,
+                                                    &handleId, ON_START_STR);
+    if (status != napi_ok) { // LOCV_EXCL_BR_LINE
+        HILOG_ERROR("taskpool:: failed to send event to the host side");
+        workerEngine->DecreaseListeningCounter();
+    }
+    return true;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -104,7 +104,7 @@ public:
         const std::string& type);
     void IncreaseSendDataRefCount(uint32_t taskId);
     void DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* task = nullptr);
-    void ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, Task* task);
+    void ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint32_t taskId);
 
     // for task dependency
     bool IsDependendByTaskId(uint32_t taskId);
@@ -158,6 +158,7 @@ public:
     bool IsPerformIdle() const;
     uint32_t GetNonIdleTaskNum();
     uint32_t GetTotalTaskNum() const;
+    bool ExecuteTaskStartExecution(uint32_t taskId, Priority priority);
 
 private:
     TaskManager();
