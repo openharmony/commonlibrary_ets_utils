@@ -28,6 +28,7 @@ import { registerCameraKit } from './cameraKit.ets';
 import { registerPasteboard } from './pasteboard.ets';
 import { registerEffectKit } from './effectKit.ets';
 import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
+import { registerDrawing } from './drawing.ets'
 
 export function registerMain(){
     registerArkTS();
@@ -45,4 +46,5 @@ export function registerMain(){
     registerPasteboard();
     registerEffectKit();
     registerMediaLibraryKit();
+    registerDrawing();
 }
