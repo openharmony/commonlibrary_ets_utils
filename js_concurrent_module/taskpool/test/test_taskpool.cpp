@@ -7062,3 +7062,24 @@ HWTEST_F(NativeEngineTest, TaskpoolTest340, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest341, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    uint32_t taskId = 341;
+    Task* task1 = taskManager.GetTaskForPerform(taskId);
+    ASSERT_TRUE(task1 == nullptr);
+    Task* task2 = new Task();
+    taskManager.StoreTask(task2);
+    Task* res1 = taskManager.GetTaskForPerform(task2->taskId_);
+    ASSERT_EQ(res1, task2);
+    taskManager.RemoveRunningTask(task2->taskId_);
+    bool isFinished = taskManager.RemoveTask(task2->taskId_);
+    ASSERT_TRUE(isFinished);
+    Task* res2 = taskManager.GetTaskForPerform(task2->taskId_);
+    ASSERT_TRUE(res2 == nullptr);
+    delete task2;
+}

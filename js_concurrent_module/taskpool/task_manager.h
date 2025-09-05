@@ -60,8 +60,10 @@ public:
     static TaskManager& GetInstance();
 
     void StoreTask(Task* task);
-    void RemoveTask(uint32_t taskId);
+    bool RemoveTask(uint32_t taskId);
+    void RemoveRunningTask(uint32_t taskId);
     Task* GetTask(uint32_t taskId);
+    Task* GetTaskForPerform(uint32_t taskId);
     void EnqueueTaskId(uint32_t taskId, Priority priority = Priority::DEFAULT);
     bool EraseWaitingTaskId(uint32_t taskId, Priority priority);
     std::pair<uint32_t, Priority> DequeueTaskId();
@@ -198,6 +200,7 @@ private:
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};
+    std::unordered_map<uint32_t, Task*> runningTasks_ {};
     std::recursive_mutex tasksMutex_;
 
     // <taskId, <dependent taskId1, dependent taskId2, ...>>, update when removeDependency or executeTask

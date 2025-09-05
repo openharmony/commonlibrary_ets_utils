@@ -236,9 +236,11 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_value promise = NapiHelper::CreatePromise(env, &task->currentTaskInfo_->deferred);
     if (promise == nullptr) { // LOCV_EXCL_BR_LINE
         task->ReleaseData();
-        TaskManager::GetInstance().RemoveTask(task->GetTaskId());
-        delete task;
-        task = nullptr;
+        task->SetValid(false);
+        if (TaskManager::GetInstance().RemoveTask(task->GetTaskId())) {
+            delete task;
+            task = nullptr;
+        }
         std::string err = "create promise failed, maybe has exception.";
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
         HILOG_ERROR("taskpool:: Execute %{public}s", err.c_str());
@@ -418,6 +420,7 @@ void TaskPool::HandleTaskResult(Task* task)
 {
     HILOG_DEBUG("taskpool:: HandleTaskResult task");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    TaskManager::GetInstance().RemoveRunningTask(task->taskId_); // update task execution info
     if (!task->IsMainThreadTask()) {
         if (task->ShouldDeleteTask(false)) {
             delete task;
