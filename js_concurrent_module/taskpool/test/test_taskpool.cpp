@@ -4637,17 +4637,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     Task* task = new Task();
-    uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
-    task->taskId_ = taskId;
-    napi_value thisValue = NapiHelper::CreateObject(env);
-    napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
-    
-    CallbackInfo* cbInfo = new CallbackInfo(env, 1, ref);
-
+    TaskManager::GetInstance().StoreTask(task);
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
+    TaskManager::GetInstance().StoreTask(task);
     void* args = nullptr;
-    TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId, args);
-    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task);
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, task->taskId_, args);
+    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -4821,8 +4816,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest240, testing::ext::TestSize.Level0)
     Task* task = new Task();
     uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->taskId_ = taskId;
-    auto loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_, NativeEngineTest::foo, task);
     task->taskType_ = TaskType::FUNCTION_TASK;
     Task::CleanupHookFunc(task);
     napi_value exception = nullptr;
@@ -4898,14 +4891,22 @@ HWTEST_F(NativeEngineTest, TaskpoolTest245, testing::ext::TestSize.Level0)
     task->taskId_ = taskId;
     task->env_ = env;
     task->isMainThreadTask_ = false;
-    task->onStartExecutionSignal_ = nullptr;
     task->CheckStartExecution(Priority::DEFAULT);
-    auto loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_, NativeEngineTest::foo, task);
-    task->SetValid(false);
-    task->CheckStartExecution(Priority::DEFAULT);
-    task->SetValid(true);
-    task->CheckStartExecution(Priority::DEFAULT);
+    Task* task2 = new Task();
+    TaskManager::GetInstance().StoreTask(task2);
+    task2->env_ = env;
+    task2->isMainThreadTask_ = false;
+    task2->SetValid(false);
+    task2->CheckStartExecution(Priority::DEFAULT);
+    task2->SetValid(true);
+    task2->CheckStartExecution(Priority::DEFAULT);
+
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
+    task2->worker_ = worker;
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_ref callbackRef = NapiHelper::CreateReference(env, obj, 1);
+    task2->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    task2->CheckStartExecution(Priority::DEFAULT);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -4934,8 +4935,6 @@ HWTEST_F(NativeEngineTest, TaskpoolTest247, testing::ext::TestSize.Level0)
     task->taskId_ = taskId;
     task->env_ = env;
     task->isMainThreadTask_ = false;
-    auto loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, task->onStartExecutionSignal_, NativeEngineTest::foo, task);
     TaskManager::GetInstance().ReleaseCallBackInfo(task);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -6890,4 +6889,70 @@ HWTEST_F(NativeEngineTest, TaskpoolTest335, testing::ext::TestSize.Level0)
     delete handle;
     delete task;
     ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    taskManager.ExecuteSendData(env, nullptr, 338);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
+    task->worker_ = worker;
+    taskManager.RegisterCallback(env, task->taskId_, nullptr, "OnReceiveData");
+    taskManager.ExecuteSendData(env, nullptr, task->taskId_);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    napi_value thisValue = NapiHelper::CreateObject(env);
+    auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
+    taskManager.RegisterCallback(env, task->taskId_, callbackInfo, "TaskpoolTest338");
+    void* args = nullptr;
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, task->taskId_, args);
+    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest339, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    task->env_ = env;
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
+    task->worker_ = worker;
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_ref callbackRef = NapiHelper::CreateReference(env, obj, 1);
+    task->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    TaskManager::GetInstance().ExecuteTaskStartExecution(task->taskId_, Priority::DEFAULT);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest340, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    task->env_ = env;
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
+    task->worker_ = worker;
+    napi_value obj = NapiHelper::CreateObject(env);
+    napi_ref callbackRef = NapiHelper::CreateReference(env, obj, 1);
+    task->onStartExecutionCallBackInfo_ = new ListenerCallBackInfo(env, callbackRef, nullptr);
+    TaskManager::GetInstance().ExecuteTaskStartExecution(task->taskId_, Priority::DEFAULT);
+    task->onStartExecutionCallBackInfo_ = nullptr;
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }
