@@ -2795,7 +2795,7 @@ HWTEST_F(NativeEngineTest, testUrlHelper011, testing::ext::TestSize.Level1)
     for (int i = 0xF00000; i <= 0xFF0000; i++) {
         auto tem = DecimalToPercentHexString((i >> 16)) + DecimalToPercentHexString((i >> 8) & 0xFF) +
                    DecimalToPercentHexString(i & 0xFF);
-        for (int k1 = 0; k1 <= sizeof(last) / sizeof(int); k1++) {
+        for (int k1 = 0; k1 < sizeof(last) / sizeof(int); k1++) {
             auto tem4 = tem + DecimalToPercentHexString(last[k1]);
             //%xx%xx%xx%xx,first char 1111 0XXX - 1111 0111;0xF0-0xF7
             // second char 10XX XXXX - 1011 1111;0x80-0xBF
