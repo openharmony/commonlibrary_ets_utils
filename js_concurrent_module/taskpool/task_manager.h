@@ -97,7 +97,8 @@ public:
     napi_value GetTaskInfos(napi_env env);
 
     // for countTrace for worker
-    void CountTraceForWorker();
+    void CountTraceForWorker(bool needLog = false);
+    void CountTraceForWorkerWithoutLock(bool needLog = false);
 
     std::shared_ptr<CallbackInfo> GetCallbackInfo(uint32_t taskId);
     void RegisterCallback(napi_env env, uint32_t taskId, std::shared_ptr<CallbackInfo> callbackInfo);
@@ -189,6 +190,7 @@ private:
     void CheckTasksAndReportHisysEvent();
     void WorkerAliveAndReport(Worker* worker);
     void WriteHisysForFfrtAndUv(Worker* worker, HisyseventParams* hisyseventParams);
+    void AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int64_t idleThreadNum, int64_t timeoutThreadNum);
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};

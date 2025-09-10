@@ -352,9 +352,12 @@ void Worker::NotifyExecuteTask()
     if (LIKELY(performTaskSignal_ != nullptr && !uv_is_closing(reinterpret_cast<uv_handle_t*>(performTaskSignal_)))) {
         int ret = uv_async_send(performTaskSignal_);
         if (ret != 0) {
+            HILOG_ERROR("taskpool:: worker NotifyExecuteTask uv send failed");
             TaskManager::GetInstance().UvReportHisysEvent(this, "NotifyExecuteTask", "uv_async_send",
                 "uv send performTaskSignal_ failed", ret);
         }
+    } else {
+        HILOG_ERROR("taskpool:: performTaskSignal_ is invalid");
     }
 }
 
