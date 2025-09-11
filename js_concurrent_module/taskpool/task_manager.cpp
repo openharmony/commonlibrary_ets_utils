@@ -577,7 +577,9 @@ template <bool needCheckIdle>
 void TaskManager::TryExpandWithCheckIdle()
 {
     if (GetNonIdleTaskNum() == 0) {
-        HILOG_INFO("taskpool:: no need expand");
+        if constexpr (!needCheckIdle) {
+            HILOG_DEBUG("taskpool:: no need expand");
+        }
         return;
     }
 
@@ -676,7 +678,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
         if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND ||
             task->taskState_ == ExecuteState::FINISHED || task->taskState_ == ExecuteState::ENDING) {
             std::string errMsg = "taskpool:: task is not executed or has been executed";
-            HILOG_ERROR("%{public}s", errMsg.c_str());
+            HILOG_DEBUG("%{public}s", errMsg.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
             return;
         }
@@ -709,7 +711,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
             task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
             task->taskState_ == ExecuteState::ENDING) {
             std::string errMsg = "taskpool:: task is not executed or has been executed";
-            HILOG_ERROR("%{public}s", errMsg.c_str());
+            HILOG_DEBUG("%{public}s", errMsg.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
             return;
         }
