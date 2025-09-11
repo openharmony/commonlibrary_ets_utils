@@ -82,7 +82,6 @@ void EncodeIntoChinese(napi_env env, napi_value src, std::string encoding, std::
     std::string input = "";
     size_t inputSize = 0;
     napi_get_value_string_utf8(env, src, nullptr, 0, &inputSize); // 0:buffer size
-    input.reserve(inputSize + 1);
     input.resize(inputSize);
     napi_get_value_string_utf8(env, src, input.data(), inputSize + 1, &inputSize);
     buffer = UtilPlugin::EncodeIntoChinese(input, encoding);
