@@ -311,6 +311,9 @@ namespace OHOS::Xml {
         if (!doc) {
             xmlFreeDoc(doc);
             DealSingleLine(env, strXml, object);
+            const xmlError* err = xmlGetLastError();
+            const char* message = err->message;
+            HILOG_ERROR("ConvertXml:: XMLParseMemory execution failed, reason for failure: %{public}s", message);
             return object;
         }
         napi_value subObject = nullptr;
