@@ -208,6 +208,8 @@ public:
     bool UpdateTaskStateToFinished();
     bool UpdateTaskStateToDelayed();
     bool UpdateTaskStateToEnding();
+    void TriggerEnqueueCallback();
+
     static std::tuple<napi_value, napi_value, napi_value, napi_value> GetSerializeParams(napi_env env,
                                                                                          napi_value napiTask);
     static std::tuple<void*, void*> GetSerializeResult(napi_env env, napi_value func, napi_value args,
