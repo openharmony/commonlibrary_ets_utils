@@ -14,8 +14,10 @@
  */
 import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
+import { registerEffectKit } from './effectKit.ets';
 
 export function registerMain(){
     registerArkTS();
     registerArkUI();
+    registerEffectKit();
 }
