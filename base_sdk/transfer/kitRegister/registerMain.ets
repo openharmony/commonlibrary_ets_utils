@@ -14,8 +14,10 @@
  */
 import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
+import { registerScene3D } from './scene3d.ets';
 
 export function registerMain(){
     registerArkTS();
     registerArkUI();
+    registerScene3D;
 }
