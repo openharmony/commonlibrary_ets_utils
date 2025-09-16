@@ -18,7 +18,6 @@ import { registerMain } from './kitRegister/registerMain.ets';
 
 registerMain();
 
-type Any = Object | undefined | null;
 const transferErrorCodeId = 10200067;
 
 const staticCBCache = new Map<string, Method>();
