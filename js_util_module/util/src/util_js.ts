@@ -1920,6 +1920,17 @@ class Aspect {
   }
 }
 
+interface AutoFinalizer<T> {
+  onFinalization(heldValue: T): void;
+}
+
+class AutoFinalizerCleaner {
+  static register<T>(obj: AutoFinalizer<T>, heldValue: T): void {
+    let registry = new FinalizationRegistry<T>(obj.onFinalization);
+    registry.register(obj, heldValue);
+  }
+}
+
 export default {
   printf: printf,
   format: format,
@@ -1948,4 +1959,5 @@ export default {
   Type: Type,
   Aspect: Aspect,
   StringDecoder: stringdecoder,
+  AutoFinalizerCleaner: AutoFinalizerCleaner,
 };
