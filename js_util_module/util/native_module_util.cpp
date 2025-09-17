@@ -224,7 +224,7 @@ namespace OHOS::Util {
                 FreeMemory(argv);
                 return nullptr;
             }
-            format.reserve(formatsize + 1);
+            format.reserve(formatsize);
             format.resize(formatsize);
             if (napi_get_value_string_utf8(env, argv[0], format.data(), formatsize + 1, &formatsize) != napi_ok) {
                 HILOG_ERROR("Printf:: can not get argv[0] value");
@@ -240,7 +240,7 @@ namespace OHOS::Util {
                     FreeMemory(argv);
                     return nullptr;
                 }
-                valueString.reserve(valuesize + 1);
+                valueString.reserve(valuesize);
                 valueString.resize(valuesize);
                 if (napi_get_value_string_utf8(env, argv[i], valueString.data(),
                                                valuesize + 1, &valuesize) != napi_ok) {
@@ -578,9 +578,7 @@ namespace OHOS::Util {
                     HILOG_ERROR("TextEncoder:: can not get src size");
                     return nullptr;
                 }
-                std::string buffer = "";
-                buffer.reserve(bufferSize + 1);
-                buffer.resize(bufferSize, '\0');
+                std::string buffer(bufferSize, '\0');
                 if (napi_get_value_string_utf8(env, src, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
                     HILOG_ERROR("TextEncoder:: can not get src value");
                     return nullptr;
@@ -1602,7 +1600,7 @@ namespace OHOS::Util {
                     return nullptr;
                 }
                 std::string buffer = "";
-                buffer.reserve(bufferSize + 1);
+                buffer.reserve(bufferSize);
                 buffer.resize(bufferSize);
                 if (napi_get_value_string_utf8(env, argv, buffer.data(), bufferSize + 1, &bufferSize) != napi_ok) {
                     HILOG_ERROR("StringDecoder:: can not get argv value");

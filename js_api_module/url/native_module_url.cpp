@@ -42,7 +42,7 @@ namespace OHOS::Url {
                 HILOG_ERROR("UrlStructor:: can not get argv[0] size");
                 return;
             }
-            temp.reserve(tempSize + 1);
+            temp.reserve(tempSize);
             temp.resize(tempSize);
             if (napi_get_value_string_utf8(env, argv[0], temp.data(), tempSize + 1, &tempSize) != napi_ok) {
                 HILOG_ERROR("UrlStructor:: can not get argv[0] value");
@@ -55,7 +55,7 @@ namespace OHOS::Url {
                     HILOG_ERROR("UrlStructor:: can not get argv[1] size");
                     return;
                 }
-                tempType.reserve(tempTypeSize + 1);
+                tempType.reserve(tempTypeSize);
                 tempType.resize(tempTypeSize);
                 if (napi_get_value_string_utf8(env, argv[1], tempType.data(),
                                                tempTypeSize + 1, &tempTypeSize) != napi_ok) {
@@ -108,7 +108,7 @@ namespace OHOS::Url {
                     HILOG_ERROR("UrlStructor:: can not get argv[0] size");
                     return nullptr;
                 }
-                type.reserve(typeSize + 1);
+                type.reserve(typeSize);
                 type.resize(typeSize);
                 if (napi_get_value_string_utf8(env, argv[0], type.data(), typeSize + 1, &typeSize) != napi_ok) {
                     HILOG_ERROR("UrlStructor:: can not get argv[0] value");
@@ -289,7 +289,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -315,7 +314,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -341,7 +339,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -367,7 +364,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -393,7 +389,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -422,7 +417,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -454,7 +448,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -480,7 +473,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -506,7 +498,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -532,7 +523,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -558,7 +548,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URL:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URL:: can not get argv[0] value");
@@ -617,7 +606,6 @@ namespace OHOS::Url {
             }
             if (arraySize > 0) {
                 std::string cstr = "";
-                cstr.reserve(arraySize + 1);
                 cstr.resize(arraySize);
                 if (napi_get_value_string_utf8(env, napiStr, cstr.data(), arraySize + 1, &arraySize) != napi_ok) {
                     HILOG_ERROR("URLSearchParams:: can not get name value");
@@ -822,7 +810,6 @@ namespace OHOS::Url {
             HILOG_ERROR("URLSearchParams:: can not get argv[0] size");
             return nullptr;
         }
-        input.reserve(typelen + 1);
         input.resize(typelen);
         if (napi_get_value_string_utf8(env, argv[0], input.data(), typelen + 1, &typelen) != napi_ok) {
             HILOG_ERROR("URLSearchParams:: can not get argv[0] value");
