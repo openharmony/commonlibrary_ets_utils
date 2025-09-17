@@ -54,6 +54,9 @@ export function registerArkUI() {
     registerStaticCB('ArkUI.RenderNode', 'arkui.handwritten.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.RenderNode', 'arkui.handwritten.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferDynamic');
 
+    registerStaticCB('ArkUI.ColorFilter', 'arkui.transfer.ColorFilterTransfer', 'ColorFilterTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.ColorFilter', 'arkui.transfer.ColorFilterTransfer', 'ColorFilterTransfer', 'transferDynamic');
+
     registerStaticCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferDynamic');
 
@@ -86,7 +89,4 @@ export function registerArkUI() {
 
     registerStaticCB('ArkUI.DrawableDescriptor', '@ohos.arkui.drawableDescriptor', 'DrawableDescriptor', 'transferStatic');
     registerDynamicCB('ArkUI.DrawableDescriptor', '@ohos.arkui.drawableDescriptor', 'DrawableDescriptor', 'transferDynamic');
-    
-    registerStaticCB('ArkUI.ColorFilter', 'arkui.component.units', 'ColorFilter', 'transferStatic');
-    registerDynamicCB('ArkUI.ColorFilter', 'arkui.component.units', 'ColorFilter', 'transferDynamic');
 }
