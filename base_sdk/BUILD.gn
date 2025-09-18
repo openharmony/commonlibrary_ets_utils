@@ -45,7 +45,7 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/resourceManager.ets",
     "./transfer/kitRegister/basicServicesKit.ets",
     "./transfer/kitRegister/osAccount.ets",
-    "./transfer/kitRegister/rpc.ets",
+    "./transfer/kitRegister/ipc.ets",
     "./transfer/kitRegister/window.ets",
     "./transfer/kitRegister/scene3d.ets",
     "./transfer/kitRegister/imageKit.ets",
