@@ -131,6 +131,7 @@ TaskManager::~TaskManager()
             task = nullptr;
         }
         tasks_.clear();
+        runningTasks_.clear();
     }
     CountTraceForWorker();
 }
@@ -575,7 +576,9 @@ template <bool needCheckIdle>
 void TaskManager::TryExpandWithCheckIdle()
 {
     if (GetNonIdleTaskNum() == 0) {
-        HILOG_INFO("taskpool:: no need to create worker");
+        if constexpr (!needCheckIdle) {
+            HILOG_DEBUG("taskpool:: no need expand");
+        }
         return;
     }
 
@@ -674,7 +677,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
         if (task->currentTaskInfo_ == nullptr || task->taskState_ == ExecuteState::NOT_FOUND ||
             task->taskState_ == ExecuteState::FINISHED || task->taskState_ == ExecuteState::ENDING) {
             std::string errMsg = "taskpool:: task is not executed or has been executed";
-            HILOG_ERROR("%{public}s", errMsg.c_str());
+            HILOG_DEBUG("%{public}s", errMsg.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
             return;
         }
@@ -707,7 +710,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
             task->taskState_ == ExecuteState::NOT_FOUND || task->taskState_ == ExecuteState::FINISHED ||
             task->taskState_ == ExecuteState::ENDING) {
             std::string errMsg = "taskpool:: task is not executed or has been executed";
-            HILOG_ERROR("%{public}s", errMsg.c_str());
+            HILOG_DEBUG("%{public}s", errMsg.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
             return;
         }
@@ -1385,11 +1388,6 @@ void TaskManager::TerminateTask(uint32_t taskId)
 
 void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTask)
 {
-    uint32_t taskId = task->taskId_;
-    if (shouldDeleteTask) {
-        RemoveTask(taskId);
-    }
-
     task->ReleaseData();
     task->CancelPendingTask(env);
 
@@ -1401,6 +1399,7 @@ void TaskManager::ReleaseTaskData(napi_env env, Task* task, bool shouldDeleteTas
     if (!task->IsMainThreadTask()) {
         task->SetValid(false);
     }
+    uint32_t taskId = task->taskId_;
     DecreaseSendDataRefCount(env, taskId, task);
     RemoveTaskDuration(taskId);
     RemovePendingTaskInfo(taskId);
@@ -1460,10 +1459,23 @@ void TaskManager::StoreTask(Task* task)
     tasks_.emplace(taskId, task);
 }
 
-void TaskManager::RemoveTask(uint32_t taskId)
+bool TaskManager::RemoveTask(uint32_t taskId)
 {
     std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    bool res = true;
+    auto runningIter = runningTasks_.find(taskId);
+    if (runningIter != runningTasks_.end()) {
+        res = false;
+    }
+    runningTasks_.erase(taskId);
     tasks_.erase(taskId);
+    return res;
+}
+
+void TaskManager::RemoveRunningTask(uint32_t taskId)
+{
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    runningTasks_.erase(taskId);
 }
 
 Task* TaskManager::GetTask(uint32_t taskId)
@@ -1473,6 +1485,17 @@ Task* TaskManager::GetTask(uint32_t taskId)
     if (iter == tasks_.end()) {
         return nullptr;
     }
+    return iter->second;
+}
+
+Task* TaskManager::GetTaskForPerform(uint32_t taskId)
+{
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    auto iter = tasks_.find(taskId);
+    if (iter == tasks_.end()) {
+        return nullptr;
+    }
+    runningTasks_.emplace(taskId, iter->second);
     return iter->second;
 }
 
@@ -1569,7 +1592,7 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
-        auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
+        DequeuePendingTaskInfo(*taskIdIter);
         RemoveDependencyById(taskId, *taskIdIter);
         auto id = *taskIdIter;
         taskIdIter = iter->second.erase(taskIdIter);
@@ -1577,10 +1600,18 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
         if (task == nullptr) {
             continue;
         }
-        if (task->currentTaskInfo_ != nullptr) {
-            EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority);
+        // 1. The task is in taskQueues_, need remove.
+        // 2. The task has not been executed yet, need remove.
+        if (task->currentTaskInfo_ != nullptr && EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {
+            delete task->currentTaskInfo_;
+            task->currentTaskInfo_ = nullptr;
+            task->DecreaseTaskLifecycleCount();
         }
-        task->DisposeCanceledTask();
+        if (task->currentTaskInfo_ == nullptr) {
+            reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
+            DecreaseSendDataRefCount(task->env_, task->taskId_, task);
+            napi_reference_unref(task->env_, task->taskRef_, nullptr);
+        }
         RemoveDependentTaskByTaskId(task->taskId_);
     }
 }

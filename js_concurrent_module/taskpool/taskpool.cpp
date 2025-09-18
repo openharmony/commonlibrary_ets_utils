@@ -390,6 +390,7 @@ void TaskPool::HandleTaskResult(Task* task)
 {
     HILOG_DEBUG("taskpool:: HandleTaskResult task");
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    TaskManager::GetInstance().RemoveRunningTask(task->taskId_); // update task execution info
     if (!task->IsMainThreadTask()) {
         if (task->ShouldDeleteTask(false)) {
             delete task;
