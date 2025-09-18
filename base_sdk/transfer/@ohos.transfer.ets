@@ -28,6 +28,7 @@ const dynamicRegisterMapRef = dynamicRegisterMap;
 export namespace transfer {
 
     export function transferStatic(input: Any, inputName: string): Object {
+
         if (!staticRegisterMapRef.has(inputName)) {
             throw new BusinessError(transferErrorCodeId,
                 new Error(`Transfer Error. The input name is not supported!`));

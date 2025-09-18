@@ -14,12 +14,38 @@
  */
 import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
+import { registerWindow } from './window.ets';
+import { registerAbilityKit } from './abilitykit.ets';
+import { registerOsAccount } from './osAccount.ets';
+import { registerArkWeb } from './arkweb.ets';
+import { registerCommonEventManager } from './basicServicesKit.ets';
+import { registerResourceManager } from './resourceManager.ets';
+import { registerDisplay } from './display.ets';
+import { registerScreen } from './screen.ets';
+import { registerImageKit } from './imageKit.ets';
+import { registerCameraKit } from './cameraKit.ets';
+import { registerPasteboard } from './pasteboard.ets';
 import { registerEffectKit } from './effectKit.ets';
+import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
+import { registerDrawing } from './drawing.ets'
 import { registerScene3D } from './scene3d.ets';
 
 export function registerMain(){
     registerArkTS();
     registerArkUI();
+    registerWindow();
+    registerAbilityKit();
+    registerOsAccount();
+    registerArkWeb();
+    registerCommonEventManager();
+    registerResourceManager();
+    registerDisplay();
+    registerScreen();
+    registerImageKit();
+    registerCameraKit();
+    registerPasteboard();
     registerEffectKit();
+    registerMediaLibraryKit();
+    registerDrawing();
     registerScene3D();
 }
