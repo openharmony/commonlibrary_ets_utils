@@ -29,6 +29,7 @@ import { registerEffectKit } from './effectKit.ets';
 import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
 import { registerDrawing } from './drawing.ets'
 import { registerScene3D } from './scene3d.ets';
+import { registerRpc } from './rpc.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -48,4 +49,5 @@ export function registerMain(){
     registerMediaLibraryKit();
     registerDrawing();
     registerScene3D();
+    registerRpc();
 }
