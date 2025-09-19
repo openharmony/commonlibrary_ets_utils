@@ -49,7 +49,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     std::string errMessage = "";
     if (argc < 1) {
         errMessage = "taskpool:: create task need more than one param";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
+        HILOG_DEBUG("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
@@ -72,7 +72,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     }
     if (!NapiHelper::IsFunction(env, func)) {
         errMessage = "taskpool:: the first or second param of task must be function";
-        HILOG_ERROR("%{public}s", errMessage.c_str());
+        HILOG_DEBUG("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "the type of the first or second param of task must be function.");
         return nullptr;
