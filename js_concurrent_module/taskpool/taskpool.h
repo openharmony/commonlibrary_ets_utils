@@ -67,6 +67,8 @@ private:
                                         Task*& task);
     static void ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResultInfo* resultInfo);
     static void RecordTaskResultLog(Task* task, napi_status status, napi_value& napiTaskResult, bool& isCancel);
+    static napi_value GetTask(napi_env env, napi_callback_info cbinfo);
+
     friend class TaskManager;
     friend class NativeEngineTest;
 };

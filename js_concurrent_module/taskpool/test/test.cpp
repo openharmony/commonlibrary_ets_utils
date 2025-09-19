@@ -1100,4 +1100,14 @@ bool NativeEngineTest::GetTaskEnvAndPriority(uint32_t taskId)
     }
     return true;
 }
+
+napi_value NativeEngineTest::GetTask(napi_env env, napi_value argv[], size_t argc)
+{
+    std::string funcName = "GetTask";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), TaskPool::GetTask, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &result);
+    return result;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

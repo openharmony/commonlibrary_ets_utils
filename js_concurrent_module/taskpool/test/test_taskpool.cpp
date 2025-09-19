@@ -7163,3 +7163,110 @@ HWTEST_F(NativeEngineTest, TaskpoolTest346, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest347, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value result = NativeEngineTest::GetTask(env, nullptr, 0);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    napi_value argv[] = {nullptr, nullptr, nullptr};
+    result = NativeEngineTest::GetTask(env, argv, 3);
+    ASSERT_TRUE(result == nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    napi_value name = nullptr;
+    napi_create_string_utf8(env, "task347", NAPI_AUTO_LENGTH, &name);
+    napi_value argv2[] = {name};
+    result = NativeEngineTest::GetTask(env, argv2, 1);
+    ASSERT_TRUE(result == nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    napi_value taskId = NapiHelper::CreateUint32(env, 0);
+    napi_value argv3[] = {taskId};
+    result = NativeEngineTest::GetTask(env, argv3, 1);
+    ASSERT_TRUE(result != nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    napi_value name2 = nullptr;
+    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &name2);
+    napi_value taskId2 = NapiHelper::CreateUint32(env, 1);
+    napi_value argv4[] = {taskId2, name2};
+    result = NativeEngineTest::GetTask(env, argv4, 2);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest348, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value exception = nullptr;
+
+    napi_value taskId = NapiHelper::CreateUint32(env, 344);
+    napi_value argv[] = {taskId, taskId};
+    napi_value result = NativeEngineTest::GetTask(env, argv, 2);
+    ASSERT_TRUE(result == nullptr);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+
+    napi_value name = nullptr;
+    napi_create_string_utf8(env, "task348", NAPI_AUTO_LENGTH, &name);
+    napi_value argv2[] = {taskId, name};
+    result = NativeEngineTest::GetTask(env, argv2, 2);
+    ASSERT_TRUE(result != nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    napi_value taskId3 = NapiHelper::CreateUint32(env, task->taskId_);
+    napi_value argv3[] = {taskId3};
+    result = NativeEngineTest::GetTask(env, argv3, 1);
+    ASSERT_TRUE(result != nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    task->env_ = env;
+    task->SetValid(false);
+    result = NativeEngineTest::GetTask(env, argv3, 1);
+    ASSERT_TRUE(result != nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest349, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value name = nullptr;
+    napi_create_string_utf8(env, "task349", NAPI_AUTO_LENGTH, &name);
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    napi_value taskId = NapiHelper::CreateUint32(env, task->taskId_);
+    napi_value argv[] = {taskId, name};
+    task->env_ = env;
+    napi_value result = NativeEngineTest::GetTask(env, argv, 2);
+    ASSERT_TRUE(result != nullptr);
+
+    task->name_ = "task349";
+    napi_value argv2[] = {taskId, name};
+    result = NativeEngineTest::GetTask(env, argv2, 2);
+    ASSERT_TRUE(result != nullptr);
+
+    napi_value argv3[] = {taskId};
+    result = NativeEngineTest::GetTask(env, argv3, 1);
+    ASSERT_TRUE(result != nullptr);
+}
