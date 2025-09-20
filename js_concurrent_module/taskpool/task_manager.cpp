@@ -490,7 +490,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     // update the maxThreads_ periodically
     maxThreads_ = ConcurrentHelper::GetMaxThreads();
     if (minThread == 0) {
-        HILOG_INFO("taskpool:: low memory");
+        HILOG_INFO("taskpool:: low mem");
     }
     if (workerCount > minThread && workerCount > targetNum) {
         targetNum = std::max(minThread, targetNum);
@@ -613,8 +613,8 @@ void TaskManager::TryExpandWithCheckIdle()
             return;
         }
         CreateWorkers(hostEnv_, step);
-        HILOG_INFO("taskpool:: maxThreads: %{public}u, created num: %{public}u, total num: %{public}u",
-            maxThreads, step, GetThreadNum());
+        // print taskpool workers info
+        HILOG_INFO("taskpool:: max:%{public}u, create:%{public}u, total:%{public}u", maxThreads, step, GetThreadNum());
     }
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
@@ -930,11 +930,11 @@ void TaskManager::NotifyExecuteTask()
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
         // When there are only idle tasks and workers executing them, it is not triggered
-        HILOG_INFO("taskpool:: no need notify");
+        HILOG_INFO("taskpool:: not notify");
         return;
     }
     if (idleWorkers_.size() == 0) {
-        HILOG_INFO("taskpool:: idleWorkers is 0");
+        HILOG_INFO("taskpool:: 0 idleWorker");
         return;
     }
 
@@ -956,9 +956,9 @@ void TaskManager::InitTaskManager(napi_env env)
             }
         }
         if (EnableFfrt()) {
-            HILOG_INFO("taskpool:: apps use ffrt");
+            HILOG_DEBUG("taskpool:: apps use ffrt");
         } else {
-            HILOG_INFO("taskpool:: apps do not use ffrt");
+            HILOG_DEBUG("taskpool:: apps do not use ffrt");
         }
 #endif
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
@@ -1780,7 +1780,8 @@ void TaskManager::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int
                                             int64_t timeoutThreadNum)
 {
     if (needLog) {
-        HILOG_INFO("taskpool:: threads: %{public}s, running: %{public}s, idle: %{public}s, timeout: %{public}s",
+        // A: all workers num, R: running workers num, I: idle workers num, O: timeout workers num
+        HILOG_INFO("taskpool:: A:%{public}s, R:%{public}s, I:%{public}s, O:%{public}s",
             std::to_string(threadNum).c_str(), std::to_string(threadNum - idleThreadNum).c_str(),
             std::to_string(idleThreadNum).c_str(), std::to_string(timeoutThreadNum).c_str());
     }

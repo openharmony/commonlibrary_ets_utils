@@ -38,21 +38,16 @@
 #define LOG_TAG "NAPI"
 
 #define HILOG_FATAL(fmt, ...) \
-    ((void)HILOG_IMPL(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    ((void)HILOG_IMPL(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
 #define HILOG_ERROR(fmt, ...) \
-    ((void)HILOG_IMPL(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    ((void)HILOG_IMPL(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
 #define HILOG_WARN(fmt, ...) \
-    ((void)HILOG_IMPL(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    ((void)HILOG_IMPL(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
 #define HILOG_INFO(fmt, ...) \
-    ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
 #define HILOG_TASK_INFO(...) \
-    ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,  ##__VA_ARGS__))
+    ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__))
 #define HILOG_DEBUG(fmt, ...) \
-    ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, \
-    "[(%{public}s:%{public}d)(%{public}s)] " fmt, "", __LINE__, __FUNCTION__, ##__VA_ARGS__))
+    ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
 
 #endif /* COMMONLIBRARY_ETS_UTILS_TOOLS_LOG_H */

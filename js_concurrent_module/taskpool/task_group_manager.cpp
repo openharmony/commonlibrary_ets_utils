@@ -91,7 +91,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
         if (taskGroup->currentGroupInfo_ == nullptr || taskGroup->groupState_ == ExecuteState::NOT_FOUND ||
             taskGroup->groupState_ == ExecuteState::FINISHED) {
             std::string errMsg = "taskpool:: taskGroup is not executed or has been executed";
-            HILOG_ERROR("%{public}s", errMsg.c_str());
+            HILOG_DEBUG("%{public}s", errMsg.c_str());
             ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK_GROUP, errMsg.c_str());
             return;
         }
