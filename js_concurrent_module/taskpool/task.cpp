@@ -80,11 +80,13 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
 
     Task* task = GenerateTask(env, thisVar, func, name, args, argc);
     napi_status status = napi_wrap(env, thisVar, task, TaskDestructor, nullptr, nullptr);
-    if (status != napi_ok) {
+    if (status != napi_ok) { // LOCV_EXCL_BR_LINE
         HILOG_ERROR("taskpool::TaskConstructor napi_wrap return value is %{public}d", status);
-        TaskManager::GetInstance().RemoveTask(task->taskId_);
-        delete task;
-        task = nullptr;
+        task->SetValid(false);
+        if (TaskManager::GetInstance().RemoveTask(task->taskId_)) {
+            delete task;
+            task = nullptr;
+        }
         return nullptr;
     }
     napi_create_reference(env, thisVar, 0, &task->taskRef_);
@@ -113,25 +115,33 @@ void Task::TaskDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
     if (!task->IsMainThreadTask()) {
         napi_remove_env_cleanup_hook(env, Task::CleanupHookFunc, task);
     }
+    task->SetValid(false);
     // for performance, do not lock first
     if (task->IsMainThreadTask() || task->lifecycleCount_ == 0) {
         TaskManager::GetInstance().ReleaseTaskData(env, task);
         napi_delete_reference(env, task->taskRef_);
-        delete task;
+        if (TaskManager::GetInstance().RemoveTask(task->taskId_)) {
+            delete task;
+            task = nullptr;
+        } else { // LOCV_EXCL_BR_LINE
+            HILOG_DEBUG("taskpool:: task may be in progress");
+        }
         return;
     }
     bool shouldDelete = false;
     {
         std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        task->SetValid(false);
         if (task->lifecycleCount_ == 0) {
             shouldDelete = true;
         }
         TaskManager::GetInstance().ReleaseTaskData(env, task, shouldDelete);
         napi_delete_reference(env, task->taskRef_);
     }
-    if (shouldDelete) {
+    if (shouldDelete && TaskManager::GetInstance().RemoveTask(task->taskId_)) {
         delete task;
+        task = nullptr;
+    } else { // LOCV_EXCL_BR_LINE
+        HILOG_DEBUG("taskpool:: task may be in progress");
     }
 }
 

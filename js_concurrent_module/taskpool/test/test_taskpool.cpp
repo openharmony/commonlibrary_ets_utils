@@ -6891,6 +6891,25 @@ HWTEST_F(NativeEngineTest, TaskpoolTest335, testing::ext::TestSize.Level0)
     ASSERT_TRUE(true);
 }
 
+HWTEST_F(NativeEngineTest, TaskpoolTest336, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t taskId = 336;
+    Task* task = new Task();
+    task->env_ = env;
+    napi_value obj = NapiHelper::CreateObject(env);
+    task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
+    task->currentTaskInfo_ = new TaskInfo();
+    TaskManager::GetInstance().StoreTask(task);
+    std::set<uint32_t> taskIds{taskId};
+    TaskManager::GetInstance().StoreDependentTaskInfo(taskIds, task->taskId_);
+    NativeEngineTest::EnqueueTaskIdToQueue(reinterpret_cast<void*>(task));
+    TaskManager::GetInstance().ClearDependentTask(taskId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
 HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -7006,4 +7025,25 @@ HWTEST_F(NativeEngineTest, TaskpoolTest340, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest341, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    uint32_t taskId = 341;
+    Task* task1 = taskManager.GetTaskForPerform(taskId);
+    ASSERT_TRUE(task1 == nullptr);
+    Task* task2 = new Task();
+    taskManager.StoreTask(task2);
+    Task* res1 = taskManager.GetTaskForPerform(task2->taskId_);
+    ASSERT_EQ(res1, task2);
+    taskManager.RemoveRunningTask(task2->taskId_);
+    bool isFinished = taskManager.RemoveTask(task2->taskId_);
+    ASSERT_TRUE(isFinished);
+    Task* res2 = taskManager.GetTaskForPerform(task2->taskId_);
+    ASSERT_TRUE(res2 == nullptr);
+    delete task2;
 }
