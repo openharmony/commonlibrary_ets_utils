@@ -631,7 +631,7 @@ napi_value Worker::Terminate(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     bool expected = false;
-    if (worker->isTerminated_.compare_exchange_weak(expected, true)) {
+    if (worker->isTerminated_.compare_exchange_strong(expected, true)) {
         HILOG_DEBUG("worker:: Terminate worker");
     } else {
         HILOG_DEBUG("worker:: worker is terminated when Terminate");
@@ -2033,7 +2033,7 @@ void Worker::TerminateInner()
 void Worker::CloseInner()
 {
     bool expected = false;
-    if (isTerminated_.compare_exchange_weak(expected, true)) {
+    if (isTerminated_.compare_exchange_strong(expected, true)) {
         HILOG_INFO("worker:: Close worker");
     } else {
         HILOG_DEBUG("worker:: worker is terminated when Close");
