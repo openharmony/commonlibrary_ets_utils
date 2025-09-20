@@ -2236,6 +2236,11 @@ void Worker::WorkerOnMessageInner()
             TerminateWorker();
             return;
         }
+
+        // support worker execute high prio task
+        uv_loop_t *loop = GetWorkerLoop();
+        uv_call_specify_task(loop);
+
         napi_value result = nullptr;
         status = napi_deserialize(workerEnv_, data, &result);
         napi_delete_serialization_data(workerEnv_, data);
