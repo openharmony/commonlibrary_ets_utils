@@ -103,6 +103,7 @@ public:
     static void TriggerTask(void* data, bool isCancel);
     static bool GetTaskEnvAndPriority(uint32_t taskId);
     static napi_value GetTask(napi_env env, napi_value argv[], size_t argc);
+    static std::string GetFuncNameFromError(napi_env env, napi_value error);
 
     class ExceptionScope {
     public:

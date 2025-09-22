@@ -7103,6 +7103,85 @@ HWTEST_F(NativeEngineTest, TaskpoolTest342, testing::ext::TestSize.Level0)
     ASSERT_FALSE(res);
 }
 
+HWTEST_F(NativeEngineTest, TaskpoolTest343, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string defaultName = "Taskpool Thread";
+    std::string name = NativeEngineTest::GetFuncNameFromError(env, nullptr);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error = NapiHelper::CreateObject(env);
+    std::string err = "TaskpoolTest343";
+    napi_value stack = nullptr;
+    napi_create_string_utf8(env, err.c_str(), NAPI_AUTO_LENGTH, &stack);
+    napi_set_named_property(env, error, "stack", stack);
+    name = NativeEngineTest::GetFuncNameFromError(env, error);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error2 = NapiHelper::CreateObject(env);
+    std::string err2 = "TaskatTest343";
+    napi_value stack2 = nullptr;
+    napi_create_string_utf8(env, err2.c_str(), NAPI_AUTO_LENGTH, &stack2);
+    napi_set_named_property(env, error2, "stack", stack2);
+    name = NativeEngineTest::GetFuncNameFromError(env, error2);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error3 = NapiHelper::CreateObject(env);
+    std::string err3 = "Tas(atTest343";
+    napi_value stack3 = nullptr;
+    napi_create_string_utf8(env, err3.c_str(), NAPI_AUTO_LENGTH, &stack3);
+    napi_set_named_property(env, error3, "stack", stack3);
+    name = NativeEngineTest::GetFuncNameFromError(env, error3);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error4 = NapiHelper::CreateObject(env);
+    std::string err4 = "Tasat T(est (343";
+    napi_value stack4 = nullptr;
+    napi_create_string_utf8(env, err4.c_str(), NAPI_AUTO_LENGTH, &stack4);
+    napi_set_named_property(env, error4, "stack", stack4);
+    name = NativeEngineTest::GetFuncNameFromError(env, error4);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error5 = NapiHelper::CreateObject(env);
+    std::string err5 = "Tasat Test (343";
+    napi_value stack5 = nullptr;
+    napi_create_string_utf8(env, err5.c_str(), NAPI_AUTO_LENGTH, &stack5);
+    napi_set_named_property(env, error5, "stack", stack5);
+    name = NativeEngineTest::GetFuncNameFromError(env, error5);
+    ASSERT_TRUE(name == "Taskpool Thread Test");
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest343_1, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    std::string defaultName = "Taskpool Thread";
+    std::string name = taskManager.GetFuncNameFromData(nullptr);
+    ASSERT_TRUE(name == defaultName);
+
+    Task* task = new Task();
+    task->name_ = "TaskpoolTest343_1";
+    void* data = reinterpret_cast<void*>(task);
+    name = taskManager.GetFuncNameFromData(data);
+    ASSERT_TRUE(name == defaultName);
+
+    taskManager.StoreTask(task);
+    Task* task2 = taskManager.GetTaskForPerform(task->taskId_);
+    ASSERT_TRUE(task == task2);
+
+    name = taskManager.GetFuncNameFromData(data);
+    ASSERT_TRUE(name == "Taskpool Thread TaskpoolTest343_1");
+
+    task->SetValid(false);
+    name = taskManager.GetFuncNameFromData(data);
+    ASSERT_TRUE(name == defaultName);
+
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+}
+
 HWTEST_F(NativeEngineTest, TaskpoolTest344, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;

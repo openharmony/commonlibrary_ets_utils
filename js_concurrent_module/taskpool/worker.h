@@ -188,6 +188,7 @@ private:
     static void TaskResultCallback(napi_env env, napi_value result, bool success, void* data);
     static void ReleaseWorkerHandles(const uv_async_t* req);
     static void TriggerGCCheck(const uv_async_t* req);
+    static std::string GetFuncNameFromError(napi_env env, napi_value error);
 
 #if defined(ENABLE_TASKPOOL_FFRT)
     void InitFfrtInfo();

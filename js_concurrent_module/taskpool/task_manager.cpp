@@ -1835,4 +1835,27 @@ CallbackInfo* TaskManager::GetSenddataCallback(uint32_t taskId)
     }
     return iter->second.get();
 }
+
+std::string TaskManager::GetFuncNameFromData(void* data)
+{
+    std::string name = "Taskpool Thread";
+    if (data == nullptr) {
+        return name;
+    }
+    Task* task = static_cast<Task*>(data);
+    bool flag = false;
+    {
+        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+        for (auto& [_, rTask] : runningTasks_) {
+            if (rTask == task) {
+                flag = true;
+                break;
+            }
+        }
+    }
+    if (!flag || !task->IsValid()) {
+        return name;
+    }
+    return name + " " + task->name_;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
