@@ -1163,6 +1163,10 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
         }
         serializationFunction = currentTaskInfo_->serializationFunction;
         serializationArguments = currentTaskInfo_->serializationArguments;
+        if (!IsGroupFunctionTask()) {
+            currentTaskInfo_->serializationFunction = nullptr;
+            currentTaskInfo_->serializationArguments = nullptr;
+        }
     }
     napi_status status = napi_ok;
     std::string errMessage = "";
