@@ -15,8 +15,8 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerIpc() {
-  registerStaticCB('Ipc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'transferStatic');
-  registerDynamicCB('Ipc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'transferDynamic');
+  registerStaticCB('Ipc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'TransferStatic');
+  registerDynamicCB('Ipc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'TransferDynamic');
   registerStaticCB('Ipc.Ashmem', '@ohos.rpc', 'rpc.Ashmem', 'TransferStatic');
   registerDynamicCB('Ipc.Ashmem', '@ohos.rpc', 'rpc.Ashmem', 'TransferDynamic');
   registerStaticCB('Ipc.RemoteObject', '@ohos.rpc', 'rpc.RemoteObject', 'TransferStatic');
