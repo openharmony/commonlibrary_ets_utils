@@ -4674,6 +4674,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().StoreTask(task);
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     task->worker_ = worker;
+    task->env_ = env;
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, task->taskId_, args);
     TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_);
@@ -7011,6 +7012,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
     taskManager.StoreTask(task);
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     task->worker_ = worker;
+    task->env_ = env;
     taskManager.RegisterCallback(env, task->taskId_, nullptr, "OnReceiveData");
     taskManager.ExecuteSendData(env, nullptr, task->taskId_);
     exception = nullptr;
@@ -7082,4 +7084,21 @@ HWTEST_F(NativeEngineTest, TaskpoolTest341, testing::ext::TestSize.Level0)
     Task* res2 = taskManager.GetTaskForPerform(task2->taskId_);
     ASSERT_TRUE(res2 == nullptr);
     delete task2;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest342, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    task->SetValid(false);
+    bool res = NativeEngineTest::GetTaskEnvAndPriority(task->taskId_);
+    ASSERT_FALSE(res);
+
+    task->SetValid(true);
+    res = NativeEngineTest::GetTaskEnvAndPriority(task->taskId_);
+    ASSERT_FALSE(res);
 }

@@ -1068,19 +1068,10 @@ void TaskManager::DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* 
 
 void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint32_t taskId)
 {
-    auto task = GetTask(taskId);
-    if (task == nullptr) {
-        HILOG_ERROR("taskpool:: the task is nullptr");
+    auto [hostEnv, priority] = GetTaskEnvAndPriority(taskId);
+    if (hostEnv == nullptr) {
         delete resultInfo;
         return;
-    }
-    napi_env hostEnv = nullptr;
-    napi_event_priority priority = napi_eprio_high;
-    {
-        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        auto worker = task->GetWorker();
-        hostEnv = task->GetEnv();
-        priority = g_napiPriorityMap.at(worker->GetPriority());
     }
     std::lock_guard<std::mutex> lock(callbackMutex_);
     auto iter = callbackTable_.find(taskId);
@@ -1819,5 +1810,23 @@ bool TaskManager::ExecuteTaskStartExecution(uint32_t taskId, Priority priority)
         workerEngine->DecreaseListeningCounter();
     }
     return true;
+}
+
+std::tuple<napi_env, napi_event_priority> TaskManager::GetTaskEnvAndPriority(uint32_t taskId)
+{
+    auto task = GetTask(taskId);
+    if (task == nullptr || !task->IsValid()) {
+        HILOG_ERROR("taskpool:: GetTaskEnvAndPriority task is nullptr");
+        return {nullptr, napi_eprio_high};
+    }
+    std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+    auto worker = task->GetWorker();
+    if (worker == nullptr) {
+        HILOG_ERROR("taskpool:: GetTaskEnvAndPriority worker is nullptr");
+        return {nullptr, napi_eprio_high};
+    }
+    napi_env hostEnv = task->GetEnv();
+    napi_event_priority priority = g_napiPriorityMap.at(worker->GetPriority());
+    return {hostEnv, priority};
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
