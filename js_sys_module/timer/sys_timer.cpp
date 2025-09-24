@@ -49,9 +49,9 @@ TimerCallbackInfo::~TimerCallbackInfo()
     Helper::CloseHelp::DeletePointer(argv_, true);
 
     uv_timer_stop(timeReq_);
+    timeReq_->data = nullptr;
     uv_close(reinterpret_cast<uv_handle_t*>(timeReq_), [](uv_handle_t* handle) {
         if (handle != nullptr) {
-            handle->data = nullptr;
             delete (uv_timer_t*)handle;
             handle = nullptr;
         }
