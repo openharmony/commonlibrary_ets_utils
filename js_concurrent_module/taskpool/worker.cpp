@@ -23,6 +23,7 @@
 #include "sys_timer.h"
 #include "helper/hitrace_helper.h"
 #include "process_helper.h"
+#include "sequence_runner_manager.h"
 #include "taskpool.h"
 #include "task_group_manager.h"
 #include "native_engine.h"
@@ -538,6 +539,8 @@ void Worker::NotifyHandleTaskResult(Task* task)
     if (!Task::VerifyAndPostResult(task, priority)) {
         if (task->ShouldDeleteTask()) {
             delete task;
+        } else if (task->IsSeqRunnerTask()) {
+            SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->GetEnv(), task);
         }
     }
     worker->NotifyTaskFinished();
