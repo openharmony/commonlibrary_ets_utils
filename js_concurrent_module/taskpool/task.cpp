@@ -1528,6 +1528,9 @@ bool Task::ShouldDeleteTask(bool needUnref)
         if (IsAsyncRunnerTask()) {
             AsyncRunnerManager::GetInstance().DecreaseRunningCount(asyncRunnerId_);
         }
+        if (IsSeqRunnerTask()) {
+            SequenceRunnerManager::GetInstance().TriggerSeqRunner(env_, this);
+        }
         TaskManager::GetInstance().RemoveTask(taskId_);
         return true;
     }

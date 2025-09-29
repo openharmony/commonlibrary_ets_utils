@@ -20,4 +20,7 @@ export function registerCommonEventManager() {
 
     registerStaticCB('StaticSubscriberExtensionContext', '@ohos.application.StaticSubscriberExtensionContext', 'StaticSubscriberExtensionContext', 'transferStatic');
     registerDynamicCB('StaticSubscriberExtensionContext', '@ohos.application.StaticSubscriberExtensionContext', 'StaticSubscriberExtensionContext', 'transferDynamic');
+
+    registerStaticCB('Emitter', '@ohos.events.emitter.emitter', 'Emitter', 'transferStatic');
+    registerDynamicCB('Emitter', '@ohos.events.emitter.emitter', 'Emitter', 'transferDynamic');
 }
