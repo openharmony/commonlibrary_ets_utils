@@ -832,9 +832,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest058, testing::ext::TestSize.Level0)
     sequenceRunnerManager.AddTaskToSeqRunner(seqRunnerId, task);
     sequenceRunnerManager.TriggerSeqRunner(env, task);
     SequenceRunner sequenceRunner;
-    sequenceRunnerManager.StoreSequenceRunner(seqRunnerId, &sequenceRunner);
-    NativeEngineTest::RemoveSequenceRunner(seqRunnerId);
-    SequenceRunner* res = sequenceRunnerManager.GetSeqRunner(seqRunnerId);
+    sequenceRunnerManager.StoreRunner(seqRunnerId, &sequenceRunner);
+    NativeEngineTest::RemoveRunner(seqRunnerId);
+    SequenceRunner* res = sequenceRunnerManager.GetRunner(seqRunnerId);
     ASSERT_EQ(res, nullptr);
 }
 
@@ -1268,7 +1268,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest087, testing::ext::TestSize.Level0)
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, result, "seqRunnerId");
     uint64_t seqId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
     SequenceRunner seq;
-    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqId, &seq);
+    SequenceRunnerManager::GetInstance().StoreRunner(seqId, &seq);
 
     res = nullptr;
     napi_call_function(env, nullptr, cb, 1, argv2, &res);
@@ -2041,17 +2041,17 @@ HWTEST_F(NativeEngineTest, TaskpoolTest129, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     SequenceRunner* seqRunner = new SequenceRunner();
-    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
-    seqRunner->seqName_ = "seq01";
+    seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    seqRunner->name_ = "seq01";
     void* data = static_cast<void*>(seqRunner);
-    NativeEngineTest::SequenceRunnerDestructor(env, data);
+    NativeEngineTest::RunnerDestructor(env, data);
 
     SequenceRunner* seqRunner2 = new SequenceRunner();
-    seqRunner2->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner2);
-    seqRunner2->seqName_ = "seq02";
+    seqRunner2->runnerId_ = reinterpret_cast<uint64_t>(seqRunner2);
+    seqRunner2->name_ = "seq02";
     seqRunner2->isGlobalRunner_ = true;
     void* data2 = static_cast<void*>(seqRunner2);
-    NativeEngineTest::SequenceRunnerDestructor(env, data2);
+    NativeEngineTest::RunnerDestructor(env, data2);
 
     ASSERT_TRUE(true);
 }
@@ -4351,7 +4351,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, SeqResult, "seqRunnerId");
     uint64_t seqId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
     SequenceRunner seq;
-    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqId, &seq);
+    SequenceRunnerManager::GetInstance().StoreRunner(seqId, &seq);
 
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_value num = nullptr;
@@ -4372,8 +4372,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
 
     SequenceRunner seq1;
     seq1.currentTaskId_ = 1;
-    NativeEngineTest::RemoveSequenceRunner(seqId);
-    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqId, &seq1);
+    NativeEngineTest::RemoveRunner(seqId);
+    SequenceRunnerManager::GetInstance().StoreRunner(seqId, &seq1);
     thisValue = CreateTaskObject(env);
     napi_value argv2[] = {thisValue};
     napi_call_function(env, nullptr, callback, 1, argv2, &result);
@@ -4634,7 +4634,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest227, testing::ext::TestSize.Level0)
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
     TaskInfo* taskInfo = new TaskInfo();
     task->currentTaskInfo_ = taskInfo;
-    task->seqRunnerId_ = 1;
+    task->runnerId_ = 1;
     napi_value num = nullptr;
     napi_create_uint32(env, 1, &num);
     napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, num, 1);
@@ -5156,8 +5156,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest257, testing::ext::TestSize.Level0)
     result = nullptr;
     AsyncRunner* runner = asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, capacity);
     ASSERT_NE(runner, nullptr);
-    runner->asyncRunnerId_ = reinterpret_cast<uint64_t>(runner);
-    AsyncRunnerManager::GetInstance().StoreAsyncRunner(runner->asyncRunnerId_, runner);
+    runner->runnerId_ = reinterpret_cast<uint64_t>(runner);
+    AsyncRunnerManager::GetInstance().StoreRunner(runner->runnerId_, runner);
 
     runner = asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, 6);
     ASSERT_EQ(runner, nullptr);
@@ -5334,12 +5334,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest265, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     void* data = nullptr;
-    NativeEngineTest::AsyncRunnerDestructor(nullptr, data);
-    NativeEngineTest::AsyncRunnerDestructor(env, data);
+    NativeEngineTest::RunnerDestructor(nullptr, data);
+    NativeEngineTest::RunnerDestructor(env, data);
     AsyncRunner* asyncRunner = new AsyncRunner();
-    asyncRunner->asyncRunnerId_ = 265;
+    asyncRunner->runnerId_ = 265;
     void* data2 = static_cast<void*>(asyncRunner);
-    NativeEngineTest::AsyncRunnerDestructor(env, data2);
+    NativeEngineTest::RunnerDestructor(env, data2);
     ASSERT_TRUE(true);
 }
 
@@ -5356,12 +5356,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest266, testing::ext::TestSize.Level0)
     asyncRunner->runningCapacity_ = 1;
     asyncRunner->waitingCapacity_ = 1;
     asyncRunner->runningCount_ = 1;
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    task->runnerId_ = asyncRunner->runnerId_;
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
 
     Task* task2 = new Task();
-    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task2->runnerId_ = asyncRunner->runnerId_;
     TaskInfo* taskInfo = new TaskInfo();
     task2->currentTaskInfo_ = taskInfo;
     void* data2 = reinterpret_cast<void*>(task2);
@@ -5413,10 +5413,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest268, testing::ext::TestSize.Level0)
     asyncRunner->runningCapacity_ = 1;
     asyncRunner->waitingCapacity_ = 1;
     asyncRunner->runningCount_ = 1;
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    asyncRunner->IncreaseAsyncCount();
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunner->IncreaseCount();
+    task->runnerId_ = asyncRunner->runnerId_;
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
     bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
     ASSERT_TRUE(flag);
     delete task;
@@ -5431,29 +5431,29 @@ HWTEST_F(NativeEngineTest, TaskpoolTest269, testing::ext::TestSize.Level0)
     std::string asyncName = "async269";
     napi_value obj = NapiHelper::CreateObject(env);
     AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, asyncName, 5, 0);
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
     asyncRunner->isGlobalRunner_ = true;
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
 
     Task* task = new Task();
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task->runnerId_ = asyncRunner->runnerId_;
 
     Task* task2 = new Task();
-    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task2->runnerId_ = asyncRunner->runnerId_;
     task2->taskState_ = ExecuteState::CANCELED;
     TaskInfo* taskInfo = new TaskInfo();
     task2->currentTaskInfo_ = taskInfo;
     void* data2 = reinterpret_cast<void*>(task2);
     void* async = reinterpret_cast<void*>(asyncRunner);
     NativeEngineTest::AddTasksToAsyncRunner(async, data2);
-    asyncRunner->IncreaseAsyncCount();
+    asyncRunner->IncreaseCount();
 
     Task* task3 = new Task();
-    task3->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task3->runnerId_ = asyncRunner->runnerId_;
     task3->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task3));
     void* data3 = reinterpret_cast<void*>(task3);
     NativeEngineTest::AddTasksToAsyncRunner(async, data3);
-    asyncRunner->IncreaseAsyncCount();
+    asyncRunner->IncreaseCount();
     bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
     ASSERT_TRUE(flag);
 
@@ -5577,7 +5577,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest273, testing::ext::TestSize.Level0)
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
     TaskInfo* taskInfo = new TaskInfo();
     task->currentTaskInfo_ = taskInfo;
-    task->asyncRunnerId_ = 1;
+    task->runnerId_ = 1;
     napi_value num = nullptr;
     napi_create_int32(env, 1, &num);
     napi_ref callbackRef = NapiHelper::CreateReference(env, num, 1);
@@ -5613,11 +5613,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest275, testing::ext::TestSize.Level0)
     std::string asyncName = "async275";
     napi_value obj = NapiHelper::CreateObject(env);
     AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, asyncName, 5, 0);
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
 
     Task* task = new Task();
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task->runnerId_ = asyncRunner->runnerId_;
     TaskInfo* taskInfo = new TaskInfo();
     task->currentTaskInfo_ = taskInfo;
     task->taskType_ = TaskType::ASYNCRUNNER_TASK;
@@ -5627,16 +5627,16 @@ HWTEST_F(NativeEngineTest, TaskpoolTest275, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_EQ(exception, nullptr);
-    asyncRunner->waitingTasks_.push_back(task);
+    asyncRunner->tasks_.push_back(task);
 
     Task* task2 = new Task();
     task2->env_ = env;
-    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task2->runnerId_ = asyncRunner->runnerId_;
     TaskInfo* taskInfo2 = new TaskInfo();
     task2->currentTaskInfo_ = taskInfo2;
     task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task2->SetValid(false);
-    asyncRunner->waitingTasks_.push_back(task2);
+    asyncRunner->tasks_.push_back(task2);
     taskManager.StoreTask(task2);
     taskManager.CancelTask(env, task2->taskId_);
     exception = nullptr;
@@ -5738,14 +5738,14 @@ HWTEST_F(NativeEngineTest, TaskpoolTest278, testing::ext::TestSize.Level0)
 
     napi_value obj = NapiHelper::CreateObject(env);
     AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, "", 5, 0);
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
 
     Task* task = new Task();
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task->runnerId_ = asyncRunner->runnerId_;
     task->taskType_ = TaskType::ASYNCRUNNER_TASK;
     taskManager.StoreTask(task);
-    asyncRunner->waitingTasks_.push_back(task);
+    asyncRunner->tasks_.push_back(task);
     taskManager.CancelTask(env, task->taskId_);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -5827,9 +5827,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest282, testing::ext::TestSize.Level0)
     std::string asyncName = "";
     napi_value obj = NapiHelper::CreateObject(env);
     AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, obj, asyncName, 5, 0);
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
+    task->runnerId_ = asyncRunner->runnerId_;
     napi_value obj2 = NapiHelper::CreateObject(env);
     task->taskRef_ = NapiHelper::CreateReference(env, obj2, 1);
     DiscardTaskMessage* message = new DiscardTaskMessage(task->env_, task->taskId_, 0, false);
@@ -5899,12 +5899,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest284, testing::ext::TestSize.Level0)
     asyncRunner->runningCapacity_ = 1;
     asyncRunner->waitingCapacity_ = 1;
     asyncRunner->runningCount_ = 1;
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    task->runnerId_ = asyncRunner->runnerId_;
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
 
     Task* task2 = new Task();
-    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task2->runnerId_ = asyncRunner->runnerId_;
     TaskInfo* taskInfo = new TaskInfo();
     task2->currentTaskInfo_ = taskInfo;
     task2->SetValid(false);
@@ -6169,8 +6169,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest297, testing::ext::TestSize.Level0)
     ExceptionScope scope(env);
     
     AsyncRunner* asyncRunner = new AsyncRunner();
-    asyncRunner->DecreaseAsyncCount();
-    uint64_t refCount = asyncRunner->DecreaseAsyncCount();
+    asyncRunner->DecreaseCount();
+    uint64_t refCount = asyncRunner->DecreaseCount();
     ASSERT_TRUE(refCount == 0);
     delete asyncRunner;
 }
@@ -6187,9 +6187,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest298, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
     
     AsyncRunner* asyncRunner = new AsyncRunner();
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    AsyncRunnerManager::GetInstance().StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
-    task->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    AsyncRunnerManager::GetInstance().StoreRunner(asyncRunner->runnerId_, asyncRunner);
+    task->runnerId_ = asyncRunner->runnerId_;
     res = task->ShouldDeleteTask();
     ASSERT_TRUE(res);
     delete task;
@@ -6201,14 +6201,14 @@ HWTEST_F(NativeEngineTest, TaskpoolTest299, testing::ext::TestSize.Level0)
     ExceptionScope scope(env);
     SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
     SequenceRunner* seqRunner = new SequenceRunner();
-    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
-    sequenceRunnerManager.StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
+    seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    sequenceRunnerManager.StoreRunner(seqRunner->runnerId_, seqRunner);
     Task* task = new Task();
     uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
-    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    task->runnerId_ = seqRunner->runnerId_;
     task->taskId_ = taskId;
     task->taskType_ = TaskType::SEQRUNNER_TASK;
-    sequenceRunnerManager.AddTaskToSeqRunner(seqRunner->seqRunnerId_, task);
+    sequenceRunnerManager.AddTaskToSeqRunner(seqRunner->runnerId_, task);
     sequenceRunnerManager.RemoveWaitingTask(task);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -6222,7 +6222,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest300, testing::ext::TestSize.Level0)
     ExceptionScope scope(env);
     SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
     Task* task = new Task();
-    task->seqRunnerId_ = 1;
+    task->runnerId_ = 1;
     sequenceRunnerManager.RemoveWaitingTask(task);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -6235,7 +6235,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest301, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     SequenceRunner* seqRunner = new SequenceRunner();
-    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
     Task* task = new Task();
     seqRunner->RemoveWaitingTask(task);
     napi_value exception = nullptr;
@@ -6257,8 +6257,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest302, testing::ext::TestSize.Level0)
     bool isFalse = SequenceRunnerManager::GetInstance().FindRunnerAndRef(302);
     ASSERT_FALSE(isFalse);
     SequenceRunner* seqRunner = new SequenceRunner();
-    seqRunner->DecreaseSeqCount();
-    isFalse = seqRunner->DecreaseSeqCount();
+    seqRunner->DecreaseCount();
+    isFalse = seqRunner->DecreaseCount();
     ASSERT_FALSE(isFalse);
 }
 
@@ -6267,10 +6267,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest303, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     SequenceRunner* seqRunner = new SequenceRunner();
-    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
-    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
+    seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    SequenceRunnerManager::GetInstance().StoreRunner(seqRunner->runnerId_, seqRunner);
     Task* task = new Task();
-    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    task->runnerId_ = seqRunner->runnerId_;
     bool isFalse = SequenceRunnerManager::GetInstance().TriggerSeqRunner(env, task);
     ASSERT_FALSE(isFalse);
     delete task;
@@ -6281,7 +6281,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest304, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     Task* task = new Task();
-    task->seqRunnerId_ = 304;
+    task->runnerId_ = 304;
     task->taskType_ = TaskType::SEQRUNNER_TASK;
     Task::CleanupHookFunc(task);
     napi_value exception = nullptr;
@@ -6295,7 +6295,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest305, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     Task* task = new Task();
-    task->seqRunnerId_ = 305;
+    task->runnerId_ = 305;
     task->env_ = env;
     task->taskType_ = TaskType::SEQRUNNER_TASK;
     napi_value obj = NapiHelper::CreateObject(env);
@@ -6552,15 +6552,15 @@ HWTEST_F(NativeEngineTest, TaskpoolTest319, testing::ext::TestSize.Level0)
     delete task;
 
     AsyncRunner* asyncRunner = new AsyncRunner();
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
     Task* task2 = new Task();
     TaskInfo* taskInfo2 = new TaskInfo();
     task2->currentTaskInfo_ = taskInfo2;
     task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task2->taskState_ = ExecuteState::WAITING;
     taskManager.StoreTask(task2);
-    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task2->runnerId_ = asyncRunner->runnerId_;
     NativeEngineTest::EnqueueTaskIdToQueue(reinterpret_cast<void*>(task2));
     asyncRunnerManager.CancelAsyncRunnerTask(env, task2);
     exception = nullptr;
@@ -6582,10 +6582,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest320, testing::ext::TestSize.Level0)
     ASSERT_TRUE(exception == nullptr);
 
     AsyncRunner* asyncRunner = new AsyncRunner();
-    asyncRunner->asyncRunnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
-    asyncRunnerManager.StoreAsyncRunner(asyncRunner->asyncRunnerId_, asyncRunner);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
     Task* task2 = new Task();
-    task2->asyncRunnerId_ = asyncRunner->asyncRunnerId_;
+    task2->runnerId_ = asyncRunner->runnerId_;
     asyncRunnerManager.RemoveWaitingTask(task2);
     exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -6601,12 +6601,13 @@ HWTEST_F(NativeEngineTest, TaskpoolTest321, testing::ext::TestSize.Level0)
     ExceptionScope scope(env);
     SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
     SequenceRunner* seqRunner = new SequenceRunner();
-    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
-    sequenceRunnerManager.StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
+    seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    sequenceRunnerManager.StoreRunner(seqRunner->runnerId_, seqRunner);
     Task* task = new Task();
-    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    task->runnerId_ = seqRunner->runnerId_;
     sequenceRunnerManager.RemoveWaitingTask(task);
-    sequenceRunnerManager.SequenceRunnerDestructor(seqRunner);
+    void* data = static_cast<void*>(seqRunner);
+    NativeEngineTest::RunnerDestructor(env, data);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -6623,17 +6624,18 @@ HWTEST_F(NativeEngineTest, TaskpoolTest322, testing::ext::TestSize.Level0)
     uint32_t priority = 1;
     std::string name = "TaskpoolTest322";
     SequenceRunner* seqRunner = sequenceRunnerManager.CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
-    seqRunner->seqRunnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
     Task* task = new Task();
-    task->seqRunnerId_ = seqRunner->seqRunnerId_;
+    task->runnerId_ = seqRunner->runnerId_;
     seqRunner->AddTask(task);
     sequenceRunnerManager.CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     seqRunner->RemoveWaitingTask(task);
-    sequenceRunnerManager.StoreSequenceRunner(seqRunner->seqRunnerId_, seqRunner);
-    sequenceRunnerManager.SequenceRunnerDestructor(seqRunner);
+    sequenceRunnerManager.StoreRunner(seqRunner->runnerId_, seqRunner);
+    void* data = static_cast<void*>(seqRunner);
+    NativeEngineTest::RunnerDestructor(env, data);
     delete task;
 }
 
@@ -6726,9 +6728,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest329, testing::ext::TestSize.Level0)
     task->currentTaskInfo_ = taskInfo;
     SequenceRunner* seqRunner = new SequenceRunner();
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
-    task->seqRunnerId_ = seqRunnerId;
-    seqRunner->seqRunnerTasks_.push_back(task);
-    seqRunner->DecreaseSeqCount();
+    task->runnerId_ = seqRunnerId;
+    seqRunner->tasks_.push_back(task);
+    seqRunner->DecreaseCount();
     seqRunner->TriggerTask(env);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -7192,7 +7194,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest344, testing::ext::TestSize.Level0)
     task->taskType_ = TaskType::SEQRUNNER_TASK;
     task->env_ = env;
     task->SetValid(false);
-    task->seqRunnerId_ = 1;
+    task->runnerId_ = 1;
     bool res = task->ShouldDeleteTask();
     ASSERT_TRUE(res);
 }
@@ -7230,7 +7232,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest346, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().StoreTask(task);
     task->worker_ = worker;
     task->taskType_ = TaskType::SEQRUNNER_TASK;
-    task->seqRunnerId_ = 1;
+    task->runnerId_ = 1;
     Worker::NotifyHandleTaskResult(task);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -7414,4 +7416,37 @@ HWTEST_F(NativeEngineTest, TaskpoolTest354, testing::ext::TestSize.Level0)
     ExceptionScope scope(env);
     uint64_t taskId = NativeEngineTest::CalculateTaskId(0, 0);
     ASSERT_TRUE(taskId == 2);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest355, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    AsyncRunnerManager& asyncRunnerManager = AsyncRunnerManager::GetInstance();
+    SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
+    napi_value thisVar = nullptr;
+    size_t argc = 1;
+    uint32_t priority = 1;
+    uint32_t capacity = 5;
+    std::string name = "TaskpoolTest355";
+    AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, thisVar, name, capacity, capacity);
+    ASSERT_NE(asyncRunner, nullptr);
+    asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
+    ASSERT_EQ(asyncRunner->isGlobalRunner_, true);
+    uint64_t asyncRunnerId = asyncRunner->runnerId_;
+    asyncRunnerManager.StoreRunner(asyncRunnerId, asyncRunner);
+    SequenceRunner* seqRunner = sequenceRunnerManager.CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
+    ASSERT_NE(seqRunner, nullptr);
+    seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
+    ASSERT_EQ(seqRunner->isGlobalRunner_, true);
+    uint64_t seqRunnerId = seqRunner->runnerId_;
+    sequenceRunnerManager.StoreRunner(seqRunnerId, seqRunner);
+    ASSERT_NE(asyncRunnerManager.GetRunner(asyncRunnerId), nullptr);
+    ASSERT_NE(sequenceRunnerManager.GetRunner(seqRunnerId), nullptr);
+    void* asyncData = static_cast<void*>(asyncRunner);
+    NativeEngineTest::RunnerDestructor(env, asyncData);
+    void* seqData = static_cast<void*>(seqRunner);
+    NativeEngineTest::RunnerDestructor(env, seqData);
+    ASSERT_EQ(asyncRunnerManager.GetRunner(asyncRunnerId), nullptr);
+    ASSERT_EQ(sequenceRunnerManager.GetRunner(seqRunnerId), nullptr);
 }

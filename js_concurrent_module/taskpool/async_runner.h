@@ -16,27 +16,28 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_ASYNC_RUNNER_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_ASYNC_RUNNER_H
 
-#include <deque>
 #include <unordered_map>
 #include "task.h"
+#include "base_runner.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-
-class AsyncRunner {
+class AsyncRunnerManager;
+class AsyncRunner : public BaseRunner {
 public:
     AsyncRunner() = default;
-    ~AsyncRunner() = default;
+    ~AsyncRunner() override = default;
 
     static napi_value AsyncRunnerConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Execute(napi_env env, napi_callback_info cbinfo);
     static AsyncRunner* CreateGlobalRunner(const std::string& name, uint32_t runningCapacity, uint32_t waitingCapacity);
-    bool RemoveWaitingTask(Task* task, bool isReject = true);
     void TriggerRejectErrorTimer(Task* task, int32_t errCode, bool isWaiting = false);
     void TriggerWaitingTask();
-    uint64_t DecreaseAsyncCount();
-    void IncreaseAsyncCount();
-    bool CheckGlobalRunnerParams(napi_env env, uint32_t runningCapacity, uint32_t waitingCapacity);
     void DecreaseRunningCount();
+
+protected:
+    BaseRunnerManager& GetManager() override;
+    void LogRunnerConstructor(std::string name, uint64_t runnerId) override;
+    void LogRunnerConstructorInnerReturn(napi_status status) override;
 
 private:
     AsyncRunner(const AsyncRunner &) = delete;
@@ -46,7 +47,6 @@ private:
 
     static bool AsyncRunnerConstructorInner(napi_env env, napi_value& thisVar, AsyncRunner* asyncRunner);
     static void ExecuteTaskImmediately(AsyncRunner* asyncRunner, Task* task);
-    static void AsyncRunnerDestructor(napi_env env, void* data, void* hint);
     static AsyncRunner* CheckAndCreateAsyncRunner(napi_env env, napi_value &thisVar, napi_value name,
                                                   napi_value runningCapacity, napi_value waitingCapacity);
     static bool CheckExecuteArgs(napi_env env, napi_value napiTask, napi_value napiPriority);
@@ -54,18 +54,9 @@ private:
 
     friend class NativeEngineTest;
 public:
-    uint64_t asyncRunnerId_ {};
     uint32_t runningCapacity_ {};
     uint32_t waitingCapacity_ {};
     std::atomic<uint32_t> runningCount_ {}; // running task count
-
-    // for global AsyncRunner
-    std::string name_ {};
-    std::atomic<bool> isGlobalRunner_ {false};
-    std::atomic<uint64_t> refCount_ {1};
-    std::deque<Task*> waitingTasks_ {};
-    std::shared_mutex asyncRunnerMutex_;
-    std::shared_mutex waitingTasksMutex_;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_ASYNC_RUNNER_H

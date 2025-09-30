@@ -30,92 +30,70 @@ SequenceRunnerManager& SequenceRunnerManager::GetInstance()
     return sequenceRunnerManager;
 }
 
+SequenceRunner* SequenceRunnerManager::GetRunner(uint64_t runnerId)
+{
+    auto runner = BaseRunnerManager::GetRunner(runnerId);
+    if (runner != nullptr) {
+        return static_cast<SequenceRunner*>(runner);
+    }
+    return nullptr;
+}
+
 SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, size_t argc,
                                                                const std::string& name, uint32_t priority)
 {
-    SequenceRunner* seqRunner = nullptr;
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    auto iter = globalSeqRunner_.find(name);
-    if (iter == globalSeqRunner_.end()) {
-        Priority priorityVal = Priority::DEFAULT;
-        if (argc == 2) { // 2: The number of parameters is 2.
-            priorityVal = static_cast<Priority>(priority);
-        }
-        seqRunner = new SequenceRunner(priorityVal, name, true);
-        globalSeqRunner_.emplace(name, seqRunner);
-        return seqRunner;
+    std::unique_lock<std::mutex> lock(runnersMutex_);
+    SequenceRunnerConfig sequenceRunnerConfig(argc, priority);
+    return static_cast<SequenceRunner*>(
+        BaseRunnerManager::CreateOrGetGlobalRunner(env, thisVar, name, &sequenceRunnerConfig)
+    );
+}
+
+BaseRunner* SequenceRunnerManager::CreateGlobalRunner(const std::string& name, void* config)
+{
+    SequenceRunnerConfig* sequenceRunnerConfig = static_cast<SequenceRunnerConfig*>(config);
+    Priority priorityVal = Priority::DEFAULT;
+    if (sequenceRunnerConfig->argc_ == 2) { // 2: The number of parameters is 2.
+        priorityVal = static_cast<Priority>(sequenceRunnerConfig->priority_);
     }
-    
-    seqRunner = iter->second;
-    if (priority != seqRunner->priority_) {
+    auto seqRunner = new SequenceRunner(priorityVal, name, true);
+    return static_cast<BaseRunner *>(seqRunner);
+}
+
+bool SequenceRunnerManager::CheckGlobalRunnerParams(napi_env env, BaseRunner* runner, void* config)
+{
+    SequenceRunnerConfig* sequenceRunnerConfig = static_cast<SequenceRunnerConfig*>(config);
+    SequenceRunner* seqRunner = static_cast<SequenceRunner*>(runner);
+    if (sequenceRunnerConfig->priority_ != seqRunner->priority_) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: priority can not changed.");
-        return nullptr;
+        return false;
     }
-    seqRunner->IncreaseSeqCount();
-
-    return seqRunner;
-}
-
-void SequenceRunnerManager::RemoveSequenceRunnerByName(const std::string& name)
-{
-    auto iter = globalSeqRunner_.find(name.c_str());
-    if (iter != globalSeqRunner_.end()) {
-        globalSeqRunner_.erase(iter->first);
-    }
-}
-
-void SequenceRunnerManager::SequenceRunnerDestructor(SequenceRunner* seqRunner)
-{
-    auto runner = GetSeqRunner(seqRunner->seqRunnerId_);
-    if (runner == nullptr) {
-        return;
-    }
-    UnrefAndDestroyRunner(seqRunner);
-}
-
-void SequenceRunnerManager::StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner)
-{
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    seqRunners_.emplace(seqRunnerId, seqRunner);
-}
-
-void SequenceRunnerManager::RemoveSequenceRunner(uint64_t seqRunnerId)
-{
-    seqRunners_.erase(seqRunnerId);
-}
-
-SequenceRunner* SequenceRunnerManager::GetSeqRunner(uint64_t seqRunnerId)
-{
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    auto iter = seqRunners_.find(seqRunnerId);
-    if (iter != seqRunners_.end()) {
-        return iter->second;
-    }
-    HILOG_DEBUG("taskpool:: sequenceRunner has been released.");
-    return nullptr;
+    return true;
 }
 
 void SequenceRunnerManager::AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task)
 {
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    auto iter = seqRunners_.find(seqRunnerId);
-    if (iter == seqRunners_.end()) {
+    std::unique_lock<std::mutex> lock(runnersMutex_);
+    auto iter = runners_.find(seqRunnerId);
+    if (iter == runners_.end()) {
         HILOG_ERROR("seqRunner:: seqRunner not found.");
         return;
     } else {
-        iter->second->AddTask(task);
+        SequenceRunner* runner = static_cast<SequenceRunner*>(iter->second);
+        runner->AddTask(task);
     }
 }
 
 bool SequenceRunnerManager::TriggerSeqRunner(napi_env env, Task* lastTask)
 {
-    uint64_t seqRunnerId = lastTask->seqRunnerId_;
-    SequenceRunner* seqRunner = GetSeqRunner(seqRunnerId);
+    uint64_t seqRunnerId = lastTask->runnerId_;
+    SequenceRunner* seqRunner = GetRunner(seqRunnerId);
+    BaseRunner* baseRunner = static_cast<BaseRunner*>(seqRunner);
     if (seqRunner == nullptr) {
         HILOG_ERROR("taskpool:: trigger seqRunner not exist.");
         return false;
     }
-    if (UnrefAndDestroyRunner(seqRunner)) {
+    if (UnrefAndDestroyRunner(baseRunner)) {
         HILOG_WARN("taskpool:: trigger seqRunner is removed.");
         return false;
     }
@@ -127,41 +105,8 @@ bool SequenceRunnerManager::TriggerSeqRunner(napi_env env, Task* lastTask)
     return true;
 }
 
-void SequenceRunnerManager::RemoveWaitingTask(Task* task)
+void SequenceRunnerManager::LogRunnerNotExist()
 {
-    auto seqRunner = GetSeqRunner(task->seqRunnerId_);
-    if (seqRunner == nullptr) {
-        return;
-    }
-    if (seqRunner->RemoveWaitingTask(task)) {
-        UnrefAndDestroyRunner(seqRunner);
-    }
-}
-
-bool SequenceRunnerManager::FindRunnerAndRef(uint64_t seqRunnerId)
-{
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    auto iter = seqRunners_.find(seqRunnerId);
-    if (iter == seqRunners_.end()) {
-        HILOG_ERROR("taskpool:: seqRunner not exist.");
-        return false;
-    }
-    iter->second->IncreaseSeqCount();
-    return true;
-}
-
-bool SequenceRunnerManager::UnrefAndDestroyRunner(SequenceRunner* seqRunner)
-{
-    std::unique_lock<std::mutex> lock(seqRunnersMutex_);
-    if (seqRunner->DecreaseSeqCount() != 0) {
-        return false;
-    }
-    RemoveSequenceRunner(seqRunner->seqRunnerId_);
-
-    if (seqRunner->isGlobalRunner_) {
-        RemoveSequenceRunnerByName(seqRunner->seqName_);
-    }
-    delete seqRunner;
-    return true;
+    HILOG_ERROR("taskpool:: seqRunner not exist.");
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -1526,7 +1526,7 @@ bool Task::ShouldDeleteTask(bool needUnref)
     if (!IsValid()) {
         HILOG_WARN("taskpool:: task is invalid");
         if (IsAsyncRunnerTask()) {
-            AsyncRunnerManager::GetInstance().DecreaseRunningCount(asyncRunnerId_);
+            AsyncRunnerManager::GetInstance().DecreaseRunningCount(runnerId_);
         }
         if (IsSeqRunnerTask()) {
             SequenceRunnerManager::GetInstance().TriggerSeqRunner(env_, this);
@@ -1536,7 +1536,7 @@ bool Task::ShouldDeleteTask(bool needUnref)
     }
     if (needUnref) {
         if (IsAsyncRunnerTask()) {
-            AsyncRunnerManager::GetInstance().DecreaseRunningCount(asyncRunnerId_);
+            AsyncRunnerManager::GetInstance().DecreaseRunningCount(runnerId_);
         }
         DecreaseTaskLifecycleCount();
     }

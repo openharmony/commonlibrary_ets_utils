@@ -490,7 +490,7 @@ void TaskPool::TriggerTask(Task* task, bool isCancel)
     if (task->IsSeqRunnerTask()) {
         if (!SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->env_, task)) {
             HILOG_WARN("taskpool:: task %{public}s trigger in seqRunner %{public}s failed",
-                std::to_string(task->taskId_).c_str(), std::to_string(task->seqRunnerId_).c_str());
+                std::to_string(task->taskId_).c_str(), std::to_string(task->runnerId_).c_str());
         }
     } else if (task->IsCommonTask()) {
         if (!isCancel) {
@@ -500,7 +500,7 @@ void TaskPool::TriggerTask(Task* task, bool isCancel)
     } else if (task->IsAsyncRunnerTask()) {
         if (!AsyncRunnerManager::GetInstance().TriggerAsyncRunner(task->env_, task)) {
             HILOG_ERROR("taskpool:: task %{public}s trigger in asyncRunner %{public}s failed",
-                        std::to_string(task->taskId_).c_str(), std::to_string(task->asyncRunnerId_).c_str());
+                        std::to_string(task->taskId_).c_str(), std::to_string(task->runnerId_).c_str());
         }
     }
     if (task->IsPeriodicTask()) {

@@ -49,7 +49,7 @@ public:
     static void UpdateGroupInfoByResult(napi_env env, uv_timer_t* handle, napi_value res, bool success);
 
     static void TaskGroupDestructor(napi_env env, void* data);
-    static void SequenceRunnerDestructor(napi_env env, void* data);
+    static void RunnerDestructor(napi_env env, void* data);
     static void TryTriggerExpand();
     static void CheckForBlockedWorkers(napi_env env);
     static void TriggerShrink(napi_env env);
@@ -86,10 +86,9 @@ public:
     static void ResetTaskManager();
     static void CheckAndCreateAsyncRunner(napi_env env, napi_value name, napi_value runningCapacity,
                                           napi_value waitingCapacity);
-    static void AsyncRunnerDestructor(napi_env env, void* data);
     static void AddTasksToAsyncRunner(void* asyncData, void* taskData);
-    static void RemoveSequenceRunnerByName(std::string name);
-    static void RemoveSequenceRunner(uint64_t seqId);
+    static void RemoveGlobalRunner(std::string name);
+    static void RemoveRunner(uint64_t seqId);
     static void StoreTaskId(Worker* worker, uint32_t taskId);
     static void RemoveTaskId(Worker* worker, uint32_t taskId);
     static bool FindTaskId(Worker* worker, uint32_t taskId);

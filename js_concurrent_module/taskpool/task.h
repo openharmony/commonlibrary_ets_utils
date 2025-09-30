@@ -230,8 +230,7 @@ public:
     uint32_t taskId_ {};
     std::atomic<ExecuteState> taskState_ {ExecuteState::NOT_FOUND};
     uint64_t groupId_ {}; // 0 for task outside taskgroup
-    uint64_t seqRunnerId_ {}; // 0 for task without seqRunner
-    uint64_t asyncRunnerId_ {}; // 0 for task without asyncRunner
+    uint64_t runnerId_ {}; // 0 for task without runner
     TaskInfo* currentTaskInfo_ {};
     std::list<TaskInfo*> pendingTaskInfos_ {}; // for a common task executes multiple times
     void* result_ = nullptr;
