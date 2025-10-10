@@ -95,6 +95,7 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("terminateTask", TerminateTask),
         DECLARE_NAPI_FUNCTION("isConcurrent", IsConcurrent),
         DECLARE_NAPI_FUNCTION("executePeriodically", ExecutePeriodically),
+        DECLARE_NAPI_FUNCTION("getTask", GetTask),
     };
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
 
@@ -856,5 +857,44 @@ void TaskPool::RecordTaskResultLog(Task* task, napi_status status, napi_value& n
     }
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
+}
+
+napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
+{
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < 1 || argc > 2) { // 1: taskId, 2: taskId and name
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of the params must be one or two.");
+        return nullptr;
+    }
+    napi_value* args = new napi_value[argc];
+    ObjectScope<napi_value> scope(args, true);
+    napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
+    if (!NapiHelper::IsNumber(env, args[0])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be number.");
+        return nullptr;
+    }
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    std::string name = "";
+    if (argc > 1) {
+        if (!NapiHelper::IsString(env, args[1])) {
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the second param must be string.");
+            return nullptr;
+        }
+        name = NapiHelper::GetString(env, args[1]);
+        if (name == "") {
+            return undefined;
+        }
+    }
+    uint32_t taskId = NapiHelper::GetUint32Value(env, args[0]);
+    Task* task = TaskManager::GetInstance().GetTask(taskId);
+    if (task == nullptr || env != task->GetEnv() || !task->IsValid()) {
+        return undefined;
+    }
+    if (name != "" && name != task->name_) {
+        return undefined;
+    }
+    napi_value result = nullptr;
+    napi_get_reference_value(env, task->taskRef_, &result);
+    return result;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
