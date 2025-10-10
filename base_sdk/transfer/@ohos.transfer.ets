@@ -20,8 +20,8 @@ registerMain();
 
 const transferErrorCodeId = 10200067;
 
-const staticCBCache = new Map<string, Method>();
-const dynamicCBCache = new Map<string, Method>();
+const staticCBCache = new Map<string, reflect.StaticMethod>();
+const dynamicCBCache = new Map<string, reflect.StaticMethod>();
 const staticRegisterMapRef = staticRegisterMap;
 const dynamicRegisterMapRef = dynamicRegisterMap;
 
@@ -38,14 +38,14 @@ export namespace transfer {
             return cb.staticMethod!(input);
         }
 
-        let method: Method | undefined;
+        let method: reflect.StaticMethod | undefined;
         if (staticCBCache.has(inputName)) {
             method = staticCBCache.get(inputName);
         } else {
             method = getMethod(cb.filePath, cb.className, cb.methodName);
             staticCBCache.set(inputName, method);
         }
-        return method!.invoke(null, [input]) as Object;
+        return method!.invoke([input]) as Object;
     }
 
     export function transferDynamic(input: Object, inputName: string): Any {
@@ -58,28 +58,29 @@ export namespace transfer {
             return cb.dynamicMethod!(input) ;
         }
 
-        let method: Method | undefined;
+        let method: reflect.StaticMethod | undefined;
         if (dynamicCBCache.has(inputName)) {
             method = dynamicCBCache.get(inputName);
         } else {
             method = getMethod(cb.filePath, cb.className, cb.methodName);
             dynamicCBCache.set(inputName, method);
         }
-        return method!.invoke(null, [input]) as Any;
+        return method!.invoke([input]) as Any;
     }
 
-    function getMethod(filePath: string, className: string, methodName: string): Method {
+    function getMethod(filePath: string, className: string, methodName: string): reflect.StaticMethod {
         className = filePath + '.' + className;
         let linker = Class.ofCaller()!.getLinker();
-        let classType: ClassType | undefined = linker.getType(className) as ClassType;
-        if (!classType) {
+        let classType: Class;
+        try {
+            classType = linker.loadClass(className);
+        } catch (e) {
             throw new BusinessError(transferErrorCodeId,
                 new Error(`Transfer Error. The class ${className} is not found!`));
         }
-        for (let i = 0; i < classType!.getMethodsNum(); i++) {
-            if (methodName === classType!.getMethod(i).getName()) {
-                return classType!.getMethod(i);
-            }
+        let staticMethod = classType.getStaticMethodByName(methodName);
+        if (staticMethod != undefined) {
+            return staticMethod!;
         }
         throw new BusinessError(transferErrorCodeId,
             new Error(`Transfer Error. The method ${methodName} is not found!`));
