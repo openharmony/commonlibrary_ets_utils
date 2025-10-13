@@ -22,6 +22,7 @@
 #include <mutex>
 #include <set>
 #include <shared_mutex>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -197,6 +198,7 @@ private:
     void WorkerAliveAndReport(Worker* worker);
     void WriteHisysForFfrtAndUv(Worker* worker, HisyseventParams* hisyseventParams);
     void AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int64_t idleThreadNum, int64_t timeoutThreadNum);
+    std::tuple<napi_env, napi_event_priority> GetTaskEnvAndPriority(uint32_t taskId);
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};

@@ -4639,7 +4639,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
     Task* task = new Task();
     TaskManager::GetInstance().StoreTask(task);
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
-    TaskManager::GetInstance().StoreTask(task);
+    task->worker_ = worker;
+    task->env_ = env;
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, task->taskId_, args);
     TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_);
@@ -5113,22 +5114,21 @@ HWTEST_F(NativeEngineTest, TaskpoolTest257, testing::ext::TestSize.Level0)
     napi_value name = GetNapiString(env, asyncName.c_str());
     napi_value argv1[] = {name, runningCapacity};
     napi_call_function(env, nullptr, cb, 2, argv1, &result);
-    ASSERT_EQ(result, nullptr);
+    ASSERT_NE(result, nullptr);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
 
     result = nullptr;
-    napi_value runningCapacity2 = NapiHelper::CreateUint32(env, 5);
-    napi_value argv2[] = {name, runningCapacity2};
-    napi_call_function(env, nullptr, cb, 2, argv2, &result);
-    ASSERT_EQ(result, nullptr);
-    exception = nullptr;
-    napi_get_and_clear_last_exception(env, &exception);
+    AsyncRunner* runner = asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, capacity);
+    ASSERT_NE(runner, nullptr);
+    runner->asyncRunnerId_ = reinterpret_cast<uint64_t>(runner);
+    AsyncRunnerManager::GetInstance().StoreAsyncRunner(runner->asyncRunnerId_, runner);
 
-    asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, capacity);
-    exception = nullptr;
-    napi_get_and_clear_last_exception(env, &exception);
-    ASSERT_EQ(exception, nullptr);
+    runner = asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, 6);
+    ASSERT_EQ(runner, nullptr);
+
+    runner = asyncRunnerManager.CreateOrGetGlobalRunner(env, global, asyncName, capacity, capacity);
+    ASSERT_NE(runner, nullptr);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest258, testing::ext::TestSize.Level0)
@@ -6910,6 +6910,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest336, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
 HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -6924,6 +6925,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
     taskManager.StoreTask(task);
     Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     task->worker_ = worker;
+    task->env_ = env;
     taskManager.RegisterCallback(env, task->taskId_, nullptr, "OnReceiveData");
     taskManager.ExecuteSendData(env, nullptr, task->taskId_);
     exception = nullptr;
@@ -7046,4 +7048,84 @@ HWTEST_F(NativeEngineTest, TaskpoolTest341, testing::ext::TestSize.Level0)
     Task* res2 = taskManager.GetTaskForPerform(task2->taskId_);
     ASSERT_TRUE(res2 == nullptr);
     delete task2;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest342, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    task->SetValid(false);
+    bool res = NativeEngineTest::GetTaskEnvAndPriority(task->taskId_);
+    ASSERT_FALSE(res);
+
+    task->SetValid(true);
+    res = NativeEngineTest::GetTaskEnvAndPriority(task->taskId_);
+    ASSERT_FALSE(res);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest344, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    task->env_ = env;
+    task->SetValid(false);
+    task->seqRunnerId_ = 1;
+    bool res = task->ShouldDeleteTask();
+    ASSERT_TRUE(res);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest345, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    task->env_ = env;
+    Worker::NotifyHandleTaskResult(task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
+    task->SetValid(false);
+    task->worker_ = worker;
+    task->isMainThreadTask_ = false;
+    Worker::NotifyHandleTaskResult(task);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest346, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    Worker* worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
+    Task* task = new Task();
+    TaskManager::GetInstance().StoreTask(task);
+    task->worker_ = worker;
+    task->taskType_ = TaskType::SEQRUNNER_TASK;
+    task->seqRunnerId_ = 1;
+    Worker::NotifyHandleTaskResult(task);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+
+    Task* task2 = new Task();
+    TaskManager::GetInstance().StoreTask(task2);
+    task2->worker_ = worker;
+    Worker::NotifyHandleTaskResult(task2);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }

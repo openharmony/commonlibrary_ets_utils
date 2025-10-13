@@ -101,6 +101,7 @@ public:
     static void SetTotalTaskNum(uint32_t num);
     static void ExecuteOnReceiveDataCallback(void* callbackInfo, void* resultInfo);
     static void TriggerTask(void* data, bool isCancel);
+    static bool GetTaskEnvAndPriority(uint32_t taskId);
 
     class ExceptionScope {
     public:

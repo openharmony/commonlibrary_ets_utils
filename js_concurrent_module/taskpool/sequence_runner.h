@@ -45,6 +45,7 @@ private:
     static void ExecuteTaskImmediately(uint32_t taskId, Priority priority);
     static void SequenceRunnerDestructor(napi_env env, void* data, void* hint);
     static bool SeqRunnerConstructorInner(napi_env env, napi_value& thisVar, SequenceRunner* seqRunner);
+    bool UpdateCurrentTaskId(uint32_t taskId);
 
     friend class NativeEngineTest;
 public:

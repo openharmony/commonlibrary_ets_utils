@@ -1091,4 +1091,13 @@ void NativeEngineTest::TriggerTask(void* data, bool isCancel)
     Task* task = reinterpret_cast<Task*>(data);
     TaskPool::TriggerTask(task, isCancel);
 }
+
+bool NativeEngineTest::GetTaskEnvAndPriority(uint32_t taskId)
+{
+    auto [hostEnv, priority] = TaskManager::GetInstance().GetTaskEnvAndPriority(taskId);
+    if (hostEnv == nullptr) {
+        return false;
+    }
+    return true;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
