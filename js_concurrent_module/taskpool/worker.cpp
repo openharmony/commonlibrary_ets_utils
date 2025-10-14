@@ -23,6 +23,7 @@
 #include "sys_timer.h"
 #include "helper/hitrace_helper.h"
 #include "process_helper.h"
+#include "sequence_runner_manager.h"
 #include "taskpool.h"
 #include "task_group_manager.h"
 #include "native_engine.h"
@@ -472,7 +473,9 @@ void Worker::PerformTask(const uv_async_t* req)
         }
         return;
     }
+    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     if (!worker->InitTaskPoolFunc(env, func, task)) {
+        workerEngine->ClearCurrentTaskInfo();
         return;
     }
     worker->hasExecuted_ = true;
@@ -482,14 +485,14 @@ void Worker::PerformTask(const uv_async_t* req)
         argsArray[i] = NapiHelper::GetElement(env, args, i);
     }
 
-    if (!task->CheckStartExecution(taskInfo.second)) {
+    if (!task->CheckStartExecution(taskInfo.second)) { // LOCV_EXCL_BR_LINE
         if (task->ShouldDeleteTask()) {
             delete task;
         }
+        workerEngine->ClearCurrentTaskInfo();
         return;
     }
     napi_call_function(env, NapiHelper::GetGlobalObject(env), func, argsNum, argsArray, nullptr);
-    auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->ClearCurrentTaskInfo();
     task->DecreaseRefCount();
     task->StoreTaskDuration();
@@ -536,6 +539,8 @@ void Worker::NotifyHandleTaskResult(Task* task)
     if (!Task::VerifyAndPostResult(task, priority)) {
         if (task->ShouldDeleteTask()) {
             delete task;
+        } else if (task->IsSeqRunnerTask()) {
+            SequenceRunnerManager::GetInstance().TriggerSeqRunner(task->GetEnv(), task);
         }
     }
     worker->NotifyTaskFinished();

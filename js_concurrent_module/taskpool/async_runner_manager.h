@@ -55,7 +55,6 @@ private:
     std::mutex asyncRunnersMutex_;
     // <<name1, AsyncRunner>, <name2, AsyncRunner>, ...>
     std::unordered_map<std::string, AsyncRunner*> globalAsyncRunner_ {};
-    std::mutex globalAsyncRunnerMutex_;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_ASYNC_RUNNER_MANAGER_H
