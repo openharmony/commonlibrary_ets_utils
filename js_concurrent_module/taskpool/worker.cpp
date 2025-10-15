@@ -91,8 +91,7 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
 
     TaskManager::GetInstance().RemoveWorker(worker);
     HITRACE_HELPER_METER_NAME("ReleaseWorkerHandles: [Release Thread]");
-    HILOG_INFO("taskpool:: release idle thread, total num is %{public}u",
-        TaskManager::GetInstance().GetThreadNum());
+    HILOG_INFO("taskpool:shrink,now %{public}u", TaskManager::GetInstance().GetThreadNum());
     // when there is no active handle, worker loop will stop automatically.
     worker->CloseHandles();
 
@@ -459,10 +458,10 @@ void Worker::PerformTask(const uv_async_t* req)
     uint64_t loopAddress = reinterpret_cast<uint64_t>(loop);
     std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_)
                             + ", priority : " + std::to_string(taskInfo.second);
-    std::string taskLog = "Task Perform: "  + task->name_ + ", " + std::to_string(task->taskId_) + ", "
-                          "runningLoop: " + std::to_string(loopAddress);
+    std::string taskLog = "run id:" + std::to_string(task->taskId_) + ",name:" + task->name_ + ","
+                          "loop:" + std::to_string(loopAddress);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
+    HILOG_TASK_INFO("taskpool:%{public}s", taskLog.c_str());
 
     napi_value func = nullptr;
     napi_value args = nullptr;

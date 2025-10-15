@@ -578,12 +578,11 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         + ", priority : " + std::to_string(priority)
         + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
-    std::string taskLog = "Task Allocation: " + std::to_string(task->taskId_)
-        + ", " + std::to_string(priority);
+    std::string taskLog = "start id:" + std::to_string(task->taskId_) + ",prio:" + std::to_string(priority);
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     if (task->UpdateTaskStateToWaiting()) {
-        HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
+        HILOG_TASK_INFO("taskpool:%{public}s", taskLog.c_str());
         task->isCancelToFinish_ = false;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     } else {
@@ -839,7 +838,7 @@ void TaskPool::RecordTaskResultLog(Task* task, napi_status status, napi_value& n
 {
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
-    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
+    std::string taskLog = "end id:" + std::to_string(task->taskId_);
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
         napiTaskResult = task->IsAsyncRunnerTask() ? TaskManager::GetInstance().CancelError(task->env_,
@@ -848,15 +847,15 @@ void TaskPool::RecordTaskResultLog(Task* task, napi_status status, napi_value& n
         isCancel = true;
     } else if (status != napi_ok) {
         strTrace += ", performResult : DeserializeFailed";
-        taskLog += ", DeserializeFailed";
+        taskLog += ",DeserializeFailed";
     } else if (task->success_) {
         strTrace += ", performResult : Successful";
     } else {
         strTrace += ", performResult : Unsuccessful";
-        taskLog += ", Unsuccessful";
+        taskLog += ",Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
+    HILOG_TASK_INFO("taskpool:%{public}s", taskLog.c_str());
 }
 
 napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
