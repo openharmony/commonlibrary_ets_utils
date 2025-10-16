@@ -881,16 +881,13 @@ napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
             return nullptr;
         }
         name = NapiHelper::GetString(env, args[1]);
-        if (name == "") {
-            return undefined;
-        }
     }
     uint32_t taskId = NapiHelper::GetUint32Value(env, args[0]);
     Task* task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr || env != task->GetEnv() || !task->IsValid()) {
         return undefined;
     }
-    if (name != "" && name != task->name_) {
+    if (argc > 1 && name != task->name_) {
         return undefined;
     }
     napi_value result = nullptr;
