@@ -39,7 +39,11 @@ public:
     class TaskInnerRunner : public Thread {
     public:
         explicit TaskInnerRunner(const TaskRunner* runner);
-        ~TaskInnerRunner() = default;
+        ~TaskInnerRunner()
+        {
+            uv_thread_join(&tid_);
+        }
+
         void Run() override;
 
     private:

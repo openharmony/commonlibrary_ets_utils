@@ -31,7 +31,7 @@ public:
         return tId_;
     }
 
-private:
+protected:
     uv_thread_t tId_ {0};
 };
 }  // namespace Commonlibrary::Concurrent::WorkerModule

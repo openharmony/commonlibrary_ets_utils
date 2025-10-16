@@ -31,7 +31,7 @@ public:
         return tid_;
     }
 
-private:
+protected:
     uv_thread_t tid_ {0};
 };
 }  // namespace Commonlibrary::Concurrent::TaskPoolModule
