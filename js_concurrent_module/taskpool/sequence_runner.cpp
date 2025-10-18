@@ -144,10 +144,9 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (!SequenceRunnerManager::GetInstance().FindRunnerAndRef(seqRunnerId)) {
         return nullptr;
     }
-    if (seqRunner->currentTaskId_ == 0) {
+    if (seqRunner->UpdateCurrentTaskId(task->taskId_)) {
         HILOG_INFO("taskpool:: taskId %{public}s in seqRunner %{public}s immediately.",
                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
-        seqRunner->currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
         task->UpdateTaskStateToWaiting();
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
@@ -239,5 +238,15 @@ void SequenceRunner::TriggerTask(napi_env env)
                     std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId_).c_str());
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority_);
     }
+}
+
+bool SequenceRunner::UpdateCurrentTaskId(uint32_t taskId)
+{
+    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    if (currentTaskId_ != 0) {
+        return false;
+    }
+    currentTaskId_ = taskId;
+    return true;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

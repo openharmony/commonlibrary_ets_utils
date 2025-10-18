@@ -53,4 +53,46 @@ export function registerArkUI() {
 
     registerStaticCB('ArkUI.RenderNode', 'arkui.handwritten.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.RenderNode', 'arkui.handwritten.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.Colors', 'arkui.handwritten.transfer.ThemeTransfer', 'ColorsTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.Colors', 'arkui.handwritten.transfer.ThemeTransfer', 'ColorsTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.CustomColors', 'arkui.handwritten.transfer.ThemeTransfer', 'CustomColorsTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.CustomColors', 'arkui.handwritten.transfer.ThemeTransfer', 'CustomColorsTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.Theme', 'arkui.handwritten.transfer.ThemeTransfer', 'ThemeTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.Theme', 'arkui.handwritten.transfer.ThemeTransfer', 'ThemeTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.CustomTheme', 'arkui.handwritten.transfer.ThemeTransfer', 'CustomThemeTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.CustomTheme', 'arkui.handwritten.transfer.ThemeTransfer', 'CustomThemeTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.MouseEvent', 'arkui.component.common', 'MouseEventTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.MouseEvent', 'arkui.component.common', 'MouseEventTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.AxisEvent', 'arkui.component.common', 'AxisEventTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.AxisEvent', 'arkui.component.common', 'AxisEventTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.ClickEvent', 'arkui.component.common', 'ClickEventTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.ClickEvent', 'arkui.component.common', 'ClickEventTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.HoverEvent', 'arkui.component.common', 'HoverEventTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.HoverEvent', 'arkui.component.common', 'HoverEventTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.DragEvent', 'arkui.component.common', 'DragEventTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.DragEvent', 'arkui.component.common', 'DragEventTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.KeyEvent', 'arkui.component.common', 'KeyEventTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.KeyEvent', 'arkui.component.common', 'KeyEventTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.TouchTestInfo', 'arkui.component.common', 'TouchTestInfoTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.TouchTestInfo', 'arkui.component.common', 'TouchTestInfoTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.EventTargetInfo', 'arkui.component.gesture', 'EventTargetInfoTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.EventTargetInfo', 'arkui.component.gesture', 'EventTargetInfoTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.ScrollableTargetInfo', 'arkui.component.gesture', 'ScrollableTargetInfoTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.ScrollableTargetInfo', 'arkui.component.gesture', 'ScrollableTargetInfoTransfer', 'transferDynamic');
 }

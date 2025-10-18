@@ -499,6 +499,11 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     }
 
     Task* task = static_cast<Task*>(data);
+    if (task == nullptr || !task->IsValid()) { // LOCV_EXCL_BR_LINE
+        HILOG_ERROR("taskpool:: SendData is not called because task is invalid");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "task is invalid");
+        return nullptr;
+    }
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     void* serializationArgs = nullptr;
     bool defaultClone = false;
@@ -1522,6 +1527,9 @@ bool Task::ShouldDeleteTask(bool needUnref)
         HILOG_WARN("taskpool:: task is invalid");
         if (IsAsyncRunnerTask()) {
             AsyncRunnerManager::GetInstance().DecreaseRunningCount(asyncRunnerId_);
+        }
+        if (IsSeqRunnerTask()) {
+            SequenceRunnerManager::GetInstance().TriggerSeqRunner(env_, this);
         }
         TaskManager::GetInstance().RemoveTask(taskId_);
         return true;

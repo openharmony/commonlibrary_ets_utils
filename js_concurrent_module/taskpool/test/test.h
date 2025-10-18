@@ -101,6 +101,8 @@ public:
     static void SetTotalTaskNum(uint32_t num);
     static void ExecuteOnReceiveDataCallback(void* callbackInfo, void* resultInfo);
     static void TriggerTask(void* data, bool isCancel);
+    static bool GetTaskEnvAndPriority(uint32_t taskId);
+    static napi_value GetTask(napi_env env, napi_value argv[], size_t argc);
 
     class ExceptionScope {
     public:
