@@ -149,6 +149,13 @@ public:
     static void WorkerOnMessage(const uv_async_t* req);
 
     /**
+     * The worker thread receives the exit information.
+     *
+     * @param req The value of the object passed in by the js layer.
+     */
+    static void HostOnExit(const uv_async_t* req);
+
+    /**
      * ExecuteIn in thread.
      *
      * @param data The worker pointer.
@@ -591,6 +598,7 @@ private:
     void ClearHostMessage(napi_env env);
 
     bool IsPublishWorkerOverSignal();
+    void HostOnExitInner();
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -625,6 +633,7 @@ private:
     uv_async_t* hostOnErrorSignal_ = nullptr;
     uv_async_t* hostOnAllErrorsSignal_ = nullptr;
     uv_async_t* hostOnGlobalCallSignal_ = nullptr;
+    uv_async_t* hostOnExitSignal_ = nullptr;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     uv_async_t* debuggerOnPostTaskSignal_ = nullptr;
     std::mutex debuggerMutex_;

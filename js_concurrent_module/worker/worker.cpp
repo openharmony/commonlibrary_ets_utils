@@ -1653,18 +1653,6 @@ void Worker::HostOnMessageInner()
         // receive close signal.
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker received close signal");
-            liveStatusLock_.lock();
-#if defined(ENABLE_WORKER_EVENTHANDLER)
-            if ((!isMainThreadWorker_ || isLimitedWorker_) && !isHostEnvExited_) {
-                CloseHostHandle();
-            }
-#else
-            if (!isHostEnvExited_) {
-                CloseHostHandle();
-            }
-#endif
-            liveStatusLock_.unlock();
-            CloseHostCallback();
             return;
         }
         // handle data, call worker onMessage function to handle.
@@ -2104,10 +2092,10 @@ void Worker::PublishWorkerOverSignal()
     if (isMainThreadWorker_ && !isLimitedWorker_) {
         PostWorkerOverTask();
     } else {
-        ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
+        ConcurrentHelper::UvCheckAndAsyncSend(hostOnExitSignal_);
     }
 #else
-    ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
+    ConcurrentHelper::UvCheckAndAsyncSend(hostOnExitSignal_);
 #endif
     EraseWorker();
 }
@@ -2121,7 +2109,7 @@ void Worker::PostWorkerOverTask()
         if (strong) {
             HILOG_INFO("worker:: host receive terminate.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
-            strong->GetWorker()->HostOnMessageInner();
+            strong->GetWorker()->HostOnExitInner();
         } else {
             HILOG_INFO("worker:: worker is null.");
         }
@@ -2690,6 +2678,7 @@ void Worker::InitHostHandle(uv_loop_t* loop)
     ConcurrentHelper::UvHandleInit(loop, hostOnErrorSignal_, Worker::HostOnError, this);
     ConcurrentHelper::UvHandleInit(loop, hostOnAllErrorsSignal_, Worker::HostOnAllErrors, this);
     ConcurrentHelper::UvHandleInit(loop, hostOnGlobalCallSignal_, Worker::HostOnGlobalCall, this);
+    ConcurrentHelper::UvHandleInit(loop, hostOnExitSignal_, Worker::HostOnExit, this);
 }
 
 void Worker::CloseHostHandle()
@@ -2709,6 +2698,10 @@ void Worker::CloseHostHandle()
     if (ConcurrentHelper::IsUvActive(hostOnGlobalCallSignal_)) {
         ConcurrentHelper::UvHandleClose(hostOnGlobalCallSignal_);
         hostOnGlobalCallSignal_ = nullptr;
+    }
+    if (ConcurrentHelper::IsUvActive(hostOnExitSignal_)) {
+        ConcurrentHelper::UvHandleClose(hostOnExitSignal_);
+        hostOnExitSignal_ = nullptr;
     }
 }
 
@@ -2850,5 +2843,48 @@ void Worker::HostOnAllErrorsInner()
         napi_call_function(hostEnv_, obj, callback, 1, argv, &callbackResult);
         HandleHostException();
     }
+}
+
+void Worker::HostOnExit(const uv_async_t* req)
+{
+    Worker* worker = static_cast<Worker*>(req->data);
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is null when host exit.");
+        return;
+    }
+    worker->HostOnExitInner();
+}
+
+void Worker::HostOnExitInner()
+{
+    if (hostEnv_ == nullptr || HostIsStop()) {
+        HILOG_ERROR("worker:: host thread maybe is over when host exit.");
+        return;
+    }
+
+    napi_status status = napi_ok;
+    HandleScope scope(hostEnv_, status);
+    NAPI_CALL_RETURN_VOID(hostEnv_, status);
+
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    ContainerScope containerScope(engine, scopeId_);
+    if (!containerScope.IsInitialized()) {
+        HILOG_DEBUG("worker:: InitContainerScopeFunc error when HostOnExitInner begin(only stage model)");
+    }
+
+    HILOG_DEBUG("worker:: worker received close signal");
+    {
+        std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if ((!isMainThreadWorker_ || isLimitedWorker_) && !isHostEnvExited_) {
+            CloseHostHandle();
+        }
+#else
+        if (!isHostEnvExited_) {
+            CloseHostHandle();
+        }
+#endif
+    }
+    CloseHostCallback();
 }
 } // namespace Commonlibrary::Concurrent::WorkerModule
