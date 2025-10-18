@@ -7271,8 +7271,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest349, testing::ext::TestSize.Level0)
     napi_value argv3[] = {taskId};
     result = NativeEngineTest::GetTask(env, argv3, 1);
     ASSERT_TRUE(result != nullptr);
-}
 
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value argv4[] = {taskId, undefined};
+    result = NativeEngineTest::GetTask(env, argv4, 2);
+    ASSERT_TRUE(result != nullptr);
+}
 HWTEST_F(NativeEngineTest, TaskpoolTest350, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
