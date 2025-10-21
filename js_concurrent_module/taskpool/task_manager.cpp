@@ -490,7 +490,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     // update the maxThreads_ periodically
     maxThreads_ = ConcurrentHelper::GetMaxThreads();
     if (minThread == 0) {
-        HILOG_INFO("taskpool:: low mem");
+        HILOG_INFO("taskpool:low mem");
     }
     if (workerCount > minThread && workerCount > targetNum) {
         targetNum = std::max(minThread, targetNum);
@@ -613,8 +613,7 @@ void TaskManager::TryExpandWithCheckIdle()
             return;
         }
         CreateWorkers(hostEnv_, step);
-        // print taskpool workers info
-        HILOG_INFO("taskpool:: max:%{public}u, create:%{public}u, total:%{public}u", maxThreads, step, GetThreadNum());
+        HILOG_INFO("taskpool:expand %{public}u,now %{public}u,max %{public}u", step, GetThreadNum(), maxThreads);
     }
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
@@ -930,11 +929,11 @@ void TaskManager::NotifyExecuteTask()
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
         // When there are only idle tasks and workers executing them, it is not triggered
-        HILOG_INFO("taskpool:: not notify");
+        HILOG_INFO("taskpool:no notify");
         return;
     }
     if (idleWorkers_.size() == 0) {
-        HILOG_INFO("taskpool:: 0 idleWorker");
+        HILOG_INFO("taskpool:0 idleWorker");
         return;
     }
 
