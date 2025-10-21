@@ -2082,8 +2082,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
     Task* task1 = new Task();
-    uint32_t taskId1 = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
+    uint32_t taskId1 = taskManager.CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     task1->taskId_ = taskId1;
 
     napi_value thisValue = NapiHelper::CreateObject(env);
@@ -2094,9 +2095,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId1, args);
 
-    NativeEngineTest::ExecuteOnReceiveDataCallback(cbInfo.get(), resultInfo);
+    taskManager.RegisterCallback(env, taskId1, cbInfo, "TaskpoolTest131");
+    NativeEngineTest::ExecuteOnReceiveDataCallback(resultInfo);
 
-    TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.RegisterCallback(env, taskId1, cbInfo, "TaskpoolTest131-1");
     taskManager.DecreaseSendDataRefCount(env, taskId1);
 
@@ -7150,6 +7151,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest346, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().StoreTask(task);
     task->worker_ = worker;
     task->taskType_ = TaskType::SEQRUNNER_TASK;
+    task->seqRunnerId_ = 1;
     Worker::NotifyHandleTaskResult(task);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
@@ -7269,4 +7271,40 @@ HWTEST_F(NativeEngineTest, TaskpoolTest349, testing::ext::TestSize.Level0)
     napi_value argv3[] = {taskId};
     result = NativeEngineTest::GetTask(env, argv3, 1);
     ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest350, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    taskManager.RegisterCallback(env, task->taskId_, nullptr, "OnReceiveData");
+
+    auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
+    taskManager.RegisterCallback(env, task->taskId_, callbackInfo, "TaskpoolTest350");
+    auto callbackInfo2 = std::make_shared<CallbackInfo>(env, 1, nullptr);
+    taskManager.RegisterCallback(env, task->taskId_, callbackInfo2, "TaskpoolTest350");
+    auto cb = taskManager.GetSenddataCallback(task->taskId_);
+    ASSERT_TRUE(cb == callbackInfo2.get());
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+
+    auto cb2 = taskManager.GetSenddataCallback(1);
+    ASSERT_TRUE(cb2 == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest351, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    void* args = nullptr;
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, 1, args);
+    NativeEngineTest::ExecuteOnReceiveDataCallback(resultInfo);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
 }
