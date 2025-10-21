@@ -15,50 +15,50 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerArkWeb() {
-    registerStaticCB('ArkWeb.ScreenCaptureHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferScreenCaptureHandlerStatic');
-    registerDynamicCB('ArkWeb.ScreenCaptureHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferScreenCaptureHandlerDynamic');
+    registerStaticCB('ArkWeb.ScreenCaptureHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferScreenCaptureHandlerStatic');
+    registerDynamicCB('ArkWeb.ScreenCaptureHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferScreenCaptureHandlerDynamic');
 
-    registerStaticCB('ArkWeb.FileSelectorParam', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorParamStatic');
-    registerDynamicCB('ArkWeb.FileSelectorParam', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorParamDynamic');
+    registerStaticCB('ArkWeb.FileSelectorParam', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferFileSelectorParamStatic');
+    registerDynamicCB('ArkWeb.FileSelectorParam', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferFileSelectorParamDynamic');
 
-    registerStaticCB('ArkWeb.JsGeolocation', 'arkui.component.web', 'ArkWebTransfer', 'transferJsGeolocationStatic');
-    registerDynamicCB('ArkWeb.JsGeolocation', 'arkui.component.web', 'ArkWebTransfer', 'transferJsGeolocationDynamic');
+    registerStaticCB('ArkWeb.JsGeolocation', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferJsGeolocationStatic');
+    registerDynamicCB('ArkWeb.JsGeolocation', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferJsGeolocationDynamic');
 
-    registerStaticCB('ArkWeb.JsResult', 'arkui.component.web', 'ArkWebTransfer', 'transferJsResultStatic');
-    registerDynamicCB('ArkWeb.JsResult', 'arkui.component.web', 'ArkWebTransfer', 'transferJsResultDynamic');
+    registerStaticCB('ArkWeb.JsResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferJsResultStatic');
+    registerDynamicCB('ArkWeb.JsResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferJsResultDynamic');
 
-    registerStaticCB('ArkWeb.EventResult', 'arkui.component.web', 'ArkWebTransfer', 'transferEventResultStatic');
-    registerDynamicCB('ArkWeb.EventResult', 'arkui.component.web', 'ArkWebTransfer', 'transferEventResultDynamic');
+    registerStaticCB('ArkWeb.EventResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferEventResultStatic');
+    registerDynamicCB('ArkWeb.EventResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferEventResultDynamic');
 
-    registerStaticCB('ArkWeb.FileSelectorResult', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorResultStatic');
-    registerDynamicCB('ArkWeb.FileSelectorResult', 'arkui.component.web', 'ArkWebTransfer', 'transferFileSelectorResultDynamic');
+    registerStaticCB('ArkWeb.FileSelectorResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferFileSelectorResultStatic');
+    registerDynamicCB('ArkWeb.FileSelectorResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferFileSelectorResultDynamic');
 
-    registerStaticCB('ArkWeb.WebContextMenuParam', 'arkui.component.web', 'ArkWebTransfer', 'transferWebContextMenuParamStatic');
-    registerDynamicCB('ArkWeb.WebContextMenuParam', 'arkui.component.web', 'ArkWebTransfer', 'transferWebContextMenuParamDynamic');
+    registerStaticCB('ArkWeb.WebContextMenuParam', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebContextMenuParamStatic');
+    registerDynamicCB('ArkWeb.WebContextMenuParam', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebContextMenuParamDynamic');
 
-    registerStaticCB('ArkWeb.WebContextMenuResult', 'arkui.component.web', 'ArkWebTransfer', 'transferWebContextMenuResultStatic');
-    registerDynamicCB('ArkWeb.WebContextMenuResult', 'arkui.component.web', 'ArkWebTransfer', 'transferWebContextMenuResultDynamic');
+    registerStaticCB('ArkWeb.WebContextMenuResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebContextMenuResultStatic');
+    registerDynamicCB('ArkWeb.WebContextMenuResult', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebContextMenuResultDynamic');
 
-    registerStaticCB('ArkWeb.HttpAuthHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferHttpAuthHandlerToStatic');
-    registerDynamicCB('ArkWeb.HttpAuthHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferHttpAuthHandlerToDynamic');
+    registerStaticCB('ArkWeb.HttpAuthHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferHttpAuthHandlerToStatic');
+    registerDynamicCB('ArkWeb.HttpAuthHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferHttpAuthHandlerToDynamic');
 
-    registerStaticCB('ArkWeb.WebResourceResponse', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceReponseToStatic');
-    registerDynamicCB('ArkWeb.WebResourceResponse', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceReponseToDynamic');
+    registerStaticCB('ArkWeb.WebResourceResponse', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebResourceReponseToStatic');
+    registerDynamicCB('ArkWeb.WebResourceResponse', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebResourceReponseToDynamic');
 
-    registerStaticCB('ArkWeb.WebResourceRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceRequestToStatic');
-    registerDynamicCB('ArkWeb.WebResourceRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferWebResourceRequestToDynamic');
+    registerStaticCB('ArkWeb.WebResourceRequest', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebResourceRequestToStatic');
+    registerDynamicCB('ArkWeb.WebResourceRequest', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebResourceRequestToDynamic');
 
-    registerStaticCB('ArkWeb.ConsoleMessage', 'arkui.component.web', 'ArkWebTransfer', 'transferConsoleMessageToStatic');
-    registerDynamicCB('ArkWeb.ConsoleMessage', 'arkui.component.web', 'ArkWebTransfer', 'transferConsoleMessageToDynamic');
+    registerStaticCB('ArkWeb.ConsoleMessage', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferConsoleMessageToStatic');
+    registerDynamicCB('ArkWeb.ConsoleMessage', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferConsoleMessageToDynamic');
 
-    registerStaticCB('ArkWeb.DataResubmissionHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferDataResubmissionHandlerToStatic');
-    registerDynamicCB('ArkWeb.DataResubmissionHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferDataResubmissionHandlerToDynamic');
+    registerStaticCB('ArkWeb.DataResubmissionHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferDataResubmissionHandlerToStatic');
+    registerDynamicCB('ArkWeb.DataResubmissionHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferDataResubmissionHandlerToDynamic');
 
-    registerStaticCB('ArkWeb.ClientAuthenticationHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferClientAuthenticationHandlerToStatic');
-    registerDynamicCB('ArkWeb.ClientAuthenticationHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferClientAuthenticationHandlerToDynamic');
+    registerStaticCB('ArkWeb.ClientAuthenticationHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferClientAuthenticationHandlerToStatic');
+    registerDynamicCB('ArkWeb.ClientAuthenticationHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferClientAuthenticationHandlerToDynamic');
 
-    registerStaticCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToStatic');
-    registerDynamicCB('ArkWeb.SslErrorHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferSslErrorHandlerToDynamic');
+    registerStaticCB('ArkWeb.SslErrorHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferSslErrorHandlerToStatic');
+    registerDynamicCB('ArkWeb.SslErrorHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferSslErrorHandlerToDynamic');
 
     registerStaticCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToStatic');
     registerDynamicCB('ArkWeb.BackForwardList', '@ohos.web.webview', 'webview.BackForwardListinner', 'transferBackForwardListToDynamic');
@@ -66,14 +66,14 @@ export function registerArkWeb() {
     registerStaticCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToStatic');
     registerDynamicCB('ArkWeb.WebMessagePort', '@ohos.web.webview', 'webview.WebMessagePortInner', 'transferWebMessagePortToDynamic');
 
-    registerStaticCB('ArkWeb.PermissionRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferPermissionRequestStatic');
-    registerDynamicCB('ArkWeb.PermissionRequest', 'arkui.component.web', 'ArkWebTransfer', 'transferPermissionRequestDynamic');
+    registerStaticCB('ArkWeb.PermissionRequest', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferPermissionRequestStatic');
+    registerDynamicCB('ArkWeb.PermissionRequest', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferPermissionRequestDynamic');
 
-    registerStaticCB('ArkWeb.WebKeyboardController', 'arkui.component.web', 'ArkWebTransfer', 'transferWebKeyboardControllerStatic');
-    registerDynamicCB('ArkWeb.WebKeyboardController', 'arkui.component.web', 'ArkWebTransfer', 'transferWebKeyboardControllerDynamic');
+    registerStaticCB('ArkWeb.WebKeyboardController', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebKeyboardControllerStatic');
+    registerDynamicCB('ArkWeb.WebKeyboardController', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferWebKeyboardControllerDynamic');
 
-    registerStaticCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerStatic');
-    registerDynamicCB('ArkWeb.ControllerHandler', 'arkui.component.web', 'ArkWebTransfer', 'transferControllerHandlerDynamic');
+    registerStaticCB('ArkWeb.ControllerHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferControllerHandlerStatic');
+    registerDynamicCB('ArkWeb.ControllerHandler', 'arkui.handwritten.transfer.WebTransfer', 'ArkWebTransfer', 'transferControllerHandlerDynamic');
 
     registerStaticCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToStatic');
     registerDynamicCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToDynamic');
