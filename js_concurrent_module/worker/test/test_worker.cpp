@@ -749,11 +749,13 @@ public:
         worker->PostWorkerErrorTask();
         worker->PostWorkerMessageTask();
         worker->PostWorkerGlobalCallTask();
+        worker->PostWorkerExceptionTask();
         worker->EraseWorker();
         worker->PostWorkerOverTask();
         worker->PostWorkerErrorTask();
         worker->PostWorkerMessageTask();
         worker->PostWorkerGlobalCallTask();
+        worker->PostWorkerExceptionTask();
     }
 
     static void TestWorkerOnMessageInner(Worker *worker, napi_env env)

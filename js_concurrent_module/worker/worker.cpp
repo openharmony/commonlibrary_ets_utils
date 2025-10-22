@@ -2120,11 +2120,13 @@ void Worker::PostWorkerOverTask()
 
 void Worker::PostWorkerErrorTask()
 {
-    auto hostOnErrorTask = [this]() {
-        if (IsValidWorker(this)) {
+    std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
+    auto hostOnErrorTask = [weak]() { // LOCV_EXCL_BR_LINE
+        auto strong = weak.lock();
+        if (strong) {
             HILOG_INFO("worker:host receive error.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnErrorMessage");
-            this->HostOnErrorInner();
+            strong->GetWorker()->HostOnErrorInner();
         }
     };
     GetMainThreadHandler()->PostTask(hostOnErrorTask, "WorkerHostOnErrorTask",
@@ -2133,11 +2135,13 @@ void Worker::PostWorkerErrorTask()
 
 void Worker::PostWorkerMessageTask()
 {
-    auto hostOnMessageTask = [this]() {
-        if (IsValidWorker(this)) {
+    std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
+    auto hostOnMessageTask = [weak]() { // LOCV_EXCL_BR_LINE
+        auto strong = weak.lock();
+        if (strong) {
             HILOG_DEBUG("worker:: host thread receive message.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnMessage");
-            this->HostOnMessageInner();
+            strong->GetWorker()->HostOnMessageInner();
         }
     };
     GetMainThreadHandler()->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
@@ -2146,11 +2150,13 @@ void Worker::PostWorkerMessageTask()
 
 void Worker::PostWorkerGlobalCallTask()
 {
-    auto hostOnGlobalCallTask = [this]() {
-        if (IsValidWorker(this)) {
+    std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
+    auto hostOnGlobalCallTask = [weak]() { // LOCV_EXCL_BR_LINE
+        auto strong = weak.lock();
+        if (strong) {
             HILOG_DEBUG("worker:: host thread receive globalCall signal.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnGlobalCallSignal");
-            this->HostOnGlobalCallInner();
+            strong->GetWorker()->HostOnGlobalCallInner();
         }
     };
     GetMainThreadHandler()->PostTask(hostOnGlobalCallTask, "WorkerHostOnGlobalCallTask",
@@ -2159,11 +2165,13 @@ void Worker::PostWorkerGlobalCallTask()
 
 void Worker::PostWorkerExceptionTask()
 {
-    auto hostOnAllErrorsTask = [this]() {
-        if (IsValidWorker(this)) {
+    std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
+    auto hostOnAllErrorsTask = [weak]() { // LOCV_EXCL_BR_LINE
+        auto strong = weak.lock();
+        if (strong) {
             HILOG_INFO("worker:host receive exception.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnAllErrorsMessage");
-            this->HostOnAllErrorsInner();
+            strong->GetWorker()->HostOnAllErrorsInner();
         }
     };
     GetMainThreadHandler()->PostTask(hostOnAllErrorsTask, "WorkerHostOnAllErrorsTask",
