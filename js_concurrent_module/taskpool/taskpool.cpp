@@ -879,19 +879,26 @@ napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
     }
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     std::string name = "";
-    if (argc > 1) {
+    bool checkName = false;
+    // If the second parameter passed in is undefined, no validation is required.
+    if (argc > 1 && NapiHelper::IsNotUndefined(env, args[1])) {
         if (!NapiHelper::IsString(env, args[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the second param must be string.");
             return nullptr;
         }
         name = NapiHelper::GetString(env, args[1]);
+        checkName = true;
     }
     uint32_t taskId = NapiHelper::GetUint32Value(env, args[0]);
     Task* task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr || env != task->GetEnv() || !task->IsValid()) {
+        // if task is nullptr, return undefined;
+        // if task isn't valid, return undefined;
+        // If current env does not match the env when the task was created, return undefined.
         return undefined;
     }
-    if (argc > 1 && name != task->name_) {
+    if (checkName && name != task->name_) {
+        // If need check name, but name and taskName are not equal, return undefined.
         return undefined;
     }
     napi_value result = nullptr;
