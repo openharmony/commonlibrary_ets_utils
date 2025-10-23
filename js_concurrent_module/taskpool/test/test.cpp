@@ -1079,11 +1079,10 @@ void NativeEngineTest::SetTotalTaskNum(uint32_t num)
     taskManager.totalTaskNum_ = num;
 }
 
-void NativeEngineTest::ExecuteOnReceiveDataCallback(void* callbackInfo, void* resultInfo)
+void NativeEngineTest::ExecuteOnReceiveDataCallback(void* resultInfo)
 {
-    CallbackInfo* cbInfo = reinterpret_cast<CallbackInfo*>(callbackInfo);
     TaskResultInfo* resInfo = reinterpret_cast<TaskResultInfo*>(resultInfo);
-    TaskPool::ExecuteOnReceiveDataCallback(cbInfo, resInfo);
+    TaskPool::ExecuteOnReceiveDataCallback(resInfo);
 }
 
 void NativeEngineTest::TriggerTask(void* data, bool isCancel)
@@ -1099,5 +1098,10 @@ bool NativeEngineTest::GetTaskEnvAndPriority(uint32_t taskId)
         return false;
     }
     return true;
+}
+
+std::string NativeEngineTest::GetFuncNameFromError(napi_env env, napi_value error)
+{
+    return Worker::GetFuncNameFromError(env, error);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

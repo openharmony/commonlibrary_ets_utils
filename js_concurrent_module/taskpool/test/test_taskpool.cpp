@@ -2048,8 +2048,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
     Task* task1 = new Task();
-    uint32_t taskId1 = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
+    uint32_t taskId1 = taskManager.CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     task1->taskId_ = taskId1;
 
     napi_value thisValue = NapiHelper::CreateObject(env);
@@ -2060,9 +2061,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, taskId1, args);
 
-    NativeEngineTest::ExecuteOnReceiveDataCallback(cbInfo.get(), resultInfo);
+    taskManager.RegisterCallback(env, taskId1, cbInfo, "TaskpoolTest131");
+    NativeEngineTest::ExecuteOnReceiveDataCallback(resultInfo);
 
-    TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.RegisterCallback(env, taskId1, cbInfo, "TaskpoolTest131-1");
     taskManager.DecreaseSendDataRefCount(env, taskId1);
 
@@ -7067,6 +7068,85 @@ HWTEST_F(NativeEngineTest, TaskpoolTest342, testing::ext::TestSize.Level0)
     ASSERT_FALSE(res);
 }
 
+HWTEST_F(NativeEngineTest, TaskpoolTest343, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    std::string defaultName = "Taskpool Thread";
+    std::string name = NativeEngineTest::GetFuncNameFromError(env, nullptr);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error = NapiHelper::CreateObject(env);
+    std::string err = "TaskpoolTest343";
+    napi_value stack = nullptr;
+    napi_create_string_utf8(env, err.c_str(), NAPI_AUTO_LENGTH, &stack);
+    napi_set_named_property(env, error, "stack", stack);
+    name = NativeEngineTest::GetFuncNameFromError(env, error);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error2 = NapiHelper::CreateObject(env);
+    std::string err2 = "TaskatTest343";
+    napi_value stack2 = nullptr;
+    napi_create_string_utf8(env, err2.c_str(), NAPI_AUTO_LENGTH, &stack2);
+    napi_set_named_property(env, error2, "stack", stack2);
+    name = NativeEngineTest::GetFuncNameFromError(env, error2);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error3 = NapiHelper::CreateObject(env);
+    std::string err3 = "Tas(atTest343";
+    napi_value stack3 = nullptr;
+    napi_create_string_utf8(env, err3.c_str(), NAPI_AUTO_LENGTH, &stack3);
+    napi_set_named_property(env, error3, "stack", stack3);
+    name = NativeEngineTest::GetFuncNameFromError(env, error3);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error4 = NapiHelper::CreateObject(env);
+    std::string err4 = "Tasat T(est (343";
+    napi_value stack4 = nullptr;
+    napi_create_string_utf8(env, err4.c_str(), NAPI_AUTO_LENGTH, &stack4);
+    napi_set_named_property(env, error4, "stack", stack4);
+    name = NativeEngineTest::GetFuncNameFromError(env, error4);
+    ASSERT_TRUE(name == defaultName);
+
+    napi_value error5 = NapiHelper::CreateObject(env);
+    std::string err5 = "Tasat Test (343";
+    napi_value stack5 = nullptr;
+    napi_create_string_utf8(env, err5.c_str(), NAPI_AUTO_LENGTH, &stack5);
+    napi_set_named_property(env, error5, "stack", stack5);
+    name = NativeEngineTest::GetFuncNameFromError(env, error5);
+    ASSERT_TRUE(name == "Taskpool Thread Test");
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest343_1, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    std::string defaultName = "Taskpool Thread";
+    std::string name = taskManager.GetFuncNameFromData(nullptr);
+    ASSERT_TRUE(name == defaultName);
+
+    Task* task = new Task();
+    task->name_ = "TaskpoolTest343_1";
+    void* data = reinterpret_cast<void*>(task);
+    name = taskManager.GetFuncNameFromData(data);
+    ASSERT_TRUE(name == defaultName);
+
+    taskManager.StoreTask(task);
+    Task* task2 = taskManager.GetTaskForPerform(task->taskId_);
+    ASSERT_TRUE(task == task2);
+
+    name = taskManager.GetFuncNameFromData(data);
+    ASSERT_TRUE(name == "Taskpool Thread TaskpoolTest343_1");
+
+    task->SetValid(false);
+    name = taskManager.GetFuncNameFromData(data);
+    ASSERT_TRUE(name == defaultName);
+
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+}
+
 HWTEST_F(NativeEngineTest, TaskpoolTest344, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -7126,6 +7206,42 @@ HWTEST_F(NativeEngineTest, TaskpoolTest346, testing::ext::TestSize.Level0)
     task2->worker_ = worker;
     Worker::NotifyHandleTaskResult(task2);
     exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest350, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    taskManager.RegisterCallback(env, task->taskId_, nullptr, "OnReceiveData");
+
+    auto callbackInfo = std::make_shared<CallbackInfo>(env, 1, nullptr);
+    taskManager.RegisterCallback(env, task->taskId_, callbackInfo, "TaskpoolTest350");
+    auto callbackInfo2 = std::make_shared<CallbackInfo>(env, 1, nullptr);
+    taskManager.RegisterCallback(env, task->taskId_, callbackInfo2, "TaskpoolTest350");
+    auto cb = taskManager.GetSenddataCallback(task->taskId_);
+    ASSERT_TRUE(cb == callbackInfo2.get());
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+
+    auto cb2 = taskManager.GetSenddataCallback(1);
+    ASSERT_TRUE(cb2 == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest351, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    void* args = nullptr;
+    TaskResultInfo* resultInfo = new TaskResultInfo(env, 1, args);
+    NativeEngineTest::ExecuteOnReceiveDataCallback(resultInfo);
+    napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
