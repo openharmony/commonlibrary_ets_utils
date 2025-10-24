@@ -163,6 +163,7 @@ public:
     uint32_t GetTotalTaskNum() const;
     bool ExecuteTaskStartExecution(uint32_t taskId, Priority priority);
     CallbackInfo* GetSenddataCallback(uint32_t taskId);
+    std::string GetFuncNameFromData(void* data);
 
 private:
     TaskManager();

@@ -1109,4 +1109,9 @@ napi_value NativeEngineTest::GetTask(napi_env env, napi_value argv[], size_t arg
     napi_call_function(env, nullptr, cb, argc, argv, &result);
     return result;
 }
+
+std::string NativeEngineTest::GetFuncNameFromError(napi_env env, napi_value error)
+{
+    return Worker::GetFuncNameFromError(env, error);
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
