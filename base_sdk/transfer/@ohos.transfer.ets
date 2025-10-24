@@ -78,7 +78,7 @@ export namespace transfer {
             throw new BusinessError(transferErrorCodeId,
                 new Error(`Transfer Error. The class ${className} is not found!`));
         }
-        let staticMethod = classType.getStaticMethodByName(methodName);
+        let staticMethod = classType.getStaticMethod(methodName);
         if (staticMethod != undefined) {
             return staticMethod!;
         }
