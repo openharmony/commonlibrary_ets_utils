@@ -30,8 +30,8 @@ export function registerArkUI() {
     registerStaticCB('ArkUI.Animator', '@ohos.animator', 'AnimatorResultInner', 'animatorTransferStatic');
     registerDynamicCB('ArkUI.Animator', '@ohos.animator', 'AnimatorResultInner', 'animatorTransferDynamic');
 
-    registerStaticCB('ArkUI.FrameNode', 'arkui.handwritten.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferStatic');
-    registerDynamicCB('ArkUI.FrameNode', 'arkui.handwritten.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferDynamic');
+    registerStaticCB('ArkUI.FrameNode', 'arkui.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.FrameNode', 'arkui.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferDynamic');
 
     registerStaticCB('ArkUI.UIContext', 'arkui.handwritten.transfer.UIContextTransfer', 'UIContextTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.UIContext', 'arkui.handwritten.transfer.UIContextTransfer', 'UIContextTransfer', 'transferDynamic');
