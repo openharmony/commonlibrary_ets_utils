@@ -51,8 +51,8 @@ export function registerArkUI() {
     registerStaticCB('Global.Resource', 'arkui.handwritten.transfer.ResourceTransfer', 'ResourceTransfer', 'transferStatic');
     registerDynamicCB('Global.Resource', 'arkui.handwritten.transfer.ResourceTransfer', 'ResourceTransfer', 'transferDynamic');
 
-    registerStaticCB('ArkUI.RenderNode', 'arkui.handwritten.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferStatic');
-    registerDynamicCB('ArkUI.RenderNode', 'arkui.handwritten.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferDynamic');
+    registerStaticCB('ArkUI.RenderNode', 'arkui.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.RenderNode', 'arkui.transfer.RenderNodeTransfer', 'RenderNodeTransfer', 'transferDynamic');
 
     registerStaticCB('ArkUI.Colors', 'arkui.handwritten.transfer.ThemeTransfer', 'ColorsTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.Colors', 'arkui.handwritten.transfer.ThemeTransfer', 'ColorsTransfer', 'transferDynamic');
