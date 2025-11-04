@@ -164,6 +164,7 @@ public:
     bool ExecuteTaskStartExecution(uint32_t taskId, Priority priority);
     CallbackInfo* GetSenddataCallback(uint32_t taskId);
     std::string GetFuncNameFromData(void* data);
+    bool IsValidTask(Task* task);
 
 private:
     TaskManager();

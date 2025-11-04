@@ -1843,6 +1843,17 @@ std::string TaskManager::GetFuncNameFromData(void* data)
         return name;
     }
     Task* task = static_cast<Task*>(data);
+    if (!IsValidTask(task)) {
+        return name;
+    }
+    return name + " " + task->name_;
+}
+
+bool TaskManager::IsValidTask(Task* task)
+{
+    if (task == nullptr) {
+        return false;
+    }
     bool flag = false;
     {
         std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
@@ -1853,9 +1864,9 @@ std::string TaskManager::GetFuncNameFromData(void* data)
             }
         }
     }
-    if (!flag || !task->IsValid()) {
-        return name;
+    if (flag && task->IsValid()) {
+        return true;
     }
-    return name + " " + task->name_;
+    return false;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
