@@ -599,6 +599,7 @@ private:
 
     bool IsPublishWorkerOverSignal();
     void HostOnExitInner();
+    void WorkerOverWithoutExit();
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -674,6 +675,7 @@ private:
     std::shared_ptr<WorkerWrapper> workerWrapper_ = nullptr;
     WorkerPriority workerPriority_ = WorkerPriority::INVALID;
     std::function<void()> qosUpdatedCallback_;
+    std::atomic<bool> needOnExitCallback_ = true;
 
     friend class WorkersTest;
 };
