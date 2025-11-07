@@ -3163,7 +3163,7 @@ HWTEST_F(NativeEngineTest, charDencodeAchieves001, testing::ext::TestSize.Level0
     stdDecodeInfo2->slength = 2;
     stdDecodeInfo2->valueType = OHOS::Util::Type::BASIC_URL_SAFE;
     unsigned char* res2 = OHOS::Util::DecodeAchieves(env, stdDecodeInfo2);
-    ASSERT_EQ(0, static_cast<const char>(*res2));
+    ASSERT_EQ(nullptr, res2);
 
     OHOS::Util::DecodeInfo* stdDecodeInfo3 = nullptr;
     char arr3[] = {0xE4, 0xBD, 0xA0, 0xE5, 0xA5, 0xBD};
@@ -3172,7 +3172,7 @@ HWTEST_F(NativeEngineTest, charDencodeAchieves001, testing::ext::TestSize.Level0
     stdDecodeInfo3->slength = 3;
     stdDecodeInfo3->valueType = OHOS::Util::Type::BASIC_URL_SAFE;
     unsigned char* res3 = OHOS::Util::DecodeAchieves(env, stdDecodeInfo3);
-    ASSERT_EQ(0, static_cast<unsigned char>(*res3));
+    ASSERT_EQ(nullptr, res3);
 
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
