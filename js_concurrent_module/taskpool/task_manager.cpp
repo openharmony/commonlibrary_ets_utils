@@ -1026,6 +1026,10 @@ void TaskManager::RegisterCallback(napi_env env, uint32_t taskId, std::shared_pt
     std::lock_guard<std::mutex> lock(callbackMutex_);
     if (callbackInfo != nullptr) {
         callbackInfo->type = type;
+        auto iter = callbackTable_.find(taskId);
+        if (iter != callbackTable_.end() && iter->second != nullptr) {
+            callbackInfo->refCount = iter->second->refCount;
+        }
     } else { // LOCV_EXCL_BR_LINE
         HILOG_WARN("taskpool:: callbackInfo is null.");
     }
@@ -1085,15 +1089,8 @@ void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint
     ++callbackInfo->refCount;
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->IncreaseListeningCounter();
-    std::weak_ptr<CallbackInfo> info = callbackInfo;
-    auto onCallbackTask = [info, resultInfo]([[maybe_unused]] void* data) {
-        auto callbackInfo = info.lock();
-        if (callbackInfo == nullptr) {
-            HILOG_ERROR("taskpool:: callbackInfo may have been released");
-            delete resultInfo;
-            return;
-        }
-        TaskPool::ExecuteOnReceiveDataCallback(callbackInfo.get(), resultInfo);
+    auto onCallbackTask = [resultInfo]([[maybe_unused]] void* data) {
+        TaskPool::ExecuteOnReceiveDataCallback(resultInfo);
     };
     uint64_t handleId = 0;
     napi_status status = napi_send_cancelable_event(hostEnv, onCallbackTask, nullptr, priority,
@@ -1827,5 +1824,38 @@ std::tuple<napi_env, napi_event_priority> TaskManager::GetTaskEnvAndPriority(uin
     napi_env hostEnv = task->GetEnv();
     napi_event_priority priority = g_napiPriorityMap.at(worker->GetPriority());
     return {hostEnv, priority};
+}
+
+CallbackInfo* TaskManager::GetSenddataCallback(uint32_t taskId)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto iter = callbackTable_.find(taskId);
+    if (iter == callbackTable_.end() || iter->second == nullptr) {
+        return nullptr;
+    }
+    return iter->second.get();
+}
+
+std::string TaskManager::GetFuncNameFromData(void* data)
+{
+    std::string name = "Taskpool Thread";
+    if (data == nullptr) {
+        return name;
+    }
+    Task* task = static_cast<Task*>(data);
+    bool flag = false;
+    {
+        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+        for (auto& [_, rTask] : runningTasks_) {
+            if (rTask == task) {
+                flag = true;
+                break;
+            }
+        }
+    }
+    if (!flag || !task->IsValid()) {
+        return name;
+    }
+    return name + " " + task->name_;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -274,18 +274,14 @@ bool Worker::PrepareForWorkerInstance()
         this->DebuggerOnPostTask(std::move(task));
     });
 #endif
+    napi_env env = workerEnv_;
     reinterpret_cast<NativeEngine*>(workerEnv_)->RegisterNapiUncaughtExceptionHandler(
-        [workerEngine] (napi_value exception) -> void {
+        [workerEngine, env] (napi_value exception) -> void {
         if (!NativeEngine::IsAlive(workerEngine)) {
             HILOG_WARN("napi_env has been destoryed!");
             return;
         }
-        std::string name = "";
-        void* data = workerEngine->GetCurrentTaskInfo();
-        if (data != nullptr) {
-            Task* task = static_cast<Task*>(data);
-            name = task->name_;
-        }
+        std::string name = Worker::GetFuncNameFromError(env, exception);
         NapiErrorManager::GetInstance()->NotifyUncaughtException(reinterpret_cast<napi_env>(workerEngine),
             exception, name, TASKPOOL_TYPE);
     });
@@ -295,12 +291,8 @@ bool Worker::PrepareForWorkerInstance()
             HILOG_WARN("napi_env has been destoryed!");
             return;
         }
-        std::string name = "";
         void* data = workerEngine->GetCurrentTaskInfo();
-        if (data != nullptr) {
-            Task* task = static_cast<Task*>(data);
-            name = task->name_;
-        }
+        std::string name = TaskManager::GetInstance().GetFuncNameFromData(data);
         NapiErrorManager::GetInstance()->NotifyUnhandledRejection(reinterpret_cast<napi_env>(workerEngine),
             args, name, TASKPOOL_TYPE);
     });
@@ -754,5 +746,30 @@ void Worker::ResetPerformIdleState()
     if (priority_ == Priority::IDLE) {
         TaskManager::GetInstance().SetIsPerformIdle(false);
     }
+}
+
+std::string Worker::GetFuncNameFromError(napi_env env, napi_value error)
+{
+    std::string name = "Taskpool Thread";
+    if (error == nullptr) {
+        return name;
+    }
+    napi_value stack = NapiHelper::GetNameProperty(env, error, "stack");
+    std::string rawStack = NapiHelper::GetString(env, stack);
+    auto pos = rawStack.find("at");
+    if (pos == std::string::npos) {
+        return name;
+    }
+    auto endPos = rawStack.find('(');
+    if (endPos == std::string::npos) {
+        return name;
+    }
+    auto start = pos + 3; // exclude 'at' and 'space'
+    if (endPos <= start + 1) {
+        return name;
+    }
+    auto len = endPos - start - 1;
+    name += " " + rawStack.substr(start, len);
+    return name;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

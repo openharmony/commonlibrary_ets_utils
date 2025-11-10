@@ -103,8 +103,13 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 }
 
 // ---------------------------------- SendData ---------------------------------------
-void TaskPool::ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResultInfo* resultInfo)
+void TaskPool::ExecuteOnReceiveDataCallback(TaskResultInfo* resultInfo)
 {
+    CallbackInfo* callbackInfo = TaskManager::GetInstance().GetSenddataCallback(resultInfo->taskId);
+    if (callbackInfo == nullptr) {
+        HILOG_ERROR("taskpool:: ExecuteOnReceiveDataCallback callbackInfo is nullptr");
+        return;
+    }
     ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
     napi_status status = napi_ok;
     std::string traceLabel = "ExecuteOnReceiveDataCallback type: " + callbackInfo->type

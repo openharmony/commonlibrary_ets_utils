@@ -65,7 +65,7 @@ private:
                                    Task*& task);
     static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t& period, uint32_t& priority,
                                         Task*& task);
-    static void ExecuteOnReceiveDataCallback(CallbackInfo* callbackInfo, TaskResultInfo* resultInfo);
+    static void ExecuteOnReceiveDataCallback(TaskResultInfo* resultInfo);
     static void RecordTaskResultLog(Task* task, napi_status status, napi_value& napiTaskResult, bool& isCancel);
     friend class TaskManager;
     friend class NativeEngineTest;
