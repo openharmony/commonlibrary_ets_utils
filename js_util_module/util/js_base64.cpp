@@ -653,7 +653,7 @@ namespace OHOS::Util {
         }
         int tableLen = flag ? TRAGET_SIXTYFIVE - 1 : TRAGET_SIXTYFIVE;
         const char *searchArray = flag ? BASEURL : BASE;
-        int couts = 0;
+        int couts = -1;
         for (int i = 0; i < tableLen; i++) {
             if (searchArray[i] == ch) {
                 couts = i;
