@@ -77,4 +77,10 @@ export function registerArkWeb() {
 
     registerStaticCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToStatic');
     registerDynamicCB('ArkWeb.NativeMediaPlayerHandler', '@ohos.web.webview', 'webview.NativeMediaPlayerHandlerinner', 'transferNativeMediaPlayerHandlerToDynamic');
+
+    registerStaticCB('ArkWeb.WebResourceHandler', '@ohos.web.webview', 'webview.WebResourceHandler', 'transferWebResourceHandlerToStatic');
+    registerDynamicCB('ArkWeb.WebResourceHandler', '@ohos.web.webview', 'webview.WebResourceHandler', 'transferWebResourceHandlerToDynamic');
+
+    registerStaticCB('ArkWeb.WebSchemeHandlerRequest', '@ohos.web.webview', 'webview.WebSchemeHandlerRequest', 'transferWebSchemeHandlerRequestToStatic');
+    registerDynamicCB('ArkWeb.WebSchemeHandlerRequest', '@ohos.web.webview', 'webview.WebSchemeHandlerRequest', 'transferWebSchemeHandlerRequestToDynamic');
 }
