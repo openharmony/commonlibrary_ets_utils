@@ -66,6 +66,9 @@ export function registerArkUI() {
     registerStaticCB('ArkUI.CustomTheme', 'arkui.handwritten.transfer.ThemeTransfer', 'CustomThemeTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.CustomTheme', 'arkui.handwritten.transfer.ThemeTransfer', 'CustomThemeTransfer', 'transferDynamic');
 
+    registerStaticCB('ArkUI.ColorFilter', 'arkui.transfer.ColorFilterTransfer', 'ColorFilterTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.ColorFilter', 'arkui.transfer.ColorFilterTransfer', 'ColorFilterTransfer', 'transferDynamic');
+    
     registerStaticCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferDynamic');
 
