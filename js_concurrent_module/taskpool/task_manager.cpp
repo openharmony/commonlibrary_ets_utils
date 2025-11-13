@@ -1857,7 +1857,7 @@ bool TaskManager::IsValidTask(Task* task)
     bool flag = false;
     {
         std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
-        for (auto& [_, rTask] : runningTasks_) {
+        for (auto& [_, rTask] : tasks_) {
             if (rTask == task) {
                 flag = true;
                 break;
