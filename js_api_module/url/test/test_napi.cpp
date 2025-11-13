@@ -3659,3 +3659,52 @@ HWTEST_F(NativeEngineTest, testUrlParamsSet003, testing::ext::TestSize.Level0)
     DealNapiStrValue(env, params.Get(env, key), output);
     ASSERT_STREQ(output.c_str(), "2000");
 }
+
+HWTEST_F(NativeEngineTest, testUrlDeleteTab001, testing::ext::TestSize.Level0)
+{
+    std::string inPut = "dks	aasdd";
+    OHOS::Url::DeleteTabOrNewline(inPut);
+    ASSERT_STREQ(inPut.c_str(), "dksaasdd");
+}
+
+HWTEST_F(NativeEngineTest, testUrlDeleteTab002, testing::ext::TestSize.Level0)
+{
+    std::string input = "A\tB\nC\rD\t\n\rE";
+    OHOS::Url::DeleteTabOrNewline(input);
+    ASSERT_STREQ(input.c_str(), "ABCDE");
+}
+
+HWTEST_F(NativeEngineTest, testUrlDeleteTab003, testing::ext::TestSize.Level0)
+{
+    std::string input = "\t\n\rStart middle\tend\n";
+    OHOS::Url::DeleteTabOrNewline(input);
+    ASSERT_STREQ(input.c_str(), "Start middleend");
+}
+
+HWTEST_F(NativeEngineTest, testUrlDeleteTab004, testing::ext::TestSize.Level0)
+{
+    std::string input = "Hello\t\t\tWorld\r\n\r\n";
+    OHOS::Url::DeleteTabOrNewline(input);
+    ASSERT_STREQ(input.c_str(), "HelloWorld");
+}
+
+HWTEST_F(NativeEngineTest, testUrlDeleteTab005, testing::ext::TestSize.Level0)
+{
+    std::string input = "\t\n\r\t\n\r\t";
+    OHOS::Url::DeleteTabOrNewline(input);
+    ASSERT_STREQ(input.c_str(), "");
+}
+
+HWTEST_F(NativeEngineTest, testUrlDeleteTab006, testing::ext::TestSize.Level0)
+{
+    std::string input = "NoWhiteSpaceHere";
+    OHOS::Url::DeleteTabOrNewline(input);
+    ASSERT_STREQ(input.c_str(), "NoWhiteSpaceHere");
+}
+
+HWTEST_F(NativeEngineTest, testUrlDeleteTab007, testing::ext::TestSize.Level0)
+{
+    std::string input = "中文\t测试\n123\rABC";
+    OHOS::Url::DeleteTabOrNewline(input);
+    ASSERT_STREQ(input.c_str(), "中文测试123ABC");
+}

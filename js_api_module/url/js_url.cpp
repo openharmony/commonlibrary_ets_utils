@@ -153,15 +153,19 @@ namespace OHOS::Url {
         }
     }
 
-    void DeleteTabOrNewline(std::string& str1)
+    void DeleteTabOrNewline(std::string& str)
     {
-        for (auto item = str1.begin(); item != str1.end();) {
-            if (IsASCIITabOrNewline(*item)) {
-                item = str1.erase(item);
-            } else {
-                ++item;
+        char* writePtr = &str[0];
+        const char* readePtr = &str[0];
+        const char* end = readePtr + str.size();
+        while (readePtr < end) {
+            if (!IsASCIITabOrNewline(*readePtr)) {
+                *writePtr = *readePtr;
+                ++writePtr;
             }
+            ++readePtr;
         }
+        str.resize(writePtr - &str[0]);
     }
 
     bool IsSpecial(std::string scheme)
