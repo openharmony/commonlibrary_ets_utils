@@ -58,6 +58,7 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/mediaLibraryKit.ets",
     "./transfer/kitRegister/drawing.ets",
     "./transfer/kitRegister/rpc.ets",
+    "./transfer/kitRegister/udmf.ets",
   ]
   is_boot_abc = "True"
   device_dst_file = "/system/framework/base_transfer.abc"

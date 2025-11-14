@@ -31,6 +31,7 @@ import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
 import { registerDrawing } from './drawing.ets'
 import { registerScene3D } from './scene3d.ets';
 import { registerRpc } from './rpc.ets';
+import { registerUDMF } from './udmf.ets';
 
 export function registerMain(){
     registerArkTS();
@@ -52,4 +53,5 @@ export function registerMain(){
     registerDrawing();
     registerScene3D();
     registerRpc();
+    registerUDMF();
 }
