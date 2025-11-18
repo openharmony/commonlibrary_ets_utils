@@ -155,6 +155,9 @@ namespace OHOS::Url {
 
     void DeleteTabOrNewline(std::string& str)
     {
+        if (str.empty()) {
+            return;
+        }
         char* writePtr = &str[0];
         const char* readePtr = &str[0];
         const char* end = readePtr + str.size();
