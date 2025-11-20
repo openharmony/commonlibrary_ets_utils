@@ -23,6 +23,7 @@ interface NativeConvertXml {
   convert(strXml: string, options?: Object): ReceiveObject;
   convertToJSObject(strXml: string, options?: Object): ReceiveObject;
   fastConvertToJSObject(strXml: string, options?: Object): NativeConvertXml;
+  largeConvertToJSObject(strXml: string, options?: Object): Object;
 }
 interface ConvertXML {
   ConvertXml: NativeConvertXml;
@@ -89,6 +90,19 @@ class ConvertXML {
       return this.convertxmlclass.fastConvertToJSObject(strXml);
     }
     return this.convertxmlclass.fastConvertToJSObject(strXml, options);
+  }
+
+  largeConvertToJSObject(strXml: string, options?: Object): Object {
+    if (typeof strXml !== 'string') {
+      throw new BusinessError(`Parameter error.The type of ${strXml} must be string`);
+    }
+    if (options && typeof options !== 'object') {
+      throw new BusinessError(`Parameter error.The type of ${options} must be object`);
+    }
+    if (arguments.length === 1) {
+      return this.convertxmlclass.largeConvertToJSObject(strXml);
+    }
+    return this.convertxmlclass.largeConvertToJSObject(strXml, options);
   }
 }
 

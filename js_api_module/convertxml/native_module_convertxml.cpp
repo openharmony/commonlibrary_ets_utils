@@ -74,7 +74,7 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
         if (argc > 1) {
             object->DealOptions(env, args[1], true);
         }
-        napi_value result = object->Convert(env, strXml, true);
+        napi_value result = object->Convert(env, strXml, true, false);
         return result;
     }
 
@@ -95,7 +95,46 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
         if (argc > 1) {
             convertxml->DealOptions(env, args[1], false);
         }
-        return convertxml->Convert(env, strXml, false);
+        return convertxml->Convert(env, strXml, false, false);
+    }
+
+    static napi_value LargeConvert(napi_env env, napi_callback_info info)
+    {
+        napi_handle_scope scope = nullptr;
+        napi_status status = napi_open_handle_scope(env, &scope);
+        if (status != napi_ok) {
+            HILOG_ERROR("ConvertXml:: open scope failed!");
+            return nullptr;
+        }
+        napi_value thisVar = nullptr;
+        napi_value object = nullptr;
+        size_t argc = 2; // 2:The number of parameters
+        napi_value args[2] = { nullptr }; // 2:The number of parameters
+        status = napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
+        if (status != napi_ok) {
+            napi_close_handle_scope(env, scope);
+            return nullptr;
+        }
+        std::string strXml;
+        ConvertXml *convertxml = nullptr;
+        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&convertxml));
+        if (status != napi_ok || convertxml == nullptr) {
+            ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
+            napi_close_handle_scope(env, scope);
+            return nullptr;
+        }
+        status = convertxml->DealNapiStrValue(env, args[0], strXml);
+        if (status != napi_ok) {
+            HILOG_ERROR("ConvertXml:: DealNapiStrValue failed!");
+            napi_close_handle_scope(env, scope);
+            return nullptr;
+        }
+        if (argc > 1) {
+            convertxml->DealOptions(env, args[1], false);
+        }
+        object = convertxml->Convert(env, strXml, false, true);
+        napi_close_handle_scope(env, scope);
+        return object;
     }
 
     napi_value ConvertXmlInit(napi_env env, napi_value exports)
@@ -104,7 +143,8 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
         napi_value convertXmlClass = nullptr;
         napi_property_descriptor convertXmlDesc[] = {
             DECLARE_NAPI_FUNCTION("convert", Convert),
-            DECLARE_NAPI_FUNCTION("fastConvertToJSObject", FastConvert)
+            DECLARE_NAPI_FUNCTION("fastConvertToJSObject", FastConvert),
+            DECLARE_NAPI_FUNCTION("largeConvertToJSObject", LargeConvert),
         };
         NAPI_CALL(env, napi_define_class(env, convertXmlClassName, strlen(convertXmlClassName), ConvertXmlConstructor,
                                          nullptr, sizeof(convertXmlDesc) / sizeof(convertXmlDesc[0]), convertXmlDesc,

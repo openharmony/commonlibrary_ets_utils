@@ -297,16 +297,22 @@ namespace OHOS::Xml {
             }
     }
 
-    napi_value ConvertXml::Convert(napi_env env, std::string strXml, bool deprecated)
+    napi_value ConvertXml::Convert(napi_env env, std::string strXml, bool deprecated, bool isLarge)
     {
         xmlNodePtr curNode = nullptr;
         napi_value object = nullptr;
+        xmlDocPtr doc = nullptr;
         napi_status status = napi_create_object(env, &object);
         if (status != napi_ok) {
             return nullptr;
         }
         size_t len = strXml.size();
-        xmlDocPtr doc = xmlParseMemory(strXml.c_str(), len);
+
+        if (isLarge) {
+            doc = xmlReadMemory(strXml.c_str(), len, nullptr, nullptr, XML_PARSE_HUGE);
+        } else {
+            doc = xmlParseMemory(strXml.c_str(), len);
+        }
         deprecated_ = deprecated;
         if (!doc) {
             xmlFreeDoc(doc);

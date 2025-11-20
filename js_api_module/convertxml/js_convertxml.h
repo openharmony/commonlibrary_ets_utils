@@ -100,7 +100,7 @@ namespace OHOS::Xml {
          * @param env NAPI environment parameters.
          * @param strXml A string of XML text.
          */
-        napi_value Convert(napi_env env, std::string strXml, bool deprecated);
+        napi_value Convert(napi_env env, std::string strXml, bool deprecated, bool isLarge);
 
         /**
          * Converts the string of js to string of C++.
