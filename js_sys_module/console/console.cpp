@@ -762,7 +762,7 @@ napi_value Console::Assert(napi_env env, napi_callback_info info)
 
 void Console::InitConsoleModule(napi_env env)
 {
-    napi_handle_scope scope;
+    napi_handle_scope scope = nullptr;
     napi_open_handle_scope(env, &scope);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("log", ConsoleLog<LogLevel::INFO>),
