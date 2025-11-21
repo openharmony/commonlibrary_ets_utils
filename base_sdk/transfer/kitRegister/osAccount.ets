@@ -17,4 +17,10 @@ import { registerStaticCB, registerDynamicCB } from '../register.ets';
 export function registerOsAccount() {
   registerStaticCB('BasicServicesKit.IInputData', '@ohos.account.transfer.osAccount', 'Transfer', 'iInputDataTransferStatic');
   registerDynamicCB('BasicServicesKit.IInputData', '@ohos.account.transfer.osAccount', 'Transfer', 'iInputDataTransferDynamic');
+
+  registerStaticCB('BasicServicesKit.AppAccountManager', '@ohos.appAccount.transfer.appAccount', 'Transfer', 'appAccountManagerTransferStatic');
+  registerDynamicCB('BasicServicesKit.AppAccountManager', '@ohos.appAccount.transfer.appAccount', 'Transfer', 'appAccountManagerTransferDynamic');
+
+  registerStaticCB('BasicServicesKit.AuthCallback', '@ohos.appAccount.transfer.appAccount', 'Transfer', 'authCallbackTransferStatic');
+  registerDynamicCB('BasicServicesKit.AuthCallback', '@ohos.appAccount.transfer.appAccount', 'Transfer', 'authCallbackTransferDynamic');
 }
