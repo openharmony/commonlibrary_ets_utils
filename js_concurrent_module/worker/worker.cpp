@@ -1473,17 +1473,15 @@ void Worker::ExecuteInThread(const void* data)
     // 1. create a runtime
     napi_env workerEnv = worker->CreateWorkerEnv();
     if (workerEnv == nullptr) {
-        HILOG_ERROR("worker:: create workerEnv failed");
-        worker->EraseWorker();
-        CloseHelp::DeletePointer(worker, false);
+        HILOG_FATAL("worker:: create workerEnv failed");
+        worker->WorkerOverWithoutExit();
         return;
     }
 
     uv_loop_t* loop = worker->GetWorkerLoop();
     if (loop == nullptr) {
-        HILOG_ERROR("worker:: Worker loop is nullptr");
-        worker->EraseWorker();
-        CloseHelp::DeletePointer(worker, false);
+        HILOG_FATAL("worker:: Worker loop is nullptr");
+        worker->WorkerOverWithoutExit();
         return;
     }
     reinterpret_cast<NativeEngine*>(workerEnv)->RegisterNapiUncaughtExceptionHandler(
@@ -1891,7 +1889,7 @@ void Worker::CallHostFunction(size_t argc, const napi_value* argv, const char* m
 
 void Worker::CloseHostCallback()
 {
-    {
+    if (needOnExitCallback_) {
         napi_status status = napi_ok;
         HandleScope scope(hostEnv_, status);
         NAPI_CALL_RETURN_VOID(hostEnv_, status);
@@ -2894,5 +2892,11 @@ void Worker::HostOnExitInner()
 #endif
     }
     CloseHostCallback();
+}
+
+void Worker::WorkerOverWithoutExit()
+{
+    needOnExitCallback_ = false;
+    IsPublishWorkerOverSignal();
 }
 } // namespace Commonlibrary::Concurrent::WorkerModule

@@ -1094,6 +1094,7 @@ public:
         bool isLimitedWorker = worker->isLimitedWorker_;
         bool isMainThreadWorker = worker->isMainThreadWorker_;
         bool isHostEnvExited = worker->isHostEnvExited_;
+        worker->hostEnv_ = env;
         switch (state) {
             case WorkerHostExitState::NO_ENV:
                 worker->hostEnv_ = nullptr;
@@ -1103,7 +1104,6 @@ public:
                 worker->hostState_ = Worker::HostState::INACTIVE;
                 break;
             case WorkerHostExitState::INACTIVE:
-                worker->hostEnv_ = env;
                 worker->hostState_ = Worker::HostState::INACTIVE;
                 break;
             case WorkerHostExitState::LIMIT_AND_NOT_MAIN:
@@ -1126,6 +1126,7 @@ public:
             case WorkerHostExitState::NOT_LIMIT_AND_MAIN:
                 worker->isMainThreadWorker_ = false;
                 worker->isLimitedWorker_ = false;
+                worker->needOnExitCallback_ = false;
                 break;
             default:
                 break;
@@ -5965,14 +5966,8 @@ HWTEST_F(WorkersTest, HostOnExitTest001, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, HostOnExitTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
-    napi_value global;
-    napi_get_global(env, &global);
-    napi_value result = nullptr;
-    result = Worker_Constructor(env, global);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    Worker* worker = new Worker(env, nullptr);
     WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::LIMIT_AND_NOT_MAIN);
-    worker->EraseWorker();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -5981,14 +5976,8 @@ HWTEST_F(WorkersTest, HostOnExitTest002, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, HostOnExitTest003, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
-    napi_value global;
-    napi_get_global(env, &global);
-    napi_value result = nullptr;
-    result = Worker_Constructor(env, global);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    Worker* worker = new Worker(env, nullptr);
     WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::LIMIT_AND_MAIN);
-    worker->EraseWorker();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -5997,14 +5986,8 @@ HWTEST_F(WorkersTest, HostOnExitTest003, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, HostOnExitTest004, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
-    napi_value global;
-    napi_get_global(env, &global);
-    napi_value result = nullptr;
-    result = Worker_Constructor(env, global);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    Worker* worker = new Worker(env, nullptr);
     WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::MAIN_AND_NOT_LIMIT);
-    worker->EraseWorker();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -6013,14 +5996,8 @@ HWTEST_F(WorkersTest, HostOnExitTest004, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, HostOnExitTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
-    napi_value global;
-    napi_get_global(env, &global);
-    napi_value result = nullptr;
-    result = Worker_Constructor(env, global);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    Worker* worker = new Worker(env, nullptr);
     WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::HOST_AND_NOT_LIMIT);
-    worker->EraseWorker();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -6029,14 +6006,8 @@ HWTEST_F(WorkersTest, HostOnExitTest005, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, HostOnExitTest006, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
-    napi_value global;
-    napi_get_global(env, &global);
-    napi_value result = nullptr;
-    result = Worker_Constructor(env, global);
-    Worker* worker = nullptr;
-    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    Worker* worker = new Worker(env, nullptr);
     WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::NOT_LIMIT_AND_MAIN);
-    worker->EraseWorker();
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
