@@ -202,6 +202,7 @@ private:
     void WriteHisysForFfrtAndUv(Worker* worker, HisyseventParams* hisyseventParams);
     void AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int64_t idleThreadNum, int64_t timeoutThreadNum);
     std::tuple<napi_env, napi_event_priority> GetTaskEnvAndPriority(uint32_t taskId);
+    void IncreaseTaskIdSalt();
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};
@@ -272,6 +273,7 @@ private:
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
 #endif
     std::atomic<bool> isPerformIdle_ = false;
+    std::atomic<uint32_t> taskIdSalt_ = 1;
 
     friend class TaskGroupManager;
     friend class NativeEngineTest;

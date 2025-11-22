@@ -39,6 +39,7 @@ static constexpr uint32_t UINT32_ZERO = 0;
 static constexpr uint32_t UINT32_ONE = 1;
 static constexpr size_t SIZE_TWO = 2;
 static constexpr size_t SIZE_THREE = 3;
+static constexpr uint32_t MAX_UINT32_T = 0xFFFFFFFF;
 
 napi_ref CreateReference(napi_env env)
 {
@@ -1113,5 +1114,22 @@ napi_value NativeEngineTest::GetTask(napi_env env, napi_value argv[], size_t arg
 std::string NativeEngineTest::GetFuncNameFromError(napi_env env, napi_value error)
 {
     return Worker::GetFuncNameFromError(env, error);
+}
+
+uint32_t NativeEngineTest::GetTaskIdSalt()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    std::lock_guard<std::recursive_mutex> lock(taskManager.tasksMutex_);
+    taskManager.taskIdSalt_ = MAX_UINT32_T;
+    taskManager.IncreaseTaskIdSalt();
+    return taskManager.taskIdSalt_;
+}
+
+uint64_t NativeEngineTest::CalculateTaskId(uint64_t taskId, uint32_t salt)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    std::lock_guard<std::recursive_mutex> lock(taskManager.tasksMutex_);
+    taskManager.taskIdSalt_ = salt;
+    return taskManager.CalculateTaskId(taskId);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
