@@ -95,6 +95,8 @@ bool Timer::RegisterTime(napi_env env)
     auto data = new TimeData();
     data->env_ = env;
     data->func_ = SetTimeoutInner;
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
     napi_add_env_cleanup_hook(env, CleanUpHook, data);
 
     napi_add_cleanup_finalizer(env, CleanUpTimeData, data);
@@ -107,6 +109,7 @@ bool Timer::RegisterTime(napi_env env)
     };
     napi_value globalObj = Helper::NapiHelper::GetGlobalObject(env);
     napi_status status = napi_define_properties(env, globalObj, sizeof(properties) / sizeof(properties[0]), properties);
+    napi_close_handle_scope(env, scope);
     return status == napi_ok;
 }
 

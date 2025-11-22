@@ -762,6 +762,8 @@ napi_value Console::Assert(napi_env env, napi_callback_info info)
 
 void Console::InitConsoleModule(napi_env env)
 {
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("log", ConsoleLog<LogLevel::INFO>),
         DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION("debug", ConsoleLog<LogLevel::DEBUG>),
@@ -789,5 +791,6 @@ void Console::InitConsoleModule(napi_env env)
     napi_create_object(env, &console);
     napi_define_properties(env, console, sizeof(properties) / sizeof(properties[0]), properties);
     napi_set_named_property(env, globalObj, "console", console);
+    napi_close_handle_scope(env, scope);
 }
 } // namespace Commonlibrary::JsSysModule

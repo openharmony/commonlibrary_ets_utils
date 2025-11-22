@@ -60,7 +60,7 @@ namespace OHOS::Url {
     bool IsHexDigit(const char& ch);
     std::string DecodeSpecialChars(std::string input);
     void DeleteC0OrSpace(std::string& str);
-    void DeleteTabOrNewline(std::string& str1);
+    void DeleteTabOrNewline(std::string& str);
     std::string DealIpv4(std::string str);
     std::string SplitNum(std::string num, size_t& number);
     void FormatIpv6(std::string& str);
