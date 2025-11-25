@@ -7245,3 +7245,11 @@ HWTEST_F(NativeEngineTest, TaskpoolTest351, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest352, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    bool res = TaskManager::GetInstance().IsValidTask(nullptr);
+    ASSERT_FALSE(res);
+}
