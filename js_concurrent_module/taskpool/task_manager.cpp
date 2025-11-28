@@ -1442,8 +1442,8 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
 void TaskManager::StoreTask(Task* task)
 {
     uint64_t id = reinterpret_cast<uint64_t>(task);
-    uint32_t taskId = CalculateTaskId(id);
     std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    uint32_t taskId = CalculateTaskId(id);
     while (tasks_.find(taskId) != tasks_.end()) {
         id++;
         taskId = CalculateTaskId(id);
@@ -1542,11 +1542,13 @@ void TaskManager::BatchRejectDeferred(napi_env env, std::list<napi_deferred> def
 uint32_t TaskManager::CalculateTaskId(uint64_t id)
 {
     size_t hash = std::hash<uint64_t>{}(id);
-    uint64_t taskId = static_cast<uint64_t>(hash & MAX_UINT32_T);
+    uint64_t taskId = static_cast<uint64_t>((hash + taskIdSalt_) & MAX_UINT32_T);
+    IncreaseTaskIdSalt();
     while (taskId == 0) {
         ++taskId;
         hash = std::hash<uint64_t>{}(taskId);
-        taskId = static_cast<uint64_t>(hash & MAX_UINT32_T);
+        taskId = static_cast<uint64_t>((hash + taskIdSalt_) & MAX_UINT32_T);
+        IncreaseTaskIdSalt();
     }
     return static_cast<uint32_t>(taskId);
 }
@@ -1868,5 +1870,13 @@ bool TaskManager::IsValidTask(Task* task)
         return true;
     }
     return false;
+}
+
+void TaskManager::IncreaseTaskIdSalt()
+{
+    if (taskIdSalt_ >= MAX_UINT32_T) {
+        taskIdSalt_ = 1;
+    }
+    taskIdSalt_.fetch_add(1);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -7399,3 +7399,19 @@ HWTEST_F(NativeEngineTest, TaskpoolTest352, testing::ext::TestSize.Level0)
     bool res = TaskManager::GetInstance().IsValidTask(nullptr);
     ASSERT_FALSE(res);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest353, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t id = NativeEngineTest::GetTaskIdSalt();
+    ASSERT_TRUE(id == 2);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest354, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint64_t taskId = NativeEngineTest::CalculateTaskId(0, 0);
+    ASSERT_TRUE(taskId == 2);
+}

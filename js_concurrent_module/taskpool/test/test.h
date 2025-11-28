@@ -19,6 +19,7 @@
 #include "native_engine.h"
 
 #include "gtest/gtest.h"
+#include <mutex>
 #include <string>
 
 #if defined(ENABLE_TASKPOOL_FFRT)
@@ -104,6 +105,8 @@ public:
     static bool GetTaskEnvAndPriority(uint32_t taskId);
     static napi_value GetTask(napi_env env, napi_value argv[], size_t argc);
     static std::string GetFuncNameFromError(napi_env env, napi_value error);
+    static uint32_t GetTaskIdSalt();
+    static uint64_t CalculateTaskId(uint64_t taskId, uint32_t salt);
 
     class ExceptionScope {
     public:
