@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
 import { registerWindow } from './window.ets';
@@ -19,20 +20,20 @@ import { registerAbilityKit } from './abilitykit.ets';
 import { registerArkGraphics2D } from './arkGraphics2D.ets';
 import { registerOsAccount } from './osAccount.ets';
 import { registerArkWeb } from './arkweb.ets';
-import { registerCommonEventManager } from './basicServicesKit.ets';
+import { registerCommonEventManager } from './basicServicesKit.ets'
 import { registerResourceManager } from './resourceManager.ets';
+import { registerIpc } from './ipc.ets';
+import { registerScene3D } from './scene3d.ets';
+import { registerImageKit } from './imageKit.ets';
+import { registerPasteboard } from './pasteboard.ets';
+import { registerCameraKit } from './cameraKit.ets';
 import { registerDisplay } from './display.ets';
 import { registerScreen } from './screen.ets';
-import { registerImageKit } from './imageKit.ets';
-import { registerCameraKit } from './cameraKit.ets';
-import { registerPasteboard } from './pasteboard.ets';
-import { registerEffectKit } from './effectKit.ets';
 import { registerMediaLibraryKit } from './mediaLibraryKit.ets'
-import { registerDrawing } from './drawing.ets'
-import { registerScene3D } from './scene3d.ets';
-import { registerRpc } from './rpc.ets';
-import { registerBackup } from './coreFileKitBackup.ets'
 import { registerUDMF } from './udmf.ets';
+import { registerBackup } from './coreFileKitBackup.ets'
+import { registerEffectKit } from './effectKit.ets';
+import { registerDrawing } from './drawing.ets'
 
 export function registerMain(){
     registerArkTS();
@@ -44,16 +45,16 @@ export function registerMain(){
     registerArkWeb();
     registerCommonEventManager();
     registerResourceManager();
+    registerIpc();
+    registerScene3D();
+    registerImageKit();
+    registerPasteboard();
+    registerCameraKit();
     registerDisplay();
     registerScreen();
-    registerImageKit();
-    registerCameraKit();
-    registerPasteboard();
-    registerEffectKit();
     registerMediaLibraryKit();
-    registerDrawing();
-    registerScene3D();
-    registerRpc();
-    registerBackup();
     registerUDMF();
+    registerBackup();
+    registerEffectKit();
+    registerDrawing();
 }
