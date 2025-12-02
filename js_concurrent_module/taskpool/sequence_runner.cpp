@@ -22,28 +22,32 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 static constexpr char EXECUTE_STR[] = "execute";
 static constexpr char SEQ_RUNNER_ID_STR[] = "seqRunnerId";
 
+BaseRunnerManager& SequenceRunner::GetManager()
+{
+    return SequenceRunnerManager::GetInstance();
+}
+
 bool SequenceRunner::SeqRunnerConstructorInner(napi_env env, napi_value& thisVar, SequenceRunner* seqRunner)
 {
-    // update seqRunner.seqRunnerId
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
     napi_value napiSeqRunnerId = NapiHelper::CreateUint64(env, seqRunnerId);
-    SequenceRunnerManager::GetInstance().StoreSequenceRunner(seqRunnerId, seqRunner);
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY(SEQ_RUNNER_ID_STR, napiSeqRunnerId),
         DECLARE_NAPI_FUNCTION(EXECUTE_STR, Execute),
     };
-    napi_define_properties(env, thisVar, sizeof(properties) / sizeof(properties[0]), properties);
-    HILOG_INFO("taskpool:: construct seqRunner name is %{public}s, seqRunnerid %{public}s.",
-               seqRunner->seqName_.c_str(), std::to_string(seqRunnerId).c_str());
+    return RunnerConstructorInner(env, thisVar, seqRunner, properties,
+                                  sizeof(properties) / sizeof(properties[0]));
+}
 
-    seqRunner->seqRunnerId_ = seqRunnerId;
-    napi_status status = napi_wrap(env, thisVar, seqRunner, SequenceRunnerDestructor, nullptr, nullptr);
-    if (status != napi_ok) {
-        HILOG_ERROR("taskpool::SeqRunnerConstructorInner napi_wrap return value is %{public}d", status);
-        SequenceRunnerDestructor(env, seqRunner, nullptr);
-        return false;
-    }
-    return true;
+void SequenceRunner::LogRunnerConstructor(std::string name, uint64_t runnerId)
+{
+    HILOG_INFO("taskpool:: construct seqRunner name is %{public}s, seqRunnerid %{public}s.",
+               name.c_str(), std::to_string(runnerId).c_str());
+}
+
+void SequenceRunner::LogRunnerConstructorInnerReturn(napi_status status)
+{
+    HILOG_ERROR("taskpool::SeqRunnerConstructorInner napi_wrap return value is %{public}d", status);
 }
 
 napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info cbinfo)
@@ -123,7 +127,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     }
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, thisVar, SEQ_RUNNER_ID_STR);
     uint64_t seqRunnerId = NapiHelper::GetUint64Value(env, napiSeqRunnerId);
-    SequenceRunner* seqRunner = SequenceRunnerManager::GetInstance().GetSeqRunner(seqRunnerId);
+    SequenceRunner* seqRunner = SequenceRunnerManager::GetInstance().GetRunner(seqRunnerId);
     if (seqRunner == nullptr) {
         return nullptr;
     }
@@ -136,7 +140,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (!task->CanForSequenceRunner(env)) {
         return nullptr;
     }
-    task->seqRunnerId_ = seqRunnerId;
+    task->runnerId_ = seqRunnerId;
     napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::SEQRUNNER_TASK, seqRunner->priority_);
     if (promise == nullptr) {
         return nullptr;
@@ -163,54 +167,21 @@ void SequenceRunner::ExecuteTaskImmediately(uint32_t taskId, Priority priority)
     TaskManager::GetInstance().EnqueueTaskId(taskId, priority);
 }
 
-void SequenceRunner::SequenceRunnerDestructor(napi_env env, void* data, [[maybe_unused]] void* hint)
-{
-    SequenceRunner* seqRunner = static_cast<SequenceRunner*>(data);
-    SequenceRunnerManager::GetInstance().SequenceRunnerDestructor(seqRunner);
-}
-
-bool SequenceRunner::RemoveWaitingTask(Task* task)
-{
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    if (seqRunnerTasks_.empty()) {
-        return false;
-    }
-    auto iter = std::find(seqRunnerTasks_.begin(), seqRunnerTasks_.end(), task);
-    if (iter != seqRunnerTasks_.end()) {
-        seqRunnerTasks_.erase(iter);
-        return true;
-    }
-    return false;
-}
-
-uint64_t SequenceRunner::DecreaseSeqCount()
-{
-    if (refCount_ > 0) {
-        refCount_--;
-    }
-    return refCount_;
-}
-
-void SequenceRunner::IncreaseSeqCount()
-{
-    refCount_++;
-}
-
 void SequenceRunner::AddTask(Task* task)
 {
-    std::unique_lock<std::shared_mutex> seqLock(seqRunnerMutex_);
-    seqRunnerTasks_.push_back(task);
+    std::unique_lock<std::shared_mutex> seqLock(taskMutex_);
+    tasks_.push_back(task);
 }
 
 void SequenceRunner::TriggerTask(napi_env env)
 {
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
-    if (seqRunnerTasks_.empty()) {
+    std::unique_lock<std::shared_mutex> lock(taskMutex_);
+    if (tasks_.empty()) {
         currentTaskId_ = 0;
         return;
     }
-    Task* task = seqRunnerTasks_.front();
-    seqRunnerTasks_.pop_front();
+    Task* task = tasks_.front();
+    tasks_.pop_front();
     bool isEmpty = false;
     while (task->taskState_ == ExecuteState::CANCELED) {
         if (refCount_ > 0) {
@@ -220,29 +191,29 @@ void SequenceRunner::TriggerTask(napi_env env)
         CancelTaskMessage* message = new CancelTaskMessage(ExecuteState::CANCELED, task->taskId_);
         task->TriggerCancel(message);
 
-        if (seqRunnerTasks_.empty()) {
+        if (tasks_.empty()) {
             HILOG_DEBUG("seqRunner:: seqRunner %{public}s empty in cancel loop.",
-                        std::to_string(seqRunnerId_).c_str());
+                        std::to_string(runnerId_).c_str());
             currentTaskId_ = 0;
             isEmpty = true;
             break;
         }
-        task = seqRunnerTasks_.front();
-        seqRunnerTasks_.pop_front();
+        task = tasks_.front();
+        tasks_.pop_front();
     }
     if (!isEmpty) {
         currentTaskId_ = task->taskId_;
         task->IncreaseRefCount();
         task->taskState_ = ExecuteState::WAITING;
         HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
-                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId_).c_str());
+                    std::to_string(task->taskId_).c_str(), std::to_string(runnerId_).c_str());
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority_);
     }
 }
 
 bool SequenceRunner::UpdateCurrentTaskId(uint32_t taskId)
 {
-    std::unique_lock<std::shared_mutex> lock(seqRunnerMutex_);
+    std::unique_lock<std::shared_mutex> lock(taskMutex_);
     if (currentTaskId_ != 0) {
         return false;
     }

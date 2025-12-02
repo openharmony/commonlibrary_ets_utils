@@ -17,6 +17,8 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 taskpool_sources = [
   "async_runner.cpp",
   "async_runner_manager.cpp",
+  "base_runner.cpp",
+  "base_runner_manager.cpp",
   "dfx_hisys_event.cpp",
   "native_module_taskpool.cpp",
   "sequence_runner.cpp",

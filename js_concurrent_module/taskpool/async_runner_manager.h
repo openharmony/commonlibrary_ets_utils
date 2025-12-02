@@ -20,41 +20,43 @@
 #include <unordered_map>
 
 #include "async_runner.h"
+#include "base_runner_manager.h"
 #include "napi/native_api.h"
 #include "task.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
-class AsyncRunnerManager {
+class AsyncRunnerConfig {
+public:
+    AsyncRunnerConfig(uint32_t runningCapacity, uint32_t waitingCapacity)
+        : runningCapacity_(runningCapacity), waitingCapacity_(waitingCapacity) {}
+    uint32_t runningCapacity_ {};
+    uint32_t waitingCapacity_ {};
+};
+
+class AsyncRunnerManager : public BaseRunnerManager {
 public:
     static AsyncRunnerManager& GetInstance();
+    AsyncRunner* GetRunner(uint64_t runnerId);
     AsyncRunner* CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, const std::string& name,
                                          uint32_t runningCapacity, uint32_t waitingCapacity);
     bool TriggerAsyncRunner(napi_env env, Task* lastTask);
-    void StoreAsyncRunner(uint64_t asyncRunnerId, AsyncRunner* asyncRunner);
-    AsyncRunner* GetAsyncRunner(uint64_t asyncRunnerId);
     void CancelAsyncRunnerTask(napi_env env, Task* task);
-    void RemoveWaitingTask(Task* task);
-    bool FindRunnerAndRef(uint64_t asyncRunnerId);
-    bool UnrefAndDestroyRunner(AsyncRunner* asyncRunner);
     void DecreaseRunningCount(uint64_t asyncRunnerId);
+
+protected:
+    bool CheckGlobalRunnerParams(napi_env env, BaseRunner *runner, void* config) override;
+    BaseRunner* CreateGlobalRunner(const std::string& name, void* config) override;
+    void LogRunnerNotExist() override;
 
 private:
     AsyncRunnerManager() = default;
-    ~AsyncRunnerManager() = default;
+    ~AsyncRunnerManager() override = default;
     AsyncRunnerManager(const AsyncRunnerManager &) = delete;
     AsyncRunnerManager& operator=(const AsyncRunnerManager &) = delete;
     AsyncRunnerManager(AsyncRunnerManager &&) = delete;
     AsyncRunnerManager& operator=(AsyncRunnerManager &&) = delete;
-    void RemoveAsyncRunner(uint64_t asyncRunnerId);
-    void RemoveGlobalAsyncRunner(const std::string& name);
-
-    // <asyncRunnerId, AsyncRunner>
-    std::unordered_map<uint64_t, AsyncRunner*> asyncRunners_ {};
-    std::mutex asyncRunnersMutex_;
-    // <<name1, AsyncRunner>, <name2, AsyncRunner>, ...>
-    std::unordered_map<std::string, AsyncRunner*> globalAsyncRunner_ {};
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_ASYNC_RUNNER_MANAGER_H

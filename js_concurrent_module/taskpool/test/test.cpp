@@ -150,10 +150,10 @@ void NativeEngineTest::TaskGroupDestructor(napi_env env, void* data)
     TaskGroup::TaskGroupDestructor(env, data, hint);
 }
 
-void NativeEngineTest::SequenceRunnerDestructor(napi_env env, void* data)
+void NativeEngineTest::RunnerDestructor(napi_env env, void* data)
 {
     void* hint = nullptr;
-    SequenceRunner::SequenceRunnerDestructor(env, data, hint);
+    BaseRunner::RunnerDestructor(env, data, hint);
 }
 
 napi_value NativeEngineTest::ExecutePeriodically(napi_env env, napi_value argv[], size_t argc)
@@ -658,7 +658,7 @@ void NativeEngineTest::CancelGroupTask(napi_env env)
     task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
     SequenceRunner* seqRunner = new SequenceRunner();
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
-    sequenceRunnerManager.StoreSequenceRunner(seqRunnerId, seqRunner);
+    sequenceRunnerManager.StoreRunner(seqRunnerId, seqRunner);
     sequenceRunnerManager.AddTaskToSeqRunner(seqRunnerId, task1);
 }
 
@@ -673,23 +673,23 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
     SequenceRunner* seqRunner = new SequenceRunner();
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
     seqRunner->priority_ = Priority::DEFAULT;
-    task->seqRunnerId_ = seqRunnerId;
-    sequenceRunnerManager.StoreSequenceRunner(seqRunnerId, seqRunner);
+    task->runnerId_ = seqRunnerId;
+    sequenceRunnerManager.StoreRunner(seqRunnerId, seqRunner);
     seqRunner->isGlobalRunner_ = true;
-    seqRunner->IncreaseSeqCount();
+    seqRunner->IncreaseCount();
     bool res = sequenceRunnerManager.TriggerSeqRunner(env, task);
     ASSERT_FALSE(res);
     seqRunner->currentTaskId_ = task1->taskId_;
-    seqRunner->IncreaseSeqCount();
+    seqRunner->IncreaseCount();
     sequenceRunnerManager.TriggerSeqRunner(env, task);
     seqRunner->isGlobalRunner_ = false;
     seqRunner->currentTaskId_ = task->taskId_;
-    seqRunner->IncreaseSeqCount();
+    seqRunner->IncreaseCount();
     sequenceRunnerManager.TriggerSeqRunner(env, task);
-    seqRunner->IncreaseSeqCount();
+    seqRunner->IncreaseCount();
     task1->taskState_ = ExecuteState::CANCELED;
     task1->env_ = env;
-    seqRunner->seqRunnerTasks_.push_back(task1);
+    seqRunner->tasks_.push_back(task1);
     TaskInfo* taskInfo = new TaskInfo();
     task1->currentTaskInfo_ = taskInfo;
     seqRunner->currentTaskId_ = task->taskId_;
@@ -697,8 +697,8 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
     seqRunner->refCount_ = SIZE_TWO;
     TaskInfo* taskInfo1 = new TaskInfo();
     task1->currentTaskInfo_ = taskInfo1;
-    seqRunner->seqRunnerTasks_.push_back(task1);
-    seqRunner->seqRunnerTasks_.push_back(task);
+    seqRunner->tasks_.push_back(task1);
+    seqRunner->tasks_.push_back(task);
     task->taskState_ = ExecuteState::RUNNING;
     seqRunner->currentTaskId_ = task->taskId_;
     sequenceRunnerManager.TriggerSeqRunner(env, task);
@@ -724,8 +724,8 @@ void NativeEngineTest::UpdateGroupState(napi_env env)
     seqRunner->priority_ = Priority::MEDIUM;
     runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO, "test", UINT32_ZERO);
     runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO, "test", UINT32_ONE);
-    NativeEngineTest::RemoveSequenceRunnerByName("func");
-    NativeEngineTest::RemoveSequenceRunnerByName("test");
+    NativeEngineTest::RemoveGlobalRunner("func");
+    NativeEngineTest::RemoveGlobalRunner("test");
 }
 
 void NativeEngineTest::ReleaseWorkerHandles(napi_env env)
@@ -945,12 +945,6 @@ void NativeEngineTest::CheckAndCreateAsyncRunner(napi_env env, napi_value name, 
     AsyncRunner::CheckAndCreateAsyncRunner(env, thisVar, name, runningCapacity, waitingCapacity);
 }
 
-void NativeEngineTest::AsyncRunnerDestructor(napi_env env, void* data)
-{
-    void* hint = nullptr;
-    AsyncRunner::AsyncRunnerDestructor(env, data, hint);
-}
-
 void NativeEngineTest::AddTasksToAsyncRunner(void* asyncData, void* taskData)
 {
     AsyncRunner* async = reinterpret_cast<AsyncRunner*>(asyncData);
@@ -958,14 +952,14 @@ void NativeEngineTest::AddTasksToAsyncRunner(void* asyncData, void* taskData)
     AsyncRunner::AddTasksToAsyncRunner(async, task);
 }
 
-void NativeEngineTest::RemoveSequenceRunnerByName(std::string name)
+void NativeEngineTest::RemoveGlobalRunner(std::string name)
 {
-    SequenceRunnerManager::GetInstance().RemoveSequenceRunnerByName(name);
+    SequenceRunnerManager::GetInstance().RemoveGlobalRunner(name);
 }
 
-void NativeEngineTest::RemoveSequenceRunner(uint64_t seqId)
+void NativeEngineTest::RemoveRunner(uint64_t seqId)
 {
-    SequenceRunnerManager::GetInstance().RemoveSequenceRunner(seqId);
+    SequenceRunnerManager::GetInstance().RemoveRunner(seqId);
 }
 
 void NativeEngineTest::StoreTaskId(Worker* worker, uint32_t taskId)

@@ -16,40 +16,39 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_SEQ_RUNNER_MANAGER_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_SEQ_RUNNER_MANAGER_H
 
+#include "base_runner_manager.h"
 #include "sequence_runner.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
-class SequenceRunnerManager {
+class SequenceRunnerConfig {
+public:
+    SequenceRunnerConfig(uint32_t argc, uint32_t priority)
+        : argc_(argc), priority_(priority) {}
+    uint32_t argc_ {};
+    uint32_t priority_ {};
+};
+
+class SequenceRunnerManager : public BaseRunnerManager {
 public:
     static SequenceRunnerManager& GetInstance();
-    SequenceRunner* GetSeqRunner(uint64_t seqRunnerId);
-
+    SequenceRunner* GetRunner(uint64_t runnerId);
     SequenceRunner* CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, size_t argc,
                                             const std::string& name, uint32_t priority);
-    void SequenceRunnerDestructor(SequenceRunner* seqRunner);
     void AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task);
     bool TriggerSeqRunner(napi_env env, Task* lastTask);
-    void StoreSequenceRunner(uint64_t seqRunnerId, SequenceRunner* seqRunner);
-    void RemoveWaitingTask(Task* task);
-    bool FindRunnerAndRef(uint64_t seqRunnerId);
+
+protected:
+    bool CheckGlobalRunnerParams(napi_env env, BaseRunner* runner, void* config) override;
+    BaseRunner* CreateGlobalRunner(const std::string& name, void* config) override;
+    void LogRunnerNotExist() override;
 
 private:
     SequenceRunnerManager() = default;
-    ~SequenceRunnerManager() = default;
+    ~SequenceRunnerManager() override = default;
     SequenceRunnerManager(const SequenceRunnerManager &) = delete;
     SequenceRunnerManager& operator=(const SequenceRunnerManager &) = delete;
     SequenceRunnerManager(SequenceRunnerManager &&) = delete;
     SequenceRunnerManager& operator=(SequenceRunnerManager &&) = delete;
-    void RemoveSequenceRunnerByName(const std::string& name);
-    void RemoveSequenceRunner(uint64_t seqRunnerId);
-    bool UnrefAndDestroyRunner(SequenceRunner* seqRunner);
-
-    // <<name1, seqRunner>, <name2, seqRunner>, ...>
-    std::unordered_map<std::string, SequenceRunner*> globalSeqRunner_ {};
-    // <seqRunnerId, SequenceRunner>
-    std::unordered_map<uint64_t, SequenceRunner*> seqRunners_ {};
-    std::mutex seqRunnersMutex_;
-
     friend class NativeEngineTest;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
