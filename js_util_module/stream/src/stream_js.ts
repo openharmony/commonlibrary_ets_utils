@@ -630,16 +630,15 @@ class Readable {
    * Adds the generated data to the buffer. The return value indicates whether the data in the buffer has not
    * reached the highWaterMark (similar to Writable.write). If the chunk is null, all data has been generated.
    *
-   * @param {  Uint8Array | string | null } chunk - Binary data to be stored in the buffer.
+   * @param {  Uint8Array | string | undefined | null } chunk - Binary data to be stored in the buffer.
    * @param { string } [encoding] - Binary data encoding type.
    * @returns { boolean } If true is returned, the data in the buffer reaches the highWaterMark. Otherwise, the
    * data in the buffer does not reach the highWaterMark.
-   * @throws { BusinessError } 401 - if the input parameters are invalid.
    * @syscap SystemCapability.Utils.Lang
    * @crossplatform
    * @since 12
    */
-  push(chunk: Uint8Array | string | null, encoding?: string): boolean {
+  push(chunk: Uint8Array | string | undefined | null, encoding?: string): boolean {
     let bufferArr: Uint8Array;
     if (encoding) {
       this.setEncoding(encoding);
