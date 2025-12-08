@@ -278,6 +278,51 @@ namespace OHOS::Xml {
         }
     }
 
+    void ConvertXml::GetLargeXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
+                                     int flag, const std::string parentName)
+    {
+        napi_value recvElement = nullptr;
+        napi_create_array(env, &recvElement);
+        xmlNodePtr pNode = curNode;
+        int32_t index = 0;
+        bool bFlag = false;
+        while (pNode != nullptr) {
+            if (!deprecated_) {
+                if (pNode->type == xmlElementType::XML_TEXT_NODE && xmlIsBlankNode(pNode)) {
+                    pNode = pNode->next;
+                    continue;
+                }
+            }
+            bFlag = false;
+            napi_value elementsObject = nullptr;
+            napi_create_object(env, &elementsObject);
+            SetNodeInfo(env, pNode, elementsObject, parentName);
+            SetAttributes(env, pNode, elementsObject);
+            if (pNode->children != nullptr) {
+                curNode = pNode->children;
+                const std::string parentNameTemp = apiFlag_ ? reinterpret_cast<const char*>(pNode->name) : "";
+                GetLargeXMLInfo(env, curNode, elementsObject, 1, parentNameTemp);
+                bFlag = true;
+            } else {
+                char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(pNode));
+                if (curContent != nullptr) {
+                    SetXmlElementType(env, pNode, elementsObject, bFlag, curContent);
+                    SetEndInfo(env, pNode, elementsObject, bFlag, curContent);
+                    xmlFree(reinterpret_cast<void*>(curContent));
+                }
+            }
+            SetPrevInfo(env, recvElement, flag, index);
+            if (elementsObject != nullptr && bFlag) {
+                napi_set_element(env, recvElement, index++, elementsObject);
+                elementsObject = nullptr;
+            }
+            pNode = pNode->next;
+        }
+        if (bFlag) {
+            napi_set_named_property(env, object, options_.elements.c_str(), recvElement);
+        }
+    }
+
     void ConvertXml::SetSpacesInfo(napi_env env, const napi_value &object) const
     {
         napi_value iTemp = nullptr;
@@ -307,8 +352,8 @@ namespace OHOS::Xml {
             return nullptr;
         }
         size_t len = strXml.size();
-
         if (isLarge) {
+            prevObj_.clear();
             doc = xmlReadMemory(strXml.c_str(), len, nullptr, nullptr, XML_PARSE_HUGE);
         } else {
             doc = xmlParseMemory(strXml.c_str(), len);
@@ -316,7 +361,7 @@ namespace OHOS::Xml {
         deprecated_ = deprecated;
         if (!doc) {
             xmlFreeDoc(doc);
-            DealSingleLine(env, strXml, object);
+            DealSingleLine(env, strXml, object, isLarge);
             const xmlError* err = xmlGetLastError();
             const char* message = err->message;
             HILOG_ERROR("ConvertXml:: XMLParseMemory execution failed, reason for failure: %{public}s", message);
@@ -339,7 +384,7 @@ namespace OHOS::Xml {
         if (doc != nullptr) {
             curNode = xmlDocGetRootElement(doc);
             GetPrevNodeList(env, curNode);
-            GetXMLInfo(env, curNode, object, 0);
+            isLarge ? GetLargeXMLInfo(env, curNode, object, 0) : GetXMLInfo(env, curNode, object, 0);
         }
         xmlFreeDoc(doc);
         if (deprecated_) {
@@ -498,7 +543,7 @@ namespace OHOS::Xml {
         }
     }
 
-    void ConvertXml::DealSingleLine(napi_env env, std::string &strXml, const napi_value &object)
+    void ConvertXml::DealSingleLine(napi_env env, std::string &strXml, const napi_value &object, bool isLarge)
     {
         size_t iXml = 0;
         if ((iXml = strXml.find("xml")) != std::string::npos) {
@@ -539,11 +584,11 @@ namespace OHOS::Xml {
             }
         }
         if (iCount < iLen) {
-            DealComplex(env, strXml, object);
+            DealComplex(env, strXml, object, isLarge);
         }
     }
 
-    void ConvertXml::DealComplex(napi_env env, std::string &strXml, const napi_value &object) const
+    void ConvertXml::DealComplex(napi_env env, std::string &strXml, const napi_value &object, bool isLarge) const
     {
         if (strXml.find("<!DOCTYPE") != std::string::npos) {
             strXml = strXml + "<node></node>";
@@ -574,8 +619,9 @@ namespace OHOS::Xml {
                 SetNodeInfo(env, curNode, elementsObject);
                 char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(curNode));
                 SetXmlElementType(env, curNode, elementsObject, bHasEle, curContent);
-                if (!deprecated_ && curNode->type == xmlElementType::XML_TEXT_NODE &&
-                    (curNode->next != nullptr || curNode->prev != nullptr)) {
+                bool skipTextNode =
+                    isLarge ? xmlIsBlankNode(curNode) : (curNode->next != nullptr || curNode->prev != nullptr);
+                if (!deprecated_ && curNode->type == xmlElementType::XML_TEXT_NODE && skipTextNode) {
                     curNode = curNode->next;
                     continue;
                 }
