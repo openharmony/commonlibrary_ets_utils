@@ -39,7 +39,7 @@ public:
     class WorkerInnerRunner : public Thread {
     public:
         explicit WorkerInnerRunner(const WorkerRunner* runner);
-        ~WorkerInnerRunner()
+        ~WorkerInnerRunner() override
         {
             uv_thread_join(&tId_);
         }
