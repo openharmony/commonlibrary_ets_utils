@@ -1796,6 +1796,12 @@ void Task::DiscardTask(const uv_async_t* req)
 
 void Task::ReleaseData()
 {
+    if (IsGroupFunctionTask() && currentTaskInfo_ != nullptr) {
+        napi_delete_serialization_data(env_, currentTaskInfo_->serializationFunction);
+        napi_delete_serialization_data(env_, currentTaskInfo_->serializationArguments);
+        delete currentTaskInfo_;
+        currentTaskInfo_ = nullptr;
+    }
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
     if (onStartCancelSignal_ != nullptr) {
         if (!ConcurrentHelper::IsUvClosing(onStartCancelSignal_)) {
