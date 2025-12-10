@@ -4336,12 +4336,13 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     std::string func = "SeqRunnerConstructor";
+    napi_value obj = NapiHelper::CreateObject(env);
     napi_value SeqCallback = nullptr;
     napi_value SeqResult = nullptr;
     napi_create_function(env, func.c_str(), func.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &SeqCallback);
     napi_value SeqArgv[1] = {nullptr};
     napi_create_string_utf8(env, "seq06", NAPI_AUTO_LENGTH, &SeqArgv[0]);
-    napi_call_function(env, nullptr, SeqCallback, 1, SeqArgv, &SeqResult);
+    napi_call_function(env, obj, SeqCallback, 1, SeqArgv, &SeqResult);
 
     std::string funcName = "Execute";
     napi_value callback = nullptr;
@@ -4358,25 +4359,26 @@ HWTEST_F(NativeEngineTest, TaskpoolTest216, testing::ext::TestSize.Level0)
     napi_create_uint32(env, 1, &num);
     napi_set_named_property(env, thisValue, "taskId", num);
     napi_value argv[] = {thisValue};
-    napi_call_function(env, nullptr, callback, 1, argv, &result);
+    napi_call_function(env, obj, callback, 1, argv, &result);
     ASSERT_EQ(result, nullptr);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
 
     thisValue = CreateTaskObject(env, TaskType::COMMON_TASK);
     napi_value argv1[] = {thisValue};
-    napi_call_function(env, nullptr, callback, 1, argv1, &result);
+    napi_call_function(env, obj, callback, 1, argv1, &result);
     ASSERT_EQ(result, nullptr);
     exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
 
-    SequenceRunner seq1;
-    seq1.currentTaskId_ = 1;
+    SequenceRunner* seq1 = new SequenceRunner();
+    seq1->currentTaskId_ = 1;
+    seq1->runnerId_ = seqId;
     NativeEngineTest::RemoveRunner(seqId);
-    SequenceRunnerManager::GetInstance().StoreRunner(seqId, &seq1);
+    SequenceRunnerManager::GetInstance().StoreRunner(seqId, seq1);
     thisValue = CreateTaskObject(env);
     napi_value argv2[] = {thisValue};
-    napi_call_function(env, nullptr, callback, 1, argv2, &result);
+    napi_call_function(env, obj, callback, 1, argv2, &result);
     ASSERT_NE(result, nullptr);
 }
 
