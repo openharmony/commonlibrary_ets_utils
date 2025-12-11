@@ -278,7 +278,7 @@ namespace OHOS::Xml {
         }
     }
 
-    void ConvertXml::GetLargeXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
+    void ConvertXml::GetLargeXmlInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
                                      int flag, const std::string parentName)
     {
         napi_value recvElement = nullptr;
@@ -301,7 +301,7 @@ namespace OHOS::Xml {
             if (pNode->children != nullptr) {
                 curNode = pNode->children;
                 const std::string parentNameTemp = apiFlag_ ? reinterpret_cast<const char*>(pNode->name) : "";
-                GetLargeXMLInfo(env, curNode, elementsObject, 1, parentNameTemp);
+                GetLargeXmlInfo(env, curNode, elementsObject, 1, parentNameTemp);
                 bFlag = true;
             } else {
                 char *curContent = reinterpret_cast<char*>(xmlNodeGetContent(pNode));
@@ -384,7 +384,7 @@ namespace OHOS::Xml {
         if (doc != nullptr) {
             curNode = xmlDocGetRootElement(doc);
             GetPrevNodeList(env, curNode);
-            isLarge ? GetLargeXMLInfo(env, curNode, object, 0) : GetXMLInfo(env, curNode, object, 0);
+            isLarge ? GetLargeXmlInfo(env, curNode, object, 0) : GetXMLInfo(env, curNode, object, 0);
         }
         xmlFreeDoc(doc);
         if (deprecated_) {

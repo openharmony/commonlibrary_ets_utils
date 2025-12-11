@@ -131,7 +131,7 @@ namespace OHOS::Xml {
                         bool &bFlag, char *curContent) const;
         void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
                         int flag = 0, const std::string parentName = "");
-        void GetLargeXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
+        void GetLargeXmlInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
                              int flag = 0, const std::string parentName = "");
         std::string GetNodeType(const xmlElementType enumType) const;
         void SetKeyValue(napi_env env, const napi_value &object, const std::string strKey,
