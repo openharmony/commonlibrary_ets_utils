@@ -31,8 +31,8 @@ public:
     static void SetNodeInfo(napi_env env, xmlNodePtr curNode, const napi_value &elementsObject);
     static void DealSpaces(napi_env env, const napi_value napiObj);
     static void SetDefaultKey(napi_env env, size_t i, const std::string strRecv);
-    static void DealSingleLine(napi_env env, std::string &strXml, const napi_value &object);
-    static void DealComplex(napi_env env, std::string &strXml, const napi_value &object);
+    static void DealSingleLine(napi_env env, std::string &strXml, const napi_value &object, bool isLarge);
+    static void DealComplex(napi_env env, std::string &strXml, const napi_value &object, bool isLarge);
     static void Replace(napi_env env, std::string &str, const std::string src, const std::string dst);
     static void DealCDataInfo(napi_env env, bool bCData, xmlNodePtr &curNode);
     static void GetAnDSetPrevNodeList(napi_env env, xmlNodePtr curNode);
@@ -81,16 +81,16 @@ void CxmlTest::SetDefaultKey(napi_env env, size_t i, const std::string strRecv)
     convert.SetDefaultKey(i, strRecv);
 }
 
-void CxmlTest::DealSingleLine(napi_env env, std::string &strXml, const napi_value &object)
+void CxmlTest::DealSingleLine(napi_env env, std::string &strXml, const napi_value &object, bool isLarge)
 {
     ConvertXml convert(env);
-    convert.DealSingleLine(env, strXml, object);
+    convert.DealSingleLine(env, strXml, object, isLarge);
 }
 
-void CxmlTest::DealComplex(napi_env env, std::string &strXml, const napi_value &object)
+void CxmlTest::DealComplex(napi_env env, std::string &strXml, const napi_value &object, bool isLarge)
 {
     ConvertXml convert(env);
-    convert.DealComplex(env, strXml, object);
+    convert.DealComplex(env, strXml, object, isLarge);
 }
 
 void CxmlTest::Replace(napi_env env, std::string &str, const std::string src, const std::string dst)

@@ -131,6 +131,8 @@ namespace OHOS::Xml {
                         bool &bFlag, char *curContent) const;
         void GetXMLInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
                         int flag = 0, const std::string parentName = "");
+        void GetLargeXmlInfo(napi_env env, xmlNodePtr curNode, const napi_value &object,
+                             int flag = 0, const std::string parentName = "");
         std::string GetNodeType(const xmlElementType enumType) const;
         void SetKeyValue(napi_env env, const napi_value &object, const std::string strKey,
                          const std::string strValue) const;
@@ -141,8 +143,8 @@ namespace OHOS::Xml {
         void SetPrevInfo(napi_env env, const napi_value &recvElement, int flag, int32_t &index1) const;
         void SetDefaultKey(size_t i, const std::string strRecv);
         void SetSpacesInfo(napi_env env, const napi_value &object) const;
-        void DealSingleLine(napi_env env, std::string &strXml, const napi_value &object);
-        void DealComplex(napi_env env, std::string &strXml, const napi_value &object) const;
+        void DealSingleLine(napi_env env, std::string &strXml, const napi_value &object, bool isLarge);
+        void DealComplex(napi_env env, std::string &strXml, const napi_value &object, bool isLarge) const;
         void Replace(std::string &str, const std::string src, const std::string dst) const;
         void DealCDataInfo(bool bCData, xmlNodePtr &curNode) const;
 
