@@ -153,6 +153,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
                    std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
         task->IncreaseRefCount();
         task->UpdateTaskStateToWaiting();
+        task->StoreEnqueueTime();
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
         HILOG_INFO("taskpool:: add taskId: %{public}s to seqRunner %{public}s.",
@@ -207,6 +208,7 @@ void SequenceRunner::TriggerTask(napi_env env)
         task->taskState_ = ExecuteState::WAITING;
         HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
                     std::to_string(task->taskId_).c_str(), std::to_string(runnerId_).c_str());
+        task->StoreEnqueueTime();
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority_);
     }
 }

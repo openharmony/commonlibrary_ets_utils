@@ -34,7 +34,7 @@
 #undef HILOG_INFO
 #undef HILOG_DEBUG
 
-#define LOG_DOMAIN 0xD003F01
+#define LOG_DOMAIN 0xD003F05
 #define LOG_TAG "NAPI"
 
 #define HILOG_FATAL(fmt, ...) \

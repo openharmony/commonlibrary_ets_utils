@@ -136,6 +136,7 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (!AddTasksToAsyncRunner(asyncRunner, task)) {
+        task->StoreEnqueueTime();
         ExecuteTaskImmediately(asyncRunner, task);
     }
     
@@ -220,6 +221,7 @@ void AsyncRunner::ExecuteTaskImmediately(AsyncRunner* asyncRunner, Task* task)
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     task->UpdateTaskStateToWaiting();
+    task->StoreEnqueueTime();
     TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->asyncTaskPriority_);
 }
 
@@ -276,6 +278,7 @@ void AsyncRunner::TriggerWaitingTask()
         task->taskState_ = ExecuteState::WAITING;
         HILOG_DEBUG("taskpool:: Trig task %{public}s in asyncRunner %{public}s.",
                     std::to_string(task->taskId_).c_str(), std::to_string(runnerId_).c_str());
+        task->StoreEnqueueTime();
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->asyncTaskPriority_);
     }
 }

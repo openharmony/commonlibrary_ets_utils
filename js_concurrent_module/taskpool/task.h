@@ -209,6 +209,7 @@ public:
     bool UpdateTaskStateToDelayed();
     bool UpdateTaskStateToEnding();
     void TriggerEnqueueCallback();
+    void StoreEnqueueTime();
 
     static std::tuple<napi_value, napi_value, napi_value, napi_value> GetSerializeParams(napi_env env,
                                                                                          napi_value napiTask);
@@ -265,6 +266,10 @@ public:
     bool isMainThreadTask_ {false};
     Priority asyncTaskPriority_ {Priority::DEFAULT};
     std::atomic<bool> isCancelToFinish_ {false};
+
+    std::string enqueueTime_ {};
+    std::string runningTime_ {};
+    std::string finishedTime_ {};
 };
 
 struct CallbackInfo {

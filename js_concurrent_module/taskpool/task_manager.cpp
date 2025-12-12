@@ -19,6 +19,7 @@
 #include <thread>
 
 #include "async_runner_manager.h"
+#include "tools/log.h"
 #if defined(ENABLE_TASKPOOL_FFRT)
 #include "bundle_info.h"
 #include "bundle_mgr_interface.h"
@@ -30,6 +31,7 @@
 #include "c/executor_task.h"
 #include "ffrt_inner.h"
 #endif
+#include "log_manager.h"
 #include "sys_timer.h"
 #include "helper/hitrace_helper.h"
 #include "taskpool.h"
@@ -58,6 +60,8 @@ static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
 static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
+static constexpr uint32_t LOG_INTERVAL = 100; // 100: 100ms
+static constexpr uint32_t WAITING_INTERVAL = 1000; // 1000: 1s
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -86,19 +90,10 @@ TaskManager::TaskManager()
 TaskManager::~TaskManager()
 {
     HILOG_INFO("taskpool:: ~TaskManager");
-    if (balanceTimer_ == nullptr) {
-        HILOG_ERROR("taskpool:: balanceTimer_ is nullptr");
-    } else {
-        uv_timer_stop(balanceTimer_);
-        ConcurrentHelper::UvHandleClose(balanceTimer_);
-    }
-
-    if (expandTimer_ == nullptr) {
-        HILOG_ERROR("taskpool:: expandTimer_ is nullptr");
-    } else {
-        uv_timer_stop(expandTimer_);
-        ConcurrentHelper::UvHandleClose(expandTimer_);
-    }
+    TimerStop(balanceTimer_, "taskpool:: balanceTimer_ is nullptr");
+    TimerStop(expandTimer_, "taskpool:: expandTimer_ is nullptr");
+    TimerStop(logTimer_, "taskpool:: logTimer_ is nullptr");
+    TimerStop(waitingTimer_, "taskpool:: waitingTimer_ is nullptr");
 
     ConcurrentHelper::UvHandleClose(dispatchHandle_);
 
@@ -135,6 +130,31 @@ TaskManager::~TaskManager()
         runningTasks_.clear();
     }
     CountTraceForWorker();
+}
+
+void TaskManager::TimerInit(uv_timer_t*& timer, bool startFlag, uv_timer_cb cb, uint64_t repeat)
+{
+    timer = new uv_timer_t;
+    int err = uv_timer_init(loop_, timer);
+    if (err < 0) {
+        delete timer;
+        timer = nullptr;
+        HILOG_ERROR("taskpool:: timer init failed");
+        return;
+    }
+    if (startFlag) {
+        uv_timer_start(timer, cb, 0, repeat);
+    }
+}
+
+void TaskManager::TimerStop(uv_timer_t*& timer, const char* errMessage)
+{
+    if (timer == nullptr) {
+        HILOG_ERROR("%{public}s", errMessage);
+    } else {
+        uv_timer_stop(timer);
+        ConcurrentHelper::UvHandleClose(timer);
+    }
 }
 
 void TaskManager::CountTraceForWorker(bool needLog)
@@ -489,8 +509,8 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
     uint32_t minThread = ConcurrentHelper::IsLowMemory() ? 0 : DEFAULT_MIN_THREADS;
     // update the maxThreads_ periodically
     maxThreads_ = ConcurrentHelper::GetMaxThreads();
-    if (minThread == 0) {
-        HILOG_INFO("taskpool:low mem");
+    if (minThread == 0) { // LCOV_EXCL_BR_LINE
+        HILOG_DEBUG("taskpool::low mem");
     }
     if (workerCount > minThread && workerCount > targetNum) {
         targetNum = std::max(minThread, targetNum);
@@ -545,6 +565,65 @@ void TaskManager::TriggerLoadBalance([[maybe_unused]] const uv_timer_t* req)
     uint32_t targetNum = taskManager.ComputeSuitableThreadNum();
     taskManager.NotifyShrink(targetNum);
     taskManager.CountTraceForWorker(true);
+}
+
+void TaskManager::PrintLog([[maybe_unused]] const uv_timer_t* req)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.logManager_.PrintLog();
+}
+
+void TaskManager::PrintWaitingTime([[maybe_unused]] const uv_timer_t* req)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    std::string currentTimeStamp = ConcurrentHelper::GetCurrentTimeStampWithMS();
+    uint32_t highTaskId = 0;
+    uint32_t middleTaskId = 0;
+    uint32_t lowTaskId = 0;
+    {
+        std::lock_guard<std::mutex> lock(taskManager.taskQueuesMutex_);
+        auto& highTaskQueue = taskManager.taskQueues_[Priority::HIGH];
+        if (!highTaskQueue->IsEmpty()) {
+            highTaskId = highTaskQueue->GetHead();
+        }
+
+        auto& mediumTaskQueue = taskManager.taskQueues_[Priority::MEDIUM];
+        if (!mediumTaskQueue->IsEmpty()) {
+            middleTaskId = mediumTaskQueue->GetHead();
+        }
+
+        auto& lowTaskQueue = taskManager.taskQueues_[Priority::LOW];
+        if (!lowTaskQueue->IsEmpty()) {
+            lowTaskId = lowTaskQueue->GetHead();
+        }
+    }
+
+    std::string highTime = taskManager.GetTaskEnqueueTime(highTaskId);
+    std::string middleTime = taskManager.GetTaskEnqueueTime(middleTaskId);
+    std::string lowTime = taskManager.GetTaskEnqueueTime(lowTaskId);
+
+    std::ostringstream oss;
+    oss << "currentT " << currentTimeStamp;
+
+    bool hasEntries = false;
+    if (!highTime.empty()) {
+        oss << ", highEnqueueT " << highTime;
+        hasEntries = true;
+    }
+    if (!middleTime.empty()) {
+        oss << ", middleEnqueueT " << middleTime;
+        hasEntries = true;
+    }
+    if (!lowTime.empty()) {
+        oss << ", lowEnqueueT " << lowTime;
+        hasEntries = true;
+    }
+
+    if (hasEntries) {
+        HILOG_INFO("taskpool::%{public}s", oss.str().c_str());
+    } else {
+        HILOG_DEBUG("taskpool::no wating task now");
+    }
 }
 
 void TaskManager::DispatchAndTryExpand([[maybe_unused]] const uv_async_t* req)
@@ -613,7 +692,8 @@ void TaskManager::TryExpandWithCheckIdle()
             return;
         }
         CreateWorkers(hostEnv_, step);
-        HILOG_INFO("taskpool:expand %{public}u,now %{public}u,max %{public}u", step, GetThreadNum(), maxThreads);
+        // print taskpool workers info
+        HILOG_INFO("taskpool:: max:%{public}u, create:%{public}u, total:%{public}u", maxThreads, step, GetThreadNum());
     }
     if (UNLIKELY(suspend_)) {
         suspend_ = false;
@@ -629,12 +709,11 @@ void TaskManager::RunTaskManager()
         return;
     }
     ConcurrentHelper::UvHandleInit(loop_, dispatchHandle_, TaskManager::DispatchAndTryExpand);
-    balanceTimer_ = new uv_timer_t;
-    uv_timer_init(loop_, balanceTimer_);
-    uv_timer_start(balanceTimer_, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), 0, TRIGGER_INTERVAL);
 
-    expandTimer_ = new uv_timer_t;
-    uv_timer_init(loop_, expandTimer_);
+    TimerInit(balanceTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), TRIGGER_INTERVAL);
+    TimerInit(expandTimer_, false, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), TRIGGER_INTERVAL);
+    TimerInit(logTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::PrintLog), LOG_INTERVAL);
+    TimerInit(waitingTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::PrintWaitingTime), WAITING_INTERVAL);
 
     isHandleInited_ = true;
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
@@ -658,8 +737,8 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     // 2. Find executing taskInfo, skip it
     // 3. Find waiting taskInfo, cancel it
     // 4. Find canceled taskInfo, skip it
-    std::string strTrace = "CancelTask: taskId: " + std::to_string(taskId);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    std::string strTrace = "Cancel tId " + std::to_string(taskId);
+    HILOG_INFO("taskpool::%{public}s", strTrace.c_str());
     HITRACE_HELPER_METER_NAME(strTrace);
     Task* task = GetTask(taskId);
     if (task == nullptr) {
@@ -668,6 +747,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_CANCEL_NONEXIST_TASK, errMsg.c_str());
         return;
     }
+    RemoveTaskEnqueueTime(taskId);
     if (task->taskState_ == ExecuteState::CANCELED) {
         HILOG_DEBUG("taskpool:: task has been canceled");
         return;
@@ -929,11 +1009,11 @@ void TaskManager::NotifyExecuteTask()
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
         // When there are only idle tasks and workers executing them, it is not triggered
-        HILOG_INFO("taskpool:no notify");
+        HILOG_INFO("taskpool::not notify");
         return;
     }
     if (idleWorkers_.size() == 0) {
-        HILOG_INFO("taskpool:0 idleWorker");
+        HILOG_INFO("taskpool::0 idle");
         return;
     }
 
@@ -970,6 +1050,7 @@ void TaskManager::InitTaskManager(napi_env env)
             return;
         }
         hostEnv_ = reinterpret_cast<napi_env>(mainThreadEngine);
+
         // Add a reserved thread for taskpool
         CreateWorkers(hostEnv_);
         // Create a timer to manage worker threads
@@ -1366,6 +1447,25 @@ Worker* TaskManager::GetLongTaskInfo(uint32_t taskId)
     std::shared_lock<std::shared_mutex> lock(longTasksMutex_);
     auto iter = longTasksMap_.find(taskId);
     return iter != longTasksMap_.end() ? iter->second : nullptr;
+}
+
+void TaskManager::StoreTaskEnqueueTime(uint32_t taskId, std::string enqueueTimeStamp)
+{
+    std::lock_guard<std::mutex> lock(taskEnqueueTimeMutex_);
+    taskEnqueueTimeMap_.emplace(taskId, enqueueTimeStamp);
+}
+
+void TaskManager::RemoveTaskEnqueueTime(uint32_t taskId)
+{
+    std::lock_guard<std::mutex> lock(taskEnqueueTimeMutex_);
+    taskEnqueueTimeMap_.erase(taskId);
+}
+
+std::string TaskManager::GetTaskEnqueueTime(uint32_t taskId)
+{
+    std::lock_guard<std::mutex> lock(taskEnqueueTimeMutex_);
+    auto iter = taskEnqueueTimeMap_.find(taskId);
+    return iter != taskEnqueueTimeMap_.end() ? iter->second : "";
 }
 
 void TaskManager::TerminateTask(uint32_t taskId)

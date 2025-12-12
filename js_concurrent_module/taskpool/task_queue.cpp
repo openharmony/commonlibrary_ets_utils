@@ -45,4 +45,17 @@ bool ExecuteQueue::IsEmpty() const
 {
     return tasks_.empty();
 }
+
+uint32_t ExecuteQueue::GetTaskNum() const
+{
+    return tasks_.size();
+}
+
+uint32_t ExecuteQueue::GetHead() const
+{
+    if (tasks_.empty()) {
+        return 0;
+    }
+    return tasks_.front();
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

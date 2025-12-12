@@ -119,6 +119,8 @@ public:
         }
     }
 
+    static std::string GetCurrentTimeStampWithMS();
+
 #if defined(OHOS_PLATFORM)
     static std::optional<double> GetSystemMemoryRatio();
     static SystemMemoryLevel GetMemoryLevel();
