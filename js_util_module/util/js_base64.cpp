@@ -17,9 +17,34 @@
 #include "securec.h"
 #include "tools/log.h"
 #include "tools/ets_error.h"
+#include <cstdio>
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+#include <arm_neon.h>
+#include "hispeed_string_plugin.h"
+
+struct HispeedStringPluginLoader {
+    HispeedStringPluginLoader()
+    {
+        Base64LoadHispeedPlugin();
+    }
+
+    ~HispeedStringPluginLoader()
+    {
+        Base64UnloadHispeedPlugin();
+    }
+};
+
+static HispeedStringPluginLoader hispeedStringPluginLoader;
+#endif
 
 namespace OHOS::Util {
     namespace {
+        typedef enum {
+            BASE64_DEFAULT_FLAG = 0x1,
+            BASE64_URL_FLAG = 0x2,
+        } Base64Options;
+
         static const size_t TRAGET_TWO = 2;
         static const size_t TRAGET_THREE = 3;
         static const size_t TRAGET_FOUR = 4;
@@ -127,9 +152,21 @@ namespace OHOS::Util {
         }
 
         bool flag = false;
+        uint64_t options = 0;
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
             flag = true;
+            options |= BASE64_URL_FLAG;
         }
+    #if defined(__aarch64__) || defined(_M_ARM64)
+        if (g_base64EncodeFunc != nullptr) {
+            size_t readLen = 0;
+            if (g_base64EncodeFunc(input, inputLen, ret, outputLen, &readLen, &outputLen, options) != EOK) {
+                HILOG_ERROR("Base64::EncodeAchieve result is error");
+                return nullptr;
+            }
+            return ret;
+        }
+    #endif
         const char *searchArray = flag ? BASEURL : BASE;
         unsigned char *result = EncodeAchieveInner(input, ret, searchArray, inputLen, valueType);
         return result;
@@ -268,6 +305,8 @@ namespace OHOS::Util {
         if (retDecode == nullptr) {
             return retDecode;
         }
+
+        uint64_t options = 0;
         if (valueType == Type::BASIC_URL_SAFE || valueType == Type::MIME_URL_SAFE) {
             size_t remainder = inputLen % TRAGET_FOUR;
             if (remainder == TRAGET_TWO) {
@@ -275,9 +314,23 @@ namespace OHOS::Util {
             } else if (remainder == TRAGET_THREE) {
                 decodeOutLen += TRAGET_TWO;
             }
+            options |= BASE64_URL_FLAG;
         }
-        unsigned char *result = nullptr;
-        result = DecodeAchieveInner(env, input, inputLen, equalCount, valueType);
+    #if defined(__aarch64__) || defined(_M_ARM64)
+        if (g_base64DecodeFunc != nullptr) {
+            size_t decodeReadLen = 0;
+            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, decodeOutLen, &decodeReadLen,
+                &decodeOutLen, options) != EOK) {
+                    HILOG_ERROR("Base64::DecodeAchieve result is error");
+                    napi_throw_error(env, "-1", "The input string contains unsupported characters");
+                    FreeMemory(retDecode);
+                    return nullptr;
+            }
+            return retDecode;
+        }
+    #endif
+
+        unsigned char *result = DecodeAchieveInner(env, input, inputLen, equalCount, valueType);
         if (result == nullptr) {
             FreeMemory(retDecode);
         }
@@ -468,9 +521,22 @@ namespace OHOS::Util {
         }
 
         bool flag = false;
+        uint64_t options = 0;
         if (encodeInfo->valueType == Type::BASIC_URL_SAFE || encodeInfo->valueType == Type::MIME_URL_SAFE) {
             flag = true;
+            options |= BASE64_URL_FLAG;
         }
+    #if defined(__aarch64__) || defined(_M_ARM64)
+        if (g_base64EncodeFunc != nullptr) {
+            size_t readLen = 0;
+            if (g_base64EncodeFunc(input, inputLen, ret, outputLen,
+                &readLen, &encodeInfo->soutputLen, options) != EOK) {
+                HILOG_ERROR("EncodeAchieves result is error");
+                return nullptr;
+            }
+            return ret;
+        }
+    #endif
         const char *searchArray = flag ? BASEURL : BASE;
         unsigned char *result = nullptr;
         result = EncodeAchievesInner(ret, encodeInfo, searchArray, inputLen, input);
@@ -710,6 +776,8 @@ namespace OHOS::Util {
             HILOG_ERROR("Base64:: DecodeAchieves retLen is error");
             return nullptr;
         }
+
+        uint64_t options = 0;
         if (decodeInfo->valueType == Type::BASIC_URL_SAFE || decodeInfo->valueType == Type::MIME_URL_SAFE) {
             size_t remainder = inputLen % TRAGET_FOUR;
             if (remainder == TRAGET_TWO) {
@@ -717,10 +785,22 @@ namespace OHOS::Util {
             } else if (remainder == TRAGET_THREE) {
                 decodeInfo->decodeOutLen += TRAGET_TWO;
             }
+            options |= BASE64_URL_FLAG;
         }
+    #if defined(__aarch64__) || defined(_M_ARM64)
+        if (g_base64DecodeFunc != nullptr) {
+            size_t decodeReadLen = 0;
+            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, decodeInfo->decodeOutLen,
+                &decodeReadLen, &decodeInfo->decodeOutLen, options) != EOK) {
+                HILOG_ERROR("DecodeAchieves result is error");
+                FreeMemory(retDecode);
+                return nullptr;
+            }
+            return retDecode;
+        }
+    #endif
 
-        unsigned char *result = nullptr;
-        result = DecodeAchievesInner(inputLen, equalCount, input, decodeInfo, retDecode);
+        unsigned char *result = DecodeAchievesInner(inputLen, equalCount, input, decodeInfo, retDecode);
         if (result == nullptr) {
             FreeMemory(retDecode);
         }

@@ -24,6 +24,7 @@ ohos_unittest("test_util_unittest") {
   include_dirs = [
     platform_root,
     ets_util_path,
+    "${ets_util_path}/js_util_module/util/plugin",
   ]
 
   cflags = [ "-g3" ]
@@ -37,6 +38,7 @@ ohos_unittest("test_util_unittest") {
     "../../util/js_textencoder.cpp",
     "../../util/js_types.cpp",
     "../../util/js_uuid.cpp",
+    "../../util/plugin/hispeed_string_plugin.c",
     "test_ark.cpp",
     "test_util.cpp",
     "test_uuid.cpp",
