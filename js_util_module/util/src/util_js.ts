@@ -20,6 +20,7 @@ interface HelpUtil {
   Base64Helper: NativeBase64;
   Types: Object;
   StringDecoder: Object;
+  ArkTSVM: ArkTSVM;
   dealwithformatstring(formatString: string | Array<string | number | Function>): string;
   printf(formatString: string | Array<string | number | Function>,
     ...valueString: Array<Object>): string;
@@ -41,6 +42,7 @@ let textEncoder = helpUtil.TextEncoder;
 let base64 = helpUtil.Base64;
 let types = helpUtil.Types;
 let stringdecoder = helpUtil.StringDecoder;
+let arktsvm = helpUtil.ArkTSVM;
 
 const CONVERTER_FLAGS_FLUSH = 0x1;
 const CONVERTER_FLAGS_FATAL = 0x2;
@@ -1931,6 +1933,10 @@ class AutoFinalizerCleaner {
   }
 }
 
+interface ArkTSVM {
+  setMultithreadingDetectionEnabled(enabled: boolean):void;
+}
+
 export default {
   printf: printf,
   format: format,
@@ -1960,4 +1966,5 @@ export default {
   Aspect: Aspect,
   StringDecoder: stringdecoder,
   AutoFinalizerCleaner: AutoFinalizerCleaner,
+  ArkTSVM: arktsvm
 };
