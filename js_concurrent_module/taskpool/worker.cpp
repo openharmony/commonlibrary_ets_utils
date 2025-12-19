@@ -295,7 +295,9 @@ bool Worker::PrepareForWorkerInstance()
         NapiErrorManager::GetInstance()->NotifyUnhandledRejection(reinterpret_cast<napi_env>(workerEngine),
             args, name, TASKPOOL_TYPE);
     });
-
+    napi_status scopeStatus = napi_ok;
+    HandleScope scope(workerEnv_, scopeStatus);
+    NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
     if (!workerEngine->CallInitWorkerFunc(workerEngine)) {
         HILOG_ERROR("taskpool:: Worker CallInitWorkerFunc fail");
         return false;

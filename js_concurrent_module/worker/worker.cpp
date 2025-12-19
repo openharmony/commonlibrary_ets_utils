@@ -1556,6 +1556,9 @@ bool Worker::PrepareForWorkerInstance()
 {
     // set worker thread name
     ApplyNameSetting();
+    napi_status scopeStatus = napi_ok;
+    HandleScope scope(workerEnv_, scopeStatus);
+    NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
     std::string rawFileName = script_;
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
@@ -1582,9 +1585,6 @@ bool Worker::PrepareForWorkerInstance()
     }
     // add timer interface
     Timer::RegisterTime(workerEnv_);
-    napi_status scopeStatus = napi_ok;
-    HandleScope scope(workerEnv_, scopeStatus);
-    NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
     napi_value execScriptResult = nullptr;
     napi_status status = napi_run_actor(workerEnv_, const_cast<char*>(rawFileName.c_str()),
                                         const_cast<char*>(script_.c_str()),  &execScriptResult);
