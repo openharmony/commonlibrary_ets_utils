@@ -1766,7 +1766,6 @@ void Task::DiscardInner(DiscardTaskMessage* message)
     }
     napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, error);
     DisposeCanceledTask();
-    TaskManager::GetInstance().RemoveTask(message->taskId);
 
     CloseHelp::DeletePointer(message, false);
 }
