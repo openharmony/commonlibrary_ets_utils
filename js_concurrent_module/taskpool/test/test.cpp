@@ -350,7 +350,7 @@ void NativeEngineTest::CancelTask(napi_env env)
     task->taskState_ = ExecuteState::FINISHED;
     taskManager.CancelTask(env, task->taskId_);
 
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->taskState_ = ExecuteState::WAITING;
     task->currentTaskInfo_ = taskInfo;
     taskManager.CancelTask(env, task->taskId_);
@@ -650,7 +650,7 @@ void NativeEngineTest::CancelGroupTask(napi_env env)
     task->taskState_ = ExecuteState::WAITING;
     groupManager.CancelGroupTask(env, task->taskId_, group);
     task->taskState_ = ExecuteState::WAITING;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     groupManager.CancelGroupTask(env, task->taskId_, group);
 
@@ -690,12 +690,12 @@ void NativeEngineTest::TriggerSeqRunner(napi_env env)
     task1->taskState_ = ExecuteState::CANCELED;
     task1->env_ = env;
     seqRunner->tasks_.push_back(task1);
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task1->currentTaskInfo_ = taskInfo;
     seqRunner->currentTaskId_ = task->taskId_;
     sequenceRunnerManager.TriggerSeqRunner(env, task);
     seqRunner->refCount_ = SIZE_TWO;
-    TaskInfo* taskInfo1 = new TaskInfo();
+    TaskInfo* taskInfo1 = new TaskInfo(env);
     task1->currentTaskInfo_ = taskInfo1;
     seqRunner->tasks_.push_back(task1);
     seqRunner->tasks_.push_back(task);
