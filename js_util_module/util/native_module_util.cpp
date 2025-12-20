@@ -1669,6 +1669,30 @@ namespace OHOS::Util {
         return object->End(env, argv);
     }
 
+    static napi_value SetMultithreadingDetectionEnabled(napi_env env, napi_callback_info info)
+    {
+        size_t requireArgc = 1;
+        size_t argc = 1;
+        napi_value args[1] = {nullptr};
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+        if (argc < requireArgc) {
+            napi_throw_error(env, "-1", "Expected 1 parameter, actually not included in the parameter");
+            return nullptr;
+        }
+        napi_valuetype valuetype;
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
+        if (valuetype != napi_boolean) {
+            return ThrowError(env, "Parameter error. The type of Parameter must be boolean.");
+        }
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        bool value = false;
+        napi_get_value_bool(env, args[0], &value);
+        engine->SetMultithreadingDetectionEnabled(env, value);
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        return result;
+    }
+
     static napi_value TypeofInit(napi_env env, napi_value exports)
     {
         const char* typeofClassName = "Types";
@@ -1785,6 +1809,19 @@ namespace OHOS::Util {
         return exports;
     }
 
+    static napi_value ArkTSVMInit(napi_env env, napi_value exports)
+    {
+        napi_value ArkTSVMInterface = nullptr;
+        napi_create_object(env, &ArkTSVMInterface);
+        napi_property_descriptor ArkTSVMDesc[] = {
+            DECLARE_NAPI_FUNCTION("setMultithreadingDetectionEnabled", SetMultithreadingDetectionEnabled),
+        };
+        NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
+                                              sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
+        NAPI_CALL(env, napi_set_named_property(env, exports, "ArkTSVM", ArkTSVMInterface));
+        return exports;
+    }
+
     static napi_value UtilInit(napi_env env, napi_value exports)
     {
         napi_property_descriptor desc[] = {
@@ -1805,6 +1842,7 @@ namespace OHOS::Util {
         Base64HelperInit(env, exports);
         TypeofInit(env, exports);
         StringDecoderInit(env, exports);
+        ArkTSVMInit(env, exports);
         return exports;
     }
 
