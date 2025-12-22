@@ -27,8 +27,13 @@ void Base64LoadHispeedPlugin()
     if (hispeedStringHandle == NULL) {
         return;
     }
+
     g_base64EncodeFunc = (HSDPlugin_Base64Encode)dlsym(hispeedStringHandle, "HMS_Str_Base64Encode");
     g_base64DecodeFunc = (HSDPlugin_Base64Decode)dlsym(hispeedStringHandle, "HMS_Str_Base64Decode");
+    if (g_base64EncodeFunc == NULL || g_base64DecodeFunc == NULL) {
+        Base64UnloadHispeedPlugin();
+        return;
+    }
 }
 
 void Base64UnloadHispeedPlugin()
