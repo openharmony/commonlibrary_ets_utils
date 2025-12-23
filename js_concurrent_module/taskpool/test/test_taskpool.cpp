@@ -4017,7 +4017,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest204, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     task->taskRef_ = ref;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->pendingTaskInfos_.push_back(taskInfo);
     task->NotifyPendingTask();
     napi_value exception = nullptr;
@@ -4034,7 +4034,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest205, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     task->taskRef_ = ref;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     napi_value promise = NapiHelper::CreatePromise(env, &taskInfo->deferred);
     task->pendingTaskInfos_.push_back(taskInfo);
     task->isPeriodicTask_ = false;
@@ -4043,7 +4043,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest205, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
 
-    TaskInfo* taskInfo1 = new TaskInfo();
+    TaskInfo* taskInfo1 = new TaskInfo(env);
     napi_value promise1 = NapiHelper::CreatePromise(env, &taskInfo1->deferred);
     task->pendingTaskInfos_.push_back(taskInfo1);
     task->isPeriodicTask_ = true;
@@ -4061,7 +4061,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest206, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     task->taskRef_ = ref;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->taskType_ = TaskType::GROUP_FUNCTION_TASK;
     task->currentTaskInfo_ = taskInfo;
     task->taskRefCount_ = 1;
@@ -4634,7 +4634,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest227, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env, TaskType::SEQRUNNER_TASK, ExecuteState::CANCELED);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->runnerId_ = 1;
     napi_value num = nullptr;
@@ -4653,7 +4653,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest228, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->success_ = true;
     napi_value num = nullptr;
@@ -5364,7 +5364,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest266, testing::ext::TestSize.Level0)
 
     Task* task2 = new Task();
     task2->runnerId_ = asyncRunner->runnerId_;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task2->currentTaskInfo_ = taskInfo;
     void* data2 = reinterpret_cast<void*>(task2);
     void* async = reinterpret_cast<void*>(asyncRunner);
@@ -5396,7 +5396,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest267, testing::ext::TestSize.Level0)
     asyncRunnerManager.CancelAsyncRunnerTask(env, task);
     
     task->taskState_ = ExecuteState::WAITING;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     asyncRunnerManager.CancelAsyncRunnerTask(env, task);
@@ -5443,7 +5443,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest269, testing::ext::TestSize.Level0)
     Task* task2 = new Task();
     task2->runnerId_ = asyncRunner->runnerId_;
     task2->taskState_ = ExecuteState::CANCELED;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task2->currentTaskInfo_ = taskInfo;
     void* data2 = reinterpret_cast<void*>(task2);
     void* async = reinterpret_cast<void*>(asyncRunner);
@@ -5577,7 +5577,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest273, testing::ext::TestSize.Level0)
     napi_value thisValue = CreateTaskObject(env, TaskType::ASYNCRUNNER_TASK, ExecuteState::CANCELED);
     Task* task = nullptr;
     napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->runnerId_ = 1;
     napi_value num = nullptr;
@@ -5620,7 +5620,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest275, testing::ext::TestSize.Level0)
 
     Task* task = new Task();
     task->runnerId_ = asyncRunner->runnerId_;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task->taskState_ = ExecuteState::WAITING;
@@ -5634,7 +5634,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest275, testing::ext::TestSize.Level0)
     Task* task2 = new Task();
     task2->env_ = env;
     task2->runnerId_ = asyncRunner->runnerId_;
-    TaskInfo* taskInfo2 = new TaskInfo();
+    TaskInfo* taskInfo2 = new TaskInfo(env);
     task2->currentTaskInfo_ = taskInfo2;
     task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task2->SetValid(false);
@@ -5691,7 +5691,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest277, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     
     Task* task = new Task();
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task->isMainThreadTask_ = true;
@@ -5703,7 +5703,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest277, testing::ext::TestSize.Level0)
     ASSERT_EQ(exception, nullptr);
 
     Task* task2 = new Task();
-    TaskInfo* taskInfo2 = new TaskInfo();
+    TaskInfo* taskInfo2 = new TaskInfo(env);
     task2->currentTaskInfo_ = taskInfo2;
     task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
     taskManager.StoreTask(task2);
@@ -5821,7 +5821,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest282, testing::ext::TestSize.Level0)
     
     Task* task = new Task();
     task->env_ = env;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->taskType_ = TaskType::ASYNCRUNNER_TASK;
     taskManager.StoreTask(task);
@@ -5858,7 +5858,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest283, testing::ext::TestSize.Level0)
     ASSERT_EQ(exception, nullptr);
 
     Task* task = new Task();
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->taskType_ = TaskType::ASYNCRUNNER_TASK;
     taskManager.StoreTask(task);
@@ -5907,7 +5907,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest284, testing::ext::TestSize.Level0)
 
     Task* task2 = new Task();
     task2->runnerId_ = asyncRunner->runnerId_;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task2->currentTaskInfo_ = taskInfo;
     task2->SetValid(false);
     void* data2 = reinterpret_cast<void*>(task2);
@@ -6034,7 +6034,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest291, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
 
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     taskManager.CancelTask(env, task->taskId_);
     exception = nullptr;
@@ -6378,7 +6378,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest310, testing::ext::TestSize.Level0)
     task->env_ = env;
     napi_value obj = NapiHelper::CreateObject(env);
     task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
-    task->currentTaskInfo_ = new TaskInfo();
+    task->currentTaskInfo_ = new TaskInfo(env);
     TaskManager::GetInstance().StoreTask(task);
     std::set<uint32_t> taskIds{taskId};
     TaskManager::GetInstance().StoreDependentTaskInfo(taskIds, task->taskId_);
@@ -6520,7 +6520,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest318, testing::ext::TestSize.Level0)
 
     Task* task3 = new Task();
     task3->taskId_ = taskManager.CalculateTaskId(reinterpret_cast<uint64_t>(task3));
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task3->currentTaskInfo_ = taskInfo;
     task3->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task3->taskState_ = ExecuteState::WAITING;
@@ -6540,7 +6540,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest319, testing::ext::TestSize.Level0)
     TaskManager &taskManager = TaskManager::GetInstance();
 
     Task* task = new Task();
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     task->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task->taskState_ = ExecuteState::WAITING;
@@ -6557,7 +6557,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest319, testing::ext::TestSize.Level0)
     asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
     asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
     Task* task2 = new Task();
-    TaskInfo* taskInfo2 = new TaskInfo();
+    TaskInfo* taskInfo2 = new TaskInfo(env);
     task2->currentTaskInfo_ = taskInfo2;
     task2->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task2->taskState_ = ExecuteState::WAITING;
@@ -6709,7 +6709,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest328, testing::ext::TestSize.Level0)
     task->taskType_ = TaskType::SEQRUNNER_TASK;
     napi_value obj = NapiHelper::CreateObject(env);
     task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     NapiHelper::CreatePromise(env, &taskInfo->deferred);
     task->currentTaskInfo_ = taskInfo;
     task->CancelInner(ExecuteState::CANCELED);
@@ -6726,7 +6726,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest329, testing::ext::TestSize.Level0)
     task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     task->env_ = env;
     task->taskState_ = ExecuteState::CANCELED;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     SequenceRunner* seqRunner = new SequenceRunner();
     uint64_t seqRunnerId = reinterpret_cast<uint64_t>(seqRunner);
@@ -6748,7 +6748,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest330, testing::ext::TestSize.Level0)
     napi_value thisValue = NapiHelper::CreateObject(env);
     napi_ref ref = NapiHelper::CreateReference(env, thisValue, 0);
     task->taskRef_ = ref;
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     task->pendingTaskInfos_.push_back(taskInfo);
     task->isPeriodicTask_ = true;
     task->NotifyPendingTask();
@@ -6761,7 +6761,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest330, testing::ext::TestSize.Level0)
     napi_value thisValue2 = NapiHelper::CreateObject(env);
     napi_ref ref2 = NapiHelper::CreateReference(env, thisValue2, 0);
     task2->taskRef_ = ref;
-    TaskInfo* taskInfo2 = new TaskInfo();
+    TaskInfo* taskInfo2 = new TaskInfo(env);
     task2->pendingTaskInfos_.push_back(taskInfo2);
     task2->taskState_ = ExecuteState::CANCELED;
     task2->NotifyPendingTask();
@@ -6770,7 +6770,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest330, testing::ext::TestSize.Level0)
     ASSERT_TRUE(exception == nullptr);
 
     Task* task3 = new Task();
-    TaskInfo* taskInfo3 = new TaskInfo();
+    TaskInfo* taskInfo3 = new TaskInfo(env);
     task3->pendingTaskInfos_.push_back(taskInfo3);
     task3->taskState_ = ExecuteState::CANCELED;
     task3->isPeriodicTask_ = true;
@@ -6922,7 +6922,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest335, testing::ext::TestSize.Level0)
     task->isPeriodicTask_ = true;
     task->taskState_ = ExecuteState::CANCELED;
     task->env_ = env;
-    task->currentTaskInfo_ = new TaskInfo();
+    task->currentTaskInfo_ = new TaskInfo(env);
     handle->data = task;
     NativeEngineTest::PeriodicTaskCallback(handle);
     delete handle;
@@ -6939,7 +6939,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest336, testing::ext::TestSize.Level0)
     task->env_ = env;
     napi_value obj = NapiHelper::CreateObject(env);
     task->taskRef_ = NapiHelper::CreateReference(env, obj, 1);
-    task->currentTaskInfo_ = new TaskInfo();
+    task->currentTaskInfo_ = new TaskInfo(env);
     TaskManager::GetInstance().StoreTask(task);
     std::set<uint32_t> taskIds{taskId};
     TaskManager::GetInstance().StoreDependentTaskInfo(taskIds, task->taskId_);
@@ -6957,7 +6957,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest337, testing::ext::TestSize.Level0)
     TaskManager &taskManager = TaskManager::GetInstance();
 
     Task *task1 = new Task();
-    TaskInfo *taskInfo1 = new TaskInfo();
+    TaskInfo *taskInfo1 = new TaskInfo(env);
     task1->currentTaskInfo_ = taskInfo1;
     task1->taskType_ = TaskType::SEQRUNNER_TASK;
     task1->taskState_ = ExecuteState::WAITING;
@@ -6970,7 +6970,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest337, testing::ext::TestSize.Level0)
     delete task1;
 
     Task *task2 = new Task();
-    TaskInfo *taskInfo2 = new TaskInfo();
+    TaskInfo *taskInfo2 = new TaskInfo(env);
     task2->currentTaskInfo_ = taskInfo2;
     task2->taskType_ = TaskType::COMMON_TASK;
     task2->taskState_ = ExecuteState::WAITING;
@@ -6982,7 +6982,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest337, testing::ext::TestSize.Level0)
     delete task2;
 
     Task *task3 = new Task();
-    TaskInfo *taskInfo3 = new TaskInfo();
+    TaskInfo *taskInfo3 = new TaskInfo(env);
     task3->currentTaskInfo_ = taskInfo3;
     task3->taskType_ = TaskType::SEQRUNNER_TASK;
     task3->taskState_ = ExecuteState::WAITING;
@@ -6992,7 +6992,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest337, testing::ext::TestSize.Level0)
     ASSERT_TRUE(exception == nullptr);
 
     Task *task4 = new Task();
-    TaskInfo *taskInfo4 = new TaskInfo();
+    TaskInfo *taskInfo4 = new TaskInfo(env);
     task4->currentTaskInfo_ = taskInfo4;
     task4->taskType_ = TaskType::ASYNCRUNNER_TASK;
     task4->taskState_ = ExecuteState::WAITING;

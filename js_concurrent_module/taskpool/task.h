@@ -58,6 +58,20 @@ enum TaskType {
 struct GroupInfo;
 class Worker;
 struct TaskInfo {
+    explicit TaskInfo(napi_env env): hostEnv(env) {}
+    ~TaskInfo()
+    {
+        if (serializationFunction != nullptr) {
+            napi_delete_serialization_data(hostEnv, serializationFunction);
+            serializationFunction = nullptr;
+        }
+
+        if (serializationArguments != nullptr) {
+            napi_delete_serialization_data(hostEnv, serializationArguments);
+            serializationArguments = nullptr;
+        }
+    }
+    napi_env hostEnv = nullptr;
     napi_deferred deferred = nullptr;
     Priority priority = Priority::DEFAULT;
     void* serializationFunction = nullptr;

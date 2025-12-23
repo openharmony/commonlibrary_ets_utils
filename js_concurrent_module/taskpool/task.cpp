@@ -1083,7 +1083,7 @@ TaskInfo* Task::GenerateTaskInfo(napi_env env, napi_value func, napi_value args,
     if (serializationFunction == nullptr || serializationArguments == nullptr) {
         return nullptr;
     }
-    TaskInfo* taskInfo = new TaskInfo();
+    TaskInfo* taskInfo = new TaskInfo(env);
     taskInfo->serializationFunction = serializationFunction;
     taskInfo->serializationArguments = serializationArguments;
     taskInfo->priority = priority;
@@ -1796,8 +1796,6 @@ void Task::DiscardTask(const uv_async_t* req)
 void Task::ReleaseData()
 {
     if (IsGroupFunctionTask() && currentTaskInfo_ != nullptr) {
-        napi_delete_serialization_data(env_, currentTaskInfo_->serializationFunction);
-        napi_delete_serialization_data(env_, currentTaskInfo_->serializationArguments);
         delete currentTaskInfo_;
         currentTaskInfo_ = nullptr;
     }
