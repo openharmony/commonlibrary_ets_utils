@@ -20,7 +20,7 @@ interface HelpUtil {
   Base64Helper: NativeBase64;
   Types: Object;
   StringDecoder: Object;
-  ArkTSVM: ArkTSVM;
+  ArkTSVM: Object;
   dealwithformatstring(formatString: string | Array<string | number | Function>): string;
   printf(formatString: string | Array<string | number | Function>,
     ...valueString: Array<Object>): string;
@@ -1931,10 +1931,6 @@ class AutoFinalizerCleaner {
     let registry = new FinalizationRegistry<T>(obj.onFinalization);
     registry.register(obj, heldValue);
   }
-}
-
-interface ArkTSVM {
-  setMultithreadingDetectionEnabled(enabled: boolean):void;
 }
 
 export default {
