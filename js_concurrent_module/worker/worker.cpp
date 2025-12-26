@@ -299,7 +299,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         }
         worker->workerType_ = WorkerType::LIMITED_WORKER;
         g_limitedworkers.push_back(worker);
-        HILOG_INFO("worker:limitedWorkers num %{public}zu", g_limitedworkers.size());
+        HILOG_INFO("worker:: limited workers num %{public}zu", g_limitedworkers.size());
     } else {
         WorkerType workerType = (version == WorkerVersion::NEW) ? THREAD_WORKER : OLD_WORKER;
         bool success = WorkerManager::IncrementWorkerCount(workerType);
@@ -323,7 +323,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         }
         worker->workerType_ = workerType;
         g_workers.push_back(worker);
-        HILOG_INFO("worker:workers num %{public}zu", g_workers.size());
+        HILOG_INFO("worker:: workers num %{public}zu", g_workers.size());
     }
 
     if (workerParams != nullptr) {
@@ -1987,7 +1987,7 @@ void Worker::PostMessageInner(MessageDataType data)
     workerMessageQueue_.EnQueue(data);
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
     if (data == nullptr) {
-        HILOG_INFO("worker:host post null.");
+        HILOG_INFO("worker:: host post nullptr to worker.");
         if (workerOnTerminateInitState_) {
             ConcurrentHelper::UvCheckAndAsyncSend(workerOnTerminateSignal_);
         }
@@ -2108,14 +2108,15 @@ void Worker::PublishWorkerOverSignal()
 void Worker::PostWorkerOverTask()
 {
     std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
+
     auto hostOnOverSignalTask = [weak]() {
         auto strong = weak.lock();
         if (strong) {
-            HILOG_INFO("worker:host receive terminate.");
+            HILOG_INFO("worker:: host receive terminate.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnTerminateSignal");
             strong->GetWorker()->HostOnExitInner();
         } else {
-            HILOG_INFO("worker:worker is null.");
+            HILOG_INFO("worker:: worker is null.");
         }
     };
     GetMainThreadHandler()->PostTask(hostOnOverSignalTask, "WorkerHostOnOverSignalTask",
@@ -2128,7 +2129,7 @@ void Worker::PostWorkerErrorTask()
     auto hostOnErrorTask = [weak]() { // LOCV_EXCL_BR_LINE
         auto strong = weak.lock();
         if (strong) {
-            HILOG_INFO("worker:host receive error.");
+            HILOG_INFO("worker:: host receive error.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnErrorMessage");
             strong->GetWorker()->HostOnErrorInner();
         }
@@ -2173,7 +2174,7 @@ void Worker::PostWorkerExceptionTask()
     auto hostOnAllErrorsTask = [weak]() { // LOCV_EXCL_BR_LINE
         auto strong = weak.lock();
         if (strong) {
-            HILOG_INFO("worker:host receive exception.");
+            HILOG_DEBUG("worker:: host receive exception.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnAllErrorsMessage");
             strong->GetWorker()->HostOnAllErrorsInner();
         }

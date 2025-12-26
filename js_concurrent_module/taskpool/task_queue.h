@@ -29,10 +29,8 @@ public:
     uint32_t DequeueTaskId();
 
     bool IsEmpty() const;
-    uint32_t GetTaskNum() const
-    {
-        return tasks_.size();
-    }
+    uint32_t GetTaskNum() const;
+    uint32_t GetHead() const;
 
 private:
     std::list<uint32_t> tasks_ {};

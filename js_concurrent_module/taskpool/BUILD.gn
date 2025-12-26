@@ -20,6 +20,7 @@ taskpool_sources = [
   "base_runner.cpp",
   "base_runner_manager.cpp",
   "dfx_hisys_event.cpp",
+  "log_manager.cpp",
   "native_module_taskpool.cpp",
   "sequence_runner.cpp",
   "sequence_runner_manager.cpp",

@@ -28,13 +28,13 @@
 #include <vector>
 
 #include "dfx_hisys_event.h"
+#include "log_manager.h"
 #include "napi/native_api.h"
 #include "sequence_runner.h"
 #include "task.h"
 #include "task_queue.h"
 #include "task_group.h"
 #include "worker.h"
-
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common;
 
@@ -135,6 +135,10 @@ public:
     void TerminateTask(uint32_t taskId);
     Worker* GetLongTaskInfo(uint32_t taskId);
 
+    void StoreTaskEnqueueTime(uint32_t taskId, std::string taskEnqueueTime);
+    void RemoveTaskEnqueueTime(uint32_t taskId);
+    std::string GetTaskEnqueueTime(uint32_t taskId);
+
     // for callback
     void ReleaseCallBackInfo(Task* task);
 
@@ -166,6 +170,11 @@ public:
     std::string GetFuncNameFromData(void* data);
     bool IsValidTask(Task* task);
 
+    void PushLog(const std::string& msg)
+    {
+        logManager_.PushLog(msg);
+    }
+
 private:
     TaskManager();
     ~TaskManager();
@@ -190,6 +199,8 @@ private:
     static void TryExpand(const uv_timer_t* req = nullptr);
     static void DispatchAndTryExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req);
+    static void PrintLog(const uv_timer_t* req);
+    static void PrintWaitingTime(const uv_timer_t* req);
 
     bool IsChooseIdle();
     std::pair<uint32_t, Priority> GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue, Priority priority);
@@ -203,6 +214,8 @@ private:
     void AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int64_t idleThreadNum, int64_t timeoutThreadNum);
     std::tuple<napi_env, napi_event_priority> GetTaskEnvAndPriority(uint32_t taskId);
     void IncreaseTaskIdSalt();
+    void TimerStop(uv_timer_t*& timer, const char* errMessage);
+    void TimerInit(uv_timer_t*& timer, bool startFlag, uv_timer_cb cb, uint64_t repeat);
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};
@@ -233,6 +246,9 @@ private:
     std::unordered_set<Worker*> idleWorkers_ {};
     std::unordered_set<Worker*> timeoutWorkers_ {};
     std::recursive_mutex workersMutex_;
+
+    std::unordered_map<uint32_t, std::string> taskEnqueueTimeMap_ {};
+    std::mutex taskEnqueueTimeMutex_;
 
     // for load balance
     napi_env hostEnv_ = nullptr;
@@ -274,6 +290,11 @@ private:
 #endif
     std::atomic<bool> isPerformIdle_ = false;
     std::atomic<uint32_t> taskIdSalt_ = 1;
+
+    uv_timer_t* logTimer_ = nullptr;
+    uv_timer_t* waitingTimer_ = nullptr;
+
+    LogManager logManager_;
 
     friend class TaskGroupManager;
     friend class NativeEngineTest;

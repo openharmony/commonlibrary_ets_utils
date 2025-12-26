@@ -80,6 +80,7 @@ public:
     static void NotifyHandleTaskResult(napi_env env);
     static void TaskResultCallback(napi_env env);
     static void HandleFunctionResult(napi_env env);
+    static void AddExpandingCount();
     static void* WorkerConstructor(napi_env env);
     static pid_t GetWorkerTid(uv_timer_t* handle);
     static void WorkerPostTask(napi_env env);
@@ -106,6 +107,7 @@ public:
     static std::string GetFuncNameFromError(napi_env env, napi_value error);
     static uint32_t GetTaskIdSalt();
     static uint64_t CalculateTaskId(uint64_t taskId, uint32_t salt);
+    static bool SetAndTestTaskQueues();
 
     class ExceptionScope {
     public:

@@ -95,4 +95,42 @@ bool ConcurrentHelper::IsModerateMemory()
     return false;
 #endif
 }
+
+std::string ConcurrentHelper::GetCurrentTimeStampWithMS()
+{
+    auto tp = std::chrono::system_clock::now();
+    auto timeVal = std::chrono::system_clock::to_time_t(tp);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()) % 1000; // 1000: modulo
+    int outMs = static_cast<int>(ms.count());
+
+    std::tm localTm {};
+    localTm.tm_isdst = -1; // -1: the system automatically determines whether it is in daylight saving time
+
+#if defined(OHOS_PLATFORM) || defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+    if (localtime_r(&timeVal, &localTm) == nullptr) { // LCOV_EXCL_BR_LINE
+        return "TIME_ERR";
+    }
+#elif defined(WINDOWS_PLATFORM)
+    if (localtime_s(&localTm, &timeVal) != 0) {
+        return "TIME_ERR";
+    }
+#else
+    return ""; // default result
+#endif
+
+    std::ostringstream oss;
+
+    // formatted output: Day(2 digits) Hour:Minute:Second(each 2 digits).Milliseconds(3 digits)
+    const int kTimeFieldWidth = 2;
+    const int kMillisecondWidth = 3;
+
+    oss << std::setfill('0')
+        << std::setw(kTimeFieldWidth) << localTm.tm_mday << " "
+        << std::setw(kTimeFieldWidth) << localTm.tm_hour << ":"
+        << std::setw(kTimeFieldWidth) << localTm.tm_min << ":"
+        << std::setw(kTimeFieldWidth) << localTm.tm_sec << "."
+        << std::setw(kMillisecondWidth) << outMs;
+
+    return oss.str();
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

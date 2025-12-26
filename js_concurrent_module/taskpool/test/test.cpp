@@ -883,10 +883,18 @@ void NativeEngineTest::HandleFunctionResult(napi_env env)
     Worker::HandleFunctionResult(env, task);
 }
 
+void NativeEngineTest::AddExpandingCount()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.expandingCount_++;
+}
+
 void* NativeEngineTest::WorkerConstructor(napi_env env)
 {
     uint32_t sleepTime = 50000; // 50000: is sleep 50ms
+    AddExpandingCount();
     Worker* worker = Worker::WorkerConstructor(env);
+
     usleep(sleepTime);
     uv_loop_t* loop = worker->GetWorkerLoop();
     int num = 0;
@@ -1125,5 +1133,30 @@ uint64_t NativeEngineTest::CalculateTaskId(uint64_t taskId, uint32_t salt)
     std::lock_guard<std::recursive_mutex> lock(taskManager.tasksMutex_);
     taskManager.taskIdSalt_ = salt;
     return taskManager.CalculateTaskId(taskId);
+}
+
+bool NativeEngineTest::SetAndTestTaskQueues()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task1 = new Task();
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
+    taskManager.taskQueues_[Priority::HIGH]->EnqueueTaskId(task1->taskId_);
+    Task* task2 = new Task();
+    task2->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
+    taskManager.taskQueues_[Priority::MEDIUM]->EnqueueTaskId(task2->taskId_);
+    Task* task3 = new Task();
+    task3->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task3));
+    taskManager.taskQueues_[Priority::LOW]->EnqueueTaskId(task3->taskId_);
+    uv_timer_t* handle = new uv_timer_t;
+    taskManager.PrintWaitingTime(handle);
+    
+    bool eraseSuccess = true;
+    eraseSuccess &= taskManager.taskQueues_[Priority::HIGH]->EraseWaitingTaskId(task1->taskId_);
+    eraseSuccess &= taskManager.taskQueues_[Priority::MEDIUM]->EraseWaitingTaskId(task2->taskId_);
+    eraseSuccess &= taskManager.taskQueues_[Priority::LOW]->EraseWaitingTaskId(task3->taskId_);
+    delete task1;
+    delete task2;
+    delete task3;
+    return eraseSuccess;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

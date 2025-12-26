@@ -75,9 +75,9 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
 
 void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
 {
-    std::string strTrace = "CancelGroup: groupId: " + std::to_string(groupId);
+    std::string strTrace = "Cancel groupId " + std::to_string(groupId);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_INFO("taskpool:: %{public}s", strTrace.c_str());
+    HILOG_INFO("taskpool::%{public}s", strTrace.c_str());
     TaskGroup* taskGroup = GetTaskGroup(groupId);
     if (taskGroup == nullptr) {
         HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
@@ -128,6 +128,7 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint32_t taskId, TaskGroup*
         HILOG_INFO("taskpool:: CancelGroupTask task is nullptr");
         return;
     }
+    TaskManager::GetInstance().RemoveTaskEnqueueTime(taskId);
     std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
     if (task->taskState_ == ExecuteState::WAITING && task->currentTaskInfo_ != nullptr &&
         TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->currentTaskInfo_->priority)) {

@@ -416,7 +416,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest024, testing::ext::TestSize.Level0)
     auto task = new Task();
     task->taskId_ = 99;
     napi_env env = reinterpret_cast<napi_env>(engine_);
-    auto worker = static_cast<Worker*>(WorkerConstructor(env));
+    auto worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     NativeEngineTest::StoreTaskId(worker, task->taskId_);
     auto res = NativeEngineTest::FindTaskId(worker, task->taskId_);
     ASSERT_TRUE(res == true);
@@ -431,7 +431,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest025, testing::ext::TestSize.Level0)
     auto task = new Task();
     task->taskId_ = 99;
     napi_env env = reinterpret_cast<napi_env>(engine_);
-    auto worker = static_cast<Worker*>(WorkerConstructor(env));
+    auto worker = reinterpret_cast<Worker*>(NativeEngineTest::WorkerConstructor(env));
     auto res = NativeEngineTest::FindTaskId(worker, task->taskId_);
     ASSERT_TRUE(res == false);
     NativeEngineTest::RemoveTaskId(worker, task->taskId_);
@@ -548,6 +548,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest034, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.NotifyWorkerIdle(worker);
     ASSERT_NE(worker, nullptr);
+    NativeEngineTest::AddExpandingCount();
     taskManager.NotifyWorkerCreated(worker);
     ASSERT_NE(worker, nullptr);
     taskManager.NotifyWorkerRunning(worker);
@@ -842,6 +843,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest059, testing::ext::TestSize.Level0)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
+    
     taskManager.InitTaskManager(env);
     taskManager.TryTriggerExpand();
     usleep(50000);
@@ -1022,8 +1024,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest070, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     TaskManager& taskManager = TaskManager::GetInstance();
     ResetTaskManager();
+    NativeEngineTest::AddExpandingCount();
     auto worker = Worker::WorkerConstructor(env);
     usleep(50000);
+    NativeEngineTest::AddExpandingCount();
     taskManager.NotifyWorkerCreated(worker);
     Task* task = new Task();
     task->isLongTask_ = true;
@@ -5315,15 +5319,14 @@ HWTEST_F(NativeEngineTest, TaskpoolTest264, testing::ext::TestSize.Level0)
     napi_value task1 = CreateTaskObject(env);
     napi_value priority = NapiHelper::CreateUint32(env, 1);
     napi_value argv1[] = {task1, priority};
+    
     napi_call_function(env, asyncGlobal, cb, 2, argv1, &result);
     ASSERT_NE(result, nullptr);
-
     napi_value task2 = CreateTaskObject(env);
     napi_value argv2[] = {task2, priority};
     result = nullptr;
     napi_call_function(env, asyncGlobal, cb, 2, argv2, &result);
     ASSERT_NE(result, nullptr);
-
     napi_value task3 = CreateTaskObject(env);
     napi_value argv3[] = {task3, priority};
     result = nullptr;
@@ -5418,6 +5421,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest268, testing::ext::TestSize.Level0)
     asyncRunner->runnerId_ = reinterpret_cast<uint64_t>(asyncRunner);
     asyncRunner->IncreaseCount();
     task->runnerId_ = asyncRunner->runnerId_;
+    asyncRunner->tasks_.push_back(task);
     asyncRunnerManager.StoreRunner(asyncRunner->runnerId_, asyncRunner);
     bool flag = asyncRunnerManager.TriggerAsyncRunner(env, task);
     ASSERT_TRUE(flag);
@@ -7451,4 +7455,17 @@ HWTEST_F(NativeEngineTest, TaskpoolTest355, testing::ext::TestSize.Level0)
     NativeEngineTest::RunnerDestructor(env, seqData);
     ASSERT_EQ(asyncRunnerManager.GetRunner(asyncRunnerId), nullptr);
     ASSERT_EQ(sequenceRunnerManager.GetRunner(seqRunnerId), nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest356, testing::ext::TestSize.Level0)
+{
+    ExecuteQueue executeQueue;
+    uint32_t result = executeQueue.GetHead();
+    ASSERT_TRUE(result == 0);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest357, testing::ext::TestSize.Level0)
+{
+    bool ret = NativeEngineTest::SetAndTestTaskQueues();
+    ASSERT_TRUE(ret);
 }
