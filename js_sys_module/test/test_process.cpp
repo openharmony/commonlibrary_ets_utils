@@ -95,6 +95,196 @@ HWTEST_F(NativeEngineTest, ProcessUptimeTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: ProcessUptimeTest002
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(2);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 2);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest003
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(3);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 3);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest004
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(4);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 4);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest005
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(5);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 5);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest006
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(6);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 6);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest007
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(7);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 7);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest008
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(8);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 8);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest009
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(9);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 9);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest010
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest010, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(10);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 10);
+}
+
+/**
+ * @tc.name: ProcessUptimeTest011
+ * @tc.desc: Test process Uptime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUptimeTest011, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value timeStart = process.Uptime(env);
+    sleep(11);
+    napi_value timeEnd = process.Uptime(env);
+    double start = 0;
+    double end = 0;
+    napi_get_value_double(env, timeStart, &start);
+    napi_get_value_double(env, timeEnd, &end);
+    ASSERT_EQ(end - start, 11);
+}
+
+/**
  * @tc.name: ProcessKillTest001
  * @tc.desc: Test process kill signal.
  * @tc.type: FUNC
@@ -180,6 +370,282 @@ HWTEST_F(NativeEngineTest, ProcessRunCmdTest002, testing::ext::TestSize.Level0)
     OHOS::JsSysModule::Process::Process process;
 
     std::string command("mkdir test.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest003
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 3.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest004
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 4.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest005
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 5.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest006
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 6.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest007
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 7.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest008
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 8.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest009
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 9.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest010
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest010, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 10.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest011
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest011, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 11.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest012
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest012, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 12.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest013
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest013, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 13.txt");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    childprocess->Close();
+    bool res = false;
+    napi_is_promise(env, errorOutput, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessRunCmdTest014
+ * @tc.desc: Test process RunCmd fork process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessRunCmdTest014, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("mkdir 14.txt");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
@@ -343,6 +809,266 @@ HWTEST_F(NativeEngineTest, childProcesspidTest001, testing::ext::TestSize.Level0
     OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest002
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 2s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest003
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 3s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest004
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 4s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest005
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 5s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest006
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 6s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest007
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 7s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest008
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 8s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest009
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 9s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest010
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest010, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 10s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value result = childprocess->Getpid(env);
+    childprocess->Close();
+    int32_t pid = 0;
+    napi_get_value_int32(env, result, &pid);
+    bool res = false;
+    if (pid >= 0) {
+        res = true;
+    }
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name:childProcesspidTest011
+ * @tc.desc: test get the specific pid value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcesspidTest011, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 11s;");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
@@ -712,6 +1438,789 @@ HWTEST_F(NativeEngineTest, ProcessCloseTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: ProcessCloseTest002
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 2");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest003
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 3");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest004
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 4");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest005
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 5");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest006
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 6");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest007
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 7");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest008
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 8");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest009
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 9");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest010
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest010, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 10");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest011
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest011, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 11");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest012
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest012, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 12");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest013
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest013, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 13");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest014
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest014, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 14");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest015
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest015, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 15");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest016
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest016, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 16");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest017
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest017, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 17");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest018
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest018, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 18");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest019
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest019, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 19");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest020
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest020, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 20");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest021
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest021, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 21");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest022
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest022, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 22");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest023
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest023, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 23");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest024
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest024, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 24");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest025
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest025, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 25");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest026
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest026, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 26");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest027
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest027, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 27");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: ProcessCloseTest028
+ * @tc.desc: Close the target process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessCloseTest028, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 28");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    childprocess->Close();
+    napi_value exitCode = childprocess->GetExitCode(env);
+    int32_t num = 0;
+    napi_value result = nullptr;
+    napi_get_value_int32(env, exitCode, &num);
+    bool res = false;
+    if (num == 0) {
+        res = true;
+    }
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
  * @tc.name:childProcessKillTest001
  * @tc.desc: Send a signal to process.
  * @tc.type: FUNC
@@ -722,6 +2231,500 @@ HWTEST_F(NativeEngineTest, childProcessKillTest001, testing::ext::TestSize.Level
     OHOS::JsSysModule::Process::Process process;
 
     std::string command("ls; sleep 1s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest002
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 2s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest003
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 3s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest004
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 4s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest005
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 5s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest006
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 6s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest007
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 7s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest008
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 8s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest009
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 9s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest010
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest010, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 10s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest011
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest011, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 11s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest012
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest012, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 12s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest013
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest013, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 13s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest014
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest014, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 14s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest015
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest015, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 15s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest016
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest016, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 16s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest017
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest017, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 17s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest018
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest018, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 18s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest019
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest019, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 19s;");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    childprocess->Wait(env);
+    napi_value signo = nullptr;
+    napi_create_int32(env, 9, &signo);
+    childprocess->Kill(env, signo);
+    napi_value result = childprocess->GetKilled(env);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name:childProcessKillTest020
+ * @tc.desc: Send a signal to process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, childProcessKillTest020, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+
+    std::string command("ls; sleep 20s;");
     napi_value temp = nullptr;
     napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
 
