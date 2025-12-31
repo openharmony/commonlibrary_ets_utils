@@ -5394,6 +5394,187 @@ HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest001, testing::ext::TestSize.L
 }
 
 /**
+ * @tc.name: textIsBoxedPrimitiveTest002
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abce", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest003
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest003, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest003 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abcf", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest004
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest004, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest004 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abcg", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest005
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest005, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest005 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abch", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest006
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest006 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abch", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest007
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest007, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest007 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abchdd", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest008
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest008, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest008 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abcjgg", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest009
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest009, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest009 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abcjkk", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest010
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest010, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest010 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abcjll", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: textIsBoxedPrimitiveTest011
+ * @tc.desc: Check if the input value is of Boolean, Number, String, or Symbol object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsBoxedPrimitiveTest011, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsBoxedPrimitiveTest011 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, "abcjl2", NAPI_AUTO_LENGTH, &src);
+    napi_value result = type.IsBoxedPrimitive(env, src);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
  * @tc.name: textIsFloat64ArrayTest001
  * @tc.desc: Check if the input value is of Float64Array array type.
  * @tc.type: FUNC
