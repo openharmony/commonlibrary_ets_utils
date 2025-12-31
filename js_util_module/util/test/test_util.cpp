@@ -4938,6 +4938,510 @@ HWTEST_F(NativeEngineTest, textIsDateTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: textIsDateTest002
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest002, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest002 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 202110181203152; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest003
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest003, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest003 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 202110181203153; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest004
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest004, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest004 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 202010181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest005
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest005, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest005 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201910181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest006
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest006, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest006 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201810181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest007
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest007, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest007 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201810181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest008
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest008, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest008 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201710181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest009
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest009, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest009 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201710181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest010
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest010, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest010 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201610181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest011
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest011, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest011 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201510181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest012
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest012, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest012 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201410181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest013
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest013, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest013 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201310181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest014
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest014, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest014 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201210181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest015
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest015, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest015 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201110181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest016
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest016, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest016 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 201010181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest017
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest017, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest017 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 200910181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest018
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest018, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest018 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 200810181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest019
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest019, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest019 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 200710181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest020
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest020, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest020 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 200610181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest021
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest021, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest021 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 200510181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
+ * @tc.name: textIsDateTest022
+ * @tc.desc: Check if the input value is of type Date.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, textIsDateTest022, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("textIsDateTest022 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Types type;
+    napi_value createResult = nullptr;
+    double time = 200410181203150; // Date and Time
+    napi_status status = napi_create_date(env, time, &createResult);
+    if (status == napi_ok) {
+        HILOG_INFO("Types::napi_create_date success");
+    } else {
+        HILOG_INFO("Types::napi_create_date fail");
+    }
+    napi_value result = type.IsDate(env, createResult);
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_TRUE(res);
+}
+
+/**
  * @tc.name: textIsExternalTest001
  * @tc.desc: Check if the input value is of type native External.
  * @tc.type: FUNC
