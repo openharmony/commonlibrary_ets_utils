@@ -1684,7 +1684,7 @@ void Worker::HostOnMessageInner()
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             auto handler = OHOS::AppExecFwk::EventHandler::Current();
-            if (handler && (handler->HasPendingHigherEvent() && !hostMessageQueue_.IsEmpty())) {
+            if (handler && (handler->HasPendingHigherEvent(-1, false) && !hostMessageQueue_.IsEmpty())) {
                 PostWorkerMessageTask();
                 break;
             }
