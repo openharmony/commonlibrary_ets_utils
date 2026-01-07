@@ -21,6 +21,9 @@
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_types.h"
+#if defined(__aarch64__) || defined(_M_ARM64)
+#include "commonlibrary/ets_utils/js_util_module/util/plugin/hispeed_string_plugin.h"
+#endif
 #include "ohos/init_data.h"
 #include "tools/log.h"
 #include "napi/native_api.h"
@@ -1713,10 +1716,8 @@ HWTEST_F(NativeEngineTest, getMinByteSizeTest001, testing::ext::TestSize.Level0)
              the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeTest001, testing::ext::TestSize.Level0)
+static void RunEncodeTest001(napi_env env)
 {
-    HILOG_INFO("encodeTest001 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[3] = {0x73, 0x31, 0x33};
     napi_value arrayBuffer = nullptr;
@@ -1743,15 +1744,31 @@ HWTEST_F(NativeEngineTest, encodeTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(res[3], excepted[3]);
 }
 
+HWTEST_F(NativeEngineTest, encodeTest001_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest001 with hispeed start");
+    RunEncodeTest001((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeTest001_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest001 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeTest001((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeTest002
  * @tc.desc: Encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeTest002, testing::ext::TestSize.Level0)
+static void RunEncodeTest002(napi_env env)
 {
-    HILOG_INFO("encodeTest002 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[14] = {66, 97, 115, 101, 54, 52, 32, 78, 111, 100, 101, 46, 106, 115};
     napi_value arrayBuffer = nullptr;
@@ -1777,15 +1794,31 @@ HWTEST_F(NativeEngineTest, encodeTest002, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeTest002_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest002 with hispeed start");
+    RunEncodeTest002((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeTest002_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest002 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeTest002((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeTest003
  * @tc.desc: Encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeTest003, testing::ext::TestSize.Level0)
+static void RunEncodeTest003(napi_env env)
 {
-    HILOG_INFO("encodeTest003 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[26] = {66, 97, 115, 101, 54, 52, 32, 69, 110,
                               99, 111, 100, 105, 110, 103, 32, 105, 110, 32, 78, 111, 100, 101, 46, 106, 115};
@@ -1813,15 +1846,31 @@ HWTEST_F(NativeEngineTest, encodeTest003, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeTest003_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest003 with hispeed start");
+    RunEncodeTest003((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeTest003_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest003 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeTest003((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeTest004
  * @tc.desc: Encodes all bytes in the specified u8 array into the
              newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeTest004, testing::ext::TestSize.Level0)
+static void RunEncodeTest004(napi_env env)
 {
-    HILOG_INFO("encodeTest004 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[4] = {168, 174, 155, 255};
     napi_value arrayBuffer = nullptr;
@@ -1847,15 +1896,31 @@ HWTEST_F(NativeEngineTest, encodeTest004, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeTest004_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest004 with hispeed start");
+    RunEncodeTest004((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeTest004_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest004 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeTest004((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeTest005
  * @tc.desc: Encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeTest005, testing::ext::TestSize.Level0)
+static void RunEncodeTest005(napi_env env)
 {
-    HILOG_INFO("encodeTest005 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[6] = {66, 97, 115, 101, 54, 52};
     napi_value arrayBuffer = nullptr;
@@ -1881,14 +1946,30 @@ HWTEST_F(NativeEngineTest, encodeTest005, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeTest005_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest005 with hispeed start");
+    RunEncodeTest005((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeTest005_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest005 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeTest005((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeTest006
  * @tc.desc: Encode sync with napi_uint16_array.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeTest006, testing::ext::TestSize.Level0)
+static void RunEncodeTest006(napi_env env)
 {
-    HILOG_INFO("encodeTest006 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[6] = {66, 97, 115, 101, 54, 51};
     napi_value arrayBuffer = nullptr;
@@ -1908,14 +1989,30 @@ HWTEST_F(NativeEngineTest, encodeTest006, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
 }
 
+HWTEST_F(NativeEngineTest, encodeTest006_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest006 with hispeed start");
+    RunEncodeTest006((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeTest006_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest006 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeTest006((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeTest007
  * @tc.desc: Encodes all bytes in the specified u8 array with type BASIC_URL_SAFE.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeTest007, testing::ext::TestSize.Level0)
+static void RunEncodeTest007(napi_env env)
 {
-    HILOG_INFO("encodeTest007 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[4] = {168, 174, 155, 255};
     napi_value arrayBuffer = nullptr;
@@ -1941,16 +2038,31 @@ HWTEST_F(NativeEngineTest, encodeTest007, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeTest007_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest007 with hispeed start");
+    RunEncodeTest007((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeTest007_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeTest007 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeTest007((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringTest001
  * @tc.desc: Encodes the specified byte array as a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringTest001, testing::ext::TestSize.Level0)
+static void RunEncodeToStringTest001(napi_env env)
 {
-    HILOG_INFO("encodeToStringTest001 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[3] = {115, 49, 51};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 3;
@@ -1980,16 +2092,31 @@ HWTEST_F(NativeEngineTest, encodeToStringTest001, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringTest001_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest001 with hispeed start");
+    RunEncodeToStringTest001((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringTest001_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest001 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringTest001((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringTest002
  * @tc.desc: Encodes the specified byte array as a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringTest002, testing::ext::TestSize.Level0)
+static void RunEncodeToStringTest002(napi_env env)
 {
-    HILOG_INFO("encodeToStringTest002 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[14] = {66, 97, 115, 101, 54, 52, 32, 78, 111, 100, 101, 46, 106, 115};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 14;
@@ -2019,14 +2146,30 @@ HWTEST_F(NativeEngineTest, encodeToStringTest002, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringTest002_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest002 with hispeed start");
+    RunEncodeToStringTest002((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringTest002_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest002 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringTest002((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringTest003
  * @tc.desc: Encodes the specified byte array as a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringTest003, testing::ext::TestSize.Level0)
+static void RunEncodeToStringTest003(napi_env env)
 {
-    HILOG_INFO("encodeToStringTest003 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
 
     unsigned char input[26] = {66, 97, 115, 101, 54, 52, 32, 69, 110,
@@ -2059,16 +2202,31 @@ HWTEST_F(NativeEngineTest, encodeToStringTest003, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringTest003_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest003 with hispeed start");
+    RunEncodeToStringTest003((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringTest003_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest003 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringTest003((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringTest004
  * @tc.desc: Encodes the specified byte array as a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringTest004, testing::ext::TestSize.Level0)
+static void RunEncodeToStringTest004(napi_env env)
 {
-    HILOG_INFO("encodeToStringTest004 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[4] = {168, 174, 155, 255};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 4;
@@ -2098,16 +2256,31 @@ HWTEST_F(NativeEngineTest, encodeToStringTest004, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringTest004_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest004 with hispeed start");
+    RunEncodeToStringTest004((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringTest004_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest004 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringTest004((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringTest005
  * @tc.desc: Encodes the specified byte array as a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringTest005, testing::ext::TestSize.Level0)
+static void RunEncodeToStringTest005(napi_env env)
 {
-    HILOG_INFO("encodeToStringTest005 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[6] = {66, 97, 115, 101, 54, 52};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 6;
@@ -2137,17 +2310,32 @@ HWTEST_F(NativeEngineTest, encodeToStringTest005, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringTest005_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest005 with hispeed start");
+    RunEncodeToStringTest005((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringTest005_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringTest005 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringTest005((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeTest001
  * @tc.desc: Decodes the Base64-encoded string or input u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeTest001, testing::ext::TestSize.Level0)
+static void RunDecodeTest001(napi_env env)
 {
-    HILOG_INFO("decodeTest001 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[4] = {99, 122, 69, 122};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 4;
@@ -2172,17 +2360,32 @@ HWTEST_F(NativeEngineTest, decodeTest001, testing::ext::TestSize.Level0)
     ASSERT_EQ(res[2], excepted[2]);
 }
 
+HWTEST_F(NativeEngineTest, decodeTest001_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest001 with hispeed start");
+    RunDecodeTest001((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeTest001_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest001 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeTest001((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeTest002
  * @tc.desc: Decodes the Base64-encoded string or input u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeTest002, testing::ext::TestSize.Level0)
+static void RunDecodeTest002(napi_env env)
 {
-    HILOG_INFO("decodeTest002 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[20] = {81, 109, 70, 122, 90, 84, 89, 48, 73, 69, 53, 118, 90, 71, 85, 117, 97, 110, 77, 61};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 20;
@@ -2207,17 +2410,32 @@ HWTEST_F(NativeEngineTest, decodeTest002, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, decodeTest002_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest002 with hispeed start");
+    RunDecodeTest002((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeTest002_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest002 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeTest002((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeTest003
  * @tc.desc: Decodes the Base64-encoded string or input u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeTest003, testing::ext::TestSize.Level0)
+static void RunDecodeTest003(napi_env env)
 {
-    HILOG_INFO("decodeTest003 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     std::string input = "czEz";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
@@ -2236,17 +2454,32 @@ HWTEST_F(NativeEngineTest, decodeTest003, testing::ext::TestSize.Level0)
     ASSERT_EQ(res[2], excepted[2]);
 }
 
+HWTEST_F(NativeEngineTest, decodeTest003_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest003 with hispeed start");
+    RunDecodeTest003((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeTest003_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest003 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeTest003((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeTest004
  * @tc.desc: Decodes the Base64-encoded string or input u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeTest004, testing::ext::TestSize.Level0)
+static void RunDecodeTest004(napi_env env)
 {
-    HILOG_INFO("decodeTest004 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     std::string input = "qK6b/w==";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
@@ -2264,17 +2497,32 @@ HWTEST_F(NativeEngineTest, decodeTest004, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, decodeTest004_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest004 with hispeed start");
+    RunDecodeTest004((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeTest004_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest004 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeTest004((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeTest005
  * @tc.desc: Decodes the Base64-encoded string or input u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeTest005, testing::ext::TestSize.Level0)
+static void RunDecodeTest005(napi_env env)
 {
-    HILOG_INFO("decodeTest005 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     std::string input = "QmFzZTY0";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
@@ -2292,14 +2540,30 @@ HWTEST_F(NativeEngineTest, decodeTest005, testing::ext::TestSize.Level0)
     }
 }
 
+HWTEST_F(NativeEngineTest, decodeTest005_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest005 with hispeed start");
+    RunDecodeTest005((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeTest005_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest005 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeTest005((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeTest006
  * @tc.desc: Decodes the Base64-encoded string or input unit32 array with return null.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeTest006, testing::ext::TestSize.Level0)
+static void RunDecodeTest006(napi_env env)
 {
-    HILOG_INFO("decodeTest006 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
 
     std::string input1 = "";
@@ -2326,14 +2590,30 @@ HWTEST_F(NativeEngineTest, decodeTest006, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
 }
 
+HWTEST_F(NativeEngineTest, decodeTest006_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest006 with hispeed start");
+    RunDecodeTest006((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeTest006_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest006 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeTest006((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeTest007
  * @tc.desc: Decodes the Base64-encoded string with type BASIC_URL_SAFE.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeTest007, testing::ext::TestSize.Level0)
+static void RunDecodeTest007(napi_env env)
 {
-    HILOG_INFO("decodeTest007 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     std::string input = "qK6b/w==";
     napi_value src = nullptr;
@@ -2357,15 +2637,31 @@ HWTEST_F(NativeEngineTest, decodeTest007, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
 }
 
+HWTEST_F(NativeEngineTest, decodeTest007_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest007 with hispeed start");
+    RunDecodeTest007((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeTest007_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeTest007 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeTest007((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeAsyncTest001
  * @tc.desc: Asynchronously encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeAsyncTest001, testing::ext::TestSize.Level0)
+static void RunEncodeAsyncTest001(napi_env env)
 {
-    HILOG_INFO("encodeAsyncTest001 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[3] = {0x73, 0x31, 0x33};
     napi_value arrayBuffer = nullptr;
@@ -2391,15 +2687,31 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest001, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
 }
 
+HWTEST_F(NativeEngineTest, encodeAsyncTest001_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest001 with hispeed start");
+    RunEncodeAsyncTest001((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeAsyncTest001_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest001 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeAsyncTest001((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeAsyncTest002
  * @tc.desc: Asynchronously encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeAsyncTest002, testing::ext::TestSize.Level0)
+static void RunEncodeAsyncTest002(napi_env env)
 {
-    HILOG_INFO("encodeAsyncTest002 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[14] = {66, 97, 115, 101, 54, 52, 32, 78, 111, 100, 101, 46, 106, 115};
     napi_value arrayBuffer = nullptr;
@@ -2417,15 +2729,31 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest002, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeAsyncTest002_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest002 with hispeed start");
+    RunEncodeAsyncTest002((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeAsyncTest002_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest002 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeAsyncTest002((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeAsyncTest003
  * @tc.desc: Asynchronously encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeAsyncTest003, testing::ext::TestSize.Level0)
+static void RunEncodeAsyncTest003(napi_env env)
 {
-    HILOG_INFO("encodeAsyncTest003 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[26] = {66, 97, 115, 101, 54, 52, 32, 69, 110,
                                99, 111, 100, 105, 110, 103, 32, 105, 110, 32, 78, 111, 100, 101, 46, 106, 115};
@@ -2444,15 +2772,31 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest003, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeAsyncTest003_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest003 with hispeed start");
+    RunEncodeAsyncTest003((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeAsyncTest003_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest003 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeAsyncTest003((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeAsyncTest004
  * @tc.desc: Asynchronously encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeAsyncTest004, testing::ext::TestSize.Level0)
+static void RunEncodeAsyncTest004(napi_env env)
 {
-    HILOG_INFO("encodeAsyncTest004 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[4] = {168, 174, 155, 255};
     napi_value arrayBuffer = nullptr;
@@ -2470,15 +2814,31 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest004, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeAsyncTest004_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest004 with hispeed start");
+    RunEncodeAsyncTest004((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeAsyncTest004_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest004 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeAsyncTest004((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeAsyncTest005
  * @tc.desc: Asynchronously encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeAsyncTest005, testing::ext::TestSize.Level0)
+static void RunEncodeAsyncTest005(napi_env env)
 {
-    HILOG_INFO("encodeAsyncTest005 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[6] = {66, 97, 115, 101, 54, 52};
     napi_value arrayBuffer = nullptr;
@@ -2496,16 +2856,31 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest005, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeAsyncTest005_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest005 with hispeed start");
+    RunEncodeAsyncTest005((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeAsyncTest005_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeAsyncTest005 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeAsyncTest005((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringAsyncTest001
  * @tc.desc: Asynchronously encodes the specified byte array into a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001, testing::ext::TestSize.Level0)
+static void RunEncodeToStringAsyncTest001(napi_env env)
 {
-    HILOG_INFO("encodeToStringAsyncTest001 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[3] = {115, 49, 51};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 3;
@@ -2529,14 +2904,30 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001, testing::ext::TestSize.Le
     napi_get_and_clear_last_exception(env, &exception);
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest001 with hispeed start");
+    RunEncodeToStringAsyncTest001((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest001 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringAsyncTest001((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringAsyncTest002
  * @tc.desc: Asynchronously encodes the specified byte array into a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringAsyncTest002, testing::ext::TestSize.Level0)
+static void RunEncodeToStringAsyncTest002(napi_env env)
 {
-    HILOG_INFO("encodeToStringAsyncTest002 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[14] = {66, 97, 115, 101, 54, 52, 32, 78, 111, 100, 101, 46, 106, 115};
     napi_value arrayBuffer = nullptr;
@@ -2554,14 +2945,30 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest002, testing::ext::TestSize.Le
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest002_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest002 with hispeed start");
+    RunEncodeToStringAsyncTest002((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest002_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest002 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringAsyncTest002((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringAsyncTest003
  * @tc.desc: Asynchronously encodes the specified byte array into a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringAsyncTest003, testing::ext::TestSize.Level0)
+static void RunEncodeToStringAsyncTest003(napi_env env)
 {
-    HILOG_INFO("encodeToStringAsyncTest003 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[26] = {66, 97, 115, 101, 54, 52, 32, 69, 110,
                                 99, 111, 100, 105, 110, 103, 32, 105, 110, 32, 78, 111, 100, 101, 46, 106, 115};
@@ -2580,14 +2987,30 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest003, testing::ext::TestSize.Le
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest003_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest003 with hispeed start");
+    RunEncodeToStringAsyncTest003((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest003_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest003 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringAsyncTest003((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringAsyncTest004
  * @tc.desc: Asynchronously encodes the specified byte array into a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringAsyncTest004, testing::ext::TestSize.Level0)
+static void RunEncodeToStringAsyncTest004(napi_env env)
 {
-    HILOG_INFO("encodeToStringAsyncTest004 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[4] = {168, 174, 155, 255};
     napi_value arrayBuffer = nullptr;
@@ -2605,14 +3028,30 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest004, testing::ext::TestSize.Le
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest004_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest004 with hispeed start");
+    RunEncodeToStringAsyncTest004((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest004_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest004 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringAsyncTest004((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeToStringAsyncTest005
  * @tc.desc: Asynchronously encodes the specified byte array into a String using the Base64 encoding scheme.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, encodeToStringAsyncTest005, testing::ext::TestSize.Level0)
+static void RunEncodeToStringAsyncTest005(napi_env env)
 {
-    HILOG_INFO("encodeToStringAsyncTest005 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
     unsigned char input[6] = {66, 97, 115, 101, 54, 52};
     napi_value arrayBuffer = nullptr;
@@ -2630,17 +3069,33 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest005, testing::ext::TestSize.Le
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest005_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest005 with hispeed start");
+    RunEncodeToStringAsyncTest005((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, encodeToStringAsyncTest005_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("encodeToStringAsyncTest005 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunEncodeToStringAsyncTest005((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeAsyncTest001
  * @tc.desc: Use the Base64 encoding scheme to asynchronously decode a
              Base64-encoded string or input u8 array into a newly allocated u8 array.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeAsyncTest001, testing::ext::TestSize.Level0)
+static void RunDecodeAsyncTest001(napi_env env)
 {
-    HILOG_INFO("decodeAsyncTest001 start");
-    napi_env env = (napi_env)engine_;
-    OHOS::Util::Base64 base64;
 
+    OHOS::Util::Base64 base64;
     unsigned char input[4] = {99, 122, 69, 122};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 4;
@@ -2656,17 +3111,32 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest001, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, decodeAsyncTest001_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest001 with hispeed start");
+    RunDecodeAsyncTest001((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeAsyncTest001_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest001 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeAsyncTest001((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeAsyncTest002
  * @tc.desc: Use the Base64 encoding scheme to asynchronously decode a
              Base64-encoded string or input u8 array into a newly allocated u8 array.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeAsyncTest002, testing::ext::TestSize.Level0)
+static void RunDecodeAsyncTest002(napi_env env)
 {
-    HILOG_INFO("decodeAsyncTest002 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     unsigned char input[8] = {113, 75, 54, 98, 47, 119, 61, 61};
     napi_value arrayBuffer = nullptr;
     size_t arrayBufferSize = 8;
@@ -2682,17 +3152,32 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest002, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, decodeAsyncTest002_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest002 with hispeed start");
+    RunDecodeAsyncTest002((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeAsyncTest002_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest002 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeAsyncTest002((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeAsyncTest003
  * @tc.desc: Use the Base64 encoding scheme to asynchronously decode a
              Base64-encoded string or input u8 array into a newly allocated u8 array.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeAsyncTest003, testing::ext::TestSize.Level0)
+static void RunDecodeAsyncTest003(napi_env env)
 {
-    HILOG_INFO("decodeAsyncTest003 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     std::string input = "czEz";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
@@ -2702,17 +3187,32 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest003, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, decodeAsyncTest003_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest003 with hispeed start");
+    RunDecodeAsyncTest003((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeAsyncTest003_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest003 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeAsyncTest003((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeAsyncTest004
  * @tc.desc: Use the Base64 encoding scheme to asynchronously decode a
              Base64-encoded string or input u8 array into a newly allocated u8 array.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeAsyncTest004, testing::ext::TestSize.Level0)
+static void RunDecodeAsyncTest004(napi_env env)
 {
-    HILOG_INFO("decodeAsyncTest004 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     std::string input = "QmFzZTY0IEVuY29kaW5nIGluIE5vZGUuanM=";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
@@ -2722,17 +3222,32 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest004, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, decodeAsyncTest004_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest004 with hispeed start");
+    RunDecodeAsyncTest004((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeAsyncTest004_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest004 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeAsyncTest004((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeAsyncTest005
  * @tc.desc: Use the Base64 encoding scheme to asynchronously decode a
              Base64-encoded string or input u8 array into a newly allocated u8 array.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeAsyncTest005, testing::ext::TestSize.Level0)
+static void RunDecodeAsyncTest005(napi_env env)
 {
-    HILOG_INFO("decodeAsyncTest005 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     std::string input = "qK6b/w==";
     napi_value src = nullptr;
     napi_create_string_utf8(env, input.c_str(), input.size(), &src);
@@ -2742,17 +3257,32 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest005, testing::ext::TestSize.Level0)
     ASSERT_TRUE(res);
 }
 
+HWTEST_F(NativeEngineTest, decodeAsyncTest005_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest005 with hispeed start");
+    RunDecodeAsyncTest005((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeAsyncTest005_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest005 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeAsyncTest005((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: decodeAsyncTest006
  * @tc.desc: Use the Base64 encoding scheme to asynchronously decode a
              Base64-encoded string or input u8 array into a newly allocated u8 array.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, decodeAsyncTest006, testing::ext::TestSize.Level0)
+static void RunDecodeAsyncTest006(napi_env env)
 {
-    HILOG_INFO("decodeAsyncTest006 start");
-    napi_env env = (napi_env)engine_;
     OHOS::Util::Base64 base64;
-
     napi_value src = nullptr;
     napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
     ASSERT_EQ(nullptr, result);
@@ -2775,6 +3305,24 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest006, testing::ext::TestSize.Level0)
     ASSERT_EQ(nullptr, result2);
 
     napi_get_and_clear_last_exception(env, &exception);
+}
+
+HWTEST_F(NativeEngineTest, decodeAsyncTest006_hispeedOn, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest006 with hispeed start");
+    RunDecodeAsyncTest006((napi_env)engine_);
+}
+
+HWTEST_F(NativeEngineTest, decodeAsyncTest006_hispeedOff, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("decodeAsyncTest006 without hispeed start");
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64UnloadHispeedPlugin();
+#endif
+    RunDecodeAsyncTest006((napi_env)engine_);
+#if defined(__aarch64__) || defined(_M_ARM64)
+    Base64LoadHispeedPlugin();
+#endif
 }
 
 /**
@@ -3092,6 +3640,26 @@ HWTEST_F(NativeEngineTest, charEncodeAchieves001, testing::ext::TestSize.Level0)
 
     napi_value exception;
     napi_get_and_clear_last_exception(env, &exception);
+}
+
+/**
+ * @tc.name: charEncodeAchieves002
+ * @tc.desc: char encode achieves with throw error in hispeed function.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, charEncodeAchieves002, testing::ext::TestSize.Level0)
+{
+#if defined(__aarch64__) || defined(_M_ARM64)
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::EncodeInfo info;
+    info.sinputEncode = nullptr;
+    info.slength = 1;
+    info.valueType = OHOS::Util::Type::BASIC;
+    unsigned char* ret = OHOS::Util::EncodeAchieves(env, &info);
+    ASSERT_EQ(nullptr, ret);
+#else
+    ASSERT_TRUE(true);
+#endif
 }
 
 /* @tc.name: testDecode001

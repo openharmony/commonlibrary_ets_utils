@@ -18,8 +18,8 @@
 
 static const char *HISPEED_STRING_SO_PATH = "/system/lib64/libhispeed_string.so";
 static void *hispeedStringHandle = NULL;
-HSDPlugin_Base64Encode g_base64EncodeFunc = NULL; // HMS_Str_Base64Encode
-HSDPlugin_Base64Decode g_base64DecodeFunc = NULL; // HMS_Str_Base64Decode
+HSDPlugin_Base64Encode g_base64EncodeFunc = NULL; // HSD_Str_Base64Encode
+HSDPlugin_Base64Decode g_base64DecodeFunc = NULL; // HSD_Str_Base64Decode
 
 void Base64LoadHispeedPlugin()
 {
@@ -28,8 +28,8 @@ void Base64LoadHispeedPlugin()
         return;
     }
 
-    g_base64EncodeFunc = (HSDPlugin_Base64Encode)dlsym(hispeedStringHandle, "HMS_Str_Base64Encode");
-    g_base64DecodeFunc = (HSDPlugin_Base64Decode)dlsym(hispeedStringHandle, "HMS_Str_Base64Decode");
+    g_base64EncodeFunc = (HSDPlugin_Base64Encode)dlsym(hispeedStringHandle, "HSD_Str_Base64Encode");
+    g_base64DecodeFunc = (HSDPlugin_Base64Decode)dlsym(hispeedStringHandle, "HSD_Str_Base64Decode");
     if (g_base64EncodeFunc == NULL || g_base64DecodeFunc == NULL) {
         Base64UnloadHispeedPlugin();
         return;
