@@ -5943,7 +5943,51 @@ HWTEST_F(WorkersTest, CreateWorkerEnvTest001, testing::ext::TestSize.Level0)
     Worker* worker = new Worker(env, nullptr);
     napi_env workerEnv = worker->CreateWorkerEnv();
     ASSERT_NE(workerEnv, nullptr);
+    delete reinterpret_cast<NativeEngine*>(workerEnv);
     delete worker;
+}
+
+HWTEST_F(WorkersTest, CreateWorkerEnvTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    Worker* worker = new Worker(env, nullptr);
+    napi_env workerEnv = worker->CreateWorkerEnv();
+    ASSERT_NE(workerEnv, nullptr);
+    auto workerVM1 = reinterpret_cast<NativeEngine*>(workerEnv)->GetEcmaVm();
+    JSNApi::UncatchableErrorHandler func1 = JSNApi::GetUncatchableErrorHandler(workerVM1);
+    EXPECT_EQ(func1, nullptr);
+    JSNApi::UncatchableErrorHandler handler = [](panda::TryCatch& tryCatch) {
+        // nothing to do in unittest
+        return;
+    };
+    JSNApi::RegisterUncatchableErrorHandler(const_cast<panda::EcmaVM*>(workerVM1), handler);
+    JSNApi::UncatchableErrorHandler func2 = JSNApi::GetUncatchableErrorHandler(workerVM1);
+    EXPECT_NE(func2, nullptr);
+    delete reinterpret_cast<NativeEngine*>(workerEnv);
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, CreateWorkerEnvTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = GetEnv();
+    std::thread t1([env]() {
+        Worker* worker = new Worker(env, nullptr);
+        napi_env workerEnv = worker->CreateWorkerEnv();
+        ASSERT_NE(workerEnv, nullptr);
+        auto workerVM1 = reinterpret_cast<NativeEngine*>(workerEnv)->GetEcmaVm();
+        JSNApi::UncatchableErrorHandler func1 = JSNApi::GetUncatchableErrorHandler(workerVM1);
+        EXPECT_EQ(func1, nullptr);
+        JSNApi::UncatchableErrorHandler handler = [](panda::TryCatch& tryCatch) {
+            // nothing to do in unittest
+            return;
+        };
+        JSNApi::RegisterUncatchableErrorHandler(const_cast<panda::EcmaVM*>(workerVM1), handler);
+        JSNApi::UncatchableErrorHandler func2 = JSNApi::GetUncatchableErrorHandler(workerVM1);
+        EXPECT_NE(func2, nullptr);
+        delete reinterpret_cast<NativeEngine*>(workerEnv);
+        delete worker;
+    });
+    t1.join();
 }
 
 HWTEST_F(WorkersTest, HostOnExitTest001, testing::ext::TestSize.Level0)
