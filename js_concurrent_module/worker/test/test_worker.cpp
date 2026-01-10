@@ -1139,6 +1139,21 @@ public:
         worker->isLimitedWorker_ = isLimitedWorker;
         worker->isHostEnvExited_ = isHostEnvExited;
     }
+
+    static void ReAddGlobalCallObject(Worker* worker, napi_env env)
+    {
+        napi_value obj = NapiHelper::CreateObject(env);
+        napi_ref ref1 = NapiHelper::CreateReference(env, obj, 1);
+        std::string instanceName = "instanceName";
+        worker->AddGlobalCallObject(instanceName, ref1);
+        napi_ref getRef1 = worker->globalCallObjects_[instanceName];
+        ASSERT_EQ(getRef1, ref1);
+
+        napi_ref ref2 = NapiHelper::CreateReference(env, obj, 1);
+        worker->AddGlobalCallObject(instanceName, ref2);
+        napi_ref getRef2 = worker->globalCallObjects_[instanceName];
+        ASSERT_EQ(getRef2, ref2);
+    }
 protected:
     static thread_local NativeEngine *engine_;
     static thread_local EcmaVM *vm_;
@@ -6055,4 +6070,25 @@ HWTEST_F(WorkersTest, HostOnExitTest006, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(WorkersTest, AddGlobalCallObject001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+
+    ReAddGlobalCallObject(worker, env);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
 }

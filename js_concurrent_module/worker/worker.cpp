@@ -1358,6 +1358,10 @@ void Worker::GetContainerScopeId(napi_env env)
 
 void Worker::AddGlobalCallObject(const std::string &instanceName, napi_ref obj)
 {
+    auto iter = globalCallObjects_.find(instanceName);
+    if (UNLIKELY(iter != globalCallObjects_.end())) {
+        NapiHelper::DeleteReference(hostEnv_, iter->second);
+    }
     globalCallObjects_.insert_or_assign(instanceName, obj);
 }
 
