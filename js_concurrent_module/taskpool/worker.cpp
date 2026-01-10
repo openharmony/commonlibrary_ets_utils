@@ -99,6 +99,10 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
     if (loop != nullptr) {
         uv_stop(loop);
     }
+
+    #if defined(ENABLE_CONCURRENCY_INTEROP)
+        TaskManager::GetInstance().DetachWorkerFromAniVm(worker);
+    #endif
 }
 
 bool Worker::CheckFreeConditions()
@@ -223,6 +227,9 @@ void Worker::ExecuteInThread(const void* data)
             HILOG_ERROR("taskpool:: worker create runtime failed");
             return;
         }
+        #if defined(ENABLE_CONCURRENCY_INTEROP)
+            TaskManager::GetInstance().AttachWorkerToAniVm(worker);
+        #endif
         auto workerEngine = reinterpret_cast<NativeEngine*>(worker->workerEnv_);
         // mark worker env is taskpoolThread
         workerEngine->MarkTaskPoolThread();

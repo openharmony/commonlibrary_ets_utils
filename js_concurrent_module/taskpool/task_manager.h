@@ -163,6 +163,11 @@ public:
                            napi_value result = nullptr, bool success = false);
     void SetIsPerformIdle(bool performIdle);
     bool IsPerformIdle() const;
+
+    // for taskpool support interop
+    void AttachWorkerToAniVm(Worker* worker);
+    void DetachWorkerFromAniVm(Worker* worker);
+
     uint32_t GetNonIdleTaskNum();
     uint32_t GetTotalTaskNum() const;
     bool ExecuteTaskStartExecution(uint32_t taskId, Priority priority);

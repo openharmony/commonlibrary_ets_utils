@@ -1044,6 +1044,11 @@ void TaskManager::InitTaskManager(napi_env env)
         mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
 #endif
+    #if defined(ENABLE_CONCURRENCY_INTEROP)
+        if (reinterpret_cast<NativeEngine*>(env)->IsMainThread() && ANIHelper::GetAniVm() == nullptr) {
+            HILOG_INFO("taskpool:: get aniVm is null in main thread.");
+        }
+#endif
         auto mainThreadEngine = NativeEngine::GetMainThreadEngine();
         if (mainThreadEngine == nullptr) {
             HILOG_FATAL("taskpool:: mainThreadEngine is nullptr");
@@ -1860,6 +1865,45 @@ bool TaskManager::IsPerformIdle() const
     return isPerformIdle_;
 }
 
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    void TaskManager::AttachWorkerToAniVm(Worker* worker)
+    {
+        if (!ANIHelper::IsConcurrencySupportInterop()) {
+            return;
+        }
+        // attach worker env to 1.2vm
+        std::string interop = "--interop=enable";
+        ani_option interopEnabled {interop.data(), (void *)worker->workerEnv_};
+        ani_options aniArgs {1, &interopEnabled};
+        auto* aniVm = ANIHelper::GetAniVm();
+        if (aniVm == nullptr) {
+            HILOG_ERROR("taskpool:: aviVm is null.");
+            return;
+        }
+        ani_status status = aniVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &worker->aniEnv_);
+        if (status != ANI_OK || worker->aniEnv_ == nullptr) {
+            HILOG_ERROR("taskpool:: AttachCurrentThread failed.");
+        }
+    }
+    
+    void TaskManager::DetachWorkerFromAniVm(Worker* worker)
+    {
+        if (!ANIHelper::IsConcurrencySupportInterop()) {
+            return;
+        }
+        // detach worker from 1.2vm
+        auto* aniVm = ANIHelper::GetAniVm();
+        if (aniVm == nullptr) {
+            HILOG_ERROR("taskpool:: DetachWorkerFromAniVm aviVm is null.");
+            return;
+        }
+        ani_status status = aniVm->DetachCurrentThread();
+        if (status != ANI_OK) {
+            HILOG_ERROR("taskpool:: DetachCurrentThread failed.");
+        }
+    }
+#endif
+ 	 
 uint32_t TaskManager::GetTotalTaskNum() const
 {
     return totalTaskNum_;

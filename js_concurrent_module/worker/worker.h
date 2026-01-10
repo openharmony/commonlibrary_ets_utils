@@ -21,6 +21,9 @@
 #include <map>
 #include <mutex>
 
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    #include "helper/hybrid_concurrent_helper.h"
+#endif
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "message_queue.h"
@@ -596,6 +599,9 @@ private:
     void IncreaseGlobalCallId();
 
     void ClearHostMessage(napi_env env);
+     
+    void AttachWorkerEnvToAniVm();
+    void DetachWorkerFromAniVm();
 
     bool IsPublishWorkerOverSignal();
     void HostOnExitInner();
@@ -676,6 +682,10 @@ private:
     WorkerPriority workerPriority_ = WorkerPriority::INVALID;
     std::function<void()> qosUpdatedCallback_;
     std::atomic<bool> needOnExitCallback_ = true;
+
+    #if defined(ENABLE_CONCURRENCY_INTEROP)
+        ani_env* aniEnv_ = nullptr;
+    #endif
 
     friend class WorkersTest;
 };
