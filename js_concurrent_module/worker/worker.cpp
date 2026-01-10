@@ -119,6 +119,12 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
 
     InitPriorityObject(env, exports);
 
+    #if defined(ENABLE_CONCURRENCY_INTEROP)
+        if (reinterpret_cast<NativeEngine*>(env)->IsMainThread() && ANIHelper::GetAniVm() == nullptr) {
+            HILOG_INFO("worker:: get aniVm is null in main thread.");
+        }
+    #endif
+
     return InitPort(env, exports);
 }
 
@@ -362,6 +368,13 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
         CloseHelp::DeletePointer(script, true);
         return nullptr;
     }
+
+    #if defined(ENABLE_CONCURRENCY_INTEROP)
+        if (reinterpret_cast<NativeEngine*>(env)->IsMainThread() && ANIHelper::GetAniVm() == nullptr) {
+            HILOG_ERROR("worker:: get aniVm is null in main thread.");
+        }
+    #endif
+
     worker->StartExecuteInThread(env, script);
     return thisVar;
 }
@@ -1484,6 +1497,11 @@ void Worker::ExecuteInThread(const void* data)
         worker->WorkerOverWithoutExit();
         return;
     }
+
+    #if defined(ENABLE_CONCURRENCY_INTEROP)
+        worker->AttachWorkerEnvToAniVm();
+    #endif
+
     reinterpret_cast<NativeEngine*>(workerEnv)->RegisterNapiUncaughtExceptionHandler(
         [workerEnv, worker] (napi_value exception) -> void {
         if (!NativeEngine::IsAlive(reinterpret_cast<NativeEngine*>(workerEnv))) {
@@ -2542,6 +2560,11 @@ void Worker::ReleaseWorkerThreadContent()
     // 3. clear message send to worker thread
     workerMessageQueue_.Clear(workerEnv_);
     workerGlobalCallQueue_.Clear(workerEnv_);
+
+    #if defined(ENABLE_CONCURRENCY_INTEROP)
+        DetachWorkerFromAniVm();
+    #endif
+
     CloseHelp::DeletePointer(reinterpret_cast<NativeEngine*>(workerEnv_), false);
     workerEnv_ = nullptr;
 }
@@ -2860,6 +2883,43 @@ void Worker::HostOnAllErrorsInner()
         HandleHostException();
     }
 }
+
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    void Worker::AttachWorkerEnvToAniVm()
+    {
+        if (!ANIHelper::IsConcurrencySupportInterop()) {
+            return;
+        }
+        std::string interop = "--interop=enable";
+        ani_option interopEnabled {interop.data(), (void *)workerEnv_};
+        ani_options aniArgs {1, &interopEnabled};
+        auto* aniVm = ANIHelper::GetAniVm();
+        if (aniVm == nullptr) {
+            HILOG_ERROR("worker:: AttachWorkerEnvToAniVm aviVm is null");
+            return;
+        }
+        ani_status status = aniVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &aniEnv_);
+        if (status != ANI_OK || aniEnv_ == nullptr) {
+            HILOG_ERROR("worker:: AttachCurrentThread failed.");
+        }
+    }
+    
+    void Worker::DetachWorkerFromAniVm()
+    {
+        if (!ANIHelper::IsConcurrencySupportInterop()) {
+            return;
+        }
+        auto* aniVm = ANIHelper::GetAniVm();
+        if (aniVm == nullptr) {
+            HILOG_ERROR("worker:: aviVm is null when DetachWorkerFromAniVm.");
+            return;
+        }
+        ani_status status = aniVm->DetachCurrentThread();
+        if (status != ANI_OK) {
+            HILOG_ERROR("worker:: DetachCurrentThread failed.");
+        }
+    }
+#endif
 
 void Worker::HostOnExit(const uv_async_t* req)
 {

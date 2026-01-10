@@ -83,8 +83,16 @@ ohos_shared_library("worker") {
   }
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
-    defines += [ "ENABLE_WORKER_EVENTHANDLER" ]
-    external_deps += [ "eventhandler:libeventhandler" ]
+    defines += [
+      "ENABLE_WORKER_EVENTHANDLER",
+      "ENABLE_CONCURRENCY_INTEROP"
+    ]
+    external_deps += [
+      "eventhandler:libeventhandler",
+      "runtime_core:ani",
+      "runtime_core:libarkruntime",
+    ]
+    sources += [ "../common/helper/hybrid_concurrent_helper.cpp" ]
   }
 
   if (is_ohos && is_standard_system && defined(global_parts_info) &&
@@ -171,8 +179,16 @@ ohos_source_set("worker_static") {
   }
 
   if (is_ohos && is_standard_system && !is_arkui_x) {
-    defines += [ "ENABLE_WORKER_EVENTHANDLER" ]
-    external_deps += [ "eventhandler:libeventhandler" ]
+    defines += [
+      "ENABLE_WORKER_EVENTHANDLER",
+      "ENABLE_CONCURRENCY_INTEROP"
+    ]
+    external_deps += [
+      "eventhandler:libeventhandler",
+      "runtime_core:ani",
+      "runtime_core:libarkruntime",
+    ]
+    sources += [ "../common/helper/hybrid_concurrent_helper.cpp" ]
   }
 
   if (is_ohos && is_standard_system && defined(global_parts_info) &&
