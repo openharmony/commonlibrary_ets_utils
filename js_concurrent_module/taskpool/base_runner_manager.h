@@ -24,7 +24,7 @@ public:
     BaseRunnerManager() = default;
     virtual ~BaseRunnerManager();
     BaseRunner* GetRunner(uint64_t runnerId);
-    bool FindRunnerAndRef(uint64_t seqRunnerId);
+    bool FindRunnerAndRef(uint64_t runnerId);
     void RemoveWaitingTask(Task* task);
     void StoreRunner(uint64_t runnerId, BaseRunner* runner);
     bool UnrefAndDestroyRunner(BaseRunner* runner);
