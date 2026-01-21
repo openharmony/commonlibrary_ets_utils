@@ -1924,10 +1924,14 @@ bool TaskManager::ExecuteTaskStartExecution(uint32_t taskId, Priority priority)
 {
     Task* task = GetTask(taskId);
     if (task == nullptr) {
+        HILOG_ERROR("taskpool:: ExecuteTaskStartExecution task nullptr, id:%{public}s",
+            std::to_string(taskId).c_str());
         return false;
     }
     std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
     if (!task->IsValid()) {
+        HILOG_ERROR("taskpool:: ExecuteTaskStartExecution task invalid, id:%{public}s",
+            std::to_string(taskId).c_str());
         return false;
     }
     if (task->onStartExecutionCallBackInfo_ == nullptr) {

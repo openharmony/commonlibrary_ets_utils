@@ -457,10 +457,11 @@ void Worker::PerformTask(const uv_async_t* req)
     worker->StoreTaskId(task->taskId_);
     // tag for trace parse: Task Perform
     auto loop = worker->GetWorkerLoop();
+    std::string taskIdStr = std::to_string(task->taskId_);
     uint64_t loopAddress = reinterpret_cast<uint64_t>(loop);
-    std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + std::to_string(task->taskId_)
+    std::string strTrace = "Task Perform: name : "  + task->name_ + ", taskId : " + taskIdStr
                             + ", priority : " + std::to_string(taskInfo.second);
-    std::string taskLog = "Task Perform: "  + task->name_ + ", " + std::to_string(task->taskId_) + ", "
+    std::string taskLog = "Task Perform: "  + task->name_ + ", " + taskIdStr + ", "
                           "runningLoop: " + std::to_string(loopAddress);
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_DEBUG("taskpool:: %{public}s", taskLog.c_str());
@@ -471,13 +472,17 @@ void Worker::PerformTask(const uv_async_t* req)
     napi_value args = nullptr;
     napi_value errorInfo = task->DeserializeValue(env, &func, &args);
     if (UNLIKELY(func == nullptr || args == nullptr)) {
+        std::string errStr = "taskpool:: PerformTask Deserialize fail, id: " + taskIdStr;
         if (errorInfo != nullptr) {
+            errStr += "; errorInfo not nullptr";
             worker->NotifyTaskResult(env, task, errorInfo);
         }
+        HILOG_ERROR("%{public}s", errStr.c_str());
         return;
     }
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     if (!worker->InitTaskPoolFunc(env, func, task)) {
+        HILOG_ERROR("taskpool:: PerformTask InitTaskPoolFunc fail, id:%{public}s", taskIdStr.c_str());
         workerEngine->ClearCurrentTaskInfo();
         return;
     }
@@ -489,6 +494,7 @@ void Worker::PerformTask(const uv_async_t* req)
     }
 
     if (!task->CheckStartExecution(taskInfo.second)) { // LOCV_EXCL_BR_LINE
+        HILOG_ERROR("taskpool:: PerformTask CheckStartExecution fail, id:%{public}s", taskIdStr.c_str());
         if (task->ShouldDeleteTask()) {
             delete task;
         }
