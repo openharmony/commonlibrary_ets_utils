@@ -1091,9 +1091,6 @@ public:
 
     static void HostOnExitInner(Worker* worker, napi_env env, WorkerHostExitState state)
     {
-        bool isLimitedWorker = worker->isLimitedWorker_;
-        bool isMainThreadWorker = worker->isMainThreadWorker_;
-        bool isHostEnvExited = worker->isHostEnvExited_;
         worker->hostEnv_ = env;
         switch (state) {
             case WorkerHostExitState::NO_ENV:
@@ -1135,9 +1132,6 @@ public:
         napi_ref ref = NapiHelper::CreateReference(env, obj, 1);
         worker->workerRef_ = ref;
         worker->HostOnExitInner();
-        worker->isMainThreadWorker_ = isMainThreadWorker;
-        worker->isLimitedWorker_ = isLimitedWorker;
-        worker->isHostEnvExited_ = isHostEnvExited;
     }
 
     static void ReAddGlobalCallObject(Worker* worker, napi_env env)
@@ -5985,8 +5979,8 @@ HWTEST_F(WorkersTest, CreateWorkerEnvTest002, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, CreateWorkerEnvTest003, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
-    std::thread t1([env]() {
-        Worker* worker = new Worker(env, nullptr);
+    Worker* worker = new Worker(env, nullptr);
+    std::thread t1([&worker]() {
         napi_env workerEnv = worker->CreateWorkerEnv();
         ASSERT_NE(workerEnv, nullptr);
         auto workerVM1 = reinterpret_cast<NativeEngine*>(workerEnv)->GetEcmaVm();
@@ -6000,9 +5994,9 @@ HWTEST_F(WorkersTest, CreateWorkerEnvTest003, testing::ext::TestSize.Level0)
         JSNApi::UncatchableErrorHandler func2 = JSNApi::GetUncatchableErrorHandler(workerVM1);
         EXPECT_NE(func2, nullptr);
         delete reinterpret_cast<NativeEngine*>(workerEnv);
-        delete worker;
     });
     t1.join();
+    delete worker;
 }
 
 HWTEST_F(WorkersTest, HostOnExitTest001, testing::ext::TestSize.Level0)
@@ -6014,12 +6008,24 @@ HWTEST_F(WorkersTest, HostOnExitTest001, testing::ext::TestSize.Level0)
 
     Worker* worker = new Worker(env, nullptr);
     WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::NO_ENV);
-    WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::NO_ENV_INACTIVE);
-    WorkersTest::HostOnExitInner(worker, env, WorkerHostExitState::INACTIVE);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
     delete worker;
+
+    Worker* worker2 = new Worker(env, nullptr);
+    WorkersTest::HostOnExitInner(worker2, env, WorkerHostExitState::NO_ENV_INACTIVE);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete worker2;
+
+    Worker* worker3 = new Worker(env, nullptr);
+    WorkersTest::HostOnExitInner(worker3, env, WorkerHostExitState::INACTIVE);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+    delete worker3;
 }
 
 HWTEST_F(WorkersTest, HostOnExitTest002, testing::ext::TestSize.Level0)
