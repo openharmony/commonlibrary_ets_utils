@@ -15,11 +15,11 @@
 
 import { registerArkTS } from './arkts.ets';
 import { registerArkUI } from './arkui.ets';
+import { registerArkWeb } from './arkweb.ets';
 import { registerWindow } from './window.ets';
 import { registerAbilityKit } from './abilitykit.ets';
 import { registerArkGraphics2D } from './arkGraphics2D.ets';
 import { registerOsAccount } from './osAccount.ets';
-import { registerArkWeb } from './arkweb.ets';
 import { registerCommonEventManager } from './basicServicesKit.ets'
 import { registerResourceManager } from './resourceManager.ets';
 import { registerIpc } from './ipc.ets';
@@ -38,11 +38,11 @@ import { registerDrawing } from './drawing.ets'
 export function registerMain(){
     registerArkTS();
     registerArkUI();
+    registerArkWeb();
     registerWindow();
     registerAbilityKit();
     registerArkGraphics2D();
     registerOsAccount();
-    registerArkWeb();
     registerCommonEventManager();
     registerResourceManager();
     registerIpc();
