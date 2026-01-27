@@ -319,8 +319,8 @@ namespace OHOS::Util {
     #if defined(__aarch64__) || defined(_M_ARM64)
         if (g_base64DecodeFunc != nullptr) {
             size_t decodeReadLen = 0;
-            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, decodeOutLen, &decodeReadLen,
-                &decodeOutLen, options) != EOK) {
+            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, retLen, &decodeReadLen,
+                &retLen, options) != EOK) {
                     HILOG_ERROR("Base64::DecodeAchieve result is error");
                     napi_throw_error(env, "-1", "The input string contains unsupported characters");
                     FreeMemory(retDecode);
@@ -790,8 +790,8 @@ namespace OHOS::Util {
     #if defined(__aarch64__) || defined(_M_ARM64)
         if (g_base64DecodeFunc != nullptr) {
             size_t decodeReadLen = 0;
-            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, decodeInfo->decodeOutLen,
-                &decodeReadLen, &decodeInfo->decodeOutLen, options) != EOK) {
+            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, retLen,
+                &decodeReadLen, &retLen, options) != EOK) {
                 HILOG_ERROR("DecodeAchieves result is error");
                 FreeMemory(retDecode);
                 return nullptr;
