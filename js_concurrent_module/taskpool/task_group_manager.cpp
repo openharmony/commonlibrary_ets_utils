@@ -75,7 +75,7 @@ void TaskGroupManager::ReleaseTaskGroupData(napi_env env, TaskGroup* group)
 
 void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
 {
-    std::string strTrace = "Cancel groupId " + std::to_string(groupId);
+    std::string strTrace = "CancelGroup: groupId: " + std::to_string(groupId);
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_INFO("taskpool::%{public}s", strTrace.c_str());
     TaskGroup* taskGroup = GetTaskGroup(groupId);
