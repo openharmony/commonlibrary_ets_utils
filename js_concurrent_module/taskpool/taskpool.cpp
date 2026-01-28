@@ -113,8 +113,8 @@ void TaskPool::ExecuteOnReceiveDataCallback(TaskResultInfo* resultInfo)
     }
     ObjectScope<TaskResultInfo> resultInfoScope(resultInfo, false);
     napi_status status = napi_ok;
-    std::string traceLabel = "ExecuteOnReceiveDataCallback type: " + callbackInfo->type +
-                             ", taskId: " + std::to_string(resultInfo->taskId);
+    std::string traceLabel = "ExecuteOnReceiveDataCallback type: " + callbackInfo->type
+        + ", taskId: " + std::to_string(resultInfo->taskId);
     HITRACE_HELPER_METER_NAME(traceLabel);
     auto env = callbackInfo->hostEnv;
     CallbackScope callbackScope(env, resultInfo, status);
@@ -339,9 +339,9 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     uv_timer_init(loop, timer);
     timer->data = taskMessage;
 
-    std::string strTrace = "ExecuteDelayed tId " + std::to_string(task->taskId_) +
-                           ", priority: " + std::to_string(priority) +
-                           ", delayTime " + std::to_string(delayTime);
+    std::string strTrace = "ExecuteDelayed: taskId: " + std::to_string(task->taskId_);
+    strTrace += ", priority: " + std::to_string(priority);
+    strTrace += ", delayTime " + std::to_string(delayTime);
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_INFO("taskpool::%{public}s", strTrace.c_str());
 
@@ -593,9 +593,9 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
 void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
 {
     // tag for trace parse: Task Allocation
-    std::string strTrace = "Task Allocation: taskId : " + std::to_string(task->taskId_) +
-                           ", priority : " + std::to_string(priority) +
-                           ", executeState : " + std::to_string(ExecuteState::WAITING);
+    std::string strTrace = "Task Allocation: taskId : " + std::to_string(task->taskId_)
+        + ", priority : " + std::to_string(priority)
+        + ", executeState : " + std::to_string(ExecuteState::WAITING);
     HITRACE_HELPER_METER_NAME(strTrace);
     std::string taskLog = "Task Allocation: " + std::to_string(task->taskId_) + ", " + std::to_string(priority);
     task->IncreaseRefCount();

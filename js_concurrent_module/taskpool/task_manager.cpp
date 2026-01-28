@@ -737,7 +737,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     // 2. Find executing taskInfo, skip it
     // 3. Find waiting taskInfo, cancel it
     // 4. Find canceled taskInfo, skip it
-    std::string strTrace = "Cancel tId " + std::to_string(taskId);
+    std::string strTrace = "CancelTask: taskId: " + std::to_string(taskId);
     HILOG_INFO("taskpool::%{public}s", strTrace.c_str());
     HITRACE_HELPER_METER_NAME(strTrace);
     Task* task = GetTask(taskId);
