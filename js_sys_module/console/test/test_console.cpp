@@ -1930,3 +1930,199 @@ HWTEST_F(NativeEngineTest, ConsoleTest066, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, cb, argc, argv, &res);
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
 }
+
+/* @tc.name: Console.TimeLog with multiple arguments
+ * @tc.desc: Test TimeLog with timer name and additional log messages.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest067, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string funcName = "Time";
+    napi_value cb = nullptr;
+
+    std::string timerName = "testTimer067";
+    napi_value nameVal = StrToNapiValue(env, timerName);
+    napi_value argv1[] = {nameVal};
+
+    napi_value res1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Time, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv1, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+
+    funcName = "TimeLog";
+    cb = nullptr;
+    napi_value msg1 = StrToNapiValue(env, "extra");
+    napi_value msg2 = StrToNapiValue(env, "info");
+    napi_value argv2[] = {nameVal, msg1, msg2};
+
+    napi_value res2 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TimeLog, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 3, argv2, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+
+    funcName = "TimeEnd";
+    cb = nullptr;
+    napi_value res3 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TimeEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv1, &res3);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
+}
+
+/* @tc.name: Console.Dir with array
+ * @tc.desc: Test Dir with array type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest068, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Dir";
+    napi_value cb = nullptr;
+
+    napi_value arr = nullptr;
+    napi_create_array_with_length(env, 3, &arr);
+    napi_value val1 = nullptr;
+    napi_create_int32(env, 1, &val1);
+    napi_value val2 = nullptr;
+    napi_create_int32(env, 2, &val2);
+    napi_value val3 = nullptr;
+    napi_create_int32(env, 3, &val3);
+    napi_set_element(env, arr, 0, val1);
+    napi_set_element(env, arr, 1, val2);
+    napi_set_element(env, arr, 2, val3);
+    napi_value argv[] = {arr};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Table with empty object
+ * @tc.desc: Test Table with empty object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest069, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value emptyObj = nullptr;
+    napi_create_object(env, &emptyObj);
+    napi_value argv[] = {emptyObj};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Count multiple times
+ * @tc.desc: Test Count called multiple times with same label.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest070, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string funcName = "Count";
+    napi_value cb = nullptr;
+
+    std::string label = "multiCount";
+    napi_value labelVal = StrToNapiValue(env, label);
+    napi_value argv[] = {labelVal};
+
+    for (int i = 0; i < 3; i++) {
+        cb = nullptr;
+        napi_value res = nullptr;
+        napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Count, nullptr, &cb);
+        napi_call_function(env, nullptr, cb, 1, argv, &res);
+        ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    }
+
+    funcName = "CountReset";
+    cb = nullptr;
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::CountReset, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ParseLogContent
+ * @tc.desc: Test ParseLogContent with format string ending with %.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest071, testing::ext::TestSize.Level0)
+{
+    std::vector<std::string> params;
+    params.push_back("test message %");
+    params.push_back("extra");
+    std::string res = ConsoleTest::ParseLogContent(params);
+    ASSERT_TRUE(res == "test message % extra");
+}
+
+/* @tc.name: ParseLogContent
+ * @tc.desc: Test ParseLogContent with unknown format specifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest072, testing::ext::TestSize.Level0)
+{
+    std::vector<std::string> params;
+    params.push_back("test %x value");
+    params.push_back("123");
+    std::string res = ConsoleTest::ParseLogContent(params);
+    ASSERT_TRUE(res == "test %x value 123");
+}
+
+/* @tc.name: ParseLogContent
+ * @tc.desc: Test ParseLogContent with multiple format specifiers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest073, testing::ext::TestSize.Level0)
+{
+    std::vector<std::string> params;
+    params.push_back("%s %d %i %f");
+    params.push_back("str");
+    params.push_back("100");
+    params.push_back("200");
+    params.push_back("3.14");
+    std::string res = ConsoleTest::ParseLogContent(params);
+    ASSERT_TRUE(res == "str 100 200 3.14");
+}
+
+/* @tc.name: ParseLogContent
+ * @tc.desc: Test ParseLogContent with more format specifiers than params.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest074, testing::ext::TestSize.Level0)
+{
+    std::vector<std::string> params;
+    params.push_back("%s %s %s");
+    params.push_back("only one");
+    std::string res = ConsoleTest::ParseLogContent(params);
+    ASSERT_TRUE(res == "only one %s %s");
+}
+
+/* @tc.name: Console.Dir with function
+ * @tc.desc: Test Dir with function type object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest075, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Dir";
+    napi_value cb = nullptr;
+
+    napi_value testFunc = nullptr;
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH,
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &testFunc);
+    napi_value argv[] = {testFunc};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
