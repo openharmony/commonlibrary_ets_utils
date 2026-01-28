@@ -1496,3 +1496,117 @@ HWTEST_F(NativeEngineTest, ConsoleTest049, testing::ext::TestSize.Level0)
     napi_strict_equals(env, dirxmlCB, func5, &isEqual);
     ASSERT_TRUE(isEqual);
 }
+
+/* @tc.name: GetTimerOrCounterName error paths
+ * @tc.desc: Test error handling in GetTimerOrCounterName.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest050, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    // Test case 1: Empty string should throw error
+    size_t argc = 1;
+    napi_value emptyString = nullptr;
+    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &emptyString);
+    napi_value argv[] = {emptyString};
+
+    napi_value cb = nullptr;
+    napi_create_function(env, "Count", NAPI_AUTO_LENGTH, ConsoleTest::Count, nullptr, &cb);
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+
+    bool hasException = false;
+    napi_is_exception_pending(env, &hasException);
+    ASSERT_TRUE(hasException);
+
+    napi_value exception;
+    napi_get_and_clear_last_exception(env, &exception);
+}
+
+/* @tc.name: Dir with null value
+ * @tc.desc: Test Dir handling of null/undefined values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest051, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    // Test case 1: Dir with null
+    size_t argc = 1;
+    napi_value nullValue = nullptr;
+    napi_get_null(env, &nullValue);
+    napi_value argv[] = {nullValue};
+
+    napi_value cb = nullptr;
+    napi_create_function(env, "Dir", NAPI_AUTO_LENGTH, ConsoleTest::Dir, nullptr, &cb);
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+
+    // Test case 2: Dir with undefined
+    napi_value undefinedValue = nullptr;
+    napi_get_undefined(env, &undefinedValue);
+    napi_value argv2[] = {undefinedValue};
+
+    cb = nullptr;
+    napi_create_function(env, "Dir", NAPI_AUTO_LENGTH, ConsoleTest::Dir, nullptr, &cb);
+    napi_value res2 = nullptr;
+    napi_call_function(env, nullptr, cb, argc, argv2, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+}
+
+/* @tc.name: ParseLogContent edge cases
+ * @tc.desc: Test ParseLogContent with edge cases.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest052, testing::ext::TestSize.Level0)
+{
+    // Test case 1: Empty params
+    std::vector<std::string> params1;
+    std::string result1 = ConsoleTest::ParseLogContent(params1);
+    ASSERT_TRUE(result1 == "");
+
+    // Test case 2: Format with %% escape
+    std::vector<std::string> params2 = {"Progress: 50%% complete"};
+    std::string result2 = ConsoleTest::ParseLogContent(params2);
+    ASSERT_TRUE(result2 == "Progress: 50%% complete");
+
+    // Test case 3: More params than format specifiers
+    std::vector<std::string> params3 = {"Hello %s", "world", "extra"};
+    std::string result3 = ConsoleTest::ParseLogContent(params3);
+    ASSERT_TRUE(result3 == "Hello world extra");
+
+    // Test case 4: Invalid format specifier
+    std::vector<std::string> params4 = {"Test %x value"};
+    std::string result4 = ConsoleTest::ParseLogContent(params4);
+    ASSERT_TRUE(result4 == "Test %x value");
+}
+
+/* @tc.name: ConsoleLog with object parameter
+ * @tc.desc: Test ConsoleLog handles object coercion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest053, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+
+    size_t argc = 1;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    napi_value key = nullptr;
+    napi_create_string_utf8(env, "name", NAPI_AUTO_LENGTH, &key);
+    napi_value value = nullptr;
+    napi_create_string_utf8(env, "test", NAPI_AUTO_LENGTH, &value);
+    napi_set_property(env, obj, key, value);
+
+    napi_value argv[] = {obj};
+
+    napi_value cb = nullptr;
+    napi_create_function(env, "ConsoleLog", NAPI_AUTO_LENGTH,
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
