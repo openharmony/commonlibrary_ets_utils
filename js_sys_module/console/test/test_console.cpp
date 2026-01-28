@@ -1761,3 +1761,172 @@ HWTEST_F(NativeEngineTest, ConsoleTest059, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, cb, argc, argv, &res);
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
 }
+
+/* @tc.name: Console.Time with number argument
+ * @tc.desc: Test Time with number type argument that needs conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest060, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Time";
+    napi_value cb = nullptr;
+
+    napi_value numVal = nullptr;
+    napi_create_int32(env, 456, &numVal);
+    napi_value argv[] = {numVal};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Time, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Group with multiple arguments
+ * @tc.desc: Test Group with multiple arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest061, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ConsoleTest::SetGroupIndent("");
+
+    size_t argc = 2;
+    std::string funcName = "Group";
+    napi_value cb = nullptr;
+
+    napi_value msg1 = StrToNapiValue(env, "Group");
+    napi_value msg2 = StrToNapiValue(env, "Label");
+    napi_value argv[] = {msg1, msg2};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Group, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    ASSERT_EQ(ConsoleTest::GetGroupIndent().size(), 2);
+
+    ConsoleTest::SetGroupIndent("");
+}
+
+/* @tc.name: Console.GroupEnd when groupIndent is empty
+ * @tc.desc: Test GroupEnd when groupIndent size is less than GROUPINDETATIONWIDTH.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest062, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ConsoleTest::SetGroupIndent(" ");
+
+    size_t argc = 0;
+    std::string funcName = "GroupEnd";
+    napi_value cb = nullptr;
+    napi_value argv[] = {nullptr};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::GroupEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    ASSERT_EQ(ConsoleTest::GetGroupIndent().size(), 1);
+
+    ConsoleTest::SetGroupIndent("");
+}
+
+/* @tc.name: Console.Dir with string
+ * @tc.desc: Test Dir with string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest063, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Dir";
+    napi_value cb = nullptr;
+
+    napi_value strVal = StrToNapiValue(env, "test string");
+    napi_value argv[] = {strVal};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Assert with multiple messages
+ * @tc.desc: Test Assert with false condition and multiple message arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest064, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 3;
+    std::string funcName = "Assert";
+    napi_value cb = nullptr;
+
+    napi_value condition = nullptr;
+    napi_get_boolean(env, false, &condition);
+    napi_value msg1 = StrToNapiValue(env, "Error:");
+    napi_value msg2 = StrToNapiValue(env, "something went wrong");
+    napi_value argv[] = {condition, msg1, msg2};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Assert, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Table with mixed data
+ * @tc.desc: Test Table with mixed primitive and object data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest065, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value tabularData = nullptr;
+    napi_create_object(env, &tabularData);
+
+    napi_value num = nullptr;
+    napi_create_int32(env, 42, &num);
+    napi_set_named_property(env, tabularData, "primitive", num);
+
+    napi_value innerObj = nullptr;
+    napi_create_object(env, &innerObj);
+    napi_value val = nullptr;
+    napi_create_int32(env, 100, &val);
+    napi_set_named_property(env, innerObj, "nested", val);
+    napi_set_named_property(env, tabularData, "object", innerObj);
+
+    napi_value argv[] = {tabularData};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Trace with multiple arguments
+ * @tc.desc: Test Trace with multiple arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest066, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 3;
+    std::string funcName = "Trace";
+    napi_value cb = nullptr;
+
+    napi_value msg1 = StrToNapiValue(env, "trace");
+    napi_value msg2 = StrToNapiValue(env, "message");
+    napi_value num = nullptr;
+    napi_create_int32(env, 123, &num);
+    napi_value argv[] = {msg1, msg2, num};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Trace, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
