@@ -21,7 +21,7 @@
 #include "commonlibrary/ets_utils/js_util_module/util/js_textencoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_textdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_types.h"
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
 #include "commonlibrary/ets_utils/js_util_module/util/plugin/hispeed_string_plugin.h"
 #endif
 #include "ohos/init_data.h"
@@ -1753,11 +1753,11 @@ HWTEST_F(NativeEngineTest, encodeTest001_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, encodeTest001_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeTest001 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeTest001((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -1803,11 +1803,11 @@ HWTEST_F(NativeEngineTest, encodeTest002_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, encodeTest002_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeTest002 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeTest002((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -1855,11 +1855,11 @@ HWTEST_F(NativeEngineTest, encodeTest003_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, encodeTest003_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeTest003 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeTest003((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -1905,11 +1905,11 @@ HWTEST_F(NativeEngineTest, encodeTest004_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, encodeTest004_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeTest004 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeTest004((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -1955,11 +1955,11 @@ HWTEST_F(NativeEngineTest, encodeTest005_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, encodeTest005_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeTest005 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeTest005((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -1998,11 +1998,11 @@ HWTEST_F(NativeEngineTest, encodeTest006_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, encodeTest006_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeTest006 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeTest006((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2047,11 +2047,11 @@ HWTEST_F(NativeEngineTest, encodeTest007_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, encodeTest007_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeTest007 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeTest007((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2101,11 +2101,11 @@ HWTEST_F(NativeEngineTest, encodeToStringTest001_hispeedOn, testing::ext::TestSi
 HWTEST_F(NativeEngineTest, encodeToStringTest001_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringTest001 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringTest001((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2155,11 +2155,11 @@ HWTEST_F(NativeEngineTest, encodeToStringTest002_hispeedOn, testing::ext::TestSi
 HWTEST_F(NativeEngineTest, encodeToStringTest002_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringTest002 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringTest002((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2211,11 +2211,11 @@ HWTEST_F(NativeEngineTest, encodeToStringTest003_hispeedOn, testing::ext::TestSi
 HWTEST_F(NativeEngineTest, encodeToStringTest003_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringTest003 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringTest003((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2265,11 +2265,11 @@ HWTEST_F(NativeEngineTest, encodeToStringTest004_hispeedOn, testing::ext::TestSi
 HWTEST_F(NativeEngineTest, encodeToStringTest004_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringTest004 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringTest004((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2319,11 +2319,11 @@ HWTEST_F(NativeEngineTest, encodeToStringTest005_hispeedOn, testing::ext::TestSi
 HWTEST_F(NativeEngineTest, encodeToStringTest005_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringTest005 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringTest005((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2369,11 +2369,11 @@ HWTEST_F(NativeEngineTest, decodeTest001_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, decodeTest001_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeTest001 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeTest001((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2419,11 +2419,11 @@ HWTEST_F(NativeEngineTest, decodeTest002_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, decodeTest002_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeTest002 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeTest002((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2463,11 +2463,11 @@ HWTEST_F(NativeEngineTest, decodeTest003_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, decodeTest003_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeTest003 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeTest003((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2506,11 +2506,11 @@ HWTEST_F(NativeEngineTest, decodeTest004_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, decodeTest004_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeTest004 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeTest004((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2549,11 +2549,11 @@ HWTEST_F(NativeEngineTest, decodeTest005_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, decodeTest005_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeTest005 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeTest005((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2599,11 +2599,11 @@ HWTEST_F(NativeEngineTest, decodeTest006_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, decodeTest006_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeTest006 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeTest006((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2646,11 +2646,11 @@ HWTEST_F(NativeEngineTest, decodeTest007_hispeedOn, testing::ext::TestSize.Level
 HWTEST_F(NativeEngineTest, decodeTest007_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeTest007 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeTest007((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2696,11 +2696,11 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest001_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, encodeAsyncTest001_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeAsyncTest001 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeAsyncTest001((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2738,11 +2738,11 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest002_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, encodeAsyncTest002_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeAsyncTest002 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeAsyncTest002((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2781,11 +2781,11 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest003_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, encodeAsyncTest003_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeAsyncTest003 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeAsyncTest003((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2823,11 +2823,11 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest004_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, encodeAsyncTest004_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeAsyncTest004 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeAsyncTest004((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2865,11 +2865,11 @@ HWTEST_F(NativeEngineTest, encodeAsyncTest005_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, encodeAsyncTest005_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeAsyncTest005 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeAsyncTest005((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2913,11 +2913,11 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001_hispeedOn, testing::ext::T
 HWTEST_F(NativeEngineTest, encodeToStringAsyncTest001_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringAsyncTest001 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringAsyncTest001((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2954,11 +2954,11 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest002_hispeedOn, testing::ext::T
 HWTEST_F(NativeEngineTest, encodeToStringAsyncTest002_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringAsyncTest002 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringAsyncTest002((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -2996,11 +2996,11 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest003_hispeedOn, testing::ext::T
 HWTEST_F(NativeEngineTest, encodeToStringAsyncTest003_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringAsyncTest003 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringAsyncTest003((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3037,11 +3037,11 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest004_hispeedOn, testing::ext::T
 HWTEST_F(NativeEngineTest, encodeToStringAsyncTest004_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringAsyncTest004 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringAsyncTest004((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3078,11 +3078,11 @@ HWTEST_F(NativeEngineTest, encodeToStringAsyncTest005_hispeedOn, testing::ext::T
 HWTEST_F(NativeEngineTest, encodeToStringAsyncTest005_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("encodeToStringAsyncTest005 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunEncodeToStringAsyncTest005((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3120,11 +3120,11 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest001_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, decodeAsyncTest001_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeAsyncTest001 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeAsyncTest001((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3161,11 +3161,11 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest002_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, decodeAsyncTest002_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeAsyncTest002 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeAsyncTest002((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3196,11 +3196,11 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest003_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, decodeAsyncTest003_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeAsyncTest003 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeAsyncTest003((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3231,11 +3231,11 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest004_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, decodeAsyncTest004_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeAsyncTest004 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeAsyncTest004((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3266,11 +3266,11 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest005_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, decodeAsyncTest005_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeAsyncTest005 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeAsyncTest005((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3316,11 +3316,11 @@ HWTEST_F(NativeEngineTest, decodeAsyncTest006_hispeedOn, testing::ext::TestSize.
 HWTEST_F(NativeEngineTest, decodeAsyncTest006_hispeedOff, testing::ext::TestSize.Level0)
 {
     HILOG_INFO("decodeAsyncTest006 without hispeed start");
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64UnloadHispeedPlugin();
 #endif
     RunDecodeAsyncTest006((napi_env)engine_);
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
 #endif
 }
@@ -3649,7 +3649,7 @@ HWTEST_F(NativeEngineTest, charEncodeAchieves001, testing::ext::TestSize.Level0)
  */
 HWTEST_F(NativeEngineTest, charEncodeAchieves002, testing::ext::TestSize.Level0)
 {
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     napi_env env = (napi_env)engine_;
     OHOS::Util::EncodeInfo info;
     info.sinputEncode = nullptr;

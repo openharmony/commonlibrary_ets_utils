@@ -19,7 +19,7 @@
 #include "tools/ets_error.h"
 #include <cstdio>
 
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
 #include <arm_neon.h>
 #include "hispeed_string_plugin.h"
 
@@ -157,7 +157,7 @@ namespace OHOS::Util {
             flag = true;
             options |= BASE64_URL_FLAG;
         }
-    #if defined(__aarch64__) || defined(_M_ARM64)
+    #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
         if (g_base64EncodeFunc != nullptr) {
             size_t readLen = 0;
             if (g_base64EncodeFunc(input, inputLen, ret, outputLen, &readLen, &outputLen, options) != EOK) {
@@ -316,7 +316,7 @@ namespace OHOS::Util {
             }
             options |= BASE64_URL_FLAG;
         }
-    #if defined(__aarch64__) || defined(_M_ARM64)
+    #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
         if (g_base64DecodeFunc != nullptr) {
             size_t decodeReadLen = 0;
             if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, retLen, &decodeReadLen,
@@ -526,7 +526,7 @@ namespace OHOS::Util {
             flag = true;
             options |= BASE64_URL_FLAG;
         }
-    #if defined(__aarch64__) || defined(_M_ARM64)
+    #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
         if (g_base64EncodeFunc != nullptr) {
             size_t readLen = 0;
             if (g_base64EncodeFunc(input, inputLen, ret, outputLen,
@@ -787,7 +787,7 @@ namespace OHOS::Util {
             }
             options |= BASE64_URL_FLAG;
         }
-    #if defined(__aarch64__) || defined(_M_ARM64)
+    #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
         if (g_base64DecodeFunc != nullptr) {
             size_t decodeReadLen = 0;
             if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, retLen,
