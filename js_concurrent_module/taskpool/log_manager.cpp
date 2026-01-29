@@ -16,7 +16,7 @@
 #include "log_manager.h"
 
 static constexpr uint32_t MAX_LOG_SIZE = 50000;
-static constexpr uint32_t LOG_PRINT_SIZE = 100;
+static constexpr uint32_t LOG_PRINT_SIZE = 1000;
 
 void LogManager::PrintLog()
 {
