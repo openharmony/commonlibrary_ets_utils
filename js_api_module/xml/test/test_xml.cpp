@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include "test.h"
 #include "test_xml.h"
 #include "js_xml_dynamic.h"
-#include "test.h"
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -25,6 +25,7 @@
 #include "securec.h"
 #include "tools/log.h"
 #include <memory>
+#include <thread>
 
 using namespace OHOS::xml;
 
@@ -3689,4 +3690,321 @@ HWTEST_F(NativeEngineTest, GetXmlBufferDynamicTest001, testing::ext::TestSize.Le
     memset_s(pBuffer.get(), 1, 0, 1);
     ret = xmlSerializer.GetXmlBuffer(pBuffer.get(), 1);
     ASSERT_FALSE(ret);
+}
+
+/* @tc.name: XmlSerializerAddEmptyElementTest001
+ * @tc.desc: Test XmlSerializer with addEmptyElement method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSerializerAddEmptyElementTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSerializerInit(env, exports);
+        napi_value xmlSerializerClass = nullptr;
+        napi_get_named_property(env, exports, "XmlSerializer", &xmlSerializerClass);
+
+        napi_value args[2]; // 2: number of arguments
+        size_t length = 0; // allocate an ArrayBuffer with a size of 2048 bytes
+        void* pBuffer = nullptr;
+        napi_create_arraybuffer(env, length, &pBuffer, &args[0]);
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[1]);
+        napi_value instance = nullptr;
+        napi_value val = nullptr;
+        napi_new_instance(env, xmlSerializerClass, 2, args, &instance); // 2: number of arguments
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        std::string name = "d";
+        napi_create_string_utf8(env, name.c_str(), name.size(), &val);
+        napi_get_named_property(env, instance, "addEmptyElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/* @tc.name: XmlDynamicSerializerBasicTest001
+ * @tc.desc: Test XmlDynamicSerializer basic methods: SetAttributes, AddEmptyElement, SetDeclaration.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlDynamicSerializerBasicTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSerializerInit(env, exports);
+        OHOS::xml::XmlDynamicSerializerInit(env, exports);
+        napi_value xmlDynamicSerializerClass = nullptr;
+        napi_get_named_property(env, exports, "XmlDynamicSerializer", &xmlDynamicSerializerClass);
+
+        napi_value args[1]; // 1: number of arguments
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[0]);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, xmlDynamicSerializerClass, 1, args, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_value val = nullptr;
+
+        // Test SetDeclarationDynamic (must be called first)
+        napi_get_named_property(env, instance, "setDeclaration", &testFunc);
+        napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test StartElementDynamic (must be called before SetAttributes)
+        std::string elementName = "root";
+        napi_create_string_utf8(env, elementName.c_str(), elementName.size(), &val);
+
+        napi_get_named_property(env, instance, "startElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test SetAttributesDynamic (must be called after StartElement)
+        std::string name = "d";
+        std::string value = "dd";
+        napi_value args2[2]; // 2: number of arguments
+        napi_create_string_utf8(env, name.c_str(), name.size(), &args2[0]);
+        napi_create_string_utf8(env, value.c_str(), value.size(), &args2[1]);
+
+        napi_get_named_property(env, instance, "setAttributes", &testFunc);
+        napi_call_function(env, instance, testFunc, 2, args2, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test EndElementDynamic (close the element)
+        napi_get_named_property(env, instance, "endElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test AddEmptyElementDynamic
+        std::string emptyElementName = "emptyElement";
+        napi_create_string_utf8(env, emptyElementName.c_str(), emptyElementName.size(), &val);
+
+        napi_get_named_property(env, instance, "addEmptyElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/* @tc.name: XmlDynamicSerializerElementTest001
+ * @tc.desc: Test XmlDynamicSerializer element methods: StartElement, EndElement, SetNamespace.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlDynamicSerializerElementTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSerializerInit(env, exports);
+        OHOS::xml::XmlDynamicSerializerInit(env, exports);
+        napi_value xmlDynamicSerializerClass = nullptr;
+        napi_get_named_property(env, exports, "XmlDynamicSerializer", &xmlDynamicSerializerClass);
+
+        napi_value args[1]; // 1: number of arguments
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[0]);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, xmlDynamicSerializerClass, 1, args, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_value val = nullptr;
+
+        // Test StartElementDynamic
+        std::string startElemName = "d";
+        napi_create_string_utf8(env, startElemName.c_str(), startElemName.size(), &val);
+
+        napi_get_named_property(env, instance, "startElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test EndElementDynamic
+        napi_get_named_property(env, instance, "endElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test SetNamespaceDynamic
+        std::string prefix = "d";
+        std::string namespaceUri = "dd";
+        napi_value args2[2]; // 2: number of arguments
+        napi_create_string_utf8(env, prefix.c_str(), prefix.size(), &args2[0]);
+        napi_create_string_utf8(env, namespaceUri.c_str(), namespaceUri.size(), &args2[1]);
+
+        napi_get_named_property(env, instance, "setNamespace", &testFunc);
+        napi_call_function(env, instance, testFunc, 2, args2, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/* @tc.name: XmlDynamicSerializerContentTest001
+ * @tc.desc: Test XmlDynamicSerializer declaration and document type methods
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlDynamicSerializerContentTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSerializerInit(env, exports);
+        OHOS::xml::XmlDynamicSerializerInit(env, exports);
+        napi_value xmlDynamicSerializerClass = nullptr;
+        napi_get_named_property(env, exports, "XmlDynamicSerializer", &xmlDynamicSerializerClass);
+
+        napi_value args[1]; // 1: number of arguments
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[0]);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, xmlDynamicSerializerClass, 1, args, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_value val = nullptr;
+
+        // Test SetDeclarationDynamic (must be called first)
+        napi_get_named_property(env, instance, "setDeclaration", &testFunc);
+        napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test SetDocTypeDynamic
+        std::string doctype = "d";
+        napi_create_string_utf8(env, doctype.c_str(), doctype.size(), &val);
+
+        napi_get_named_property(env, instance, "setDocType", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test GetOutput
+        napi_get_named_property(env, instance, "getOutput", &testFunc);
+        napi_value outputBuffer = nullptr;
+        napi_call_function(env, instance, testFunc, 0, nullptr, &outputBuffer);
+        ASSERT_NE(outputBuffer, nullptr);
+    });
+}
+
+/* @tc.name: XmlDynamicSerializerContentTest002
+ * @tc.desc: Test XmlDynamicSerializer content methods
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlDynamicSerializerContentTest002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSerializerInit(env, exports);
+        OHOS::xml::XmlDynamicSerializerInit(env, exports);
+        napi_value xmlDynamicSerializerClass = nullptr;
+        napi_get_named_property(env, exports, "XmlDynamicSerializer", &xmlDynamicSerializerClass);
+
+        napi_value args[1]; // 1: number of arguments
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[0]);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, xmlDynamicSerializerClass, 1, args, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_value val = nullptr;
+
+        // Test SetDeclarationDynamic (must be called first)
+        napi_get_named_property(env, instance, "setDeclaration", &testFunc);
+        napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test StartElementDynamic (create element structure)
+        std::string elementName = "root";
+        napi_create_string_utf8(env, elementName.c_str(), elementName.size(), &val);
+
+        napi_get_named_property(env, instance, "startElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test SetCommentDynamic
+        std::string comment = "d";
+        napi_create_string_utf8(env, comment.c_str(), comment.size(), &val);
+        napi_get_named_property(env, instance, "setComment", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test SetTextDynamic
+        std::string text = "d";
+        napi_create_string_utf8(env, text.c_str(), text.size(), &val);
+        napi_get_named_property(env, instance, "setText", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test SetCDataDynamic
+        std::string cdata = "d";
+        napi_create_string_utf8(env, cdata.c_str(), cdata.size(), &val);
+        napi_get_named_property(env, instance, "setCDATA", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &val, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test EndElementDynamic (close the element)
+        napi_get_named_property(env, instance, "endElement", &testFunc);
+        napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Test GetOutput
+        napi_get_named_property(env, instance, "getOutput", &testFunc);
+        napi_value outputBuffer = nullptr;
+        napi_call_function(env, instance, testFunc, 0, nullptr, &outputBuffer);
+        ASSERT_NE(outputBuffer, nullptr);
+    });
+}
+
+/* @tc.name: XmlPullParserParseXmlTest001
+ * @tc.desc: Test XmlPullParser with ParseXml method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlPullParserParseXmlTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSerializerInit(env, exports);
+        OHOS::xml::XmlPullParserInit(env, exports);
+        napi_value xmlPullParserClass = nullptr;
+        napi_get_named_property(env, exports, "XmlPullParser", &xmlPullParserClass);
+
+        // Create a test XML string
+        std::string xmlStr = "<?xml version=\"1.0\" encoding=\"utf-8\"?><note>to user</note>";
+        size_t xmlLength = xmlStr.size();
+
+        napi_value args[2]; // 2: number of arguments
+        napi_value arraybuffer = nullptr;
+        void* pData = nullptr;
+        napi_create_arraybuffer(env, xmlLength, &pData, &arraybuffer);
+
+        if (memcpy_s(pData, xmlLength, xmlStr.c_str(), xmlLength) != EOK) {
+            ASSERT_TRUE(false);
+        }
+
+        args[0] = arraybuffer;
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[1]);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, xmlPullParserClass, 2, args, &instance); // 2: number of arguments
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+
+        // Test ParseXml method
+        napi_value options = nullptr;
+        napi_create_object(env, &options);
+
+        napi_get_named_property(env, instance, "parseXml", &testFunc);
+        napi_call_function(env, instance, testFunc, 1, &options, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Verify the result is a boolean
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, funcResultValue, &valueType);
+        ASSERT_EQ(valueType, napi_boolean);
+    });
 }

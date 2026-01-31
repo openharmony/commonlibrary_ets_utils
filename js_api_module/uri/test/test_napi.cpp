@@ -1289,3 +1289,65 @@ HWTEST_F(NativeEngineTest, ModuleTest012, testing::ext::TestSize.Level0)
     res = GetStringUtf8(env, uriProperty);
     ASSERT_STREQ(res.c_str(), "//uscffac@www.testut.cn:223?key=val");
 }
+
+HWTEST_F(NativeEngineTest, ModuleTestInvalidTypeTag, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value exports = nullptr;
+    napi_create_object(env, &exports);
+    OHOS::Uri::UriInit(env, exports);
+
+    // uriTypeTag = {0xc471e5a2c2514f1e, 0x82e3718309e19fe7}
+    static const napi_type_tag fakeTypeTag = {
+        0x1234567890abcdef, 0xfedcba0987654321
+    };
+
+    napi_value fakeInstance = nullptr;
+    napi_create_object(env, &fakeInstance);
+
+    int* fakeData = new int(42);
+    napi_status wrapStatus = napi_wrap_s(env, fakeInstance, fakeData,
+        [](napi_env environment, void *data, void *hint) {
+            auto* ptr = static_cast<int*>(data);
+            delete ptr;
+        }, nullptr, &fakeTypeTag, nullptr);
+    ASSERT_EQ(wrapStatus, napi_ok);
+
+    napi_value tempFn = nullptr;
+    napi_value result = nullptr;
+
+    napi_value schemeValue = StrToNapiValue(env, "https");
+    napi_get_named_property(env, fakeInstance, "scheme", &tempFn);
+    napi_value args1[] = { schemeValue };
+    napi_call_function(env, fakeInstance, tempFn, 1, args1, &result);
+
+    napi_value userInfoValue = StrToNapiValue(env, "testuser");
+    napi_get_named_property(env, fakeInstance, "userInfo", &tempFn);
+    napi_value args2[] = { userInfoValue };
+    napi_call_function(env, fakeInstance, tempFn, 1, args2, &result);
+
+    napi_value pathValue = StrToNapiValue(env, "/test/path");
+    napi_get_named_property(env, fakeInstance, "path", &tempFn);
+    napi_value args3[] = { pathValue };
+    napi_call_function(env, fakeInstance, tempFn, 1, args3, &result);
+
+    napi_value fragmentValue = StrToNapiValue(env, "testfrag");
+    napi_get_named_property(env, fakeInstance, "fragment", &tempFn);
+    napi_value args4[] = { fragmentValue };
+    napi_call_function(env, fakeInstance, tempFn, 1, args4, &result);
+
+    napi_value queryValue = StrToNapiValue(env, "key=value");
+    napi_get_named_property(env, fakeInstance, "query", &tempFn);
+    napi_value args5[] = { queryValue };
+    napi_call_function(env, fakeInstance, tempFn, 1, args5, &result);
+
+    napi_value authorityValue = StrToNapiValue(env, "user@host:80");
+    napi_get_named_property(env, fakeInstance, "authority", &tempFn);
+    napi_value args6[] = { authorityValue };
+    napi_call_function(env, fakeInstance, tempFn, 1, args6, &result);
+
+    napi_value sspValue = StrToNapiValue(env, "//user@host:80/path");
+    napi_get_named_property(env, fakeInstance, "ssp", &tempFn);
+    napi_value args7[] = { sspValue };
+    napi_call_function(env, fakeInstance, tempFn, 1, args7, &result);
+}

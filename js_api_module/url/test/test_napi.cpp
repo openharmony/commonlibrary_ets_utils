@@ -951,6 +951,25 @@ HWTEST_F(NativeEngineTest, testUrlSetSearch004, testing::ext::TestSize.Level0)
     ASSERT_STREQ(output.c_str(), "?%23%2344=55");
 }
 
+HWTEST_F(NativeEngineTest, testUrlGetEncodeSearch001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://example.com/path?name=张三&age=25#section");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    DealNapiStrValue(env, url.GetEncodeSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?name=%E5%BC%A0%E4%B8%89&age=25");
+}
+
+HWTEST_F(NativeEngineTest, testUrlSetEncodeSearch001, testing::ext::TestSize.Level0)
+{
+    OHOS::Url::URL url("http://example.com/path");
+    std::string output;
+    napi_env env = (napi_env)engine_;
+    url.SetEncodeSearch("key=value&name=test");
+    DealNapiStrValue(env, url.GetSearch(env), output);
+    ASSERT_STREQ(output.c_str(), "?key=value&name=test");
+}
+
 HWTEST_F(NativeEngineTest, testUrlGetFragment001, testing::ext::TestSize.Level0)
 {
     OHOS::Url::URL url("http://username:password@host:8080/directory/file?query=pppppp#fragment");

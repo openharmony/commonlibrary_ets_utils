@@ -15,6 +15,9 @@
 
 #include "test.h"
 #include <codecvt>
+#include <thread>
+#include "ark_native_engine.h"
+#include "commonlibrary/ets_utils/js_util_module/util/native_module_util.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_uuid.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_stringdecoder.h"
@@ -6806,4 +6809,2073 @@ HWTEST_F(NativeEngineTest, textIsGeneratorFunctionTest002, testing::ext::TestSiz
     bool res = true;
     napi_get_value_bool(env, result, &res);
     ASSERT_FALSE(res);
+}
+
+// ============================================================================
+
+/**
+ * @tc.name: TextdecoderConstructorTest001
+ * @tc.desc: Test TextDecoder constructor via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TextdecoderConstructorTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textDecoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextDecoder", &textDecoderClass);
+
+        napi_value args[1]; // 1: number of arguments
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[0]);
+        napi_value instance = nullptr;
+        napi_new_instance(env, textDecoderClass, 1, args, &instance); // 1: number of arguments
+        ASSERT_NE(instance, nullptr);
+    });
+}
+
+/**
+ * @tc.name: DecodeToStringTest001
+ * @tc.desc: Test TextDecoder decodeToString method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DecodeToStringTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textDecoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextDecoder", &textDecoderClass);
+
+        napi_value args[1]; // 1: number of arguments
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[0]);
+        napi_value instance = nullptr;
+        napi_new_instance(env, textDecoderClass, 1, args, &instance); // 1: number of arguments
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "decodeToString", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TextdecoderDecodeTest001
+ * @tc.desc: Test TextDecoder decode method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TextdecoderDecodeTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textDecoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextDecoder", &textDecoderClass);
+
+        napi_value args[1]; // 1: number of arguments
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &args[0]);
+        napi_value instance = nullptr;
+        napi_new_instance(env, textDecoderClass, 1, args, &instance); // 1: number of arguments
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "decode", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: InitTextEncoderTest001
+ * @tc.desc: Test TextEncoder constructor via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, InitTextEncoderTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textEncoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextEncoder", &textEncoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, textEncoderClass, 0, nullptr, &instance);
+        ASSERT_NE(instance, nullptr);
+    });
+}
+
+/**
+ * @tc.name: GetEncodingTest001
+ * @tc.desc: Test TextEncoder getEncoding method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetEncodingTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textEncoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextEncoder", &textEncoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, textEncoderClass, 0, nullptr, &instance);
+
+        napi_value result = nullptr;
+        napi_get_named_property(env, instance, "encoding", &result);
+        ASSERT_NE(result, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeTest001
+ * @tc.desc: Test TextEncoder encode method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textEncoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextEncoder", &textEncoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, textEncoderClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encode", &testFunc);
+
+        napi_value arg = nullptr;
+        std::string text = "Hello";
+        napi_create_string_utf8(env, text.c_str(), text.size(), &arg);
+
+        napi_call_function(env, instance, testFunc, 1, &arg, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeIntoOneTest001
+ * @tc.desc: Test TextEncoder encodeInto with one argument via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeIntoOneTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textEncoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextEncoder", &textEncoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, textEncoderClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeInto", &testFunc);
+
+        napi_value arg = nullptr;
+        std::string text = "Hello";
+        napi_create_string_utf8(env, text.c_str(), text.size(), &arg);
+
+        napi_call_function(env, instance, testFunc, 1, &arg, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeIntoTwoTest001
+ * @tc.desc: Test TextEncoder encodeInto with two arguments via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeIntoTwoTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textEncoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextEncoder", &textEncoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, textEncoderClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeInto", &testFunc);
+
+        napi_value args[2]; // 2: number of arguments
+        std::string text = "Hello";
+        napi_create_string_utf8(env, text.c_str(), text.size(), &args[0]);
+
+        // Create Uint8Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, 100, arrayBuffer, 0, &uint8Array);
+        args[1] = uint8Array;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeIntoUint8ArrayTest001
+ * @tc.desc: Test TextEncoder encodeIntoUint8Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeIntoUint8ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TextcoderInit(env, exports);
+        napi_value textEncoderClass = nullptr;
+        napi_get_named_property(env, exports, "TextEncoder", &textEncoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, textEncoderClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeIntoUint8Array", &testFunc);
+
+        napi_value args[2]; // 2: number of arguments
+        std::string text = "Hello";
+        napi_create_string_utf8(env, text.c_str(), text.size(), &args[0]);
+
+        // Create Uint8Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, 100, arrayBuffer, 0, &uint8Array);
+        args[1] = uint8Array;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+// ============================================================================
+
+/**
+ * @tc.name: Base64ConstructorTest001
+ * @tc.desc: Test Base64 constructor via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, Base64ConstructorTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64Init(env, exports);
+        napi_value base64Class = nullptr;
+        napi_get_named_property(env, exports, "Base64", &base64Class);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64Class, 0, nullptr, &instance);
+        ASSERT_NE(instance, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeBase64Test001
+ * @tc.desc: Test Base64 encodeSync method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeBase64Test001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64Init(env, exports);
+        napi_value base64Class = nullptr;
+        napi_get_named_property(env, exports, "Base64", &base64Class);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64Class, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeSync", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeToStringTest001
+ * @tc.desc: Test Base64 encodeToStringSync method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeToStringTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64Init(env, exports);
+        napi_value base64Class = nullptr;
+        napi_get_named_property(env, exports, "Base64", &base64Class);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64Class, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeToStringSync", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: DecodeBase64Test001
+ * @tc.desc: Test Base64 decodeSync method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DecodeBase64Test001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64Init(env, exports);
+        napi_value base64Class = nullptr;
+        napi_get_named_property(env, exports, "Base64", &base64Class);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64Class, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "decodeSync", &testFunc);
+
+        napi_value arg = nullptr;
+        std::string base64Str = "SGVsbG8="; // "Hello" in base64
+        napi_create_string_utf8(env, base64Str.c_str(), base64Str.size(), &arg);
+
+        napi_call_function(env, instance, testFunc, 1, &arg, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeAsyncTest001
+ * @tc.desc: Test Base64 encode method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeAsyncTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64Init(env, exports);
+        napi_value base64Class = nullptr;
+        napi_get_named_property(env, exports, "Base64", &base64Class);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64Class, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encode", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeToStringAsyncTest001
+ * @tc.desc: Test Base64 encodeToString method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeToStringAsyncTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64Init(env, exports);
+        napi_value base64Class = nullptr;
+        napi_get_named_property(env, exports, "Base64", &base64Class);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64Class, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeToString", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: DecodeAsyncTest001
+ * @tc.desc: Test Base64 decode method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DecodeAsyncTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64Init(env, exports);
+        napi_value base64Class = nullptr;
+        napi_get_named_property(env, exports, "Base64", &base64Class);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64Class, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "decode", &testFunc);
+
+        napi_value arg = nullptr;
+        std::string base64Str = "SGVsbG8="; // "Hello" in base64
+        napi_create_string_utf8(env, base64Str.c_str(), base64Str.size(), &arg);
+
+        napi_call_function(env, instance, testFunc, 1, &arg, &funcResultValue); // 1: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+// ============================================================================
+
+/**
+ * @tc.name: EncodeToStringHelperTest001
+ * @tc.desc: Test Base64Helper encodeToStringSync method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeToStringHelperTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64HelperInit(env, exports);
+        napi_value base64HelperClass = nullptr;
+        napi_get_named_property(env, exports, "Base64Helper", &base64HelperClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64HelperClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeToStringSync", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_value args[2]; // 2: number of arguments
+        args[0] = uint8Array;
+        napi_value typeArg = nullptr;
+        napi_create_int32(env, 0, &typeArg); // Type::BASIC
+        args[1] = typeArg;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeBase64HelperTest001
+ * @tc.desc: Test Base64Helper encodeSync method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeBase64HelperTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64HelperInit(env, exports);
+        napi_value base64HelperClass = nullptr;
+        napi_get_named_property(env, exports, "Base64Helper", &base64HelperClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64HelperClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeSync", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_value args[2]; // 2: number of arguments
+        args[0] = uint8Array;
+        napi_value typeArg = nullptr;
+        napi_create_int32(env, 0, &typeArg); // Type::BASIC
+        args[1] = typeArg;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeAsyncHelperTest001
+ * @tc.desc: Test Base64Helper encode method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeAsyncHelperTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64HelperInit(env, exports);
+        napi_value base64HelperClass = nullptr;
+        napi_get_named_property(env, exports, "Base64Helper", &base64HelperClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64HelperClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encode", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_value args[2]; // 2: number of arguments
+        args[0] = uint8Array;
+        napi_value typeArg = nullptr;
+        napi_create_int32(env, 0, &typeArg); // Type::BASIC
+        args[1] = typeArg;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: EncodeToStringAsyncHelperTest001
+ * @tc.desc: Test Base64Helper encodeToString method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EncodeToStringAsyncHelperTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64HelperInit(env, exports);
+        napi_value base64HelperClass = nullptr;
+        napi_get_named_property(env, exports, "Base64Helper", &base64HelperClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64HelperClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "encodeToString", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_value args[2]; // 2: number of arguments
+        args[0] = uint8Array;
+        napi_value typeArg = nullptr;
+        napi_create_int32(env, 0, &typeArg); // Type::BASIC
+        args[1] = typeArg;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: DecodeBase64HelperTest001
+ * @tc.desc: Test Base64Helper decodeSync method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DecodeBase64HelperTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64HelperInit(env, exports);
+        napi_value base64HelperClass = nullptr;
+        napi_get_named_property(env, exports, "Base64Helper", &base64HelperClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64HelperClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "decodeSync", &testFunc);
+
+        napi_value args[2]; // 2: number of arguments
+        napi_value arg = nullptr;
+        std::string base64Str = "SGVsbG8="; // "Hello" in base64
+        napi_create_string_utf8(env, base64Str.c_str(), base64Str.size(), &arg);
+        args[0] = arg;
+
+        napi_value typeArg = nullptr;
+        napi_create_int32(env, 0, &typeArg); // Type::BASIC
+        args[1] = typeArg;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: DecodeAsyncHelperTest001
+ * @tc.desc: Test Base64Helper decode method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, DecodeAsyncHelperTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::Base64HelperInit(env, exports);
+        napi_value base64HelperClass = nullptr;
+        napi_get_named_property(env, exports, "Base64Helper", &base64HelperClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, base64HelperClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "decode", &testFunc);
+
+        napi_value args[2]; // 2: number of arguments
+        napi_value arg = nullptr;
+        std::string base64Str = "SGVsbG8="; // "Hello" in base64
+        napi_create_string_utf8(env, base64Str.c_str(), base64Str.size(), &arg);
+        args[0] = arg;
+
+        napi_value typeArg = nullptr;
+        napi_create_int32(env, 0, &typeArg); // Type::BASIC
+        args[1] = typeArg;
+
+        napi_call_function(env, instance, testFunc, 2, args, &funcResultValue); // 2: number of arguments
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+// ============================================================================
+
+/**
+ * @tc.name: TypesConstructorTest001
+ * @tc.desc: Test Types constructor via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesConstructorTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        ASSERT_NE(instance, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsArrayBufferTest001
+ * @tc.desc: Test Types isArrayBuffer method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsArrayBufferTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isArrayBuffer", &testFunc);
+
+        // Create ArrayBuffer
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+
+        napi_call_function(env, instance, testFunc, 1, &arrayBuffer, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsTypedArrayTest001
+ * @tc.desc: Test Types isTypedArray method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsTypedArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isTypedArray", &testFunc);
+
+        // Create Uint8Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, 100, arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsInt8ArrayTest001
+ * @tc.desc: Test Types isInt8Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsInt8ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isInt8Array", &testFunc);
+
+        // Create Int8Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value int8Array = nullptr;
+        napi_create_typedarray(env, napi_int8_array, 100, arrayBuffer, 0, &int8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &int8Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsUint8ArrayTest001
+ * @tc.desc: Test Types isUint8Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsUint8ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isUint8Array", &testFunc);
+
+        // Create Uint8Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, 100, arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsDataViewTest001
+ * @tc.desc: Test Types isDataView method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsDataViewTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isDataView", &testFunc);
+
+        // Create DataView
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value dataView = nullptr;
+        napi_create_dataview(env, 100, arrayBuffer, 0, &dataView);
+
+        napi_call_function(env, instance, testFunc, 1, &dataView, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsDateTest001
+ * @tc.desc: Test Types isDate method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsDateTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isDate", &testFunc);
+
+        // Create Date object
+        napi_value dateObj = nullptr;
+        napi_create_date(env, 0, &dateObj);
+
+        napi_call_function(env, instance, testFunc, 1, &dateObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsMapTest001
+ * @tc.desc: Test Types isMap method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsMapTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isMap", &testFunc);
+
+        // Create Map object
+        napi_value mapObj = nullptr;
+        napi_create_object(env, &mapObj);
+        // Note: In a real scenario, this would be an actual Map object
+
+        napi_call_function(env, instance, testFunc, 1, &mapObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsSetTest001
+ * @tc.desc: Test Types isSet method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsSetTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isSet", &testFunc);
+
+        // Create Set object
+        napi_value setObj = nullptr;
+        napi_create_object(env, &setObj);
+        // Note: In a real scenario, this would be an actual Set object
+
+        napi_call_function(env, instance, testFunc, 1, &setObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsPromiseTest001
+ * @tc.desc: Test Types isPromise method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsPromiseTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isPromise", &testFunc);
+
+        // Create Promise object
+        napi_value promiseObj = nullptr;
+        napi_create_object(env, &promiseObj);
+        // Note: In a real scenario, this would be an actual Promise object
+
+        napi_call_function(env, instance, testFunc, 1, &promiseObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsRegExpTest001
+ * @tc.desc: Test Types isRegExp method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsRegExpTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isRegExp", &testFunc);
+
+        // Create RegExp object
+        napi_value regexObj = nullptr;
+        napi_create_object(env, &regexObj);
+        // Note: In a real scenario, this would be an actual RegExp object
+
+        napi_call_function(env, instance, testFunc, 1, &regexObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsArrayBufferViewTest001
+ * @tc.desc: Test Types isArrayBufferView method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsArrayBufferViewTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isArrayBufferView", &testFunc);
+
+        // Create Uint8Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, 100, arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsBigInt64ArrayTest001
+ * @tc.desc: Test Types isBigInt64Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsBigInt64ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isBigInt64Array", &testFunc);
+
+        // Create BigInt64Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 800, &data, &arrayBuffer);
+        napi_value bigint64Array = nullptr;
+        napi_create_typedarray(env, napi_bigint64_array, 100, arrayBuffer, 0, &bigint64Array);
+
+        napi_call_function(env, instance, testFunc, 1, &bigint64Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsBigUint64ArrayTest001
+ * @tc.desc: Test Types isBigUint64Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsBigUint64ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isBigUint64Array", &testFunc);
+
+        // Create BigUint64Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 800, &data, &arrayBuffer);
+        napi_value biguint64Array = nullptr;
+        napi_create_typedarray(env, napi_biguint64_array, 100, arrayBuffer, 0, &biguint64Array);
+
+        napi_call_function(env, instance, testFunc, 1, &biguint64Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsBooleanObjectTest001
+ * @tc.desc: Test Types isBooleanObject method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsBooleanObjectTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isBooleanObject", &testFunc);
+
+        // Create Boolean object
+        napi_value boolObj = nullptr;
+        napi_create_object(env, &boolObj);
+        // Note: In a real scenario, this would be an actual Boolean object
+
+        napi_call_function(env, instance, testFunc, 1, &boolObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsBoxedPrimitiveTest001
+ * @tc.desc: Test Types isBoxedPrimitive method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsBoxedPrimitiveTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isBoxedPrimitive", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsAnyArrayBufferTest001
+ * @tc.desc: Test Types isAnyArrayBuffer method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsAnyArrayBufferTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isAnyArrayBuffer", &testFunc);
+
+        // Create ArrayBuffer
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+
+        napi_call_function(env, instance, testFunc, 1, &arrayBuffer, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsArgumentsObjectTest001
+ * @tc.desc: Test Types isArgumentsObject method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsArgumentsObjectTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isArgumentsObject", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsAsyncFunctionTest001
+ * @tc.desc: Test Types isAsyncFunction method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsAsyncFunctionTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isAsyncFunction", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsExternalTest001
+ * @tc.desc: Test Types isExternal method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsExternalTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isExternal", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsFloat32ArrayTest001
+ * @tc.desc: Test Types isFloat32Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsFloat32ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isFloat32Array", &testFunc);
+
+        // Create Float32Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 400, &data, &arrayBuffer);
+        napi_value float32Array = nullptr;
+        napi_create_typedarray(env, napi_float32_array, 100, arrayBuffer, 0, &float32Array);
+
+        napi_call_function(env, instance, testFunc, 1, &float32Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsFloat64ArrayTest001
+ * @tc.desc: Test Types isFloat64Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsFloat64ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isFloat64Array", &testFunc);
+
+        // Create Float64Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 800, &data, &arrayBuffer);
+        napi_value float64Array = nullptr;
+        napi_create_typedarray(env, napi_float64_array, 100, arrayBuffer, 0, &float64Array);
+
+        napi_call_function(env, instance, testFunc, 1, &float64Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsGeneratorFunctionTest001
+ * @tc.desc: Test Types isGeneratorFunction method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsGeneratorFunctionTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isGeneratorFunction", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsGeneratorObjectTest001
+ * @tc.desc: Test Types isGeneratorObject method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsGeneratorObjectTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isGeneratorObject", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsInt16ArrayTest001
+ * @tc.desc: Test Types isInt16Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsInt16ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isInt16Array", &testFunc);
+
+        // Create Int16Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 200, &data, &arrayBuffer);
+        napi_value int16Array = nullptr;
+        napi_create_typedarray(env, napi_int16_array, 100, arrayBuffer, 0, &int16Array);
+
+        napi_call_function(env, instance, testFunc, 1, &int16Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsInt32ArrayTest001
+ * @tc.desc: Test Types isInt32Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsInt32ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isInt32Array", &testFunc);
+
+        // Create Int32Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 400, &data, &arrayBuffer);
+        napi_value int32Array = nullptr;
+        napi_create_typedarray(env, napi_int32_array, 100, arrayBuffer, 0, &int32Array);
+
+        napi_call_function(env, instance, testFunc, 1, &int32Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsMapIteratorTest001
+ * @tc.desc: Test Types isMapIterator method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsMapIteratorTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isMapIterator", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsModuleNamespaceObjectTest001
+ * @tc.desc: Test Types isModuleNamespaceObject method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsModuleNamespaceObjectTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isModuleNamespaceObject", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsNativeErrorTest001
+ * @tc.desc: Test Types isNativeError method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsNativeErrorTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isNativeError", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsNumberObjectTest001
+ * @tc.desc: Test Types isNumberObject method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsNumberObjectTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isNumberObject", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsProxyTest001
+ * @tc.desc: Test Types isProxy method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsProxyTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isProxy", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsSetIteratorTest001
+ * @tc.desc: Test Types isSetIterator method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsSetIteratorTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isSetIterator", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: TypesIsUint8ClampedArrayTest001
+ * @tc.desc: Test Types isUint8ClampedArray method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsUint8ClampedArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isUint8ClampedArray", &testFunc);
+
+        // Create Uint8ClampedArray
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 100, &data, &arrayBuffer);
+        napi_value uint8ClampedArray = nullptr;
+        napi_create_typedarray(env, napi_uint8_clamped_array, 100, arrayBuffer, 0, &uint8ClampedArray);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8ClampedArray, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsUint16ArrayTest001
+ * @tc.desc: Test Types isUint16Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsUint16ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isUint16Array", &testFunc);
+
+        // Create Uint16Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 200, &data, &arrayBuffer);
+        napi_value uint16Array = nullptr;
+        napi_create_typedarray(env, napi_uint16_array, 100, arrayBuffer, 0, &uint16Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint16Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsUint32ArrayTest001
+ * @tc.desc: Test Types isUint32Array method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsUint32ArrayTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isUint32Array", &testFunc);
+
+        // Create Uint32Array
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, 400, &data, &arrayBuffer);
+        napi_value uint32Array = nullptr;
+        napi_create_typedarray(env, napi_uint32_array, 100, arrayBuffer, 0, &uint32Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint32Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        bool result = false;
+        napi_get_value_bool(env, funcResultValue, &result);
+        ASSERT_TRUE(result);
+    });
+}
+
+/**
+ * @tc.name: TypesIsWeakMapTest001
+ * @tc.desc: Test Types isWeakMap method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, TypesIsWeakMapTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::TypeofInit(env, exports);
+        napi_value typesClass = nullptr;
+        napi_get_named_property(env, exports, "Types", &typesClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, typesClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "isWeakMap", &testFunc);
+
+        napi_value testObj = nullptr;
+        napi_create_object(env, &testObj);
+
+        napi_call_function(env, instance, testFunc, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        napi_value testFunc2 = nullptr;
+        napi_get_named_property(env, instance, "isWeakSet", &testFunc);
+
+        napi_call_function(env, instance, testFunc2, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        napi_value testFunc3 = nullptr;
+        napi_get_named_property(env, instance, "isSymbolObject", &testFunc);
+
+        napi_call_function(env, instance, testFunc3, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        napi_value testFunc4 = nullptr;
+        napi_get_named_property(env, instance, "isStringObject", &testFunc);
+
+        napi_call_function(env, instance, testFunc4, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        napi_value testFunc5 = nullptr;
+        napi_get_named_property(env, instance, "isSharedArrayBuffer", &testFunc);
+
+        napi_call_function(env, instance, testFunc5, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+        
+        napi_value testFunc6 = nullptr;
+        napi_get_named_property(env, instance, "isSetIterator", &testFunc);
+
+        napi_call_function(env, instance, testFunc6, 1, &testObj, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+// ============================================================================
+
+/**
+ * @tc.name: StringDecoderConstructorTest001
+ * @tc.desc: Test StringDecoder constructor via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, StringDecoderConstructorTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::StringDecoderInit(env, exports);
+        napi_value stringDecoderClass = nullptr;
+        napi_get_named_property(env, exports, "StringDecoder", &stringDecoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, stringDecoderClass, 0, nullptr, &instance);
+
+        ASSERT_NE(instance, nullptr);
+
+        napi_value instance1 = nullptr;
+        napi_value encodingArg = nullptr;
+        std::string encoding = "utf-8";
+        napi_create_string_utf8(env, encoding.c_str(), encoding.size(), &encodingArg);
+        napi_new_instance(env, stringDecoderClass, 1, &encodingArg, &instance1);
+        ASSERT_NE(instance1, nullptr);
+    });
+}
+
+/**
+ * @tc.name: StringDecoderWriteTest001
+ * @tc.desc: Test StringDecoder write method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, StringDecoderWriteTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::StringDecoderInit(env, exports);
+        napi_value stringDecoderClass = nullptr;
+        napi_get_named_property(env, exports, "StringDecoder", &stringDecoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, stringDecoderClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "write", &testFunc);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Create string argument
+        napi_value strArg = nullptr;
+        std::string text = "Hello";
+        napi_create_string_utf8(env, text.c_str(), text.size(), &strArg);
+
+        napi_call_function(env, instance, testFunc, 1, &strArg, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
+}
+
+/**
+ * @tc.name: StringDecoderEndTest001
+ * @tc.desc: Test StringDecoder end method via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, StringDecoderEndTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::StringDecoderInit(env, exports);
+        napi_value stringDecoderClass = nullptr;
+        napi_get_named_property(env, exports, "StringDecoder", &stringDecoderClass);
+
+        napi_value instance = nullptr;
+        napi_new_instance(env, stringDecoderClass, 0, nullptr, &instance);
+
+        napi_value testFunc = nullptr;
+        napi_value funcResultValue = nullptr;
+        napi_get_named_property(env, instance, "end", &testFunc);
+
+        napi_call_function(env, instance, testFunc, 0, nullptr, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        // Create Uint8Array with test data
+        uint8_t testData[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello"
+        napi_value arrayBuffer = nullptr;
+        void* data = nullptr;
+        napi_create_arraybuffer(env, sizeof(testData), &data, &arrayBuffer);
+        int ret = memcpy_s(data, sizeof(testData), testData, sizeof(testData));
+        ASSERT_EQ(0, ret);
+        napi_value uint8Array = nullptr;
+        napi_create_typedarray(env, napi_uint8_array, sizeof(testData), arrayBuffer, 0, &uint8Array);
+
+        napi_call_function(env, instance, testFunc, 1, &uint8Array, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+
+        napi_value strArg = nullptr;
+        std::string text = "Hello";
+        napi_create_string_utf8(env, text.c_str(), text.size(), &strArg);
+
+        napi_call_function(env, instance, testFunc, 1, &strArg, &funcResultValue);
+        ASSERT_NE(funcResultValue, nullptr);
+    });
 }

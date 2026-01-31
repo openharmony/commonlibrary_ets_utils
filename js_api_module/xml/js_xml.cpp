@@ -16,6 +16,11 @@
 #include "js_xml.h"
 #include "securec.h"
 namespace OHOS::xml {
+    static const napi_type_tag xmlPullParserTypeTag = {
+        0x8c52521acad34763,  // lower
+        0xb91fad7af29f3037   // upper
+    };
+
     static constexpr size_t CALLBACK_ARGS_COUNT = 3;
     static constexpr size_t ATTRWITHTAG_ARGS_COUNT = 4;
 
@@ -531,7 +536,12 @@ namespace OHOS::xml {
         napi_value parseInfo  = nullptr;
         napi_create_object(env, &parseInfo);
         auto object = new ParseInfo();
-        napi_wrap(env, parseInfo, object, nullptr, nullptr, nullptr);
+        napi_wrap_s(env, parseInfo, object, [](napi_env env, void* data, void* hint) {
+            auto* parseInfo = reinterpret_cast<ParseInfo*>(data);
+            if (parseInfo != nullptr) {
+                delete parseInfo;
+            }
+        }, nullptr, &xmlPullParserTypeTag, nullptr);
         static napi_property_descriptor xmlDesc[] = {
             DECLARE_NAPI_FUNCTION("getDepth", XmlPullParser::ParseInfo::GetDepth),
             DECLARE_NAPI_FUNCTION("getColumnNumber", XmlPullParser::ParseInfo::GetColumnNumber),
@@ -550,10 +560,6 @@ namespace OHOS::xml {
         napi_call_function(env, parseInfo, tokenFunc_, argc, argv, &returnVal);
         bool bRec = false;
         napi_get_value_bool(env, returnVal, &bRec);
-        if (object != nullptr) {
-            delete object;
-            object = nullptr;
-        }
         napi_close_handle_scope(env, scope);
         return bRec;
     }
@@ -1863,7 +1869,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             int temp = (reinterpret_cast<XmlPullParser *>(obj))->GetColumnNumber();
@@ -1879,7 +1885,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             int temp = (reinterpret_cast<XmlPullParser *>(obj))->GetDepth();
@@ -1895,7 +1901,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             int temp = (reinterpret_cast<XmlPullParser *>(obj))->GetLineNumber();
@@ -1911,7 +1917,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             std::string temp = (reinterpret_cast<XmlPullParser *>(obj))->GetName();
@@ -1927,7 +1933,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             std::string temp = (reinterpret_cast<XmlPullParser *>(obj))->GetNamespace();
@@ -1943,7 +1949,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             std::string temp = (reinterpret_cast<XmlPullParser *>(obj))->GetPrefix();
@@ -1959,7 +1965,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             std::string temp = (reinterpret_cast<XmlPullParser *>(obj))->GetText();
@@ -1975,7 +1981,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             bool temp = (reinterpret_cast<XmlPullParser *>(obj))->IsEmptyElementTag();
@@ -1991,7 +1997,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             bool temp = (reinterpret_cast<XmlPullParser *>(obj))->IsWhitespace();
@@ -2007,7 +2013,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         void *obj = nullptr;
         napi_get_named_property(env, thisVar, "MainInfo", &mainVar);
-        NAPI_CALL(env, napi_unwrap(env, mainVar, &obj));
+        NAPI_CALL(env, napi_unwrap_s(env, mainVar, &xmlPullParserTypeTag, &obj));
         napi_value result = nullptr;
         if (obj != nullptr) {
             int temp = (reinterpret_cast<XmlPullParser *>(obj))->GetAttributeCount();

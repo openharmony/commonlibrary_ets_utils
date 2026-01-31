@@ -29,6 +29,18 @@ extern const char _binary_buffer_abc_start[];
 extern const char _binary_buffer_abc_end[];
 
 namespace OHOS::buffer {
+
+// Type tags for secure wrapping
+static const napi_type_tag bufferTypeTag = {
+    0xaf0e0e7de1c249bc,  // lower
+    0xb510ff1f3587c69f   // upper
+};
+
+static const napi_type_tag blobTypeTag = {
+    0xd29de30000fb4772,  // lower
+    0x88c55012423f5d0c   // upper
+};
+
 enum class ParaType:int32_t {
     NUMBER = 0,
     BUFFER,
@@ -94,7 +106,7 @@ static napi_value FromStringUtf8(napi_env env, napi_value thisVar, napi_value st
 {
     string utf8Str = GetStringUtf8(env, str);
     Buffer *buffer = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buffer)));
     buffer->WriteString(utf8Str, utf8Str.length());
 
     return thisVar;
@@ -104,7 +116,7 @@ static napi_value FromStringASCII(napi_env env, napi_value thisVar, napi_value s
 {
     string asciiStr = GetStringASCII(env, str);
     Buffer *buffer = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buffer)));
 
     buffer->WriteString(asciiStr, size);
     return thisVar;
@@ -121,7 +133,7 @@ static napi_value FromStringUtf16LE(napi_env env, napi_value thisVar, napi_value
 {
     string utf8Str = GetStringUtf8(env, str);
     Buffer *buffer = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buffer)));
     u16string u16Str = Utf8ToUtf16BE(utf8Str);
     // 2 : the size of string is 2 times of u16str's length
     buffer->WriteString(u16Str, 0, u16Str.size() * 2);
@@ -140,7 +152,7 @@ static napi_value FromStringBase64(napi_env env, napi_value thisVar, napi_value 
 {
     string strDecoded = GetStringBase64(env, str, type);
     Buffer *buffer = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buffer)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buffer)));
     size = (size < strDecoded.length()) ? size : strDecoded.length();
     buffer->WriteString(strDecoded, size);
     return thisVar;
@@ -157,7 +169,7 @@ static napi_value FromStringHex(napi_env env, napi_value thisVar, napi_value str
 {
     string hexStr = GetStringASCII(env, str);
     Buffer *buffer = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&buffer)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void**>(&buffer)));
 
     string strDecoded = HexDecode(hexStr);
     buffer->WriteString(strDecoded, strDecoded.length());
@@ -232,7 +244,8 @@ static void freeBolbMemory(Blob *&blob)
 static napi_value GetBlobWrapValue(napi_env env, napi_value thisVar, Blob *blob)
 {
     uint32_t length = blob->GetLength();
-    napi_status status = napi_wrap_with_size(env, thisVar, blob, FinalizeBlobCallback, nullptr, nullptr, length);
+    napi_status status = napi_wrap_enhance_s(env, thisVar, blob, FinalizeBlobCallback, true, nullptr, length,
+                                             &blobTypeTag, nullptr);
     if (status != napi_ok) {
         HILOG_ERROR("Buffer:: can not wrap buffer");
         if (blob != nullptr) {
@@ -264,7 +277,7 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
         Blob *blobIn = nullptr;
         int32_t start = -1;
         if (napi_get_value_int32(env, argv[1], &start) != napi_ok ||
-            napi_unwrap(env, argv[0], reinterpret_cast<void **>(&blobIn)) != napi_ok) {
+            napi_unwrap_s(env, argv[0], &blobTypeTag, reinterpret_cast<void **>(&blobIn)) != napi_ok) {
             freeBolbMemory(blob);
             return nullptr;
         }
@@ -288,7 +301,8 @@ static napi_value BlobConstructor(napi_env env, napi_callback_info info)
 static napi_value GetBufferWrapValue(napi_env env, napi_value thisVar, Buffer *buffer)
 {
     uint32_t length = buffer->GetNeedRelease() ? buffer->GetLength() : 0;
-    napi_status status = napi_wrap_with_size(env, thisVar, buffer, FinalizeBufferCallback, nullptr, nullptr, length);
+    napi_status status = napi_wrap_enhance_s(env, thisVar, buffer, FinalizeBufferCallback,
+                                             true, nullptr, length, &bufferTypeTag, nullptr);
     if (status != napi_ok) {
         HILOG_ERROR("Buffer:: can not wrap buffer");
         if (buffer != nullptr) {
@@ -311,7 +325,7 @@ static void freeBufferMemory(Buffer *&buffer)
 static Buffer* DealParaTypeBuffer(napi_env env, size_t argc, napi_value* argv, uint32_t length, Buffer*& buffer)
 {
     Buffer *valueBuffer = nullptr;
-    if (napi_unwrap(env, argv[1], reinterpret_cast<void **>(&valueBuffer)) != napi_ok) {
+    if (napi_unwrap_s(env, argv[1], &bufferTypeTag, reinterpret_cast<void **>(&valueBuffer)) != napi_ok) {
         return nullptr;
     }
     if (argc == 2) { // the count of argument is 2
@@ -438,7 +452,7 @@ Buffer *GetValueOffsetAndBuf(napi_env env, napi_callback_info info, int32_t *pVa
     NAPI_ASSERT(env, argc > 1, "Wrong number of arguments.");
 
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     NAPI_CALL(env, napi_get_value_int32(env, args[0], pValue));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], pOffset));
     return buf;
@@ -453,7 +467,7 @@ Buffer *GetOffsetAndBuf(napi_env env, napi_callback_info info, uint32_t *pOffset
     NAPI_ASSERT(env, argc > 0, "Wrong number of arguments.");
 
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], pOffset));
     return buf;
 }
@@ -491,12 +505,12 @@ static napi_value SetArray(napi_env env, napi_callback_info info)
     napi_value args[1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
     NAPI_ASSERT(env, argc > 0, "Wrong number of arguments.");
-    
+
     bool isArray = false;
     NAPI_CALL(env, napi_is_array(env, args[0], &isArray));
     if (isArray) {
         Buffer *buf = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
         vector<uint8_t> arr = GetArray(env, args[0]);
         buf->SetArray(arr);
     }
@@ -510,7 +524,7 @@ static napi_value GetLength(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     uint32_t res = buf->GetLength();
     napi_value result = nullptr;
     napi_create_uint32(env, res, &result);
@@ -522,7 +536,7 @@ static napi_value GetByteOffset(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     uint32_t res = buf->GetByteOffset();
     napi_value result = nullptr;
     napi_create_uint32(env, res, &result);
@@ -550,7 +564,7 @@ static napi_value WriteString(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[2], &length));
 
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     length = (value.length() < length) ? value.length() : length;
     unsigned int lengthWrote = buf->WriteString(value, offset, length, encoding);
 
@@ -578,7 +592,7 @@ static napi_value FillString(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[2], &end));
 
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     buf->FillString(value, offset, end, encoding);
 
     napi_value result = nullptr;
@@ -602,7 +616,7 @@ static napi_value FillNumbers(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[2], &end));
 
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     vector<uint8_t> arr = GetArray(env, args[0]);
     buf->FillNumber(arr, offset, end);
 
@@ -627,9 +641,9 @@ static napi_value FillBuffer(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[2], &end));
 
     Buffer *buffer = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&buffer)));
+    NAPI_CALL(env, napi_unwrap_s(env, args[0], &bufferTypeTag, reinterpret_cast<void **>(&buffer)));
     Buffer *ego = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&ego)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&ego)));
     ego->FillBuffer(buffer, offset, end);
 
     napi_value result = nullptr;
@@ -657,7 +671,7 @@ static napi_value GetBufferData(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     uint32_t length = buf->GetLength();
     uint8_t* data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
@@ -683,7 +697,7 @@ static napi_value GetArrayBuffer(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     uint32_t length = buf->GetLength();
     void *data = nullptr;
     napi_value arrayBuffer = nullptr;
@@ -702,7 +716,7 @@ static napi_value Get(napi_env env, napi_callback_info info)
     uint32_t index = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &index));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     int32_t value = buf->Get(index);
     napi_value result = nullptr;
     napi_create_int32(env, value, &result);
@@ -718,8 +732,8 @@ static napi_value Set(napi_env env, napi_callback_info info)
     NAPI_ASSERT(env, argc > 1, "Wrong number of arguments.");
 
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
-    
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
+
     uint32_t index = 0;
     int32_t value = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &index));
@@ -817,9 +831,9 @@ static napi_value SubBuffer(napi_env env, napi_callback_info info)
     NAPI_ASSERT(env, argc == 3, "Wrong number of arguments"); // 3:Number of parameters.
 
     Buffer *newBuf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&newBuf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&newBuf)));
     Buffer *targetBuf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&targetBuf)));
+    NAPI_CALL(env, napi_unwrap_s(env, args[0], &bufferTypeTag, reinterpret_cast<void **>(&targetBuf)));
 
     uint32_t start = 0;
     uint32_t end = 0;
@@ -848,9 +862,9 @@ static napi_value Copy(napi_env env, napi_callback_info info)
     // 3 : the forth argument
     NAPI_CALL(env, napi_get_value_uint32(env, args[3], &sourceEnd));
     Buffer *targetBuf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&targetBuf)));
+    NAPI_CALL(env, napi_unwrap_s(env, args[0], &bufferTypeTag, reinterpret_cast<void **>(&targetBuf)));
     Buffer *sBuf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&sBuf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&sBuf)));
     uint32_t cLength = sBuf->Copy(targetBuf, targetStart, sourceStart, sourceEnd);
     napi_value result = nullptr;
     napi_create_int32(env, cLength, &result);
@@ -873,12 +887,12 @@ static napi_value Compare(napi_env env, napi_callback_info info)
     // 3 : the forth argument
     NAPI_CALL(env, napi_get_value_uint32(env, args[3], &length));
     Buffer *targetBuf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, args[0], reinterpret_cast<void **>(&targetBuf)));
+    NAPI_CALL(env, napi_unwrap_s(env, args[0], &bufferTypeTag, reinterpret_cast<void **>(&targetBuf)));
     if (targetBuf == nullptr) {
         HILOG_FATAL("Buffer:: can not unwarp targetBuf");
     }
     Buffer *sBuf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&sBuf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&sBuf)));
     if (sBuf == nullptr) {
         HILOG_FATAL("Buffer:: can not unwarp sBuf");
         napi_create_int32(env, 0, &result);
@@ -901,7 +915,7 @@ static napi_value ToUtf8(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
     std::string data = "";
     data.reserve(length + 1);
@@ -922,7 +936,7 @@ static napi_value ToBase64(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
     std::string str = buf->ToBase64(start, length);
     napi_value result = nullptr;
@@ -941,7 +955,7 @@ static napi_value ToBase64Url(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
     std::string str = buf->ToBase64Url(start, length);
     napi_value result = nullptr;
@@ -997,7 +1011,7 @@ static napi_value IndexOf(napi_env env, napi_callback_info info)
     uint32_t len = 0;
     len = GetValue(env, eType, str, args[0]);
     Buffer *buf = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&buf)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void **>(&buf)));
     bool isReverse = false;
     // 3 : the forth argument
     NAPI_CALL(env, napi_get_value_bool(env, args[3], &isReverse));
@@ -1071,7 +1085,7 @@ static napi_value ArrayBufferAsync(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &blobTypeTag, reinterpret_cast<void **>(&blob)));
     size_t bufferSize = blob->GetLength();
     void *bufdata = nullptr;
     napi_value arrayBuffer = nullptr;
@@ -1110,7 +1124,7 @@ static napi_value TextAsync(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &blobTypeTag, reinterpret_cast<void **>(&blob)));
     napi_value stringValue = nullptr;
     PromiseInfo *promiseInfo = new (std::nothrow) PromiseInfo();
     if (promiseInfo == nullptr) {
@@ -1130,7 +1144,7 @@ static napi_value GetBytes(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
     Blob *blob = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void **>(&blob)));
+    NAPI_CALL(env, napi_unwrap_s(env, thisVar, &blobTypeTag, reinterpret_cast<void **>(&blob)));
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_array(env, &result));
     size_t key = 0;
