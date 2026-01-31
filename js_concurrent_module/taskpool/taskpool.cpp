@@ -440,17 +440,6 @@ void TaskPool::HandleTaskResult(Task* task)
     task->DecreaseTaskLifecycleCount();
 
     task->finishedTime_ = ConcurrentHelper::GetCurrentTimeStampWithMS();
-
-    std::string message = "";
-    {
-        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        message = "tId " + std::to_string(task->taskId_) +
-                  ", enqueueT " + task->enqueueTime_ +
-                  ", runningT " + task->runningTime_ +
-                  ", finishedT " + task->finishedTime_;
-    }
-    TaskManager::GetInstance().PushLog(message);
-
     HandleTaskResultInner(task);
 }
 
@@ -859,23 +848,38 @@ void TaskPool::RecordTaskResultLog(Task* task, napi_status status, napi_value& n
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
     std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
+    std::string result = "";
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
         napiTaskResult = task->IsAsyncRunnerTask() ? TaskManager::GetInstance().CancelError(task->env_,
             ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, nullptr, napiTaskResult, task->success_) :
             TaskManager::GetInstance().CancelError(task->env_, 0, nullptr, napiTaskResult, task->success_);
         isCancel = true;
+        result = "IsCanceled";
     } else if (status != napi_ok) {
         strTrace += ", performResult : DeserializeFailed";
         taskLog += ", DeserializeFailed";
+        result = "DeserializeFailed";
     } else if (task->success_) {
         strTrace += ", performResult : Successful";
+        result = "Successful";
     } else { // LCOV_EXCL_BR_LINE
         strTrace += ", performResult : Unsuccessful";
         taskLog += ", Unsuccessful";
+        result = "Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
     HILOG_DEBUG("taskpool:: %{public}s", taskLog.c_str());
+    std::string message = "";
+    {
+        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+        message = "tId " + std::to_string(task->taskId_) +
+                  ", name " + task->name_ + ", result " + result +
+                  ", enqueueT " + task->enqueueTime_ +
+                  ", runningT " + task->runningTime_ +
+                  ", finishedT " + task->finishedTime_;
+    }
+    TaskManager::GetInstance().PushLog(message);
 }
 
 napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)

@@ -60,7 +60,7 @@ static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
 static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
-static constexpr uint32_t LOG_INTERVAL = 100; // 100: 100ms
+static constexpr uint32_t LOG_INTERVAL = 1000; // 1000: 1s
 static constexpr uint32_t WAITING_INTERVAL = 1000; // 1000: 1s
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
