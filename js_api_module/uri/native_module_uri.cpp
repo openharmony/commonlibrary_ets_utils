@@ -21,6 +21,11 @@ extern const char _binary_uri_abc_start[];
 extern const char _binary_uri_abc_end[];
 
 namespace OHOS::Uri {
+    static const napi_type_tag uriTypeTag = {
+        0xc471e5a2c2514f1e,  // lower
+        0x82e3718309e19fe7   // upper
+    };
+
     static napi_value UriConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -43,14 +48,14 @@ namespace OHOS::Uri {
                 return nullptr;
             }
         }
-        NAPI_CALL(env, napi_wrap(env, thisVar, object,
+        NAPI_CALL(env, napi_wrap_s(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
             auto obj = reinterpret_cast<Uri*>(data);
             if (obj != nullptr) {
                 delete obj;
                 obj = nullptr;
             }
-        }, nullptr, nullptr));
+        }, nullptr, &uriTypeTag, nullptr));
         return thisVar;
     }
 
@@ -59,7 +64,7 @@ namespace OHOS::Uri {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string normalizeUri = muri->Normalize();
         napi_value result = nullptr;
         size_t tempLen = normalizeUri.size();
@@ -76,9 +81,9 @@ namespace OHOS::Uri {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
 
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         Uri *other = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, argv[0], reinterpret_cast<void**>(&other)));
+        NAPI_CALL(env, napi_unwrap_s(env, argv[0], &uriTypeTag, reinterpret_cast<void**>(&other)));
 
         bool flag = muri->Equals(*other);
         NAPI_CALL(env, napi_get_boolean(env, flag, &result));
@@ -91,7 +96,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         bool flag = muri->IsAbsolute();
         NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         return result;
@@ -103,7 +108,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->IsFailed();
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
@@ -116,7 +121,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->ToString();
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
@@ -129,7 +134,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         bool flag = muri->IsRelative();
         NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         return result;
@@ -141,7 +146,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         bool flag = muri->IsOpaque();
         NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         return result;
@@ -153,7 +158,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         bool flag = muri->IsHierarchical();
         NAPI_CALL(env, napi_get_boolean(env, flag, &result));
         return result;
@@ -167,7 +172,7 @@ namespace OHOS::Uri {
         napi_value argv[2] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string key = "";
         size_t keyLen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &keyLen));
@@ -196,7 +201,7 @@ namespace OHOS::Uri {
         napi_value argv[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string segment = "";
         size_t segmentLen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &segmentLen));
@@ -235,7 +240,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get scheme value");
             return nullptr;
         }
-        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+        if (napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)) != napi_ok) {
             HILOG_ERROR("URI:: can not get uri");
             return nullptr;
         }
@@ -268,7 +273,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get userInfo value");
             return nullptr;
         }
-        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+        if (napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)) != napi_ok) {
             HILOG_ERROR("URI:: can not get uri");
             return nullptr;
         }
@@ -301,7 +306,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get pathStr value");
             return nullptr;
         }
-        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+        if (napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)) != napi_ok) {
             HILOG_ERROR("URI:: can not get uri");
             return nullptr;
         }
@@ -334,7 +339,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get fragmentStr value");
             return nullptr;
         }
-        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+        if (napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)) != napi_ok) {
             HILOG_ERROR("URI:: can not get uri");
             return nullptr;
         }
@@ -367,7 +372,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get queryStr value");
             return nullptr;
         }
-        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+        if (napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)) != napi_ok) {
             HILOG_ERROR("URI:: can not get uri");
             return nullptr;
         }
@@ -401,7 +406,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get authorityStr value");
             return nullptr;
         }
-        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+        if (napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)) != napi_ok) {
             HILOG_ERROR("URI:: can not get uri");
             return nullptr;
         }
@@ -434,7 +439,7 @@ namespace OHOS::Uri {
             HILOG_ERROR("URI:: can not get authorityStr value");
             return nullptr;
         }
-        if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)) != napi_ok) {
+        if (napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)) != napi_ok) {
             HILOG_ERROR("URI:: can not get uri");
             return nullptr;
         }
@@ -450,7 +455,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetLastSegment();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -470,7 +475,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetScheme();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -487,7 +492,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetAuthority();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -504,7 +509,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetSsp();
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
@@ -517,7 +522,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetUserinfo();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -534,7 +539,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetHost();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -551,7 +556,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetPort();
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
@@ -564,7 +569,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetPath();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -581,7 +586,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetQuery();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -598,7 +603,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->GetFragment();
         if (temp.empty()) {
             napi_get_null(env, &result);
@@ -615,7 +620,7 @@ namespace OHOS::Uri {
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         Uri *muri = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&muri)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &uriTypeTag, reinterpret_cast<void**>(&muri)));
         std::string temp = muri->ClearQuery();
         if (temp.empty()) {
             napi_get_null(env, &result);

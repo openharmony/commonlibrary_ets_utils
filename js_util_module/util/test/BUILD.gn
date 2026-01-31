@@ -38,10 +38,16 @@ ohos_unittest("test_util_unittest") {
     "../../util/js_textencoder.cpp",
     "../../util/js_types.cpp",
     "../../util/js_uuid.cpp",
+    "../../util/native_module_util.cpp",
     "../../util/plugin/hispeed_string_plugin.c",
     "test_ark.cpp",
     "test_util.cpp",
     "test_uuid.cpp",
+  ]
+
+  deps = [
+    "../:gen_obj_src_util_js",
+    "../:gen_obj_src_util_abc",
   ]
 
   external_deps = [

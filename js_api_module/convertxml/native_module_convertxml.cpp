@@ -24,6 +24,11 @@ extern const char _binary_convertxml_abc_start[];
 extern const char _binary_convertxml_abc_end[];
 
 namespace OHOS::Xml {
+    static const napi_type_tag convertXmlTypeTag = {
+        0x1bf681a0e9cf4692,  // lower
+        0x93de60f8b9de7291   // upper
+    };
+
 using namespace OHOS::Tools;
 static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
 
@@ -37,14 +42,14 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
             HILOG_ERROR("ConvertXmlConstructor:: memory allocation failed, objectInfo is nullptr");
             return nullptr;
         }
-        napi_status status = napi_wrap(env, thisVar, objectInfo,
+        napi_status status = napi_wrap_s(env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<ConvertXml*>(data);
                 if (obj != nullptr) {
                     delete obj;
                     obj = nullptr;
                 }
-            }, nullptr, nullptr);
+            }, nullptr, &convertXmlTypeTag, nullptr);
         if (status != napi_ok) {
             HILOG_ERROR("ConvertXmlConstructor:: napi_wrap failed");
             delete objectInfo;
@@ -66,7 +71,7 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
         std::string strXml;
         napi_valuetype valuetype;
         ConvertXml *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &convertXmlTypeTag, reinterpret_cast<void**>(&object)));
 
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
@@ -86,7 +91,7 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
         napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
         std::string strXml;
         ConvertXml *convertxml = nullptr;
-        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&convertxml));
+        napi_unwrap_s(env, thisVar, &convertXmlTypeTag, reinterpret_cast<void**>(&convertxml));
         if (convertxml == nullptr) {
             ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
             return nullptr;
@@ -117,7 +122,7 @@ static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
         }
         std::string strXml;
         ConvertXml *convertxml = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&convertxml));
+        status = napi_unwrap_s(env, thisVar, &convertXmlTypeTag, reinterpret_cast<void**>(&convertxml));
         if (status != napi_ok || convertxml == nullptr) {
             ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
             napi_close_handle_scope(env, scope);

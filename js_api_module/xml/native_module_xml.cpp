@@ -24,6 +24,21 @@ extern const char _binary_xml_abc_start[];
 extern const char _binary_xml_abc_end[];
 
 namespace OHOS::xml {
+    static const napi_type_tag xmlPullParserTypeTag = {
+        0x8c52521acad34763,  // lower
+        0xb91fad7af29f3037   // upper
+    };
+
+    static const napi_type_tag xmlSerializerTypeTag = {
+        0x3a752be742ff4874,  // lower
+        0x92d426c94e179d0f   // upper
+    };
+
+    static const napi_type_tag xmlDynamicSerializerTypeTag = {
+        0x7e7df72a244042f5,  // lower
+        0x9ef0d26f18ca7681   // upper
+    };
+
 using namespace OHOS::Tools;
 static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
 const int32_t ARGC_ONE = 1; // 1 : number of args
@@ -77,14 +92,14 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
                 }
             }
         }
-        napi_status status = napi_wrap(env, thisVar, object,
+        napi_status status = napi_wrap_s(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<XmlSerializer*>(data);
                 if (obj != nullptr) {
                     delete obj;
                     obj = nullptr;
                 }
-            }, nullptr, nullptr);
+            }, nullptr, &xmlSerializerTypeTag, nullptr);
         if (status != napi_ok && object != nullptr) {
             HILOG_ERROR("XmlPullParserConstructor:: napi_wrap failed");
             delete object;
@@ -141,14 +156,14 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
                 }
             }
         }
-        napi_status status = napi_wrap(env, thisVar, object,
+        napi_status status = napi_wrap_s(env, thisVar, object,
             [](napi_env env, void *data, void *hint) {
                 auto obj = reinterpret_cast<XmlPullParser*>(data);
                 if (obj != nullptr) {
                     delete obj;
                     obj = nullptr;
                 }
-            }, nullptr, nullptr);
+            }, nullptr, &xmlPullParserTypeTag, nullptr);
         if (status != napi_ok && object != nullptr) {
             HILOG_ERROR("XmlPullParserConstructor:: napi_wrap failed");
             delete object;
@@ -170,7 +185,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type. string expected.");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string name;
         std::string value;
         XmlSerializer::DealNapiStrValue(env, args[0], name);
@@ -193,7 +208,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string name;
         object->DealNapiStrValue(env, args[0], name);
         object->AddEmptyElement(name);
@@ -208,7 +223,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         object->SetDeclaration();
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
@@ -223,7 +238,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         NAPI_ASSERT(env, argc == 1, "Wrong number of arguments");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string name;
         object->DealNapiStrValue(env, args[0], name);
         object->StartElement(name);
@@ -237,7 +252,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         object->EndElement();
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &result));
@@ -257,7 +272,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string prefix;
         std::string nsTemp;
         XmlSerializer::DealNapiStrValue(env, args[0], prefix);
@@ -279,7 +294,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string comment;
         object->DealNapiStrValue(env, args[0], comment);
         object->SetComment(comment);
@@ -299,7 +314,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string data;
         XmlSerializer::DealNapiStrValue(env, args[0], data);
         object->SetCData(data);
@@ -319,7 +334,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string text;
         XmlSerializer::DealNapiStrValue(env, args[0], text);
         object->SetText(text);
@@ -339,7 +354,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_string, "Wrong argument type: string expected.");
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string text;
         XmlSerializer::DealNapiStrValue(env, args[0], text);
         object->SetDocType(text);
@@ -353,7 +368,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         XmlSerializer *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSerializerTypeTag, reinterpret_cast<void**>(&object)));
         std::string temp = object->XmlSerializerError();
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));
@@ -407,14 +422,14 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
                 return nullptr;
             }
         }
-        status = napi_wrap(env, thisVar, object,
+        status = napi_wrap_s(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<XmlDynamicSerializer*>(data);
                 if (obj != nullptr) {
                     delete obj;
                     obj = nullptr;
                 }
-            }, nullptr, nullptr);
+            }, nullptr, &xmlDynamicSerializerTypeTag, nullptr);
         if (status != napi_ok && object != nullptr) {
             HILOG_ERROR("XmlDynamicSerializerConstructor::napi_wrap failed");
             delete object;
@@ -434,7 +449,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -466,7 +481,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -490,7 +505,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -510,7 +525,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -534,7 +549,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -554,7 +569,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -586,7 +601,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -612,7 +627,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -638,7 +653,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -664,7 +679,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -688,7 +703,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
             return nullptr;
         }
         XmlDynamicSerializer *object = nullptr;
-        status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
+        status = napi_unwrap_s(env, thisVar, &xmlDynamicSerializerTypeTag, reinterpret_cast<void**>(&object));
         if (status != napi_ok || object == nullptr) {
             HILOG_ERROR("XmlDynamicSerializer:: napi_unwrap failed!");
             return nullptr;
@@ -753,7 +768,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         NAPI_ASSERT(env, valuetype == napi_object, "Wrong argument type: object expected.");
         XmlPullParser *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlPullParserTypeTag, reinterpret_cast<void**>(&object)));
         object->DealOptionInfo(env, args[0]);
         object->Parse(env, thisVar, true);
         napi_value result = nullptr;
@@ -768,7 +783,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         napi_value args[1] = { nullptr };
         napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
         XmlPullParser *xmlPullParser = nullptr;
-        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&xmlPullParser));
+        napi_unwrap_s(env, thisVar, &xmlPullParserTypeTag, reinterpret_cast<void**>(&xmlPullParser));
         napi_value result = nullptr;
         if (xmlPullParser == nullptr) {
             ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
@@ -788,7 +803,7 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
         XmlPullParser *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlPullParserTypeTag, reinterpret_cast<void**>(&object)));
         std::string temp = object->XmlPullParserError();
         size_t templen = temp.size();
         NAPI_CALL(env, napi_create_string_utf8(env, temp.c_str(), templen, &result));

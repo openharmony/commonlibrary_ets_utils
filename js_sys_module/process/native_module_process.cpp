@@ -18,6 +18,11 @@
 #include "tools/log.h"
 
 namespace OHOS::JsSysModule::Process {
+    static const napi_type_tag processTypeTag = {
+        0x3cd59a211d6d4402,  // lower
+        0x99cf77f827007d0d   // upper
+    };
+
     static napi_value DealType(napi_env env, napi_value args[], size_t argc)
     {
         if (argc > 0) {
@@ -87,7 +92,7 @@ namespace OHOS::JsSysModule::Process {
 
         objectInfo->Spawn(env, args[0]);
 
-        NAPI_CALL(env, napi_wrap(
+        NAPI_CALL(env, napi_wrap_s(
             env, thisVar, objectInfo,
             [](napi_env env, void* data, void* hint) {
                 auto objectResult = reinterpret_cast<ChildProcess*>(data);
@@ -96,7 +101,7 @@ namespace OHOS::JsSysModule::Process {
                     objectResult = nullptr;
                 }
             },
-            nullptr, nullptr));
+            nullptr, &processTypeTag, nullptr));
 
         return thisVar;
     }
@@ -107,7 +112,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         napi_value result = object->Wait(env);
 
         return result;
@@ -119,7 +124,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         napi_value result = object->GetOutput(env);
 
         return result;
@@ -131,7 +136,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         object->Close();
 
         napi_value result = nullptr;
@@ -145,7 +150,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
 
         napi_value result = object->GetErrorOutput(env);
 
@@ -170,7 +175,7 @@ namespace OHOS::JsSysModule::Process {
         }
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         object->Kill(env, args);
 
         napi_value result = nullptr;
@@ -184,7 +189,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         napi_value result = object->GetKilled(env);
 
         return result;
@@ -196,7 +201,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         napi_value result = object->Getpid(env);
 
         return result;
@@ -208,7 +213,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         napi_value result = object->Getppid(env);
 
         return result;
@@ -220,7 +225,7 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         ChildProcess* object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, reinterpret_cast<void**>(&object)));
         napi_value result = object->GetExitCode(env);
 
         return result;
@@ -540,7 +545,7 @@ namespace OHOS::JsSysModule::Process {
             return ThrowError(env, "Parameter error. The type of signal or pid must be number.");
         }
         ProcessManager *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
         return object->Kill(env, argv[0], argv[1]);
     }
     static napi_value ExitOfProcess(napi_env env, napi_callback_info info)
@@ -553,7 +558,7 @@ namespace OHOS::JsSysModule::Process {
             return ThrowError(env, "Parameter error. The type of code must be number.");
         }
         ProcessManager *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
         object->Exit(env, args);
         napi_value res = nullptr;
         NAPI_CALL(env, napi_get_undefined(env, &res));
@@ -569,7 +574,7 @@ namespace OHOS::JsSysModule::Process {
             return ThrowError(env, "Parameter error. The type of name must be number.");
         }
         ProcessManager *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
         return object->GetSystemConfig(env, args);
     }
 
@@ -583,7 +588,7 @@ namespace OHOS::JsSysModule::Process {
             return ThrowError(env, "Parameter error. The type of code must be number.");
         }
         ProcessManager *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
         return object->GetThreadPriority(env, args);
     }
 
@@ -597,7 +602,7 @@ namespace OHOS::JsSysModule::Process {
             return ThrowError(env, "Parameter error. The type of code must be string.");
         }
         ProcessManager *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
         return object->GetUidForName(env, args);
     }
 
@@ -611,7 +616,7 @@ namespace OHOS::JsSysModule::Process {
             return ThrowError(env, "Parameter error. The type of code must be number.");
         }
         ProcessManager *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
         return object->IsAppUid(env, args);
     }
 
@@ -625,7 +630,7 @@ namespace OHOS::JsSysModule::Process {
             return ThrowError(env, "Parameter error. The type of name must be string.");
         }
         ProcessManager *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
         return object->GetEnvironmentVar(env, args);
     }
 
@@ -635,14 +640,14 @@ namespace OHOS::JsSysModule::Process {
         void *data = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
         auto objectInfo = new ProcessManager();
-        napi_status status = napi_wrap(env, thisVar, objectInfo,
+        napi_status status = napi_wrap_s(env, thisVar, objectInfo,
             [](napi_env environment, void *data, void *hint) {
                 auto objInfo = reinterpret_cast<ProcessManager*>(data);
                 if (objInfo != nullptr) {
                     delete objInfo;
                     objInfo = nullptr;
                 }
-            }, nullptr, nullptr);
+            }, nullptr, &processTypeTag, nullptr);
         if (status != napi_ok && objectInfo != nullptr) {
             HILOG_ERROR("ProcessManager:: napi_wrap failed");
             delete objectInfo;
@@ -709,7 +714,7 @@ namespace OHOS::JsSysModule::Process {
         napi_value obj = nullptr;
         NAPI_CALL(env, napi_create_object(env, &obj));
 
-        NAPI_CALL(env, napi_wrap(
+        NAPI_CALL(env, napi_wrap_s(
             env, obj, reinterpret_cast<void*>(Process::ClearReference),
             [](napi_env env, void* data, void* hint) {
                 if (data != nullptr) {
@@ -717,7 +722,7 @@ namespace OHOS::JsSysModule::Process {
                     clearParameters(env);
                 }
             },
-            nullptr, nullptr));
+            nullptr, &processTypeTag, nullptr));
         NAPI_CALL(env, napi_set_named_property(env, exports, "obj", obj));
 
         return exports;
