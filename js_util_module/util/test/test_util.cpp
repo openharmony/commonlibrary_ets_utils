@@ -8879,3 +8879,61 @@ HWTEST_F(NativeEngineTest, StringDecoderEndTest001, testing::ext::TestSize.Level
         ASSERT_NE(funcResultValue, nullptr);
     });
 }
+/**
+ * @tc.name: GetAllVMHeapMemoryInfoTest001
+ * @tc.desc: Test getAllVMHeapMemoryInfo function via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetAllVMHeapMemoryInfoTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value getAllFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "getAllVMHeapMemoryInfo", &getAllFunc);
+        ASSERT_NE(getAllFunc, nullptr);
+
+        napi_valuetype funcType;
+        napi_typeof(env, getAllFunc, &funcType);
+        ASSERT_EQ(funcType, napi_function);
+
+        bool callbackExecuted = false;
+        auto thenCallback = [](napi_env env, napi_callback_info info) -> napi_value {
+            bool* isCalled = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, nullptr, reinterpret_cast<void**>(&isCalled));
+            *isCalled = true;
+            napi_value undefined = nullptr;
+            napi_get_undefined(env, &undefined);
+            return undefined;
+        };
+
+        napi_value callbackValue = nullptr;
+        napi_create_function(env, "thenCallback", NAPI_AUTO_LENGTH, thenCallback, &callbackExecuted, &callbackValue);
+
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, getAllFunc, 0, nullptr, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool isPromise = false;
+        napi_is_promise(env, result, &isPromise);
+        ASSERT_TRUE(isPromise);
+
+        napi_value thenFunc = nullptr;
+        napi_get_named_property(env, result, "then", &thenFunc);
+        ASSERT_NE(thenFunc, nullptr);
+
+        napi_value args[] = {callbackValue};
+        napi_call_function(env, result, thenFunc, 1, args, nullptr);
+
+        NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+        engine->Loop(LOOP_ONCE);
+
+        ASSERT_TRUE(callbackExecuted);
+    });
+}
