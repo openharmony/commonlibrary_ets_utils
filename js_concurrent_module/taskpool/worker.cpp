@@ -464,9 +464,7 @@ void Worker::PerformTask(const uv_async_t* req)
     std::string taskLog = "Task Perform: "  + task->name_ + ", " + taskIdStr + ", "
                           "runningLoop: " + std::to_string(loopAddress);
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_DEBUG("taskpool:: %{public}s", taskLog.c_str());
-
-    task->runningTime_ = ConcurrentHelper::GetCurrentTimeStampWithMS();
+    HILOG_INFO("taskpool:: %{public}s", taskLog.c_str());
 
     napi_value func = nullptr;
     napi_value args = nullptr;
