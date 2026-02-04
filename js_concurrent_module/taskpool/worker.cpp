@@ -518,9 +518,10 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
     bool defaultTransfer = true;
     bool defaultCloneSendable = false;
     std::string errString = "";
-    napi_status status = napi_serialize_inner_with_error(env, result, undefined, undefined, defaultTransfer,
-                                                         defaultCloneSendable, &resultData, errString);
-    if ((status != napi_ok || resultData == nullptr) && task->success_) {
+    NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+    engine->SerializeJSErrorWithError(env, result, defaultTransfer, defaultCloneSendable,
+                                      &resultData, errString);
+    if (resultData == nullptr && task->success_) {
         task->success_ = false;
         std::string errMessage = "taskpool: failed to serialize result.\nSerialize error: " + errString;
         HILOG_ERROR("%{public}s", errMessage.c_str());
