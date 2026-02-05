@@ -138,7 +138,8 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         TaskGroupManager::GetInstance().AddTask(groupId, task->taskRef_, task->taskId_);
         return nullptr;
     }
-    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be object or function.");
+    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+        "the type of addTask's first param must be object or function.");
     return nullptr;
 }
 
@@ -291,5 +292,65 @@ void TaskGroup::TriggerRejectResult()
 bool TaskGroup::IsSameEnv(napi_env env)
 {
     return env_ == env;
+}
+
+bool TaskGroup::IsTimeoutTaskGroup() const
+{
+    return timeout_;
+}
+
+void TaskGroup::SetTimeout(uint32_t timeout)
+{
+    std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
+    timeout_ = timeout;
+}
+bool TaskGroup::UpdateStateToTimeout()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
+    if (IsCanceledState() || IsFinishedState() || IsTimeoutState()) {
+        return false;
+    }
+    groupState_ = ExecuteState::TIMEOUT;
+    return true;
+}
+
+bool TaskGroup::IsNotFoundState()
+{
+    return groupState_ == ExecuteState::NOT_FOUND;
+}
+
+bool TaskGroup::IsWaitingState()
+{
+    return groupState_ == ExecuteState::WAITING;
+}
+
+bool TaskGroup::IsRunningState()
+{
+    return groupState_ == ExecuteState::RUNNING;
+}
+
+bool TaskGroup::IsCanceledState()
+{
+    return groupState_ == ExecuteState::CANCELED;
+}
+
+bool TaskGroup::IsFinishedState()
+{
+    return groupState_ == ExecuteState::FINISHED;
+}
+
+bool TaskGroup::IsTimeoutState()
+{
+    return groupState_ == ExecuteState::TIMEOUT;
+}
+
+void TaskGroup::ClearTimeoutTimer()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskGroupMutex_);
+    if (!IsTimeoutTaskGroup() || timer_ == nullptr || IsTimeoutState()) {
+        return;
+    }
+    uv_timer_stop(timer_);
+    ConcurrentHelper::UvHandleClose(timer_);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

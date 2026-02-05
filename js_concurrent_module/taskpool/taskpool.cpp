@@ -209,7 +209,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
             timeout = result.second;
         }
         if (NapiHelper::HasNameProperty(env, args[0], GROUP_ID_STR)) {
-            return ExecuteGroup(env, args[0], static_cast<Priority>(priority));
+            return ExecuteGroup(env, args[0], static_cast<Priority>(priority), timeout);
         }
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
@@ -217,11 +217,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's first param must be task.");
             return nullptr;
         }
-        if (!task->CanExecute(env)) {
-            return nullptr;
-        }
-        if (timeout > 0 && !task->IsNotFoundState()) {
-            ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, "the task cannot be set timeout.");
+        if (!task->CanExecute(env, timeout)) {
             return nullptr;
         }
         napi_value promise = task->GetTaskInfoPromise(env, args[0], TaskType::COMMON_TASK,
@@ -229,7 +225,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         if (promise == nullptr) {
             return nullptr;
         }
-        task->timeout_ = timeout;
+        task->SetTimeout(timeout);
         ExecuteTask(env, task, static_cast<Priority>(priority));
         return promise;
     }
@@ -360,7 +356,7 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
     return promise;
 }
 
-napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priority priority)
+napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priority priority, uint32_t timeout)
 {
     napi_value napiGroupId = NapiHelper::GetNameProperty(env, napiTaskGroup, GROUP_ID_STR);
     uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
@@ -370,11 +366,20 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup is nullptr.");
         return nullptr;
     }
+    if (taskGroup->IsTimeoutTaskGroup()) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASKGROUP_EXECUTE_AGAIN, "taskGroup has already set timeout.");
+        return nullptr;
+    }
+    if (timeout > 0 && !taskGroup->IsNotFoundState()) {
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASKGROUP_EXECUTE_AGAIN, "taskGroup cannot be set timeout.");
+        return nullptr;
+    }
     napi_reference_ref(env, taskGroup->groupRef_, nullptr);
     if (taskGroup->groupState_ == ExecuteState::NOT_FOUND || taskGroup->groupState_ == ExecuteState::FINISHED ||
         taskGroup->groupState_ == ExecuteState::CANCELED) {
         taskGroup->groupState_ = ExecuteState::WAITING;
     }
+    taskGroup->SetTimeout(timeout);
     GroupInfo* groupInfo = new GroupInfo();
     groupInfo->priority = priority;
     napi_value resArr;
@@ -405,6 +410,7 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
         }
         if (taskGroup->currentGroupInfo_ == nullptr) {
             taskGroup->currentGroupInfo_ = groupInfo;
+            TriggerTaskGroupTimeoutTimer(env, taskGroup);
             for (auto iter = taskGroup->taskRefs_.begin(); iter != taskGroup->taskRefs_.end(); iter++) {
                 napi_value napiTask = NapiHelper::GetReferenceValue(env, *iter);
                 Task* task = nullptr;
@@ -553,6 +559,18 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
     if (groupInfo->finishedTaskNum < taskGroup->taskNum_) {
         return;
     }
+    if (taskGroup->IsTimeoutState()) {
+        HILOG_INFO("taskpool::taskGroup perform end, taskGroupId %{public}s, Timeout",
+            std::to_string(task->groupId_).c_str());
+        napi_value error = ErrorHelper::NewError(task->GetEnv(), ErrorHelper::ERR_TASKGROUP_EXECUTE_TIMEOUT);
+        napi_reject_deferred(env, groupInfo->deferred, error);
+        napi_delete_reference(env, groupInfo->resArr);
+        napi_reference_unref(env, taskGroup->groupRef_, nullptr);
+        delete groupInfo;
+        taskGroup->currentGroupInfo_ = nullptr;
+        return;
+    }
+    taskGroup->ClearTimeoutTimer();
     // if there is no exception, just resolve
     if (!groupInfo->HasException()) {
         HILOG_INFO("taskpool::taskGroup perform end, taskGroupId %{public}s", std::to_string(task->groupId_).c_str());
@@ -597,7 +615,7 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
         HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
         task->isCancelToFinish_ = false;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
-        TriggerTimeoutTimer(env, task);
+        TriggerTaskTimeoutTimer(env, task);
     } else {
         HILOG_WARN("taskpool:: %{public}s, not enqueue", taskLog.c_str());
     }
@@ -931,9 +949,9 @@ napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
     return result;
 }
 
-void Taskpool::TriggerTimeoutTimer(napi_env env, Task* task)
+void TaskPool::TriggerTaskTimeoutTimer(napi_env env, Task* task)
 {
-    if (!task->IsTimeoutTask()) {
+    if (!task->IsTimeoutTask() || task->timer_ != nullptr) {
         return;
     }
     TaskMessage* message = new TaskMessage();
@@ -943,14 +961,14 @@ void Taskpool::TriggerTimeoutTimer(napi_env env, Task* task)
     task->timer_ = new uv_timer_t;
     uv_timer_init(loop, task->timer_);
     task->timer_->data = message;
-    uv_timer_start(task->timer_, reinterpret_cast<uv_timer_cb>(TimeoutCallback), task->timeout_, 0);
+    uv_timer_start(task->timer_, reinterpret_cast<uv_timer_cb>(TaskTimeoutCallback), task->timeout_, 0);
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsMainThread()) {
         uv_async_send(&loop->wq_async);
     }
 }
 
-void Taskpool::TimeoutCallback(uv_timer_t* handle)
+void TaskPool::TaskTimeoutCallback(uv_timer_t* handle)
 {
     TaskMessage* message = reinterpret_cast<TaskMessage*>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(message->taskId);
@@ -972,7 +990,7 @@ void Taskpool::TimeoutCallback(uv_timer_t* handle)
         HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
         return;
     }
-    napi_value error = ErrorHelper::NewError(task->GetEnv(), ErrorHelper::ERR_TASK_TIMEOUT);
+    napi_value error = ErrorHelper::NewError(task->GetEnv(), ErrorHelper::ERR_TASK_EXECUTE_TIMEOUT);
     if (state == ExecuteState::RUNNING) {
         napi_reject_deferred(task->GetEnv(), task->currentTaskInfo_->deferred, error);
         return;
@@ -996,7 +1014,7 @@ void Taskpool::TimeoutCallback(uv_timer_t* handle)
     }
 }
 
-std::pair<uint32_t, uint32_t> Taskpool::GetExecuteParams(napi_env env, napi_value arg)
+std::pair<uint32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_value arg)
 {
     napi_value priorityValue = nullptr;
     uint32_t timeout = 0;
@@ -1006,25 +1024,61 @@ std::pair<uint32_t, uint32_t> Taskpool::GetExecuteParams(napi_env env, napi_valu
         napi_value timeoutValue = NapiHelper::GetNameProperty(env, arg, "timeout");
         if (NapiHelper::IsNotUndefined(env, timeoutValue)) {
             if (!NapiHelper::IsNumber(env, timeoutValue)) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of timeout must be number.");
-                return std::make_pair(0, Priority::NUMBER);
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's timeout must be number.");
+                return std::make_pair(Priority::NUMBER, 0);
             }
             timeout = NapiHelper::GetUint32Value(env, timeoutValue);
+        }
+        if (!NapiHelper::IsNotUndefined(env, priorityValue)) {
+            priorityValue = NapiHelper::CreateUint32(env, priority);
         }
     } else {
         priorityValue = arg;
     }
-    if (NapiHelper::IsNotUndefined(env, priorityValue)) {
-        if (!NapiHelper::IsNumber(env, priorityValue)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of priority must be number.");
-            return std::make_pair(0, Priority::NUMBER);
-        }
-        priority = NapiHelper::GetUint32Value(env, priorityValue);
-        if (priority >= Priority::NUMBER) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value is error");
-            return std::make_pair(0, Priority::NUMBER);
-        }
+    if (!NapiHelper::IsNumber(env, priorityValue)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's priority must be number.");
+        return std::make_pair(Priority::NUMBER, 0);
+    }
+    priority = NapiHelper::GetUint32Value(env, priorityValue);
+    if (priority >= Priority::NUMBER) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "execute's priority value is error");
+        return std::make_pair(Priority::NUMBER, 0);
     }
     return std::make_pair(priority, timeout);
+}
+
+void TaskPool::TriggerTaskGroupTimeoutTimer(napi_env env, TaskGroup* taskGroup)
+{
+    if (!taskGroup->IsTimeoutTaskGroup() || taskGroup->timer_ != nullptr) {
+        return;
+    }
+    TaskGroupMessage* message = new TaskGroupMessage();
+    message->groupId = taskGroup->groupId_;
+    message->env = env;
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+    taskGroup->timer_ = new uv_timer_t;
+    uv_timer_init(loop, taskGroup->timer_);
+    taskGroup->timer_->data = message;
+    uv_timer_start(taskGroup->timer_, reinterpret_cast<uv_timer_cb>(TaskGroupTimeoutCallback), taskGroup->timeout_, 0);
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    if (engine->IsMainThread()) {
+        uv_async_send(&loop->wq_async);
+    }
+}
+
+void TaskPool::TaskGroupTimeoutCallback(uv_timer_t* handle)
+{
+    TaskGroupMessage* message = reinterpret_cast<TaskGroupMessage*>(handle->data);
+    TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(message->groupId);
+    if (taskGroup == nullptr) {
+        delete message;
+        message = nullptr;
+        HILOG_ERROR("taskpool:: the taskGroup is nullptr");
+        return;
+    }
+    TaskGroupManager::GetInstance().TimeoutGroup(message->env, message->groupId);
+    delete message;
+    message = nullptr;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -43,7 +43,7 @@ public:
     static napi_value ExecuteDelayed(napi_env env, napi_value argv[], size_t argc);
     static napi_value Cancel(napi_env env, napi_value argv[], size_t argc);
     static void DelayTask(uv_timer_t* handle);
-    static napi_value ExecuteGroup(napi_env env, napi_value taskGroup);
+    static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, uint32_t timeout = 0);
     static napi_value ExecutePeriodically(napi_env env, napi_value argv[], size_t argc);
     static void PeriodicTaskCallback(uv_timer_t* handle);
     static void UpdateGroupInfoByResult(napi_env env, uv_timer_t* handle, napi_value res, bool success);
@@ -108,6 +108,10 @@ public:
     static uint32_t GetTaskIdSalt();
     static uint64_t CalculateTaskId(uint64_t taskId, uint32_t salt);
     static bool SetAndTestTaskQueues();
+    static bool TriggerTaskTimeoutTimer(napi_env env, void* data);
+    static bool TaskTimeoutCallback(uv_timer_t* handle);
+    static bool TriggerTaskGroupTimeoutTimer(napi_env env, void* data);
+    static bool TaskGroupTimeoutCallback(uv_timer_t* handle);
 
     class ExceptionScope {
     public:

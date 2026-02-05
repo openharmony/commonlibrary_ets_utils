@@ -31,6 +31,7 @@ public:
     void CancelGroupTask(napi_env env, uint32_t taskId, TaskGroup* group);
     void ReleaseTaskGroupData(napi_env env, TaskGroup* group);
     bool UpdateGroupState(uint64_t groupId);
+    void TimeoutGroup(napi_env env, uint64_t groupId);
 
 private:
     TaskGroupManager() = default;
