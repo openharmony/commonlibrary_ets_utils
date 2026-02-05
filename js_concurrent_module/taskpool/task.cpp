@@ -567,6 +567,12 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
         return nullptr;
     }
+    if (task->IsTimeoutTask()) {
+        errMessage = "taskpool:: the timeout task cannot addDependency.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        return nullptr;
+    }
     task->SetHasDependency(true);
     std::set<uint32_t> idSet;
     for (size_t i = 0; i < argc; i++) {
@@ -605,6 +611,12 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
             }
             if (dependentTask->IsGroupCommonTask()) {
                 errMessage = "taskpool:: groupTask cannot be relied on";
+                HILOG_ERROR("%{public}s", errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                return nullptr;
+            }
+            if (task->IsTimeoutTask()) {
+                errMessage = "taskpool:: the timeout task cannot be relied on.";
                 HILOG_ERROR("%{public}s", errMessage.c_str());
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
                 return nullptr;
@@ -1255,6 +1267,12 @@ bool Task::CanForSequenceRunner(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
+    if (IsTimeoutTask()) {
+        errMessage = "the timeout task cannot be executed again.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1293,6 +1311,12 @@ bool Task::CanForTaskGroup(napi_env env)
     }
     if (IsAsyncRunnerTask()) {
         errMessage = "TaskGroup cannot execute asyncRunnerTask.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
+    if (IsTimeoutTask()) {
+        errMessage = "the timeout task cannot be executed again.";
         HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
@@ -1340,6 +1364,12 @@ bool Task::CanExecute(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
+    if (IsTimeoutTask()) {
+        errMessage = "the timeout task cannot be executed again.";
+        HILOG_ERROR("%{public}s", errMessage.c_str());
+        ErrorHelper::taskpool:: ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1382,6 +1412,12 @@ bool Task::CanExecuteDelayed(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
+    if (IsTimeoutTask()) {
+        errMessage = "the timeout task cannot be executed again.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1399,6 +1435,11 @@ bool Task::CanExecutePeriodically(napi_env env)
     if (HasDependency()) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "taskpool:: the task with dependency cannot executePeriodically");
+        return false;
+    }
+    if (IsTimeoutTask()) {
+        std::string errMessage = "the timeout task cannot be executed again.";
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
     return true;
@@ -1609,6 +1650,12 @@ bool Task::CanForAsyncRunner(napi_env env)
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
         return false;
     }
+    if (IsTimeoutTask()) {
+        errMessage = "the timeout task cannot be executed again.";
+        HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_TASK_CANNOT_EXECUTED, errMessage.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -1667,6 +1714,7 @@ void Task::CancelInner(ExecuteState state)
 {
     ClearDelayedTimers();
     CancelPendingTask(env_);
+    ClearTimeoutTimer();
     if (HasDependency()) {
         TaskManager::GetInstance().ClearDependentTask(taskId_);
     }
@@ -1880,6 +1928,9 @@ bool Task::UpdateTaskStateToWaiting()
 bool Task::UpdateTaskStateToRunning()
 {
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (IsTimeoutState()) {
+        return false;
+    }
     if (taskState_ != ExecuteState::CANCELED) {
         taskState_ = ExecuteState::RUNNING;
         return true;
@@ -1890,13 +1941,15 @@ bool Task::UpdateTaskStateToRunning()
 bool Task::UpdateTaskStateToCanceled()
 {
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (IsTimeoutState()) {
+        return false;
+    }
     if (IsPeriodicTask()) {
         taskState_ = ExecuteState::CANCELED;
         return true;
     }
     if (taskState_ == ExecuteState::NOT_FOUND || taskState_ == ExecuteState::FINISHED ||
         taskState_ == ExecuteState::CANCELED || taskState_ == ExecuteState::ENDING) {
-        taskState_ = ExecuteState::WAITING;
         return false;
     }
     taskState_ = ExecuteState::CANCELED;
@@ -1916,6 +1969,9 @@ bool Task::UpdateTaskStateToFinished()
 bool Task::UpdateTaskStateToDelayed()
 {
     std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (IsTimeoutState()) {
+        return false;
+    }
     if (!IsExecuted() || IsRealyCanceled() || taskState_ == ExecuteState::FINISHED) {
         taskState_ = ExecuteState::DELAYED;
         return true;
@@ -1997,4 +2053,71 @@ void Task::TriggerEnqueueCallback()
         HILOG_DEBUG("taskpool:: onEnqueuedCallBackInfo is null");
     }
 }
+
+bool Task::IsTimeoutTask()
+{
+    return timeout_;
+}
+
+bool Task::IsNotFoundState()
+{
+    return taskState_ == ExecuteState::NOT_FOUND;
+}
+
+bool Task::IsWaitingState()
+{
+    return taskState_ == ExecuteState::WAITING;
+}
+
+bool Task::IsRunningState()
+{
+    return taskState_ == ExecuteState::RUNNING;
+}
+
+bool Task::IsCanceledState()
+{
+    return taskState_ == ExecuteState::CANCELED;
+}
+
+bool Task::IsFinishedState()
+{
+    return taskState_ == ExecuteState::FINISHED;
+}
+
+bool Task::IsDelayedState()
+{
+    return taskState_ == ExecuteState::DELAYED;
+}
+
+bool Task::IsEndingState()
+{
+    return taskState_ == ExecuteState::ENDING;
+}
+
+bool Task::IsTimeoutState()
+{
+    return taskState_ == ExecuteState::TIMEOUT;
+}
+
+bool Task::UpdateTaskStateToTimeout()
+{
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    if (IsCanceledState() || IsFinishedState() || IsEndingState()) {
+        return false;
+    }
+    taskState_ = ExecuteState::TIMEOUT;
+    return true;
+}
+
+void Task::ClearTimeoutTimer()
+{
+    HILOG_DEBUG("taskpool:: task ClearTimeoutTimer");
+    if (!IsTimeoutTask() || timer_ == nullptr || IsTimeoutState()) {
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+    uv_timer_stop(timer_);
+    ConcurrentHelper::UvHandleClose(timer_);
+}
+
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

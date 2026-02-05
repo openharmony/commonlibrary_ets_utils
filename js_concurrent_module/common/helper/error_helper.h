@@ -135,6 +135,9 @@ public:
             case ERR_TASK_CANNOT_EXECUTED:
                 errTitle = "The task cannot be executed by two APIs, ";
                 break;
+            case ERR_TASK_TIMEOUT:
+                errTitle = "The task has been timeout.";
+                break;
             default:
                 break;
         }
@@ -304,8 +307,10 @@ public:
     static const int32_t ERR_ASYNCRUNNER_TASK_CANCELED = 10200055;
     // 10200056 : The task has been executed by AsyncRunner
     static const int32_t ERR_ASYNCRUNNER_TASK_HAVE_DEPENDENCY = 10200056;
-    // 10200056 : The task cannot be executed by two APIs
+    // 10200057 : The task cannot be executed by two APIs
     static const int32_t ERR_TASK_CANNOT_EXECUTED = 10200057;
+    // 10200058 : The task has been timeout.
+    static const int32_t ERR_TASK_TIMEOUT = 10200058;
 };
 } // namespace Commonlibrary::Concurrent::Common::Helper
 #endif // JS_CONCURRENT_MODULE_COMMON_HELPER_ERROR_HELPER_H

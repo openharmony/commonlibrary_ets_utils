@@ -44,7 +44,7 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
 
 extern const std::unordered_map<Priority, napi_event_priority> g_napiPriorityMap;
-enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING};
+enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING, TIMEOUT};
 enum TaskType {
     TASK,
     FUNCTION_TASK,
@@ -223,6 +223,21 @@ public:
     bool UpdateTaskStateToDelayed();
     bool UpdateTaskStateToEnding();
     void TriggerEnqueueCallback();
+<<<<<<< HEAD
+=======
+    void StoreEnqueueTime();
+    bool IsTimeoutTask();
+    bool IsNotFoundState();
+    bool IsWaitingState();
+    bool IsRunningState();
+    bool IsCanceledState();
+    bool IsFinishedState();
+    bool IsDelayedState();
+    bool IsEndingState();
+    bool IsTimeoutState();
+    bool UpdateTaskStateToTimeout();
+    void ClearTimeoutTimer();
+>>>>>>> edccb39d... taskpool add timeout logic
 
     static std::tuple<napi_value, napi_value, napi_value, napi_value> GetSerializeParams(napi_env env,
                                                                                          napi_value napiTask);
@@ -279,6 +294,7 @@ public:
     bool isMainThreadTask_ {false};
     Priority asyncTaskPriority_ {Priority::DEFAULT};
     std::atomic<bool> isCancelToFinish_ {false};
+    uint32_t timeout_ {0};
 };
 
 struct CallbackInfo {

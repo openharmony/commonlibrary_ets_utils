@@ -542,6 +542,7 @@ void Worker::NotifyHandleTaskResult(Task* task)
         HILOG_FATAL("taskpool:: worker is nullptr");
         return;
     }
+    task->ClearTimeoutTimer();
     worker->EraseRunningTaskId(task->GetTaskId());
     auto priority = worker->GetPriority();
     if (!Task::VerifyAndPostResult(task, priority)) {
