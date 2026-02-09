@@ -47,11 +47,6 @@ namespace OHOS::Util {
         0xb5ae6775f25fd92b   // upper
     };
 
-    static const napi_type_tag textEncoderTypeTag = {
-        0x6e66468a3e9b43bb,  // lower
-        0x9be3e32ba27e51e0   // upper
-    };
-
     static const napi_type_tag base64TypeTag = {
         0x0421c0a4ed4d4c3b,  // lower
         0x957195ee1483013a   // upper
@@ -567,14 +562,14 @@ namespace OHOS::Util {
             return nullptr;
         }
         object->SetOrgEncoding(orgEncoding);
-        napi_status status = napi_wrap_s(env, thisVar, object,
+        napi_status status = napi_wrap(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {
                 auto obj = reinterpret_cast<TextEncoder*>(data);
                 if (obj != nullptr) {
                     delete obj;
                     obj = nullptr;
                 }
-            }, nullptr, &textEncoderTypeTag, nullptr);
+            }, nullptr, nullptr);
         if (status != napi_ok) {
             delete object;
             object = nullptr;
@@ -627,7 +622,7 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         TextEncoder *object = nullptr;
-        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &textEncoderTypeTag, (void**)&object));
+        NAPI_CALL(env, napi_unwrap(env, thisVar,  (void**)&object));
 
         return object->GetEncoding(env);
     }
@@ -655,7 +650,7 @@ namespace OHOS::Util {
             return result;
         }
         TextEncoder *object = nullptr;
-        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &textEncoderTypeTag, (void**)&object));
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
 
         result = object->Encode(env, args);
 
@@ -683,7 +678,7 @@ namespace OHOS::Util {
         }
 
         TextEncoder *object = nullptr;
-        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &textEncoderTypeTag, (void **)&object));
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void **)&object));
         result = object->Encode(env, args);
         return result;
     }
@@ -712,7 +707,7 @@ namespace OHOS::Util {
         NAPI_ASSERT(env, valuetype1 == napi_uint8_array, "Wrong argument type. napi_uint8_array expected.");
 
         TextEncoder *object = nullptr;
-        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &textEncoderTypeTag, (void**)&object));
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
 
         napi_value result = object->EncodeInto(env, args[0], args[1]);
 
@@ -740,7 +735,7 @@ namespace OHOS::Util {
             return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
         }
         TextEncoder *object = nullptr;
-        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &textEncoderTypeTag, (void**)&object));
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
         napi_value result = object->EncodeInto(env, args[0], args[1]);
         return result;
     }
