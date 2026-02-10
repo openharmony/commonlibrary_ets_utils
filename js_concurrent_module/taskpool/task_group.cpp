@@ -210,7 +210,6 @@ void TaskGroup::NotifyGroupTask(napi_env env)
         task->IncreaseRefCount();
         TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
         task->taskState_ = ExecuteState::WAITING;
-        task->StoreEnqueueTime();
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
     }
 }

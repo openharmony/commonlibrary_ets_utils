@@ -6567,6 +6567,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest319, testing::ext::TestSize.Level0)
     task2->taskState_ = ExecuteState::WAITING;
     taskManager.StoreTask(task2);
     task2->runnerId_ = asyncRunner->runnerId_;
+    AsyncRunnerManager::GetInstance().FindRunnerAndRef(asyncRunner->runnerId_);
     NativeEngineTest::EnqueueTaskIdToQueue(reinterpret_cast<void*>(task2));
     asyncRunnerManager.CancelAsyncRunnerTask(env, task2);
     exception = nullptr;

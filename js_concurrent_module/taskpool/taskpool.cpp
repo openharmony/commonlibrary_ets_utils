@@ -287,7 +287,6 @@ void TaskPool::DelayTask(uv_timer_t* handle)
             taskInfo->deferred = taskMessage->deferred;
             if (task->taskState_ == ExecuteState::DELAYED || task->taskState_ == ExecuteState::FINISHED) {
                 task->taskState_ = ExecuteState::WAITING;
-                task->StoreEnqueueTime();
                 TaskManager::GetInstance().EnqueueTaskId(taskMessage->taskId, Priority(taskMessage->priority));
             }
         } else {
@@ -439,7 +438,6 @@ void TaskPool::HandleTaskResult(Task* task)
     }
     task->DecreaseTaskLifecycleCount();
 
-    task->finishedTime_ = ConcurrentHelper::GetCurrentTimeStampWithMS();
     HandleTaskResultInner(task);
 }
 
@@ -590,7 +588,6 @@ void TaskPool::ExecuteTask(napi_env env, Task* task, Priority priority)
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     if (task->UpdateTaskStateToWaiting()) {
-        task->StoreEnqueueTime();
         HILOG_TASK_INFO("taskpool:: %{public}s", taskLog.c_str());
         task->isCancelToFinish_ = false;
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority);
@@ -847,39 +844,26 @@ void TaskPool::RecordTaskResultLog(Task* task, napi_status status, napi_value& n
 {
     // tag for trace parse: Task PerformTask End
     std::string strTrace = "Task PerformTask End: taskId : " + std::to_string(task->taskId_);
-    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_);
-    std::string result = "";
+    std::string taskLog = "Task PerformTask End: " + std::to_string(task->taskId_)
+ 	                    + ", " + ConcurrentHelper::GetCurrentTimeStampWithMS();
     if (task->taskState_ == ExecuteState::CANCELED) {
         strTrace += ", performResult : IsCanceled";
         napiTaskResult = task->IsAsyncRunnerTask() ? TaskManager::GetInstance().CancelError(task->env_,
             ErrorHelper::ERR_ASYNCRUNNER_TASK_CANCELED, nullptr, napiTaskResult, task->success_) :
             TaskManager::GetInstance().CancelError(task->env_, 0, nullptr, napiTaskResult, task->success_);
         isCancel = true;
-        result = "IsCanceled";
+        taskLog += ", IsCanceled";
     } else if (status != napi_ok) {
         strTrace += ", performResult : DeserializeFailed";
         taskLog += ", DeserializeFailed";
-        result = "DeserializeFailed";
     } else if (task->success_) {
         strTrace += ", performResult : Successful";
-        result = "Successful";
     } else { // LCOV_EXCL_BR_LINE
         strTrace += ", performResult : Unsuccessful";
         taskLog += ", Unsuccessful";
-        result = "Unsuccessful";
     }
     HITRACE_HELPER_METER_NAME(strTrace);
-    HILOG_DEBUG("taskpool:: %{public}s", taskLog.c_str());
-    std::string message = "";
-    {
-        std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        message = "tId " + std::to_string(task->taskId_) +
-                  ", name " + task->name_ + ", result " + result +
-                  ", enqueueT " + task->enqueueTime_ +
-                  ", runningT " + task->runningTime_ +
-                  ", finishedT " + task->finishedTime_;
-    }
-    TaskManager::GetInstance().PushLog(message);
+    TaskManager::GetInstance().PushLog(taskLog);
 }
 
 napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
