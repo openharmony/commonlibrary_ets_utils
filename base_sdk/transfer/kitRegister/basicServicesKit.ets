@@ -15,9 +15,12 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerCommonEventManager() {
-    registerStaticCB('CommonEventManager.CommonEventSubscriber', 'commonEvent/commonEventSubscriber', 'CommonEventSubscriberInner', 'transferStatic');
-    registerDynamicCB('CommonEventManager.CommonEventSubscriber', 'commonEvent/commonEventSubscriber', 'CommonEventSubscriberInner', 'transferDynamic');
+    registerStaticCB('CommonEventManager.CommonEventSubscriber', 'commonEvent.commonEventSubscriber', 'CommonEventSubscriberInner', 'transferStatic');
+    registerDynamicCB('CommonEventManager.CommonEventSubscriber', 'commonEvent.commonEventSubscriber', 'CommonEventSubscriberInner', 'transferDynamic');
 
     registerStaticCB('StaticSubscriberExtensionContext', '@ohos.application.StaticSubscriberExtensionContext', 'StaticSubscriberExtensionContext', 'transferStatic');
     registerDynamicCB('StaticSubscriberExtensionContext', '@ohos.application.StaticSubscriberExtensionContext', 'StaticSubscriberExtensionContext', 'transferDynamic');
+
+    registerStaticCB('Emitter', '@ohos.events.emitter.emitter', 'Emitter', 'transferStatic');
+    registerDynamicCB('Emitter', '@ohos.events.emitter.emitter', 'Emitter', 'transferDynamic');
 }
