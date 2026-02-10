@@ -1126,7 +1126,6 @@ void Task::NotifyPendingTask()
     currentTaskInfo_ = pendingTaskInfos_.front();
     pendingTaskInfos_.pop_front();
     taskState_ = ExecuteState::WAITING;
-    StoreEnqueueTime();
     TaskManager::GetInstance().EnqueueTaskId(taskId_, currentTaskInfo_->priority);
 }
 
@@ -1997,14 +1996,5 @@ void Task::TriggerEnqueueCallback()
     } else { // LOCV_EXCL_BR_LINE
         HILOG_DEBUG("taskpool:: onEnqueuedCallBackInfo is null");
     }
-}
-
-void Task::StoreEnqueueTime()
-{
-    {
-        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
-        enqueueTime_ = ConcurrentHelper::GetCurrentTimeStampWithMS();
-    }
-    TaskManager::GetInstance().StoreTaskEnqueueTime(taskId_, enqueueTime_);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
