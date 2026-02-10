@@ -70,7 +70,7 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
             }
         } else {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "the type of first param must be string and the type of second param must be string.");
+                "the type of first param must be string and the type of second param must be number.");
             return nullptr;
         }
     } else if (argc == 1) {
@@ -116,13 +116,13 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (argc < 1) {
         errMessage = "seqRunner:: number of params at least one";
         HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of param at least one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of execute's param at least one.");
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[0]) || !NapiHelper::HasNameProperty(env, args[0], TASKID_STR)) {
         errMessage = "seqRunner:: first param must be task.";
         HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's first param must be task.");
         return nullptr;
     }
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, thisVar, SEQ_RUNNER_ID_STR);
@@ -134,7 +134,7 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     Task* task = nullptr;
     napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's param must be task.");
         return nullptr;
     }
     if (!task->CanForSequenceRunner(env)) {

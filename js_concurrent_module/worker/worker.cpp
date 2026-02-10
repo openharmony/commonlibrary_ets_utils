@@ -672,7 +672,8 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc != NUM_WORKER_ARGS) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters must be 2.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of registerGlobalCallObject's parameters must be 2.");
         return nullptr;
     }
     // check 1st param is string
@@ -682,7 +683,8 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of instanceName must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of registerGlobalCallObject's instanceName must be string.");
         return nullptr;
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);
@@ -690,7 +692,8 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
     Worker* worker = nullptr;
     napi_unwrap(env, thisVar, (void**)&worker);
     if (worker == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING,
+            "maybe worker is terminated when registerGlobalCallObject");
         return nullptr;
     }
     napi_ref obj = NapiHelper::CreateReference(env, args[1], 1);
@@ -702,7 +705,8 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc > 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of the parameters must be 1 or 0.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of unregisterGlobalCallObject's parameters must be 1 or 0.");
         return nullptr;
     }
     napi_value thisVar = nullptr;
@@ -713,7 +717,8 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
     Worker* worker = nullptr;
     napi_unwrap(env, thisVar, (void**)&worker);
     if (worker == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "maybe worker is terminated");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING,
+            "maybe worker is terminated when unregisterGlobalCallObject");
         return nullptr;
     }
     if (argc == 0) {
@@ -723,7 +728,8 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
     }
     // check 1st param is string
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of instanceName must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of unregisterGlobalCallObject's instanceName must be string.");
         return nullptr;
     }
     std::string instanceName = NapiHelper::GetString(env, args[0]);
@@ -862,7 +868,8 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
     void* data = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of the parameters must be more than 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of dispatchEvent's parameters must be more than 1.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -883,7 +890,7 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
 
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
     if (!NapiHelper::IsString(env, typeValue)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of event type must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of dispatchEvent's event type must be string.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -1019,7 +1026,8 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_GLOBAL_CALL_ARGS) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters must be equal or more than 3.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of callGlobalCallObjectMethod's parameters must be equal or more than 3.");
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -1040,15 +1048,18 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     }
 
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of instanceName must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of callGlobalCallObjectMethod's instanceName must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsString(env, args[1])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of methodname must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of callGlobalCallObjectMethod's methodName must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsNumber(env, args[2])) { // 2: the index of argument "timeout"
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of timeout must be number.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of callGlobalCallObjectMethod's timeout must be number.");
         return nullptr;
     }
 
@@ -1099,7 +1110,8 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
 #endif
     } else {
         HILOG_ERROR("worker:: worker host engine is nullptr when callGloballCallObjectMethod.");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING,
+            "worker is null when callGlobalCallObjectMethod");
         return nullptr;
     }
 
@@ -1133,7 +1145,8 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     serializeStatus = napi_deserialize(env, data, &res);
     napi_delete_serialization_data(env, data);
     if (serializeStatus != napi_ok || res == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, "failed to serialize message.");
+        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
+            "failed to serialize message when callGlobalCallObjectMethod.");
         return nullptr;
     }
     return res;
@@ -1164,7 +1177,7 @@ napi_value Worker::CloseWorker(napi_env env, napi_callback_info cbinfo)
     if (worker != nullptr) {
         worker->CloseInner();
     } else {
-        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is null when close");
         return nullptr;
     }
     return NapiHelper::GetUndefinedValue(env);
@@ -1218,7 +1231,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
 
     if (worker == nullptr || !worker->IsNotTerminate()) {
         HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is not running.");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is not running when addEventListener.");
         return nullptr;
     }
 
@@ -1256,19 +1269,20 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
 
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
     if (!NapiHelper::IsString(env, typeValue)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of worker event must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of dispatchEvent's worker event must be string.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
     if (worker == nullptr || !worker->IsNotTerminate()) {
         HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr.");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr when dispatchEvent.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
     char* typeStr = NapiHelper::GetChars(env, typeValue);
     if (typeStr == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener type must be not null.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "dispatchEvent: worker listener type must be not null.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -1292,7 +1306,8 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters must be more than 2.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of removeEventListener's parameters must be more than 2.");
         return nullptr;
     }
 
@@ -1302,19 +1317,20 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
 
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of worker listener 1st param must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of removeEventListener's 1st param must be string.");
         return nullptr;
     }
 
     if (argc > 1 && !NapiHelper::IsCallable(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the type of worker listener second param must be callable.");
+            "the type of removeEventListener's second param must be callable.");
         return nullptr;
     }
 
     if (worker == nullptr || !worker->IsNotTerminate()) {
         HILOG_ERROR("worker:: when post message to host occur worker is nullptr");
-        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is not running.");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is not running when removeEventListener.");
         return nullptr;
     }
 
@@ -1325,7 +1341,8 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
 
     char* typeStr = NapiHelper::GetChars(env, args[0]);
     if (typeStr == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "worker listener type must be not null.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "removeEventListener's worker listener type must be not null.");
         return nullptr;
     }
     worker->ParentPortRemoveListenerInner(env, typeStr, callback);
