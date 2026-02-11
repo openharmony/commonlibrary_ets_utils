@@ -60,7 +60,6 @@ static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
 static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
-static constexpr uint32_t LOG_INTERVAL = 1000; // 1000: 1s
 static constexpr uint32_t WAITING_INTERVAL = 1000; // 1000: 1s
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
@@ -92,7 +91,6 @@ TaskManager::~TaskManager()
     HILOG_INFO("taskpool:: ~TaskManager");
     TimerStop(balanceTimer_, "taskpool:: balanceTimer_ is nullptr");
     TimerStop(expandTimer_, "taskpool:: expandTimer_ is nullptr");
-    TimerStop(logTimer_, "taskpool:: logTimer_ is nullptr");
     TimerStop(waitingTimer_, "taskpool:: waitingTimer_ is nullptr");
 
     ConcurrentHelper::UvHandleClose(dispatchHandle_);
@@ -320,8 +318,10 @@ void TaskManager::CheckForBlockedWorkers()
             }
             continue;
         }
-
-        HILOG_INFO("taskpool:: The worker has been marked as timeout.");
+        auto loop = worker->GetWorkerLoop();
+        uint64_t loopAddress = reinterpret_cast<uint64_t>(loop);
+        HILOG_INFO("taskpool:: The worker has been marked as timeout. loop:%{public}s",
+            std::to_string(loopAddress).c_str());
         // If the current worker has a longTask and is not executing, we will only interrupt it.
         if (worker->HasLongTask()) {
             continue;
@@ -567,12 +567,6 @@ void TaskManager::TriggerLoadBalance([[maybe_unused]] const uv_timer_t* req)
     taskManager.CountTraceForWorker(true);
 }
 
-void TaskManager::PrintLog([[maybe_unused]] const uv_timer_t* req)
-{
-    TaskManager& taskManager = TaskManager::GetInstance();
-    taskManager.logManager_.PrintLog();
-}
-
 void TaskManager::PrintWaitingTime([[maybe_unused]] const uv_timer_t* req)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
@@ -624,6 +618,7 @@ void TaskManager::PrintWaitingTime([[maybe_unused]] const uv_timer_t* req)
     } else {
         HILOG_DEBUG("taskpool::no wating task now");
     }
+    taskManager.logManager_.PrintLog();
 }
 
 void TaskManager::DispatchAndTryExpand([[maybe_unused]] const uv_async_t* req)
@@ -712,7 +707,6 @@ void TaskManager::RunTaskManager()
 
     TimerInit(balanceTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), TRIGGER_INTERVAL);
     TimerInit(expandTimer_, false, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), TRIGGER_INTERVAL);
-    TimerInit(logTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::PrintLog), LOG_INTERVAL);
     TimerInit(waitingTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::PrintWaitingTime), WAITING_INTERVAL);
 
     isHandleInited_ = true;
