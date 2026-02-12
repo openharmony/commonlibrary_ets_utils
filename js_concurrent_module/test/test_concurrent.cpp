@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "async_stack_helper.h"
 #include "test.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -841,4 +842,26 @@ HWTEST_F(NativeEngineTest, GetElementTest001, testing::ext::TestSize.Level0)
         napi_value propName = NapiHelper::GetElement(env, propNames, i);
         ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
     }
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackHelperTest001, testing::ext::TestSize.Level0)
+{
+    // Try to load faultlogd function symbol
+    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    uint64_t id = AsyncStackHelper::CollectAsyncStack(
+        AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_TASKPOOL);
+    // ASYNC_TYPE_ARKTS_TASKPOOL is default closed, so id is 0
+    ASSERT_EQ(id, 0);
+    AsyncStackHelper::SetStackId(id);
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackHelperTest002, testing::ext::TestSize.Level0)
+{
+    // Try to load faultlogd function symbol
+    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    uint64_t id = AsyncStackHelper::CollectAsyncStack(
+        AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_WORKER);
+    // ASYNC_TYPE_ARKTS_TASKPOOL is default closed, so id is 0
+    ASSERT_EQ(id, 0);
+    AsyncStackHelper::SetStackId(id);
 }

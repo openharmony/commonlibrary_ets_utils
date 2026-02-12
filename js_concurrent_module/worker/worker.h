@@ -24,6 +24,7 @@
 #if defined(ENABLE_CONCURRENCY_INTEROP)
     #include "helper/hybrid_concurrent_helper.h"
 #endif
+#include "helper/async_stack_helper.h"
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
 #include "message_queue.h"
@@ -535,6 +536,15 @@ public:
 
     napi_env CreateWorkerEnv();
 
+    inline void SetAsyncStackID(uint64_t asyncStackID)
+    {
+        asyncStackID_ = asyncStackID;
+    }
+    inline uint64_t GetAsyncStackID() const
+    {
+        return asyncStackID_;
+    }
+
 private:
     void WorkerOnMessageInner();
     void HostOnMessageInner();
@@ -683,6 +693,8 @@ private:
     std::function<void()> qosUpdatedCallback_;
     std::atomic<bool> needOnExitCallback_ = true;
 
+    uint64_t asyncStackID_ = 0;
+
     #if defined(ENABLE_CONCURRENCY_INTEROP)
         ani_env* aniEnv_ = nullptr;
     #endif
@@ -716,6 +728,27 @@ private:
     NativeEngine* engine_ {nullptr};
     int32_t scopeId_ {-1};
     bool initialized_ {false};
+};
+
+class AsyncStackScope {
+public:
+    explicit AsyncStackScope(Worker* worker)
+    {
+        uint64_t id = worker->GetAsyncStackID();
+        if (id != 0) {
+            AsyncStackHelper::SetStackId(id);
+            hasSetStackId = true;
+        }
+    }
+
+    ~AsyncStackScope()
+    {
+        if (hasSetStackId) {
+            AsyncStackHelper::SetStackId(0);
+        }
+    }
+private:
+    bool hasSetStackId = false;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H

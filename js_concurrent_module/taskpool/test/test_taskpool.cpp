@@ -2082,6 +2082,40 @@ HWTEST_F(NativeEngineTest, TaskpoolTest130, testing::ext::TestSize.Level0)
     ASSERT_TRUE(true);
 }
 
+HWTEST_F(NativeEngineTest, GetSetAsyncStackIDTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    Task* task = new Task(env, TaskType::COMMON_TASK, "groupTask");
+    uint64_t id = task->GetAsyncStackID();
+    // faultlogd function symbol is not loaded
+    ASSERT_TRUE(id == 0);
+    const uint64_t newId = 123;
+    task->SetAsyncStackID(newId);
+
+    id = task->GetAsyncStackID();
+    ASSERT_TRUE(id == newId);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, GetSetAsyncStackIDTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    // try to load faultlogd function symbol
+    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    Task* task = new Task(env, TaskType::COMMON_TASK, "groupTask");
+    uint64_t id = task->GetAsyncStackID();
+    // ASYNC_TYPE_ARKTS_TASKPOOL is default closed, so id is 0
+    ASSERT_TRUE(id == 0);
+    const uint64_t newId = 123;
+    task->SetAsyncStackID(newId);
+
+    id = task->GetAsyncStackID();
+    ASSERT_TRUE(id == newId);
+    delete task;
+}
+
 HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;

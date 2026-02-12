@@ -14,6 +14,7 @@
  */
 
 #include "worker.h"
+#include "helper/async_stack_helper.h"
 #include "helper/concurrent_helper.h"
 
 #if defined(ENABLE_TASKPOOL_FFRT)
@@ -441,6 +442,7 @@ void Worker::PerformTask(const uv_async_t* req)
         delete task;
         return;
     }
+    AsyncStackHelper::SetStackId(task->GetAsyncStackID());
     // try to record the memory data for gc
     worker->NotifyTaskBegin();
 
