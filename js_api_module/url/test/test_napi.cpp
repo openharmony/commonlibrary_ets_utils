@@ -2155,6 +2155,7 @@ HWTEST_F(NativeEngineTest, testUrlModule005, testing::ext::TestSize.Level0)
     DealNapiStrValue(env, result, output);
     ASSERT_STREQ(output.c_str(), "aa");
 }
+
 HWTEST_F(NativeEngineTest, testUrlModule006, testing::ext::TestSize.Level0)
 {
     std::string inPut =  "#1asdf";
