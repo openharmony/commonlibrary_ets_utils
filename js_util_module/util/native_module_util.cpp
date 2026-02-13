@@ -622,7 +622,7 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
 
         TextEncoder *object = nullptr;
-        NAPI_CALL(env, napi_unwrap(env, thisVar,  (void**)&object));
+        NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
 
         return object->GetEncoding(env);
     }
