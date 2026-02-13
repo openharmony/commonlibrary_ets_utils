@@ -14,15 +14,13 @@ uri/
 ├── BUILD.gn                                      # Main build configuration defining compilation targets and dependencies
 ├── tsconfig.json                                 # TypeScript compiler configuration (tsconfig options)
 ├── src/
-│   ├── js_uri.ts                                 # TypeScript API wrapper exposing Uri class and public API surface
-│   └── js_uri.ts exports:                     # Uri class, Uri.Escape/Hierarchy/Helper functions, parse/set/toString methods
+│   └── js_uri.ts                                 # TypeScript API wrapper exposing Uri class and public API surface
 ├── js_uri.h / js_uri.cpp                         # Core URI implementation: Uri class with RFC 3986 compliant parsing, character validation rules, component extractors, normalization algorithms
 ├── native_module_uri.h / native_module_uri.cpp   # N-API module registration: UriConstructor binding, method exports (Normalize, Equals, IsAbsolute, etc.)
 └── test/                                         # Unit tests subdirectory
     ├── BUILD.gn                                  # Test build configuration
     ├── test.h / test_napi.cpp                    # N-API binding tests
-    │   └── test_ark.cpp                              # ArkTS runtime integration tests
-    └── test_ark.ts exports                      # Test entry points
+    └── test_ark.cpp                              # ArkTS runtime integration tests
 ```
 
 ## Building
@@ -31,7 +29,7 @@ The component uses GN (Generate Ninja) build system with BUILD.gn configuration 
 ### Build System
 The component uses GN build system configured through BUILD.gn with the following characteristics:
 - **Build Tool**: GN (Generate Ninja) - Meta-build system that generates Ninja build files
-- **Compiler Toolchain**: Clang/LLVM for C++ compilation
+- **Compiler Toolchain**: C++ compiler toolchain
 - **TypeScript Compiler**: build_ts_js.py action that invokes ArkTS tsc compiler
 - **Bytecode Compiler**: es2abc compiler that converts JavaScript to ArkTS ABC bytecode
 - **Integration**: Seamless integration with ArkTS runtime and N-API framework
@@ -54,7 +52,6 @@ The component uses GN build system configured through BUILD.gn with the followin
 │                    ↓                                       │
 │            Native Object Files (.o)                     │
 │                    ↓                                       │
-│            ↓                                       │
 │            Linker (ld)                                │
 │                    ↓                                       │
 │            Target Shared Library (liburi.so/.dylib)     │
@@ -136,7 +133,7 @@ The test suite includes comprehensive tests organized by category:
 - **RFC 3986 Compliance**: Verify adherence to URI specification requirements
 
 #### 3. Unit Test Framework
-- **Framework**: Google Test (gtest/gmock) for test organization and mocking
+- **Framework**: Google Test framework for test and mocking
 - **Assertions**: EXPECT_EQ, EXPECT_TRUE, EXPECT_THROW for validating expected behaviors
 - **Test Coverage**: Measure code coverage across all URI functionality
 - **Performance**: Benchmark critical parsing paths for optimization validation
