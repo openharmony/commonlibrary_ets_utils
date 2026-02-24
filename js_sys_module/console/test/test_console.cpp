@@ -2126,3 +2126,141 @@ HWTEST_F(NativeEngineTest, ConsoleTest075, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, cb, argc, argv, &res);
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
 }
+
+/* @tc.name: Console.Dir with null and undefined
+ * @tc.desc: Test Dir with null and undefined parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest076, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Dir";
+    napi_value cb = nullptr;
+
+    napi_value nullValue = nullptr;
+    napi_get_null(env, &nullValue);
+    napi_value argv1[] = {nullValue};
+
+    napi_value res0 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv1, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+
+    napi_value undefinedValue = nullptr;
+    napi_get_undefined(env, &undefinedValue);
+    napi_value argv2[] = {undefinedValue};
+
+    cb = nullptr;
+    napi_value res1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv2, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+}
+
+/* @tc.name: Console.Table with empty array
+ * @tc.desc: Test Table with empty array parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest077, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value emptyArray = nullptr;
+    uint32_t length = 0;
+    napi_create_array_with_length(env, length, &emptyArray);
+    napi_value argv[] = {emptyArray};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Table with primitive array
+ * @tc.desc: Test Table with primitive type array containing numbers and strings.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest078, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value primitiveArray = nullptr;
+    uint32_t length = 3;
+    napi_create_array_with_length(env, length, &primitiveArray);
+    
+    napi_value num1 = nullptr;
+    napi_create_int32(env, 10, &num1);
+    napi_set_element(env, primitiveArray, 0, num1);
+    
+    napi_value num2 = nullptr;
+    napi_create_int32(env, 20, &num2);
+    napi_set_element(env, primitiveArray, 1, num2);
+    
+    napi_value str = nullptr;
+    napi_create_string_utf8(env, "test", NAPI_AUTO_LENGTH, &str);
+    napi_set_element(env, primitiveArray, 2, str);
+    
+    napi_value argv[] = {primitiveArray};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Table with mixed object types
+ * @tc.desc: Test Table with objects containing mixed property types.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest079, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value tabularData = nullptr;
+    napi_create_object(env, &tabularData);
+    
+    napi_value nameArray = nullptr;
+    napi_create_array_with_length(env, 2, &nameArray);
+    napi_value name1 = StrToNapiValue(env, "Alice");
+    napi_value name2 = StrToNapiValue(env, "Bob");
+    napi_set_element(env, nameArray, 0, name1);
+    napi_set_element(env, nameArray, 1, name2);
+    napi_set_named_property(env, tabularData, "name", nameArray);
+    
+    napi_value ageArray = nullptr;
+    napi_create_array_with_length(env, 2, &ageArray);
+    napi_value age1 = nullptr;
+    napi_value age2 = nullptr;
+    napi_create_uint32(env, 25, &age1);
+    napi_create_uint32(env, 30, &age2);
+    napi_set_element(env, ageArray, 0, age1);
+    napi_set_element(env, ageArray, 1, age2);
+    napi_set_named_property(env, tabularData, "age", ageArray);
+    
+    napi_value activeArray = nullptr;
+    napi_create_array_with_length(env, 2, &activeArray);
+    napi_value bool1 = nullptr;
+    napi_value bool2 = nullptr;
+    napi_get_boolean(env, 1, &bool1);
+    napi_get_boolean(env, 0, &bool2);
+    napi_set_element(env, activeArray, 0, bool1);
+    napi_set_element(env, activeArray, 1, bool2);
+    napi_set_named_property(env, tabularData, "active", activeArray);
+    
+    napi_value argv[] = {tabularData};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
