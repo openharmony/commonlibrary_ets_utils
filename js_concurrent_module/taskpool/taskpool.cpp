@@ -1017,7 +1017,7 @@ void TaskPool::TaskTimeoutCallback(uv_timer_t* handle)
 std::pair<uint32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_value arg)
 {
     napi_value priorityValue = nullptr;
-    uint32_t timeout = 0;
+    int32_t timeout = 0;
     uint32_t priority = Priority::DEFAULT;
     if (NapiHelper::IsObject(env, arg)) {
         priorityValue = NapiHelper::GetNameProperty(env, arg, "priority");
@@ -1027,7 +1027,10 @@ std::pair<uint32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_valu
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's timeout must be number.");
                 return std::make_pair(Priority::NUMBER, 0);
             }
-            timeout = NapiHelper::GetUint32Value(env, timeoutValue);
+            timeout = NapiHelper::GetInt32Value(env, timeoutValue);
+            if (timeout < 0) {
+                timeout = 0;
+            }
         }
         if (!NapiHelper::IsNotUndefined(env, priorityValue)) {
             priorityValue = NapiHelper::CreateUint32(env, priority);
@@ -1044,7 +1047,7 @@ std::pair<uint32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_valu
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "execute's priority value is error");
         return std::make_pair(Priority::NUMBER, 0);
     }
-    return std::make_pair(priority, timeout);
+    return std::make_pair(priority, static_cast<uint32_t>(timeout));
 }
 
 void TaskPool::TriggerTaskGroupTimeoutTimer(napi_env env, TaskGroup* taskGroup)

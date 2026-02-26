@@ -8446,3 +8446,28 @@ HWTEST_F(NativeEngineTest, TaskpoolTest397, testing::ext::TestSize.Level0)
     TaskPool::HandleTaskResult(task);
     ASSERT_TRUE(true);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest398, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    task->taskState_ = ExecuteState::WAITING;
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
+    napi_value timeoutValue = nullptr;
+    napi_create_int32(env, -10, &timeoutValue);
+    napi_set_named_property(env, priorityObj, "priority", priorityValue);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_TRUE(result != nullptr);
+}
