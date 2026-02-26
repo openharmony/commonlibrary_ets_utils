@@ -97,7 +97,8 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     if (argc < 1 || argc > 2) { // 2 : task, Priority
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The numbers of params not more than two or less one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "The numbers of execute's params not more than two or less one.");
         return nullptr;
     }
     napi_value napiTask = args[0];
@@ -117,7 +118,7 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
     Task* task = nullptr;
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The type of param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The type of execute's param must be task.");
         return nullptr;
     }
     if (!task->CanForAsyncRunner(env)) {
@@ -196,12 +197,12 @@ AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value& th
 bool AsyncRunner::CheckExecuteArgs(napi_env env, napi_value napiTask, napi_value napiPriority)
 {
     if (!NapiHelper::IsObject(env, napiTask) || !NapiHelper::HasNameProperty(env, napiTask, TASKID_STR)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "First param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "execute's first param must be task.");
         return false;
     }
     if (napiPriority != nullptr) {
         if (!NapiHelper::IsNumber(env, napiPriority)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The type of the second param must be number.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The type of execute's second param must be number.");
             return false;
         }
         uint32_t priority = NapiHelper::GetUint32Value(env, napiPriority);

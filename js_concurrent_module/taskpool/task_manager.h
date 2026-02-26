@@ -204,7 +204,6 @@ private:
     static void TryExpand(const uv_timer_t* req = nullptr);
     static void DispatchAndTryExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req);
-    static void PrintLog(const uv_timer_t* req);
     static void PrintWaitingTime(const uv_timer_t* req);
 
     bool IsChooseIdle();
@@ -296,7 +295,6 @@ private:
     std::atomic<bool> isPerformIdle_ = false;
     std::atomic<uint32_t> taskIdSalt_ = 1;
 
-    uv_timer_t* logTimer_ = nullptr;
     uv_timer_t* waitingTimer_ = nullptr;
 
     LogManager logManager_;
