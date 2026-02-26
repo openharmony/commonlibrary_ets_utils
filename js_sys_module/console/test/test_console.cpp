@@ -1757,7 +1757,269 @@ HWTEST_F(NativeEngineTest, ConsoleTest059, testing::ext::TestSize.Level0)
     napi_value argv[] = {numVal};
 
     napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleLog with different number types
+ * @tc.desc: Test ConsoleLog with various number format specifiers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest080, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 2;
+    std::string funcName = "ConsoleLog";
+    napi_value cb = nullptr;
+
+    std::string message = "Integer: %d, Float: %f";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value nativeMessage1 = nullptr;
+    napi_create_int32(env, 42, &nativeMessage1);
+    napi_value nativeMessage2 = nullptr;
+    napi_create_double(env, 3.14159, &nativeMessage2);
+    napi_value argv[] = {nativeMessage0, nativeMessage1, nativeMessage2};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleLog with boolean values
+ * @tc.desc: Test ConsoleLog with boolean format specifier.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest081, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 2;
+    std::string funcName = "ConsoleLog";
+    napi_value cb = nullptr;
+
+    std::string message = "Boolean value: %s";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value nativeMessage1 = nullptr;
+    napi_get_boolean(env, 1, &nativeMessage1);
+    napi_value argv[] = {nativeMessage0, nativeMessage1};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleLog with large number
+ * @tc.desc: Test ConsoleLog with large integer value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest082, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 2;
+    std::string funcName = "ConsoleLog";
+    napi_value cb = nullptr;
+
+    std::string message = "Large number: %d";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value nativeMessage1 = nullptr;
+    napi_create_int32(env, 999999, &nativeMessage1);
+    napi_value argv[] = {nativeMessage0, nativeMessage1};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Count with boolean label
+ * @tc.desc: Test Count with boolean type label.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest083, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Count";
+    napi_value cb = nullptr;
+
+    napi_value boolVal = nullptr;
+    napi_get_boolean(env, 1, &boolVal);
+    napi_value argv[] = {boolVal};
+
+    napi_value res = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Count, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Time with boolean label
+ * @tc.desc: Test Time with boolean type label.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest084, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Time";
+    napi_value cb = nullptr;
+
+    napi_value boolVal = nullptr;
+    napi_get_boolean(env, 0, &boolVal);
+    napi_value argv[] = {boolVal};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Time, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Group with nested groups
+ * @tc.desc: Test Group with multiple nested group calls.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest085, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ConsoleTest::SetGroupIndent("");
+
+    size_t argc = 1;
+    std::string funcName = "Group";
+    napi_value cb = nullptr;
+
+    napi_value msg1 = StrToNapiValue(env, "Level 1");
+    napi_value argv1[] = {msg1};
+
+    napi_value res1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Group, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv1, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+
+    napi_value msg2 = StrToNapiValue(env, "Level 2");
+    napi_value argv2[] = {msg2};
+
+    cb = nullptr;
+    napi_value res2 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Group, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv2, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+
+    funcName = "GroupEnd";
+    cb = nullptr;
+    napi_value res3 = nullptr;
+    napi_value argv3[] = {nullptr};
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::GroupEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv3, &res3);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
+
+    cb = nullptr;
+    napi_value res4 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::GroupEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, argv3, &res4);
+    ASSERT_CHECK_VALUE_TYPE(env, res4, napi_undefined);
+
+    ConsoleTest::SetGroupIndent("");
+}
+
+/* @tc.name: Console.TraceHybridStack with no arguments
+ * @tc.desc: Test TraceHybridStack called without arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest086, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 0;
+    napi_value res = nullptr;
+    std::string funcName = "TraceHybridStack";
+    napi_value argv[] = {nullptr};
+    napi_value cb = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TraceHybridStack, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Assert with true condition
+ * @tc.desc: Test Assert with true condition that should not trigger error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest087, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Assert";
+    napi_value cb = nullptr;
+
+    napi_value condition = nullptr;
+    napi_get_boolean(env, 1, &condition);
+    napi_value argv[] = {condition};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Assert, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Table with array of objects
+ * @tc.desc: Test Table with array containing object elements.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest088, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value objectArray = nullptr;
+    napi_create_array_with_length(env, 2, &objectArray);
+
+    napi_value obj1 = nullptr;
+    napi_create_object(env, &obj1);
+    napi_value val1 = nullptr;
+    napi_create_int32(env, 10, &val1);
+    napi_set_named_property(env, obj1, "id", val1);
+    napi_set_element(env, objectArray, 0, obj1);
+
+    napi_value obj2 = nullptr;
+    napi_create_object(env, &obj2);
+    napi_value val2 = nullptr;
+    napi_create_int32(env, 20, &val2);
+    napi_set_named_property(env, obj2, "id", val2);
+    napi_set_element(env, objectArray, 1, obj2);
+
+    napi_value argv[] = {objectArray};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: Console.Dir with number value
+ * @tc.desc: Test Dir with number type parameter.
+ * @tc.type: FUNC
+
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest089, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Dir";
+    napi_value cb = nullptr;
+
+    napi_value numVal = nullptr;
+    napi_create_double(env, 123.456, &numVal);
+    napi_value argv[] = {numVal};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
     napi_call_function(env, nullptr, cb, argc, argv, &res);
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
 }
