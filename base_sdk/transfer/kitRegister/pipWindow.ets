@@ -15,6 +15,6 @@
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
 export function registerPiPWindow() {
-    registerStaticCB('window.PiPContrller', '@ohos.PiPWindow', 'window.PiPControllerInternal', 'transferStatic');
-    registerDynamicCB('window.PiPContrller', '@ohos.PiPWindow', 'window.PiPControllerInternal', 'transferDynamic');
+    registerStaticCB('window.PiPController', '@ohos.PiPWindow', 'window.PiPControllerInternal', 'transferStatic');
+    registerDynamicCB('window.PiPController', '@ohos.PiPWindow', 'window.PiPControllerInternal', 'transferDynamic');
 }
