@@ -44,7 +44,7 @@ namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Platform;
 
 extern const std::unordered_map<Priority, napi_event_priority> g_napiPriorityMap;
-enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING};
+enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING, TIMEOUT};
 enum TaskType {
     TASK,
     FUNCTION_TASK,
@@ -189,7 +189,7 @@ public:
     void StoreTaskDuration();
     bool CanForSequenceRunner(napi_env env);
     bool CanForTaskGroup(napi_env env);
-    bool CanExecute(napi_env env);
+    bool CanExecute(napi_env env, uint32_t timeout = 0);
     bool CanExecuteDelayed(napi_env env);
     bool CanExecutePeriodically(napi_env env);
     void SetHasDependency(bool hasDependency);
@@ -223,6 +223,21 @@ public:
     bool UpdateTaskStateToDelayed();
     bool UpdateTaskStateToEnding();
     void TriggerEnqueueCallback();
+    void StoreEnqueueTime();
+    bool IsTimeoutTask() const;
+    bool IsNotFoundState();
+    bool IsWaitingState();
+    bool IsRunningState();
+    bool IsCanceledState();
+    bool IsFinishedState();
+    bool IsDelayedState();
+    bool IsEndingState();
+    bool IsTimeoutState();
+    bool UpdateTaskStateToTimeout();
+    void ClearTimeoutTimer();
+    void SetTimeout(uint32_t timeout);
+    static bool CheckAddDependency(napi_env env, Task* task);
+    bool CanExecuteTimeout(napi_env env, uint32_t timeout);
 
     static std::tuple<napi_value, napi_value, napi_value, napi_value> GetSerializeParams(napi_env env,
                                                                                          napi_value napiTask);
@@ -271,7 +286,7 @@ public:
 
     // for periodic task
     bool isPeriodicTask_ {false};
-    uv_timer_t* timer_ {nullptr};
+    uv_timer_t* timer_ {nullptr}; // task timeout timer or task delayed timer
     Priority periodicTaskPriority_ {Priority::DEFAULT};
 
     std::set<uv_timer_t*> delayedTimers_ {}; // task delayed timer
@@ -279,6 +294,7 @@ public:
     bool isMainThreadTask_ {false};
     Priority asyncTaskPriority_ {Priority::DEFAULT};
     std::atomic<bool> isCancelToFinish_ {false};
+    uint32_t timeout_ {0};
 };
 
 struct CallbackInfo {

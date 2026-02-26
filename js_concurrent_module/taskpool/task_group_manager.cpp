@@ -99,6 +99,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
     ExecuteState groupState = taskGroup->groupState_;
     taskGroup->groupState_ = ExecuteState::CANCELED;
     taskGroup->CancelPendingGroup(env);
+    taskGroup->ClearTimeoutTimer();
     std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
     if (taskGroup->currentGroupInfo_->finishedTaskNum != taskGroup->taskNum_) {
         for (uint32_t taskId : taskGroup->taskIds_) {
@@ -141,7 +142,11 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint32_t taskId, TaskGroup*
             group->currentGroupInfo_->finishedTaskNum++;
         }
     }
-    task->taskState_ = ExecuteState::CANCELED;
+    if (group->IsTimeoutState()) {
+        task->taskState_ = ExecuteState::TIMEOUT;
+    } else {
+        task->taskState_ = ExecuteState::CANCELED;
+    }
 }
 
 void TaskGroupManager::StoreTaskGroup(uint64_t groupId, TaskGroup* taskGroup)
@@ -183,5 +188,45 @@ bool TaskGroupManager::UpdateGroupState(uint64_t groupId)
     }
     group->groupState_ = ExecuteState::RUNNING;
     return true;
+}
+
+void TaskGroupManager::TimeoutGroup(napi_env env, uint64_t groupId)
+{
+    std::string strTrace = "TimeoutGroup: groupId: " + std::to_string(groupId);
+    HITRACE_HELPER_METER_NAME(strTrace);
+    HILOG_INFO("taskpool::%{public}s", strTrace.c_str());
+    TaskGroup* taskGroup = GetTaskGroup(groupId);
+    if (taskGroup == nullptr) {
+        HILOG_ERROR("taskpool:: TimeoutGroup group is nullptr");
+        return;
+    }
+    ExecuteState groupState = taskGroup->groupState_;
+    if (!taskGroup->UpdateStateToTimeout()) {
+        HILOG_ERROR("taskpool:: the taskGroup update state to timeout fail");
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(taskGroup->taskGroupMutex_);
+    if (taskGroup->currentGroupInfo_ == nullptr) {
+        HILOG_ERROR("taskpool:: TimeoutGroup groupInfo is nullptr");
+        return;
+    }
+    if (taskGroup->currentGroupInfo_->finishedTaskNum != taskGroup->taskNum_) {
+        for (uint32_t taskId : taskGroup->taskIds_) {
+            CancelGroupTask(env, taskId, taskGroup);
+        }
+        if (taskGroup->currentGroupInfo_->finishedTaskNum == taskGroup->taskNum_) {
+            napi_value error = ErrorHelper::NewError(env, ErrorHelper::ERR_TASKGROUP_EXECUTE_TIMEOUT);
+            taskGroup->RejectResult(env, error);
+            return;
+        }
+    }
+    if (groupState == ExecuteState::WAITING) {
+        auto engine = reinterpret_cast<NativeEngine*>(env);
+        for (size_t i = 0; i < taskGroup->taskIds_.size(); i++) {
+            engine->DecreaseSubEnvCounter();
+        }
+        napi_value error = TaskManager::GetInstance().CancelError(env, ErrorHelper::ERR_TASKGROUP_EXECUTE_TIMEOUT);
+        taskGroup->RejectResult(env, error);
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

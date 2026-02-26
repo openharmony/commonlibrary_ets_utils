@@ -859,18 +859,18 @@ HWTEST_F(NativeEngineTest, TaskpoolTest060, testing::ext::TestSize.Level0)
     TaskManager& taskManager = TaskManager::GetInstance();
     ResetTaskManager();
     uint32_t taskId = 36;
-    taskManager.EnqueueTaskId(taskId, Priority::LOW);
+    taskManager.EnqueueTaskId(taskId, Priority::IDLE);
 
     std::pair<uint32_t, Priority> result = taskManager.DequeueTaskId();
     ASSERT_TRUE(result.first == 36);
-    ASSERT_TRUE(result.second == Priority::LOW);
+    ASSERT_TRUE(result.second == Priority::IDLE);
 
     taskId = 37;
-    taskManager.EnqueueTaskId(taskId, Priority::IDLE);
+    taskManager.EnqueueTaskId(taskId, Priority::LOW);
 
     result = taskManager.DequeueTaskId();
     ASSERT_TRUE(result.first == 37);
-    ASSERT_TRUE(result.second == Priority::IDLE);
+    ASSERT_TRUE(result.second == Priority::LOW);
     result = taskManager.DequeueTaskId();
     ASSERT_TRUE(result.first == 0);
     ASSERT_TRUE(result.second == Priority::LOW);
@@ -1031,12 +1031,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest070, testing::ext::TestSize.Level0)
     taskManager.NotifyWorkerCreated(worker);
     Task* task = new Task();
     task->isLongTask_ = true;
-    taskManager.StoreTask(task);
+    task->taskId_ = taskManager.CalculateTaskId(reinterpret_cast<uint64_t>(task));
     uint32_t id = task->taskId_;
-    taskManager.EnqueueTaskId(id);
-    usleep(50000);
+    taskManager.StoreLongTaskInfo(id, worker);
     auto res = taskManager.GetLongTaskInfo(id);
     ASSERT_NE(res, nullptr);
+    taskManager.TerminateTask(id);
     ResetTaskManager();
 }
 
@@ -6966,6 +6966,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest337, testing::ext::TestSize.Level0)
     task1->currentTaskInfo_ = taskInfo1;
     task1->taskType_ = TaskType::SEQRUNNER_TASK;
     task1->taskState_ = ExecuteState::WAITING;
+    task1->runnerId_ = 337;
     taskManager.StoreTask(task1);
     NativeEngineTest::EnqueueTaskIdToQueue(reinterpret_cast<void *>(task1));
     napi_value exception = nullptr;
@@ -6991,6 +6992,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest337, testing::ext::TestSize.Level0)
     task3->currentTaskInfo_ = taskInfo3;
     task3->taskType_ = TaskType::SEQRUNNER_TASK;
     task3->taskState_ = ExecuteState::WAITING;
+    task3->runnerId_ = 3371;
     taskManager.StoreTask(task3);
     taskManager.EnqueueTaskId(task3->taskId_);
     napi_get_and_clear_last_exception(env, &exception);
@@ -7110,6 +7112,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest342, testing::ext::TestSize.Level0)
     task->SetValid(true);
     res = NativeEngineTest::GetTaskEnvAndPriority(task->taskId_);
     ASSERT_FALSE(res);
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest343, testing::ext::TestSize.Level0)
@@ -7469,4 +7473,976 @@ HWTEST_F(NativeEngineTest, TaskpoolTest357, testing::ext::TestSize.Level0)
 {
     bool ret = NativeEngineTest::SetAndTestTaskQueues();
     ASSERT_TRUE(ret);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest358, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskState_ = ExecuteState::WAITING;
+    ASSERT_TRUE(task->IsWaitingState());
+    ASSERT_FALSE(task->IsRunningState());
+    ASSERT_FALSE(task->IsDelayedState());
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest359, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskState_ = ExecuteState::WAITING;
+    ASSERT_TRUE(task->UpdateTaskStateToTimeout());
+    task->taskState_ = ExecuteState::CANCELED;
+    ASSERT_FALSE(task->UpdateTaskStateToTimeout());
+    task->taskState_ = ExecuteState::FINISHED;
+    ASSERT_FALSE(task->UpdateTaskStateToTimeout());
+    task->taskState_ = ExecuteState::ENDING;
+    ASSERT_FALSE(task->UpdateTaskStateToTimeout());
+    task->taskState_ = ExecuteState::DELAYED;
+    ASSERT_FALSE(task->UpdateTaskStateToTimeout());
+    task->taskState_ = ExecuteState::TIMEOUT;
+    ASSERT_FALSE(task->UpdateTaskStateToTimeout());
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest360, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->ClearTimeoutTimer();
+    ASSERT_EQ(task->timer_, nullptr);
+    task->timeout_ = 1000;
+    task->ClearTimeoutTimer();
+    ASSERT_EQ(task->timer_, nullptr);
+    task->timeout_ = 0;
+    task->timer_ = new uv_timer_t;
+    task->ClearTimeoutTimer();
+    ASSERT_NE(task->timer_, nullptr);
+    task->timer_ = nullptr;
+    task->taskState_ = ExecuteState::TIMEOUT;
+    task->ClearTimeoutTimer();
+    ASSERT_EQ(task->timer_, nullptr);
+
+    task->timeout_ = 1000;
+    task->timer_ = new uv_timer_t;
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+    uv_timer_init(loop, task->timer_);
+    task->ClearTimeoutTimer();
+    task->taskState_ = ExecuteState::WAITING;
+    task->ClearTimeoutTimer();
+    ASSERT_EQ(task->timer_, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest361, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->timer_ = new uv_timer_t;
+    task->timeout_ = 0;
+    task->taskState_ = ExecuteState::TIMEOUT;
+    task->ClearTimeoutTimer();
+    ASSERT_NE(task->timer_, nullptr);
+    task->timer_ = nullptr;
+    task->timeout_ = 1000;
+    task->ClearTimeoutTimer();
+    ASSERT_EQ(task->timer_, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest362, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->taskState_ = ExecuteState::TIMEOUT;
+    ASSERT_FALSE(task->UpdateTaskStateToRunning());
+    task->taskState_ = ExecuteState::CANCELED;
+    ASSERT_FALSE(task->UpdateTaskStateToRunning());
+    task->taskState_ = ExecuteState::TIMEOUT;
+    ASSERT_FALSE(task->UpdateTaskStateToCanceled());
+    task->taskState_ = ExecuteState::TIMEOUT;
+    ASSERT_FALSE(task->UpdateTaskStateToDelayed());
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest363, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->timeout_ = 1000;
+    ASSERT_FALSE(task->CanForSequenceRunner(env));
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest364, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->timeout_ = 1000;
+    ASSERT_FALSE(task->CanForTaskGroup(env));
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest365, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->timeout_ = 1000;
+    ASSERT_FALSE(task->CanExecute(env));
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest366, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->timeout_ = 1000;
+    ASSERT_FALSE(task->CanExecuteDelayed(env));
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest367, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->timeout_ = 1000;
+    ASSERT_FALSE(task->CanExecutePeriodically(env));
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest368, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->timeout_ = 1000;
+    ASSERT_FALSE(task->CanForAsyncRunner(env));
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest369, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value thisValue = CreateTaskObject(env);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+    task->timeout_ = 1000;
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value argv[] = { nullptr };
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    napi_call_function(env, thisValue, cb, 0, argv, &result);
+
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest370, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value thisValue = CreateTaskObject(env);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+    napi_value func = TestFunction(env);
+    napi_value taskName = NapiHelper::CreateEmptyString(env);
+    size_t argc = 0;
+    napi_value* args = new napi_value[1];
+    Task* dependentTask = Task::GenerateTask(env, NapiHelper::CreateObject(env), func, taskName, args, argc);
+    dependentTask->timeout_ = 1000;
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+    TaskManager::GetInstance().RemoveTask(dependentTask->taskId_);
+
+    napi_value dependentTaskValue = NapiHelper::CreateObject(env);
+    napi_wrap(env, dependentTaskValue, dependentTask, nullptr, nullptr, nullptr);
+
+    napi_value argv[] = { dependentTaskValue };
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest371, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t priority = 1;
+    uint32_t timeout = 5000;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
+    napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
+    napi_set_named_property(env, priorityObj, "priority", priorityValue);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest372, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
+    napi_value timeoutValue = GetNapiString(env, "invalid");
+    napi_set_named_property(env, priorityObj, "priority", priorityValue);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest373, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    task->taskState_ = ExecuteState::WAITING;
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t priority = 1;
+    uint32_t timeout = 5000;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
+    napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
+    napi_set_named_property(env, priorityObj, "priority", priorityValue);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest374, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t timeout = 5000;
+    napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest375, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t timeout = 0;
+    napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest376, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
+
+    napi_value argv[] = { taskValue, priorityValue };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest377, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t priority = 100;
+    uint32_t timeout = 5000;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
+    napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
+    napi_set_named_property(env, priorityObj, "priority", priorityValue);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest378, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    napi_value priorityValue = GetNapiString(env, "invalid");
+    uint32_t timeout = 5000;
+    napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
+    napi_set_named_property(env, priorityObj, "priority", priorityValue);
+    napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_TRUE(result == nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest379, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    napi_value func = TestFunction(env);
+    napi_value taskValue = GeneratorTask(env, NapiHelper::CreateObject(env));
+    Task* task = nullptr;
+    napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+
+    napi_value priorityObj = NapiHelper::CreateObject(env);
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
+    napi_set_named_property(env, priorityObj, "priority", priorityValue);
+
+    napi_value argv[] = { taskValue, priorityObj };
+    napi_value result = NativeEngineTest::Execute(env, argv, 2);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest380, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroup* group = new TaskGroup();
+    group->ClearTimeoutTimer();
+    ASSERT_EQ(group->timer_, nullptr);
+
+    group->SetTimeout(1000);
+    group->ClearTimeoutTimer();
+    ASSERT_EQ(group->timer_, nullptr);
+
+    group->SetTimeout(0);
+    group->timer_ = new uv_timer_t;
+    group->ClearTimeoutTimer();
+    ASSERT_NE(group->timer_, nullptr);
+    group->timer_ = nullptr;
+
+    group->groupState_ = ExecuteState::TIMEOUT;
+    group->ClearTimeoutTimer();
+    ASSERT_EQ(group->timer_, nullptr);
+
+    group->SetTimeout(1000);
+    group->groupState_ = ExecuteState::WAITING;
+    group->timer_ = new uv_timer_t;
+    uv_loop_t* loop = NapiHelper::GetLibUV(env);
+    uv_update_time(loop);
+    uv_timer_init(loop, group->timer_);
+    group->ClearTimeoutTimer();
+    ASSERT_EQ(group->timer_, nullptr);
+    group->timer_ = nullptr;
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest381, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    Task* task = new Task();
+    uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    task->taskId_ = taskId;
+    bool flag = NativeEngineTest::TriggerTaskTimeoutTimer(env, static_cast<void*>(task));
+    ASSERT_TRUE(flag);
+    task->SetTimeout(10);
+    flag = NativeEngineTest::TriggerTaskTimeoutTimer(env, static_cast<void*>(task));
+    ASSERT_TRUE(flag);
+
+    Task* task2 = new Task();
+    uint32_t taskId2 = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
+    task2->taskId_ = taskId2;
+    task2->timer_ = new uv_timer_t;
+    flag = NativeEngineTest::TriggerTaskTimeoutTimer(env, static_cast<void*>(task2));
+    ASSERT_TRUE(flag);
+    task2->SetTimeout(10);
+    flag = NativeEngineTest::TriggerTaskTimeoutTimer(env, static_cast<void*>(task2));
+    ASSERT_TRUE(flag);
+    task2->timer_ = nullptr;
+    delete task2;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest382, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+
+    uv_timer_t* handle = new uv_timer_t;
+    Task* task = new Task();
+    task->SetValid(false);
+    taskManager.StoreTask(task);
+    TaskMessage* message = new TaskMessage();
+    message->taskId = task->taskId_;
+    handle->data = message;
+    bool flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+
+    task->SetValid(true);
+    task->taskState_ = ExecuteState::CANCELED;
+    TaskMessage* message2 = new TaskMessage();
+    message2->taskId = task->taskId_;
+    handle->data = message2;
+    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+
+    task->taskState_ = ExecuteState::RUNNING;
+    TaskMessage* message3 = new TaskMessage();
+    message3->taskId = task->taskId_;
+    handle->data = message3;
+    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+    taskManager.RemoveTask(task->taskId_);
+    handle = nullptr;
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest383, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+
+    uv_timer_t* handle = new uv_timer_t;
+    Task* task = new Task();
+    task->env_ = env;
+    task->taskState_ = ExecuteState::RUNNING;
+    TaskInfo* taskInfo = new TaskInfo(env);
+    task->currentTaskInfo_ = taskInfo;
+    taskManager.StoreTask(task);
+    TaskMessage* message = new TaskMessage();
+    message->taskId = task->taskId_;
+    handle->data = message;
+    bool flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+    delete task->currentTaskInfo_;
+    task->currentTaskInfo_ = nullptr;
+
+    task->taskState_ = ExecuteState::WAITING;
+    TaskMessage* message2 = new TaskMessage();
+    message2->taskId = task->taskId_;
+    handle->data = message2;
+    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+
+    TaskInfo* taskInfo2 = new TaskInfo(env);
+    task->currentTaskInfo_ = taskInfo2;
+    TaskMessage* message3 = new TaskMessage();
+    message3->taskId = task->taskId_;
+    handle->data = message3;
+    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+    Task* task2 = new Task();
+    task2->env_ = env;
+    taskManager.StoreTask(task2);
+    TaskMessage* message4 = new TaskMessage();
+    message4->taskId = task2->taskId_;
+    handle->data = message4;
+    TaskInfo* taskInfo3 = new TaskInfo(env);
+    task2->currentTaskInfo_ = taskInfo3;
+    task2->currentTaskInfo_->priority = Priority::IDLE;
+    NapiHelper::CreatePromise(env, &taskInfo3->deferred);
+    taskManager.EnqueueTaskId(task->taskId_, Priority::IDLE);
+    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+    taskManager.RemoveTask(task->taskId_);
+    handle = nullptr;
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest384, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value exception = nullptr;
+    napi_value thisVar = NapiHelper::CreateObject(env);
+    napi_value taskGroupResult = GeneratorTaskGroup(env, thisVar);
+    napi_value napiGroupId = NapiHelper::GetNameProperty(env, taskGroupResult, "groupId");
+    uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
+
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup* group = taskGroupManager.GetTaskGroup(groupId);
+    group->SetTimeout(10);
+    napi_value result = NativeEngineTest::ExecuteGroup(env, taskGroupResult);
+    ASSERT_TRUE(result == nullptr);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+
+    group->SetTimeout(0);
+    group->groupState_ = ExecuteState::WAITING;
+    result = NativeEngineTest::ExecuteGroup(env, taskGroupResult, 10);
+    ASSERT_TRUE(result == nullptr);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+
+    napi_value value = NapiHelper::CreateUint64(env, groupId);
+    napi_ref reference = NapiHelper::CreateReference(env, value, 0);
+    taskGroupManager.AddTask(groupId, reference, 1);
+    result = NativeEngineTest::ExecuteGroup(env, taskGroupResult, 0);
+    ASSERT_TRUE(result == nullptr);
+
+    group->groupState_ = ExecuteState::NOT_FOUND;
+    result = NativeEngineTest::ExecuteGroup(env, taskGroupResult, 10);
+    ASSERT_NE(result, nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest385, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    uv_timer_t* handle = new uv_timer_t;
+
+    Task* task = new Task();
+    uint32_t taskId = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
+    task->taskId_ = taskId;
+    task->taskType_ = TaskType::GROUP_COMMON_TASK;
+    napi_value num = nullptr;
+    napi_create_uint32(env, 1, &num);
+    handle->data = task;
+    napi_value res = nullptr;
+
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    task->groupId_ = groupId;
+
+    group->taskIds_.push_back(taskId);
+    GroupInfo* groupInfo = new GroupInfo();
+    napi_value resArr;
+    napi_create_array_with_length(env, group->taskIds_.size(), &resArr);
+    napi_ref arrRef = NapiHelper::CreateReference(env, resArr, 1);
+    groupInfo->resArr = arrRef;
+    NapiHelper::CreatePromise(env, &groupInfo->deferred);
+    group->currentGroupInfo_ = groupInfo;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    group->UpdateStateToTimeout();
+    NativeEngineTest::UpdateGroupInfoByResult(env, handle, res, false);
+    ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest386, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    bool flag = NativeEngineTest::TriggerTaskGroupTimeoutTimer(env, static_cast<void*>(group));
+    ASSERT_TRUE(flag);
+    group->SetTimeout(10);
+    flag = NativeEngineTest::TriggerTaskGroupTimeoutTimer(env, static_cast<void*>(group));
+    ASSERT_TRUE(flag);
+
+    TaskGroup* group2 = new TaskGroup();
+    uint64_t groupId2 = reinterpret_cast<uint64_t>(group2);
+    group2->groupId_ = groupId2;
+    group2->timer_ = new uv_timer_t;
+    flag = NativeEngineTest::TriggerTaskGroupTimeoutTimer(env, static_cast<void*>(group2));
+    ASSERT_TRUE(flag);
+    group2->SetTimeout(10);
+    flag = NativeEngineTest::TriggerTaskGroupTimeoutTimer(env, static_cast<void*>(group2));
+    ASSERT_TRUE(flag);
+    group2->timer_ = nullptr;
+    delete group2;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest387, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+
+    uv_timer_t* handle = new uv_timer_t;
+    TaskGroupMessage* message = new TaskGroupMessage();
+    message->groupId = 382;
+    handle->data = message;
+    bool flag = NativeEngineTest::TaskGroupTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    group->groupState_ = ExecuteState::TIMEOUT;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+
+    TaskGroupMessage* message2 = new TaskGroupMessage();
+    message2->groupId = groupId;
+    message2->env = env;
+    handle->data = message2;
+    flag = NativeEngineTest::TaskGroupTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+    taskGroupManager.RemoveTaskGroup(groupId);
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest388, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroup* group = new TaskGroup();
+    group->groupState_ = ExecuteState::WAITING;
+    ASSERT_TRUE(group->IsWaitingState());
+    ASSERT_FALSE(group->IsNotFoundState());
+    ASSERT_FALSE(group->IsRunningState());
+    ASSERT_FALSE(group->IsCanceledState());
+    ASSERT_FALSE(group->IsFinishedState());
+    ASSERT_FALSE(group->IsTimeoutState());
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest389, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    TaskGroup* group = new TaskGroup();
+    group->groupState_ = ExecuteState::TIMEOUT;
+    taskGroupManager.CancelGroupTask(env, task->taskId_, group);
+    ASSERT_TRUE(task->IsTimeoutState());
+    taskManager.RemoveTask(task->taskId_);
+    delete group;
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest390, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskManager& taskManager = TaskManager::GetInstance();
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    taskGroupManager.TimeoutGroup(env, groupId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    group->groupState_ = ExecuteState::TIMEOUT;
+    taskGroupManager.TimeoutGroup(env, groupId);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    GroupInfo* groupInfo = new GroupInfo();
+    group->currentGroupInfo_ = groupInfo;
+    group->groupState_ = ExecuteState::WAITING;
+    taskGroupManager.TimeoutGroup(env, groupId);
+
+    group->groupState_ = ExecuteState::WAITING;
+    Task* task = new Task();
+    TaskInfo* taskInfo = new TaskInfo(env);
+    task->currentTaskInfo_ = taskInfo;
+    taskManager.StoreTask(task);
+    taskManager.EnqueueTaskId(task->taskId_, Priority::IDLE);
+    napi_value value = NapiHelper::CreateUint64(env, groupId);
+    napi_ref reference = NapiHelper::CreateReference(env, value, 0);
+    taskGroupManager.AddTask(groupId, reference, task->taskId_);
+    GroupInfo* groupInfo2 = new GroupInfo();
+    group->currentGroupInfo_ = groupInfo2;
+    taskGroupManager.TimeoutGroup(env, groupId);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    taskGroupManager.AddTask(groupId, reference, task->taskId_);
+    taskGroupManager.TimeoutGroup(env, groupId);
+
+    taskManager.RemoveTask(task->taskId_);
+    taskGroupManager.RemoveTaskGroup(groupId);
+    delete task;
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest391, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    bool res = task->CanExecuteTimeout(env, 0);
+    ASSERT_TRUE(res);
+
+    res = task->CanExecuteTimeout(env, 10);
+    ASSERT_TRUE(res);
+
+    task->taskState_ = ExecuteState::TIMEOUT;
+    res = task->CanExecuteTimeout(env, 10);
+    ASSERT_FALSE(res);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+
+    task->taskState_ = ExecuteState::NOT_FOUND;
+    task->SetHasDependency(true);
+    res = task->CanExecuteTimeout(env, 10);
+    ASSERT_FALSE(res);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest392, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    Task* task = new Task();
+    task->SetTimeout(10);
+    bool res = Task::CheckAddDependency(env, task);
+    ASSERT_FALSE(res);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest393, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager &taskManager = TaskManager::GetInstance();
+
+    Task* task = new Task();
+    taskManager.StoreTask(task);
+    task->taskState_ = ExecuteState::TIMEOUT;
+    bool res = NativeEngineTest::GetTaskEnvAndPriority(task->taskId_);
+    ASSERT_FALSE(res);
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest394, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global = NapiHelper::CreateObject(env);
+    napi_value thisValue = CreateTaskObject(env);
+    Task* task = nullptr;
+    napi_unwrap(env, thisValue, reinterpret_cast<void**>(&task));
+
+    napi_value dependentTask = CreateTaskObject(env);
+    Task* depTask = nullptr;
+    napi_unwrap(env, dependentTask, reinterpret_cast<void**>(&depTask));
+    depTask->SetTimeout(10);
+    napi_value argv[] = { dependentTask };
+    std::string funcName = "AddDependency";
+    napi_value cb = nullptr;
+    napi_value result = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), Task::AddDependency, nullptr, &cb);
+    task->taskType_ = TaskType::TASK;
+    task->isPeriodicTask_ = false;
+    napi_call_function(env, thisValue, cb, 1, argv, &result);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception != nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest395, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskManager& taskManager = TaskManager::GetInstance();
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    taskGroupManager.TimeoutGroup(env, groupId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    GroupInfo* groupInfo = new GroupInfo();
+    group->currentGroupInfo_ = groupInfo;
+    group->groupState_ = ExecuteState::NOT_FOUND;
+    taskGroupManager.TimeoutGroup(env, groupId);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    group->groupState_ = ExecuteState::WAITING;
+    taskGroupManager.TimeoutGroup(env, groupId);
+    Task* task = new Task();
+    TaskInfo* taskInfo = new TaskInfo(env);
+    task->currentTaskInfo_ = taskInfo;
+    task->taskState_ = ExecuteState::WAITING;
+    task->currentTaskInfo_->priority = Priority::IDLE;
+    taskManager.StoreTask(task);
+    taskManager.EnqueueTaskId(task->taskId_, Priority::IDLE);
+    TaskGroup* group2 = new TaskGroup();
+    uint64_t groupId2 = reinterpret_cast<uint64_t>(group2);
+    group2->groupId_ = groupId2;
+    taskGroupManager.StoreTaskGroup(groupId2, group2);
+    napi_value value = NapiHelper::CreateUint64(env, groupId2);
+    napi_ref reference = NapiHelper::CreateReference(env, value, 0);
+    taskGroupManager.AddTask(groupId2, reference, task->taskId_);
+    GroupInfo* groupInfo2 = new GroupInfo();
+    group2->currentGroupInfo_ = groupInfo2;
+    taskGroupManager.TimeoutGroup(env, groupId2);
+
+    taskManager.RemoveTask(task->taskId_);
+    taskGroupManager.RemoveTaskGroup(groupId);
+    taskGroupManager.RemoveTaskGroup(groupId2);
+    delete task;
+    delete group;
+    delete group2;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest396, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
+    TaskGroup* group = new TaskGroup();
+    uint64_t groupId = reinterpret_cast<uint64_t>(group);
+    group->groupId_ = groupId;
+    group->groupState_ = ExecuteState::WAITING;
+    taskGroupManager.StoreTaskGroup(groupId, group);
+    GroupInfo* groupInfo = new GroupInfo();
+    group->currentGroupInfo_ = groupInfo;
+    taskGroupManager.CancelGroup(env, groupId);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    taskGroupManager.RemoveTaskGroup(groupId);
+    delete group;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest397, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    napi_value global = NapiHelper::CreateObject(env);
+    auto napiTask = GeneratorTask(env, global);
+    Task* task = nullptr;
+    napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
+    task->SetTimeout(10);
+    napi_value num = nullptr;
+    napi_create_uint32(env, 1, &num);
+    void* resultData = nullptr;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_status status = napi_serialize_inner(env, num, undefined, undefined,
+                                              true, false, &resultData);
+    task->result_ = resultData;
+    task->taskState_ = ExecuteState::TIMEOUT;
+    TaskPool::HandleTaskResult(task);
+    ASSERT_TRUE(true);
 }

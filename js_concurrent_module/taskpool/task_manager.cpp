@@ -1960,6 +1960,10 @@ std::tuple<napi_env, napi_event_priority> TaskManager::GetTaskEnvAndPriority(uin
         return {nullptr, napi_eprio_high};
     }
     std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
+    if (task->IsTimeoutState()) {
+        HILOG_ERROR("taskpool:: GetTaskEnvAndPriority task is timeout");
+        return {nullptr, napi_eprio_high};
+    }
     auto worker = task->GetWorker();
     if (worker == nullptr) {
         HILOG_ERROR("taskpool:: GetTaskEnvAndPriority worker is nullptr");

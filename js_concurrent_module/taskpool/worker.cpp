@@ -576,6 +576,7 @@ void Worker::TaskResultCallback(napi_env env, napi_value result, bool success, v
         HILOG_FATAL("taskpool:: task is nullptr");
         return;
     }
+    task->ClearTimeoutTimer();
     auto worker = static_cast<Worker*>(task->worker_);
     worker->isExecutingLongTask_ = task->IsLongTask();
     task->DecreaseRefCount();

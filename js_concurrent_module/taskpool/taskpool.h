@@ -31,6 +31,11 @@ struct TaskMessage {
     uint32_t taskId {};
 };
 
+struct TaskGroupMessage {
+    napi_env env = nullptr;
+    uint64_t groupId {};
+};
+
 class TaskPool {
 public:
     static napi_value InitTaskPool(napi_env env, napi_value exports);
@@ -57,7 +62,7 @@ private:
     static void HandleTaskResultInner(Task* task);
     static void UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res, bool success);
     static void ExecuteTask(napi_env env, Task* task, Priority priority = Priority::DEFAULT);
-    static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority);
+    static napi_value ExecuteGroup(napi_env env, napi_value taskGroup, Priority priority, uint32_t timeout = 0);
 
     static void TriggerTask(Task* task, bool isCancel);
     static void TriggerTimer(napi_env env, Task* task, int32_t period);
@@ -68,6 +73,11 @@ private:
     static void ExecuteOnReceiveDataCallback(TaskResultInfo* resultInfo);
     static void RecordTaskResultLog(Task* task, napi_status status, napi_value& napiTaskResult, bool& isCancel);
     static napi_value GetTask(napi_env env, napi_callback_info cbinfo);
+    static void TriggerTaskTimeoutTimer(napi_env env, Task* task);
+    static void TaskTimeoutCallback(uv_timer_t* handle);
+    static std::pair<uint32_t, uint32_t> GetExecuteParams(napi_env env, napi_value arg);
+    static void TriggerTaskGroupTimeoutTimer(napi_env env, TaskGroup* taskGroup);
+    static void TaskGroupTimeoutCallback(uv_timer_t* handle);
 
     friend class TaskManager;
     friend class NativeEngineTest;

@@ -166,9 +166,9 @@ napi_value NativeEngineTest::ExecutePeriodically(napi_env env, napi_value argv[]
     return result;
 }
 
-napi_value NativeEngineTest::ExecuteGroup(napi_env env, napi_value taskGroup)
+napi_value NativeEngineTest::ExecuteGroup(napi_env env, napi_value taskGroup, uint32_t timeout)
 {
-    return TaskPool::ExecuteGroup(env, taskGroup, Priority::DEFAULT);
+    return TaskPool::ExecuteGroup(env, taskGroup, Priority::DEFAULT, timeout);
 }
 
 void NativeEngineTest::DelayTask(uv_timer_t* handle)
@@ -1151,12 +1151,38 @@ bool NativeEngineTest::SetAndTestTaskQueues()
     taskManager.PrintWaitingTime(handle);
     
     bool eraseSuccess = true;
-    eraseSuccess &= taskManager.taskQueues_[Priority::HIGH]->EraseWaitingTaskId(task1->taskId_);
-    eraseSuccess &= taskManager.taskQueues_[Priority::MEDIUM]->EraseWaitingTaskId(task2->taskId_);
-    eraseSuccess &= taskManager.taskQueues_[Priority::LOW]->EraseWaitingTaskId(task3->taskId_);
+    taskManager.taskQueues_[Priority::HIGH]->EraseWaitingTaskId(task1->taskId_);
+    taskManager.taskQueues_[Priority::MEDIUM]->EraseWaitingTaskId(task2->taskId_);
+    taskManager.taskQueues_[Priority::LOW]->EraseWaitingTaskId(task3->taskId_);
     delete task1;
     delete task2;
     delete task3;
     return eraseSuccess;
+}
+
+bool NativeEngineTest::TriggerTaskTimeoutTimer(napi_env env, void* data)
+{
+    Task* task = static_cast<Task*>(data);
+    TaskPool::TriggerTaskTimeoutTimer(env, task);
+    return true;
+}
+
+bool NativeEngineTest::TaskTimeoutCallback(uv_timer_t* handle)
+{
+    TaskPool::TaskTimeoutCallback(handle);
+    return true;
+}
+
+bool NativeEngineTest::TriggerTaskGroupTimeoutTimer(napi_env env, void* data)
+{
+    TaskGroup* group = static_cast<TaskGroup*>(data);
+    TaskPool::TriggerTaskGroupTimeoutTimer(env, group);
+    return true;
+}
+
+bool NativeEngineTest::TaskGroupTimeoutCallback(uv_timer_t* handle)
+{
+    TaskPool::TaskGroupTimeoutCallback(handle);
+    return true;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

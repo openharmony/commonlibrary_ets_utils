@@ -68,6 +68,16 @@ public:
     void InitHandle(napi_env env);
     void TriggerRejectResult();
     bool IsSameEnv(napi_env env);
+    bool IsTimeoutTaskGroup() const;
+    void SetTimeout(uint32_t timeout);
+    bool UpdateStateToTimeout();
+    bool IsNotFoundState();
+    bool IsWaitingState();
+    bool IsRunningState();
+    bool IsCanceledState();
+    bool IsFinishedState();
+    bool IsTimeoutState();
+    void ClearTimeoutTimer();
 
 private:
     TaskGroup(const TaskGroup &) = delete;
@@ -91,6 +101,8 @@ public:
     std::recursive_mutex taskGroupMutex_ {};
     uv_async_t* onRejectResultSignal_ = nullptr;
     std::atomic<bool> isValid_ {true};
+    uint32_t timeout_ {0};
+    uv_timer_t* timer_ {nullptr}; // timeout timer
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
