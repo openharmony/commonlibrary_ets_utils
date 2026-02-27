@@ -31,6 +31,7 @@
 #endif
 
 namespace Commonlibrary::Concurrent::WorkerModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
 using namespace OHOS::JsSysModule;
 static constexpr int8_t NUM_WORKER_ARGS = 2;
 static constexpr uint8_t NUM_GLOBAL_CALL_ARGS = 3;
@@ -76,11 +77,14 @@ Worker::Worker(napi_env env, napi_ref thisVar)
     : hostEnv_(env), workerRef_(thisVar)
 {
     workerWrapper_ = std::make_shared<WorkerWrapper>(this);
+    SetAsyncStackID(
+        AsyncStackHelper::CollectAsyncStack(AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_WORKER));
 }
 
 napi_value Worker::InitWorker(napi_env env, napi_value exports)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    AsyncStackHelper::LoadDfxAsyncStackFunc();
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("postMessage", PostMessage),
         DECLARE_NAPI_FUNCTION("postMessageWithSharedSendable", PostMessageWithSharedSendable),
@@ -1286,6 +1290,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
+    AsyncStackScope asyncStackScope(worker);
     napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerPort_);
 
     if (strcmp(typeStr, "error") == 0) {
@@ -1625,6 +1630,7 @@ bool Worker::PrepareForWorkerInstance()
     // add timer interface
     Timer::RegisterTime(workerEnv_);
     napi_value execScriptResult = nullptr;
+    AsyncStackScope asyncStackScope(this);
     napi_status status = napi_run_actor(workerEnv_, const_cast<char*>(rawFileName.c_str()),
                                         const_cast<char*>(script_.c_str()),  &execScriptResult);
     if (status != napi_ok || execScriptResult == nullptr) {
@@ -2269,6 +2275,7 @@ void Worker::WorkerOnMessageInner()
     }
     MessageDataType data = nullptr;
     while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
+        AsyncStackScope asyncStackScope(this);
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker reveive terminate signal");
             // Close handlescope need before TerminateWorker
@@ -2390,6 +2397,7 @@ void Worker::HandleUncaughtException(napi_value exception)
 
 void Worker::WorkerOnMessageErrorInner()
 {
+    AsyncStackScope asyncStackScope(this);
     isErrorExit_ = true;
     CallWorkerFunction(0, nullptr, "onmessageerror", true);
     napi_value obj = NapiHelper::GetReferenceValue(workerEnv_, this->workerPort_);
@@ -2506,6 +2514,7 @@ void Worker::ReleaseHostThreadContent()
 
 void Worker::WorkerOnErrorInner(napi_value error)
 {
+    AsyncStackScope asyncStackScope(this);
     isErrorExit_ = true;
     napi_value argv[1] = { error };
     CallWorkerFunction(1, argv, "onerror", false);

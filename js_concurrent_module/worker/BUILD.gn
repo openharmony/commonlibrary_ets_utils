@@ -36,6 +36,7 @@ ohos_shared_library("worker") {
   public_configs = [ ":worker_public_config" ]
 
   sources = [
+    "../common/helper/async_stack_helper.cpp",
     "../common/helper/napi_helper.cpp",
     "message_queue.cpp",
     "native_module_worker.cpp",
@@ -124,6 +125,7 @@ ohos_source_set("worker_static") {
   ]
 
   sources = [
+    "$js_concurrent_module_common/helper/async_stack_helper.cpp",
     "$js_concurrent_module_common/helper/napi_helper.cpp",
     "$sys_module/timer/sys_timer.cpp",
     "message_queue.cpp",
@@ -156,6 +158,7 @@ ohos_source_set("worker_static") {
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     sources -= [
+      "$js_concurrent_module_common/helper/async_stack_helper.cpp",
       "$js_concurrent_module_common/helper/napi_helper.cpp",
       "$sys_module/timer/sys_timer.cpp",
     ]

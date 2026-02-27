@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <uv.h>
 
+#include "helper/async_stack_helper.h"
 #include "helper/concurrent_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -41,6 +42,7 @@
 #endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
 using namespace Commonlibrary::Platform;
 
 extern const std::unordered_map<Priority, napi_event_priority> g_napiPriorityMap;
@@ -120,7 +122,11 @@ struct DiscardTaskMessage {
 class Task {
 public:
     Task() = default;
-    Task(napi_env env, TaskType taskType, const char* name) : env_(env), taskType_(taskType), name_(name) {}
+    Task(napi_env env, TaskType taskType, const char* name) : env_(env), taskType_(taskType), name_(name)
+    {
+        SetAsyncStackID(
+            AsyncStackHelper::CollectAsyncStack(AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_TASKPOOL));
+    }
 
     ~Task() = default;
 
@@ -244,6 +250,14 @@ public:
     static std::tuple<void*, void*> GetSerializeResult(napi_env env, napi_value func, napi_value args,
         std::tuple<napi_value, napi_value, bool, bool> transferAndCloneParams);
 
+    inline void SetAsyncStackID(uint64_t asyncStackID)
+    {
+        asyncStackID_ = asyncStackID;
+    }
+    inline uint64_t GetAsyncStackID() const
+    {
+        return asyncStackID_;
+    }
 private:
     Task(const Task &) = delete;
     Task& operator=(const Task &) = delete;
@@ -251,6 +265,8 @@ private:
     Task& operator=(Task &&) = delete;
 
     void InitHandle(napi_env env);
+
+    uint64_t asyncStackID_ = 0;
 
 public:
     napi_env env_ = nullptr;

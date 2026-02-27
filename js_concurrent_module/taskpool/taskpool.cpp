@@ -16,6 +16,7 @@
 #include "taskpool.h"
 
 #include "async_runner_manager.h"
+#include "helper/async_stack_helper.h"
 #include "helper/hitrace_helper.h"
 #include "sequence_runner_manager.h"
 #include "task_group_manager.h"
@@ -26,6 +27,7 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
+    AsyncStackHelper::LoadDfxAsyncStackFunc();
     napi_value taskClass = nullptr;
     NAPI_CALL(env, napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor,
               nullptr, 0, nullptr, &taskClass));
