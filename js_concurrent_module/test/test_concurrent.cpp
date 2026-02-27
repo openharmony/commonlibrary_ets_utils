@@ -846,22 +846,37 @@ HWTEST_F(NativeEngineTest, GetElementTest001, testing::ext::TestSize.Level0)
 
 HWTEST_F(NativeEngineTest, AsyncStackHelperTest001, testing::ext::TestSize.Level0)
 {
-    // Try to load faultlogd function symbol
-    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     uint64_t id = AsyncStackHelper::CollectAsyncStack(
         AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_TASKPOOL);
     // ASYNC_TYPE_ARKTS_TASKPOOL is default closed, so id is 0
     ASSERT_EQ(id, 0);
     AsyncStackHelper::SetStackId(id);
+    id = AsyncStackHelper::GetStackId();
+    ASSERT_EQ(id, 0);
 }
 
 HWTEST_F(NativeEngineTest, AsyncStackHelperTest002, testing::ext::TestSize.Level0)
 {
-    // Try to load faultlogd function symbol
-    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     uint64_t id = AsyncStackHelper::CollectAsyncStack(
         AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_WORKER);
     // ASYNC_TYPE_ARKTS_TASKPOOL is default closed, so id is 0
     ASSERT_EQ(id, 0);
     AsyncStackHelper::SetStackId(id);
+    id = AsyncStackHelper::GetStackId();
+    ASSERT_EQ(id, 0);
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackHelperTest003, testing::ext::TestSize.Level0)
+{
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    uint64_t id = AsyncStackHelper::GetStackId();
+    ASSERT_EQ(id, 0);
+    const uint64_t newID = 123; // 123 is test number
+    AsyncStackHelper::SetStackId(newID);
+
+    id = AsyncStackHelper::GetStackId();
+    // DfxSetSubmitterStackId and DfxGetSubmitterStackId is not enable in ut, so id is 0.
+    ASSERT_EQ(id, 0);
 }

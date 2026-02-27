@@ -84,7 +84,7 @@ Worker::Worker(napi_env env, napi_ref thisVar)
 napi_value Worker::InitWorker(napi_env env, napi_value exports)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("postMessage", PostMessage),
         DECLARE_NAPI_FUNCTION("postMessageWithSharedSendable", PostMessageWithSharedSendable),

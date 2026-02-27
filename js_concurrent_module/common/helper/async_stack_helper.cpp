@@ -17,17 +17,21 @@
 #include "tools/log.h"
 namespace Commonlibrary::Concurrent::Common::Helper {
 
+// libasync_stack.z.so has dlopen in appspawn, so dlsym directly
 typedef uint64_t(*CollectAsyncStackFunc)(uint64_t, size_t);
-thread_local static CollectAsyncStackFunc g_collectAsyncStackFunc = nullptr;
+thread_local static CollectAsyncStackFunc g_collectAsyncStackFunc =
+    (CollectAsyncStackFunc)(dlsym(RTLD_DEFAULT, "DfxCollectStackWithDepth"));
 typedef void(*SetStackIdFunc)(uint64_t);
-thread_local static SetStackIdFunc g_setStackIdFunc = nullptr;
+thread_local static SetStackIdFunc g_setStackIdFunc =
+    (SetStackIdFunc)(dlsym(RTLD_DEFAULT, "DfxSetSubmitterStackId"));
+typedef uint64_t(*GetStackIdFunc)(void);
+thread_local static GetStackIdFunc g_getStackIdFunc =
+    (GetStackIdFunc)(dlsym(RTLD_DEFAULT, "DfxGetSubmitterStackId"));
 
-void AsyncStackHelper::LoadDfxAsyncStackFunc()
+void AsyncStackHelper::CheckLoadDfxAsyncStackFunc()
 {
-    // libasync_stack.z.so has dlopen in appspawn
-    g_collectAsyncStackFunc = (CollectAsyncStackFunc)(dlsym(RTLD_DEFAULT, "DfxCollectStackWithDepth"));
-    g_setStackIdFunc = (SetStackIdFunc)(dlsym(RTLD_DEFAULT, "DfxSetSubmitterStackId"));
-    if ((g_collectAsyncStackFunc == nullptr) || (g_setStackIdFunc == nullptr)) {
+    if ((g_collectAsyncStackFunc == nullptr) || (g_setStackIdFunc == nullptr) ||
+        (g_getStackIdFunc == nullptr)) {
         HILOG_ERROR("DfxAsyncStackFunc failed.");
     }
 }
@@ -50,5 +54,14 @@ void AsyncStackHelper::SetStackId(uint64_t id)
         return;
     }
     g_setStackIdFunc(id);
+}
+
+uint64_t AsyncStackHelper::GetStackId()
+{
+    if (!g_getStackIdFunc) {
+        HILOG_ERROR("DfxGetSubmitterStackId is not loaded in taskpool/worker.");
+        return 0U;
+    }
+    return g_getStackIdFunc();
 }
 } // Commonlibrary::Concurrent::Common::Helper

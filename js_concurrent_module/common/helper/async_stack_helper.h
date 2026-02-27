@@ -25,9 +25,10 @@ public:
         ASYNC_TYPE_ARKTS_TASKPOOL = 1ULL << 25,
     } ConcurrentAsyncType;
 
-    static void LoadDfxAsyncStackFunc();
+    static void CheckLoadDfxAsyncStackFunc();
     static uint64_t CollectAsyncStack(ConcurrentAsyncType asyncType);
     static void SetStackId(uint64_t id);
+    static uint64_t GetStackId();
 };
 
 } // Commonlibrary::Concurrent::Common::Helper
