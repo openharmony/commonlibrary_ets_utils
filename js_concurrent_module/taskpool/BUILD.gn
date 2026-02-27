@@ -190,10 +190,7 @@ ohos_source_set("taskpool_static") {
   }
 
   if (is_arkui_x) {
-    sources -= [
-      "../common/helper/async_stack_helper.cpp",
-      "../common/helper/napi_helper.cpp",
-    ]
+    sources -= [ "../common/helper/napi_helper.cpp" ]
     deps -= [ "${ets_util_path}/js_sys_module/timer:timer" ]
     include_dirs += [
       "$plugins_root/hilog/include",
