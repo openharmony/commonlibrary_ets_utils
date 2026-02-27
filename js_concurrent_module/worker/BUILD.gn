@@ -158,7 +158,6 @@ ohos_source_set("worker_static") {
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
     sources -= [
-      "$js_concurrent_module_common/helper/async_stack_helper.cpp",
       "$js_concurrent_module_common/helper/napi_helper.cpp",
       "$sys_module/timer/sys_timer.cpp",
     ]
