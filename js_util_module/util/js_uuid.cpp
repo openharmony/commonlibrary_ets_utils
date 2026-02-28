@@ -119,12 +119,12 @@ bool GetBufferedUUID(napi_env env, UUID &uuid)
 {
     if (uuidCachedIndex == 0) {
         if (!GenerateUUID(g_uuidCache, MAX_CACHE_MASK * UUID_SIZE)) {
-            napi_throw_error(env, "-1", "uuid generate failed");
+            napi_throw_error(env, "-1", "GetBufferedUUID: failed to generate random number via GenerateUUID method.");
             return false;
         }
     }
     if (memcpy_s(uuid.elements, UUID_SIZE, g_uuidCache + uuidCachedIndex * UUID_SIZE, UUID_SIZE) != EOK) {
-        napi_throw_error(env, "-1", "uuid generate failed");
+        napi_throw_error(env, "-1", "GetBufferedUUID: failed to copy random number via memcpy_s function.");
         return false;
     }
     ProcessUUID(uuid.elements);
@@ -135,7 +135,7 @@ bool GetBufferedUUID(napi_env env, UUID &uuid)
 bool GetUnBufferedUUID(napi_env env, UUID &uuid)
 {
     if (!GenerateUUID(uuid.elements, UUID_SIZE)) {
-        napi_throw_error(env, "-1", "uuid generate failed");
+        napi_throw_error(env, "-1", "GetUnBufferedUUID: failed to generate random number via GenerateUUID method.");
         return false;
     }
     ProcessUUID(uuid.elements);

@@ -81,7 +81,7 @@ namespace OHOS::Util {
         inputEncode_ = static_cast<const unsigned char*>(resultData);
         unsigned char *rets = EncodeAchieve(inputEncode_, length, valueType);
         if (rets == nullptr) {
-            napi_throw_error(env, "-1", "encode input is null");
+            napi_throw_error(env, "-1", "encodeSync: encodeAdvanced encoding execution failed");
             return nullptr;
         }
         void *data = nullptr;
@@ -115,7 +115,7 @@ namespace OHOS::Util {
         unsigned char *ret = EncodeAchieve(inputEncode_, length, valueType);
         if (ret == nullptr) {
             FreeMemory(ret);
-            napi_throw_error(env, "-1", "encodeToString input is null");
+            napi_throw_error(env, "-1", "encodeToStringSync: encodeAdvanced encoding execution failed.");
             return nullptr;
         }
         const char *encString = reinterpret_cast<const char*>(ret);
@@ -250,11 +250,12 @@ namespace OHOS::Util {
                 }
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
                     FreeMemory(inputString);
-                    napi_throw_error(env, "-1", "decode inputString memset_s failed");
+                    napi_throw_error(env, "-1", "decodeSync: failed to execute memset_s function.");
                     return false;
                 }
             } else {
-                napi_throw_error(env, "-2", "prolen is error !");
+                napi_throw_error(env, "-2",
+                    "Parameter error. The type of Parameter must be string and the length greater than 0.");
                 return false;
             }
             if (inputString != nullptr) {
@@ -295,11 +296,11 @@ namespace OHOS::Util {
             }
             if (memset_s(retDecode, retLen + 1, '\0', retLen + 1) != EOK) {
                 FreeMemory(retDecode);
-                napi_throw_error(env, "-1", "decode retDecode memset_s failed");
+                napi_throw_error(env, "-1", "decodeSync: failed to execute memset_s function.");
                 return nullptr;
             }
         } else {
-            napi_throw_error(env, "-2", "retLen is error !");
+            napi_throw_error(env, "-2", "decodeSync: the data length does not comply with the rules.");
             return nullptr;
         }
         if (retDecode == nullptr) {
@@ -322,7 +323,7 @@ namespace OHOS::Util {
             if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, retLen, &decodeReadLen,
                 &retLen, options) != EOK) {
                     HILOG_ERROR("Base64::DecodeAchieve result is error");
-                    napi_throw_error(env, "-1", "The input string contains unsupported characters");
+                    napi_throw_error(env, "-1", "decodeSync: the input string contains unsupported characters");
                     FreeMemory(retDecode);
                     return nullptr;
             }
@@ -407,7 +408,7 @@ namespace OHOS::Util {
                 return i;
             }
         }
-        napi_throw_error(env, "-1", "The input string contains unsupported characters");
+        napi_throw_error(env, "-1", "decodeSync: The input string contains unsupported characters");
         return -1;
     }
 
@@ -666,11 +667,11 @@ namespace OHOS::Util {
                 inputString = new char[prolen + 1];
                 if (memset_s(inputString, prolen + 1, '\0', prolen + 1) != EOK) {
                     delete[] inputString;
-                    napi_throw_error(env, "-1", "decode inputString memset_s failed");
+                    napi_throw_error(env, "-1", "decode: failed to execute memset_s function.");
                     return nullptr;
                 }
             } else {
-                napi_throw_error(env, "-2", "prolen is error !");
+                napi_throw_error(env, "-2", "decode: the data length does not comply with the rules.");
                 return nullptr;
             }
             napi_get_value_string_utf8(env, src, inputString, prolen + 1, &prolen);

@@ -416,7 +416,6 @@ static Buffer* BufferConstructorInner(napi_env env, size_t argc, napi_value* arg
         }
     } else {
         freeBufferMemory(buffer);
-        napi_throw_error(env, nullptr, "parameter type is error");
         return nullptr;
     }
     return buffer;

@@ -350,13 +350,13 @@ namespace OHOS::Util {
         napi_value args[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         if (argc < requireArgc) {
-            napi_throw_error(env, "-1", "Expected 1 parameter, actually not included in the parameter.");
+            napi_throw_error(env, "-1", "Parameter error. the type of getHash parameter must be object.");
             return nullptr;
         }
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_object) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be object.");
+            return ThrowError(env, "Parameter error. The type of getHash parameter must be object.");
         }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         int32_t value = engine->GetObjectHash(env, args[0]);
@@ -890,7 +890,7 @@ namespace OHOS::Util {
                                                     &data, &arraybuffer, &byteOffset));
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
-            napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            napi_throw_error(env, nullptr, "Parameter error. incorrect type for decodeBase64 parameter.");
             return nullptr;
         }
         Base64 *object = nullptr;
@@ -960,7 +960,7 @@ namespace OHOS::Util {
                                                     &length, &data, &arraybuffer, &byteOffset));
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
-            napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            napi_throw_error(env, nullptr, "Parameter error. incorrect type for decodeAsync parameter.");
             return nullptr;
         }
         Base64 *object = nullptr;
@@ -1697,13 +1697,15 @@ namespace OHOS::Util {
         napi_value args[1] = {nullptr};
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
         if (argc < requireArgc) {
-            napi_throw_error(env, "-1", "Expected 1 parameter, actually not included in the parameter");
+            napi_throw_error(env, "-1",
+                "Parameter error. SetMultithreadingDetectionEnabled: input parameter count must be > 0.");
             return nullptr;
         }
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_boolean) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be boolean.");
+            return ThrowError(env,
+                "Parameter error. SetMultithreadingDetectionEnabled: input parameter type must be boolean.");
         }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         bool value = false;

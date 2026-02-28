@@ -73,13 +73,15 @@ namespace OHOS::JsSysModule::Process {
         napi_value result = nullptr;
         int progroups = getgroups(0, nullptr);
         if (progroups == -1) {
-            napi_throw_error(env, "-1", "getgroups initialize failed");
+            napi_throw_error(env, "-1",
+                "process.groups faild to obtain the group ID list associated with the current process.");
             return nullptr;
         }
         std::vector<gid_t> pgrous(progroups);
         progroups = getgroups(progroups, pgrous.data());
         if (progroups == -1) {
-            napi_throw_error(env, "-1", "getgroups");
+            napi_throw_error(env, "-1",
+                "process.groups faild to obtain the group ID list associated with the current process.");
             return nullptr;
         }
         pgrous.resize(static_cast<size_t>(progroups));
@@ -135,7 +137,7 @@ namespace OHOS::JsSysModule::Process {
         int proerr = 0;
         proerr = uv_chdir(result.c_str());
         if (proerr) {
-            napi_throw_error(env, "-1", "chdir");
+            napi_throw_error(env, "-1", "process.chdir failed to invoke the uv_chdir interface.");
             return;
         }
     }
@@ -149,7 +151,8 @@ namespace OHOS::JsSysModule::Process {
         uv_pid_t ownPid = uv_os_getpid();
         // 64:The maximum valid signal value is 64.
         if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
-            napi_throw_error(env, "0", "process exit");
+            napi_throw_error(env, "0",
+                "Parameter error. process.killinput's Parameter must be number, and from 1 to 64.");
             return nullptr;
         }
         bool flag = false;
@@ -171,7 +174,7 @@ namespace OHOS::JsSysModule::Process {
             runsystime = static_cast<double>(systimer);
             NAPI_CALL(env, napi_create_double(env, runsystime, &result));
         } else {
-            napi_throw_error(env, "-1", "Failed to get systimer");
+            napi_throw_error(env, "-1", "process.uptime faild to retrieve system uptime.");
             return nullptr;
         }
         return result;
@@ -191,7 +194,7 @@ namespace OHOS::JsSysModule::Process {
         size_t length = sizeof(buf);
         int err = uv_cwd(buf, &length);
         if (err) {
-            napi_throw_error(env, "1", "uv_cwd");
+            napi_throw_error(env, "1", "process.cwd faild to invoke the uv_cwd interface.");
             return nullptr;
         }
         napi_create_string_utf8(env, buf, length, &result);
@@ -391,7 +394,8 @@ namespace OHOS::JsSysModule::Process {
         napi_get_value_int32(env, tid, &proTid);
         int32_t pri = getpriority(PRIO_PROCESS, proTid);
         if (errno) {
-            napi_throw_error(env, "-1", "Invalid tid");
+            napi_throw_error(env, "-1",
+                "Parameter error. the type of process.getThreadPriority's Parameter must be number and a valid tid.");
             return nullptr;
         }
         napi_create_int32(env, pri, &result);
@@ -440,7 +444,7 @@ namespace OHOS::JsSysModule::Process {
         while (iter != eventMap.end()) {
             napi_status status = napi_delete_reference(env, iter->second);
             if (status != napi_ok) {
-                napi_throw_error(env, nullptr, "ClearReference failed");
+                napi_throw_error(env, nullptr, "Failed to delete reference when destroying the process.");
                 return;
             }
             iter++;
