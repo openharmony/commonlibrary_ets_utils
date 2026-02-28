@@ -107,7 +107,7 @@ public:
         const std::string& type);
     void IncreaseSendDataRefCount(uint32_t taskId);
     void DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* task = nullptr);
-    void ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint32_t taskId);
+    void ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint32_t taskId, Task* task);
 
     // for task dependency
     bool IsDependendByTaskId(uint32_t taskId);

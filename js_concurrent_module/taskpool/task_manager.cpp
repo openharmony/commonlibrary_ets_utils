@@ -1149,7 +1149,7 @@ void TaskManager::DecreaseSendDataRefCount(napi_env env, uint32_t taskId, Task* 
     }
 }
 
-void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint32_t taskId)
+void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint32_t taskId, Task* task)
 {
     auto [hostEnv, priority] = GetTaskEnvAndPriority(taskId);
     if (hostEnv == nullptr) {
@@ -1168,7 +1168,8 @@ void TaskManager::ExecuteSendData(napi_env env, TaskResultInfo* resultInfo, uint
     ++callbackInfo->refCount;
     auto workerEngine = reinterpret_cast<NativeEngine*>(env);
     workerEngine->IncreaseListeningCounter();
-    auto onCallbackTask = [resultInfo]([[maybe_unused]] void* data) {
+    auto onCallbackTask = [resultInfo, task]([[maybe_unused]] void* data) {
+        AsyncStackScope asyncStackScope(task);
         TaskPool::ExecuteOnReceiveDataCallback(resultInfo);
     };
     uint64_t handleId = 0;
@@ -1939,6 +1940,7 @@ bool TaskManager::ExecuteTaskStartExecution(uint32_t taskId, Priority priority)
         if (task == nullptr || task->onStartExecutionCallBackInfo_ == nullptr) {
             return;
         }
+        AsyncStackScope asyncStackScope(task);
         Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
     };
     auto napiPrio = g_napiPriorityMap.at(priority);

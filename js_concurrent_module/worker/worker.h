@@ -734,6 +734,9 @@ class AsyncStackScope {
 public:
     explicit AsyncStackScope(Worker* worker)
     {
+        if (worker == nullptr) {
+            return;
+        }
         uint64_t id = worker->GetAsyncStackID();
         if (id != 0) {
             prevID_ = AsyncStackHelper::GetStackId();
