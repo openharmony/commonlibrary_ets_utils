@@ -27,7 +27,7 @@ using namespace Commonlibrary::Concurrent::Common::Helper;
 napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     napi_value taskClass = nullptr;
     NAPI_CALL(env, napi_define_class(env, "Task", NAPI_AUTO_LENGTH, Task::TaskConstructor,
               nullptr, 0, nullptr, &taskClass));

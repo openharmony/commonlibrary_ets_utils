@@ -2103,7 +2103,7 @@ HWTEST_F(NativeEngineTest, GetSetAsyncStackIDTest002, testing::ext::TestSize.Lev
     napi_env env = reinterpret_cast<napi_env>(engine_);
     ExceptionScope scope(env);
     // try to load faultlogd function symbol
-    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     Task* task = new Task(env, TaskType::COMMON_TASK, "groupTask");
     uint64_t id = task->GetAsyncStackID();
     // ASYNC_TYPE_ARKTS_TASKPOOL is default closed, so id is 0

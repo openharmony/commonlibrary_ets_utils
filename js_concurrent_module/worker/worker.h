@@ -736,19 +736,23 @@ public:
     {
         uint64_t id = worker->GetAsyncStackID();
         if (id != 0) {
-            AsyncStackHelper::SetStackId(id);
-            hasSetStackId = true;
+            prevID_ = AsyncStackHelper::GetStackId();
+            if (prevID_ != id) {
+                AsyncStackHelper::SetStackId(id);
+                hasSetStackId_ = true;
+            }
         }
     }
 
     ~AsyncStackScope()
     {
-        if (hasSetStackId) {
-            AsyncStackHelper::SetStackId(0);
+        if (hasSetStackId_) {
+            AsyncStackHelper::SetStackId(prevID_);
         }
     }
 private:
-    bool hasSetStackId = false;
+    bool hasSetStackId_ = false;
+    uint64_t prevID_ = 0U;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
 #endif // JS_CONCURRENT_MODULE_WORKER_WORKER_H

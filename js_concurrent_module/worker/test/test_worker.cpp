@@ -6102,14 +6102,15 @@ HWTEST_F(WorkersTest, AddGlobalCallObject001, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, SetGetAsyncStackIDTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     Worker* worker = new Worker(env, nullptr);
     ASSERT_NE(worker, nullptr);
 
     uint64_t id = worker->GetAsyncStackID();
-    // faultlogd function symbol is not loaded
+    // ASYNC_TYPE_ARKTS_WORKER is default closed, so id is 0
     ASSERT_TRUE(id == 0);
 
-    const uint64_t newId = 123;
+    const uint64_t newId = 123; // 123 is test number
     worker->SetAsyncStackID(newId);
 
     id = worker->GetAsyncStackID();
@@ -6121,50 +6122,11 @@ HWTEST_F(WorkersTest, SetGetAsyncStackIDTest001, testing::ext::TestSize.Level0)
 HWTEST_F(WorkersTest, SetGetAsyncStackIDTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = GetEnv();
-    AsyncStackHelper::LoadDfxAsyncStackFunc();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     Worker* worker = new Worker(env, nullptr);
     ASSERT_NE(worker, nullptr);
 
-    uint64_t id = worker->GetAsyncStackID();
-    // ASYNC_TYPE_ARKTS_WORKER is default closed, so id is 0
-    ASSERT_TRUE(id == 0);
-
-    const uint64_t newId = 123;
-    worker->SetAsyncStackID(newId);
-
-    id = worker->GetAsyncStackID();
-    ASSERT_TRUE(id == newId);
-
-    delete worker;
-}
-
-HWTEST_F(WorkersTest, SetGetAsyncStackIDTest003, testing::ext::TestSize.Level0)
-{
-    napi_env env = GetEnv();
-    Worker* worker = new Worker(env, nullptr);
-    ASSERT_NE(worker, nullptr);
-
-    const uint64_t newId = 123;
-    worker->SetAsyncStackID(newId);
-
-    uint64_t id = worker->GetAsyncStackID();
-    ASSERT_TRUE(id == newId);
-
-    // test AsyncStackScope constructor and destructor
-    AsyncStackScope* asyncStackScope = new AsyncStackScope(worker);
-
-    delete asyncStackScope;
-    delete worker;
-}
-
-HWTEST_F(WorkersTest, SetGetAsyncStackIDTest004, testing::ext::TestSize.Level0)
-{
-    napi_env env = GetEnv();
-    AsyncStackHelper::LoadDfxAsyncStackFunc();
-    Worker* worker = new Worker(env, nullptr);
-    ASSERT_NE(worker, nullptr);
-
-    const uint64_t newId = 123;
+    const uint64_t newId = 123; // 123 is test number
     worker->SetAsyncStackID(newId);
 
     uint64_t id = worker->GetAsyncStackID();
