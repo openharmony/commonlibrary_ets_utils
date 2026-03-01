@@ -4718,7 +4718,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest229, testing::ext::TestSize.Level0)
     task->env_ = env;
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, task->taskId_, args);
-    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_);
+    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_, task);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -7048,7 +7048,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
     napi_env env = (napi_env)engine_;
     ExceptionScope scope(env);
     TaskManager &taskManager = TaskManager::GetInstance();
-    taskManager.ExecuteSendData(env, nullptr, 338);
+    taskManager.ExecuteSendData(env, nullptr, 338, nullptr);
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);
@@ -7059,7 +7059,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
     task->worker_ = worker;
     task->env_ = env;
     taskManager.RegisterCallback(env, task->taskId_, nullptr, "OnReceiveData");
-    taskManager.ExecuteSendData(env, nullptr, task->taskId_);
+    taskManager.ExecuteSendData(env, nullptr, task->taskId_, task);
     exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception != nullptr);
@@ -7069,7 +7069,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest338, testing::ext::TestSize.Level0)
     taskManager.RegisterCallback(env, task->taskId_, callbackInfo, "TaskpoolTest338");
     void* args = nullptr;
     TaskResultInfo* resultInfo = new TaskResultInfo(env, task->taskId_, args);
-    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_);
+    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->taskId_, task);
     exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_TRUE(exception == nullptr);

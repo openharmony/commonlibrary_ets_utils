@@ -898,6 +898,7 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
+    AsyncStackScope asyncStackScope(worker);
     napi_value obj = NapiHelper::GetReferenceValue(env, worker->workerRef_);
 
     char* typeStr = NapiHelper::GetChars(env, typeValue);
@@ -1067,6 +1068,8 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
+    // for napi_deserialize
+    AsyncStackScope asyncStackScope(worker);
     napi_status serializeStatus = napi_ok;
     MessageDataType data = nullptr;
     napi_value argsArray;
@@ -1704,6 +1707,7 @@ void Worker::HostOnMessageInner()
             HILOG_DEBUG("worker:: worker received close signal");
             return;
         }
+        AsyncStackScope asyncStackScope(this);
         // handle data, call worker onMessage function to handle.
         napi_status status = napi_ok;
         HandleScope scope(hostEnv_, status);
@@ -1758,6 +1762,7 @@ void Worker::HostOnGlobalCallInner()
         return;
     }
 
+    AsyncStackScope asyncStackScope(this);
     napi_status scopeStatus = napi_ok;
     HandleScope handleScope(hostEnv_, scopeStatus);
     NAPI_CALL_RETURN_VOID(hostEnv_, scopeStatus);
@@ -1944,6 +1949,7 @@ void Worker::CloseHostCallback()
         napi_status status = napi_ok;
         HandleScope scope(hostEnv_, status);
         NAPI_CALL_RETURN_VOID(hostEnv_, status);
+        AsyncStackScope asyncStackScope(this);
         napi_value exitValue = nullptr;
         if (isErrorExit_) {
             napi_create_int32(hostEnv_, 1, &exitValue); // 1 : exit because of error
@@ -1997,6 +2003,7 @@ void Worker::HostOnErrorInner()
 
     MessageDataType data;
     while (errorQueue_.DeQueue(&data)) {
+        AsyncStackScope asyncStackScope(this);
         napi_value result = nullptr;
         napi_deserialize(hostEnv_, data, &result);
         napi_delete_serialization_data(hostEnv_, data);
@@ -2045,6 +2052,7 @@ void Worker::PostMessageInner(MessageDataType data)
 
 void Worker::HostOnMessageErrorInner()
 {
+    AsyncStackScope asyncStackScope(this);
     if (hostEnv_ == nullptr || HostIsStop()) {
         HILOG_ERROR("worker:: host thread maybe is over");
         return;
@@ -2326,6 +2334,7 @@ bool Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, co
             HILOG_WARN("worker:: host thread listener %{public}s is not callable", type);
             return false;
         }
+        AsyncStackScope asyncStackScope(this);
         napi_value callbackResult = nullptr;
         napi_call_function(env, recv, callbackObj, argc, argv, &callbackResult);
         if (!data->NextIsAvailable()) {
@@ -2666,6 +2675,7 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
     std::list<WorkerListener*>& listeners = iter->second;
     std::list<WorkerListener*>::iterator it = listeners.begin();
     while (it != listeners.end()) {
+        AsyncStackScope asyncStackScope(this);
         WorkerListener* data = *it++;
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
         if (!NapiHelper::IsCallable(env, callbackObj)) {
@@ -2903,6 +2913,7 @@ void Worker::HostOnAllErrorsInner()
         if (data == nullptr) {
             return;
         }
+        AsyncStackScope asyncStackScope(this);
         napi_value result = nullptr;
         napi_deserialize(hostEnv_, data, &result);
         napi_delete_serialization_data(hostEnv_, data);

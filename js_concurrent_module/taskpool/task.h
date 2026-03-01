@@ -336,5 +336,33 @@ struct TaskResultInfo {
     uint32_t taskId;
     void* serializationArgs;
 };
+
+class AsyncStackScope {
+public:
+    explicit AsyncStackScope(Task* task)
+    {
+        if (task == nullptr) {
+            return;
+        }
+        uint64_t id = task->GetAsyncStackID();
+        if (id != 0) {
+            prevID_ = AsyncStackHelper::GetStackId();
+            if (prevID_ != id) {
+                AsyncStackHelper::SetStackId(id);
+                hasSetStackId_ = true;
+            }
+        }
+    }
+
+    ~AsyncStackScope()
+    {
+        if (hasSetStackId_) {
+            AsyncStackHelper::SetStackId(prevID_);
+        }
+    }
+private:
+    bool hasSetStackId_ = false;
+    uint64_t prevID_ = 0U;
+};
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_TASKPOOL_TASK_H

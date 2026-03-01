@@ -479,11 +479,13 @@ void TaskPool::HandleTaskResultInner(Task* task)
         if (success) {
             napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
             if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
+                AsyncStackScope asyncStackScope(task);
                 task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_, task->taskId_);
             }
         } else {
             napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
             if (task->onExecutionFailedCallBackInfo_ != nullptr) {
+                AsyncStackScope asyncStackScope(task);
                 task->onExecutionFailedCallBackInfo_->taskError_ = napiTaskResult;
                 task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_, task->taskId_);
             }
@@ -580,6 +582,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         for (uint32_t taskId : taskGroup->taskIds_) {
             auto task = TaskManager::GetInstance().GetTask(taskId);
             if (task != nullptr && task->onExecutionSucceededCallBackInfo_ != nullptr) {
+                AsyncStackScope asyncStackScope(task);
                 task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_, task->taskId_);
             }
         }
@@ -591,6 +594,7 @@ void TaskPool::UpdateGroupInfoByResult(napi_env env, Task* task, napi_value res,
         std::advance(iter, groupInfo->GetFailedIndex());
         auto task = iter != taskGroup->taskIds_.end() ? TaskManager::GetInstance().GetTask(*iter) : nullptr;
         if (task != nullptr && task->onExecutionFailedCallBackInfo_ != nullptr) {
+            AsyncStackScope asyncStackScope(task);
             task->onExecutionFailedCallBackInfo_->taskError_ = res;
             task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_, task->taskId_);
         }

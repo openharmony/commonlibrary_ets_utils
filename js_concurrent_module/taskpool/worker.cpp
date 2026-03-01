@@ -442,7 +442,7 @@ void Worker::PerformTask(const uv_async_t* req)
         delete task;
         return;
     }
-    AsyncStackHelper::SetStackId(task->GetAsyncStackID());
+    AsyncStackScope asyncStackScope(task);
     // try to record the memory data for gc
     worker->NotifyTaskBegin();
 

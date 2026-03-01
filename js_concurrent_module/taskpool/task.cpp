@@ -519,7 +519,7 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     }
 
     TaskResultInfo* resultInfo = new TaskResultInfo(env, task->GetTaskId(), serializationArgs);
-    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->GetTaskId());
+    TaskManager::GetInstance().ExecuteSendData(env, resultInfo, task->GetTaskId(), task);
     return nullptr;
 }
 
@@ -1576,6 +1576,7 @@ bool Task::CheckStartExecution(Priority priority)
             if (task == nullptr || task->onStartExecutionCallBackInfo_ == nullptr) {
                 return;
             }
+            AsyncStackScope asyncStackScope(task);
             Task::StartExecutionTask(task->onStartExecutionCallBackInfo_);
         };
         TaskManager::GetInstance().PostTask(onStartExecutionTask, "TaskPoolOnStartExecutionTask", priority);
@@ -2026,6 +2027,7 @@ void Task::TriggerEnqueueCallback()
         info = onEnqueuedCallBackInfo_;
     }
     if (info != nullptr) {
+        AsyncStackScope asyncStackScope(this);
         ExecuteListenerCallback(info, taskId_);
     } else { // LOCV_EXCL_BR_LINE
         HILOG_DEBUG("taskpool:: onEnqueuedCallBackInfo is null");
