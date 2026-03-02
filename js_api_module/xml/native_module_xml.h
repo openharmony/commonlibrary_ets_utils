@@ -22,5 +22,6 @@ namespace OHOS::xml {
 napi_value XmlSerializerInit(napi_env env, napi_value exports);
 napi_value XmlPullParserInit(napi_env env, napi_value exports);
 napi_value XmlDynamicSerializerInit(napi_env env, napi_value exports);
+napi_value XmlSAXParserInit(napi_env env, napi_value exports);
 }
 #endif // NATIVE_MODULE_XML_H

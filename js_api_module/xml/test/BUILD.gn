@@ -24,6 +24,8 @@ ohos_unittest("test_xml_unittest") {
   include_dirs = [
     "${ets_util_path}/js_api_module/xml",
     ets_util_path,
+    "$root_gen_dir/third_party/libxml2/libxml2-2.14.0/include",
+    "$root_out_dir/obj/third_party/libxml2/include",
   ]
 
   cflags = [ "-g3" ]
@@ -44,6 +46,7 @@ ohos_unittest("test_xml_unittest") {
     "hilog:libhilog",
     "icu:shared_icuuc",
     "libuv:uv",
+    "libxml2:libxml2",
     "napi:ace_napi",
   ]
 }
