@@ -31,12 +31,10 @@ namespace OHOS::JsSysModule::Process {
             NAPI_ASSERT(env, valueType == napi_string, "Wrong argument type: string expected.");
         } else {
             HILOG_ERROR("Process:: command is null");
-            napi_throw_error(env, "", "command is empty");
+            napi_throw_error(env, "", "Parameter error. process.runCmdinput's command is empty");
             return nullptr;
         }
-
         std::vector<std::string> keyStr = {"timeout", "killSignal", "maxBuffer"};
-
         if (argc < 2) { // 2:The number of parameters is 2
             return nullptr;
         }
@@ -54,7 +52,7 @@ namespace OHOS::JsSysModule::Process {
                         int timeout = 0;
                         napi_get_value_int32(env, property, &timeout);
                         if (timeout < 0) {
-                            NAPI_CALL(env, napi_throw_error(env, "", "options timeout is lessthen zero"));
+                            napi_throw_error(env, "", "Parameter error. process.runCmd timeout is lessthen zero");
                             return nullptr;
                         }
                         break;
@@ -170,7 +168,7 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if ((valuetype != napi_valuetype::napi_number) && (valuetype != napi_valuetype::napi_string)) {
-            napi_throw_error(env, nullptr, "The parameter type is incorrect");
+            napi_throw_error(env, nullptr, "Parameter error. process.kill parameter type is incorrect");
             return nullptr;
         }
 

@@ -288,7 +288,7 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
 {
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        napi_throw_error(env, nullptr, "StartTimeoutOrInterval, callback info is nullptr.");
+        napi_throw_error(env, nullptr, "Parameter error. The input callback of StartTimeoutOrInterval is empty.");
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];
