@@ -1185,4 +1185,10 @@ bool NativeEngineTest::TaskGroupTimeoutCallback(uv_timer_t* handle)
     TaskPool::TaskGroupTimeoutCallback(handle);
     return true;
 }
+
+bool NativeEngineTest::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum)
+{
+    TaskManager::GetInstance().AddCountTraceForWorkerLog(needLog, threadNum, 1, 1);
+    return true;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

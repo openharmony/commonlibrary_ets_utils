@@ -125,7 +125,7 @@ napi_value Worker::InitWorker(napi_env env, napi_value exports)
 
     #if defined(ENABLE_CONCURRENCY_INTEROP)
         if (reinterpret_cast<NativeEngine*>(env)->IsMainThread() && ANIHelper::GetAniVm() == nullptr) {
-            HILOG_INFO("worker:: get aniVm is null in main thread.");
+            HILOG_DEBUG("worker:: get aniVm is null in main thread.");
         }
     #endif
 
@@ -375,7 +375,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
 
     #if defined(ENABLE_CONCURRENCY_INTEROP)
         if (reinterpret_cast<NativeEngine*>(env)->IsMainThread() && ANIHelper::GetAniVm() == nullptr) {
-            HILOG_ERROR("worker:: get aniVm is null in main thread.");
+            HILOG_DEBUG("worker:: get aniVm is null in main thread.");
         }
     #endif
 
@@ -2936,12 +2936,12 @@ void Worker::HostOnAllErrorsInner()
         ani_options aniArgs {1, &interopEnabled};
         auto* aniVm = ANIHelper::GetAniVm();
         if (aniVm == nullptr) {
-            HILOG_ERROR("worker:: AttachWorkerEnvToAniVm aviVm is null");
+            HILOG_DEBUG("worker:: AttachWorkerEnvToAniVm aniVm is null");
             return;
         }
         ani_status status = aniVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &aniEnv_);
         if (status != ANI_OK || aniEnv_ == nullptr) {
-            HILOG_ERROR("worker:: AttachCurrentThread failed.");
+            HILOG_DEBUG("worker:: AttachCurrentThread failed.");
         }
     }
     
@@ -2952,12 +2952,12 @@ void Worker::HostOnAllErrorsInner()
         }
         auto* aniVm = ANIHelper::GetAniVm();
         if (aniVm == nullptr) {
-            HILOG_ERROR("worker:: aviVm is null when DetachWorkerFromAniVm.");
+            HILOG_DEBUG("worker:: aniVm is null when DetachWorkerFromAniVm.");
             return;
         }
         ani_status status = aniVm->DetachCurrentThread();
         if (status != ANI_OK) {
-            HILOG_ERROR("worker:: DetachCurrentThread failed.");
+            HILOG_DEBUG("worker:: DetachCurrentThread failed.");
         }
     }
 #endif
