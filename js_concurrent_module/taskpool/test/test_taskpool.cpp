@@ -2102,7 +2102,6 @@ HWTEST_F(NativeEngineTest, GetSetAsyncStackIDTest002, testing::ext::TestSize.Lev
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     ExceptionScope scope(env);
-    // try to load faultlogd function symbol
     AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
     Task* task = new Task(env, TaskType::COMMON_TASK, "groupTask");
     uint64_t id = task->GetAsyncStackID();
@@ -2114,6 +2113,73 @@ HWTEST_F(NativeEngineTest, GetSetAsyncStackIDTest002, testing::ext::TestSize.Lev
     id = task->GetAsyncStackID();
     ASSERT_TRUE(id == newId);
     delete task;
+}
+
+HWTEST_F(NativeEngineTest, GetSetAsyncStackIDTest003, testing::ext::TestSize.Level0)
+{
+    // Test multiple calls to Task::SetAsyncStackID and Task::GetAsyncStackID
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    Task* task = new Task(env, TaskType::COMMON_TASK, "testTask");
+    ASSERT_NE(task, nullptr);
+
+    const uint64_t id1 = 100;
+    const uint64_t id2 = 200;
+    task->SetAsyncStackID(id1);
+    ASSERT_EQ(task->GetAsyncStackID(), id1);
+    task->SetAsyncStackID(id2);
+    ASSERT_EQ(task->GetAsyncStackID(), id2);
+    task->SetAsyncStackID(0);
+    ASSERT_EQ(task->GetAsyncStackID(), 0);
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackScopeTest001, testing::ext::TestSize.Level0)
+{
+    // Test Task::AsyncStackScope constructor and destructor with valid ID
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    Task* task = new Task(env, TaskType::COMMON_TASK, "testTask");
+    ASSERT_NE(task, nullptr);
+
+    const uint64_t newId = 456;
+    task->SetAsyncStackID(newId);
+
+    AsyncStackScope* asyncStackScope = new AsyncStackScope(task);
+    ASSERT_NE(asyncStackScope, nullptr);
+
+    delete asyncStackScope;
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackScopeTest002, testing::ext::TestSize.Level0)
+{
+    // Test Task::AsyncStackScope constructor and destructor with zero ID
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    Task* task = new Task(env, TaskType::COMMON_TASK, "testTask");
+    ASSERT_NE(task, nullptr);
+    ASSERT_EQ(task->GetAsyncStackID(), 0);
+
+    AsyncStackScope* asyncStackScope = new AsyncStackScope(task);
+    ASSERT_NE(asyncStackScope, nullptr);
+
+    delete asyncStackScope;
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackScopeTest003, testing::ext::TestSize.Level0)
+{
+    // Test Task::AsyncStackScope constructor and destructor with nullptr
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+
+    AsyncStackScope* asyncStackScope = new AsyncStackScope(nullptr);
+    ASSERT_NE(asyncStackScope, nullptr);
+
+    delete asyncStackScope;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)

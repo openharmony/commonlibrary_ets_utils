@@ -880,3 +880,42 @@ HWTEST_F(NativeEngineTest, AsyncStackHelperTest003, testing::ext::TestSize.Level
     // DfxSetSubmitterStackId and DfxGetSubmitterStackId is not enable in ut, so id is 0.
     ASSERT_EQ(id, 0);
 }
+
+HWTEST_F(NativeEngineTest, AsyncStackHelperTest004, testing::ext::TestSize.Level0)
+{
+    // Test multiple calls to SetStackId and GetStackId
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    const uint64_t id1 = 456; // 456  is test number
+    const uint64_t id2 = 789; // 789  is test number
+    AsyncStackHelper::SetStackId(id1);
+    uint64_t result = AsyncStackHelper::GetStackId();
+    // DfxSetSubmitterStackId and DfxGetSubmitterStackId is not enable in ut, so result is 0.
+    ASSERT_EQ(result, 0);
+    AsyncStackHelper::SetStackId(id2);
+    result = AsyncStackHelper::GetStackId();
+    ASSERT_EQ(result, 0);
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackHelperTest005, testing::ext::TestSize.Level0)
+{
+    // Test CollectAsyncStack with both ASYNC_TYPE_ARKTS_TASKPOOL and ASYNC_TYPE_ARKTS_WORKER
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    uint64_t id = AsyncStackHelper::CollectAsyncStack(
+        AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_TASKPOOL);
+    ASSERT_EQ(id, 0);
+    id = AsyncStackHelper::CollectAsyncStack(
+        AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_WORKER);
+    ASSERT_EQ(id, 0);
+}
+
+HWTEST_F(NativeEngineTest, AsyncStackHelperTest006, testing::ext::TestSize.Level0)
+{
+    // Test setting and clearing stack ID
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    const uint64_t id = 999; // 999 is test number
+    AsyncStackHelper::SetStackId(id);
+    AsyncStackHelper::SetStackId(0);
+    uint64_t result = AsyncStackHelper::GetStackId();
+    // DfxSetSubmitterStackId and DfxGetSubmitterStackId is not enable in ut, so result is 0.
+    ASSERT_EQ(result, 0);
+}
