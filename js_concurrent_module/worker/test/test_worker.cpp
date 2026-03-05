@@ -6138,3 +6138,68 @@ HWTEST_F(WorkersTest, SetGetAsyncStackIDTest002, testing::ext::TestSize.Level0)
     delete asyncStackScope;
     delete worker;
 }
+
+HWTEST_F(WorkersTest, SetGetAsyncStackIDTest003, testing::ext::TestSize.Level0)
+{
+    // Test multiple calls to Worker::SetAsyncStackID and Worker::GetAsyncStackID
+    napi_env env = GetEnv();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+
+    const uint64_t id1 = 100;
+    const uint64_t id2 = 200;
+    worker->SetAsyncStackID(id1);
+    ASSERT_EQ(worker->GetAsyncStackID(), id1);
+    worker->SetAsyncStackID(id2);
+    ASSERT_EQ(worker->GetAsyncStackID(), id2);
+    worker->SetAsyncStackID(0);
+    ASSERT_EQ(worker->GetAsyncStackID(), 0);
+
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, AsyncStackScopeTest001, testing::ext::TestSize.Level0)
+{
+    // Test Worker::AsyncStackScope constructor and destructor with valid ID
+    napi_env env = GetEnv();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+
+    const uint64_t newId = 456;
+    worker->SetAsyncStackID(newId);
+
+    AsyncStackScope* asyncStackScope = new AsyncStackScope(worker);
+    ASSERT_NE(asyncStackScope, nullptr);
+
+    delete asyncStackScope;
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, AsyncStackScopeTest002, testing::ext::TestSize.Level0)
+{
+    // Test Worker::AsyncStackScope constructor and destructor with zero ID
+    napi_env env = GetEnv();
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+    ASSERT_EQ(worker->GetAsyncStackID(), 0);
+
+    AsyncStackScope* asyncStackScope = new AsyncStackScope(worker);
+    ASSERT_NE(asyncStackScope, nullptr);
+
+    delete asyncStackScope;
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, AsyncStackScopeTest003, testing::ext::TestSize.Level0)
+{
+    // Test Worker::AsyncStackScope constructor and destructor with nullptr
+    AsyncStackHelper::CheckLoadDfxAsyncStackFunc();
+
+    AsyncStackScope* asyncStackScope = new AsyncStackScope(nullptr);
+    ASSERT_NE(asyncStackScope, nullptr);
+
+    delete asyncStackScope;
+}
