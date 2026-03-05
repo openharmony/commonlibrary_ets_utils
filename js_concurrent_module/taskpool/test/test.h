@@ -112,6 +112,7 @@ public:
     static bool TaskTimeoutCallback(uv_timer_t* handle);
     static bool TriggerTaskGroupTimeoutTimer(napi_env env, void* data);
     static bool TaskGroupTimeoutCallback(uv_timer_t* handle);
+    static bool AddCountTraceForWorkerLog(bool needLog, int64_t threadNum);
 
     class ExceptionScope {
     public:
