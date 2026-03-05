@@ -2526,3 +2526,285 @@ HWTEST_F(NativeEngineTest, ConsoleTest079, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, cb, argc, argv, &res);
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
 }
+
+/* @tc.name: ConsoleTest090 - ConsoleLog with empty string
+ * @tc.desc: Test ConsoleLog with empty string argument.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest090, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+    std::string message = "";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value argv[] = {nativeMessage0};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest091 - ConsoleLog with special characters
+ * @tc.desc: Test ConsoleLog with special characters in string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest091, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+    std::string message = "Special chars: !@#$%^&*()_+-={}[]|\\:;\"'<>,.?/~`";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value argv[] = {nativeMessage0};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest092 - ConsoleLog with unicode string
+ * @tc.desc: Test ConsoleLog with unicode characters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest092, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+    std::string message = "Unicode test";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value argv[] = {nativeMessage0};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest093 - ConsoleLog with number values
+ * @tc.desc: Test ConsoleLog with various number types.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest093, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string funcName = "ConsoleLog";
+    napi_value cb = nullptr;
+
+    // Test int32
+    napi_value int32Val = nullptr;
+    napi_create_int32(env, -2147483648, &int32Val);
+    napi_value argv1[] = {int32Val};
+    napi_value res1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv1, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+
+    // Test uint32
+    cb = nullptr;
+    napi_value uint32Val = nullptr;
+    napi_create_uint32(env, 4294967295, &uint32Val);
+    napi_value argv2[] = {uint32Val};
+    napi_value res2 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv2, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+
+    // Test double
+    cb = nullptr;
+    napi_value doubleVal = nullptr;
+    napi_create_double(env, 3.14159265359, &doubleVal);
+    napi_value argv3[] = {doubleVal};
+    napi_value res3 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv3, &res3);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest094 - ConsoleLog with boolean values
+ * @tc.desc: Test ConsoleLog with boolean true and false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest094, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    std::string funcName = "ConsoleLog";
+    napi_value cb = nullptr;
+
+    napi_value boolTrue = nullptr;
+    napi_get_boolean(env, true, &boolTrue);
+    napi_value argv1[] = {boolTrue};
+    napi_value res1 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv1, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+
+    cb = nullptr;
+    napi_value boolFalse = nullptr;
+    napi_get_boolean(env, false, &boolFalse);
+    napi_value argv2[] = {boolFalse};
+    napi_value res2 = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv2, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest095 - ConsoleLog with object
+ * @tc.desc: Test ConsoleLog with object parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest095, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    napi_value key = nullptr;
+    napi_create_string_utf8(env, "name", 4, &key);
+    napi_value value = nullptr;
+    napi_create_string_utf8(env, "test object", 11, &value);
+    napi_set_property(env, obj, key, value);
+
+    napi_value argv[] = {obj};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest096 - ConsoleLog with multiple arguments
+ * @tc.desc: Test ConsoleLog with multiple arguments of different types.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest096, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 5;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+
+    napi_value strVal = nullptr;
+    napi_create_string_utf8(env, "mixed", 5, &strVal);
+    napi_value numVal = nullptr;
+    napi_create_int32(env, 42, &numVal);
+    napi_value boolVal = nullptr;
+    napi_get_boolean(env, true, &boolVal);
+    napi_value nullVal = nullptr;
+    napi_get_null(env, &nullVal);
+
+    napi_value argv[] = {strVal, numVal, boolVal, nullVal, strVal};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest097 - ConsoleLog with zero arguments
+ * @tc.desc: Test ConsoleLog with no arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest097, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 0;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+    napi_value argv[] = {nullptr};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest098 - ConsoleLog with ERROR level
+ * @tc.desc: Test ConsoleLog with ERROR log level.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest098, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+    std::string message = "error message";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value argv[] = {nativeMessage0};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::ERROR>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest099 - ConsoleLog with WARN level
+ * @tc.desc: Test ConsoleLog with WARN log level.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest099, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+    std::string message = "warning message";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value argv[] = {nativeMessage0};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::WARN>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest100 - ConsoleLog with DEBUG level
+ * @tc.desc: Test ConsoleLog with DEBUG log level.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest100, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "ConsoleLog";
+    napi_value res0 = nullptr;
+    napi_value cb = nullptr;
+    std::string message = "debug message";
+    napi_value nativeMessage0 = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &nativeMessage0);
+    napi_value argv[] = {nativeMessage0};
+
+    napi_create_function(env, funcName.c_str(), funcName.size(),
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::DEBUG>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res0);
+    ASSERT_CHECK_VALUE_TYPE(env, res0, napi_undefined);
+}
