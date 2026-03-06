@@ -21,10 +21,10 @@
 #include "commonlibrary/ets_utils/js_util_module/util/js_stringdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/native_module_util.h"
 
+#include "jni_helper.h"
 #include "securec.h"
 #include "tools/log.h"
-
-#include "jni_helper.h"
+#include "tools/ets_error.h"
 
 extern const char _binary_util_js_js_start[];
 extern const char _binary_util_js_js_end[];
@@ -62,6 +62,7 @@ namespace OHOS::Util {
         0x957ca7faf113d259   // upper
     };
 
+    using namespace OHOS::Tools;
     using namespace Commonlibrary::Platform;
     static bool IsValidValue(napi_env env, napi_value value)
     {
@@ -136,24 +137,6 @@ namespace OHOS::Util {
             str += format.substr(i);
         }
         return str;
-    }
-
-    static napi_value ThrowError(napi_env env, const char* errMessage)
-    {
-        napi_value utilError = nullptr;
-        napi_value code = nullptr;
-        uint32_t errCode = 401;
-        napi_create_uint32(env, errCode, &code);
-        napi_value name = nullptr;
-        std::string errName = "BusinessError";
-        napi_value msg = nullptr;
-        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
-        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
-        napi_create_error(env, nullptr, msg, &utilError);
-        napi_set_named_property(env, utilError, "code", code);
-        napi_set_named_property(env, utilError, "name", name);
-        napi_throw(env, utilError);
-        return nullptr;
     }
 
     static napi_value FormatString(napi_env env, std::string &str)
@@ -350,13 +333,16 @@ namespace OHOS::Util {
         napi_value args[1] = { nullptr };
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         if (argc < requireArgc) {
-            napi_throw_error(env, "-1", "Parameter error. the type of getHash parameter must be object.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. the type of getHash parameter must be object.");
             return nullptr;
         }
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_object) {
-            return ThrowError(env, "Parameter error. The type of getHash parameter must be object.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. The type of getHash parameter must be object.");
+            return nullptr;
         }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         int32_t value = engine->GetObjectHash(env, args[0]);
@@ -458,7 +444,9 @@ namespace OHOS::Util {
             napi_get_cb_info(env, info, &argc, &argv, nullptr, &dataPara);
             napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset);
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. The type of Parameter must be Uint8Array.");
+                return nullptr;
             }
             valStr = textDecoder->DecodeToString(env, argv, iStream);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
@@ -467,13 +455,17 @@ namespace OHOS::Util {
             napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara);
             napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset);
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of first Parameter must be Uint8Array.");
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. The type of first Parameter must be Uint8Array.");
+                return nullptr;
             }
             napi_valuetype valueType;
             napi_typeof(env, argvArr[1], &valueType);
             if (valueType != napi_undefined && valueType != napi_null) {
                 if (valueType != napi_object) {
-                    return ThrowError(env, "Parameter error. The type of second Parameter must be object.");
+                    ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                        "Parameter error. The type of second Parameter must be object.");
+                    return nullptr;
                 }
                 const char *messageKeyStrStream = "stream";
                 napi_value resultStream = nullptr;
@@ -511,7 +503,9 @@ namespace OHOS::Util {
             // first para
             napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset);
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. The type of Parameter must be Uint8Array.");
+                return nullptr;
             }
             valStr = textDecoder->Decode(env, argv, iStream);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
@@ -522,13 +516,17 @@ namespace OHOS::Util {
             napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset);
             // second para
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. The type of Parameter must be string.");
+                return nullptr;
             }
             napi_valuetype valueType1;
             napi_typeof(env, argvArr[1], &valueType1);
             if (valueType1 != napi_undefined && valueType1 != napi_null) {
                 if (valueType1 != napi_object) {
-                    return ThrowError(env, "Parameter error. The type of Parameter must be object.");
+                    ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                        "Parameter error. The type of Parameter must be object.");
+                    return nullptr;
                 }
                 napi_value messageKeyStream = nullptr;
                 const char *messageKeyStrStream = "stream";
@@ -592,7 +590,9 @@ namespace OHOS::Util {
             napi_typeof(env, src, &valuetype);
             if (valuetype != napi_undefined && valuetype != napi_null) {
                 if (valuetype != napi_string) {
-                    return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+                    ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                        "Parameter error. The type of Parameter must be string.");
+                    return nullptr;
                 }
                 size_t bufferSize = 0;
                 if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
@@ -674,7 +674,8 @@ namespace OHOS::Util {
             return result;
         }
         if (valuetype != napi_string) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of Parameter must be string.");
+            return nullptr;
         }
 
         TextEncoder *object = nullptr;
@@ -729,10 +730,13 @@ namespace OHOS::Util {
         size_t byteOffset = 0;
         napi_get_typedarray_info(env, args[1], &valuetype1, &length, &data, &arraybuffer, &byteOffset);
         if (valuetype0 != napi_string) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of Parameter must be string.");
+            return nullptr;
         }
         if (valuetype1 != napi_uint8_array) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. The type of Parameter must be Uint8Array.");
+            return nullptr;
         }
         TextEncoder *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
@@ -890,7 +894,8 @@ namespace OHOS::Util {
                                                     &data, &arraybuffer, &byteOffset));
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
-            napi_throw_error(env, nullptr, "Parameter error. incorrect type for decodeBase64 parameter.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. incorrect type for decodeBase64 parameter.");
             return nullptr;
         }
         Base64 *object = nullptr;
@@ -960,7 +965,8 @@ namespace OHOS::Util {
                                                     &length, &data, &arraybuffer, &byteOffset));
         }
         if ((valuetype1 != napi_valuetype::napi_string) && (valuetype0 != napi_typedarray_type::napi_uint8_array)) {
-            napi_throw_error(env, nullptr, "Parameter error. incorrect type for decodeAsync parameter.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. incorrect type for decodeAsync parameter.");
             return nullptr;
         }
         Base64 *object = nullptr;
@@ -979,8 +985,9 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
         if (typeValue < Type::TYPED_FIRST || typeValue > Type::TYPED_LAST) {
-            return ThrowError(env,
-                              "Parameter error. The target encoding type option must be one of the Type enumerations.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. The target encoding type option must be one of the Type enumerations.");
+            return nullptr;
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &base64TypeTag, (void**)&object));
@@ -997,7 +1004,9 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
         if (typeValue != Type::BASIC && typeValue != Type::BASIC_URL_SAFE) {
-            return ThrowError(env, "Parameter error. The target encoding type option must be BASIC or BASIC_URL_SAFE.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. The target encoding type option must be BASIC or BASIC_URL_SAFE.");
+            return nullptr;
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &base64TypeTag, (void**)&object));
@@ -1043,8 +1052,9 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
         if (typeValue < Type::TYPED_FIRST || typeValue > Type::TYPED_LAST) {
-            return ThrowError(env,
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. The target encoding type option must be one of the Type enumerations.");
+            return nullptr;
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &base64TypeTag, (void**)&object));
@@ -1628,7 +1638,7 @@ namespace OHOS::Util {
                     return nullptr;
                 }
                 if (!CheckEncodingFormat(buffer)) {
-                    napi_throw_error(env, "401",
+                    ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                         "Parameter error. Wrong encoding format, the current encoding format is not support.");
                     return nullptr;
                 }
@@ -1697,15 +1707,16 @@ namespace OHOS::Util {
         napi_value args[1] = {nullptr};
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
         if (argc < requireArgc) {
-            napi_throw_error(env, "-1",
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. SetMultithreadingDetectionEnabled: input parameter count must be > 0.");
             return nullptr;
         }
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_boolean) {
-            return ThrowError(env,
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. SetMultithreadingDetectionEnabled: input parameter type must be boolean.");
+            return nullptr;
         }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         bool value = false;

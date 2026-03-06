@@ -899,6 +899,9 @@ class Writable {
     if (typeof chunk !== 'string' && !(chunk instanceof Uint8Array)) {
       throw new BusinessError(`Parameter error. The type of ${chunk} must be string or UintArray`, 401);
     }
+    if (typeof chunk === 'string' && chunk.length === 0) {
+        throw new BusinessError(`Parameter error. The type of ${chunk} cannot be empty string`, 401);
+    }
     if (this.ending && !this.writing) {
       setTimeout((): void => {
         this.erroredInner = new BusinessError('write after end', 10200036);

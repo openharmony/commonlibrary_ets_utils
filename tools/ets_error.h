@@ -22,6 +22,9 @@
 #include "napi/native_node_api.h"
 
 namespace OHOS::Tools {
+// Error code definitions
+constexpr int32_t TYPE_ERROR_CODE = 401; // 401: Type error code value
+
 class ErrorHelper {
 public:
     ErrorHelper() = default;
