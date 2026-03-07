@@ -13,6 +13,16 @@
  * limitations under the License.
  */
 
+// Import stream interface
+// @ts-ignore
+import { stream } from '@ohos.util.stream'
+
+// Import util for StringDecoder
+type AnyType = Object | null | undefined | unknown;
+declare function requireNapi(napiModuleName: string): AnyType;
+// @ts-ignore
+const { StringDecoder } = requireNapi('util');
+
 interface NativeXmlPullParser {
   new(value: object, strEncoding?: string): NativeXmlPullParser;
   parse(options: object): void;
@@ -50,10 +60,16 @@ interface NativeXMLDynamicSerializer {
   getOutput(): ArrayBuffer | undefined;
 }
 
+interface NativeXmlSAXParser {
+  new(): NativeXmlSAXParser;
+  parse(handler: XmlSAXHandler, chunk: string, isFinal: boolean): void;
+}
+
 interface Xml {
   XmlSerializer: NativeXMLSerializer;
   XmlPullParser: NativeXmlPullParser;
   XmlDynamicSerializer: NativeXMLDynamicSerializer;
+  XmlSAXParser: NativeXmlSAXParser;
 }
 
 const ARGUMENT_LENGTH_ONE = 1;
@@ -400,6 +416,92 @@ class XmlPullParser {
   }
 }
 
+// SAX handler interface for XML parsing events
+export interface XmlSAXHandler {
+  startDocument(): void;
+  endDocument(): void;
+  startElement(elementName: string, namespaceURI?: string, prefix?: string, attributes?: Map<string, string>): void;
+  endElement(elementName: string, namespaceURI?: string, prefix?: string): void;
+  characters(content: string): void;
+}
+
+const PARSER_NOT_PARSING = false;
+const PARSER_IS_PARSING = true;
+
+class XmlSAXParser {
+  private nativeSAXParser: NativeXmlSAXParser;
+  private inputStream: stream.Readable;
+  private encoding: string;
+  private isParsing: boolean;
+
+  constructor(inputStream: stream.Readable, encoding?: string) {
+    if (typeof inputStream !== 'object') {
+      throw new BusinessError('Parameter error. Input stream must be a readable stream.');
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new BusinessError('Parameter error. Encoding must be a string.');
+    }
+    if (encoding && encoding.toLowerCase() !== 'utf-8') {
+      throw new BusinessError('Parameter error. Only UTF-8 encoding is supported.');
+    }
+
+    this.inputStream = inputStream;
+    this.encoding = encoding || 'utf-8';
+    this.nativeSAXParser = new XML.XmlSAXParser();
+    this.isParsing = PARSER_NOT_PARSING;
+  }
+
+  parse(handler: XmlSAXHandler): void {
+    if (typeof handler !== 'object') {
+      throw new BusinessError('Parameter error. Handler must be an object.');
+    }
+
+    if (this.isParsing === PARSER_IS_PARSING) {
+      throw new BusinessError('Parser is already parsing. Cannot call parse() again before parsing completes.');
+    }
+
+    this.isParsing = PARSER_IS_PARSING;
+
+    this.inputStream.off('data');
+    this.inputStream.off('end');
+    this.inputStream.off('error');
+
+    const decoder = new StringDecoder(this.encoding);
+    
+    // @ts-ignore
+    this.inputStream.on('data', (obj) => {
+      let chunk = obj.data;
+      let data: string;
+      if (typeof chunk === 'string') {
+        data = chunk;
+      } else {
+        data = decoder.write(chunk);
+      }
+      try {
+        this.nativeSAXParser.parse(handler, data, false);
+      } catch (e) {
+        this.isParsing = PARSER_NOT_PARSING;
+        throw new BusinessError(`Parse error: ${e}`);
+      }
+    });
+
+    this.inputStream.on('end', () => {
+      try {
+        this.nativeSAXParser.parse(handler, '', true);
+        this.isParsing = PARSER_NOT_PARSING;
+      } catch (e) {
+        this.isParsing = PARSER_NOT_PARSING;
+        throw new BusinessError(`Parse error: ${e}`);
+      }
+    });
+
+    this.inputStream.on('error', (error: Error) => {
+      this.isParsing = PARSER_NOT_PARSING;
+      throw new BusinessError(`Stream error: ${error.message}`);
+    });
+  }
+}
+
 enum EventType {
   START_DOCUMENT,
   END_DOCUMENT,
@@ -418,5 +520,6 @@ export default {
   XmlSerializer: XmlSerializer,
   XmlPullParser: XmlPullParser,
   XmlDynamicSerializer: XmlDynamicSerializer,
+  XmlSAXParser: XmlSAXParser,
   EventType,
 };

@@ -17,8 +17,19 @@
 #define TEST_XML_H
 
 #include "js_api_module/xml/js_xml.h"
+#include "js_api_module/xml/js_xml_sax.h"
 
 namespace OHOS::xml {
+
+class XmlSAXParserTestHelper {
+public:
+    static std::map<std::string, std::string> TestConvertSAX2Attributes(
+        XmlSAXParser& parser, const xmlChar** attrs, int attributeSize)
+    {
+        return parser.ConvertSAX2Attributes(attrs, attributeSize);
+    }
+};
+
 class XmlTest {
 public:
     XmlTest() = default;
@@ -522,5 +533,5 @@ int XmlTest::SkipCharFunction(napi_env env, std::string str, char expected)
     xmlPullParser.SkipChar(expected);
     return xmlPullParser.PriorDealChar();
 }
-}
+} // namespace OHOS::xml
 #endif // TEST_XML_H

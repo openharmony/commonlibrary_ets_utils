@@ -74,6 +74,7 @@ gen_obj("xml_abc") {
 xml_sources = [
   "js_xml.cpp",
   "js_xml_dynamic.cpp",
+  "js_xml_sax.cpp",
   "native_module_xml.cpp",
 ]
 
@@ -101,6 +102,8 @@ ohos_source_set("xml_static") {
   include_dirs = [
     "include",
     ets_util_path,
+    "$root_gen_dir/third_party/libxml2/libxml2-2.14.0/include",
+    "$root_out_dir/obj/third_party/libxml2/include",
   ]
 
   sources = xml_sources
@@ -136,6 +139,7 @@ ohos_source_set("xml_static") {
     external_deps += [
       "bounds_checking_function:libsec_shared",
       "icu:shared_icuuc",
+      "libxml2:libxml2",
       "napi:ace_napi",
     ]
   }
