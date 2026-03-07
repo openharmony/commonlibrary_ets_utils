@@ -42,6 +42,10 @@ static const std::vector<std::string> conventFormat = {"utf-8", "UTF-8", "gbk", 
                                                        "utf-16le", "iso-8859-1"};
 
 namespace OHOS::Util {
+    static constexpr double MIN_THRESHOLD = 70.0;
+    static constexpr double MAX_THRESHOLD = 95.0;
+    static constexpr double THRESHOLD_DIVISOR = 100.0;
+
     static const napi_type_tag textDecoderTypeTag = {
         0x558ace4b8a124838,  // lower
         0xb5ae6775f25fd92b   // upper
@@ -1852,6 +1856,92 @@ namespace OHOS::Util {
         return result;
     }
 
+    static double GetThresholdProperty(napi_env env, napi_value obj, const char* propName)
+    {
+        double threshold = 0.0;
+        napi_value key;
+        NAPI_CALL_BASE(env, napi_create_string_utf8(env, propName, NAPI_AUTO_LENGTH, &key), -1.0);
+        bool hasProp = false;
+        NAPI_CALL_BASE(env, napi_has_property(env, obj, key, &hasProp), -1.0);
+        if (hasProp) {
+            napi_value value;
+            NAPI_CALL_BASE(env, napi_get_property(env, obj, key, &value), -1.0);
+            napi_valuetype type;
+            NAPI_CALL_BASE(env, napi_typeof(env, value, &type), -1.0);
+            if (type != napi_number) {
+                std::string errorMsg = std::string(propName) + " must be a number.";
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, errorMsg.c_str());
+                return -1.0;
+            }
+            NAPI_CALL_BASE(env, napi_get_value_double(env, value, &threshold), -1.0);
+            return std::clamp(threshold, MIN_THRESHOLD, MAX_THRESHOLD) / THRESHOLD_DIVISOR;
+        }
+        return threshold;
+    }
+
+    napi_value OnVMHeapMemoryPressure(napi_env env, napi_callback_info info)
+    {
+        auto engine = reinterpret_cast<NativeEngine *>(env);
+        if (!engine->IsMainThread()) {
+            HILOG_WARN("Must be called from main thread.");
+            napi_value result = nullptr;
+            NAPI_CALL(env, napi_get_boolean(env, false, &result));
+            return result;
+        }
+
+        size_t expectedArgc = 2;
+        size_t actualArgc = 2;
+        napi_value args[2] = {nullptr};
+        NAPI_CALL(env, napi_get_cb_info(env, info, &actualArgc, args, nullptr, nullptr));
+        if (actualArgc < expectedArgc) {
+            return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Expected 2 parameters.");
+        }
+
+        napi_valuetype valuetype0;
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype0));
+        if (valuetype0 != napi_function) {
+            return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "First parameter must be a function.");
+        }
+
+        napi_valuetype valuetype1;
+        NAPI_CALL(env, napi_typeof(env, args[1], &valuetype1));
+        if (valuetype1 != napi_object) {
+            return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Second parameter must be an object.");
+        }
+
+        double localHeapThreshold = GetThresholdProperty(env, args[1], "localHeapThreshold");
+        if (localHeapThreshold == -1) {
+            return nullptr;
+        }
+
+        double sharedHeapThreshold = GetThresholdProperty(env, args[1], "sharedHeapThreshold");
+        if (sharedHeapThreshold == -1) {
+            return nullptr;
+        }
+
+        double processHeapThreshold = GetThresholdProperty(env, args[1], "processHeapThreshold");
+        if (processHeapThreshold == -1) {
+            return nullptr;
+        }
+
+        HeapMemoryThreshold heapMemoryThreshold = {localHeapThreshold, sharedHeapThreshold, processHeapThreshold};
+        bool success = engine->OnVMHeapMemoryPressure(env, heapMemoryThreshold, args[0]);
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_get_boolean(env, success, &result));
+        return result;
+    }
+
+    napi_value OffVMHeapMemoryPressure(napi_env env, napi_callback_info info)
+    {
+        auto engine = reinterpret_cast<NativeEngine *>(env);
+        if (!engine->IsMainThread()) {
+            HILOG_WARN("Must be called from main thread.");
+            return nullptr;
+        }
+        engine->OffVMHeapMemoryPressure(env);
+        return nullptr;
+    }
+
     napi_value TypeofInit(napi_env env, napi_value exports)
     {
         const char* typeofClassName = "Types";
@@ -1975,6 +2065,8 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("setMultithreadingDetectionEnabled", SetMultithreadingDetectionEnabled),
             DECLARE_NAPI_FUNCTION("getAllVMHeapMemoryInfo", GetAllVMHeapMemoryInfo),
             DECLARE_NAPI_FUNCTION("enableLocalHandleDetection", EnableLocalHandleDetection),
+            DECLARE_NAPI_FUNCTION("onVMHeapMemoryPressure", OnVMHeapMemoryPressure),
+            DECLARE_NAPI_FUNCTION("offVMHeapMemoryPressure", OffVMHeapMemoryPressure),
         };
         NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
                                               sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
