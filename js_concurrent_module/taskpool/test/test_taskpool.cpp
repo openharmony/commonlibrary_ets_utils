@@ -8585,3 +8585,35 @@ HWTEST_F(NativeEngineTest, TaskpoolTest399, testing::ext::TestSize.Level0)
     flag = NativeEngineTest::AddCountTraceForWorkerLog(false, 1);
     ASSERT_TRUE(flag);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest400, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    bool flag = NativeEngineTest::PrintLogsEnd(nullptr);
+    ASSERT_TRUE(flag);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest401, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* task1 = new Task();
+    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
+    task1->asyncTaskPriority_ = Priority::HIGH;
+    bool flag = NativeEngineTest::PrintLogs(static_cast<void*>(task1));
+    ASSERT_TRUE(flag);
+
+    Task* task2 = new Task();
+    task2->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
+    task2->asyncTaskPriority_ = Priority::MEDIUM;
+    flag = NativeEngineTest::PrintLogs(static_cast<void*>(task2));
+    ASSERT_TRUE(flag);
+
+    Task* task3 = new Task();
+    task3->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task3));
+    task3->asyncTaskPriority_ = Priority::LOW;
+    flag = NativeEngineTest::PrintLogs(static_cast<void*>(task3));
+    ASSERT_TRUE(flag);
+}

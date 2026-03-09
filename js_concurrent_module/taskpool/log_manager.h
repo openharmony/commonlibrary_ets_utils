@@ -22,6 +22,11 @@
 #include <queue>
 #include <mutex>
 
+#include "helper/concurrent_helper.h"
+
+namespace Commonlibrary::Concurrent::TaskPoolModule {
+using namespace Commonlibrary::Concurrent::Common::Helper;
+
 class LogManager {
 public:
     LogManager() = default;
@@ -31,10 +36,14 @@ public:
     LogManager(LogManager &&) = delete;
     LogManager& operator=(LogManager &&) = delete;
     void PrintLog();
-    void PushLog(const std::string& msg);
+    bool PushLog(const std::string& msg);
+    bool IsNeedPrint();
 
 private:
     std::queue<std::string> logQueue_ {};
     std::mutex logQueueMutex_;
+    std::atomic<uint64_t> printTime_ {0};
+    std::atomic<uint64_t> size_ {0};
 };
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_LOG_RUNNER_H
