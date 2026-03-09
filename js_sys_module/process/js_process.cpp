@@ -13,15 +13,16 @@
  * limitations under the License.
  */
 
-#include "js_process.h"
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <uv.h>
 
+#include "js_process.h"
 #include "process_helper.h"
 namespace OHOS::JsSysModule::Process {
 
     using namespace Commonlibrary::Platform;
+    using namespace OHOS::Tools;
     namespace {
         constexpr int NUM_OF_DATA = 4;
         constexpr int PER_USER_RANGE = 100000;
@@ -151,7 +152,7 @@ namespace OHOS::JsSysModule::Process {
         uv_pid_t ownPid = uv_os_getpid();
         // 64:The maximum valid signal value is 64.
         if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
-            napi_throw_error(env, "0",
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. process.killinput's Parameter must be number, and from 1 to 64.");
             return nullptr;
         }
@@ -394,7 +395,7 @@ namespace OHOS::JsSysModule::Process {
         napi_get_value_int32(env, tid, &proTid);
         int32_t pri = getpriority(PRIO_PROCESS, proTid);
         if (errno) {
-            napi_throw_error(env, "-1",
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. the type of process.getThreadPriority's Parameter must be number and a valid tid.");
             return nullptr;
         }
@@ -513,7 +514,8 @@ namespace OHOS::JsSysModule::Process {
         napi_get_value_int32(env, tid, &proTid);
         int32_t pri = GetThreadPRY(proTid);
         if (errno) {
-            napi_throw_error(env, "401", "Parameter error. The type of Parameter must be number and a valid tid.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. The type of Parameter must be number and a valid tid.");
             return nullptr;
         }
         napi_create_int32(env, pri, &result);
@@ -574,7 +576,8 @@ namespace OHOS::JsSysModule::Process {
         uv_pid_t ownPid = uv_os_getpid();
         // 64:The maximum valid signal value is 64.
         if (sig > 64 && (!pid || pid == -1 || pid == ownPid || pid == -ownPid)) {
-            napi_throw_error(env, "401", "Parameter error. The type of signal must be number,and from 1 to 64.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. The type of signal must be number,and from 1 to 64.");
             return nullptr;
         }
         bool flag = false;

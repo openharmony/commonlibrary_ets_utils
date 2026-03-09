@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 
+#include <cstdio>
+
 #include "js_base64.h"
 #include "securec.h"
 #include "tools/log.h"
 #include "tools/ets_error.h"
-#include <cstdio>
 
 #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
 #include <arm_neon.h>
@@ -39,6 +40,7 @@ static HispeedStringPluginLoader hispeedStringPluginLoader;
 #endif
 
 namespace OHOS::Util {
+    using namespace OHOS::Tools;
     namespace {
         typedef enum {
             BASE64_DEFAULT_FLAG = 0x1,
@@ -74,7 +76,7 @@ namespace OHOS::Util {
         void *resultData = nullptr;
         napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
-            napi_throw_error(env, "401",
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
@@ -107,7 +109,7 @@ namespace OHOS::Util {
         void *resultData = nullptr;
         napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
-            napi_throw_error(env, "401",
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
@@ -254,7 +256,7 @@ namespace OHOS::Util {
                     return false;
                 }
             } else {
-                napi_throw_error(env, "-2",
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                     "Parameter error. The type of Parameter must be string and the length greater than 0.");
                 return false;
             }
@@ -268,7 +270,7 @@ namespace OHOS::Util {
         } else {
             std::string errMsg =
                 "Parameter error. The type of Parameter must be Uint8Array or string and the length greater than 0.";
-            napi_throw_error(env, "401", errMsg.c_str());
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, errMsg.c_str());
             return false;
         }
         FreeMemory(inputString);
@@ -419,7 +421,7 @@ namespace OHOS::Util {
         void *resultData = nullptr;
         napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
-            napi_throw_error(env, "401",
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
@@ -440,7 +442,7 @@ namespace OHOS::Util {
         void *resultData = nullptr;
         napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
         if (type != napi_uint8_array || length == 0) {
-            napi_throw_error(env, "401",
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
@@ -656,7 +658,7 @@ namespace OHOS::Util {
             if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
                 std::string errMsg =
                     "Parameter error. The type of Parameter must be Uint8Array or string.";
-                napi_throw_error(env, "401", errMsg.c_str());
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, errMsg.c_str());
                 return nullptr;
             }
         }
@@ -682,7 +684,7 @@ namespace OHOS::Util {
         } else {
             std::string errMsg =
                 "Parameter error. The type of Parameter must be Uint8Array or string and the length greater than 0.";
-            napi_throw_error(env, "401", errMsg.c_str());
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, errMsg.c_str());
             FreeMemory(inputString);
             return nullptr;
         }

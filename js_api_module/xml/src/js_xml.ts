@@ -395,7 +395,7 @@ class XmlPullParser {
     }
   }
   parse(options: object): void {
-    if (typeof options !== 'object') {
+    if (typeof options !== 'object' || options === null) {
       throw new BusinessError(`Parameter error.The type of ${options} must be object`);
     }
     this.xmlPullParserClass.parse(options);
@@ -406,7 +406,7 @@ class XmlPullParser {
   }
 
   parseXml(options: object): void {
-    if (typeof options !== 'object') {
+    if (typeof options !== 'object' || options === null) {
       throw new BusinessError(`Parameter error.The type of ${options} must be object`);
     }
     if (this.xmlPullParserClass.parseXml(options)) {

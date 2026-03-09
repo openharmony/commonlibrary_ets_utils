@@ -22,6 +22,9 @@
 #endif
 #include "native_engine/native_engine.h"
 #include "tools/log.h"
+#include "tools/ets_error.h"
+
+using namespace OHOS::Tools;
 
 #ifdef ENABLE_CONTAINER_SCOPE
 using OHOS::Ace::ContainerScope;
@@ -288,7 +291,8 @@ napi_value Timer::SetTimeoutInner(napi_env env, napi_callback_info cbinfo, bool 
 {
     size_t argc = Helper::NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        napi_throw_error(env, nullptr, "Parameter error. The input callback of StartTimeoutOrInterval is empty.");
+        ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+            "Parameter error. The input callback of StartTimeoutOrInterval is empty.");
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];

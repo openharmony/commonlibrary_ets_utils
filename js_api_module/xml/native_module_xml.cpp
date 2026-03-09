@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "native_module_xml.h"
 #include "js_xml.h"
 #include "js_xml_dynamic.h"
 #include "js_xml_sax.h"
+#include "native_module_xml.h"
 #include "tools/ets_error.h"
 
 extern const char _binary_js_xml_js_start[];
@@ -41,7 +41,6 @@ namespace OHOS::xml {
     };
 
 using namespace OHOS::Tools;
-static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
 const int32_t ARGC_ZERO = 0; // 0 : first argument index
 const int32_t ARGC_ONE = 1; // 1 : number of args
 const int32_t ARGC_TWO = 2; // 2 : number of args
@@ -69,7 +68,8 @@ const int32_t ARGC_THREE = 3; // 3 : number of args
             if (bFlag) {
                 napi_get_dataview_info(env, args[0], &iLength, &data, &arraybuffer, &offPos);
             } else {
-                napi_throw_error(env, "401", "Parameter error. The type of Parameter must be ArrayBuffer or DataView.");
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. The type of Parameter must be ArrayBuffer or DataView.");
                 return nullptr;
             }
         }
@@ -135,7 +135,8 @@ const int32_t ARGC_THREE = 3; // 3 : number of args
             if (bFlag) {
                 napi_get_dataview_info(env, args[0], &len, &data, &arraybuffer, &offPos);
             } else {
-                napi_throw_error(env, "401", "Parameter error. The type of Parameter must be ArrayBuffer or DataView.");
+                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. The type of Parameter must be ArrayBuffer or DataView.");
                 return nullptr;
             }
         }
@@ -789,7 +790,7 @@ const int32_t ARGC_THREE = 3; // 3 : number of args
         napi_unwrap_s(env, thisVar, &xmlPullParserTypeTag, reinterpret_cast<void**>(&xmlPullParser));
         napi_value result = nullptr;
         if (xmlPullParser == nullptr) {
-            ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. Parameter verification failed.");
             napi_get_boolean(env, false, &result);
             return result;
         }

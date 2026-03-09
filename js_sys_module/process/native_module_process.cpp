@@ -16,6 +16,7 @@
 #include "js_childprocess.h"
 #include "js_process.h"
 #include "tools/log.h"
+using namespace OHOS::Tools;
 
 namespace OHOS::JsSysModule::Process {
     static const napi_type_tag processTypeTag = {
@@ -31,7 +32,7 @@ namespace OHOS::JsSysModule::Process {
             NAPI_ASSERT(env, valueType == napi_string, "Wrong argument type: string expected.");
         } else {
             HILOG_ERROR("Process:: command is null");
-            napi_throw_error(env, "", "Parameter error. process.runCmdinput's command is empty");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. process.runCmdinput's command is empty");
             return nullptr;
         }
         std::vector<std::string> keyStr = {"timeout", "killSignal", "maxBuffer"};
@@ -52,7 +53,8 @@ namespace OHOS::JsSysModule::Process {
                         int timeout = 0;
                         napi_get_value_int32(env, property, &timeout);
                         if (timeout < 0) {
-                            napi_throw_error(env, "", "Parameter error. process.runCmd timeout is lessthen zero");
+                            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                                "Parameter error. process.runCmd timeout is lessthen zero");
                             return nullptr;
                         }
                         break;
@@ -168,7 +170,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if ((valuetype != napi_valuetype::napi_number) && (valuetype != napi_valuetype::napi_string)) {
-            napi_throw_error(env, nullptr, "Parameter error. process.kill parameter type is incorrect");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. process.kill parameter type is incorrect");
             return nullptr;
         }
 
@@ -500,26 +503,6 @@ namespace OHOS::JsSysModule::Process {
         return object.GetEnvironmentVar(env, args);
     }
 
-    static napi_value ThrowError(napi_env env, const char* errMessage)
-    {
-        napi_value processError = nullptr;
-        napi_value code = nullptr;
-        uint32_t errCode = 401; // 401:The code parameter of this error is 401
-        napi_create_uint32(env, errCode, &code);
-        napi_value name = nullptr;
-        std::string errName = "BuisnessError";
-        napi_value msg = nullptr;
-        napi_create_string_utf8(env, errMessage, NAPI_AUTO_LENGTH, &msg);
-        napi_create_string_utf8(env, errName.c_str(), NAPI_AUTO_LENGTH, &name);
-        napi_create_error(env, nullptr, msg, &processError);
-        napi_set_named_property(env, processError, "code", code);
-        napi_set_named_property(env, processError, "name", name);
-        napi_throw(env, processError);
-        napi_value res = nullptr;
-        NAPI_CALL(env, napi_get_undefined(env, &res));
-        return res;
-    }
-
     static napi_value GetValueFromInfo(napi_env env, napi_callback_info info, napi_value &thisVar)
     {
         size_t argc = 1;
@@ -540,7 +523,9 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype1;
         NAPI_CALL(env, napi_typeof(env, argv[1], &valuetype1));
         if (valuetype0 != napi_number || valuetype1 != napi_number) {
-            return ThrowError(env, "Parameter error. The type of signal or pid must be number.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. The type of signal or pid must be number.");
+            return nullptr;
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -553,7 +538,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of code must be number.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of code must be number.");
+            return nullptr;
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -569,7 +555,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of name must be number.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of name must be number.");
+            return nullptr;
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -583,7 +570,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of code must be number.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of code must be number.");
+            return nullptr;
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -597,7 +585,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_string) {
-            return ThrowError(env, "Parameter error. The type of code must be string.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of code must be string.");
+            return nullptr;
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -611,7 +600,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of code must be number.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of code must be number.");
+            return nullptr;
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -625,7 +615,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_string) {
-            return ThrowError(env, "Parameter error. The type of name must be string.");
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. The type of name must be string.");
+            return nullptr;
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));

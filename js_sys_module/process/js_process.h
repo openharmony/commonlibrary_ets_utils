@@ -22,6 +22,7 @@
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "tools/ets_error.h"
 
 namespace OHOS::JsSysModule::Process {
     using ClearRefCallback = void (*)(napi_env env);
