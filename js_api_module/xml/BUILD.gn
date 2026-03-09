@@ -126,6 +126,7 @@ ohos_source_set("xml_static") {
       "$plugins_root/libs/icu:icu_${target_os}",
       "$plugins_root/libs/napi:napi_${target_os}",
       "$plugins_root/libs/securec:sec_${target_os}",
+      "//third_party/libxml2:static_libxml2",
     ]
   } else {
     if (is_standard_system) {

@@ -52,6 +52,11 @@ XmlSAXParser::XmlSAXParser(napi_env env)
 
 XmlSAXParser::~XmlSAXParser()
 {
+    if (currentWorkData_ != nullptr) {
+        AsyncParseWorkData* workData = currentWorkData_;
+        currentWorkData_ = nullptr;
+        CleanupWorkData(workData);
+    }
     Cleanup();
 }
 
@@ -67,19 +72,7 @@ void XmlSAXParser::Cleanup()
         callbacks_ = nullptr;
     }
 
-    if (currentWorkData_ != nullptr) {
-        if (currentWorkData_->asyncHandle != nullptr &&
-            !uv_is_closing(reinterpret_cast<uv_handle_t*>(currentWorkData_->asyncHandle))) {
-            uv_close(reinterpret_cast<uv_handle_t*>(currentWorkData_->asyncHandle),
-                [](uv_handle_t* handle) {
-                    delete reinterpret_cast<uv_async_t*>(handle);
-                });
-        }
-        currentWorkData_->asyncHandle = nullptr;
-        delete currentWorkData_;
-        currentWorkData_ = nullptr;
-    }
-
+    currentWorkData_ = nullptr;
     isInitialized_ = false;
 }
 
@@ -180,7 +173,7 @@ napi_value XmlSAXParser::Parse(napi_env env, napi_value handler,
     workData->asyncWork = nullptr;
     workData->deferred = deferred;
     workData->asyncHandle = nullptr;
-    workData->callbackProcessed = false;
+    workData->callbackProcessed = true;
 
     uv_loop_t* loop = nullptr;
     napi_get_uv_event_loop(env, &loop);
@@ -300,7 +293,6 @@ bool XmlSAXParser::HandleParseError(napi_env env, AsyncParseWorkData* workData)
     napi_value error = nullptr;
     napi_create_string_utf8(env, workData->error.c_str(), workData->error.length(), &error);
     napi_reject_deferred(env, workData->deferred, error);
-    Cleanup();
     return true;
 }
 
@@ -309,42 +301,40 @@ bool XmlSAXParser::HandleParseSuccess(napi_env env, AsyncParseWorkData* workData
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_resolve_deferred(env, workData->deferred, result);
-    
-    if (workData->isFinal) {
-        Cleanup();
-        return true;
-    }
-    return false;
+    return workData->isFinal;
 }
 
 void XmlSAXParser::CleanupWorkDataOnClose(uv_handle_t* handle)
 {
-    AsyncParseWorkData* workData = static_cast<AsyncParseWorkData*>(handle->data);
-    if (workData == nullptr) {
-        delete reinterpret_cast<uv_async_t*>(handle);
+    if (handle == nullptr) {
         return;
     }
-
-    if (workData->parser != nullptr && workData->parser->currentWorkData_ == workData) {
-        workData->parser->currentWorkData_ = nullptr;
-    }
+    
+    AsyncParseWorkData* workData = static_cast<AsyncParseWorkData*>(handle->data);
+    uv_async_t* asyncHandle = reinterpret_cast<uv_async_t*>(handle);
+    
     delete workData;
-    delete reinterpret_cast<uv_async_t*>(handle);
+    delete asyncHandle;
 }
 
 void XmlSAXParser::CleanupWorkData(AsyncParseWorkData* workData)
 {
-    if (workData->asyncHandle != nullptr &&
-        !uv_is_closing(reinterpret_cast<uv_handle_t*>(workData->asyncHandle))) {
-        uv_close(reinterpret_cast<uv_handle_t*>(workData->asyncHandle), CleanupWorkDataOnClose);
-        workData->asyncHandle = nullptr;
+    if (workData == nullptr) {
         return;
     }
 
     if (currentWorkData_ == workData) {
         currentWorkData_ = nullptr;
     }
-    delete workData;
+
+    if (workData->asyncHandle != nullptr) {
+        if (!uv_is_closing(reinterpret_cast<uv_handle_t*>(workData->asyncHandle))) {
+            workData->asyncHandle->data = workData;
+            uv_close(reinterpret_cast<uv_handle_t*>(workData->asyncHandle), CleanupWorkDataOnClose);
+        }
+    } else {
+        delete workData;
+    }
 }
 
 void XmlSAXParser::CompleteParse(napi_env env, napi_status status, void* data)
@@ -352,13 +342,18 @@ void XmlSAXParser::CompleteParse(napi_env env, napi_status status, void* data)
     AsyncParseWorkData* workData = static_cast<AsyncParseWorkData*>(data);
     XmlSAXParser* parser = workData->parser;
 
-    bool cleanupCalled = parser->HandleParseError(env, workData);
-    if (!cleanupCalled) {
-        cleanupCalled = parser->HandleParseSuccess(env, workData);
+    bool hasError = parser->HandleParseError(env, workData);
+    bool isFinal = false;
+    if (!hasError) {
+        isFinal = parser->HandleParseSuccess(env, workData);
     }
 
     napi_delete_async_work(env, workData->asyncWork);
     parser->CleanupWorkData(workData);
+    
+    if (hasError || isFinal) {
+        parser->Cleanup();
+    }
 }
 
 void XmlSAXParser::AsyncCallback(uv_async_t* handle)
