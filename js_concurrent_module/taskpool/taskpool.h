@@ -31,9 +31,10 @@ struct TaskMessage {
     uint32_t taskId {};
 };
 
-struct TaskGroupMessage {
+struct TaskTimeoutMessage {
     napi_env env = nullptr;
     uint64_t groupId {};
+    uint32_t taskId {};
 };
 
 class TaskPool {

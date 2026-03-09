@@ -8088,7 +8088,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest382, testing::ext::TestSize.Level0)
     Task* task = new Task();
     task->SetValid(false);
     taskManager.StoreTask(task);
-    TaskMessage* message = new TaskMessage();
+    TaskTimeoutMessage* message = new TaskTimeoutMessage();
     message->taskId = task->taskId_;
     handle->data = message;
     bool flag = NativeEngineTest::TaskTimeoutCallback(handle);
@@ -8096,21 +8096,37 @@ HWTEST_F(NativeEngineTest, TaskpoolTest382, testing::ext::TestSize.Level0)
 
     task->SetValid(true);
     task->taskState_ = ExecuteState::CANCELED;
-    TaskMessage* message2 = new TaskMessage();
+    TaskTimeoutMessage* message2 = new TaskTimeoutMessage();
     message2->taskId = task->taskId_;
     handle->data = message2;
     flag = NativeEngineTest::TaskTimeoutCallback(handle);
     ASSERT_TRUE(flag);
 
     task->taskState_ = ExecuteState::RUNNING;
-    TaskMessage* message3 = new TaskMessage();
+    TaskTimeoutMessage* message3 = new TaskTimeoutMessage();
     message3->taskId = task->taskId_;
     handle->data = message3;
+    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+
+    TaskTimeoutMessage* message4 = new TaskTimeoutMessage();
+    message4->taskId = task->taskId_;
+    message4->env = task->env_;
+    handle->data = message4;
+    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+
+    Task* task2 = new Task();
+    task2->taskId_ = taskManager.CalculateTaskId(reinterpret_cast<uint64_t>(task2));
+    TaskTimeoutMessage* message5 = new TaskTimeoutMessage();
+    message5->taskId = task2->taskId_;
+    handle->data = message5;
     flag = NativeEngineTest::TaskTimeoutCallback(handle);
     ASSERT_TRUE(flag);
     taskManager.RemoveTask(task->taskId_);
     handle = nullptr;
     delete task;
+    delete task2;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest383, testing::ext::TestSize.Level0)
@@ -8126,8 +8142,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest383, testing::ext::TestSize.Level0)
     TaskInfo* taskInfo = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo;
     taskManager.StoreTask(task);
-    TaskMessage* message = new TaskMessage();
+    TaskTimeoutMessage* message = new TaskTimeoutMessage();
     message->taskId = task->taskId_;
+    message->env = env;
     handle->data = message;
     bool flag = NativeEngineTest::TaskTimeoutCallback(handle);
     ASSERT_TRUE(flag);
@@ -8135,31 +8152,46 @@ HWTEST_F(NativeEngineTest, TaskpoolTest383, testing::ext::TestSize.Level0)
     task->currentTaskInfo_ = nullptr;
 
     task->taskState_ = ExecuteState::WAITING;
-    TaskMessage* message2 = new TaskMessage();
+    TaskTimeoutMessage* message2 = new TaskTimeoutMessage();
     message2->taskId = task->taskId_;
+    message2->env = env;
     handle->data = message2;
     flag = NativeEngineTest::TaskTimeoutCallback(handle);
     ASSERT_TRUE(flag);
 
     TaskInfo* taskInfo2 = new TaskInfo(env);
     task->currentTaskInfo_ = taskInfo2;
-    TaskMessage* message3 = new TaskMessage();
+    TaskTimeoutMessage* message3 = new TaskTimeoutMessage();
     message3->taskId = task->taskId_;
+    message3->env = env;
     handle->data = message3;
     flag = NativeEngineTest::TaskTimeoutCallback(handle);
     ASSERT_TRUE(flag);
-    Task* task2 = new Task();
-    task2->env_ = env;
-    taskManager.StoreTask(task2);
-    TaskMessage* message4 = new TaskMessage();
-    message4->taskId = task2->taskId_;
-    handle->data = message4;
-    TaskInfo* taskInfo3 = new TaskInfo(env);
-    task2->currentTaskInfo_ = taskInfo3;
-    task2->currentTaskInfo_->priority = Priority::IDLE;
-    NapiHelper::CreatePromise(env, &taskInfo3->deferred);
+    taskManager.RemoveTask(task->taskId_);
+    handle = nullptr;
+    delete task;
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest383_2, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    TaskManager& taskManager = TaskManager::GetInstance();
+
+    uv_timer_t* handle = new uv_timer_t;
+    Task* task = new Task();
+    task->env_ = env;
+    taskManager.StoreTask(task);
+    TaskTimeoutMessage* message = new TaskTimeoutMessage();
+    message->taskId = task->taskId_;
+    message->env = env;
+    handle->data = message;
+    TaskInfo* taskInfo = new TaskInfo(env);
+    task->currentTaskInfo_ = taskInfo;
+    task->currentTaskInfo_->priority = Priority::IDLE;
+    NapiHelper::CreatePromise(env, &taskInfo->deferred);
     taskManager.EnqueueTaskId(task->taskId_, Priority::IDLE);
-    flag = NativeEngineTest::TaskTimeoutCallback(handle);
+    bool flag = NativeEngineTest::TaskTimeoutCallback(handle);
     ASSERT_TRUE(flag);
     taskManager.RemoveTask(task->taskId_);
     handle = nullptr;
@@ -8271,7 +8303,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest387, testing::ext::TestSize.Level0)
     TaskGroupManager& taskGroupManager = TaskGroupManager::GetInstance();
 
     uv_timer_t* handle = new uv_timer_t;
-    TaskGroupMessage* message = new TaskGroupMessage();
+    TaskTimeoutMessage* message = new TaskTimeoutMessage();
     message->groupId = 382;
     handle->data = message;
     bool flag = NativeEngineTest::TaskGroupTimeoutCallback(handle);
@@ -8283,7 +8315,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest387, testing::ext::TestSize.Level0)
     group->groupState_ = ExecuteState::TIMEOUT;
     taskGroupManager.StoreTaskGroup(groupId, group);
 
-    TaskGroupMessage* message2 = new TaskGroupMessage();
+    TaskTimeoutMessage* message2 = new TaskTimeoutMessage();
     message2->groupId = groupId;
     message2->env = env;
     handle->data = message2;
