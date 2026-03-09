@@ -15,6 +15,7 @@
 
 #include "js_xml.h"
 #include "js_xml_dynamic.h"
+#include "js_xml_sax.h"
 #include "native_module_xml.h"
 #include "tools/ets_error.h"
 
@@ -40,8 +41,10 @@ namespace OHOS::xml {
     };
 
 using namespace OHOS::Tools;
+const int32_t ARGC_ZERO = 0; // 0 : first argument index
 const int32_t ARGC_ONE = 1; // 1 : number of args
 const int32_t ARGC_TWO = 2; // 2 : number of args
+const int32_t ARGC_THREE = 3; // 3 : number of args
 
     static napi_value XmlSerializerConstructor(napi_env env, napi_callback_info info)
     {
@@ -830,11 +833,95 @@ const int32_t ARGC_TWO = 2; // 2 : number of args
         return exports;
     };
 
+    // XmlSAXParser type tag for type-safe unwrapping
+    static const napi_type_tag xmlSAXParserTypeTag = {
+        0x5f8a3b2c1d4e6f7a,  // lower
+        0x9b2c3d4e5f6a7b8c   // upper
+    };
+
+    static napi_value XmlSAXParserConstructor(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
+
+        XmlSAXParser *object = new (std::nothrow) XmlSAXParser(env);
+        if (object == nullptr) {
+            HILOG_ERROR("XmlSAXParserConstructor:: memory allocation failed, object is nullptr");
+            return nullptr;
+        }
+
+        napi_status status = napi_wrap_s(env, thisVar, object,
+            [](napi_env environment, void *data, void *hint) {
+                auto obj = reinterpret_cast<OHOS::xml::XmlSAXParser*>(data);
+                if (obj != nullptr) {
+                    delete obj;
+                    obj = nullptr;
+                }
+            }, nullptr, &xmlSAXParserTypeTag, nullptr);
+        if (status != napi_ok && object != nullptr) {
+            HILOG_ERROR("XmlSAXParserConstructor:: napi_wrap failed");
+            delete object;
+            object = nullptr;
+        }
+        return thisVar;
+    }
+
+    static napi_value XmlSAXParserParse(napi_env env, napi_callback_info info)
+    {
+        napi_value thisVar = nullptr;
+        size_t argc = ARGC_THREE;
+        napi_value args[ARGC_THREE] = { nullptr };
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
+        NAPI_ASSERT(env, argc == ARGC_THREE, "Wrong number of arguments");
+
+        // Validate handler parameter
+        napi_valuetype handlerType;
+        NAPI_CALL(env, napi_typeof(env, args[ARGC_ZERO], &handlerType));
+        NAPI_ASSERT(env, handlerType == napi_object, "Wrong argument type: handler object expected.");
+
+        // Validate chunk parameter (string)
+        napi_valuetype chunkType;
+        NAPI_CALL(env, napi_typeof(env, args[ARGC_ONE], &chunkType));
+        NAPI_ASSERT(env, chunkType == napi_string, "Wrong argument type: chunk string expected.");
+
+        // Extract chunk string
+        std::string chunk;
+        XmlSerializer::DealNapiStrValue(env, args[ARGC_ONE], chunk);
+
+        bool isFinal = false;
+        napi_get_value_bool(env, args[ARGC_TWO], &isFinal);
+        XmlSAXParser *object = nullptr;
+        NAPI_CALL(env, napi_unwrap_s(env, thisVar, &xmlSAXParserTypeTag, reinterpret_cast<void**>(&object)));
+
+        // Parse the chunk
+        napi_value result = object->Parse(env, args[ARGC_ZERO], chunk, isFinal);
+
+        return result;
+    }
+
+    napi_value XmlSAXParserInit(napi_env env, napi_value exports)
+    {
+        const char *xmlSAXParserClass = "XmlSAXParser";
+        napi_value xmlClass = nullptr;
+        napi_property_descriptor xmlDesc[] = {
+            DECLARE_NAPI_FUNCTION("parse", XmlSAXParserParse)
+        };
+        NAPI_CALL(env, napi_define_class(env, xmlSAXParserClass, strlen(xmlSAXParserClass),
+            XmlSAXParserConstructor, nullptr, sizeof(xmlDesc) / sizeof(xmlDesc[0]),
+            xmlDesc, &xmlClass));
+        napi_property_descriptor desc[] = {
+            DECLARE_NAPI_PROPERTY("XmlSAXParser", xmlClass)
+        };
+        napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+        return exports;
+    }
+
     static napi_value Init(napi_env env, napi_value exports)
     {
         XmlSerializerInit(env, exports);
         XmlPullParserInit(env, exports);
         XmlDynamicSerializerInit(env, exports);
+        XmlSAXParserInit(env, exports);
         return exports;
     }
 

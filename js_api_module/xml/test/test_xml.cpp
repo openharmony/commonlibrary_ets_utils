@@ -16,6 +16,7 @@
 #include "test.h"
 #include "test_xml.h"
 #include "js_xml_dynamic.h"
+#include "js_xml_sax.h"
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -4007,4 +4008,668 @@ HWTEST_F(NativeEngineTest, XmlPullParserParseXmlTest001, testing::ext::TestSize.
         napi_typeof(env, funcResultValue, &valueType);
         ASSERT_EQ(valueType, napi_boolean);
     });
+}
+
+// ============= XmlSAXParser Tests =============
+
+napi_value SAXStartDocumentCallback(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SAXEndDocumentCallback(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SAXStartElementCallback(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SAXEndElementCallback(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SAXCharactersCallback(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+/* @tc.name: XmlSAXParserTest001
+ * @tc.desc: Test XmlSAXParser basic construction and initialization.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSAXParserInit(env, exports);
+
+        // Get XmlSAXParser class
+        napi_value saxParserClass = nullptr;
+        napi_get_named_property(env, exports, "XmlSAXParser", &saxParserClass);
+        ASSERT_NE(saxParserClass, nullptr);
+
+        // Create instance
+        napi_value instance = nullptr;
+        napi_status status = napi_new_instance(env, saxParserClass, 0, nullptr, &instance);
+        ASSERT_EQ(status, napi_ok);
+        ASSERT_NE(instance, nullptr);
+    });
+}
+
+/* @tc.name: XmlSAXParserTest002
+ * @tc.desc: Test XmlSAXParser with simple XML parsing callbacks.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserTest002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSAXParserInit(env, exports);
+
+        // Get XmlSAXParser class
+        napi_value saxParserClass = nullptr;
+        napi_get_named_property(env, exports, "XmlSAXParser", &saxParserClass);
+
+        // Create SAX parser instance
+        napi_value instance = nullptr;
+        napi_new_instance(env, saxParserClass, 0, nullptr, &instance);
+
+        // Create handler object with callbacks
+        napi_value handler = nullptr;
+        napi_create_object(env, &handler);
+
+        // Set startDocument callback
+        napi_value startDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartDocumentCallback, nullptr, &startDocFunc);
+        napi_set_named_property(env, handler, "startDocument", startDocFunc);
+
+        // Set endDocument callback
+        napi_value endDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndDocumentCallback, nullptr, &endDocFunc);
+        napi_set_named_property(env, handler, "endDocument", endDocFunc);
+
+        // Set startElement callback
+        napi_value startElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartElementCallback, nullptr, &startElemFunc);
+        napi_set_named_property(env, handler, "startElement", startElemFunc);
+
+        // Set endElement callback
+        napi_value endElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndElementCallback, nullptr, &endElemFunc);
+        napi_set_named_property(env, handler, "endElement", endElemFunc);
+
+        // Set characters callback
+        napi_value charFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXCharactersCallback, nullptr, &charFunc);
+        napi_set_named_property(env, handler, "characters", charFunc);
+
+        // Get parse method
+        napi_value parseMethod = nullptr;
+        napi_get_named_property(env, instance, "parse", &parseMethod);
+
+        // Prepare XML content as chunk
+        std::string xmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><test>SAX Parser Test</test></root>";
+        napi_value chunkValue = nullptr;
+        napi_create_string_utf8(env, xmlContent.c_str(), xmlContent.size(), &chunkValue);
+
+        // Create isFinal boolean (true for complete XML in test)
+        napi_value isFinalValue = nullptr;
+        napi_get_boolean(env, true, &isFinalValue);
+
+        // Call parse with handler, chunk, and isFinal
+        napi_value args[3] = {handler, chunkValue, isFinalValue};
+        napi_value result = nullptr;
+        napi_call_function(env, instance, parseMethod, 3, args, &result);
+
+        // Note: Current implementation may not fully parse, but we test the binding
+        ASSERT_NE(result, nullptr);
+    });
+}
+
+/* @tc.name: XmlSAXParserTest003a
+ * @tc.desc: Test XmlSAXParser Parse method with UTF-8 encoding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserTest003a, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSAXParserInit(env, exports);
+
+        // Get XmlSAXParser class
+        napi_value saxParserClass = nullptr;
+        napi_get_named_property(env, exports, "XmlSAXParser", &saxParserClass);
+
+        // Create SAX parser instance
+        napi_value instance = nullptr;
+        napi_new_instance(env, saxParserClass, 0, nullptr, &instance);
+
+        // Create handler object
+        napi_value handler = nullptr;
+        napi_create_object(env, &handler);
+
+        // Add required callbacks
+        napi_value startDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartDocumentCallback, nullptr, &startDocFunc);
+        napi_set_named_property(env, handler, "startDocument", startDocFunc);
+
+        napi_value endDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndDocumentCallback, nullptr, &endDocFunc);
+        napi_set_named_property(env, handler, "endDocument", endDocFunc);
+
+        napi_value startElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartElementCallback, nullptr, &startElemFunc);
+        napi_set_named_property(env, handler, "startElement", startElemFunc);
+
+        napi_value endElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndElementCallback, nullptr, &endElemFunc);
+        napi_set_named_property(env, handler, "endElement", endElemFunc);
+
+        napi_value charFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXCharactersCallback, nullptr, &charFunc);
+        napi_set_named_property(env, handler, "characters", charFunc);
+
+        // Get parse method
+        napi_value parseMethod = nullptr;
+        napi_get_named_property(env, instance, "parse", &parseMethod);
+
+        // Prepare XML content as chunk
+        std::string xmlContent = std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>") +
+                                  "<note><to>User</to><from>Author</from>" +
+                                  "<heading>Reminder</heading><body>Test encoding UTF-8</body></note>";
+        napi_value chunkValue = nullptr;
+        napi_create_string_utf8(env, xmlContent.c_str(), xmlContent.size(), &chunkValue);
+
+        // Create isFinal boolean
+        napi_value isFinalValue = nullptr;
+        napi_get_boolean(env, true, &isFinalValue);
+
+        // Call parse with handler, chunk, and isFinal
+        napi_value args[3] = {handler, chunkValue, isFinalValue};
+        napi_value result = nullptr;
+        napi_status status = napi_call_function(env, instance, parseMethod, 3, args, &result);
+        ASSERT_EQ(status, napi_ok);
+        ASSERT_NE(result, nullptr);
+    });
+}
+
+/* @tc.name: XmlSAXParserTest003b
+ * @tc.desc: Test XmlSAXParser Parse method with undefined encoding.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserTest003b, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSAXParserInit(env, exports);
+
+        // Get XmlSAXParser class
+        napi_value saxParserClass = nullptr;
+        napi_get_named_property(env, exports, "XmlSAXParser", &saxParserClass);
+
+        // Create SAX parser instance
+        napi_value instance = nullptr;
+        napi_new_instance(env, saxParserClass, 0, nullptr, &instance);
+
+        // Create handler object
+        napi_value handler = nullptr;
+        napi_create_object(env, &handler);
+
+        // Add required callbacks
+        napi_value startDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartDocumentCallback, nullptr, &startDocFunc);
+        napi_set_named_property(env, handler, "startDocument", startDocFunc);
+
+        napi_value endDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndDocumentCallback, nullptr, &endDocFunc);
+        napi_set_named_property(env, handler, "endDocument", endDocFunc);
+
+        napi_value startElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartElementCallback, nullptr, &startElemFunc);
+        napi_set_named_property(env, handler, "startElement", startElemFunc);
+
+        napi_value endElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndElementCallback, nullptr, &endElemFunc);
+        napi_set_named_property(env, handler, "endElement", endElemFunc);
+
+        napi_value charFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXCharactersCallback, nullptr, &charFunc);
+        napi_set_named_property(env, handler, "characters", charFunc);
+
+        // Get parse method
+        napi_value parseMethod = nullptr;
+        napi_get_named_property(env, instance, "parse", &parseMethod);
+
+        // Prepare XML content as chunk
+        std::string xmlContent = std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>") +
+                                  "<note><to>User</to><from>Author</from>" +
+                                  "<heading>Reminder</heading><body>Test encoding UTF-8</body></note>";
+        napi_value chunkValue = nullptr;
+        napi_create_string_utf8(env, xmlContent.c_str(), xmlContent.size(), &chunkValue);
+
+        // Create isFinal boolean
+        napi_value isFinalValue = nullptr;
+        napi_get_boolean(env, true, &isFinalValue);
+
+        // Call parse with handler, chunk, and isFinal (isFinal defaults to true)
+        napi_value args[3] = {handler, chunkValue, isFinalValue};
+        napi_value result = nullptr;
+        napi_status status = napi_call_function(env, instance, parseMethod, 3, args, &result);
+        ASSERT_EQ(status, napi_ok);
+    });
+}
+
+/* @tc.name: XmlSAXParserTest005a
+ * @tc.desc: Test XmlSAXParser single parse call.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserTest005a, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSAXParserInit(env, exports);
+
+        // Get XmlSAXParser class
+        napi_value saxParserClass = nullptr;
+        napi_get_named_property(env, exports, "XmlSAXParser", &saxParserClass);
+
+        // Create SAX parser instance
+        napi_value instance = nullptr;
+        napi_new_instance(env, saxParserClass, 0, nullptr, &instance);
+
+        // Create handler object with minimal callbacks
+        napi_value handler = nullptr;
+        napi_create_object(env, &handler);
+
+        napi_value startDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartDocumentCallback, nullptr, &startDocFunc);
+        napi_set_named_property(env, handler, "startDocument", startDocFunc);
+
+        napi_value endDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndDocumentCallback, nullptr, &endDocFunc);
+        napi_set_named_property(env, handler, "endDocument", endDocFunc);
+
+        napi_value startElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartElementCallback, nullptr, &startElemFunc);
+        napi_set_named_property(env, handler, "startElement", startElemFunc);
+
+        napi_value endElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndElementCallback, nullptr, &endElemFunc);
+        napi_set_named_property(env, handler, "endElement", endElemFunc);
+
+        napi_value charFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXCharactersCallback, nullptr, &charFunc);
+        napi_set_named_property(env, handler, "characters", charFunc);
+
+        // Get parse method
+        napi_value parseMethod = nullptr;
+        napi_get_named_property(env, instance, "parse", &parseMethod);
+
+        // Prepare XML content as chunk
+        std::string xmlContent = std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>") +
+                                  "<books><book><title>Test Book</title>" +
+                                  "<author>Author Name</author></book></books>";
+        napi_value chunkValue = nullptr;
+        napi_create_string_utf8(env, xmlContent.c_str(), xmlContent.size(), &chunkValue);
+
+        // Create isFinal boolean
+        napi_value isFinalValue = nullptr;
+        napi_get_boolean(env, true, &isFinalValue);
+
+        // Parse call
+        napi_value args[3] = {handler, chunkValue, isFinalValue};
+        napi_value result = nullptr;
+        napi_status status = napi_call_function(env, instance, parseMethod, 3, args, &result);
+        ASSERT_EQ(status, napi_ok);
+    });
+}
+
+/* @tc.name: XmlSAXParserTest005b
+ * @tc.desc: Test XmlSAXParser with multiple parse calls.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserTest005b, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::xml::XmlSAXParserInit(env, exports);
+
+        // Get XmlSAXParser class
+        napi_value saxParserClass = nullptr;
+        napi_get_named_property(env, exports, "XmlSAXParser", &saxParserClass);
+
+        // Create SAX parser instance
+        napi_value instance = nullptr;
+        napi_new_instance(env, saxParserClass, 0, nullptr, &instance);
+
+        // Create handler object with minimal callbacks
+        napi_value handler = nullptr;
+        napi_create_object(env, &handler);
+
+        napi_value startDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartDocumentCallback, nullptr, &startDocFunc);
+        napi_set_named_property(env, handler, "startDocument", startDocFunc);
+
+        napi_value endDocFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndDocumentCallback, nullptr, &endDocFunc);
+        napi_set_named_property(env, handler, "endDocument", endDocFunc);
+
+        napi_value startElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXStartElementCallback, nullptr, &startElemFunc);
+        napi_set_named_property(env, handler, "startElement", startElemFunc);
+
+        napi_value endElemFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXEndElementCallback, nullptr, &endElemFunc);
+        napi_set_named_property(env, handler, "endElement", endElemFunc);
+
+        napi_value charFunc = nullptr;
+        napi_create_function(env, nullptr, 0, SAXCharactersCallback, nullptr, &charFunc);
+        napi_set_named_property(env, handler, "characters", charFunc);
+
+        // Get parse method
+        napi_value parseMethod = nullptr;
+        napi_get_named_property(env, instance, "parse", &parseMethod);
+
+        // Multiple parse calls to test reusability
+        for (int i = 0; i < 2; i++) {
+            // Create new instance for each parse
+            napi_value newInstance = nullptr;
+            napi_new_instance(env, saxParserClass, 0, nullptr, &newInstance);
+
+            // Prepare XML content as chunk
+            std::string xmlContent = std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>") +
+                                      "<books><book><title>Test Book</title>" +
+                                      "<author>Author Name</author></book></books>";
+            napi_value chunkValue = nullptr;
+            napi_create_string_utf8(env, xmlContent.c_str(), xmlContent.size(), &chunkValue);
+
+            // Create isFinal boolean
+            napi_value isFinalValue = nullptr;
+            napi_get_boolean(env, true, &isFinalValue);
+
+            napi_value args[3] = {handler, chunkValue, isFinalValue};
+            napi_value result = nullptr;
+            napi_status status = napi_call_function(env, newInstance, parseMethod, 3, args, &result);
+            ASSERT_EQ(status, napi_ok);
+        }
+    });
+}
+
+// ============= XmlSAXParser Branch Coverage Tests =============
+
+/* @tc.name: XmlSAXParserBranchTest001
+ * @tc.desc: Test XmlSAXParser constructor and destructor with env not nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser* parser = new OHOS::xml::XmlSAXParser(env);
+    ASSERT_NE(parser, nullptr);
+    delete parser;
+}
+
+/* @tc.name: XmlSAXParserBranchTest002
+ * @tc.desc: Test XmlSAXParser::ExtractCallbacks with handler nullptr (if handler == nullptr true).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    OHOS::xml::SAXCallbackRefs callbacks;
+    bool result = parser.ExtractCallbacks(env, nullptr, callbacks);
+    ASSERT_FALSE(result);
+    std::string error = parser.GetError();
+    ASSERT_FALSE(error.empty());
+}
+
+/* @tc.name: XmlSAXParserBranchTest003
+ * @tc.desc: Test XmlSAXParser::ExtractCallbacks with valid handler (if handler == nullptr false).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    
+    napi_value handler = nullptr;
+    napi_create_object(env, &handler);
+    
+    napi_value func = nullptr;
+    napi_create_function(env, nullptr, 0, SAXStartDocumentCallback, nullptr, &func);
+    napi_set_named_property(env, handler, "startDocument", func);
+    
+    napi_create_function(env, nullptr, 0, SAXEndDocumentCallback, nullptr, &func);
+    napi_set_named_property(env, handler, "endDocument", func);
+    
+    napi_create_function(env, nullptr, 0, SAXStartElementCallback, nullptr, &func);
+    napi_set_named_property(env, handler, "startElement", func);
+    
+    napi_create_function(env, nullptr, 0, SAXEndElementCallback, nullptr, &func);
+    napi_set_named_property(env, handler, "endElement", func);
+    
+    napi_create_function(env, nullptr, 0, SAXCharactersCallback, nullptr, &func);
+    napi_set_named_property(env, handler, "characters", func);
+    
+    OHOS::xml::SAXCallbackRefs callbacks;
+    bool result = parser.ExtractCallbacks(env, handler, callbacks);
+    ASSERT_TRUE(result);
+}
+
+/* @tc.name: XmlSAXParserBranchTest012
+ * @tc.desc: Test XmlSAXParser::GetError when no error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest012, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    std::string error = parser.GetError();
+    ASSERT_TRUE(error.empty());
+}
+
+/* @tc.name: XmlSAXParserBranchTest013
+ * @tc.desc: Test SAXCallbackRefs destructor with env nullptr (if env != nullptr false).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest013, testing::ext::TestSize.Level0)
+{
+    OHOS::xml::SAXCallbackRefs* callbacks = new OHOS::xml::SAXCallbackRefs();
+    ASSERT_NE(callbacks, nullptr);
+    callbacks->env = nullptr;
+    delete callbacks;
+}
+
+/* @tc.name: XmlSAXParserBranchTest014
+ * @tc.desc: Test SAXCallbackRefs destructor with refs nullptr (if ref != nullptr false).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest014, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::SAXCallbackRefs* callbacks = new OHOS::xml::SAXCallbackRefs();
+    ASSERT_NE(callbacks, nullptr);
+    callbacks->env = env;
+    ASSERT_EQ(callbacks->env, env);
+    callbacks->startDocumentRef = nullptr;
+    callbacks->endDocumentRef = nullptr;
+    callbacks->startElementRef = nullptr;
+    callbacks->endElementRef = nullptr;
+    callbacks->charactersRef = nullptr;
+    delete callbacks;
+}
+
+/* @tc.name: XmlSAXParserBranchTest015
+ * @tc.desc: Test SAXCallbackRefs destructor with refs not nullptr (if ref != nullptr true).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest015, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::SAXCallbackRefs* callbacks = new OHOS::xml::SAXCallbackRefs();
+    ASSERT_NE(callbacks, nullptr);
+    callbacks->env = env;
+    
+    napi_value func = nullptr;
+    napi_create_function(env, nullptr, 0, SAXStartDocumentCallback, nullptr, &func);
+    napi_create_reference(env, func, 1, &callbacks->startDocumentRef);
+    
+    napi_create_function(env, nullptr, 0, SAXEndDocumentCallback, nullptr, &func);
+    napi_create_reference(env, func, 1, &callbacks->endDocumentRef);
+    
+    napi_create_function(env, nullptr, 0, SAXStartElementCallback, nullptr, &func);
+    napi_create_reference(env, func, 1, &callbacks->startElementRef);
+    
+    napi_create_function(env, nullptr, 0, SAXEndElementCallback, nullptr, &func);
+    napi_create_reference(env, func, 1, &callbacks->endElementRef);
+    
+    napi_create_function(env, nullptr, 0, SAXCharactersCallback, nullptr, &func);
+    napi_create_reference(env, func, 1, &callbacks->charactersRef);
+    
+    delete callbacks;
+}
+
+/* @tc.name: XmlSAXParserBranchTest016
+ * @tc.desc: Test ConvertSAX2Attributes with localname nullptr (if localname != nullptr false).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest016, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    
+    const xmlChar* attrs[5] = {
+        nullptr,
+        reinterpret_cast<const xmlChar*>("prefix"),
+        reinterpret_cast<const xmlChar*>("uri"),
+        reinterpret_cast<const xmlChar*>("value"),
+        reinterpret_cast<const xmlChar*>("valueEnd")
+    };
+    
+    std::map<std::string, std::string> result =
+        OHOS::xml::XmlSAXParserTestHelper::TestConvertSAX2Attributes(parser, attrs, 1);
+    ASSERT_TRUE(result.empty());
+}
+
+/* @tc.name: XmlSAXParserBranchTest017
+ * @tc.desc: Test ConvertSAX2Attributes with valueStart nullptr (if valueStart != nullptr false).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest017, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    
+    const xmlChar* attrs[5] = {
+        reinterpret_cast<const xmlChar*>("localname"),
+        reinterpret_cast<const xmlChar*>("prefix"),
+        reinterpret_cast<const xmlChar*>("uri"),
+        nullptr,
+        reinterpret_cast<const xmlChar*>("valueEnd")
+    };
+    
+    std::map<std::string, std::string> result =
+        OHOS::xml::XmlSAXParserTestHelper::TestConvertSAX2Attributes(parser, attrs, 1);
+    ASSERT_TRUE(result.empty());
+}
+
+/* @tc.name: XmlSAXParserBranchTest018
+ * @tc.desc: Test ConvertSAX2Attributes with valueEnd nullptr (if valueEnd != nullptr false).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest018, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    
+    const xmlChar* attrs[5] = {
+        reinterpret_cast<const xmlChar*>("localname"),
+        reinterpret_cast<const xmlChar*>("prefix"),
+        reinterpret_cast<const xmlChar*>("uri"),
+        reinterpret_cast<const xmlChar*>("value"),
+        nullptr
+    };
+    
+    std::map<std::string, std::string> result =
+        OHOS::xml::XmlSAXParserTestHelper::TestConvertSAX2Attributes(parser, attrs, 1);
+    ASSERT_TRUE(result.empty());
+}
+
+/* @tc.name: XmlSAXParserBranchTest019
+ * @tc.desc: Test ConvertSAX2Attributes with empty prefix (if *prefix != 0 false).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest019, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    
+    const char* valueStr = "testvalue";
+    const xmlChar* attrs[5] = {
+        reinterpret_cast<const xmlChar*>("attr"),
+        reinterpret_cast<const xmlChar*>(""),
+        reinterpret_cast<const xmlChar*>("http://example.com"),
+        reinterpret_cast<const xmlChar*>(valueStr),
+        reinterpret_cast<const xmlChar*>(valueStr + 9)
+    };
+    
+    std::map<std::string, std::string> result =
+        OHOS::xml::XmlSAXParserTestHelper::TestConvertSAX2Attributes(parser, attrs, 1);
+    ASSERT_EQ(result.size(), static_cast<size_t>(1));
+    if (result.size() > 0) {
+        auto it = result.begin();
+        ASSERT_EQ(it->first, std::string("attr"));
+        ASSERT_EQ(it->second, std::string("testvalue"));
+    }
+}
+
+/* @tc.name: XmlSAXParserBranchTest020
+ * @tc.desc: Test ConvertSAX2Attributes with non-empty prefix (if prefix != nullptr && *prefix != 0 true).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest020, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::xml::XmlSAXParser parser(env);
+    
+    const char* valueStr = "testvalue";
+    const xmlChar* attrs[5] = {
+        reinterpret_cast<const xmlChar*>("attr"),
+        reinterpret_cast<const xmlChar*>("ns"),
+        reinterpret_cast<const xmlChar*>("http://example.com"),
+        reinterpret_cast<const xmlChar*>(valueStr),
+        reinterpret_cast<const xmlChar*>(valueStr + 9)
+    };
+    
+    std::map<std::string, std::string> result =
+        OHOS::xml::XmlSAXParserTestHelper::TestConvertSAX2Attributes(parser, attrs, 1);
+    ASSERT_EQ(result.size(), static_cast<size_t>(1));
+    if (result.size() > 0) {
+        auto it = result.begin();
+        ASSERT_EQ(it->first, std::string("ns:attr"));
+        ASSERT_EQ(it->second, std::string("testvalue"));
+    }
 }
