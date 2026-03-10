@@ -1727,6 +1727,116 @@ namespace OHOS::Util {
         return result;
     }
 
+    // Async callback data for GetAllVMHeapMemoryInfo
+    struct GetAllVMHeapMemoryInfoData {
+        napi_env env;
+        napi_deferred deferred;
+        NativeEngine* engine;
+        std::vector<panda::ecmascript::HeapMemoryInfo> heapInfos;
+    };
+
+    static void GetAllVMHeapMemoryInfoAsyncExecute(void* data)
+    {
+        auto* asyncData = reinterpret_cast<GetAllVMHeapMemoryInfoData*>(data);
+        asyncData->heapInfos = asyncData->engine->GetAllVMHeapMemoryInfo();
+    }
+
+    static void GetAllVMHeapMemoryInfoComplete(napi_env env, napi_status status, void* data)
+    {
+        auto* asyncData = reinterpret_cast<GetAllVMHeapMemoryInfoData*>(data);
+        if (status != napi_ok) {
+            HILOG_ERROR("GetAllVMHeapMemoryInfoComplete:: napi async execute failed.");
+            napi_value undefined = nullptr;
+            napi_get_undefined(env, &undefined);
+            napi_reject_deferred(env, asyncData->deferred, undefined);
+            delete asyncData;
+            return;
+        }
+        // Create result array
+        napi_value resultArray = nullptr;
+        napi_create_array_with_length(env, asyncData->heapInfos.size(), &resultArray);
+        constexpr size_t PROPERTY_COUNT = 4;
+        constexpr size_t INDEX_THREAD_ID = 0;
+        constexpr size_t INDEX_THREAD_NAME = 1;
+        constexpr size_t INDEX_HEAP_TYPE = 2;
+        constexpr size_t INDEX_HEAP_OBJECT_SIZE = 3;
+        const char* keys[] = {"threadId", "threadName", "heapType", "heapObjectSize"};
+        napi_value values[PROPERTY_COUNT] = {nullptr};
+        for (size_t i = 0; i < asyncData->heapInfos.size(); i++) {
+            napi_value threadIdValue = nullptr;
+            if (asyncData->heapInfos[i].heapType == "shared") {
+                napi_get_undefined(env, &threadIdValue);
+            } else {
+                napi_create_uint32(env, asyncData->heapInfos[i].threadId, &threadIdValue);
+            }
+            napi_value threadNameValue = nullptr;
+            if (asyncData->heapInfos[i].heapType == "shared") {
+                napi_get_undefined(env, &threadNameValue);
+            } else {
+                napi_create_string_utf8(env, asyncData->heapInfos[i].threadName.c_str(),
+                    asyncData->heapInfos[i].threadName.length(), &threadNameValue);
+            }
+            napi_value heapTypeValue = nullptr;
+            napi_create_string_utf8(env, asyncData->heapInfos[i].heapType.c_str(),
+                asyncData->heapInfos[i].heapType.length(), &heapTypeValue);
+            napi_value heapObjectSizeValue = nullptr;
+            napi_create_uint32(env, asyncData->heapInfos[i].heapObjectSize, &heapObjectSizeValue);
+            values[INDEX_THREAD_ID] = threadIdValue;
+            values[INDEX_THREAD_NAME] = threadNameValue;
+            values[INDEX_HEAP_TYPE] = heapTypeValue;
+            values[INDEX_HEAP_OBJECT_SIZE] = heapObjectSizeValue;
+            napi_value heapInfoObj = nullptr;
+            napi_create_object_with_named_properties(env, &heapInfoObj, PROPERTY_COUNT, keys, values);
+            napi_set_element(env, resultArray, i, heapInfoObj);
+        }
+        // Resolve the promise with result
+        napi_resolve_deferred(env, asyncData->deferred, resultArray);
+        // Cleanup
+        delete asyncData;
+    }
+
+    static napi_value GetAllVMHeapMemoryInfo(napi_env env, napi_callback_info info)
+    {
+        napi_value promise = nullptr;
+        napi_deferred deferred = nullptr;
+        napi_create_promise(env, &deferred, &promise);
+
+        NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+
+        auto* asyncData = new (std::nothrow) GetAllVMHeapMemoryInfoData();
+        if (asyncData == nullptr) {
+            HILOG_ERROR("GetAllVMHeapMemoryInfo:: memory allocation failed, asyncData is nullptr");
+            napi_value undefined = nullptr;
+            napi_get_undefined(env, &undefined);
+            napi_reject_deferred(env, deferred, undefined);
+            return promise;
+        }
+
+        asyncData->env = env;
+        asyncData->deferred = deferred;
+        asyncData->engine = engine;
+
+        napi_value resourceName = nullptr;
+        napi_create_string_utf8(env, "GetAllVMHeapMemoryInfo", NAPI_AUTO_LENGTH, &resourceName);
+
+        napi_async_work asyncWork = nullptr;
+        napi_create_async_work(
+            env,
+            nullptr,
+            resourceName,
+            [](napi_env env, void* data) {
+                // Execute function - runs in worker thread/pool
+                GetAllVMHeapMemoryInfoAsyncExecute(data);
+            },
+            GetAllVMHeapMemoryInfoComplete,
+            asyncData,
+            &asyncWork);
+
+        napi_queue_async_work(env, asyncWork);
+
+        return promise;
+    }
+
     napi_value TypeofInit(napi_env env, napi_value exports)
     {
         const char* typeofClassName = "Types";
@@ -1848,6 +1958,7 @@ namespace OHOS::Util {
         napi_create_object(env, &ArkTSVMInterface);
         napi_property_descriptor ArkTSVMDesc[] = {
             DECLARE_NAPI_FUNCTION("setMultithreadingDetectionEnabled", SetMultithreadingDetectionEnabled),
+            DECLARE_NAPI_FUNCTION("getAllVMHeapMemoryInfo", GetAllVMHeapMemoryInfo),
         };
         NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
                                               sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
