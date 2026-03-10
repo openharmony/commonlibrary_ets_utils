@@ -55,7 +55,7 @@ struct SAXCallbackData {
     SAXCallbackType type;
     std::string name;
     std::string namespaceURI;
-    std::string prefix;
+    std::string qname;
     std::string content;
     std::map<std::string, std::string> attributes;
 };
@@ -73,6 +73,12 @@ struct AsyncParseWorkData {
     std::mutex queueMutex;
     std::condition_variable queueCv;
     bool callbackProcessed;
+};
+
+struct ChunkData {
+    std::string chunk;
+    bool isFinal;
+    napi_deferred deferred;
 };
 
 /**
@@ -208,12 +214,23 @@ private:
     bool HandleParseSuccess(napi_env env, AsyncParseWorkData* workData);
     static void CleanupWorkDataOnClose(uv_handle_t* handle);
     void CleanupWorkData(AsyncParseWorkData* workData);
+    
+    void ProcessChunkQueue();
+    static void ExecuteChunkParse(napi_env env, void* data);
+    static void CompleteChunkParse(napi_env env, napi_status status, void* data);
 
     xmlParserCtxtPtr parserCtxt_;
     SAXCallbackRefs* callbacks_;
     std::string error_;
     bool isInitialized_;
     AsyncParseWorkData* currentWorkData_;
+    
+    std::queue<ChunkData> chunkQueue_;
+    std::mutex chunkQueueMutex_;
+    std::condition_variable chunkQueueCv_;
+    bool isProcessing_;
+    napi_async_work chunkWork_;
+    bool isParsing_;
 
     friend class XmlSAXParserTestHelper;
 };

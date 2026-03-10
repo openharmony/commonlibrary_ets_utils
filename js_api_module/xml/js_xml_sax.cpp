@@ -47,7 +47,8 @@ SAXCallbackRefs::~SAXCallbackRefs()
 }
 
 XmlSAXParser::XmlSAXParser(napi_env env)
-    : parserCtxt_(nullptr), callbacks_(nullptr), isInitialized_(false), currentWorkData_(nullptr)
+    : parserCtxt_(nullptr), callbacks_(nullptr), isInitialized_(false), currentWorkData_(nullptr),
+      isProcessing_(false), chunkWork_(nullptr), isParsing_(false)
 {}
 
 XmlSAXParser::~XmlSAXParser()
@@ -72,8 +73,24 @@ void XmlSAXParser::Cleanup()
         callbacks_ = nullptr;
     }
 
+    if (chunkWork_ != nullptr) {
+        napi_env env = callbacks_ ? callbacks_->env : nullptr;
+        if (env != nullptr) {
+            napi_delete_async_work(env, chunkWork_);
+        }
+        chunkWork_ = nullptr;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(chunkQueueMutex_);
+        std::queue<ChunkData> empty;
+        std::swap(chunkQueue_, empty);
+    }
+
     currentWorkData_ = nullptr;
     isInitialized_ = false;
+    isProcessing_ = false;
+    isParsing_ = false;
 }
 
 bool XmlSAXParser::InitParserContext()
@@ -166,31 +183,19 @@ napi_value XmlSAXParser::Parse(napi_env env, napi_value handler,
         return promise;
     }
 
-    AsyncParseWorkData* workData = new AsyncParseWorkData();
-    workData->parser = this;
-    workData->chunk = chunk;
-    workData->isFinal = isFinal;
-    workData->asyncWork = nullptr;
-    workData->deferred = deferred;
-    workData->asyncHandle = nullptr;
-    workData->callbackProcessed = true;
+    {
+        std::lock_guard<std::mutex> lock(chunkQueueMutex_);
+        ChunkData chunkData;
+        chunkData.chunk = chunk;
+        chunkData.isFinal = isFinal;
+        chunkData.deferred = deferred;
+        chunkQueue_.push(chunkData);
+    }
+    chunkQueueCv_.notify_one();
 
-    uv_loop_t* loop = nullptr;
-    napi_get_uv_event_loop(env, &loop);
-    
-    workData->asyncHandle = new uv_async_t;
-    workData->asyncHandle->data = workData;
-    uv_async_init(loop, workData->asyncHandle, AsyncCallback);
-
-    currentWorkData_ = workData;
-
-    napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "XmlSAXParser::Parse", NAPI_AUTO_LENGTH, &resourceName);
-    
-    napi_create_async_work(env, nullptr, resourceName, ExecuteParse, CompleteParse,
-                           workData, &workData->asyncWork);
-    
-    napi_queue_async_work_with_qos(env, workData->asyncWork, napi_qos_user_initiated);
+    if (!isProcessing_) {
+        ProcessChunkQueue();
+    }
 
     return promise;
 }
@@ -258,6 +263,48 @@ napi_value XmlSAXParser::CreateAttributesMap(napi_env env, const std::map<std::s
     }
 
     return attributesMap;
+}
+
+void XmlSAXParser::ProcessChunkQueue()
+{
+    ChunkData chunkData;
+    {
+        std::lock_guard<std::mutex> lock(chunkQueueMutex_);
+        if (chunkQueue_.empty()) {
+            isProcessing_ = false;
+            return;
+        }
+        chunkData = chunkQueue_.front();
+        chunkQueue_.pop();
+    }
+
+    isProcessing_ = true;
+
+    AsyncParseWorkData* workData = new AsyncParseWorkData();
+    workData->parser = this;
+    workData->chunk = chunkData.chunk;
+    workData->isFinal = chunkData.isFinal;
+    workData->asyncWork = nullptr;
+    workData->deferred = chunkData.deferred;
+    workData->asyncHandle = nullptr;
+    workData->callbackProcessed = true;
+
+    uv_loop_t* loop = nullptr;
+    napi_get_uv_event_loop(callbacks_->env, &loop);
+    
+    workData->asyncHandle = new uv_async_t;
+    workData->asyncHandle->data = workData;
+    uv_async_init(loop, workData->asyncHandle, AsyncCallback);
+
+    currentWorkData_ = workData;
+
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(callbacks_->env, "XmlSAXParser::Parse", NAPI_AUTO_LENGTH, &resourceName);
+    
+    napi_create_async_work(callbacks_->env, nullptr, resourceName, ExecuteParse, CompleteParse,
+                           workData, &workData->asyncWork);
+    
+    napi_queue_async_work_with_qos(callbacks_->env, workData->asyncWork, napi_qos_user_initiated);
 }
 
 void XmlSAXParser::ExecuteParse(napi_env env, void* data)
@@ -353,6 +400,8 @@ void XmlSAXParser::CompleteParse(napi_env env, napi_status status, void* data)
     
     if (hasError || isFinal) {
         parser->Cleanup();
+    } else {
+        parser->ProcessChunkQueue();
     }
 }
 
@@ -431,11 +480,11 @@ void XmlSAXParser::PrepareElementArgs(napi_env env, const SAXCallbackData& callb
 {
     napi_value nameValue = CreateStringValue(env, callbackData.name);
     napi_value uriValue = CreateStringValue(env, callbackData.namespaceURI);
-    napi_value prefixValue = CreateStringValue(env, callbackData.prefix);
+    napi_value qnameValue = CreateStringValue(env, callbackData.qname);
     
     args.push_back(nameValue);
     args.push_back(uriValue);
-    args.push_back(prefixValue);
+    args.push_back(qnameValue);
     
     if (includeAttributes) {
         napi_value attributesMap = CreateAttributesMap(env, callbackData.attributes);
@@ -582,8 +631,10 @@ void XmlSAXParser::StartElementNsCallback(void* userData, const xmlChar* localna
         callbackData.namespaceURI = reinterpret_cast<const char*>(URI);
     }
     
-    if (prefix != nullptr) {
-        callbackData.prefix = reinterpret_cast<const char*>(prefix);
+    if (prefix != nullptr && *prefix != 0) {
+        std::string prefixStr = reinterpret_cast<const char*>(prefix);
+        std::string localnameStr = reinterpret_cast<const char*>(localname);
+        callbackData.qname = prefixStr + ":" + localnameStr;
     }
     
     if (attributes != nullptr && attributeSize > 0) {
@@ -609,8 +660,10 @@ void XmlSAXParser::EndElementNsCallback(void* userData, const xmlChar* localname
         callbackData.namespaceURI = reinterpret_cast<const char*>(URI);
     }
     
-    if (prefix != nullptr) {
-        callbackData.prefix = reinterpret_cast<const char*>(prefix);
+    if (prefix != nullptr && *prefix != 0) {
+        std::string prefixStr = reinterpret_cast<const char*>(prefix);
+        std::string localnameStr = reinterpret_cast<const char*>(localname);
+        callbackData.qname = prefixStr + ":" + localnameStr;
     }
     
     parser->QueueCallback(callbackData);
