@@ -60,7 +60,6 @@ static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
 static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
-static constexpr uint32_t WAITING_INTERVAL = 1000; // 1000: 1s
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -91,7 +90,6 @@ TaskManager::~TaskManager()
     HILOG_INFO("taskpool:: ~TaskManager");
     TimerStop(balanceTimer_, "taskpool:: balanceTimer_ is nullptr");
     TimerStop(expandTimer_, "taskpool:: expandTimer_ is nullptr");
-    TimerStop(waitingTimer_, "taskpool:: waitingTimer_ is nullptr");
 
     ConcurrentHelper::UvHandleClose(dispatchHandle_);
 
@@ -566,60 +564,27 @@ void TaskManager::TriggerLoadBalance([[maybe_unused]] const uv_timer_t* req)
     uint32_t targetNum = taskManager.ComputeSuitableThreadNum();
     taskManager.NotifyShrink(targetNum);
     taskManager.CountTraceForWorker(true);
+    bool ret = taskManager.logManager_.IsNeedPrint();
+    taskManager.DealLogs(ret);
 }
 
-void TaskManager::PrintWaitingTime([[maybe_unused]] const uv_timer_t* req)
+void TaskManager::DealLogs(bool flag)
 {
+    if (!flag) {
+        return;
+    }
     TaskManager& taskManager = TaskManager::GetInstance();
-    std::string currentTimeStamp = ConcurrentHelper::GetCurrentTimeStampWithMS();
-    uint32_t highTaskId = 0;
-    uint32_t middleTaskId = 0;
-    uint32_t lowTaskId = 0;
-    {
-        std::lock_guard<std::mutex> lock(taskManager.taskQueuesMutex_);
-        auto& highTaskQueue = taskManager.taskQueues_[Priority::HIGH];
-        if (!highTaskQueue->IsEmpty()) {
-            highTaskId = highTaskQueue->GetHead();
-        }
-
-        auto& mediumTaskQueue = taskManager.taskQueues_[Priority::MEDIUM];
-        if (!mediumTaskQueue->IsEmpty()) {
-            middleTaskId = mediumTaskQueue->GetHead();
-        }
-
-        auto& lowTaskQueue = taskManager.taskQueues_[Priority::LOW];
-        if (!lowTaskQueue->IsEmpty()) {
-            lowTaskId = lowTaskQueue->GetHead();
-        }
+    uv_loop_t* loop = NapiHelper::GetLibUV(taskManager.hostEnv_);
+    if (loop == nullptr) {
+        return;
     }
-
-    std::string highTime = taskManager.GetTaskEnqueueTime(highTaskId);
-    std::string middleTime = taskManager.GetTaskEnqueueTime(middleTaskId);
-    std::string lowTime = taskManager.GetTaskEnqueueTime(lowTaskId);
-
-    std::ostringstream oss;
-    oss << "currentT " << currentTimeStamp;
-
-    bool hasEntries = false;
-    if (!highTime.empty()) {
-        oss << ", highEnqueueT " << highTime;
-        hasEntries = true;
+    uv_work_t* workReq = new uv_work_t();
+    int ret = uv_queue_work_with_qos(taskManager.loop_, workReq, TaskManager::PrintLogs, TaskManager::PrintLogsEnd,
+                                     uv_qos_user_initiated);
+    if (ret != 0) {
+        delete workReq;
+        workReq = nullptr;
     }
-    if (!middleTime.empty()) {
-        oss << ", middleEnqueueT " << middleTime;
-        hasEntries = true;
-    }
-    if (!lowTime.empty()) {
-        oss << ", lowEnqueueT " << lowTime;
-        hasEntries = true;
-    }
-
-    if (hasEntries) {
-        HILOG_INFO("taskpool::%{public}s", oss.str().c_str());
-    } else {
-        HILOG_DEBUG("taskpool::no wating task now");
-    }
-    taskManager.logManager_.PrintLog();
 }
 
 void TaskManager::DispatchAndTryExpand([[maybe_unused]] const uv_async_t* req)
@@ -707,8 +672,8 @@ void TaskManager::RunTaskManager()
     ConcurrentHelper::UvHandleInit(loop_, dispatchHandle_, TaskManager::DispatchAndTryExpand);
 
     TimerInit(balanceTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), TRIGGER_INTERVAL);
-    TimerInit(expandTimer_, false, reinterpret_cast<uv_timer_cb>(TaskManager::TriggerLoadBalance), TRIGGER_INTERVAL);
-    TimerInit(waitingTimer_, true, reinterpret_cast<uv_timer_cb>(TaskManager::PrintWaitingTime), WAITING_INTERVAL);
+    expandTimer_ = new uv_timer_t;
+    uv_timer_init(loop_, expandTimer_);
 
     isHandleInited_ = true;
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
@@ -2027,5 +1992,67 @@ void TaskManager::IncreaseTaskIdSalt()
         taskIdSalt_ = 1;
     }
     taskIdSalt_.fetch_add(1);
+}
+
+void TaskManager::PrintLogs(uv_work_t* req)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    std::string currentTimeStamp = ConcurrentHelper::GetCurrentTimeStampWithMS();
+    uint32_t highTaskId = 0;
+    uint32_t middleTaskId = 0;
+    uint32_t lowTaskId = 0;
+    {
+        std::lock_guard<std::mutex> lock(taskManager.taskQueuesMutex_);
+        auto& highTaskQueue = taskManager.taskQueues_[Priority::HIGH];
+        if (!highTaskQueue->IsEmpty()) {
+            highTaskId = highTaskQueue->GetHead();
+        }
+
+        auto& mediumTaskQueue = taskManager.taskQueues_[Priority::MEDIUM];
+        if (!mediumTaskQueue->IsEmpty()) {
+            middleTaskId = mediumTaskQueue->GetHead();
+        }
+
+        auto& lowTaskQueue = taskManager.taskQueues_[Priority::LOW];
+        if (!lowTaskQueue->IsEmpty()) {
+            lowTaskId = lowTaskQueue->GetHead();
+        }
+    }
+
+    std::string highTime = taskManager.GetTaskEnqueueTime(highTaskId);
+    std::string middleTime = taskManager.GetTaskEnqueueTime(middleTaskId);
+    std::string lowTime = taskManager.GetTaskEnqueueTime(lowTaskId);
+
+    std::ostringstream oss;
+    oss << "currentT " << currentTimeStamp;
+
+    bool hasEntries = false;
+    if (!highTime.empty()) {
+        oss << ", highEnqueueT " << highTime;
+        hasEntries = true;
+    }
+    if (!middleTime.empty()) {
+        oss << ", middleEnqueueT " << middleTime;
+        hasEntries = true;
+    }
+    if (!lowTime.empty()) {
+        oss << ", lowEnqueueT " << lowTime;
+        hasEntries = true;
+    }
+
+    if (hasEntries) {
+        HILOG_INFO("taskpool::%{public}s", oss.str().c_str());
+    } else {
+        HILOG_DEBUG("taskpool::no wating task now");
+    }
+    taskManager.logManager_.PrintLog();
+}
+
+void TaskManager::PrintLogsEnd(uv_work_t* req, int status)
+{
+    if (req != nullptr) {
+        delete req;
+        req = nullptr;
+    }
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
