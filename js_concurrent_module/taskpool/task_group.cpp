@@ -28,14 +28,14 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     if (argc > 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of params must be zero or one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of taskGroup's params must be zero or one.");
         return nullptr;
     }
     napi_value name;
     if (argc == 1) {
         // check 1st param is taskGroupName
         if (!NapiHelper::IsString(env, args[0])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the first param must be string.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup's first param must be string.");
             return nullptr;
         }
         name = args[0];
@@ -84,7 +84,7 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
     if (argc < 1) {
         errMessage = "taskGroup:: the number of params must be at least one";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of params must be at least one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of addTask's params must be at least one.");
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -106,7 +106,7 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
         if (task == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the params must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of addTask's params must be task.");
             return nullptr;
         }
         if (!task->CanForTaskGroup(env)) {
