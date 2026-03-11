@@ -36,7 +36,7 @@ void ANIHelper::InitializeAniVm()
     const std::string logMsg = globalEnableConcurrencyInteropFlag
         ? "worker and taskpool support interop."
         : "worker and taskpool do not support interop.";
-    HILOG_INFO("ANIHelper:: %{public}s", logMsg.c_str());
+    HILOG_DEBUG("ANIHelper:: %{public}s", logMsg.c_str());
     if (!globalEnableConcurrencyInteropFlag) {
         return;
     }

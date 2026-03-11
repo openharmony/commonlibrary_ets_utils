@@ -708,7 +708,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
         return;
     }
     RemoveTaskEnqueueTime(taskId);
-    if (task->taskState_ == ExecuteState::CANCELED) {
+    if (task->IsCanceledState() || task->IsTimeoutState()) {
         HILOG_DEBUG("taskpool:: task has been canceled");
         return;
     }
@@ -742,7 +742,7 @@ void TaskManager::CancelTask(napi_env env, uint32_t taskId)
     ExecuteState state = ExecuteState::NOT_FOUND;
     {
         std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        if (task->taskState_ == ExecuteState::CANCELED) {
+        if (task->IsCanceledState() || task->IsTimeoutState()) {
             HILOG_DEBUG("taskpool:: task has been canceled");
             return;
         }

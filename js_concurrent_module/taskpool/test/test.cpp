@@ -339,6 +339,9 @@ void NativeEngineTest::CancelTask(napi_env env)
     task->taskState_ = ExecuteState::CANCELED;
     taskManager.CancelTask(env, task->taskId_);
 
+    task->taskState_ = ExecuteState::TIMEOUT;
+    taskManager.CancelTask(env, task->taskId_);
+
     task->taskState_ = ExecuteState::RUNNING;
     task->isPeriodicTask_ = true;
     taskManager.CancelTask(env, task->taskId_);
