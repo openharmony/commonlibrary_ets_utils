@@ -960,8 +960,9 @@ void TaskPool::TriggerTaskTimeoutTimer(napi_env env, Task* task)
     if (!task->IsTimeoutTask() || task->timer_ != nullptr) {
         return;
     }
-    TaskMessage* message = new TaskMessage();
+    TaskTimeoutMessage* message = new TaskTimeoutMessage();
     message->taskId = task->taskId_;
+    message->env = env;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
     uv_update_time(loop);
     task->timer_ = new uv_timer_t;
@@ -976,14 +977,16 @@ void TaskPool::TriggerTaskTimeoutTimer(napi_env env, Task* task)
 
 void TaskPool::TaskTimeoutCallback(uv_timer_t* handle)
 {
-    TaskMessage* message = reinterpret_cast<TaskMessage*>(handle->data);
+    TaskTimeoutMessage* message = reinterpret_cast<TaskTimeoutMessage*>(handle->data);
     auto task = TaskManager::GetInstance().GetTask(message->taskId);
-    delete message;
-    message = nullptr;
-    if (task == nullptr || !task->IsValid()) {
+    if (task == nullptr || !task->IsValid() || message->env != task->GetEnv()) {
         HILOG_ERROR("taskpool:: the task is nullptr or invalid");
+        delete message;
+        message = nullptr;
         return;
     }
+    delete message;
+    message = nullptr;
     ExecuteState state = task->taskState_;
     if (!task->UpdateTaskStateToTimeout()) {
         HILOG_ERROR("taskpool:: the task update state to timeout fail");
@@ -1004,15 +1007,16 @@ void TaskPool::TaskTimeoutCallback(uv_timer_t* handle)
     napi_deferred deferred = nullptr;
     {
         std::lock_guard<std::recursive_mutex> lock(task->taskMutex_);
-        if (task->currentTaskInfo_ != nullptr &&
-            TaskManager::GetInstance().EraseWaitingTaskId(task->GetTaskId(), task->currentTaskInfo_->priority)) {
-            reinterpret_cast<NativeEngine*>(task->GetEnv())->DecreaseSubEnvCounter();
-            task->DecreaseTaskLifecycleCount();
-            TaskManager::GetInstance().DecreaseSendDataRefCount(task->GetEnv(), task->GetTaskId());
+        if (task->currentTaskInfo_ != nullptr) {
             deferred = task->currentTaskInfo_->deferred;
-            napi_reference_unref(task->GetEnv(), task->taskRef_, nullptr);
-            delete task->currentTaskInfo_;
-            task->currentTaskInfo_ = nullptr;
+            if (TaskManager::GetInstance().EraseWaitingTaskId(task->GetTaskId(), task->currentTaskInfo_->priority)) {
+                reinterpret_cast<NativeEngine*>(task->GetEnv())->DecreaseSubEnvCounter();
+                task->DecreaseTaskLifecycleCount();
+                TaskManager::GetInstance().DecreaseSendDataRefCount(task->GetEnv(), task->GetTaskId());
+                napi_reference_unref(task->GetEnv(), task->taskRef_, nullptr);
+                delete task->currentTaskInfo_;
+                task->currentTaskInfo_ = nullptr;
+            }
         }
     }
     if (deferred != nullptr) {
@@ -1061,7 +1065,7 @@ void TaskPool::TriggerTaskGroupTimeoutTimer(napi_env env, TaskGroup* taskGroup)
     if (!taskGroup->IsTimeoutTaskGroup() || taskGroup->timer_ != nullptr) {
         return;
     }
-    TaskGroupMessage* message = new TaskGroupMessage();
+    TaskTimeoutMessage* message = new TaskTimeoutMessage();
     message->groupId = taskGroup->groupId_;
     message->env = env;
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
@@ -1078,7 +1082,7 @@ void TaskPool::TriggerTaskGroupTimeoutTimer(napi_env env, TaskGroup* taskGroup)
 
 void TaskPool::TaskGroupTimeoutCallback(uv_timer_t* handle)
 {
-    TaskGroupMessage* message = reinterpret_cast<TaskGroupMessage*>(handle->data);
+    TaskTimeoutMessage* message = reinterpret_cast<TaskTimeoutMessage*>(handle->data);
     TaskGroup* taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(message->groupId);
     if (taskGroup == nullptr) {
         delete message;
