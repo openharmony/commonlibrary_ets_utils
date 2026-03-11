@@ -360,12 +360,13 @@ bool TaskManager::ReadThreadInfo(pid_t tid, char* buf, uint32_t size)
         HILOG_ERROR("snprintf_s failed");
         return false;
     }
-    int fd = open(path, O_RDONLY | O_NONBLOCK);
-    if (UNLIKELY(fd == -1)) {
+    FILE *file = fopen(path, "r");
+    if (file == NULL) {
+        HILOG_ERROR("Error opening file");
         return false;
     }
-    bytesLen = read(fd, buf, size - 1);
-    close(fd);
+    bytesLen = fread(buf, 1, size, file);
+    (void)fclose(file);
     if (bytesLen <= 0) {
         HILOG_ERROR("taskpool:: failed to read %{public}s", path);
         return false;

@@ -66,16 +66,22 @@ namespace OHOS::JsSysModule::Process {
             HILOG_ERROR("ChildProcess:: pipe1 failed %{public}d", errno);
             return;
         }
+        fdsan_exchange_owner_tag(stdOutFd_[0], 0, LOG_DOMAIN);
+        fdsan_exchange_owner_tag(stdOutFd_[1], 0, LOG_DOMAIN);
         ret = pipe(stdErrFd_);
         if (ret < 0) {
             HILOG_ERROR("ChildProcess:: pipe2 failed %{public}d", errno);
             return;
         }
+        fdsan_exchange_owner_tag(stdErrFd_[0], 0, LOG_DOMAIN);
+        fdsan_exchange_owner_tag(stdErrFd_[1], 0, LOG_DOMAIN);
         std::string strCommnd = RequireStrValue(env, command);
         pid_t pid = fork();
         if (!pid) {
-            close(stdErrFd_[0]);
-            close(stdOutFd_[0]);
+            fdsan_close_with_tag(stdErrFd_[0], LOG_DOMAIN);
+            stdErrFd_[0] = -1;
+            fdsan_close_with_tag(stdOutFd_[0], LOG_DOMAIN);
+            stdOutFd_[0] = -1;
             dup2(stdOutFd_[1], 1);
             dup2(stdErrFd_[1], 2); // 2:The value of parameter
             if (execl("/bin/sh", "sh", "-c", strCommnd.c_str(), nullptr) == -1) {
@@ -102,8 +108,8 @@ namespace OHOS::JsSysModule::Process {
                 },
                 reinterpret_cast<void*>(optionsInfo_), &optionsInfo_->worker);
             napi_queue_async_work_with_qos(env, optionsInfo_->worker, napi_qos_user_initiated);
-            close(stdErrFd_[1]);
-            close(stdOutFd_[1]);
+            fdsan_close_with_tag(stdErrFd_[1], LOG_DOMAIN);
+            fdsan_close_with_tag(stdOutFd_[1], LOG_DOMAIN);
         } else {
             HILOG_ERROR("ChildProcess:: child process create failed");
         }
@@ -467,8 +473,12 @@ namespace OHOS::JsSysModule::Process {
 
     ChildProcess::~ChildProcess()
     {
-        close(stdOutFd_[0]);
-        close(stdErrFd_[0]);
+        if (stdOutFd_[0] >= 0) {
+            fdsan_close_with_tag(stdOutFd_[0], LOG_DOMAIN);
+        }
+        if (stdErrFd_[0] >= 0) {
+            fdsan_close_with_tag(stdErrFd_[0], LOG_DOMAIN);
+        }
         if (isWait_) {
             int32_t status = 0;
             waitpid(optionsInfo_->pid, &status, 0);
