@@ -22,6 +22,8 @@ namespace OHOS::Util {
 napi_value TextcoderInit(napi_env env, napi_value exports);
 napi_value Base64Init(napi_env env, napi_value exports);
 napi_value Base64HelperInit(napi_env env, napi_value exports);
+napi_value OnVMHeapMemoryPressure(napi_env env, napi_callback_info info);
+napi_value OffVMHeapMemoryPressure(napi_env env, napi_callback_info info);
 napi_value TypeofInit(napi_env env, napi_value exports);
 napi_value StringDecoderInit(napi_env env, napi_value exports);
 napi_value ArkTSVMInit(napi_env env, napi_value exports);
