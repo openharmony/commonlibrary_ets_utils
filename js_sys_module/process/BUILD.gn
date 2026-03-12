@@ -71,6 +71,7 @@ ohos_source_set("process_static") {
     if (target_os == "ios") {
       defines = [ "IOS_PLATFORM" ]
     }
+    defines += [ "CROSS_PLATFORM" ]
     deps += [
       "$plugins_root/libs/icu:icu_${target_os}",
       "$plugins_root/libs/napi:napi_${target_os}",
