@@ -1837,6 +1837,21 @@ namespace OHOS::Util {
         return promise;
     }
 
+    static napi_value EnableLocalHandleDetection(napi_env env, [[maybe_unused]] napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        bool ret = engine->EnableLocalHandleDetection();
+        if (!ret) {
+            HILOG_WARN("enable LocalHandleDetection failed");
+        } else {
+            HILOG_DEBUG("enable LocalHandleDetection successfully");
+        }
+
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        return result;
+    }
+
     napi_value TypeofInit(napi_env env, napi_value exports)
     {
         const char* typeofClassName = "Types";
@@ -1959,6 +1974,7 @@ namespace OHOS::Util {
         napi_property_descriptor ArkTSVMDesc[] = {
             DECLARE_NAPI_FUNCTION("setMultithreadingDetectionEnabled", SetMultithreadingDetectionEnabled),
             DECLARE_NAPI_FUNCTION("getAllVMHeapMemoryInfo", GetAllVMHeapMemoryInfo),
+            DECLARE_NAPI_FUNCTION("enableLocalHandleDetection", EnableLocalHandleDetection),
         };
         NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
                                               sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
