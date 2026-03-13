@@ -81,6 +81,8 @@ protected:
                 return;
             }
             testBody(env);
+            napi_status status = napi_destroy_ark_runtime(&env);
+            ASSERT_EQ(status, napi_ok);
         });
 
         newThread->join();
