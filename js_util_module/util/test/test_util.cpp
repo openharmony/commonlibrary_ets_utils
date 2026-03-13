@@ -2589,7 +2589,7 @@ static void RunDecodeTest006(napi_env env)
     napi_create_typedarray(env, napi_uint32_array, arrayBufferSize, arrayBuffer, 0, &src);
     napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
     ASSERT_EQ(result, nullptr);
-    
+
     napi_get_and_clear_last_exception(env, &exception);
 }
 
@@ -8751,7 +8751,7 @@ HWTEST_F(NativeEngineTest, TypesIsWeakMapTest001, testing::ext::TestSize.Level0)
 
         napi_call_function(env, instance, testFunc5, 1, &testObj, &funcResultValue);
         ASSERT_NE(funcResultValue, nullptr);
-        
+
         napi_value testFunc6 = nullptr;
         napi_get_named_property(env, instance, "isSetIterator", &testFunc);
 
@@ -8935,5 +8935,973 @@ HWTEST_F(NativeEngineTest, GetAllVMHeapMemoryInfoTest001, testing::ext::TestSize
         engine->Loop(LOOP_ONCE);
 
         ASSERT_TRUE(callbackExecuted);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest001
+ * @tc.desc: Test OnVMHeapMemoryPressure with valid callback and config object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value localThreshold = nullptr;
+        napi_create_double(env, 80.0, &localThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", localThreshold);
+
+        napi_value sharedThreshold = nullptr;
+        napi_create_double(env, 85.0, &sharedThreshold);
+        napi_set_named_property(env, config, "sharedHeapThreshold", sharedThreshold);
+
+        napi_value processThreshold = nullptr;
+        napi_create_double(env, 90.0, &processThreshold);
+        napi_set_named_property(env, config, "processHeapThreshold", processThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest002
+ * @tc.desc: Test OnVMHeapMemoryPressure with only localHeapThreshold.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value localThreshold = nullptr;
+        napi_create_double(env, 80.0, &localThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", localThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest003
+ * @tc.desc: Test OnVMHeapMemoryPressure with only sharedHeapThreshold.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest003, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value sharedThreshold = nullptr;
+        napi_create_double(env, 85.0, &sharedThreshold);
+        napi_set_named_property(env, config, "sharedHeapThreshold", sharedThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest004
+ * @tc.desc: Test OnVMHeapMemoryPressure with only processHeapThreshold.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest004, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value processThreshold = nullptr;
+        napi_create_double(env, 90.0, &processThreshold);
+        napi_set_named_property(env, config, "processHeapThreshold", processThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest005
+ * @tc.desc: Test OnVMHeapMemoryPressure with insufficient parameters.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest005, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value args[1] = {callback};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 1, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest006
+ * @tc.desc: Test OnVMHeapMemoryPressure with first parameter as string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest006, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value invalidArg = nullptr;
+        napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalidArg);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value args[2] = {invalidArg, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest007
+ * @tc.desc: Test OnVMHeapMemoryPressure with second parameter as string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest007, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value invalidConfig = nullptr;
+        napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalidConfig);
+
+        napi_value args[2] = {callback, invalidConfig};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest008
+ * @tc.desc: Test OnVMHeapMemoryPressure with second parameter as number.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest008, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value invalidConfig = nullptr;
+        napi_create_double(env, 80.0, &invalidConfig);
+
+        napi_value args[2] = {callback, invalidConfig};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest009
+ * @tc.desc: Test OnVMHeapMemoryPressure with second parameter as null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest009, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value invalidConfig = nullptr;
+        napi_get_null(env, &invalidConfig);
+
+        napi_value args[2] = {callback, invalidConfig};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest010
+ * @tc.desc: Test OnVMHeapMemoryPressure with localHeapThreshold as string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest010, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value invalidThreshold = nullptr;
+        napi_create_string_utf8(env, "80", NAPI_AUTO_LENGTH, &invalidThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", invalidThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest011
+ * @tc.desc: Test OnVMHeapMemoryPressure with sharedHeapThreshold as boolean.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest011, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value invalidThreshold = nullptr;
+        napi_get_boolean(env, true, &invalidThreshold);
+        napi_set_named_property(env, config, "sharedHeapThreshold", invalidThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest012
+ * @tc.desc: Test OnVMHeapMemoryPressure with processHeapThreshold as object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest012, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value invalidThreshold = nullptr;
+        napi_create_object(env, &invalidThreshold);
+        napi_set_named_property(env, config, "processHeapThreshold", invalidThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_EQ(result, nullptr);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_NE(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest013
+ * @tc.desc: Test OnVMHeapMemoryPressure with negative threshold value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest013, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value negativeThreshold = nullptr;
+        napi_create_double(env, -10.0, &negativeThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", negativeThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest014
+ * @tc.desc: Test OnVMHeapMemoryPressure with zero threshold value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest014, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value zeroThreshold = nullptr;
+        napi_create_double(env, 0.0, &zeroThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", zeroThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest015
+ * @tc.desc: Test OnVMHeapMemoryPressure with threshold at minimum boundary (70.0).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest015, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value minThreshold = nullptr;
+        napi_create_double(env, 70.0, &minThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", minThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest016
+ * @tc.desc: Test OnVMHeapMemoryPressure with threshold at maximum boundary (95.0).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest016, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value maxThreshold = nullptr;
+        napi_create_double(env, 95.0, &maxThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", maxThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest017
+ * @tc.desc: Test OnVMHeapMemoryPressure with multiple calls (only first call should succeed).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest017, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value localThreshold = nullptr;
+        napi_create_double(env, 80.0, &localThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", localThreshold);
+
+        napi_value args[2] = {callback, config};
+
+        for (int i = 0; i < 3; i++) {
+            napi_value result = nullptr;
+            napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+            ASSERT_NE(result, nullptr);
+
+            bool boolResult = false;
+            napi_get_value_bool(env, result, &boolResult);
+
+            if (i == 0) {
+                ASSERT_TRUE(boolResult);
+            } else {
+                ASSERT_FALSE(boolResult);
+            }
+
+            napi_value exception = nullptr;
+            napi_get_and_clear_last_exception(env, &exception);
+            ASSERT_EQ(exception, nullptr);
+        }
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest018
+ * @tc.desc: Test OnVMHeapMemoryPressure with on/off paired calls.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest018, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value offVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "offVMHeapMemoryPressure", &offVMHeapMemoryPressureFunc);
+        ASSERT_NE(offVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value localThreshold = nullptr;
+        napi_create_double(env, 80.0, &localThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", localThreshold);
+
+        napi_value args[2] = {callback, config};
+
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+
+        napi_value offResult = nullptr;
+        napi_call_function(env, arktsvm, offVMHeapMemoryPressureFunc, 0, nullptr, &offResult);
+        ASSERT_CHECK_VALUE_TYPE(env, offResult, napi_undefined);
+
+        napi_value offException = nullptr;
+        napi_get_and_clear_last_exception(env, &offException);
+        ASSERT_EQ(offException,  nullptr);
+    });
+}
+
+/* @tc.name: OnVMHeapMemoryPressureTest019
+ * @tc.desc: Test OnVMHeapMemoryPressure with multiple threshold boundary values (50.0, 100.0, 82.5).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OnVMHeapMemoryPressureTest019, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value onVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "onVMHeapMemoryPressure", &onVMHeapMemoryPressureFunc);
+        ASSERT_NE(onVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value callback = nullptr;
+        auto callbackFunc = [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value result = nullptr;
+            napi_get_undefined(env, &result);
+            return result;
+        };
+        napi_create_function(env, "callback", NAPI_AUTO_LENGTH, callbackFunc, nullptr, &callback);
+
+        napi_value config = nullptr;
+        napi_create_object(env, &config);
+
+        napi_value minThreshold = nullptr;
+        napi_create_double(env, 50.0, &minThreshold);
+        napi_set_named_property(env, config, "localHeapThreshold", minThreshold);
+
+        napi_value maxThreshold = nullptr;
+        napi_create_double(env, 100.0, &maxThreshold);
+        napi_set_named_property(env, config, "sharedHeapThreshold", maxThreshold);
+
+        napi_value validThreshold = nullptr;
+        napi_create_double(env, 82.5, &validThreshold);
+        napi_set_named_property(env, config, "processHeapThreshold", validThreshold);
+
+        napi_value args[2] = {callback, config};
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, onVMHeapMemoryPressureFunc, 2, args, &result);
+        ASSERT_NE(result, nullptr);
+
+        bool boolResult = false;
+        napi_get_value_bool(env, result, &boolResult);
+        ASSERT_TRUE(boolResult);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OffVMHeapMemoryPressureTest001
+ * @tc.desc: Test OffVMHeapMemoryPressure normal call.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OffVMHeapMemoryPressureTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value offVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "offVMHeapMemoryPressure", &offVMHeapMemoryPressureFunc);
+        ASSERT_NE(offVMHeapMemoryPressureFunc, nullptr);
+
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, offVMHeapMemoryPressureFunc, 0, nullptr, &result);
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_undefined);
+
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        ASSERT_EQ(exception, nullptr);
+    });
+}
+
+/* @tc.name: OffVMHeapMemoryPressureTest002
+ * @tc.desc: Test OffVMHeapMemoryPressure with multiple calls.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, OffVMHeapMemoryPressureTest002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        napi_get_named_property(env, exports, "ArkTSVM", &arktsvm);
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value offVMHeapMemoryPressureFunc = nullptr;
+        napi_get_named_property(env, arktsvm, "offVMHeapMemoryPressure", &offVMHeapMemoryPressureFunc);
+        ASSERT_NE(offVMHeapMemoryPressureFunc, nullptr);
+
+        for (int i = 0; i < 3; i++) {
+            napi_value result = nullptr;
+            napi_call_function(env, arktsvm, offVMHeapMemoryPressureFunc, 0, nullptr, &result);
+            ASSERT_CHECK_VALUE_TYPE(env, result, napi_undefined);
+
+            napi_value exception = nullptr;
+            napi_get_and_clear_last_exception(env, &exception);
+            ASSERT_EQ(exception, nullptr);
+        }
     });
 }

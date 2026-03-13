@@ -1910,17 +1910,17 @@ namespace OHOS::Util {
         }
 
         double localHeapThreshold = GetThresholdProperty(env, args[1], "localHeapThreshold");
-        if (localHeapThreshold == -1) {
+        if (localHeapThreshold < 0) {
             return nullptr;
         }
 
         double sharedHeapThreshold = GetThresholdProperty(env, args[1], "sharedHeapThreshold");
-        if (sharedHeapThreshold == -1) {
+        if (sharedHeapThreshold < 0) {
             return nullptr;
         }
 
         double processHeapThreshold = GetThresholdProperty(env, args[1], "processHeapThreshold");
-        if (processHeapThreshold == -1) {
+        if (processHeapThreshold < 0) {
             return nullptr;
         }
 
