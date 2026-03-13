@@ -1159,4 +1159,10 @@ bool NativeEngineTest::SetAndTestTaskQueues()
     delete task3;
     return eraseSuccess;
 }
+
+bool NativeEngineTest::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum)
+{
+    TaskManager::GetInstance().AddCountTraceForWorkerLog(needLog, threadNum, 1, 1);
+    return true;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

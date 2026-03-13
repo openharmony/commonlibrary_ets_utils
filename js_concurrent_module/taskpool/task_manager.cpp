@@ -1003,11 +1003,11 @@ void TaskManager::NotifyExecuteTask()
     std::lock_guard<std::recursive_mutex> lock(workersMutex_);
     if (GetNonIdleTaskNum() == 0 && workers_.size() != idleWorkers_.size()) {
         // When there are only idle tasks and workers executing them, it is not triggered
-        HILOG_INFO("taskpool::not notify");
+        HILOG_DEBUG("taskpool::not notify");
         return;
     }
     if (idleWorkers_.size() == 0) {
-        HILOG_INFO("taskpool::0 idle");
+        HILOG_DEBUG("taskpool::0 idle");
         return;
     }
 
@@ -1040,7 +1040,7 @@ void TaskManager::InitTaskManager(napi_env env)
 #endif
     #if defined(ENABLE_CONCURRENCY_INTEROP)
         if (reinterpret_cast<NativeEngine*>(env)->IsMainThread() && ANIHelper::GetAniVm() == nullptr) {
-            HILOG_INFO("taskpool:: get aniVm is null in main thread.");
+            HILOG_DEBUG("taskpool:: get aniVm is null in main thread.");
         }
 #endif
         auto mainThreadEngine = NativeEngine::GetMainThreadEngine();
@@ -1871,12 +1871,12 @@ bool TaskManager::IsPerformIdle() const
         ani_options aniArgs {1, &interopEnabled};
         auto* aniVm = ANIHelper::GetAniVm();
         if (aniVm == nullptr) {
-            HILOG_ERROR("taskpool:: aviVm is null.");
+            HILOG_DEBUG("taskpool:: aniVm is null.");
             return;
         }
         ani_status status = aniVm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &worker->aniEnv_);
         if (status != ANI_OK || worker->aniEnv_ == nullptr) {
-            HILOG_ERROR("taskpool:: AttachCurrentThread failed.");
+            HILOG_DEBUG("taskpool:: AttachCurrentThread failed.");
         }
     }
     
@@ -1888,12 +1888,12 @@ bool TaskManager::IsPerformIdle() const
         // detach worker from 1.2vm
         auto* aniVm = ANIHelper::GetAniVm();
         if (aniVm == nullptr) {
-            HILOG_ERROR("taskpool:: DetachWorkerFromAniVm aviVm is null.");
+            HILOG_DEBUG("taskpool:: DetachWorkerFromAniVm aniVm is null.");
             return;
         }
         ani_status status = aniVm->DetachCurrentThread();
         if (status != ANI_OK) {
-            HILOG_ERROR("taskpool:: DetachCurrentThread failed.");
+            HILOG_DEBUG("taskpool:: DetachCurrentThread failed.");
         }
     }
 #endif
@@ -1906,7 +1906,7 @@ uint32_t TaskManager::GetTotalTaskNum() const
 void TaskManager::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum, int64_t idleThreadNum,
                                             int64_t timeoutThreadNum)
 {
-    if (needLog) {
+    if (needLog && threadNum > 1) {
         // A: all workers num, R: running workers num, I: idle workers num, O: timeout workers num
         HILOG_INFO("taskpool:: A:%{public}s, R:%{public}s, I:%{public}s, O:%{public}s",
             std::to_string(threadNum).c_str(), std::to_string(threadNum - idleThreadNum).c_str(),

@@ -7470,3 +7470,17 @@ HWTEST_F(NativeEngineTest, TaskpoolTest357, testing::ext::TestSize.Level0)
     bool ret = NativeEngineTest::SetAndTestTaskQueues();
     ASSERT_TRUE(ret);
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest399, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    bool flag = NativeEngineTest::AddCountTraceForWorkerLog(true, 1);
+    ASSERT_TRUE(flag);
+    flag = NativeEngineTest::AddCountTraceForWorkerLog(true, 2);
+    ASSERT_TRUE(flag);
+    flag = NativeEngineTest::AddCountTraceForWorkerLog(false, 1);
+    ASSERT_TRUE(flag);
+    flag = NativeEngineTest::AddCountTraceForWorkerLog(false, 1);
+    ASSERT_TRUE(flag);
+}

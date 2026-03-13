@@ -108,6 +108,7 @@ public:
     static uint32_t GetTaskIdSalt();
     static uint64_t CalculateTaskId(uint64_t taskId, uint32_t salt);
     static bool SetAndTestTaskQueues();
+    static bool AddCountTraceForWorkerLog(bool needLog, int64_t threadNum);
 
     class ExceptionScope {
     public:
