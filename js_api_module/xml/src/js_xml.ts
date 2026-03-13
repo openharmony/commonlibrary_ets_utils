@@ -420,8 +420,8 @@ class XmlPullParser {
 export interface XmlSAXHandler {
   startDocument(): void;
   endDocument(): void;
-  startElement(elementName: string, namespaceURI?: string, prefix?: string, attributes?: Map<string, string>): void;
-  endElement(elementName: string, namespaceURI?: string, prefix?: string): void;
+  startElement(elementName: string, namespaceURI?: string, qname?: string, attributes?: Map<string, string>): void;
+  endElement(elementName: string, namespaceURI?: string, qname?: string): void;
   characters(content: string): void;
 }
 
