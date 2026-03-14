@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define protected public
+
 #include "test.h"
 #include <codecvt>
 #include <thread>
@@ -46,6 +48,9 @@
         ASSERT_CHECK_CALL(napi_typeof(env, value, &valueType)); \
         ASSERT_EQ(valueType, type);                             \
     }
+
+static constexpr const char* ENABLE_LOCAL_HANDLE_DETECTION = "enableLocalHandleDetection";
+static constexpr const char* ARKTSVM_NAME = "ArkTSVM";
 
 /* @tc.name: GetStringUUIDTest001
  * @tc.desc: Test Generate a random RFC 4122 version 4 UUID.
@@ -9903,5 +9908,115 @@ HWTEST_F(NativeEngineTest, OffVMHeapMemoryPressureTest002, testing::ext::TestSiz
             napi_get_and_clear_last_exception(env, &exception);
             ASSERT_EQ(exception, nullptr);
         }
+    });
+}
+/**
+ * @tc.name: EnableLocalHandleDetectionTest001
+ * @tc.desc: Test enableLocalHandleDetection function via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EnableLocalHandleDetectionTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value enableFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, ENABLE_LOCAL_HANDLE_DETECTION, &enableFunc));
+        ASSERT_NE(enableFunc, nullptr);
+
+        napi_valuetype funcType = napi_undefined;
+        ASSERT_CHECK_CALL(napi_typeof(env, enableFunc, &funcType));
+        ASSERT_EQ(funcType, napi_function);
+
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, enableFunc, 0, nullptr, &result));
+        ASSERT_NE(result, nullptr);
+
+        napi_valuetype resultType = napi_undefined;
+        ASSERT_CHECK_CALL(napi_typeof(env, result, &resultType));
+        ASSERT_EQ(resultType, napi_undefined);
+    });
+}
+
+/**
+ * @tc.name: EnableLocalHandleDetectionTest002
+ * @tc.desc: Test enableLocalHandleDetection function multiple calls via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EnableLocalHandleDetectionTest002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value enableFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, ENABLE_LOCAL_HANDLE_DETECTION, &enableFunc));
+        ASSERT_NE(enableFunc, nullptr);
+
+        napi_valuetype funcType = napi_undefined;
+        ASSERT_CHECK_CALL(napi_typeof(env, enableFunc, &funcType));
+        ASSERT_EQ(funcType, napi_function);
+
+        napi_value result1 = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, enableFunc, 0, nullptr, &result1));
+        ASSERT_NE(result1, nullptr);
+
+        napi_value result2 = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, enableFunc, 0, nullptr, &result2));
+        ASSERT_NE(result2, nullptr);
+
+        napi_valuetype resultType1;
+        ASSERT_CHECK_CALL(napi_typeof(env, result1, &resultType1));
+        ASSERT_EQ(resultType1, napi_undefined);
+
+        napi_valuetype resultType2 = napi_undefined;
+        ASSERT_CHECK_CALL(napi_typeof(env, result2, &resultType2));
+        ASSERT_EQ(resultType2, napi_undefined);
+    });
+}
+
+/**
+ * @tc.name: EnableLocalHandleDetectionTest001
+ * @tc.desc: Test enableLocalHandleDetection function via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, EnableLocalHandleDetectionTest003, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value enableFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, ENABLE_LOCAL_HANDLE_DETECTION, &enableFunc));
+        ASSERT_NE(enableFunc, nullptr);
+
+        napi_valuetype funcType = napi_undefined;
+        ASSERT_CHECK_CALL(napi_typeof(env, enableFunc, &funcType));
+        ASSERT_EQ(funcType, napi_function);
+
+        reinterpret_cast<NativeEngine*>(env)->loop_ = nullptr;
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, enableFunc, 0, nullptr, &result));
+        ASSERT_NE(result, nullptr);
+
+        napi_valuetype resultType = napi_undefined;
+        ASSERT_CHECK_CALL(napi_typeof(env, result, &resultType));
+        ASSERT_EQ(resultType, napi_undefined);
     });
 }
