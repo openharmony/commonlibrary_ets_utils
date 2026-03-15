@@ -462,21 +462,11 @@ class XmlSAXParser {
 
     this.isParsing = PARSER_IS_PARSING;
 
-    this.inputStream.off('data');
-    this.inputStream.off('end');
-    this.inputStream.off('error');
-
     const decoder = new StringDecoder(this.encoding);
     
     // @ts-ignore
-    this.inputStream.on('data', (obj) => {
-      let chunk = obj.data;
-      let data: string;
-      if (typeof chunk === 'string') {
-        data = chunk;
-      } else {
-        data = decoder.write(chunk);
-      }
+    this.inputStream.on('readable', () => {
+      const data = this.inputStream.read();
       try {
         this.nativeSAXParser.parse(handler, data, false);
       } catch (e) {

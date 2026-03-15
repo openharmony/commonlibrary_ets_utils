@@ -67,12 +67,6 @@ struct AsyncParseWorkData {
     std::string chunk;
     bool isFinal;
     std::string error;
-    
-    uv_async_t* asyncHandle;
-    std::queue<SAXCallbackData> callbackQueue;
-    std::mutex queueMutex;
-    std::condition_variable queueCv;
-    bool callbackProcessed;
 };
 
 struct ChunkData {
@@ -143,6 +137,9 @@ public:
      */
     std::string GetError() const;
 
+    uint32_t refCount_ = 1;
+    napi_ref ref_ {};
+
 private:
     /**
      * Initialize libxml2 SAX parser context.
@@ -198,7 +195,7 @@ private:
     static void AsyncCallback(uv_async_t* handle);
     
     void QueueCallback(const SAXCallbackData& callbackData);
-    void ProcessCallbackQueue(AsyncParseWorkData* workData);
+    void ProcessCallbackQueue();
     void CallJSCallbackFromData(napi_env env, const SAXCallbackData& callbackData);
     
     napi_value CreateStringValue(napi_env env, const std::string& str);
@@ -213,24 +210,24 @@ private:
     bool HandleParseError(napi_env env, AsyncParseWorkData* workData);
     bool HandleParseSuccess(napi_env env, AsyncParseWorkData* workData);
     static void CleanupWorkDataOnClose(uv_handle_t* handle);
-    void CleanupWorkData(AsyncParseWorkData* workData);
     
-    void ProcessChunkQueue();
+    void ProcessChunkQueue(ChunkData chunkData);
     static void ExecuteChunkParse(napi_env env, void* data);
     static void CompleteChunkParse(napi_env env, napi_status status, void* data);
 
     xmlParserCtxtPtr parserCtxt_;
     SAXCallbackRefs* callbacks_;
     std::string error_;
+    napi_env env_;
     bool isInitialized_;
-    AsyncParseWorkData* currentWorkData_;
-    
-    std::queue<ChunkData> chunkQueue_;
-    std::mutex chunkQueueMutex_;
-    std::condition_variable chunkQueueCv_;
-    bool isProcessing_;
-    napi_async_work chunkWork_;
-    bool isParsing_;
+
+    uv_async_t* asyncHandle;
+    std::atomic_bool isExecuting_ = false;
+    std::mutex dataQueueMutex_;
+    std::queue<AsyncParseWorkData*> workDataQueue_;
+
+    std::mutex callbackQueueMutex_;
+    std::queue<SAXCallbackData> callbackQueue_;
 
     friend class XmlSAXParserTestHelper;
 };
