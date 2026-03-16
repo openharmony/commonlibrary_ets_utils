@@ -1022,9 +1022,11 @@ class LRUCache {
 
   private changeCapacity(newCapacity: number): void {
     while (this.cache.size > newCapacity) {
-      this.cache.delete(this.cache.keys().next().value);
+      let key: object = this.cache.keys().next().value;
+      let val: object = this.cache.values().next().value;
+      this.cache.delete(key);
       this.evictionCount++;
-      this.afterRemoval(true, this.cache.keys(), this.cache.values(), null);
+      this.afterRemoval(true, key, val, null);
     }
   }
 
@@ -1177,7 +1179,9 @@ class LRUCache {
   }
 
   public clear(): void {
-    this.afterRemoval(false, this.cache.keys(), this.cache.values(), null);
+    this.cache.forEach((v, k) => {
+      this.afterRemoval(false, k, v, null);
+    });
     this.cache.clear();
     this.length = this.cache.size;
   }
