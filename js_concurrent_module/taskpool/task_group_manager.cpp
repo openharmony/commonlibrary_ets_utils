@@ -83,7 +83,7 @@ void TaskGroupManager::CancelGroup(napi_env env, uint64_t groupId)
         HILOG_ERROR("taskpool:: CancelGroup group is nullptr");
         return;
     }
-    if (taskGroup->groupState_ == ExecuteState::CANCELED) {
+    if (taskGroup->IsCanceledState() || taskGroup->IsTimeoutState()) {
         return;
     }
     {

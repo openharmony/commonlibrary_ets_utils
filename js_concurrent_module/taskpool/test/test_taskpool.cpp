@@ -8554,8 +8554,24 @@ HWTEST_F(NativeEngineTest, TaskpoolTest396, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_EQ(exception, nullptr);
+    TaskGroup* group2 = new TaskGroup();
+    uint64_t groupId2 = reinterpret_cast<uint64_t>(group2);
+    group2->groupId_ = groupId2;
+    group2->groupState_ = ExecuteState::TIMEOUT;
+    taskGroupManager.StoreTaskGroup(groupId2, group2);
+    taskGroupManager.CancelGroup(env, groupId2);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+    group2->groupState_ = ExecuteState::CANCELED;
+    taskGroupManager.CancelGroup(env, groupId2);
+    exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
     taskGroupManager.RemoveTaskGroup(groupId);
+    taskGroupManager.RemoveTaskGroup(groupId2);
     delete group;
+    delete group2;
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest397, testing::ext::TestSize.Level0)
