@@ -857,7 +857,7 @@ const int32_t ARGC_THREE = 3; // 3 : number of args
                     delete obj;
                     obj = nullptr;
                 }
-            }, nullptr, &xmlSAXParserTypeTag, nullptr);
+            }, nullptr, &xmlSAXParserTypeTag, &object->ref_);
         if (status != napi_ok && object != nullptr) {
             HILOG_ERROR("XmlSAXParserConstructor:: napi_wrap failed");
             delete object;
