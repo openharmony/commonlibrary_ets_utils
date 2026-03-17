@@ -424,6 +424,10 @@ napi_value Task::IsCanceled(napi_env env, napi_callback_info cbinfo)
         HILOG_ERROR("taskpool:: call isCanceled not in Concurrent function");
     } else {
         Task* task = static_cast<Task*>(data);
+        if (!TaskManager::GetInstance().IsValidTask(task)) {
+            HILOG_ERROR("taskpool:: call isCanceled because task is invalid");
+            return NapiHelper::CreateBooleanValue(env, isCanceled);
+        }
         isCanceled = task->taskState_ == ExecuteState::CANCELED ? true : false;
     }
     return NapiHelper::CreateBooleanValue(env, isCanceled);
