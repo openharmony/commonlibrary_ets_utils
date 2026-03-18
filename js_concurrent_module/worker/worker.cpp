@@ -1512,6 +1512,8 @@ void Worker::ExecuteInThread(const void* data)
 #ifdef ENABLE_QOS
     worker->SetQOSLevel();
 #endif
+    // set worker thread name
+    worker->ApplyNameSetting();
     // 1. create a runtime
     napi_env workerEnv = worker->CreateWorkerEnv();
     if (workerEnv == nullptr) {
@@ -1601,8 +1603,6 @@ bool Worker::IsPublishWorkerOverSignal()
 
 bool Worker::PrepareForWorkerInstance()
 {
-    // set worker thread name
-    ApplyNameSetting();
     napi_status scopeStatus = napi_ok;
     HandleScope scope(workerEnv_, scopeStatus);
     NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
