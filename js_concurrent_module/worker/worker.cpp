@@ -1603,6 +1603,14 @@ bool Worker::IsPublishWorkerOverSignal()
 
 bool Worker::PrepareForWorkerInstance()
 {
+    if (!name_.empty()) {
+        napi_status scopeStatus = napi_ok;
+        HandleScope scope(workerEnv_, scopeStatus);
+        NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv_, name_.c_str(), name_.length(), &nameValue);
+        NapiHelper::SetNamePropertyInGlobal(workerEnv_, "name", nameValue);
+    }
     napi_status scopeStatus = napi_ok;
     HandleScope scope(workerEnv_, scopeStatus);
     NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
@@ -1649,13 +1657,6 @@ void Worker::ApplyNameSetting()
 {
     std::string threadName = "WorkerThread";
     if (!name_.empty()) {
-        napi_status scopeStatus = napi_ok;
-        HandleScope scope(workerEnv_, scopeStatus);
-        NAPI_CALL_RETURN_VOID(workerEnv_, scopeStatus);
-        napi_value nameValue = nullptr;
-        napi_create_string_utf8(workerEnv_, name_.c_str(), name_.length(), &nameValue);
-        NapiHelper::SetNamePropertyInGlobal(workerEnv_, "name", nameValue);
-
         threadName += "_" + name_;
         if (threadName.length() > THREAD_NAME_MAX_LENGTH) {
             threadName = threadName.substr(0, THREAD_NAME_MAX_LENGTH);
