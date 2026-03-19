@@ -2865,7 +2865,8 @@ void Worker::HandleWorkerUncaughtException(napi_env env, napi_value exception)
 
     MessageDataType data = nullptr;
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-    engine->SerializeJSError(env, exception, false, true, &data);
+    SerializeOptions options(false, true, true);
+    engine->SerializeJSError(env, exception, options, &data);
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop() || isHostEnvExited_) {
