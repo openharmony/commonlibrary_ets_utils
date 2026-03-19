@@ -23809,3 +23809,284 @@ HWTEST_F(NativeEngineTest, ConsoleTest2000, testing::ext::TestSize.Level0)
     napi_call_function(env, nullptr, cb, 1, argv, &res);
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
 }
+
+/* @tc.name: ConsoleTest2001 - Test console log with special characters
+ * @tc.desc: Test console log with special characters in message.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string message = "Special chars: \n\t\r\\\"\'";
+    napi_value msg = StrToNapiValue(env, message);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+    napi_create_function(env, "log", 3, ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2002 - Test console info with empty string
+ * @tc.desc: Test console info with empty string message.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string message = "";
+    napi_value msg = StrToNapiValue(env, message);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+    napi_create_function(env, "info", 4, ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2003 - Test console warn with warning message
+ * @tc.desc: Test console warn with warning level message.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string message = "This is a warning message";
+    napi_value msg = StrToNapiValue(env, message);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+    napi_create_function(env, "warn", 4, ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::WARN>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2004 - Test console error with error message
+ * @tc.desc: Test console error with error level message.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string message = "This is an error message";
+    napi_value msg = StrToNapiValue(env, message);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+    napi_create_function(env, "error", 5, ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::ERROR>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2005 - Test console debug with debug message
+ * @tc.desc: Test console debug with debug level message.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2005, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string message = "Debug information";
+    napi_value msg = StrToNapiValue(env, message);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+    napi_create_function(env, "debug", 5, ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::DEBUG>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2006 - Test console log with multiple arguments
+ * @tc.desc: Test console log with multiple string and number arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2006, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    size_t argc = 3;
+    napi_value msg1 = StrToNapiValue(env, "Message:");
+    napi_value msg2 = StrToNapiValue(env, "Value=");
+    napi_value msg3 = nullptr;
+    napi_create_uint32(env, 42, &msg3);
+    napi_value argv[] = {msg1, msg2, msg3};
+    napi_value res = nullptr;
+    napi_create_function(env, "log", 3, ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2007 - Test console count with default label
+ * @tc.desc: Test console count without label parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2007, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    napi_value res = nullptr;
+    napi_create_function(env, "count", 5, ConsoleTest::Count, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, nullptr, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2008 - Test console count with custom label
+ * @tc.desc: Test console count with custom label string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2008, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string label = "custom-counter";
+    napi_value msg = StrToNapiValue(env, label);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+    napi_create_function(env, "count", 5, ConsoleTest::Count, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2009 - Test console count with multiple calls
+ * @tc.desc: Test console count called multiple times with same label.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2009, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string label = "multi-counter";
+    napi_value msg = StrToNapiValue(env, label);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+
+    napi_create_function(env, "count", 5, ConsoleTest::Count, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2010 - Test console countReset with existing label
+ * @tc.desc: Test console countReset to reset an existing counter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2010, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string label = "reset-counter";
+    napi_value msg = StrToNapiValue(env, label);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+
+    // Create counter first
+    napi_create_function(env, "count", 5, ConsoleTest::Count, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+
+    // Reset counter
+    napi_create_function(env, "countReset", 9, ConsoleTest::CountReset, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2011 - Test console dir with object
+ * @tc.desc: Test console dir to display object properties.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2011, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    napi_value value1 = StrToNapiValue(env, "test");
+    napi_set_named_property(env, obj, "name", value1);
+
+    napi_value argv[] = {obj};
+    napi_value res = nullptr;
+    napi_create_function(env, "dir", 3, ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2012 - Test console group and groupEnd
+ * @tc.desc: Test console group and groupEnd for nested logging.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2012, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+
+    // Group
+    napi_value groupMsg = StrToNapiValue(env, "Test Group");
+    napi_value groupArgv[] = {groupMsg};
+    napi_value res = nullptr;
+    napi_create_function(env, "group", 5, ConsoleTest::Group, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, groupArgv, &res);
+
+    // Log in group
+    napi_value logMsg = StrToNapiValue(env, "Nested message");
+    napi_value logArgv[] = {logMsg};
+    napi_create_function(env, "log", 3, ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, logArgv, &res);
+
+    // Group end
+    napi_create_function(env, "groupEnd", 8, ConsoleTest::GroupEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 0, nullptr, &res);
+
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2013 - Test console table with object
+ * @tc.desc: Test console table to display tabular data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2013, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+
+    napi_value value1 = nullptr;
+    napi_create_uint32(env, 1, &value1);
+    napi_set_named_property(env, obj, "id", value1);
+
+    napi_value value2 = StrToNapiValue(env, "Item1");
+    napi_set_named_property(env, obj, "name", value2);
+
+    napi_value argv[] = {obj};
+    napi_value res = nullptr;
+    napi_create_function(env, "table", 5, ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest2014 - Test console time and timeEnd
+ * @tc.desc: Test console time and timeEnd to measure execution time.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2014, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value cb = nullptr;
+    std::string label = "timer-2014";
+    napi_value msg = StrToNapiValue(env, label);
+    napi_value argv[] = {msg};
+    napi_value res = nullptr;
+
+    // Start timer
+    napi_create_function(env, "time", 4, ConsoleTest::Time, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+
+    // End timer
+    napi_create_function(env, "timeEnd", 7, ConsoleTest::TimeEnd, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, 1, argv, &res);
+
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
