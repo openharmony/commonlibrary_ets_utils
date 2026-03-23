@@ -467,6 +467,9 @@ class XmlSAXParser {
     // @ts-ignore
     this.inputStream.on('readable', () => {
       const data = this.inputStream.read();
+      if (data === null) {
+        return;
+      }
       try {
         this.nativeSAXParser.parse(handler, data, false);
       } catch (e) {
