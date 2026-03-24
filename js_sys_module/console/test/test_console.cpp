@@ -24090,3 +24090,231 @@ HWTEST_F(NativeEngineTest, ConsoleTest2014, testing::ext::TestSize.Level0)
 
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
 }
+
+/* @tc.name: ConsoleTest2015 - Console.timeLog with invalid timer name
+ * @tc.desc: Test timeLog function with invalid timer name parameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2015, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    
+    // Create an invalid timer name that doesn't exist
+    std::string invalidTimerName = "nonexistent_timer";
+    napi_value nativeMessage = nullptr;
+    napi_create_string_utf8(env, invalidTimerName.c_str(), invalidTimerName.length(), &nativeMessage);
+    napi_value argv[] = {nativeMessage};
+
+    std::string funcName = "TimeLog";
+    napi_value cb = nullptr;
+    napi_value res = nullptr;
+    
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::TimeLog, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    
+    // Verify no exception is thrown
+    bool hasException = false;
+    napi_is_exception_pending(env, &hasException);
+    ASSERT_FALSE(hasException);
+}
+
+/* @tc.name: ConsoleTest2016 - Console.count with numeric label
+ * @tc.desc: Test count function with numeric label parameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2016, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    
+    // Create a numeric label as string
+    std::string numericLabel = "12345";
+    napi_value nativeMessage = nullptr;
+    napi_create_string_utf8(env, numericLabel.c_str(), numericLabel.length(), &nativeMessage);
+    napi_value argv[] = {nativeMessage};
+
+    std::string funcName = "Count";
+    napi_value cb = nullptr;
+    napi_value res = nullptr;
+    
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Count, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    
+    // Call count again with same label to increment
+    napi_value res2 = nullptr;
+    napi_call_function(env, nullptr, cb, argc, argv, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+    
+    // Verify no exception occurred
+    bool hasException = false;
+    napi_is_exception_pending(env, &hasException);
+    ASSERT_FALSE(hasException);
+}
+
+/* @tc.name: ConsoleTest2017 - Console.table with object containing circular reference
+ * @tc.desc: Test table function with object that has circular references
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2017, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    
+    // Create an object with circular reference
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    
+    // Add some properties
+    napi_value prop1 = nullptr;
+    napi_create_string_utf8(env, "value1", 6, &prop1);
+    napi_set_named_property(env, obj, "property1", prop1);
+    
+    // Set the object to reference itself
+    napi_set_named_property(env, obj, "self", obj);
+    
+    napi_value argv[] = {obj};
+
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+    napi_value res = nullptr;
+    
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    
+    // Verify no exception occurred during circular reference handling
+    bool hasException = false;
+    napi_is_exception_pending(env, &hasException);
+    ASSERT_FALSE(hasException);
+}
+
+/* @tc.name: ConsoleTest2018 - Console.assert with multiple parameters
+ * @tc.desc: Test assert function with multiple parameters including message
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2018, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 3;
+    
+    // First parameter: boolean false to trigger assertion
+    napi_value condition = nullptr;
+    napi_get_boolean(env, false, &condition);
+    
+    // Second parameter: message string
+    std::string message = "Assertion failed: expected true but got false";
+    napi_value msgValue = nullptr;
+    napi_create_string_utf8(env, message.c_str(), message.length(), &msgValue);
+    
+    // Third parameter: additional data
+    napi_value additionalData = nullptr;
+    napi_create_int32(env, 42, &additionalData);
+    
+    napi_value argv[] = {condition, msgValue, additionalData};
+
+    std::string funcName = "Assert";
+    napi_value cb = nullptr;
+    napi_value res = nullptr;
+    
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Assert, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    
+    // Verify no exception occurred
+    bool hasException = false;
+    napi_is_exception_pending(env, &hasException);
+    ASSERT_FALSE(hasException);
+}
+
+/* @tc.name: ConsoleTest2019 - Console.group/groupEnd nesting levels
+ * @tc.desc: Test nested group functionality with multiple levels
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2019, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 0;
+    napi_value argv[] = {nullptr};
+    
+    // Start first level group
+    napi_value groupCb = nullptr;
+    napi_value res = nullptr;
+    napi_create_function(env, "Group", 5, ConsoleTest::Group, nullptr, &groupCb);
+    napi_call_function(env, nullptr, groupCb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+    
+    // Start second level group
+    napi_value res2 = nullptr;
+    napi_call_function(env, nullptr, groupCb, argc, argv, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+    
+    // Start third level group
+    napi_value res3 = nullptr;
+    napi_call_function(env, nullptr, groupCb, argc, argv, &res3);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
+    
+    // End groups in proper order
+    napi_value groupEndCb = nullptr;
+    napi_create_function(env, "GroupEnd", 8, ConsoleTest::GroupEnd, nullptr, &groupEndCb);
+    
+    napi_value res4 = nullptr;
+    napi_call_function(env, nullptr, groupEndCb, argc, argv, &res4);
+    ASSERT_CHECK_VALUE_TYPE(env, res4, napi_undefined);
+    
+    napi_value res5 = nullptr;
+    napi_call_function(env, nullptr, groupEndCb, argc, argv, &res5);
+    ASSERT_CHECK_VALUE_TYPE(env, res5, napi_undefined);
+    
+    napi_value res6 = nullptr;
+    napi_call_function(env, nullptr, groupEndCb, argc, argv, &res6);
+    ASSERT_CHECK_VALUE_TYPE(env, res6, napi_undefined);
+    
+    // Verify no exceptions occurred
+    bool hasException = false;
+    napi_is_exception_pending(env, &hasException);
+    ASSERT_FALSE(hasException);
+}
+
+/* @tc.name: ConsoleTest2020 - Console.trace with function context
+ * @tc.desc: Test trace function with proper context and multiple calls
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest2020, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 0;
+    napi_value argv[] = {nullptr};
+    
+    // Create trace function
+    std::string funcName = "Trace";
+    napi_value cb = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Trace, nullptr, &cb);
+    
+    // Call trace multiple times to verify stack trace generation
+    napi_value res1 = nullptr;
+    napi_call_function(env, nullptr, cb, argc, argv, &res1);
+    ASSERT_CHECK_VALUE_TYPE(env, res1, napi_undefined);
+    
+    napi_value res2 = nullptr;
+    napi_call_function(env, nullptr, cb, argc, argv, &res2);
+    ASSERT_CHECK_VALUE_TYPE(env, res2, napi_undefined);
+    
+    // Add a parameter to trace call
+    size_t argcWithParam = 1;
+    std::string traceMsg = "Custom trace message";
+    napi_value msgValue = nullptr;
+    napi_create_string_utf8(env, traceMsg.c_str(), traceMsg.length(), &msgValue);
+    napi_value argvWithParam[] = {msgValue};
+    
+    napi_value res3 = nullptr;
+    napi_call_function(env, nullptr, cb, argcWithParam, argvWithParam, &res3);
+    ASSERT_CHECK_VALUE_TYPE(env, res3, napi_undefined);
+    
+    // Verify no exceptions occurred
+    bool hasException = false;
+    napi_is_exception_pending(env, &hasException);
+    ASSERT_FALSE(hasException);
+}
