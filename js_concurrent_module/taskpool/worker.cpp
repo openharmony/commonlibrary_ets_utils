@@ -514,13 +514,10 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     HILOG_DEBUG("taskpool:: NotifyTaskResult task:%{public}s", std::to_string(task->taskId_).c_str());
     void* resultData = nullptr;
-    napi_value undefined = NapiHelper::GetUndefinedValue(env);
-    bool defaultTransfer = true;
-    bool defaultCloneSendable = false;
     std::string errString = "";
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-    engine->SerializeJSErrorWithError(env, result, defaultTransfer, defaultCloneSendable,
-                                      &resultData, errString);
+    SerializeOptions options(true, false, true);
+    engine->SerializeJSErrorWithError(env, result, options, &resultData, errString);
     if (resultData == nullptr && task->success_) {
         task->success_ = false;
         std::string errMessage = "taskpool: failed to serialize result.\nSerialize error: " + errString;
