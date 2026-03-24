@@ -1512,8 +1512,6 @@ void Worker::ExecuteInThread(const void* data)
 #ifdef ENABLE_QOS
     worker->SetQOSLevel();
 #endif
-    // set worker thread name
-    worker->ApplyNameSetting();
     // 1. create a runtime
     napi_env workerEnv = worker->CreateWorkerEnv();
     if (workerEnv == nullptr) {
@@ -1603,14 +1601,8 @@ bool Worker::IsPublishWorkerOverSignal()
 
 bool Worker::PrepareForWorkerInstance()
 {
-    if (!name_.empty()) {
-        napi_status scopeStatus = napi_ok;
-        HandleScope scope(workerEnv_, scopeStatus);
-        NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
-        napi_value nameValue = nullptr;
-        napi_create_string_utf8(workerEnv_, name_.c_str(), name_.length(), &nameValue);
-        NapiHelper::SetNamePropertyInGlobal(workerEnv_, "name", nameValue);
-    }
+    // set worker thread name
+    ApplyNameSetting();
     napi_status scopeStatus = napi_ok;
     HandleScope scope(workerEnv_, scopeStatus);
     NAPI_CALL_BASE(workerEnv_, scopeStatus, false);
@@ -1657,10 +1649,19 @@ void Worker::ApplyNameSetting()
 {
     std::string threadName = "WorkerThread";
     if (!name_.empty()) {
+        napi_status scopeStatus = napi_ok;
+        HandleScope scope(workerEnv_, scopeStatus);
+        NAPI_CALL_RETURN_VOID(workerEnv_, scopeStatus);
+        napi_value nameValue = nullptr;
+        napi_create_string_utf8(workerEnv_, name_.c_str(), name_.length(), &nameValue);
+        NapiHelper::SetNamePropertyInGlobal(workerEnv_, "name", nameValue);
+
         threadName += "_" + name_;
-        if (threadName.length() > THREAD_NAME_MAX_LENGTH) {
-            threadName = threadName.substr(0, THREAD_NAME_MAX_LENGTH);
-        }
+    }
+    auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    workerEngine->SetThreadName(threadName);
+    if (threadName.length() > THREAD_NAME_MAX_LENGTH) {
+        threadName = threadName.substr(0, THREAD_NAME_MAX_LENGTH);
     }
 #if defined IOS_PLATFORM || defined MAC_PLATFORM
     pthread_setname_np(threadName.c_str());
