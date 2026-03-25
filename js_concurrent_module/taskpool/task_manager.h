@@ -177,7 +177,8 @@ public:
 
     void PushLog(const std::string& msg)
     {
-        logManager_.PushLog(msg);
+        bool ret = logManager_.PushLog(msg);
+        DealLogs(ret);
     }
 
 private:
@@ -204,7 +205,9 @@ private:
     static void TryExpand(const uv_timer_t* req = nullptr);
     static void DispatchAndTryExpand(const uv_async_t* req);
     static void TriggerLoadBalance(const uv_timer_t* req);
-    static void PrintWaitingTime(const uv_timer_t* req);
+    static void PrintLogs(uv_work_t* req);
+    static void PrintLogsEnd(uv_work_t* req, int status);
+    void DealLogs(bool flag);
 
     bool IsChooseIdle();
     std::pair<uint32_t, Priority> GetTaskByPriority(const std::unique_ptr<ExecuteQueue>& taskQueue, Priority priority);
@@ -294,8 +297,6 @@ private:
 #endif
     std::atomic<bool> isPerformIdle_ = false;
     std::atomic<uint32_t> taskIdSalt_ = 1;
-
-    uv_timer_t* waitingTimer_ = nullptr;
 
     LogManager logManager_;
 

@@ -109,6 +109,8 @@ public:
     static uint64_t CalculateTaskId(uint64_t taskId, uint32_t salt);
     static bool SetAndTestTaskQueues();
     static bool AddCountTraceForWorkerLog(bool needLog, int64_t threadNum);
+    static bool PrintLogs(void* data);
+    static bool PrintLogsEnd(void* data);
 
     class ExceptionScope {
     public:

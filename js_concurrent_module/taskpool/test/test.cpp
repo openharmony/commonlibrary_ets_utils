@@ -1138,31 +1138,48 @@ uint64_t NativeEngineTest::CalculateTaskId(uint64_t taskId, uint32_t salt)
 bool NativeEngineTest::SetAndTestTaskQueues()
 {
     TaskManager& taskManager = TaskManager::GetInstance();
-    Task* task1 = new Task();
-    task1->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task1));
-    taskManager.taskQueues_[Priority::HIGH]->EnqueueTaskId(task1->taskId_);
-    Task* task2 = new Task();
-    task2->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
-    taskManager.taskQueues_[Priority::MEDIUM]->EnqueueTaskId(task2->taskId_);
-    Task* task3 = new Task();
-    task3->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task3));
-    taskManager.taskQueues_[Priority::LOW]->EnqueueTaskId(task3->taskId_);
-    uv_timer_t* handle = new uv_timer_t;
-    taskManager.PrintWaitingTime(handle);
-    
-    bool eraseSuccess = true;
-    eraseSuccess &= taskManager.taskQueues_[Priority::HIGH]->EraseWaitingTaskId(task1->taskId_);
-    eraseSuccess &= taskManager.taskQueues_[Priority::MEDIUM]->EraseWaitingTaskId(task2->taskId_);
-    eraseSuccess &= taskManager.taskQueues_[Priority::LOW]->EraseWaitingTaskId(task3->taskId_);
-    delete task1;
-    delete task2;
-    delete task3;
-    return eraseSuccess;
+    taskManager.DealLogs(false);
+    taskManager.DealLogs(true);
+    napi_env env = taskManager.hostEnv_;
+    taskManager.hostEnv_ = nullptr;
+    taskManager.DealLogs(true);
+    taskManager.hostEnv_ = env;
+    return true;
 }
 
 bool NativeEngineTest::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum)
 {
     TaskManager::GetInstance().AddCountTraceForWorkerLog(needLog, threadNum, 1, 1);
+    return true;
+}
+
+bool NativeEngineTest::PrintLogs(void* data)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    uint32_t id = 0;
+    for (size_t i = 0; i < taskManager.taskQueues_.size(); i++) {
+        id = taskManager.taskQueues_[i]->DequeueTaskId();
+        taskManager.RemoveTask(id);
+        while (id != 0) {
+            id = taskManager.taskQueues_[i]->DequeueTaskId();
+            taskManager.RemoveTask(id);
+        }
+    }
+    Task* task = static_cast<Task*>(data);
+    taskManager.taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
+    taskManager.PrintLogs(nullptr);
+    taskManager.StoreTaskEnqueueTime(task->taskId_, ConcurrentHelper::GetCurrentTimeStampWithMS());
+    taskManager.PrintLogs(nullptr);
+    taskManager.RemoveTaskEnqueueTime(task->taskId_);
+    taskManager.taskQueues_[task->asyncTaskPriority_]->EraseWaitingTaskId(task->taskId_);
+    delete task;
+    return true;
+}
+
+bool NativeEngineTest::PrintLogsEnd(void* data)
+{
+    uv_work_t* req = static_cast<uv_work_t*>(data);
+    TaskManager::PrintLogsEnd(req, 1);
     return true;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
