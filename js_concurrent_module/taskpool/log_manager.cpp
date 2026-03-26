@@ -17,7 +17,7 @@
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 static constexpr uint32_t MAX_LOG_SIZE = 50000;
-static constexpr uint32_t LOG_PRINT_SIZE = 1000;
+static constexpr uint32_t LOG_PRINT_SIZE = 750;
 static constexpr uint32_t WAITING_INTERVAL = 1000; // 1000: 1s
 
 void LogManager::PrintLog()
