@@ -15,8 +15,10 @@
 
 #include "log_manager.h"
 
+namespace Commonlibrary::Concurrent::TaskPoolModule {
 static constexpr uint32_t MAX_LOG_SIZE = 50000;
-static constexpr uint32_t LOG_PRINT_SIZE = 1000;
+static constexpr uint32_t LOG_PRINT_SIZE = 750;
+static constexpr uint32_t WAITING_INTERVAL = 1000; // 1000: 1s
 
 void LogManager::PrintLog()
 {
@@ -30,20 +32,40 @@ void LogManager::PrintLog()
             logQueue_.pop();
             count--;
         }
+        size_ -= count;
     }
     for (size_t i = 0; i < outputContainer.size(); i++) {
         HILOG_INFO("taskpool::%{public}s", outputContainer[i].c_str());
     }
 }
 
-void LogManager::PushLog(const std::string& msg)
+bool LogManager::PushLog(const std::string& msg)
 {
     std::lock_guard<std::mutex> lock(logQueueMutex_);
-    if (logQueue_.size() > MAX_LOG_SIZE) {
+    if (size_ > MAX_LOG_SIZE) {
         std::queue<std::string> empty;
         std::swap(logQueue_, empty);
+        size_ = 0;
         HILOG_WARN("taskpool::The number of Logs has exceeded 50000 and has been cleared");
-    } else {
-        logQueue_.push(msg);
     }
+    logQueue_.push(msg);
+    size_++;
+    uint64_t nowTime = ConcurrentHelper::GetMilliseconds();
+    if (size_ >= LOG_PRINT_SIZE && (nowTime - printTime_) >= WAITING_INTERVAL) {
+        printTime_ = nowTime;
+        return true;
+    }
+    return false;
 }
+
+bool LogManager::IsNeedPrint()
+{
+    std::lock_guard<std::mutex> lock(logQueueMutex_);
+    uint64_t nowTime = ConcurrentHelper::GetMilliseconds();
+    if ((nowTime - printTime_) >= WAITING_INTERVAL) {
+        printTime_ = nowTime;
+        return true;
+    }
+    return false;
+}
+} // namespace Commonlibrary::Concurrent::TaskPoolModule
