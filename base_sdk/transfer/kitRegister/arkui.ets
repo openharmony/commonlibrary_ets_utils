@@ -60,6 +60,12 @@ export function registerArkUI() {
     registerStaticCB('ArkUI.ColorFilter', 'arkui.transfer.ColorFilterTransfer', 'ColorFilterTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.ColorFilter', 'arkui.transfer.ColorFilterTransfer', 'ColorFilterTransfer', 'transferDynamic');
 
+    registerStaticCB('ArkUI.MutableBinding', 'arkui.transfer.BindingTransfer', 'MutableBindingTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.MutableBinding', 'arkui.transfer.BindingTransfer', 'MutableBindingTransfer', 'transferDynamic');
+
+    registerStaticCB('ArkUI.Binding', 'arkui.transfer.BindingTransfer', 'BindingTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.Binding', 'arkui.transfer.BindingTransfer', 'BindingTransfer', 'transferDynamic');
+
     registerStaticCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.TouchEvent', 'arkui.component.common', 'TouchEventTransfer', 'transferDynamic');
 
