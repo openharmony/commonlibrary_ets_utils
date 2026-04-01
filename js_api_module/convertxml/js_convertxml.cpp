@@ -342,7 +342,7 @@ namespace OHOS::Xml {
             }
     }
 
-    napi_value ConvertXml::Convert(napi_env env, std::string strXml, bool deprecated, bool isLarge)
+    napi_value ConvertXml::Convert(napi_env env, std::string strXml, bool deprecated, bool isLarge, bool isFast)
     {
         xmlNodePtr curNode = nullptr;
         napi_value object = nullptr;
@@ -361,7 +361,7 @@ namespace OHOS::Xml {
         deprecated_ = deprecated;
         if (!doc) {
             xmlFreeDoc(doc);
-            DealSingleLine(env, strXml, object, isLarge);
+            DealSingleLine(env, strXml, object, isLarge || isFast);
             const xmlError* err = xmlGetLastError();
             const char* message = err->message;
             HILOG_ERROR("ConvertXml:: XMLParseMemory execution failed, reason for failure: %{public}s", message);
@@ -384,7 +384,7 @@ namespace OHOS::Xml {
         if (doc != nullptr) {
             curNode = xmlDocGetRootElement(doc);
             GetPrevNodeList(env, curNode);
-            isLarge ? GetLargeXmlInfo(env, curNode, object, 0) : GetXMLInfo(env, curNode, object, 0);
+            (isLarge || isFast) ? GetLargeXmlInfo(env, curNode, object, 0) : GetXMLInfo(env, curNode, object, 0);
         }
         xmlFreeDoc(doc);
         if (deprecated_) {

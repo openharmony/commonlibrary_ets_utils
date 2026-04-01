@@ -99,7 +99,7 @@ using namespace OHOS::Tools;
         if (argc > 1) {
             convertxml->DealOptions(env, args[1], false);
         }
-        return convertxml->Convert(env, strXml, false, false);
+        return convertxml->Convert(env, strXml, false, false, true);
     }
 
     static napi_value LargeConvert(napi_env env, napi_callback_info info)
