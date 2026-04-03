@@ -226,6 +226,7 @@ private:
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};
+    std::unordered_set<Task*> tasksPtrSet_ {};
     std::unordered_map<uint32_t, Task*> runningTasks_ {};
     std::recursive_mutex tasksMutex_;
 

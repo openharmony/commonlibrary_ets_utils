@@ -1515,6 +1515,7 @@ void TaskManager::StoreTask(Task* task)
         taskId = CalculateTaskId(id);
     }
     task->SetTaskId(taskId);
+    tasksPtrSet_.insert(task);
     tasks_.emplace(taskId, task);
 }
 
@@ -1525,6 +1526,10 @@ bool TaskManager::RemoveTask(uint32_t taskId)
     auto runningIter = runningTasks_.find(taskId);
     if (runningIter != runningTasks_.end()) {
         res = false;
+    }
+    auto taskIter = tasks_.find(taskId);
+    if (taskIter != tasks_.end()) {
+        tasksPtrSet_.erase(taskIter->second);
     }
     runningTasks_.erase(taskId);
     tasks_.erase(taskId);
@@ -1971,19 +1976,9 @@ bool TaskManager::IsValidTask(Task* task)
         return false;
     }
     bool flag = false;
-    {
-        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
-        for (auto& [_, rTask] : tasks_) {
-            if (rTask == task) {
-                flag = true;
-                break;
-            }
-        }
-    }
-    if (flag && task->IsValid()) {
-        return true;
-    }
-    return false;
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    flag = tasksPtrSet_.count(task) > 0;
+    return flag && task->IsValid();
 }
 
 void TaskManager::IncreaseTaskIdSalt()
