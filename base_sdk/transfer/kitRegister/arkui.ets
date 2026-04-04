@@ -33,6 +33,9 @@ export function registerArkUI() {
     registerStaticCB('ArkUI.ComponentContent', 'arkui.transfer.ComponentContentTransfer', 'ComponentContentTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.ComponentContent', 'arkui.transfer.ComponentContentTransfer', 'ComponentContentTransfer', 'transferDynamic');
 
+    registerStaticCB('ArkUI.ReactiveComponentContent', 'arkui.transfer.ComponentContentTransfer', 'ReactiveComponentContentTransfer', 'transferStatic');
+    registerDynamicCB('ArkUI.ReactiveComponentContent', 'arkui.transfer.ComponentContentTransfer', 'ReactiveComponentContentTransfer', 'transferDynamic');
+
     registerStaticCB('ArkUI.FrameNode', 'arkui.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferStatic');
     registerDynamicCB('ArkUI.FrameNode', 'arkui.transfer.FrameNodeTransfer', 'FrameNodeTransfer', 'transferDynamic');
 
