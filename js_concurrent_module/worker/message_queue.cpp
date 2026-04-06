@@ -17,13 +17,13 @@
 #include "tools/log.h"
 
 namespace Commonlibrary::Concurrent::WorkerModule {
-void MessageQueue::EnQueue(MessageDataType data)
+void MessageQueue::Enqueue(MessageDataType data)
 {
     std::lock_guard<std::mutex> lock(queueLock_);
-    queue_.push(data);
+    queue_.push_back(data);
 }
 
-bool MessageQueue::DeQueue(MessageDataType *data)
+bool MessageQueue::Dequeue(MessageDataType *data)
 {
     std::unique_lock<std::mutex> lock(queueLock_);
     if (queue_.empty()) {
@@ -31,7 +31,7 @@ bool MessageQueue::DeQueue(MessageDataType *data)
     }
     if (data != nullptr) {
         *data = queue_.front();
-        queue_.pop();
+        queue_.pop_front();
     } else {
         HILOG_ERROR("worker:: data is nullptr.");
     }
@@ -50,8 +50,14 @@ void MessageQueue::Clear(napi_env env)
     for (size_t i = 0; i < size; i++) {
         MessageDataType data = queue_.front();
         napi_delete_serialization_data(env, data);
-        queue_.pop();
+        queue_.pop_front();
     }
+}
+
+void MessageQueue::EnqueueFront(MessageDataType data)
+{
+    std::lock_guard<std::mutex> lock(queueLock_);
+    queue_.push_front(data);
 }
 
 void MarkedMessageQueue::Push(uint32_t id, MessageDataType data)
