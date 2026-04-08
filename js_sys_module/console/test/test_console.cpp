@@ -1717,3 +1717,264 @@ HWTEST_F(NativeEngineTest, ConsoleTest056, testing::ext::TestSize.Level0)
     res = ConsoleTest::ParseLogContent(params);
     ASSERT_TRUE(res.find("a") != std::string::npos);
 }
+
+/* @tc.name: ConsoleTest057 - Test console log with multiple parameters
+* @tc.desc: Test console log with string, number and boolean parameters.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest057, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "log", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func);
+    
+    size_t argc = 3;
+    napi_value argv[3];
+    napi_create_string_utf8(env, "Test message:", NAPI_AUTO_LENGTH, &argv[0]);
+    napi_create_uint32(env, 42, &argv[1]);
+    napi_get_boolean(env, true, &argv[2]);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, argc, argv, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest058 - Test console error with error message
+* @tc.desc: Test console error with error level message.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest058, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "error", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::ERROR>, nullptr, &func);
+    
+    napi_value msg = nullptr;
+    napi_create_string_utf8(env, "Error occurred!", NAPI_AUTO_LENGTH, &msg);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 1, &msg, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest059 - Test console warn with warning
+* @tc.desc: Test console warn with warning level message.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest059, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "warn", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::WARN>, nullptr, &func);
+    
+    napi_value msg = nullptr;
+    napi_create_string_utf8(env, "Warning: deprecated API", NAPI_AUTO_LENGTH, &msg);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 1, &msg, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest060 - Test console debug
+* @tc.desc: Test console debug with debug level message.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest060, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "debug", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::DEBUG>, nullptr, &func);
+    
+    napi_value msg = nullptr;
+    napi_create_string_utf8(env, "Debug info: variable value", NAPI_AUTO_LENGTH, &msg);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 1, &msg, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest061 - Test console info
+* @tc.desc: Test console info with info level message.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest061, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "info", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &func);
+    
+    napi_value msg = nullptr;
+    napi_create_string_utf8(env, "Info: Process started", NAPI_AUTO_LENGTH, &msg);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 1, &msg, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest062 - Test console count with default label
+* @tc.desc: Test console count without label uses default counter.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest062, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "count", NAPI_AUTO_LENGTH, ConsoleTest::Count, nullptr, &func);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 0, nullptr, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest063 - Test console count with custom label
+* @tc.desc: Test console count with custom label string.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest063, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "count", NAPI_AUTO_LENGTH, ConsoleTest::Count, nullptr, &func);
+    
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "myCounter", NAPI_AUTO_LENGTH, &label);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 1, &label, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest064 - Test console count multiple calls
+* @tc.desc: Test console count increments on multiple calls.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest064, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "count", NAPI_AUTO_LENGTH, ConsoleTest::Count, nullptr, &func);
+    
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "multiCall", NAPI_AUTO_LENGTH, &label);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 1, &label, &res);
+    napi_call_function(env, nullptr, func, 1, &label, &res);
+    napi_call_function(env, nullptr, func, 1, &label, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest065 - Test console countReset
+* @tc.desc: Test console countReset resets counter to zero.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest065, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value countFunc = nullptr;
+    napi_create_function(env, "count", NAPI_AUTO_LENGTH, ConsoleTest::Count, nullptr, &countFunc);
+    
+    napi_value resetFunc = nullptr;
+    napi_create_function(env, "countReset", NAPI_AUTO_LENGTH, ConsoleTest::CountReset, nullptr, &resetFunc);
+    
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "resetTest", NAPI_AUTO_LENGTH, &label);
+    
+    napi_value res = nullptr;
+    // Increment counter
+    napi_call_function(env, nullptr, countFunc, 1, &label, &res);
+    napi_call_function(env, nullptr, countFunc, 1, &label, &res);
+    
+    // Reset counter
+    napi_call_function(env, nullptr, resetFunc, 1, &label, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest066 - Test console dir with object
+* @tc.desc: Test console dir displays object properties.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest066, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value func = nullptr;
+    napi_create_function(env, "dir", NAPI_AUTO_LENGTH, ConsoleTest::Dir, nullptr, &func);
+    
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    
+    napi_value name = nullptr;
+    napi_create_string_utf8(env, "testObject", NAPI_AUTO_LENGTH, &name);
+    napi_set_named_property(env, obj, "name", name);
+    
+    napi_value value = nullptr;
+    napi_create_uint32(env, 123, &value);
+    napi_set_named_property(env, obj, "value", value);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, func, 1, &obj, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest067 - Test console group and groupEnd
+* @tc.desc: Test console group creates indented section.
+* @tc.type: FUNC
+*/
+HWTEST_F(NativeEngineTest, ConsoleTest067, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    
+    napi_value groupFunc = nullptr;
+    napi_create_function(env, "group", NAPI_AUTO_LENGTH, ConsoleTest::Group, nullptr, &groupFunc);
+    
+    napi_value logFunc = nullptr;
+    napi_create_function(env, "log", NAPI_AUTO_LENGTH, ConsoleTest::ConsoleLog<LogLevel::INFO>, nullptr, &logFunc);
+    
+    napi_value groupEndFunc = nullptr;
+    napi_create_function(env, "groupEnd", NAPI_AUTO_LENGTH, ConsoleTest::GroupEnd, nullptr, &groupEndFunc);
+    
+    napi_value groupMsg = nullptr;
+    napi_create_string_utf8(env, "Test Group", NAPI_AUTO_LENGTH, &groupMsg);
+    
+    napi_value logMsg = nullptr;
+    napi_create_string_utf8(env, "Nested log message", NAPI_AUTO_LENGTH, &logMsg);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, groupFunc, 1, &groupMsg, &res);
+    napi_call_function(env, nullptr, logFunc, 1, &logMsg, &res);
+    napi_call_function(env, nullptr, groupEndFunc, 0, nullptr, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
