@@ -126,6 +126,7 @@ generate_static_abc("base_transfer") {
     "./transfer/kitRegister/osAccount.ets",
     "./transfer/kitRegister/ipc.ets",
     "./transfer/kitRegister/window.ets",
+    "./transfer/kitRegister/pipWindow.ets",
     "./transfer/kitRegister/scene3d.ets",
     "./transfer/kitRegister/imageKit.ets",
     "./transfer/kitRegister/pasteboard.ets",
