@@ -71,6 +71,13 @@ std::shared_ptr<OHOS::AppExecFwk::EventHandler> Worker::GetMainThreadHandler()
     }
     return mainThreadHandler;
 }
+
+static const std::map<WorkerEventPriority, OHOS::AppExecFwk::EventQueue::Priority> EVENTHANDLER_PRIORITY_MAP = {
+    {WorkerEventPriority::IDLE, OHOS::AppExecFwk::EventQueue::Priority::IDLE},
+    {WorkerEventPriority::LOW, OHOS::AppExecFwk::EventQueue::Priority::LOW},
+    {WorkerEventPriority::HIGH, OHOS::AppExecFwk::EventQueue::Priority::HIGH},
+    {WorkerEventPriority::IMMEDIATE, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE},
+};
 #endif
 
 Worker::Worker(napi_env env, napi_ref thisVar)
@@ -152,8 +159,25 @@ void Worker::InitPriorityObject(napi_env env, napi_value exports)
     };
     napi_define_properties(env, priorityObj, sizeof(exportPriority) / sizeof(exportPriority[0]), exportPriority);
 
+    napi_value EventPriorityObj = NapiHelper::CreateObject(env);
+
+    napi_value EventImmediatePriority =
+        NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerEventPriority::IMMEDIATE));
+    napi_value EventHighPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerEventPriority::HIGH));
+    napi_value EventLowPriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerEventPriority::LOW));
+    napi_value EventIdlePriority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(WorkerEventPriority::IDLE));
+    napi_property_descriptor exportEventPriority[] = {
+        DECLARE_NAPI_PROPERTY("IMMEDIATE", EventImmediatePriority),
+        DECLARE_NAPI_PROPERTY("HIGH", EventHighPriority),
+        DECLARE_NAPI_PROPERTY("LOW", EventLowPriority),
+        DECLARE_NAPI_PROPERTY("IDLE", EventIdlePriority)
+    };
+    napi_define_properties(env, EventPriorityObj, sizeof(exportEventPriority) / sizeof(exportEventPriority[0]),
+        exportEventPriority);
+
     napi_property_descriptor exportObjs[] = {
         DECLARE_NAPI_PROPERTY("ThreadWorkerPriority", priorityObj),
+        DECLARE_NAPI_PROPERTY("Priority", EventPriorityObj),
     };
     napi_define_properties(env, exports, sizeof(exportObjs) / sizeof(exportObjs[0]), exportObjs);
 }
@@ -188,6 +212,7 @@ napi_value Worker::InitPort(napi_env env, napi_value exports)
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION_WITH_DATA("postMessage", PostMessageToHost, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("postMessageWithSharedSendable", PostMessageWithSharedSendableToHost, worker),
+        DECLARE_NAPI_FUNCTION_WITH_DATA("postMessageAtFront", PostMessageAtFrontToHost, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("callGlobalCallObjectMethod", GlobalCall, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("close", CloseWorker, worker),
         DECLARE_NAPI_FUNCTION_WITH_DATA("cancelTasks", ParentPortCancelTask, worker),
@@ -378,7 +403,7 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
             HILOG_DEBUG("worker:: get aniVm is null in main thread.");
         }
     #endif
-
+    worker->InitHostMessageQueue();
     worker->StartExecuteInThread(env, script);
     return thisVar;
 }
@@ -1144,7 +1169,7 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         worker->HandleGlobalCallError(env);
         return nullptr;
     }
-    if (!worker->workerGlobalCallQueue_.DeQueue(&data)) {
+    if (!worker->workerGlobalCallQueue_.Dequeue(&data)) {
         HILOG_ERROR("worker:: message returned from host is empty when callGloballCallObjectMethod");
         return nullptr;
     }
@@ -1681,7 +1706,7 @@ void Worker::HostOnMessage(const uv_async_t* req)
     worker->HostOnMessageInner();
 }
 
-void Worker::HostOnMessageInner()
+void Worker::HostOnMessageInner(WorkerEventPriority priority)
 {
     if (hostEnv_ == nullptr || HostIsStop()) {
         HILOG_ERROR("worker:: host thread maybe is over when host onmessage.");
@@ -1703,7 +1728,7 @@ void Worker::HostOnMessageInner()
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
 
     MessageDataType data = nullptr;
-    while (hostMessageQueue_.DeQueue(&data)) {
+    while (hostMessageAtFrontQueue_[priority]->Dequeue(&data)) {
         // receive close signal.
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker received close signal");
@@ -1735,8 +1760,9 @@ void Worker::HostOnMessageInner()
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             auto handler = OHOS::AppExecFwk::EventHandler::Current();
-            if (handler && (handler->HasPendingHigherEvent(-1, false) && !hostMessageQueue_.IsEmpty())) {
-                PostWorkerMessageTask();
+            if (handler && (handler->HasPendingHigherEvent(-1, false) &&
+                !hostMessageAtFrontQueue_[priority]->IsEmpty())) {
+                PostWorkerMessageTask(priority);
                 break;
             }
         }
@@ -1890,7 +1916,7 @@ void Worker::HostOnGlobalCallInner()
         cv_.notify_one();
         return;
     }
-    workerGlobalCallQueue_.EnQueue(data);
+    workerGlobalCallQueue_.Enqueue(data);
     globalCallSuccess_ = true;
     cv_.notify_one();
 }
@@ -2004,7 +2030,7 @@ void Worker::HostOnErrorInner()
     bool isCallable = NapiHelper::IsCallable(hostEnv_, callback);
 
     MessageDataType data;
-    while (errorQueue_.DeQueue(&data)) {
+    while (errorQueue_.Dequeue(&data)) {
         AsyncStackScope asyncStackScope(this);
         napi_value result = nullptr;
         napi_deserialize(hostEnv_, data, &result);
@@ -2038,7 +2064,7 @@ void Worker::PostMessageInner(MessageDataType data)
         HILOG_DEBUG("worker:: worker has been terminated when PostMessageInner.");
         return;
     }
-    workerMessageQueue_.EnQueue(data);
+    workerMessageQueue_.Enqueue(data);
     std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
     if (data == nullptr) {
         HILOG_INFO("worker:: host post nullptr to worker.");
@@ -2146,7 +2172,11 @@ void Worker::PublishWorkerOverSignal()
         return;
     }
     // post nullptr tell host worker is not running
-    hostMessageQueue_.EnQueue(nullptr);
+    for (size_t i = 0; i < hostMessageAtFrontQueue_.size(); i++) {
+        if (hostMessageAtFrontQueue_[i]) {
+            hostMessageAtFrontQueue_[i]->Enqueue(nullptr);
+        }
+    }
 #if defined(ENABLE_WORKER_EVENTHANDLER)
     if (isMainThreadWorker_ && !isLimitedWorker_) {
         PostWorkerOverTask();
@@ -2193,19 +2223,20 @@ void Worker::PostWorkerErrorTask()
         0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
 }
 
-void Worker::PostWorkerMessageTask()
+void Worker::PostWorkerMessageTask(WorkerEventPriority priority)
 {
     std::weak_ptr<WorkerWrapper> weak = workerWrapper_;
-    auto hostOnMessageTask = [weak]() { // LOCV_EXCL_BR_LINE
+    auto eventPriority = EVENTHANDLER_PRIORITY_MAP.at(priority);
+    auto hostOnMessageTask = [weak, priority]() { // LOCV_EXCL_BR_LINE
         auto strong = weak.lock();
         if (strong) {
             HILOG_DEBUG("worker:: host thread receive message.");
             HITRACE_HELPER_METER_NAME("Worker:: HostOnMessage");
-            strong->GetWorker()->HostOnMessageInner();
+            strong->GetWorker()->HostOnMessageInner(priority);
         }
     };
     GetMainThreadHandler()->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
-        0, OHOS::AppExecFwk::EventQueue::Priority::HIGH);
+        0, eventPriority);
 }
 
 void Worker::PostWorkerGlobalCallTask()
@@ -2284,7 +2315,7 @@ void Worker::WorkerOnMessageInner()
         return;
     }
     MessageDataType data = nullptr;
-    while (!IsTerminated() && workerMessageQueue_.DeQueue(&data)) {
+    while (!IsTerminated() && workerMessageQueue_.Dequeue(&data)) {
         AsyncStackScope asyncStackScope(this);
         if (data == nullptr) {
             HILOG_DEBUG("worker:: worker reveive terminate signal");
@@ -2393,7 +2424,7 @@ void Worker::HandleUncaughtException(napi_value exception)
         if (HostIsStop() || isHostEnvExited_) {
             return;
         }
-        errorQueue_.EnQueue(data);
+        errorQueue_.Enqueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             PostWorkerErrorTask();
@@ -2419,7 +2450,7 @@ void Worker::PostMessageToHostInner(MessageDataType data)
 {
     std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
     if (hostEnv_ != nullptr && !HostIsStop() && !isHostEnvExited_) {
-        hostMessageQueue_.EnQueue(data);
+        hostMessageAtFrontQueue_[WorkerEventPriority::HIGH]->Enqueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             PostWorkerMessageTask();
@@ -2813,10 +2844,14 @@ void Worker::EraseWorker()
 
 void Worker::ClearHostMessage(napi_env env)
 {
-    hostMessageQueue_.Clear(env);
     hostGlobalCallQueue_.Clear(env);
     errorQueue_.Clear(env);
     exceptionQueue_.Clear(env);
+    for (size_t i = 0; i < hostMessageAtFrontQueue_.size(); i++) {
+        if (hostMessageAtFrontQueue_[i]) {
+            hostMessageAtFrontQueue_[i]->Clear(env);
+        }
+    }
 }
 
 #ifdef ENABLE_QOS
@@ -2874,7 +2909,7 @@ void Worker::HandleWorkerUncaughtException(napi_env env, napi_value exception)
         if (HostIsStop() || isHostEnvExited_) {
             return;
         }
-        exceptionQueue_.EnQueue(data);
+        exceptionQueue_.Enqueue(data);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             PostWorkerExceptionTask();
@@ -2912,7 +2947,7 @@ void Worker::HostOnAllErrorsInner()
     }
 
     MessageDataType data = nullptr;
-    while (exceptionQueue_.DeQueue(&data)) {
+    while (exceptionQueue_.Dequeue(&data)) {
         if (data == nullptr) {
             return;
         }
@@ -3012,5 +3047,107 @@ void Worker::WorkerOverWithoutExit()
 {
     needOnExitCallback_ = false;
     IsPublishWorkerOverSignal();
+}
+
+napi_value Worker::PostMessageAtFrontToHost(napi_env env, napi_callback_info cbinfo)
+{
+    HITRACE_HELPER_METER_NAME("PostMessageAtFrontToHost");
+    size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
+    if (argc < NUM_WORKER_ARGS) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the number of postMessageAtFront parameters must be more than one.");
+        return nullptr;
+    }
+    napi_value* argv = new napi_value[argc];
+    ObjectScope<napi_value> scope(argv, true);
+    Worker* worker = nullptr;
+    napi_get_cb_info(env, cbinfo, &argc, argv, nullptr, reinterpret_cast<void**>(&worker));
+
+    if (worker == nullptr) {
+        HILOG_ERROR("worker:: worker is nullptr when PostMessageAtFrontToHost");
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr when postMessageAtFront");
+        return nullptr;
+    }
+
+    if (!worker->IsRunning()) {
+        HILOG_DEBUG("worker:: worker is not in running when PostMessageAtFrontToHost.");
+        return nullptr;
+    }
+
+    if (!NapiHelper::IsNumber(env, argv[1])) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "the type of postMessageAtFront second param priority must be number.");
+        return nullptr;
+    }
+    uint32_t priority = NapiHelper::GetUint32Value(env, argv[1]);
+    if (priority < static_cast<uint32_t>(WorkerEventPriority::IMMEDIATE) ||
+        priority >= static_cast<uint32_t>(WorkerEventPriority::NUMBER)) {
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "priority only supports HIGH, MEDIUM LOW, IDLE.");
+        return nullptr;
+    }
+    MessageDataType data = worker->GetData(env, argc, argv);
+    if (data == nullptr) {
+        return nullptr;
+    }
+    worker->PostMessageToHostAtFrontInner(data, static_cast<WorkerEventPriority>(priority));
+    return NapiHelper::GetUndefinedValue(env);
+}
+
+void Worker::PostMessageToHostAtFrontInner(MessageDataType data, WorkerEventPriority priority)
+{
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+    if (hostEnv_ != nullptr && !HostIsStop() && !isHostEnvExited_) {
+#if defined(ENABLE_WORKER_EVENTHANDLER)
+        if (isMainThreadWorker_ && !isLimitedWorker_) {
+            hostMessageAtFrontQueue_[priority]->EnqueueFront(data);
+            PostWorkerMessageTask(priority);
+        } else {
+            hostMessageAtFrontQueue_[WorkerEventPriority::HIGH]->EnqueueFront(data);
+            ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
+        }
+#else
+        hostMessageAtFrontQueue_[WorkerEventPriority::HIGH]->EnqueueFront(data);
+        ConcurrentHelper::UvCheckAndAsyncSend(hostOnMessageSignal_);
+#endif
+    } else {
+        HILOG_ERROR("worker:: worker host engine is nullptr when PostMessageToHostAtFrontInner.");
+    }
+}
+
+void Worker::InitHostMessageQueue()
+{
+    for (size_t i = 0; i < hostMessageAtFrontQueue_.size(); i++) {
+        std::unique_ptr<MessageQueue> queue = std::make_unique<MessageQueue>();
+        hostMessageAtFrontQueue_[i] = std::move(queue);
+    }
+}
+
+MessageDataType Worker::GetData(napi_env env, size_t argc, napi_value* argv)
+{
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value transferList = undefined;
+    if (argc > NUM_WORKER_ARGS) {
+        std::string errMessage = "Transfer list must be an Array";
+        bool isValidTransfer = false;
+        napi_value secondArg = argv[2];
+        transferList = ParseTransferListArg(env, secondArg, isValidTransfer, errMessage);
+        if (transferList == nullptr || !isValidTransfer) {
+            return nullptr;
+        }
+    }
+    MessageDataType data = nullptr;
+    napi_status serializeStatus = napi_ok;
+    bool defaultSendable = NapiHelper::IsSendable(env, argv[0]);
+    std::string serializeErr = "";
+    serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, defaultSendable,
+                                                      &data, serializeErr);
+    if (serializeStatus != napi_ok || data == nullptr) {
+        WorkerOnMessageErrorInner();
+        serializeErr = "failed to serialize message.\nSerialize error: " + serializeErr;
+        WorkerThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, serializeErr.c_str());
+        return nullptr;
+    }
+    return data;
 }
 } // namespace Commonlibrary::Concurrent::WorkerModule
