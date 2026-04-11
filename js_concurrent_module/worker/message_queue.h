@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_WORKER_MESSAGE_QUEUE_H
 #define JS_CONCURRENT_MODULE_WORKER_MESSAGE_QUEUE_H
 
+#include <deque>
 #include <mutex>
 #include <queue>
 #include "napi/native_api.h"
@@ -25,8 +26,9 @@ namespace Commonlibrary::Concurrent::WorkerModule {
 using MessageDataType = void*;
 class MessageQueue final {
 public:
-    void EnQueue(MessageDataType data);
-    bool DeQueue(MessageDataType *data);
+    void Enqueue(MessageDataType data);
+    void EnqueueFront(MessageDataType data);
+    bool Dequeue(MessageDataType *data);
     bool IsEmpty() const;
     void Clear(napi_env env);
     size_t GetSize() const
@@ -36,7 +38,7 @@ public:
 
 private:
     std::mutex queueLock_;
-    std::queue<MessageDataType> queue_;
+    std::deque<MessageDataType> queue_;
 };
 
 class MarkedMessageQueue final {

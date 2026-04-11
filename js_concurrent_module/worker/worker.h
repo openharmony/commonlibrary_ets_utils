@@ -41,6 +41,7 @@ namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
 
 enum class WorkerPriority { INVALID = -1, HIGH = 0, MEDIUM, LOW, IDLE, DEADLINE, VIP, MAX };
+enum WorkerEventPriority { IMMEDIATE = 1, HIGH, LOW, IDLE, NUMBER = 5 };
 
 class Worker {
 public:
@@ -213,6 +214,14 @@ public:
     * @param thisVar The callback information of the js layer.
     */
     static napi_value CommonPostMessageToHost(napi_env env, napi_callback_info cbinfo, bool cloneSendable);
+
+    /**
+     * Post a message and insert it into the queue header.
+     *
+     * @param env NAPI environment parameters.
+     * @param thisVar The callback information of the js layer.
+     */
+    static napi_value PostMessageAtFrontToHost(napi_env env, napi_callback_info cbinfo);
 
     /**
      * Terminates the worker thread to stop the worker from receiving messages.
@@ -545,9 +554,11 @@ public:
         return asyncStackID_;
     }
 
+    void InitHostMessageQueue();
+
 private:
     void WorkerOnMessageInner();
-    void HostOnMessageInner();
+    void HostOnMessageInner(WorkerEventPriority priority = WorkerEventPriority::HIGH);
     void HostOnErrorInner();
     void HostOnAllErrorsInner();
     void HostOnMessageErrorInner();
@@ -581,7 +592,7 @@ private:
     void PostWorkerOverTask();
     void PostWorkerErrorTask();
     void PostWorkerExceptionTask();
-    void PostWorkerMessageTask();
+    void PostWorkerMessageTask(WorkerEventPriority priority = WorkerEventPriority::HIGH);
     void PostWorkerGlobalCallTask();
     static bool IsValidWorker(Worker* worker);
     static bool IsValidLimitedWorker(Worker* limitedWorker);
@@ -616,6 +627,8 @@ private:
     bool IsPublishWorkerOverSignal();
     void HostOnExitInner();
     void WorkerOverWithoutExit();
+    void PostMessageToHostAtFrontInner(MessageDataType data, WorkerEventPriority priority);
+    MessageDataType GetData(napi_env env, size_t argc, napi_value* argv);
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -635,7 +648,6 @@ private:
     int32_t scopeId_ {-1};
 
     MessageQueue workerMessageQueue_ {};
-    MessageQueue hostMessageQueue_ {};
     std::mutex globalCallMutex_;
     MarkedMessageQueue hostGlobalCallQueue_ {};
     MessageQueue workerGlobalCallQueue_ {};
@@ -698,6 +710,8 @@ private:
     #if defined(ENABLE_CONCURRENCY_INTEROP)
         ani_env* aniEnv_ = nullptr;
     #endif
+
+    std::array<std::unique_ptr<MessageQueue>, WorkerEventPriority::NUMBER> hostMessageAtFrontQueue_ {};
 
     friend class WorkersTest;
 };
