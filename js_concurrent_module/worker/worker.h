@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_WORKER_WORKER_H
 #define JS_CONCURRENT_MODULE_WORKER_WORKER_H
 
+#include <array>
 #include <condition_variable>
 #include <list>
 #include <map>
