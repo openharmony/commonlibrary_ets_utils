@@ -21,6 +21,7 @@
 #include <list>
 #include <map>
 #include <mutex>
+#include <set>
 
 #if defined(ENABLE_CONCURRENCY_INTEROP)
     #include "helper/hybrid_concurrent_helper.h"
@@ -630,6 +631,9 @@ private:
     void WorkerOverWithoutExit();
     void PostMessageToHostAtFrontInner(MessageDataType data, WorkerEventPriority priority);
     MessageDataType GetData(napi_env env, size_t argc, napi_value* argv);
+    void InsertAtFrontSet(MessageDataType data, WorkerEventPriority priority);
+    void RemoveAtFrontSet(MessageDataType data);
+    bool IsPostTaskAtFront(WorkerEventPriority priority);
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     static void HandleDebuggerTask(const uv_async_t* req);
@@ -713,6 +717,8 @@ private:
     #endif
 
     std::array<std::unique_ptr<MessageQueue>, WorkerEventPriority::NUMBER> hostMessageAtFrontQueue_ {};
+    std::set<MessageDataType> atFrontSet_ {};
+    std::mutex atFrontSetMutex_ {};
 
     friend class WorkersTest;
 };
