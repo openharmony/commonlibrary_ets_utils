@@ -1739,6 +1739,7 @@ void Worker::HostOnMessageInner(WorkerEventPriority priority)
         napi_status status = napi_ok;
         HandleScope scope(hostEnv_, status);
         NAPI_CALL_RETURN_VOID(hostEnv_, status);
+        RemoveAtFrontSet(data);
         napi_value result = nullptr;
         status = napi_deserialize(hostEnv_, data, &result);
         napi_delete_serialization_data(hostEnv_, data);
@@ -2235,8 +2236,11 @@ void Worker::PostWorkerMessageTask(WorkerEventPriority priority)
             strong->GetWorker()->HostOnMessageInner(priority);
         }
     };
-    GetMainThreadHandler()->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask",
-        0, eventPriority);
+    if (IsPostTaskAtFront(priority)) {
+        GetMainThreadHandler()->PostTaskAtFront(hostOnMessageTask, "WorkerHostOnMessageTaskAtFront", eventPriority);
+    } else {
+        GetMainThreadHandler()->PostTask(hostOnMessageTask, "WorkerHostOnMessageTask", 0, eventPriority);
+    }
 }
 
 void Worker::PostWorkerGlobalCallTask()
@@ -3101,6 +3105,7 @@ void Worker::PostMessageToHostAtFrontInner(MessageDataType data, WorkerEventPrio
 #if defined(ENABLE_WORKER_EVENTHANDLER)
         if (isMainThreadWorker_ && !isLimitedWorker_) {
             hostMessageAtFrontQueue_[priority]->EnqueueFront(data);
+            InsertAtFrontSet(data, priority);
             PostWorkerMessageTask(priority);
         } else {
             hostMessageAtFrontQueue_[WorkerEventPriority::HIGH]->EnqueueFront(data);
@@ -3149,5 +3154,37 @@ MessageDataType Worker::GetData(napi_env env, size_t argc, napi_value* argv)
         return nullptr;
     }
     return data;
+}
+
+void Worker::InsertAtFrontSet(MessageDataType data, WorkerEventPriority priority)
+{
+    if (priority != WorkerEventPriority::HIGH) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(atFrontSetMutex_);
+    atFrontSet_.insert(data);
+}
+
+void Worker::RemoveAtFrontSet(MessageDataType data)
+{
+    std::lock_guard<std::mutex> lock(atFrontSetMutex_);
+    atFrontSet_.erase(data);
+}
+
+bool Worker::IsPostTaskAtFront(WorkerEventPriority priority)
+{
+    if (priority != WorkerEventPriority::HIGH) {
+        return true;
+    }
+    if (!hostMessageAtFrontQueue_[WorkerEventPriority::HIGH]) {
+        return false;
+    }
+
+    MessageDataType data;
+    if (!hostMessageAtFrontQueue_[WorkerEventPriority::HIGH]->Peekqueue(&data)) {
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(atFrontSetMutex_);
+    return atFrontSet_.count(data) > 0;
 }
 } // namespace Commonlibrary::Concurrent::WorkerModule

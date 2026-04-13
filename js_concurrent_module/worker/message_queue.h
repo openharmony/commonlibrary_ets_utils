@@ -29,6 +29,7 @@ public:
     void Enqueue(MessageDataType data);
     void EnqueueFront(MessageDataType data);
     bool Dequeue(MessageDataType *data);
+    bool Peekqueue(MessageDataType *data);
     bool IsEmpty() const;
     void Clear(napi_env env);
     size_t GetSize() const
