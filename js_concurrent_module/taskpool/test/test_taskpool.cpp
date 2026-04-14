@@ -8317,8 +8317,14 @@ HWTEST_F(NativeEngineTest, TaskpoolTest387, testing::ext::TestSize.Level0)
 
     TaskTimeoutMessage* message2 = new TaskTimeoutMessage();
     message2->groupId = groupId;
-    message2->env = env;
     handle->data = message2;
+    flag = NativeEngineTest::TaskGroupTimeoutCallback(handle);
+    ASSERT_TRUE(flag);
+
+    TaskTimeoutMessage* message3 = new TaskTimeoutMessage();
+    message3->groupId = groupId;
+    message3->env = env;
+    handle->data = message3;
     flag = NativeEngineTest::TaskGroupTimeoutCallback(handle);
     ASSERT_TRUE(flag);
     taskGroupManager.RemoveTaskGroup(groupId);

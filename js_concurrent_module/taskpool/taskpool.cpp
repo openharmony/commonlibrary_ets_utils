@@ -1090,6 +1090,14 @@ void TaskPool::TaskGroupTimeoutCallback(uv_timer_t* handle)
         HILOG_ERROR("taskpool:: the taskGroup is nullptr");
         return;
     }
+    napi_status status = napi_ok;
+    HandleScope scope(message->env, status);
+    if (status != napi_ok) {
+        HILOG_ERROR("taskpool:: napi_open_handle_scope failed");
+        delete message;
+        message = nullptr;
+        return;
+    }
     TaskGroupManager::GetInstance().TimeoutGroup(message->env, message->groupId);
     delete message;
     message = nullptr;
