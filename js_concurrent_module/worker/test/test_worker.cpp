@@ -1200,6 +1200,21 @@ public:
             }
         }
     }
+
+    static void InsertAtFrontSet(Worker* worker, WorkerEventPriority priority, MessageDataType data)
+    {
+        worker->InsertAtFrontSet(data, priority);
+    }
+
+    static void IsPostTaskAtFront(Worker* worker, WorkerEventPriority priority)
+    {
+        worker->IsPostTaskAtFront(priority);
+    }
+
+    static void Peekqueue(Worker* worker, WorkerEventPriority priority)
+    {
+        worker->hostMessageAtFrontQueue_[priority]->Peekqueue(nullptr);
+    }
 protected:
     static thread_local NativeEngine *engine_;
     static thread_local EcmaVM *vm_;
@@ -7148,7 +7163,6 @@ HWTEST_F(WorkersTest, HostOnAllErrorsInnerTest006, testing::ext::TestSize.Level0
     Worker_Terminate(env, global);
 }
 
-// HostOnMessageInner: main thread + not limited, queue has data, loop processes then exits
 HWTEST_F(WorkersTest, HostOnMessageInnerEventHandlerTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -7180,7 +7194,6 @@ HWTEST_F(WorkersTest, HostOnMessageInnerEventHandlerTest001, testing::ext::TestS
     Worker_Terminate(env, global);
 }
 
-// HostOnMessageInner: main thread + not limited, multiple messages in queue
 HWTEST_F(WorkersTest, HostOnMessageInnerEventHandlerTest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -7209,6 +7222,76 @@ HWTEST_F(WorkersTest, HostOnMessageInnerEventHandlerTest002, testing::ext::TestS
     Enqueue(worker, WorkerEventPriority::LOW, data1);
     Enqueue(worker, WorkerEventPriority::LOW, data2);
     HostOnMessageInner(worker, WorkerEventPriority::LOW);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    Worker_Terminate(env, global);
+}
+
+HWTEST_F(WorkersTest, InsertAtFrontSetTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+
+    napi_value result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    MessageDataType data = nullptr;
+    napi_serialize_inner(env, undefined, undefined, undefined, false, true, &data);
+    InsertAtFrontSet(worker, WorkerEventPriority::HIGH, data);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    Worker_Terminate(env, global);
+}
+
+HWTEST_F(WorkersTest, IsPostTaskAtFrontTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+
+    napi_value result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    ClearQueue(worker, env);
+    IsPostTaskAtFront(worker, WorkerEventPriority::HIGH);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    Worker_Terminate(env, global);
+}
+
+HWTEST_F(WorkersTest, IsPostTaskAtFrontTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    Worker* worker = new Worker(env, nullptr);
+    ASSERT_NE(worker, nullptr);
+    IsPostTaskAtFront(worker, WorkerEventPriority::HIGH);
+
+    delete worker;
+}
+
+HWTEST_F(WorkersTest, IsPostTaskAtFrontTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+
+    napi_value result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    MessageDataType data = nullptr;
+    napi_serialize_inner(env, undefined, undefined, undefined, false, true, &data);
+    InsertAtFrontSet(worker, WorkerEventPriority::HIGH, data);
+    Peekqueue(worker, WorkerEventPriority::HIGH);
 
     worker->EraseWorker();
     ClearWorkerHandle(worker);

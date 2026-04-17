@@ -60,6 +60,19 @@ void MessageQueue::EnqueueFront(MessageDataType data)
     queue_.push_front(data);
 }
 
+bool MessageQueue::Peekqueue(MessageDataType *data)
+{
+    std::unique_lock<std::mutex> lock(queueLock_);
+    if (queue_.empty()) {
+        return false;
+    }
+    if (data != nullptr) {
+        *data = queue_.front();
+        return true;
+    }
+    return false;
+}
+
 void MarkedMessageQueue::Push(uint32_t id, MessageDataType data)
 {
     std::unique_lock<std::mutex> lock(queueLock_);
