@@ -62,6 +62,8 @@ static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
 static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
+static constexpr std::array<uint32_t, 6> PRINT_FREQUENCY_MAP = {10000, 30000, 60000, 300000, 600000, 1800000};
+static constexpr uint64_t RATIO = 1000;
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -554,7 +556,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
         CreateWorkers(hostEnv_);
     }
     // stop the timer
-    if ((workerCount == idleNum && workerCount <= minThread) && timeoutWorkers_.empty()) {
+    if ((workerCount == idleNum && workerCount <= minThread) && timeoutWorkers_.empty() && logManager_.IsEmpty()) {
         suspend_ = true;
         uv_timer_stop(balanceTimer_);
         HILOG_DEBUG("taskpool:: timer will be suspended");
@@ -2026,80 +2028,8 @@ void TaskManager::IncreaseTaskIdSalt()
 void TaskManager::PrintLogs(uv_work_t* req)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
-    std::string currentTimeStamp = ConcurrentHelper::GetCurrentTimeStampWithMS();
-    uint32_t userInteractionTaskId = 0;
-    uint32_t deadlineTaskId = 0;
-    uint32_t highTaskId = 0;
-    uint32_t middleTaskId = 0;
-    uint32_t lowTaskId = 0;
-    {
-        std::lock_guard<std::mutex> lock(taskManager.taskQueuesMutex_);
-        if (taskManager.IsSystemApp()) {
-            auto& userInteractionTaskQueue = taskManager.taskQueues_[Priority::USER_INTERACTION];
-            if (!userInteractionTaskQueue->IsEmpty()) {
-                userInteractionTaskId = userInteractionTaskQueue->GetHead();
-            }
-
-            auto& deadlineTaskQueue = taskManager.taskQueues_[Priority::DEADLINE_REQUEST];
-            if (!deadlineTaskQueue->IsEmpty()) {
-                deadlineTaskId = deadlineTaskQueue->GetHead();
-            }
-        }
-
-        auto& highTaskQueue = taskManager.taskQueues_[Priority::HIGH];
-        if (!highTaskQueue->IsEmpty()) {
-            highTaskId = highTaskQueue->GetHead();
-        }
-
-        auto& mediumTaskQueue = taskManager.taskQueues_[Priority::MEDIUM];
-        if (!mediumTaskQueue->IsEmpty()) {
-            middleTaskId = mediumTaskQueue->GetHead();
-        }
-
-        auto& lowTaskQueue = taskManager.taskQueues_[Priority::LOW];
-        if (!lowTaskQueue->IsEmpty()) {
-            lowTaskId = lowTaskQueue->GetHead();
-        }
-    }
-
-    std::string userInteractionTime = taskManager.GetTaskEnqueueTime(userInteractionTaskId);
-    std::string deadlineTime = taskManager.GetTaskEnqueueTime(deadlineTaskId);
-    std::string highTime = taskManager.GetTaskEnqueueTime(highTaskId);
-    std::string middleTime = taskManager.GetTaskEnqueueTime(middleTaskId);
-    std::string lowTime = taskManager.GetTaskEnqueueTime(lowTaskId);
-
-    std::ostringstream oss;
-    oss << "currentT " << currentTimeStamp;
-
-    bool hasEntries = false;
-    if (taskManager.IsSystemApp()) {
-        if (!userInteractionTime.empty()) {
-            oss << ", userInteractionEnqueueT " << userInteractionTime;
-            hasEntries = true;
-        }
-        if (!deadlineTime.empty()) {
-            oss << ", deadlineEnqueueT " << deadlineTime;
-            hasEntries = true;
-        }
-    }
-    if (!highTime.empty()) {
-        oss << ", highEnqueueT " << highTime;
-        hasEntries = true;
-    }
-    if (!middleTime.empty()) {
-        oss << ", middleEnqueueT " << middleTime;
-        hasEntries = true;
-    }
-    if (!lowTime.empty()) {
-        oss << ", lowEnqueueT " << lowTime;
-        hasEntries = true;
-    }
-
-    if (hasEntries) {
-        HILOG_INFO("taskpool::%{public}s", oss.str().c_str());
-    } else {
-        HILOG_DEBUG("taskpool::no wating task now");
-    }
+    taskManager.PrintPendingTaskLog();
+    taskManager.PushRunningTaskLog();
     taskManager.logManager_.PrintLog();
 }
 
@@ -2109,5 +2039,110 @@ void TaskManager::PrintLogsEnd(uv_work_t* req, int status)
         delete req;
         req = nullptr;
     }
+}
+
+bool TaskManager::IsNeedPrint(uint64_t nowTime, uint64_t startTime, uint32_t printCount, uint64_t& diffTime)
+{
+    uint32_t mapSize = PRINT_FREQUENCY_MAP.size();
+    if (printCount < mapSize) {
+        diffTime = PRINT_FREQUENCY_MAP[printCount];
+    } else {
+        diffTime = PRINT_FREQUENCY_MAP[mapSize - 1] * (printCount + 2 - mapSize); // 2: extra count
+    }
+    return (nowTime - startTime) >= diffTime;
+}
+
+void TaskManager::PushRunningTaskLog()
+{
+    std::list<std::string> logs {};
+    uint64_t now = ConcurrentHelper::GetMilliseconds();
+    std::string msg = "";
+    uint64_t diffTime = 0;
+    {
+        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+        for (auto& [_, task] : runningTasks_) {
+            diffTime = 0;
+            if (IsNeedPrint(now, task->startTime_, task->runningPrintCount_, diffTime)) {
+                task->runningPrintCount_++;
+                msg = "Task is running, " + std::to_string(task->taskId_) + ", " + task->name_ +
+                    ", runT: " + task->runningTime_ + ", duration: " + std::to_string(diffTime / RATIO) + "s";
+                logs.push_back(msg);
+            }
+        }
+    }
+    if (logs.empty()) {
+        return;
+    }
+    for (auto& log : logs) {
+        PushLogFront(log);
+    }
+}
+
+void TaskManager::PrintPendingTaskLog()
+{
+    std::ostringstream oss;
+    oss << "Task is pending";
+    bool hasEntries = false;
+    std::string message = "";
+    if (IsSystemApp()) {
+        message = GetPendingMessage(Priority::USER_INTERACTION, "InterActionTask");
+        if (message != "") {
+            oss << message;
+            hasEntries = true;
+        }
+        message = GetPendingMessage(Priority::DEADLINE_REQUEST, "DeadLineTask");
+        if (message != "") {
+            oss << message;
+            hasEntries = true;
+        }
+    }
+    message = GetPendingMessage(Priority::HIGH, "highTask");
+    if (message != "") {
+        oss << message;
+        hasEntries = true;
+    }
+    message = GetPendingMessage(Priority::MEDIUM, "mediumTask");
+    if (message != "") {
+        oss << message;
+        hasEntries = true;
+    }
+    message = GetPendingMessage(Priority::LOW, "lowTask");
+    if (message != "") {
+        oss << message;
+        hasEntries = true;
+    }
+    if (hasEntries) {
+        HILOG_INFO("taskpool::%{public}s", oss.str().c_str());
+    } else {
+        HILOG_DEBUG("taskpool::no wating task now");
+    }
+}
+
+std::string TaskManager::GetPendingMessage(Priority priority, std::string tag)
+{
+    std::string message = "";
+    uint32_t taskId = 0;
+    {
+        std::lock_guard<std::mutex> lock(taskQueuesMutex_);
+        auto& queue = taskQueues_[priority];
+        if (queue->IsEmpty()) {
+            return message;
+        }
+        taskId = queue->GetHead();
+    }
+
+    std::string enqueueTime = GetTaskEnqueueTime(taskId);
+    if (enqueueTime.empty()) {
+        return message;
+    }
+    uint64_t now = ConcurrentHelper::GetMilliseconds();
+    Task* task = GetTask(taskId);
+    uint64_t diffTime = 0;
+    if (task != nullptr && IsNeedPrint(now, task->addTime_, task->enqueuePrintCount_, diffTime)) {
+        task->enqueuePrintCount_++;
+        message = ", " + tag + ": " + std::to_string(taskId) + ", " + task->name_ + ", enqueueT:" + enqueueTime +
+                ", duration: " + std::to_string(diffTime / RATIO) + "s";
+    }
+    return message;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

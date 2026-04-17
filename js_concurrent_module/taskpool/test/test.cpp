@@ -40,6 +40,7 @@ static constexpr uint32_t UINT32_ONE = 1;
 static constexpr size_t SIZE_TWO = 2;
 static constexpr size_t SIZE_THREE = 3;
 static constexpr uint32_t MAX_UINT32_T = 0xFFFFFFFF;
+static constexpr uint64_t MAX_LOG_COUNT = 50000;
 
 napi_ref CreateReference(napi_env env)
 {
@@ -224,6 +225,8 @@ void NativeEngineTest::CheckForBlockedWorkers(napi_env env)
     taskManager.idleWorkers_.insert(worker);
     taskManager.CheckForBlockedWorkers();
     taskManager.timeoutWorkers_.clear();
+    taskManager.workers_.clear();
+    taskManager.idleWorkers_.clear();
 }
 
 void NativeEngineTest::foo(const uv_async_t* req)
@@ -274,12 +277,16 @@ void NativeEngineTest::NotifyShrink(napi_env env)
 
     Worker* worker1 = reinterpret_cast<Worker*>(WorkerConstructor(env));
     Worker* worker2 = reinterpret_cast<Worker*>(WorkerConstructor(env));
+    Worker* worker3 = reinterpret_cast<Worker*>(WorkerConstructor(env));
     worker1->workerEnv_ = env;
     worker2->workerEnv_ = env;
+    worker3->workerEnv_ = env;
     uv_loop_t* loop1 = worker1->GetWorkerLoop();
     ConcurrentHelper::UvHandleInit(loop1, worker1->clearWorkerSignal_, NativeEngineTest::foo, worker1);
     uv_loop_t* loop2 = worker2->GetWorkerLoop();
     ConcurrentHelper::UvHandleInit(loop2, worker2->clearWorkerSignal_, NativeEngineTest::foo, worker2);
+    uv_loop_t* loop3 = worker3->GetWorkerLoop();
+    ConcurrentHelper::UvHandleInit(loop3, worker3->clearWorkerSignal_, NativeEngineTest::foo, worker3);
     taskManager.workers_.insert(worker1);
     taskManager.workers_.insert(worker2);
     taskManager.timeoutWorkers_.insert(worker1);
@@ -304,6 +311,20 @@ void NativeEngineTest::NotifyShrink(napi_env env)
     worker2->hasExecuted_ = false;
     taskManager.workers_.clear();
     taskManager.NotifyShrink(step);
+
+    taskManager.workers_.clear();
+    taskManager.workers_.insert(worker2);
+    taskManager.timeoutWorkers_.insert(worker2);
+    worker2->runningCount_++;
+    taskManager.NotifyShrink(step);
+
+    taskManager.workers_.insert(worker3);
+    taskManager.idleWorkers_.insert(worker3);
+    taskManager.NotifyShrink(step);
+    worker2->runningCount_--;
+    taskManager.workers_.clear();
+    taskManager.timeoutWorkers_.clear();
+    taskManager.idleWorkers_.clear();
 }
 
 void NativeEngineTest::TryExpand(napi_env env)
@@ -367,6 +388,7 @@ void NativeEngineTest::NotifyWorkerIdle(napi_env env)
     Task* task = new Task();
     task->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task));
     taskManager.taskQueues_[Priority::DEFAULT]->EnqueueTaskId(task->taskId_);
+    taskManager.IncreaseTaskNum(Priority::DEFAULT);
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     worker->workerEnv_ = env;
     uv_loop_t* loop = worker->GetWorkerLoop();
@@ -394,7 +416,9 @@ void NativeEngineTest::EnqueueTaskId(napi_env env)
     taskManager.workers_.insert(worker);
     taskManager.IsChooseIdle();
     taskManager.workers_.clear();
+    taskManager.idleWorkers_.clear();
     Helper::NapiHelper::DeleteReference(env, callbackRef);
+    taskManager.EraseWaitingTaskId(task->taskId_, Priority::DEFAULT);
     delete task;
 }
 
@@ -403,12 +427,10 @@ void NativeEngineTest::GetTaskByPriority(napi_env env)
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = new Task();
     taskManager.StoreTask(task);
+    ClearTaskQueue();
     auto& mediumTaskQueue = taskManager.taskQueues_[Priority::DEFAULT];
-    uint32_t id = mediumTaskQueue->DequeueTaskId();
-    while (id != 0) {
-        id = mediumTaskQueue->DequeueTaskId();
-    }
-    taskManager.EnqueueTaskId(task->taskId_);
+    mediumTaskQueue->EnqueueTaskId(task->taskId_);
+    taskManager.IncreaseTaskNum(Priority::DEFAULT);
     std::set<uint32_t> set{task->taskId_};
     taskManager.dependTaskInfos_.emplace(task->taskId_, std::move(set));
     taskManager.GetTaskByPriority(mediumTaskQueue, Priority::DEFAULT);
@@ -433,6 +455,7 @@ void NativeEngineTest::RestoreWorker(napi_env env)
     uv_loop_t* loop = worker->GetWorkerLoop();
     ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, NativeEngineTest::foo, worker);
     taskManager.RestoreWorker(worker);
+    taskManager.EraseWaitingTaskId(task->taskId_, Priority::DEFAULT);
 }
 
 void NativeEngineTest::StoreDependentId(uint32_t taskId, uint32_t dependentId)
@@ -786,7 +809,7 @@ void NativeEngineTest::DebuggerOnPostTask(napi_env env)
     worker->ReleaseWorkerThreadContent();
 }
 
-void NativeEngineTest::PerformTask(napi_env env)
+void NativeEngineTest::PerformTask(napi_env env, napi_value pointer)
 {
     ExceptionScope scope(env);
     TaskManager& taskManager = TaskManager::GetInstance();
@@ -801,15 +824,13 @@ void NativeEngineTest::PerformTask(napi_env env)
     TaskGroupManager& groupManager = TaskGroupManager::GetInstance();
     groupManager.StoreTaskGroup(groupId, group);
 
-    Task* task = new Task();
-    taskManager.StoreTask(task);
+    Task* task = nullptr;
+    napi_unwrap(env, pointer, reinterpret_cast<void**>(&task));
     Priority priority = Priority::DEFAULT;
+    ClearTaskQueue();
     auto& mediumTaskQueue = taskManager.taskQueues_[priority];
-    uint32_t id = mediumTaskQueue->DequeueTaskId();
-    while (id != 0) {
-        id = mediumTaskQueue->DequeueTaskId();
-    }
     mediumTaskQueue->EnqueueTaskId(task->taskId_);
+    taskManager.IncreaseTaskNum(priority);
 
     uv_async_t* req = new uv_async_t;
     req->data = worker;
@@ -996,22 +1017,16 @@ bool NativeEngineTest::FindTaskId(Worker* worker, uint32_t taskId)
 
 void NativeEngineTest::PerformTask(napi_env env, void* data)
 {
+    ClearTaskQueue();
     TaskManager& taskManager = TaskManager::GetInstance();
-    uint32_t id = 0;
-    for (size_t i = 0; i < taskManager.taskQueues_.size(); i++) {
-        id = taskManager.taskQueues_[i]->DequeueTaskId();
-        while (id != 0) {
-            id = taskManager.taskQueues_[i]->DequeueTaskId();
-        }
-    }
     Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
     napi_env workerEnv = nullptr;
     napi_create_runtime(env, &workerEnv);
     worker->workerEnv_ = workerEnv;
     Task* task = reinterpret_cast<Task*>(data);
     if (task != nullptr) {
-        taskManager.StoreTask(task);
         taskManager.SetIsPerformIdle(false);
+        taskManager.IncreaseTaskNum(task->asyncTaskPriority_);
         taskManager.taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
     }
     uv_async_t* req = new uv_async_t;
@@ -1022,27 +1037,23 @@ void NativeEngineTest::PerformTask(napi_env env, void* data)
 
 void NativeEngineTest::GetIdleTaskByPriority(napi_env env)
 {
+    ClearTaskQueue();
     TaskManager& taskManager = TaskManager::GetInstance();
-    uint32_t id = 0;
-    for (size_t i = 0; i < taskManager.taskQueues_.size(); i++) {
-        id = taskManager.taskQueues_[i]->DequeueTaskId();
-        while (id != 0) {
-            id = taskManager.taskQueues_[i]->DequeueTaskId();
-        }
-    }
     Task* task = new Task();
     taskManager.StoreTask(task);
     auto& taskQueue = taskManager.taskQueues_[Priority::IDLE];
     taskQueue->EnqueueTaskId(task->taskId_);
+    taskManager.IncreaseTaskNum(Priority::IDLE);
     taskManager.GetTaskByPriority(taskQueue, Priority::IDLE);
     taskManager.SetIsPerformIdle(false);
+    taskManager.RemoveTask(task->taskId_);
     taskManager.tasks_.clear();
     delete task;
 }
 
 void NativeEngineTest::WorkerRunningScope(napi_env env)
 {
-    Worker* worker = reinterpret_cast<Worker*>(WorkerConstructor(env));
+    Worker* worker = new Worker(env);
     worker->priority_ = Priority::IDLE;
     worker->workerEnv_ = env;
     Worker::RunningScope runningScope(worker);
@@ -1054,20 +1065,24 @@ void NativeEngineTest::SetNonIdleTaskNum(uint32_t num)
     taskManager.nonIdleTaskNum_ = num;
 }
 
-void NativeEngineTest::EnqueueTaskIdToQueue(void* data)
+void NativeEngineTest::EnqueueTaskIdToQueue(void* data, bool flag)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
     Task* task = reinterpret_cast<Task*>(data);
     auto& taskQueue = taskManager.taskQueues_[task->asyncTaskPriority_];
     taskQueue->EnqueueTaskId(task->taskId_);
+    taskManager.IncreaseTaskNum(task->asyncTaskPriority_);
+    if (flag && taskQueue->EraseWaitingTaskId(task->taskId_)) {
+        taskManager.DecreaseTaskNum(task->asyncTaskPriority_);
+    }
 }
 
 void NativeEngineTest::DecreaseTaskNum()
 {
     TaskManager& taskManager = TaskManager::GetInstance();
-    taskManager.nonIdleTaskNum_ = 1;
+    taskManager.totalTaskNum_ += SIZE_TWO;
     taskManager.DecreaseTaskNum(Priority::IDLE);
-    taskManager.nonIdleTaskNum_ = 0;
+    taskManager.nonIdleTaskNum_++;
     taskManager.DecreaseTaskNum(Priority::HIGH);
 }
 
@@ -1184,23 +1199,16 @@ bool NativeEngineTest::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum
 
 bool NativeEngineTest::PrintLogs(void* data)
 {
+    ClearTaskQueue();
     TaskManager& taskManager = TaskManager::GetInstance();
-    uint32_t id = 0;
-    for (size_t i = 0; i < taskManager.taskQueues_.size(); i++) {
-        id = taskManager.taskQueues_[i]->DequeueTaskId();
-        taskManager.RemoveTask(id);
-        while (id != 0) {
-            id = taskManager.taskQueues_[i]->DequeueTaskId();
-            taskManager.RemoveTask(id);
-        }
-    }
     Task* task = static_cast<Task*>(data);
     taskManager.taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
+    taskManager.IncreaseTaskNum(task->asyncTaskPriority_);
     taskManager.PrintLogs(nullptr);
     taskManager.StoreTaskEnqueueTime(task->taskId_, ConcurrentHelper::GetCurrentTimeStampWithMS());
     taskManager.PrintLogs(nullptr);
     taskManager.RemoveTaskEnqueueTime(task->taskId_);
-    taskManager.taskQueues_[task->asyncTaskPriority_]->EraseWaitingTaskId(task->taskId_);
+    taskManager.EraseWaitingTaskId(task->taskId_, task->asyncTaskPriority_);
     delete task;
     return true;
 }
@@ -1210,5 +1218,51 @@ bool NativeEngineTest::PrintLogsEnd(void* data)
     uv_work_t* req = static_cast<uv_work_t*>(data);
     TaskManager::PrintLogsEnd(req, 1);
     return true;
+}
+
+bool NativeEngineTest::PushRunningTaskLog(void* data)
+{
+    Task* task = static_cast<Task*>(data);
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.StoreTask(task);
+    taskManager.GetTaskForPerform(task->taskId_);
+    taskManager.PushRunningTaskLog();
+    taskManager.RemoveTask(task->taskId_);
+    delete task;
+    return true;
+}
+
+void NativeEngineTest::TestLogMax()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.logManager_.size_ = MAX_LOG_COUNT;
+    std::string message = "TestLogMax";
+    taskManager.PushLogFront(message);
+    taskManager.logManager_.size_ = MAX_LOG_COUNT;
+    taskManager.logManager_.PushLog(message);
+}
+
+void NativeEngineTest::ClearTaskQueue()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    uint32_t id = 0;
+    for (size_t i = 0; i < taskManager.taskQueues_.size(); i++) {
+        id = taskManager.taskQueues_[i]->DequeueTaskId();
+        while (id != 0) {
+            taskManager.RemoveTask(id);
+            if (taskManager.nonIdleTaskNum_ > 0 && i != Priority::IDLE) {
+                taskManager.nonIdleTaskNum_--;
+            }
+            if (taskManager.totalTaskNum_ > 0) {
+                taskManager.totalTaskNum_--;
+            }
+            id = taskManager.taskQueues_[i]->DequeueTaskId();
+        }
+    }
+}
+
+void NativeEngineTest::SetSystemApp(bool flag)
+{
+    TaskManager::GetInstance().isSystemApp_ = flag;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

@@ -311,6 +311,12 @@ public:
     Priority asyncTaskPriority_ {Priority::DEFAULT};
     std::atomic<bool> isCancelToFinish_ {false};
     uint32_t timeout_ {0};
+
+    std::string enqueueTime_ {};
+    std::string runningTime_ {};
+    std::atomic<uint32_t> enqueuePrintCount_ {0};
+    std::atomic<uint32_t> runningPrintCount_ {0};
+    std::atomic<uint64_t> addTime_ {0};
 };
 
 struct CallbackInfo {

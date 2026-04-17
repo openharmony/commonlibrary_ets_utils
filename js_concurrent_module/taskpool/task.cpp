@@ -1119,6 +1119,7 @@ void Task::NotifyPendingTask()
     currentTaskInfo_ = pendingTaskInfos_.front();
     pendingTaskInfos_.pop_front();
     taskState_ = ExecuteState::WAITING;
+    StoreEnqueueTime();
     TaskManager::GetInstance().EnqueueTaskId(taskId_, currentTaskInfo_->priority);
 }
 
@@ -2164,5 +2165,16 @@ bool Task::CanExecuteTimeout(napi_env env, uint32_t timeout)
         return false;
     }
     return true;
+}
+
+void Task::StoreEnqueueTime()
+{
+    std::string currentTime = ConcurrentHelper::GetCurrentTimeStampWithMS();
+    {
+        std::lock_guard<std::recursive_mutex> lock(taskMutex_);
+        enqueueTime_ = currentTime;
+        addTime_ = ConcurrentHelper::GetMilliseconds();
+    }
+    TaskManager::GetInstance().StoreTaskEnqueueTime(taskId_, currentTime);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

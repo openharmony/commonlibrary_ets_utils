@@ -181,6 +181,13 @@ public:
         DealLogs(ret);
     }
 
+    void PushLogFront(const std::string& msg)
+    {
+        logManager_.PushLogFront(msg);
+    }
+
+    LogManager logManager_ {};
+
 private:
     TaskManager();
     ~TaskManager();
@@ -223,6 +230,10 @@ private:
     void IncreaseTaskIdSalt();
     void TimerStop(uv_timer_t*& timer, const char* errMessage);
     void TimerInit(uv_timer_t*& timer, bool startFlag, uv_timer_cb cb, uint64_t repeat);
+    bool IsNeedPrint(uint64_t nowTime, uint64_t startTime, uint32_t printCount, uint64_t& diffTime);
+    void PushRunningTaskLog();
+    void PrintPendingTaskLog();
+    std::string GetPendingMessage(Priority priority, std::string tag);
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};
@@ -301,8 +312,6 @@ private:
 #endif
     std::atomic<bool> isPerformIdle_ = false;
     std::atomic<uint32_t> taskIdSalt_ = 1;
-
-    LogManager logManager_;
 
     friend class TaskGroupManager;
     friend class NativeEngineTest;
