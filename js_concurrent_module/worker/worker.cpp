@@ -3143,9 +3143,8 @@ MessageDataType Worker::GetData(napi_env env, size_t argc, napi_value* argv)
     }
     MessageDataType data = nullptr;
     napi_status serializeStatus = napi_ok;
-    bool defaultSendable = NapiHelper::IsSendable(env, argv[0]);
     std::string serializeErr = "";
-    serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, defaultSendable,
+    serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, false,
                                                       &data, serializeErr);
     if (serializeStatus != napi_ok || data == nullptr) {
         WorkerOnMessageErrorInner();
