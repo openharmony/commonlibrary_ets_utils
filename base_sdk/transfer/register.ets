@@ -22,10 +22,10 @@ export interface CallbackUrl {
     dynamicMethod?: (input: Object) => Any;
 }
 
-export const staticRegisterMap = new Map<string, CallbackUrl>();
-export const dynamicRegisterMap = new Map<string, CallbackUrl>();
+export const staticRegisterMap: Map<string, CallbackUrl> = new Map<string, CallbackUrl>();
+export const dynamicRegisterMap: Map<string, CallbackUrl> = new Map<string, CallbackUrl>();
 
-export function registerStaticCB(key: string, filePath: string, className: string, methodName: string) {
+export function registerStaticCB(key: string, filePath: string, className: string, methodName: string): void {
     let callbackUrl: CallbackUrl = {
         key: key,
         filePath: filePath,
@@ -35,7 +35,7 @@ export function registerStaticCB(key: string, filePath: string, className: strin
     staticRegisterMap.set(key, callbackUrl);
 }
 
-export function registerDynamicCB(key: string, filePath: string, className: string, methodName: string) {
+export function registerDynamicCB(key: string, filePath: string, className: string, methodName: string): void {
     let callbackUrl: CallbackUrl = {
         key: key,
         filePath: filePath,
@@ -45,7 +45,7 @@ export function registerDynamicCB(key: string, filePath: string, className: stri
     dynamicRegisterMap.set(key, callbackUrl);
 }
 
-export function registerStaticCB(key: string, staticMethod: (input: Any) => Object) {
+export function registerStaticCB(key: string, staticMethod: (input: Any) => Object): void {
     let callbackUrl: CallbackUrl = {
         key: key,
         filePath: '',
@@ -56,7 +56,7 @@ export function registerStaticCB(key: string, staticMethod: (input: Any) => Obje
     staticRegisterMap.set(key, callbackUrl);
 }
 
-export function registerDynamicCB(key: string, dynamicMethod: (input: Object) => Any) {
+export function registerDynamicCB(key: string, dynamicMethod: (input: Object) => Any): void {
     let callbackUrl: CallbackUrl = {
         key: key,
         filePath: '',

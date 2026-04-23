@@ -15,7 +15,7 @@
 
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerMediaLibraryKit() {
+export function registerMediaLibraryKit(): void {
   registerStaticCB('MediaLibraryKit.PhotoAsset', '@ohos.file.photoAccessHelper.photoAccessHelper', 'PhotoAssetHandle', 'transferStatic');
   registerDynamicCB('MediaLibraryKit.PhotoAsset', '@ohos.file.photoAccessHelper.photoAccessHelper', 'PhotoAssetHandle', 'transferDynamic');
 

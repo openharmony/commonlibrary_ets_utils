@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerArkTS() {
+export function registerArkTS(): void {
     registerStaticCB('InteropTransferHelper', InteropTransferHelper.transferArrayBufferToStatic);
     registerDynamicCB('InteropTransferHelper', InteropTransferHelper.transferArrayBufferToDynamic);
 }

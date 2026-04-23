@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerCommonEventManager() {
+export function registerCommonEventManager(): void {
     registerStaticCB('CommonEventManager.CommonEventSubscriber', 'commonEvent.commonEventSubscriber', 'CommonEventSubscriberInner', 'transferStatic');
     registerDynamicCB('CommonEventManager.CommonEventSubscriber', 'commonEvent.commonEventSubscriber', 'CommonEventSubscriberInner', 'transferDynamic');
 

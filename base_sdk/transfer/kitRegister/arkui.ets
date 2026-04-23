@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerArkUI() {
+export function registerArkUI(): void {
     registerStaticCB('ArkUI.NavDestinationInfo', '@ohos.arkui.observer', 'uiObserver.NavDestinationInfoImpl', 'transferStatic');
     registerDynamicCB('ArkUI.NavDestinationInfo', '@ohos.arkui.observer', 'uiObserver.NavDestinationInfoImpl', 'transferDynamic');
 

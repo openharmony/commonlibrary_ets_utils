@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerArkGraphics2D() {
+export function registerArkGraphics2D(): void {
     registerStaticCB('ArkGraphics2D.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferStatic');
     registerDynamicCB('ArkGraphics2D.FontCollection', '@ohos.graphics.text', 'text.FontCollection', 'transferDynamic');
 

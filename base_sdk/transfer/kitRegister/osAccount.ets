@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerOsAccount() {
+export function registerOsAccount(): void {
   registerStaticCB('BasicServicesKit.IInputData', '@ohos.account.transfer.osAccount', 'Transfer', 'iInputDataTransferStatic');
   registerDynamicCB('BasicServicesKit.IInputData', '@ohos.account.transfer.osAccount', 'Transfer', 'iInputDataTransferDynamic');
 
