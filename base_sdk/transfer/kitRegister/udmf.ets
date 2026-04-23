@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerUDMF() {
+export function registerUDMF(): void {
   registerStaticCB('ArkData.SystemDefinedRecord', '@ohos.data.unifiedDataChannel', 'unifiedDataChannel', 'systemDefinedRecordTransferStatic');
   registerDynamicCB('ArkData.SystemDefinedRecord', '@ohos.data.unifiedDataChannel', 'unifiedDataChannel', 'systemDefinedRecordTransferDynamic');
 

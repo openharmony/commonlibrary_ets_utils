@@ -14,7 +14,7 @@
 */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerEffectKit() {
+export function registerEffectKit(): void {
     registerStaticCB('ArkGraphics2D.Filter', '@ohos.effectKit','effectKit.FilterInternal','kitTransferStatic');// 1.1 => 1.2对象
     registerDynamicCB('ArkGraphics2D.Filter', '@ohos.effectKit','effectKit.FilterInternal','kitTransferDynamic');// 1.2 => 1.1对象
     registerStaticCB('ArkGraphics2D.ColorPicker', '@ohos.effectKit','effectKit.ColorPickerInternal','kitTransferStatic');// 1.1 => 1.2对象

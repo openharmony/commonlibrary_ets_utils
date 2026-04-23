@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerBackup() {
+export function registerBackup(): void {
   registerStaticCB('CoreFileKit.IncrementalBackupSession', '@ohos.backup.transfer.backup', 'IncrBackupSessionTransfer',
     'transferStatic');
   registerDynamicCB('CoreFileKit.IncrementalBackupSession', '@ohos.backup.transfer.backup', 'IncrBackupSessionTransfer',
