@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerScene3D() {
+export function registerScene3D(): void {
     registerStaticCB('ArkGraphics3D.Scene', 'graphics3d.Scene', 'Transfer', 'sceneTransferStatic');
     registerDynamicCB('ArkGraphics3D.Scene', 'graphics3d.Scene', 'Transfer', 'sceneTransferDynamic');
     registerStaticCB('ArkGraphics3D.SceneResourceFactory', 'graphics3d.Scene', 'Transfer', 'sceneResourceFactoryTransferStatic');

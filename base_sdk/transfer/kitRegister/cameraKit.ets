@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerCameraKit() {
+export function registerCameraKit(): void {
   registerStaticCB('CameraKit.CameraInput', '@ohos.multimedia.camera', 'camera', 'cameraInputTransferStatic');
   registerDynamicCB('CameraKit.CameraInput', '@ohos.multimedia.camera', 'camera', 'cameraInputTransferDynamic');
 

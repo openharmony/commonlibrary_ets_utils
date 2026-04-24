@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerImageKit() {
+export function registerImageKit(): void {
   registerStaticCB('ImageKit.ImageSource', '@ohos.multimedia.image', 'image', 'imageSourceTransferStatic');
   registerDynamicCB('ImageKit.ImageSource', '@ohos.multimedia.image', 'image', 'imageSourceTransferDynamic');
 

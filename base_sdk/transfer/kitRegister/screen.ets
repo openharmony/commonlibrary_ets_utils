@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerScreen() {
+export function registerScreen(): void {
     registerStaticCB('ArkUI.Screen', '@ohos.screen', 'screen.ScreenImpl', 'transferStatic');
     registerDynamicCB('ArkUI.Screen', '@ohos.screen', 'screen.ScreenImpl', 'transferDynamic');
 }
