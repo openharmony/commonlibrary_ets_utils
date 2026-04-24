@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerAbilityKit() {
+export function registerAbilityKit(): void {
   registerStaticCB('AbilityKit.UIAbilityContext', 'application.UIAbilityContext', 'UIAbilityContext', 'transferStatic');
   registerDynamicCB('AbilityKit.UIAbilityContext', 'application.UIAbilityContext', 'UIAbilityContext', 'transferDynamic');
 

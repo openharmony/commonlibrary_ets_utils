@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerDrawing() {
+export function registerDrawing(): void {
     registerStaticCB('ArkGraphics2D.SamplingOptions', '@ohos.graphics.drawing', 'drawing.SamplingOptions', 'samplingOptionsTransferStatic');
     registerDynamicCB('ArkGraphics2D.SamplingOptions', '@ohos.graphics.drawing', 'drawing.SamplingOptions', 'samplingOptionsTransferDynamic');
 

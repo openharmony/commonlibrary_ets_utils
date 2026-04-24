@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerPasteboard() {
+export function registerPasteboard(): void {
   registerStaticCB('BasicServicesKit.PasteData', '@ohos.pasteboard', 'pasteboard', 'pasteDataTransferStatic');
   registerDynamicCB('BasicServicesKit.PasteData', '@ohos.pasteboard', 'pasteboard', 'pasteDataTransferDynamic');
 

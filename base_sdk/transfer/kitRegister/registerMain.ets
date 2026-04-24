@@ -36,7 +36,7 @@ import { registerBackup } from './coreFileKitBackup.ets'
 import { registerEffectKit } from './effectKit.ets';
 import { registerDrawing } from './drawing.ets'
 
-export function registerMain(){
+export function registerMain(): void {
     registerArkTS();
     registerArkUI();
     registerArkWeb();

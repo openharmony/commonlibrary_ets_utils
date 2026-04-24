@@ -14,7 +14,7 @@
  */
 import { registerStaticCB, registerDynamicCB } from '../register.ets';
 
-export function registerIpc() {
+export function registerIpc(): void {
   registerStaticCB('Ipc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'TransferStatic');
   registerDynamicCB('Ipc.MessageSequence', '@ohos.rpc', 'rpc.MessageSequence', 'TransferDynamic');
   registerStaticCB('Ipc.Ashmem', '@ohos.rpc', 'rpc.Ashmem', 'TransferStatic');
