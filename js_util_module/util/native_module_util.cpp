@@ -1737,6 +1737,7 @@ namespace OHOS::Util {
         napi_deferred deferred;
         NativeEngine* engine;
         std::vector<panda::ecmascript::HeapMemoryInfo> heapInfos;
+        napi_async_work asyncWork = nullptr;
     };
 
     static void GetAllVMHeapMemoryInfoAsyncExecute(void* data)
@@ -1753,6 +1754,7 @@ namespace OHOS::Util {
             napi_value undefined = nullptr;
             napi_get_undefined(env, &undefined);
             napi_reject_deferred(env, asyncData->deferred, undefined);
+            napi_delete_async_work(env, asyncData->asyncWork);
             delete asyncData;
             return;
         }
@@ -1796,6 +1798,7 @@ namespace OHOS::Util {
         // Resolve the promise with result
         napi_resolve_deferred(env, asyncData->deferred, resultArray);
         // Cleanup
+        napi_delete_async_work(env, asyncData->asyncWork);
         delete asyncData;
     }
 
@@ -1823,20 +1826,18 @@ namespace OHOS::Util {
         napi_value resourceName = nullptr;
         napi_create_string_utf8(env, "GetAllVMHeapMemoryInfo", NAPI_AUTO_LENGTH, &resourceName);
 
-        napi_async_work asyncWork = nullptr;
         napi_create_async_work(
             env,
             nullptr,
             resourceName,
             [](napi_env env, void* data) {
-                // Execute function - runs in worker thread/pool
                 GetAllVMHeapMemoryInfoAsyncExecute(data);
             },
             GetAllVMHeapMemoryInfoComplete,
             asyncData,
-            &asyncWork);
+            &asyncData->asyncWork);
 
-        napi_queue_async_work(env, asyncWork);
+        napi_queue_async_work(env, asyncData->asyncWork);
 
         return promise;
     }
