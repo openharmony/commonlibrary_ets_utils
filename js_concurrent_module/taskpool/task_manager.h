@@ -229,6 +229,7 @@ private:
     std::unordered_set<Task*> tasksPtrSet_ {};
     std::unordered_map<uint32_t, Task*> runningTasks_ {};
     std::recursive_mutex tasksMutex_;
+    std::recursive_mutex tasksPtrSetMutex_;
 
     // <taskId, <dependent taskId1, dependent taskId2, ...>>, update when removeDependency or executeTask
     std::unordered_map<uint32_t, std::set<uint32_t>> dependTaskInfos_ {};
