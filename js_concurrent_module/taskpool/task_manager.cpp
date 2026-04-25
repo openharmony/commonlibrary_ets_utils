@@ -1508,31 +1508,41 @@ void TaskManager::ReleaseCallBackInfo(Task* task)
 void TaskManager::StoreTask(Task* task)
 {
     uint64_t id = reinterpret_cast<uint64_t>(task);
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
-    uint32_t taskId = CalculateTaskId(id);
-    while (tasks_.find(taskId) != tasks_.end()) {
-        id++;
-        taskId = CalculateTaskId(id);
+    {
+        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+        uint32_t taskId = CalculateTaskId(id);
+        while (tasks_.find(taskId) != tasks_.end()) {
+            id++;
+            taskId = CalculateTaskId(id);
+        }
+        task->SetTaskId(taskId);
+        tasks_.emplace(taskId, task);
     }
-    task->SetTaskId(taskId);
+    std::lock_guard<std::recursive_mutex> lock(tasksPtrSetMutex_);
     tasksPtrSet_.insert(task);
-    tasks_.emplace(taskId, task);
 }
 
 bool TaskManager::RemoveTask(uint32_t taskId)
 {
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
     bool res = true;
-    auto runningIter = runningTasks_.find(taskId);
-    if (runningIter != runningTasks_.end()) {
-        res = false;
+    Task* task = nullptr;
+    {
+        std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+        auto runningIter = runningTasks_.find(taskId);
+        if (runningIter != runningTasks_.end()) {
+            res = false;
+        }
+        auto taskIter = tasks_.find(taskId);
+        if (taskIter != tasks_.end()) {
+            task = taskIter->second;
+        }
+        runningTasks_.erase(taskId);
+        tasks_.erase(taskId);
     }
-    auto taskIter = tasks_.find(taskId);
-    if (taskIter != tasks_.end()) {
-        tasksPtrSet_.erase(taskIter->second);
+    if (task != nullptr) {
+        std::lock_guard<std::recursive_mutex> lock(tasksPtrSetMutex_);
+        tasksPtrSet_.erase(task);
     }
-    runningTasks_.erase(taskId);
-    tasks_.erase(taskId);
     return res;
 }
 
@@ -1976,7 +1986,7 @@ bool TaskManager::IsValidTask(Task* task)
         return false;
     }
     bool flag = false;
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    std::lock_guard<std::recursive_mutex> lock(tasksPtrSetMutex_);
     flag = tasksPtrSet_.count(task) > 0;
     return flag && task->IsValid();
 }
