@@ -278,6 +278,8 @@ private:
     std::atomic<uint64_t> reportTime_ = 0;
 
     // for task priority
+    uint32_t userInteractionPrioExecuteCount_ = 0;
+    uint32_t deadlinePrioExecuteCount_ = 0;
     uint32_t highPrioExecuteCount_ = 0;
     uint32_t mediumPrioExecuteCount_ = 0;
     std::array<std::unique_ptr<ExecuteQueue>, Priority::NUMBER> taskQueues_ {};

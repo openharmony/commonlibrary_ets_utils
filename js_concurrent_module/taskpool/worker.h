@@ -49,6 +49,8 @@ static const std::map<Priority, int> WORKERPRIORITY_FFRTQOS_MAP = {
     {Priority::LOW, ffrt::qos_utility},
     {Priority::MEDIUM, ffrt::qos_default},
     {Priority::HIGH, ffrt::qos_user_initiated},
+    {Priority::DEADLINE_REQUEST, ffrt::qos_deadline_request},
+    {Priority::USER_INTERACTION, ffrt::qos_user_interactive},
 };
 #endif
 

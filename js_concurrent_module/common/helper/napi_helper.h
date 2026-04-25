@@ -49,6 +49,7 @@ public:
     static napi_value GetGlobalObject(napi_env env);
     static napi_ref CreateReference(napi_env env, napi_value value, uint32_t refcount);
     static napi_value CreateUint32(napi_env env, uint32_t value);
+    static napi_value CreateInt32(napi_env env, int32_t value);
     static uv_loop_t* GetLibUV(napi_env env);
     static napi_value GetReferenceValue(napi_env env, napi_ref ref);
     static void DeleteReference(napi_env env, napi_ref ref);

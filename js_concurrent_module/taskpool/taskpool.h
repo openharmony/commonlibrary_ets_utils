@@ -67,16 +67,16 @@ private:
 
     static void TriggerTask(Task* task, bool isCancel);
     static void TriggerTimer(napi_env env, Task* task, int32_t period);
-    static bool CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint32_t& priority, int32_t& delayTime,
+    static bool CheckDelayedParams(napi_env env, napi_callback_info cbinfo, int32_t& priority, int32_t& delayTime,
                                    Task*& task);
-    static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t& period, uint32_t& priority,
+    static bool CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t& period, int32_t& priority,
                                         Task*& task);
     static void ExecuteOnReceiveDataCallback(TaskResultInfo* resultInfo);
     static void RecordTaskResultLog(Task* task, napi_status status, napi_value& napiTaskResult, bool& isCancel);
     static napi_value GetTask(napi_env env, napi_callback_info cbinfo);
     static void TriggerTaskTimeoutTimer(napi_env env, Task* task);
     static void TaskTimeoutCallback(uv_timer_t* handle);
-    static std::pair<uint32_t, uint32_t> GetExecuteParams(napi_env env, napi_value arg);
+    static std::pair<int32_t, uint32_t> GetExecuteParams(napi_env env, napi_value arg);
     static void TriggerTaskGroupTimeoutTimer(napi_env env, TaskGroup* taskGroup);
     static void TaskGroupTimeoutCallback(uv_timer_t* handle);
 

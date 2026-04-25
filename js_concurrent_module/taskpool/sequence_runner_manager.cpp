@@ -40,7 +40,7 @@ SequenceRunner* SequenceRunnerManager::GetRunner(uint64_t runnerId)
 }
 
 SequenceRunner* SequenceRunnerManager::CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, size_t argc,
-                                                               const std::string& name, uint32_t priority)
+                                                               const std::string& name, int32_t priority)
 {
     std::unique_lock<std::mutex> lock(runnersMutex_);
     SequenceRunnerConfig sequenceRunnerConfig(argc, priority);
