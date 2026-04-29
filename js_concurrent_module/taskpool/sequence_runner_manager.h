@@ -22,10 +22,10 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 class SequenceRunnerConfig {
 public:
-    SequenceRunnerConfig(uint32_t argc, int32_t priority)
+    SequenceRunnerConfig(uint32_t argc, uint32_t priority)
         : argc_(argc), priority_(priority) {}
     uint32_t argc_ {};
-    int32_t priority_ {};
+    uint32_t priority_ {};
 };
 
 class SequenceRunnerManager : public BaseRunnerManager {
@@ -33,7 +33,7 @@ public:
     static SequenceRunnerManager& GetInstance();
     SequenceRunner* GetRunner(uint64_t runnerId);
     SequenceRunner* CreateOrGetGlobalRunner(napi_env env, napi_value thisVar, size_t argc,
-                                            const std::string& name, int32_t priority);
+                                            const std::string& name, uint32_t priority);
     void AddTaskToSeqRunner(uint64_t seqRunnerId, Task* task);
     bool TriggerSeqRunner(napi_env env, Task* lastTask);
 

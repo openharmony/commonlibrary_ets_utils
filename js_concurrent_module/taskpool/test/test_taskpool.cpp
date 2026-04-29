@@ -1689,7 +1689,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest109, testing::ext::TestSize.Level0)
     napi_create_object(env, &obj);
     auto task = GeneratorTask(env, obj);
     napi_value priority = nullptr;
-    napi_create_int32(env, 2, &priority); // 2: LOW priority
+    napi_create_uint32(env, 2, &priority); // 2: LOW priority
     napi_value argv[] = { task, priority };
     NativeEngineTest::Execute(env, argv, 2);
     napi_value exception = nullptr;
@@ -1705,7 +1705,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest110, testing::ext::TestSize.Level0)
     napi_create_object(env, &obj);
     auto task = GeneratorTask(env, obj);
     napi_value priority = nullptr;
-    napi_create_int32(env, 10, &priority); // 10: invalid priority
+    napi_create_uint32(env, 10, &priority); // 10: invalid priority
     napi_value argv[] = { task, priority };
     NativeEngineTest::Execute(env, argv, 2);
     napi_value exception = nullptr;
@@ -2401,7 +2401,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest137, testing::ext::TestSize.Level0)
     thisValue = CreateTaskObject(env);
     napi_value argv3[2] = {};
     argv3[0] = thisValue;
-    napi_create_uint32(env, 5, &argv3[1]);
+    napi_create_uint32(env, 6, &argv3[1]);
     result = NativeEngineTest::Execute(env, argv3, 2);
     ASSERT_TRUE(result == nullptr);
 }
@@ -2462,7 +2462,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest139, testing::ext::TestSize.Level0)
 
     napi_value obj = NapiHelper::CreateObject(env);
     napi_create_uint32(env, delayTime, &num);
-    napi_create_int32(env, 5, &priority);
+    napi_create_uint32(env, 6, &priority);
     napi_value argv[] = { num, obj, priority };
     result = NativeEngineTest::ExecuteDelayed(env, argv, 3);
     ASSERT_TRUE(result == nullptr);
@@ -2470,7 +2470,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest139, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
 
     obj = CreateNullTaskObject(env);
-    napi_create_int32(env, 1, &priority);
+    napi_create_uint32(env, 1, &priority);
     napi_value argv2[] = { num, obj, priority };
     result = NativeEngineTest::ExecuteDelayed(env, argv2, 3);
     ASSERT_TRUE(result == nullptr);
@@ -2654,7 +2654,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest145, testing::ext::TestSize.Level0)
 
     napi_value obj = NapiHelper::CreateObject(env);
     napi_create_uint32(env, delayTime, &num);
-    napi_create_int32(env, 5, &priority);
+    napi_create_uint32(env, 6, &priority);
     napi_value argv[] = { num, obj, priority };
     result = NativeEngineTest::ExecutePeriodically(env, argv, 3);
     ASSERT_TRUE(result == nullptr);
@@ -2662,7 +2662,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest145, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
 
     obj = CreateNullTaskObject(env);
-    napi_create_int32(env, 1, &priority);
+    napi_create_uint32(env, 1, &priority);
     napi_value argv2[] = { num, obj, priority };
     result = NativeEngineTest::ExecutePeriodically(env, argv2, 3);
     ASSERT_TRUE(result == nullptr);
@@ -2693,7 +2693,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest146, testing::ext::TestSize.Level0)
     napi_value num = nullptr;
     napi_value priority = nullptr;
     napi_create_uint32(env, delayTime, &num);
-    napi_create_int32(env, 1, &priority);
+    napi_create_uint32(env, 1, &priority);
     napi_value argv[] = { num, global, priority };
     result = NativeEngineTest::ExecutePeriodically(env, argv, 3);
     ASSERT_TRUE(result != nullptr);
@@ -4397,7 +4397,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest215, testing::ext::TestSize.Level0)
     napi_create_function(env, func.c_str(), func.size(), SequenceRunner::SeqRunnerConstructor, nullptr, &callback);
     napi_value argv[2] = {nullptr};
     napi_create_string_utf8(env, "seq04", NAPI_AUTO_LENGTH, &argv[0]);
-    napi_create_uint32(env, 5, &argv[1]);
+    napi_create_uint32(env, 6, &argv[1]);
     result = nullptr;
     napi_call_function(env, nullptr, callback, 2, argv, &result);
     ASSERT_EQ(result, nullptr);
@@ -4414,7 +4414,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest215, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
 
     napi_value argv2[1] = {nullptr};
-    napi_create_uint32(env, 5, &argv2[0]);
+    napi_create_uint32(env, 6, &argv2[0]);
     result = nullptr;
     napi_call_function(env, nullptr, callback, 1, argv2, &result);
     ASSERT_EQ(result, nullptr);
@@ -4583,7 +4583,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest220, testing::ext::TestSize.Level0)
     napi_value priority = nullptr;
     napi_value exception = nullptr;
     napi_create_uint32(env, delayTime, &num);
-    napi_create_int32(env, 1, &priority);
+    napi_create_uint32(env, 1, &priority);
 
     napi_value obj = CreateTaskObject(env, TaskType::TASK, ExecuteState::FINISHED);
     napi_value argv[] = { num, obj, priority };
@@ -4606,7 +4606,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest221, testing::ext::TestSize.Level0)
     napi_value priority = nullptr;
     napi_value exception = nullptr;
     napi_create_uint32(env, delayTime, &num);
-    napi_create_int32(env, 1, &priority);
+    napi_create_uint32(env, 1, &priority);
 
     napi_value obj = CreateTaskObject(env, TaskType::COMMON_TASK, ExecuteState::FINISHED);
     napi_value argv[] = { num, obj, priority };
@@ -5282,7 +5282,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest258, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
 
     napi_value obj = NapiHelper::CreateObject(env);
-    napi_value priority = NapiHelper::CreateInt32(env, 1);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
     napi_value argv[] = {obj, priority};
     napi_call_function(env, nullptr, cb, 2, argv, &result);
     ASSERT_EQ(result, nullptr);
@@ -5303,7 +5303,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest259, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
 
-    napi_value priority = NapiHelper::CreateInt32(env, 1);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
     napi_value argv2[] = {priority, priority, priority};
     result = nullptr;
     napi_call_function(env, nullptr, cb, 3, argv2, &result);
@@ -5319,7 +5319,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest260, testing::ext::TestSize.Level0)
     napi_value result = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
 
-    napi_value priority = NapiHelper::CreateInt32(env, 4);
+    napi_value priority = NapiHelper::CreateUint32(env, 6);
     napi_value argv[] = {priority, priority};
     napi_call_function(env, nullptr, cb, 2, argv, &result);
     ASSERT_EQ(result, nullptr);
@@ -5342,7 +5342,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest261, testing::ext::TestSize.Level0)
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
 
-    napi_value priority = NapiHelper::CreateInt32(env, 4);
+    napi_value priority = NapiHelper::CreateUint32(env, 6);
     napi_value argv2[] = {task, priority};
     result = nullptr;
     napi_call_function(env, nullptr, cb, 2, argv2, &result);
@@ -5360,7 +5360,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest262, testing::ext::TestSize.Level0)
 
     napi_value obj = NapiHelper::CreateObject(env);
     napi_value task = GeneratorTask(env, obj);
-    napi_value priority = NapiHelper::CreateInt32(env, 1);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
     napi_value argv[] = {task, priority};
     napi_call_function(env, nullptr, cb, 2, argv, &result);
     ASSERT_NE(result, nullptr);
@@ -5385,7 +5385,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest263, testing::ext::TestSize.Level0)
     napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
     napi_value obj = NapiHelper::CreateObject(env);
     napi_value task = GeneratorTask(env, obj);
-    napi_value priority = NapiHelper::CreateInt32(env, 1);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
     napi_value argv[] = {task, priority};
     napi_call_function(env, asyncGlobal, cb, 2, argv, &result);
     ASSERT_NE(result, nullptr);
@@ -5417,7 +5417,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest264, testing::ext::TestSize.Level0)
     napi_value result = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
     napi_value task1 = CreateTaskObject(env);
-    napi_value priority = NapiHelper::CreateInt32(env, 1);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
     napi_value argv1[] = {task1, priority};
     
     napi_call_function(env, asyncGlobal, cb, 2, argv1, &result);
@@ -5589,7 +5589,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest270, testing::ext::TestSize.Level0)
     napi_value result = nullptr;
     napi_create_function(env, funcName.c_str(), funcName.size(), AsyncRunner::Execute, nullptr, &cb);
     napi_value task = CreateTaskObject(env);
-    napi_value priority = NapiHelper::CreateInt32(env, 1);
+    napi_value priority = NapiHelper::CreateUint32(env, 1);
     napi_value argv[] = {task, priority};
     napi_call_function(env, asyncGlobal, cb, 2, argv, &result);
     ASSERT_NE(result, nullptr);
@@ -6728,7 +6728,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest322, testing::ext::TestSize.Level0)
     SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
     napi_value thisVar = nullptr;
     size_t argc = 1;
-    int32_t priority = 1;
+    uint32_t priority = 1;
     std::string name = "TaskpoolTest322";
     SequenceRunner* seqRunner = sequenceRunnerManager.CreateOrGetGlobalRunner(env, thisVar, argc, name, priority);
     seqRunner->runnerId_ = reinterpret_cast<uint64_t>(seqRunner);
@@ -7537,7 +7537,7 @@ HWTEST_F(NativeEngineTest, TaskpoolTest355, testing::ext::TestSize.Level0)
     SequenceRunnerManager& sequenceRunnerManager = SequenceRunnerManager::GetInstance();
     napi_value thisVar = nullptr;
     size_t argc = 1;
-    int32_t priority = 1;
+    uint32_t priority = 1;
     uint32_t capacity = 5;
     std::string name = "TaskpoolTest355";
     AsyncRunner* asyncRunner = asyncRunnerManager.CreateOrGetGlobalRunner(env, thisVar, name, capacity, capacity);
@@ -7816,9 +7816,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest371, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().RemoveTask(task->taskId_);
 
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    int32_t priority = 1;
+    uint32_t priority = 1;
     uint32_t timeout = 5000;
-    napi_value priorityValue = NapiHelper::CreateInt32(env, priority);
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
     napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
     napi_set_named_property(env, priorityObj, "priority", priorityValue);
     napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
@@ -7840,8 +7840,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest372, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().RemoveTask(task->taskId_);
 
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    int32_t priority = 1;
-    napi_value priorityValue = NapiHelper::CreateInt32(env, priority);
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
     napi_value timeoutValue = GetNapiString(env, "invalid");
     napi_set_named_property(env, priorityObj, "priority", priorityValue);
     napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
@@ -7867,9 +7867,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest373, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().RemoveTask(task->taskId_);
 
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    int32_t priority = 1;
+    uint32_t priority = 1;
     uint32_t timeout = 5000;
-    napi_value priorityValue = NapiHelper::CreateInt32(env, priority);
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
     napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
     napi_set_named_property(env, priorityObj, "priority", priorityValue);
     napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
@@ -7935,8 +7935,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest376, testing::ext::TestSize.Level0)
     napi_unwrap(env, taskValue, reinterpret_cast<void**>(&task));
     TaskManager::GetInstance().RemoveTask(task->taskId_);
 
-    int32_t priority = 1;
-    napi_value priorityValue = NapiHelper::CreateInt32(env, priority);
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
 
     napi_value argv[] = { taskValue, priorityValue };
     napi_value result = NativeEngineTest::Execute(env, argv, 2);
@@ -7955,9 +7955,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest377, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().RemoveTask(task->taskId_);
 
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    int32_t priority = 100;
+    uint32_t priority = 100;
     uint32_t timeout = 5000;
-    napi_value priorityValue = NapiHelper::CreateInt32(env, priority);
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
     napi_value timeoutValue = NapiHelper::CreateUint32(env, timeout);
     napi_set_named_property(env, priorityObj, "priority", priorityValue);
     napi_set_named_property(env, priorityObj, "timeout", timeoutValue);
@@ -8008,8 +8008,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest379, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().RemoveTask(task->taskId_);
 
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    int32_t priority = 1;
-    napi_value priorityValue = NapiHelper::CreateInt32(env, priority);
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
     napi_set_named_property(env, priorityObj, "priority", priorityValue);
 
     napi_value argv[] = { taskValue, priorityObj };
@@ -8614,8 +8614,8 @@ HWTEST_F(NativeEngineTest, TaskpoolTest398, testing::ext::TestSize.Level0)
     TaskManager::GetInstance().RemoveTask(task->taskId_);
 
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    int32_t priority = 1;
-    napi_value priorityValue = NapiHelper::CreateInt32(env, priority);
+    uint32_t priority = 1;
+    napi_value priorityValue = NapiHelper::CreateUint32(env, priority);
     napi_value timeoutValue = nullptr;
     napi_create_int32(env, -10, &timeoutValue);
     napi_set_named_property(env, priorityObj, "priority", priorityValue);
