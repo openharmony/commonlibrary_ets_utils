@@ -19,12 +19,16 @@
 namespace Commonlibrary::Platform {
 // for task priority and worker priority
 enum Priority {
+    USER_INTERACTION = -2,
+    DEADLINE_REQUEST = -1,
     HIGH = 0,
     MEDIUM,
     LOW,
     IDLE,
-    NUMBER = 4,
+    NUMBER = 6,
     DEFAULT = MEDIUM,
+    MIN = USER_INTERACTION,
+    MAX = IDLE,
 };
 } // namespace Commonlibrary::Platform
 #endif // PLATFORM_UTILS_H

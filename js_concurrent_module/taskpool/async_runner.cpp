@@ -125,7 +125,7 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (napiPriority != nullptr) {
-        uint32_t priority = NapiHelper::GetUint32Value(env, napiPriority);
+        int32_t priority = NapiHelper::GetInt32Value(env, napiPriority);
         task->asyncTaskPriority_ = static_cast<Priority>(priority);
     }
     task->runnerId_ = asyncRunner->runnerId_;
@@ -205,8 +205,8 @@ bool AsyncRunner::CheckExecuteArgs(napi_env env, napi_value napiTask, napi_value
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The type of execute's second param must be number.");
             return false;
         }
-        uint32_t priority = NapiHelper::GetUint32Value(env, napiPriority);
-        if (priority >= Priority::NUMBER) {
+        int32_t priority = NapiHelper::GetInt32Value(env, napiPriority);
+        if (priority > Priority::MAX || priority < Priority::MIN) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Priority value is error.");
             return false;
         }

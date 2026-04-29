@@ -242,6 +242,13 @@ napi_value NapiHelper::CreateUint32(napi_env env, uint32_t value)
     return result;
 }
 
+napi_value NapiHelper::CreateInt32(napi_env env, int32_t value)
+{
+    napi_value result = nullptr;
+    napi_create_int32(env, value, &result);
+    return result;
+}
+
 uv_loop_t* NapiHelper::GetLibUV(napi_env env)
 {
     uv_loop_t* loop;

@@ -31,7 +31,9 @@ static const std::map<Priority, QosLevel> WORKERPRIORITY_QOSLEVEL_MAP = {
     {Priority::IDLE, OHOS::QOS::QosLevel::QOS_BACKGROUND},
     {Priority::LOW, OHOS::QOS::QosLevel::QOS_UTILITY},
     {Priority::DEFAULT, OHOS::QOS::QosLevel::QOS_DEFAULT},
-    {Priority::HIGH, OHOS::QOS::QosLevel::QOS_USER_INITIATED}
+    {Priority::HIGH, OHOS::QOS::QosLevel::QOS_USER_INITIATED},
+    {Priority::DEADLINE_REQUEST, OHOS::QOS::QosLevel::QOS_DEADLINE_REQUEST},
+    {Priority::USER_INTERACTION, OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE},
 };
 
 int SetWorkerPriority([[maybe_unused]] Priority priority)

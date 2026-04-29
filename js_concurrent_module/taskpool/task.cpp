@@ -38,6 +38,8 @@ const std::unordered_map<Priority, napi_event_priority> g_napiPriorityMap = {
     {Priority::LOW, napi_eprio_low},
     {Priority::MEDIUM, napi_eprio_high},
     {Priority::HIGH, napi_eprio_immediate},
+    {Priority::DEADLINE_REQUEST, napi_eprio_immediate},
+    {Priority::USER_INTERACTION, napi_eprio_immediate},
 };
 
 using namespace Commonlibrary::Concurrent::Common::Helper;

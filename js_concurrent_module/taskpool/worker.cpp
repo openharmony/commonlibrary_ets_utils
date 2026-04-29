@@ -180,6 +180,8 @@ void Worker::InitFfrtInfo()
             {ffrt::qos_utility, Priority::LOW},
             {ffrt::qos_default, Priority::DEFAULT},
             {ffrt::qos_user_initiated, Priority::HIGH},
+            {ffrt::qos_deadline_request, Priority::DEADLINE_REQUEST},
+            {ffrt::qos_user_interactive, Priority::USER_INTERACTION},
         };
         ffrt_qos_t qos = ffrt_this_task_get_qos();
         priority_ = FFRTQOS_WORKERPRIORITY_MAP.at(qos);
