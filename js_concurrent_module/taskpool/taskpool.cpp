@@ -57,12 +57,12 @@ napi_value TaskPool::InitTaskPool(napi_env env, napi_value exports)
 
     // define priority
     napi_value priorityObj = NapiHelper::CreateObject(env);
-    napi_value userInteractionPriority = NapiHelper::CreateInt32(env, Priority::USER_INTERACTION);
-    napi_value deadlinePriority = NapiHelper::CreateInt32(env, Priority::DEADLINE_REQUEST);
-    napi_value highPriority = NapiHelper::CreateInt32(env, Priority::HIGH);
-    napi_value mediumPriority = NapiHelper::CreateInt32(env, Priority::MEDIUM);
-    napi_value lowPriority = NapiHelper::CreateInt32(env, Priority::LOW);
-    napi_value idlePriority = NapiHelper::CreateInt32(env, Priority::IDLE);
+    napi_value userInteractionPriority = NapiHelper::CreateUint32(env, Priority::USER_INTERACTION);
+    napi_value deadlinePriority = NapiHelper::CreateUint32(env, Priority::DEADLINE_REQUEST);
+    napi_value highPriority = NapiHelper::CreateUint32(env, Priority::HIGH);
+    napi_value mediumPriority = NapiHelper::CreateUint32(env, Priority::MEDIUM);
+    napi_value lowPriority = NapiHelper::CreateUint32(env, Priority::LOW);
+    napi_value idlePriority = NapiHelper::CreateUint32(env, Priority::IDLE);
     napi_property_descriptor exportPriority[] = {
         DECLARE_NAPI_PROPERTY("USER_INTERACTION", userInteractionPriority),
         DECLARE_NAPI_PROPERTY("DEADLINE_REQUEST", deadlinePriority),
@@ -204,11 +204,11 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type = napi_undefined;
     napi_typeof(env, args[0], &type);
     if (type == napi_object) {
-        int32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
+        uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
         uint32_t timeout = 0;
         if (argc > 1) {
             auto result = GetExecuteParams(env, args[1]);
-            if (result.first > Priority::MAX || result.first < Priority::MIN) {
+            if (result.first > Priority::MAX) {
                 return nullptr;
             }
             priority = result.first;
@@ -316,7 +316,7 @@ void TaskPool::DelayTask(uv_timer_t* handle)
 napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
-    int32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
+    uint32_t priority = Priority::DEFAULT; // DEFAULT priority is MEDIUM
     int32_t delayTime = 0;
     Task* task = nullptr;
     if (!CheckDelayedParams(env, cbinfo, priority, delayTime, task)) {
@@ -737,7 +737,7 @@ void TaskPool::PeriodicTaskCallback(uv_timer_t* handle)
 napi_value TaskPool::ExecutePeriodically(napi_env env, napi_callback_info cbinfo)
 {
     int32_t period = 0;
-    int32_t priority = Priority::DEFAULT;
+    uint32_t priority = Priority::DEFAULT;
     Task* periodicTask = nullptr;
     if (!CheckPeriodicallyParams(env, cbinfo, period, priority, periodicTask)) {
         return nullptr;
@@ -781,7 +781,7 @@ void TaskPool::TriggerTimer(napi_env env, Task* task, int32_t period)
     }
 }
 
-bool TaskPool::CheckDelayedParams(napi_env env, napi_callback_info cbinfo, int32_t &priority, int32_t &delayTime,
+bool TaskPool::CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint32_t &priority, int32_t &delayTime,
                                   Task* &task)
 {
     size_t argc = 3; // 3: delayTime, task and priority
@@ -817,8 +817,8 @@ bool TaskPool::CheckDelayedParams(napi_env env, napi_callback_info cbinfo, int32
                 "the type of executeDelayed's third param must be number.");
             return false;
         }
-        priority = NapiHelper::GetInt32Value(env, args[2]); // 2: get task priority
-        if (priority > Priority::MAX || priority < Priority::MIN) {
+        priority = NapiHelper::GetUint32Value(env, args[2]); // 2: get task priority
+        if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "executeDelayed's priority value is error.");
             return false;
         }
@@ -836,7 +836,7 @@ bool TaskPool::CheckDelayedParams(napi_env env, napi_callback_info cbinfo, int32
 }
 
 bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, int32_t &period,
-                                       int32_t &priority, Task* &periodicTask)
+                                       uint32_t &priority, Task* &periodicTask)
 {
     size_t argc = 3; // 3 : period, task, priority
     napi_value args[3]; // 3 : period, task, priority
@@ -868,8 +868,8 @@ bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, 
                 "the executePeriodically's third param must be priority.");
             return false;
         }
-        priority = NapiHelper::GetInt32Value(env, args[2]); // 2 : priority
-        if (priority > Priority::MAX || priority < Priority::MIN) {
+        priority = NapiHelper::GetUint32Value(env, args[2]); // 2 : priority
+        if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
                 "the value of executePeriodically's priority is invalid.");
             return false;
@@ -1028,11 +1028,11 @@ void TaskPool::TaskTimeoutCallback(uv_timer_t* handle)
     }
 }
 
-std::pair<int32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_value arg)
+std::pair<uint32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_value arg)
 {
     napi_value priorityValue = nullptr;
     int32_t timeout = 0;
-    int32_t priority = Priority::DEFAULT;
+    uint32_t priority = Priority::DEFAULT;
     if (NapiHelper::IsObject(env, arg)) {
         priorityValue = NapiHelper::GetNameProperty(env, arg, "priority");
         napi_value timeoutValue = NapiHelper::GetNameProperty(env, arg, "timeout");
@@ -1047,7 +1047,7 @@ std::pair<int32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_value
             }
         }
         if (!NapiHelper::IsNotUndefined(env, priorityValue)) {
-            napi_create_int32(env, priority, &priorityValue);
+            napi_create_uint32(env, priority, &priorityValue);
         }
     } else {
         priorityValue = arg;
@@ -1056,8 +1056,8 @@ std::pair<int32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_value
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's priority must be number.");
         return std::make_pair(Priority::NUMBER, 0);
     }
-    priority = NapiHelper::GetInt32Value(env, priorityValue);
-    if (priority > Priority::MAX || priority < Priority::MIN) {
+    priority = NapiHelper::GetUint32Value(env, priorityValue);
+    if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "execute's priority value is error");
         return std::make_pair(Priority::NUMBER, 0);
     }

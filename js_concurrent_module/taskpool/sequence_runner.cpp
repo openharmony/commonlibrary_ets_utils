@@ -58,13 +58,13 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
 
-    int32_t priority = Priority::DEFAULT;
+    uint32_t priority = Priority::DEFAULT;
     std::string name = "";
     if (argc == 2) { // 2: The number of parameters is 2, if the first is seqRunner name, the second must be priority
         if (NapiHelper::IsString(env, args[0]) && NapiHelper::IsNumber(env, args[1])) {
             name = NapiHelper::GetString(env, args[0]);
-            priority = NapiHelper::GetInt32Value(env, args[1]);
-            if (priority > Priority::MAX || priority < Priority::MIN) {
+            priority = NapiHelper::GetUint32Value(env, args[1]);
+            if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value unvalied.");
                 return nullptr;
             }
@@ -77,8 +77,8 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         if (NapiHelper::IsString(env, args[0])) {
             name = NapiHelper::GetString(env, args[0]);
         } else if (NapiHelper::IsNumber(env, args[0])) {
-            priority = NapiHelper::GetInt32Value(env, args[0]);
-            if (priority > Priority::MAX || priority < Priority::MIN) {
+            priority = NapiHelper::GetUint32Value(env, args[0]);
+            if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value unvalied.");
                 return nullptr;
             }

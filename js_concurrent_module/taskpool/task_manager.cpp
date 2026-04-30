@@ -15,7 +15,6 @@
 
 #include "task_manager.h"
 
-#include <cstdint>
 #include <securec.h>
 #include <thread>
 
@@ -63,7 +62,6 @@ static constexpr char ON_CALLBACK_STR[] = "TaskPoolOnCallbackTask";
 static constexpr char ON_ENQUEUE_STR[] = "TaskPoolOnEnqueueTask";
 static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
-static constexpr uint32_t PRIORITY_OFFSET = 2;
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -200,7 +198,7 @@ napi_value TaskManager::GetThreadInfos(napi_env env)
     int32_t i = 0;
     for (auto& info : threadInfoSet) {
         napi_value tid = NapiHelper::CreateUint32(env, static_cast<uint32_t>(info->tid));
-        napi_value priority = NapiHelper::CreateInt32(env, static_cast<int32_t>(info->priority));
+        napi_value priority = NapiHelper::CreateUint32(env, static_cast<uint32_t>(info->priority));
 
         napi_value taskId = nullptr;
         napi_create_array(env, &taskId);
@@ -876,9 +874,9 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
         std::lock_guard<std::mutex> lock(taskQueuesMutex_);
         IncreaseTaskNum(priority);
         if (!IsSystemApp()) {
-            priority = priority < Priority::HIGH ? Priority::HIGH : priority;
+            priority = priority > Priority::IDLE ? Priority::HIGH : priority;
         }
-        taskQueues_[priority + PRIORITY_OFFSET]->EnqueueTaskId(taskId);
+        taskQueues_[priority]->EnqueueTaskId(taskId);
     }
     TryTriggerExpand();
     Task* task = GetTask(taskId);
@@ -907,7 +905,7 @@ void TaskManager::EnqueueTaskId(uint32_t taskId, Priority priority)
 bool TaskManager::EraseWaitingTaskId(uint32_t taskId, Priority priority)
 {
     std::lock_guard<std::mutex> lock(taskQueuesMutex_);
-    if (!taskQueues_[priority + PRIORITY_OFFSET]->EraseWaitingTaskId(taskId)) {
+    if (!taskQueues_[priority]->EraseWaitingTaskId(taskId)) {
         HILOG_WARN("taskpool:: taskId is not in executeQueue when cancel");
         return false;
     }
@@ -921,7 +919,7 @@ std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()
     {
         std::lock_guard<std::mutex> lock(taskQueuesMutex_);
         if (IsSystemApp()) {
-            auto& userInteractionTaskQueue = taskQueues_[Priority::USER_INTERACTION + PRIORITY_OFFSET];
+            auto& userInteractionTaskQueue = taskQueues_[Priority::USER_INTERACTION];
             if (!userInteractionTaskQueue->IsEmpty() &&
                 userInteractionPrioExecuteCount_ < USER_INTERACTION_PRIORITY_TASK_COUNT) {
                 userInteractionPrioExecuteCount_++;
@@ -929,7 +927,7 @@ std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()
             }
             userInteractionPrioExecuteCount_ = 0;
 
-            auto& deadlineTaskQueue = taskQueues_[Priority::DEADLINE_REQUEST + PRIORITY_OFFSET];
+            auto& deadlineTaskQueue = taskQueues_[Priority::DEADLINE_REQUEST];
             if (!deadlineTaskQueue->IsEmpty() && deadlinePrioExecuteCount_ < DEADLINE_PRIORITY_TASK_COUNT) {
                 deadlinePrioExecuteCount_++;
                 return GetTaskByPriority(deadlineTaskQueue, Priority::DEADLINE_REQUEST);
@@ -937,26 +935,26 @@ std::pair<uint32_t, Priority> TaskManager::DequeueTaskId()
             deadlinePrioExecuteCount_ = 0;
         }
 
-        auto& highTaskQueue = taskQueues_[Priority::HIGH + PRIORITY_OFFSET];
+        auto& highTaskQueue = taskQueues_[Priority::HIGH];
         if (!highTaskQueue->IsEmpty() && highPrioExecuteCount_ < HIGH_PRIORITY_TASK_COUNT) {
             highPrioExecuteCount_++;
             return GetTaskByPriority(highTaskQueue, Priority::HIGH);
         }
         highPrioExecuteCount_ = 0;
 
-        auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM + PRIORITY_OFFSET];
+        auto& mediumTaskQueue = taskQueues_[Priority::MEDIUM];
         if (!mediumTaskQueue->IsEmpty() && mediumPrioExecuteCount_ < MEDIUM_PRIORITY_TASK_COUNT) {
             mediumPrioExecuteCount_++;
             return GetTaskByPriority(mediumTaskQueue, Priority::MEDIUM);
         }
         mediumPrioExecuteCount_ = 0;
 
-        auto& lowTaskQueue = taskQueues_[Priority::LOW + PRIORITY_OFFSET];
+        auto& lowTaskQueue = taskQueues_[Priority::LOW];
         if (!lowTaskQueue->IsEmpty()) {
             return GetTaskByPriority(lowTaskQueue, Priority::LOW);
         }
 
-        auto& idleTaskQueue = taskQueues_[Priority::IDLE + PRIORITY_OFFSET];
+        auto& idleTaskQueue = taskQueues_[Priority::IDLE];
         if (!IsPerformIdle() && highTaskQueue->IsEmpty() && mediumTaskQueue->IsEmpty() &&
             !idleTaskQueue->IsEmpty() && isChoose) {
             return GetTaskByPriority(idleTaskQueue, Priority::IDLE);
@@ -2037,28 +2035,28 @@ void TaskManager::PrintLogs(uv_work_t* req)
     {
         std::lock_guard<std::mutex> lock(taskManager.taskQueuesMutex_);
         if (taskManager.IsSystemApp()) {
-            auto& userInteractionTaskQueue = taskManager.taskQueues_[Priority::USER_INTERACTION + PRIORITY_OFFSET];
+            auto& userInteractionTaskQueue = taskManager.taskQueues_[Priority::USER_INTERACTION];
             if (!userInteractionTaskQueue->IsEmpty()) {
                 userInteractionTaskId = userInteractionTaskQueue->GetHead();
             }
 
-            auto& deadlineTaskQueue = taskManager.taskQueues_[Priority::DEADLINE_REQUEST + PRIORITY_OFFSET];
+            auto& deadlineTaskQueue = taskManager.taskQueues_[Priority::DEADLINE_REQUEST];
             if (!deadlineTaskQueue->IsEmpty()) {
                 deadlineTaskId = deadlineTaskQueue->GetHead();
             }
         }
 
-        auto& highTaskQueue = taskManager.taskQueues_[Priority::HIGH + PRIORITY_OFFSET];
+        auto& highTaskQueue = taskManager.taskQueues_[Priority::HIGH];
         if (!highTaskQueue->IsEmpty()) {
             highTaskId = highTaskQueue->GetHead();
         }
 
-        auto& mediumTaskQueue = taskManager.taskQueues_[Priority::MEDIUM + PRIORITY_OFFSET];
+        auto& mediumTaskQueue = taskManager.taskQueues_[Priority::MEDIUM];
         if (!mediumTaskQueue->IsEmpty()) {
             middleTaskId = mediumTaskQueue->GetHead();
         }
 
-        auto& lowTaskQueue = taskManager.taskQueues_[Priority::LOW + PRIORITY_OFFSET];
+        auto& lowTaskQueue = taskManager.taskQueues_[Priority::LOW];
         if (!lowTaskQueue->IsEmpty()) {
             lowTaskId = lowTaskQueue->GetHead();
         }
@@ -2074,13 +2072,15 @@ void TaskManager::PrintLogs(uv_work_t* req)
     oss << "currentT " << currentTimeStamp;
 
     bool hasEntries = false;
-    if (!userInteractionTime.empty()) {
-        oss << ", userInteractionEnqueueT " << userInteractionTime;
-        hasEntries = true;
-    }
-    if (!deadlineTime.empty()) {
-        oss << ", deadlineEnqueueT " << deadlineTime;
-        hasEntries = true;
+    if (taskManager.IsSystemApp()) {
+        if (!userInteractionTime.empty()) {
+            oss << ", userInteractionEnqueueT " << userInteractionTime;
+            hasEntries = true;
+        }
+        if (!deadlineTime.empty()) {
+            oss << ", deadlineEnqueueT " << deadlineTime;
+            hasEntries = true;
+        }
     }
     if (!highTime.empty()) {
         oss << ", highEnqueueT " << highTime;
