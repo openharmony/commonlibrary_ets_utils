@@ -1978,3 +1978,191 @@ HWTEST_F(NativeEngineTest, ConsoleTest067, testing::ext::TestSize.Level0)
     ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
     ASSERT_EQ(valueType, napi_undefined);
 }
+
+/* @tc.name: ConsoleTest068 - Test console.countReset with non-existent counter
+ * @tc.desc: Test countReset for counter that doesn't exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest068, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value resetFunc = nullptr;
+    napi_create_function(env, "countReset", NAPI_AUTO_LENGTH, ConsoleTest::CountReset, nullptr, &resetFunc);
+    
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "nonexistent", NAPI_AUTO_LENGTH, &label);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, resetFunc, 1, &label, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest069 - Test console.timeLog with non-existent timer
+ * @tc.desc: Test timeLog for timer that doesn't exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest069, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value timeLogFunc = nullptr;
+    napi_create_function(env, "timeLog", NAPI_AUTO_LENGTH, ConsoleTest::TimeLog, nullptr, &timeLogFunc);
+    
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "nonexistentTimer", NAPI_AUTO_LENGTH, &label);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, timeLogFunc, 1, &label, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest070 - Test console.timeEnd with non-existent timer
+ * @tc.desc: Test timeEnd for timer that doesn't exist.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest070, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value timeEndFunc = nullptr;
+    napi_create_function(env, "timeEnd", NAPI_AUTO_LENGTH, ConsoleTest::TimeEnd, nullptr, &timeEndFunc);
+    
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "nonexistentTimer", NAPI_AUTO_LENGTH, &label);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, timeEndFunc, 1, &label, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest071 - Test console.time with duplicate timer
+ * @tc.desc: Test starting the same timer twice.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest071, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value timeFunc = nullptr;
+    napi_create_function(env, "time", NAPI_AUTO_LENGTH, ConsoleTest::Time, nullptr, &timeFunc);
+    
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "duplicateTimer", NAPI_AUTO_LENGTH, &label);
+    
+    napi_value res = nullptr;
+    // First call
+    napi_call_function(env, nullptr, timeFunc, 1, &label, &res);
+    // Second call with same label
+    napi_call_function(env, nullptr, timeFunc, 1, &label, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest072 - Test console.table with nested objects
+ * @tc.desc: Test table with objects containing nested properties.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest072, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value tableFunc = nullptr;
+    napi_create_function(env, "table", NAPI_AUTO_LENGTH, ConsoleTest::Table, nullptr, &tableFunc);
+    
+    napi_value obj1 = nullptr;
+    napi_create_object(env, &obj1);
+    napi_value nested = nullptr;
+    napi_create_object(env, &nested);
+    napi_value name1 = nullptr;
+    napi_create_string_utf8(env, "nestedValue", NAPI_AUTO_LENGTH, &name1);
+    napi_set_named_property(env, nested, "nestedProp", name1);
+    napi_set_named_property(env, obj1, "prop", nested);
+    
+    napi_value obj2 = nullptr;
+    napi_create_object(env, &obj2);
+    napi_value name2 = nullptr;
+    napi_create_string_utf8(env, "value2", NAPI_AUTO_LENGTH, &name2);
+    napi_set_named_property(env, obj2, "prop", name2);
+    
+    napi_value arr = nullptr;
+    napi_create_array_with_length(env, 2, &arr);
+    napi_set_element(env, arr, 0, obj1);
+    napi_set_element(env, arr, 1, obj2);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, tableFunc, 1, &arr, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest073 - Test console.table with primitive values
+ * @tc.desc: Test table with array containing primitive values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest073, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value tableFunc = nullptr;
+    napi_create_function(env, "table", NAPI_AUTO_LENGTH, ConsoleTest::Table, nullptr, &tableFunc);
+    
+    napi_value arr = nullptr;
+    napi_create_array_with_length(env, 5, &arr);
+    
+    napi_value val1 = nullptr;
+    napi_create_string_utf8(env, "string", NAPI_AUTO_LENGTH, &val1);
+    napi_set_element(env, arr, 0, val1);
+    
+    napi_value val2 = nullptr;
+    napi_create_int32(env, 42, &val2);
+    napi_set_element(env, arr, 1, val2);
+    
+    napi_value val3 = nullptr;
+    napi_get_boolean(env, true, &val3);
+    napi_set_element(env, arr, 2, val3);
+    
+    napi_value val4 = nullptr;
+    napi_create_double(env, 3.14, &val4);
+    napi_set_element(env, arr, 3, val4);
+    
+    napi_value val5 = nullptr;
+    napi_get_null(env, &val5);
+    napi_set_element(env, arr, 4, val5);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, tableFunc, 1, &arr, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest074 - Test console.table with non-object input
+ * @tc.desc: Test table with primitive value should fallback to log.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest074, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value tableFunc = nullptr;
+    napi_create_function(env, "table", NAPI_AUTO_LENGTH, ConsoleTest::Table, nullptr, &tableFunc);
+    
+    napi_value str = nullptr;
+    napi_create_string_utf8(env, "not an object", NAPI_AUTO_LENGTH, &str);
+    
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, tableFunc, 1, &str, &res);
+    
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
