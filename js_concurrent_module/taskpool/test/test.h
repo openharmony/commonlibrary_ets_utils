@@ -75,7 +75,7 @@ public:
     static void UpdateGroupState(napi_env env);
     static void ReleaseWorkerHandles(napi_env env);
     static void DebuggerOnPostTask(napi_env env);
-    static void PerformTask(napi_env env);
+    static void PerformTask(napi_env env, napi_value pointer);
     static void PerformTask(napi_env env, void* data);
     static void NotifyHandleTaskResult(napi_env env);
     static void TaskResultCallback(napi_env env);
@@ -96,7 +96,7 @@ public:
     static void GetIdleTaskByPriority(napi_env env);
     static void WorkerRunningScope(napi_env env);
     static void SetNonIdleTaskNum(uint32_t num);
-    static void EnqueueTaskIdToQueue(void* data);
+    static void EnqueueTaskIdToQueue(void* data, bool flag = false);
     static void DecreaseTaskNum();
     static void ResetPerformIdleState(napi_env env);
     static void SetTotalTaskNum(uint32_t num);
@@ -108,13 +108,17 @@ public:
     static uint32_t GetTaskIdSalt();
     static uint64_t CalculateTaskId(uint64_t taskId, uint32_t salt);
     static bool SetAndTestTaskQueues();
+    static bool AddCountTraceForWorkerLog(bool needLog, int64_t threadNum);
     static bool TriggerTaskTimeoutTimer(napi_env env, void* data);
     static bool TaskTimeoutCallback(uv_timer_t* handle);
     static bool TriggerTaskGroupTimeoutTimer(napi_env env, void* data);
     static bool TaskGroupTimeoutCallback(uv_timer_t* handle);
-    static bool AddCountTraceForWorkerLog(bool needLog, int64_t threadNum);
     static bool PrintLogs(void* data);
     static bool PrintLogsEnd(void* data);
+    static bool PushRunningTaskLog(void* data);
+    static void TestLogMax();
+    static void ClearTaskQueue();
+    static void SetSystemApp(bool flag);
 
     class ExceptionScope {
     public:

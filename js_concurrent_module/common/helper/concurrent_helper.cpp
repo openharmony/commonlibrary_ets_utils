@@ -120,12 +120,11 @@ std::string ConcurrentHelper::GetCurrentTimeStampWithMS()
 
     std::ostringstream oss;
 
-    // formatted output: Day(2 digits) Hour:Minute:Second(each 2 digits).Milliseconds(3 digits)
+    // formatted output: Hour:Minute:Second(each 2 digits).Milliseconds(3 digits)
     const int kTimeFieldWidth = 2;
     const int kMillisecondWidth = 3;
 
     oss << std::setfill('0')
-        << std::setw(kTimeFieldWidth) << localTm.tm_mday << " "
         << std::setw(kTimeFieldWidth) << localTm.tm_hour << ":"
         << std::setw(kTimeFieldWidth) << localTm.tm_min << ":"
         << std::setw(kTimeFieldWidth) << localTm.tm_sec << "."

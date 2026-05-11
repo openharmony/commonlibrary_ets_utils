@@ -148,17 +148,24 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (!SequenceRunnerManager::GetInstance().FindRunnerAndRef(seqRunnerId)) {
         return nullptr;
     }
+    std::string message = "";
     if (seqRunner->UpdateCurrentTaskId(task->taskId_)) {
-        HILOG_INFO("taskpool:: taskId %{public}s in seqRunner %{public}s immediately.",
-                   std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
+        task->StoreEnqueueTime();
+        message = " taskId " + std::to_string(task->taskId_) + " in seqRunner " + std::to_string(seqRunnerId) +
+                " immediately.";
+        HILOG_DEBUG("taskpool::%{public}s", message.c_str());
+        message += " " + task->enqueueTime_;
         task->IncreaseRefCount();
         task->UpdateTaskStateToWaiting();
         ExecuteTaskImmediately(task->taskId_, seqRunner->priority_);
     } else {
-        HILOG_INFO("taskpool:: add taskId: %{public}s to seqRunner %{public}s.",
-                   std::to_string(task->taskId_).c_str(), std::to_string(seqRunnerId).c_str());
+        message = " add taskId: " + std::to_string(task->taskId_) + " to seqRunner " +
+                std::to_string(seqRunnerId) + ".";
+        HILOG_DEBUG("taskpool::%{public}s", message.c_str());
+        message += " " + ConcurrentHelper::GetCurrentTimeStampWithMS();
         SequenceRunnerManager::GetInstance().AddTaskToSeqRunner(seqRunnerId, task);
     }
+    TaskManager::GetInstance().PushLog(message);
     return promise;
 }
 
@@ -207,6 +214,7 @@ void SequenceRunner::TriggerTask(napi_env env)
         task->taskState_ = ExecuteState::WAITING;
         HILOG_DEBUG("seqRunner:: Trigger task %{public}s in seqRunner %{public}s.",
                     std::to_string(task->taskId_).c_str(), std::to_string(runnerId_).c_str());
+        task->StoreEnqueueTime();
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, priority_);
     }
 }

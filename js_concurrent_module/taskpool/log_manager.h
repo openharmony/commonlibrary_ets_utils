@@ -19,7 +19,7 @@
 #include "tools/log.h"
 
 #include <string>
-#include <queue>
+#include <deque>
 #include <mutex>
 
 #include "helper/concurrent_helper.h"
@@ -38,12 +38,16 @@ public:
     void PrintLog();
     bool PushLog(const std::string& msg);
     bool IsNeedPrint();
+    bool IsEmpty();
+    void PushLogFront(const std::string& msg);
 
 private:
-    std::queue<std::string> logQueue_ {};
+    std::deque<std::string> logQueue_ {};
     std::mutex logQueueMutex_;
     std::atomic<uint64_t> printTime_ {0};
     std::atomic<uint64_t> size_ {0};
+
+    friend class NativeEngineTest;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
 #endif // JS_CONCURRENT_MODULE_LOG_RUNNER_H
