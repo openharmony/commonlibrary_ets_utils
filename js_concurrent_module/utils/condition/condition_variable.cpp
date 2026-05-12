@@ -49,8 +49,22 @@ ConditionVariable *ConditionVariable::FindOrCreateCondition(const std::string &n
     return cond;
 }
 
+size_t ConditionVariable::GetConditionCount(const std::string &name)
+{
+    std::lock_guard<std::mutex> mapLock(mapMtx_);
+    return condMap_.count(name);
+}
+
+ConditionVariable *ConditionVariable::GetCondition(const std::string &name)
+{
+    std::lock_guard<std::mutex> mapLock(mapMtx_);
+    auto it = condMap_.find(name);
+    return it == condMap_.end() ? nullptr : it->second;
+}
+
 void ConditionVariable::TryRemoveCondition()
 {
+    bool shouldDelete {false};
     {
         std::lock_guard<std::mutex> lock(mtx_);
         --refCount_;
@@ -58,16 +72,22 @@ void ConditionVariable::TryRemoveCondition()
             return;
         }
         if (name_.empty()) {
-            delete this;
-            return;
+            shouldDelete = true;
         }
     }
-    std::lock_guard<std::mutex> mapLock(mapMtx_);
-    std::lock_guard<std::mutex> lock(mtx_);
-    if (refCount_ != 0 || condMap_.find(name_) == condMap_.end()) {
+    if (shouldDelete) {
+        delete this;
         return;
     }
-    condMap_.erase(name_);
+
+    {
+        std::lock_guard<std::mutex> mapLock(mapMtx_);
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (refCount_ != 0 || condMap_.find(name_) == condMap_.end()) {
+            return;
+        }
+        condMap_.erase(name_);
+    }
     delete this;
 }
 
