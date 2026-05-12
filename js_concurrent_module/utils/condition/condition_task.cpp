@@ -89,9 +89,6 @@ void ConditionTask::RejectPromise()
 
 void ConditionTask::InitTimer(uint64_t timeout)
 {
-    if (timeout < 0) {
-        return;
-    }
     timer_ = new uv_timer_t;
     uv_timer_init(Common::Helper::NapiHelper::GetLibUV(env_), timer_);
     timer_->data = this;

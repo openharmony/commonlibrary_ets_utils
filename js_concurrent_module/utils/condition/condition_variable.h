@@ -31,6 +31,8 @@ public:
     explicit ConditionVariable(const std::string &name);
 
     static ConditionVariable *FindOrCreateCondition(const std::string &name);
+    static size_t GetConditionCount(const std::string &name);
+    static ConditionVariable *GetCondition(const std::string &name);
     void TryRemoveCondition();
 
     void AddTask(napi_env env, napi_deferred deferred, uint64_t timeout = -1);

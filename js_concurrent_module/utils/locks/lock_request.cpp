@@ -239,6 +239,8 @@ void LockRequest::InitTimer()
 
     int status = uv_timer_init(loop, timeoutTimer_);
     if (status != 0) {
+        delete timeoutTimer_;
+        timeoutTimer_ = nullptr;
         HILOG_FATAL("Internal error: unable to initialize the AsyncLock timeout timer %{public}d", status);
         return;
     }
@@ -247,6 +249,8 @@ void LockRequest::InitTimer()
     timeoutTimer_->data = this;
     status = uv_timer_start(timeoutTimer_, TimeoutCallback, options_.timeoutMillis, 0);
     if (status != 0) {
+        delete timeoutTimer_;
+        timeoutTimer_ = nullptr;
         HILOG_FATAL("Internal error: unable to start the AsyncLock timeout timer %{public}d", status);
     }
 }
