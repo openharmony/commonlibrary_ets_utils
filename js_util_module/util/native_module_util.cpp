@@ -1731,6 +1731,33 @@ namespace OHOS::Util {
         return result;
     }
 
+    static napi_value SetTrackGlobalRef(napi_env env, napi_callback_info info)
+    {
+        size_t requireArgc = 1;
+        size_t argc = 1;
+        napi_value args[1] = {nullptr};
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+        if (argc < requireArgc) {
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. SetTrackGlobalRef: input parameter count must be > 0.");
+            return nullptr;
+        }
+
+        napi_valuetype valuetype = napi_undefined;
+        NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
+        if (valuetype != napi_boolean) {
+            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                "Parameter error. SetTrackGlobalRef: input parameter type must be boolean.");
+            return nullptr;
+        }
+        bool enable = false;
+        napi_get_value_bool(env, args[0], &enable);
+        napi_set_store_global_ref(env, enable);
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        return result;
+    }
+
     // Async callback data for GetAllVMHeapMemoryInfo
     struct GetAllVMHeapMemoryInfoData {
         napi_env env;
@@ -2068,6 +2095,7 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("enableLocalHandleDetection", EnableLocalHandleDetection),
             DECLARE_NAPI_FUNCTION("onVMHeapMemoryPressure", OnVMHeapMemoryPressure),
             DECLARE_NAPI_FUNCTION("offVMHeapMemoryPressure", OffVMHeapMemoryPressure),
+            DECLARE_NAPI_FUNCTION("setTrackGlobalRef", SetTrackGlobalRef),
         };
         NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
                                               sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
