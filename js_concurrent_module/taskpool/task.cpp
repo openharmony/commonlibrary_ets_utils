@@ -1680,6 +1680,7 @@ void Task::TriggerCancel(CancelTaskMessage* message)
     } else {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (!IsValid() || !ConcurrentHelper::IsUvActive(onStartCancelSignal_)) {
+            CloseHelp::DeletePointer(message, false);
             return;
         }
         onStartCancelSignal_->data = message;
