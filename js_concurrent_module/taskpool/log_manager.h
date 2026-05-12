@@ -21,6 +21,7 @@
 #include <string>
 #include <deque>
 #include <mutex>
+#include <vector>
 
 #include "helper/concurrent_helper.h"
 
