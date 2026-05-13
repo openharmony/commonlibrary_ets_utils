@@ -64,7 +64,7 @@ ConditionVariable *ConditionVariable::GetCondition(const std::string &name)
 
 void ConditionVariable::TryRemoveCondition()
 {
-    bool shouldDelete {false};
+    bool shouldDelete = false;
     {
         std::lock_guard<std::mutex> lock(mtx_);
         --refCount_;
