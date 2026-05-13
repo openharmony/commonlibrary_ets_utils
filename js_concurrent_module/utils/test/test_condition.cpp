@@ -378,3 +378,37 @@ TEST_F(ConditionTest, NotifyOneAfterEnvDestroyedTest)
     });
     t.join();
 }
+
+TEST_F(ConditionTest, TryRemoveConditionTest1)
+{
+    const std::string name = "name_test";
+    ASSERT_EQ(ConditionVariable::GetConditionCount(name), 0U);
+
+    ConditionVariable *cond = ConditionVariable::FindOrCreateCondition(name);
+    ASSERT_NE(cond, nullptr);
+    ASSERT_EQ(ConditionVariable::GetConditionCount(name), 1U);
+    ASSERT_EQ(ConditionVariable::GetCondition(name), cond);
+
+    cond->TryRemoveCondition();
+    ASSERT_EQ(ConditionVariable::GetConditionCount(name), 0U);
+
+    ConditionVariable *newCond = ConditionVariable::FindOrCreateCondition(name);
+    ASSERT_NE(newCond, nullptr);
+    ASSERT_EQ(ConditionVariable::GetConditionCount(name), 1U);
+    ASSERT_EQ(ConditionVariable::GetCondition(name), newCond);
+
+    newCond->TryRemoveCondition();
+    ASSERT_EQ(ConditionVariable::GetConditionCount(name), 0U);
+}
+
+TEST_F(ConditionTest, TryRemoveConditionTest2)
+{
+    const std::string name = "name_test1";
+    ASSERT_EQ(ConditionVariable::GetConditionCount(name), 0U);
+
+    ConditionVariable *cond = new ConditionVariable(name);
+    ASSERT_NE(cond, nullptr);
+
+    cond->TryRemoveCondition();
+    ASSERT_EQ(ConditionVariable::GetConditionCount(name), 0U);
+}
