@@ -27,11 +27,18 @@ thread_local static SetStackIdFunc g_setStackIdFunc =
 typedef uint64_t(*GetStackIdFunc)(void);
 thread_local static GetStackIdFunc g_getStackIdFunc =
     (GetStackIdFunc)(dlsym(RTLD_DEFAULT, "DfxGetSubmitterStackId"));
+typedef void(*ReleaseStackIdFunc)(uint64_t);
+thread_local static ReleaseStackIdFunc g_releaseStackIdFunc =
+    (ReleaseStackIdFunc)(dlsym(RTLD_DEFAULT, "ReleaseAsyncContext"));
+typedef AsyncStackHelper::DfxAsyncMode(*GetAsyncStackModeFunc)(void);
+thread_local static GetAsyncStackModeFunc g_getAsyncStackModeFunc =
+    (GetAsyncStackModeFunc)(dlsym(RTLD_DEFAULT, "GetAsyncStackMode"));
 
 void AsyncStackHelper::CheckLoadDfxAsyncStackFunc()
 {
     if ((g_collectAsyncStackFunc == nullptr) || (g_setStackIdFunc == nullptr) ||
-        (g_getStackIdFunc == nullptr)) {
+        (g_getStackIdFunc == nullptr) || (g_releaseStackIdFunc == nullptr)) {
+        // GetAsyncStackMode is not support in libasync_stack.z.so, so check it later
         HILOG_ERROR("DfxAsyncStackFunc failed.");
     }
 }
@@ -63,5 +70,24 @@ uint64_t AsyncStackHelper::GetStackId()
         return 0U;
     }
     return g_getStackIdFunc();
+}
+
+void AsyncStackHelper::ReleaseStackId(uint64_t id)
+{
+    if (!g_releaseStackIdFunc) {
+        HILOG_ERROR("ReleaseAsyncContext is not loaded in taskpool/worker.");
+        return;
+    }
+    g_releaseStackIdFunc(id);
+}
+
+AsyncStackHelper::DfxAsyncMode AsyncStackHelper::GetAsyncStackMode()
+{
+    if (!g_getAsyncStackModeFunc) {
+        // GetAsyncStackMode is not support in libasync_stack.z.so, so debug level hilog
+        HILOG_DEBUG("GetAsyncStackMode is not loaded in taskpool/worker.");
+        return AsyncStackHelper::DfxAsyncMode::MODE_LAST_STACKTRACE;
+    }
+    return g_getAsyncStackModeFunc();
 }
 } // Commonlibrary::Concurrent::Common::Helper

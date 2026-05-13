@@ -2527,6 +2527,8 @@ Worker::~Worker()
         RemoveAllListenerInner();
         ClearGlobalCallObject();
     }
+    AsyncStackHelper::ReleaseStackId(GetAsyncStackID());
+    SetAsyncStackID(0);
 }
 
 void Worker::RemoveAllListenerInner()

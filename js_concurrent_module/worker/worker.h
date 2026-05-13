@@ -41,6 +41,7 @@
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
+using DfxAsyncMode = Common::Helper::AsyncStackHelper::DfxAsyncMode;
 
 enum class WorkerPriority { INVALID = -1, HIGH = 0, MEDIUM, LOW, IDLE, DEADLINE, VIP, MAX };
 enum WorkerEventPriority { IMMEDIATE = 1, HIGH, LOW, IDLE, NUMBER = 5 };
@@ -760,8 +761,14 @@ public:
         }
         uint64_t id = worker->GetAsyncStackID();
         if (id != 0) {
-            prevID_ = AsyncStackHelper::GetStackId();
-            if (prevID_ != id) {
+            mode_ = AsyncStackHelper::GetAsyncStackMode();
+            if (mode_ == DfxAsyncMode::MODE_LAST_STACKTRACE) {
+                prevID_ = AsyncStackHelper::GetStackId();
+                if (prevID_ != id) {
+                    AsyncStackHelper::SetStackId(id);
+                    hasSetStackId_ = true;
+                }
+            } else {
                 AsyncStackHelper::SetStackId(id);
                 hasSetStackId_ = true;
             }
@@ -771,11 +778,16 @@ public:
     ~AsyncStackScope()
     {
         if (hasSetStackId_) {
-            AsyncStackHelper::SetStackId(prevID_);
+            if (mode_ == DfxAsyncMode::MODE_LAST_STACKTRACE) {
+                AsyncStackHelper::SetStackId(prevID_);
+            } else {
+                AsyncStackHelper::SetStackId(0);
+            }
         }
     }
 private:
     bool hasSetStackId_ = false;
+    DfxAsyncMode mode_ = DfxAsyncMode::MODE_LAST_STACKTRACE;
     uint64_t prevID_ = 0U;
 };
 } // namespace Commonlibrary::Concurrent::WorkerModule
