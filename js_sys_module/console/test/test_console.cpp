@@ -2154,15 +2154,239 @@ HWTEST_F(NativeEngineTest, ConsoleTest074, testing::ext::TestSize.Level0)
     NativeEngineProxy env;
     napi_value tableFunc = nullptr;
     napi_create_function(env, "table", NAPI_AUTO_LENGTH, ConsoleTest::Table, nullptr, &tableFunc);
-    
+
     napi_value str = nullptr;
     napi_create_string_utf8(env, "not an object", NAPI_AUTO_LENGTH, &str);
-    
+
     napi_value res = nullptr;
     napi_call_function(env, nullptr, tableFunc, 1, &str, &res);
-    
+
     napi_valuetype valueType;
     ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
     ASSERT_EQ(valueType, napi_undefined);
 }
 
+/* @tc.name: ConsoleTest075 - Test console.assert with true condition
+ * @tc.desc: Test console.assert does nothing when assertion is true.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest075, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value assertFunc = nullptr;
+    napi_create_function(env, "assert", NAPI_AUTO_LENGTH, ConsoleTest::Assert, nullptr, &assertFunc);
+
+    napi_value condition = nullptr;
+    napi_get_boolean(env, true, &condition);
+
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, assertFunc, 1, &condition, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest076 - Test console.assert with false condition and message
+ * @tc.desc: Test console.assert logs error message when assertion fails.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest076, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value assertFunc = nullptr;
+    napi_create_function(env, "assert", NAPI_AUTO_LENGTH, ConsoleTest::Assert, nullptr, &assertFunc);
+
+    napi_value condition = nullptr;
+    napi_get_boolean(env, false, &condition);
+
+    napi_value msg = nullptr;
+    napi_create_string_utf8(env, "Assertion failed: value is null", NAPI_AUTO_LENGTH, &msg);
+
+    napi_value argv[] = {condition, msg};
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, assertFunc, 2, argv, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest077 - Test console.assert with multiple arguments
+ * @tc.desc: Test console.assert with formatted message containing multiple values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest077, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value assertFunc = nullptr;
+    napi_create_function(env, "assert", NAPI_AUTO_LENGTH, ConsoleTest::Assert, nullptr, &assertFunc);
+
+    napi_value condition = nullptr;
+    napi_get_boolean(env, false, &condition);
+
+    napi_value msg1 = nullptr;
+    napi_create_string_utf8(env, "Expected", NAPI_AUTO_LENGTH, &msg1);
+
+    napi_value msg2 = nullptr;
+    napi_create_int32(env, 100, &msg2);
+
+    napi_value msg3 = nullptr;
+    napi_create_string_utf8(env, "but got", NAPI_AUTO_LENGTH, &msg3);
+
+    napi_value msg4 = nullptr;
+    napi_create_int32(env, 50, &msg4);
+
+    napi_value argv[] = {condition, msg1, msg2, msg3, msg4};
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, assertFunc, 5, argv, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest078 - Test console.trace with stack trace
+ * @tc.desc: Test console.trace outputs stack trace information.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest078, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value traceFunc = nullptr;
+    napi_create_function(env, "trace", NAPI_AUTO_LENGTH, ConsoleTest::Trace, nullptr, &traceFunc);
+
+    napi_value msg = nullptr;
+    napi_create_string_utf8(env, "Entering critical section", NAPI_AUTO_LENGTH, &msg);
+
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, traceFunc, 1, &msg, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest079 - Test console.trace without message
+ * @tc.desc: Test console.trace with no arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest079, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value traceFunc = nullptr;
+    napi_create_function(env, "trace", NAPI_AUTO_LENGTH, ConsoleTest::Trace, nullptr, &traceFunc);
+
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, traceFunc, 0, nullptr, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest080 - Test console.time and timeEnd basic flow
+ * @tc.desc: Test complete timer flow from start to end.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest080, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value timeFunc = nullptr;
+    napi_create_function(env, "time", NAPI_AUTO_LENGTH, ConsoleTest::Time, nullptr, &timeFunc);
+
+    napi_value timeEndFunc = nullptr;
+    napi_create_function(env, "timeEnd", NAPI_AUTO_LENGTH, ConsoleTest::TimeEnd, nullptr, &timeEndFunc);
+
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "operationTimer", NAPI_AUTO_LENGTH, &label);
+
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, timeFunc, 1, &label, &res);
+    napi_call_function(env, nullptr, timeEndFunc, 1, &label, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest081 - Test console.time with default label
+ * @tc.desc: Test console.time without arguments uses default label.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest081, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value timeFunc = nullptr;
+    napi_create_function(env, "time", NAPI_AUTO_LENGTH, ConsoleTest::Time, nullptr, &timeFunc);
+
+    napi_value timeEndFunc = nullptr;
+    napi_create_function(env, "timeEnd", NAPI_AUTO_LENGTH, ConsoleTest::TimeEnd, nullptr, &timeEndFunc);
+
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, timeFunc, 0, nullptr, &res);
+    napi_call_function(env, nullptr, timeEndFunc, 0, nullptr, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest082 - Test console.timeLog with active timer
+ * @tc.desc: Test console.timeLog logs intermediate time value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest082, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value timeFunc = nullptr;
+    napi_create_function(env, "time", NAPI_AUTO_LENGTH, ConsoleTest::Time, nullptr, &timeFunc);
+
+    napi_value timeLogFunc = nullptr;
+    napi_create_function(env, "timeLog", NAPI_AUTO_LENGTH, ConsoleTest::TimeLog, nullptr, &timeLogFunc);
+
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "processTimer", NAPI_AUTO_LENGTH, &label);
+
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, timeFunc, 1, &label, &res);
+    napi_call_function(env, nullptr, timeLogFunc, 1, &label, &res);
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest083 - Test console.timeLog with additional data
+ * @tc.desc: Test console.timeLog with extra message arguments.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest083, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy env;
+    napi_value timeFunc = nullptr;
+    napi_create_function(env, "time", NAPI_AUTO_LENGTH, ConsoleTest::Time, nullptr, &timeFunc);
+
+    napi_value timeLogFunc = nullptr;
+    napi_create_function(env, "timeLog", NAPI_AUTO_LENGTH, ConsoleTest::TimeLog, nullptr, &timeLogFunc);
+
+    napi_value label = nullptr;
+    napi_create_string_utf8(env, "dataTimer", NAPI_AUTO_LENGTH, &label);
+
+    napi_value msg = nullptr;
+    napi_create_string_utf8(env, "Checkpoint reached", NAPI_AUTO_LENGTH, &msg);
+
+    napi_value data = nullptr;
+    int32_t TEST_NUM = 42; // test num
+    napi_create_int32(env, TEST_NUM, &data);
+
+    napi_value res = nullptr;
+    napi_call_function(env, nullptr, timeFunc, 1, &label, &res);
+
+    napi_value argv[] = {label, msg, data};
+    napi_call_function(env, nullptr, timeLogFunc, 3, argv, &res); // size of parameters
+
+    napi_valuetype valueType;
+    ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
+    ASSERT_EQ(valueType, napi_undefined);
+}
