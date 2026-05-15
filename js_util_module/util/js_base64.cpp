@@ -596,6 +596,13 @@ namespace OHOS::Util {
         napi_handle_scope scope = nullptr;
         napi_open_handle_scope(env, &scope);
         if (scope == nullptr) {
+            napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE,
+                "Parameter error: scope creation failed");
+            napi_reject_deferred(env, stdEncodeInfo->deferred, error);
+            napi_delete_reference(env, stdEncodeInfo->arrayRef);
+            napi_delete_async_work(env, stdEncodeInfo->worker);
+            delete[] stdEncodeInfo->sinputEncoding;
+            delete stdEncodeInfo;
             return;
         }
         napi_value arrayBuffer = nullptr;
@@ -604,9 +611,15 @@ namespace OHOS::Util {
         if (memcpy_s(data, bufferSize,
             reinterpret_cast<const void*>(stdEncodeInfo->sinputEncoding), bufferSize) != EOK) {
             HILOG_ERROR("Base64:: copy ret to arraybuffer error");
+            const char* errMessage =
+                "Parameter error. The type of the parameter must be a string and must be valid and legal";
+            napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE, errMessage);
+            napi_reject_deferred(env, stdEncodeInfo->deferred, error);
             napi_delete_reference(env, stdEncodeInfo->arrayRef);
             napi_delete_async_work(env, stdEncodeInfo->worker);
             napi_close_handle_scope(env, scope);
+            delete[] stdEncodeInfo->sinputEncoding;
+            delete stdEncodeInfo;
             return;
         }
         napi_value result = nullptr;
@@ -632,6 +645,13 @@ namespace OHOS::Util {
         napi_handle_scope scope = nullptr;
         napi_open_handle_scope(env, &scope);
         if (scope == nullptr) {
+            napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE,
+                "Parameter error: scope creation failed");
+            napi_reject_deferred(env, stdEncodeInfo->deferred, error);
+            napi_delete_reference(env, stdEncodeInfo->arrayRef);
+            napi_delete_async_work(env, stdEncodeInfo->worker);
+            delete[] stdEncodeInfo->sinputEncoding;
+            delete stdEncodeInfo;
             return;
         }
         const char *encString = reinterpret_cast<const char*>(stdEncodeInfo->sinputEncoding);
@@ -857,6 +877,13 @@ namespace OHOS::Util {
         napi_handle_scope scope = nullptr;
         napi_open_handle_scope(env, &scope);
         if (scope == nullptr) {
+            napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE,
+                "Parameter error: scope creation failed");
+            napi_reject_deferred(env, stdDecodeInfo->deferred, error);
+            napi_delete_async_work(env, stdDecodeInfo->worker);
+            napi_delete_reference(env, stdDecodeInfo->srcRef);
+            delete[] stdDecodeInfo->sinputDecoding;
+            delete stdDecodeInfo;
             return;
         }
         napi_value arrayBuffer = nullptr;
@@ -865,14 +892,15 @@ namespace OHOS::Util {
         if (memcpy_s(data, bufferSize,
             reinterpret_cast<const void*>(stdDecodeInfo->sinputDecoding), bufferSize) != EOK) {
             HILOG_ERROR("Base64:: copy ret to arraybuffer error");
-            int32_t errCode = 401; // 401：errCode
             const char* errMessage =
                 "Parameter error. The type of the parameter must be a string and must be valid and legal";
-            napi_value error = Tools::ErrorHelper::CreateError(env, errCode, errMessage);
+            napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE, errMessage);
             napi_reject_deferred(env, stdDecodeInfo->deferred, error);
             napi_delete_async_work(env, stdDecodeInfo->worker);
             napi_delete_reference(env, stdDecodeInfo->srcRef);
             napi_close_handle_scope(env, scope);
+            delete[] stdDecodeInfo->sinputDecoding;
+            delete stdDecodeInfo;
             return;
         }
         napi_value result = nullptr;
