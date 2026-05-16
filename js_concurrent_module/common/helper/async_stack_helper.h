@@ -25,10 +25,17 @@ public:
         ASYNC_TYPE_ARKTS_TASKPOOL = 1ULL << 25,
     } ConcurrentAsyncType;
 
+    typedef enum {
+        MODE_LAST_STACKTRACE,
+        MODE_CHAINED_STACKTRACE,
+    } DfxAsyncMode;
+
     static void CheckLoadDfxAsyncStackFunc();
     static uint64_t CollectAsyncStack(ConcurrentAsyncType asyncType);
     static void SetStackId(uint64_t id);
     static uint64_t GetStackId();
+    static void ReleaseStackId(uint64_t id);
+    static DfxAsyncMode GetAsyncStackMode();
 };
 
 } // Commonlibrary::Concurrent::Common::Helper

@@ -464,37 +464,39 @@ void TaskPool::HandleTaskResultInner(Task* task)
 {
     napi_handle_scope scope = nullptr;
     NAPI_CALL_RETURN_VOID(task->env_, napi_open_handle_scope(task->env_, &scope));
-    napi_value napiTaskResult = nullptr;
-    napi_status status = napi_deserialize(task->env_, task->result_, &napiTaskResult);
-    napi_delete_serialization_data(task->env_, task->result_);
-    if (task->IsTimeoutState()) {
-        task->success_ = false;
-    }
     bool isCancel = false;
-    RecordTaskResultLog(task, status, napiTaskResult, isCancel);
+    {
+        AsyncStackScope asyncStackScope(task);
+        napi_value napiTaskResult = nullptr;
+        napi_status status = napi_deserialize(task->env_, task->result_, &napiTaskResult);
+        napi_delete_serialization_data(task->env_, task->result_);
+        if (task->IsTimeoutState()) {
+            task->success_ = false;
+        }
+        RecordTaskResultLog(task, status, napiTaskResult, isCancel);
 
-    if (napiTaskResult == nullptr) {
-        napi_get_undefined(task->env_, &napiTaskResult);
-    }
-    reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
-    bool success = ((status == napi_ok) && !task->IsTimeoutState() && !task->IsCanceledState()) && (task->success_);
-    task->UpdateTaskStateToEnding();
-    task->isCancelToFinish_ = false;
-    if (task->IsGroupTask()) {
-        UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
-    } else if (!task->IsPeriodicTask() && !task->IsTimeoutState()) {
-        if (success) {
-            napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
-            if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
-                AsyncStackScope asyncStackScope(task);
-                task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_, task->taskId_);
-            }
-        } else {
-            napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
-            if (task->onExecutionFailedCallBackInfo_ != nullptr) {
-                AsyncStackScope asyncStackScope(task);
-                task->onExecutionFailedCallBackInfo_->taskError_ = napiTaskResult;
-                task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_, task->taskId_);
+        if (napiTaskResult == nullptr) {
+            napi_get_undefined(task->env_, &napiTaskResult);
+        }
+        reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
+        bool success = ((status == napi_ok) &&
+            !task->IsTimeoutState() && !task->IsCanceledState()) && (task->success_);
+        task->UpdateTaskStateToEnding();
+        task->isCancelToFinish_ = false;
+        if (task->IsGroupTask()) {
+            UpdateGroupInfoByResult(task->env_, task, napiTaskResult, success);
+        } else if (!task->IsPeriodicTask() && !task->IsTimeoutState()) {
+            if (success) {
+                napi_resolve_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
+                if (task->onExecutionSucceededCallBackInfo_ != nullptr) {
+                    task->ExecuteListenerCallback(task->onExecutionSucceededCallBackInfo_, task->taskId_);
+                }
+            } else {
+                napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, napiTaskResult);
+                if (task->onExecutionFailedCallBackInfo_ != nullptr) {
+                    task->onExecutionFailedCallBackInfo_->taskError_ = napiTaskResult;
+                    task->ExecuteListenerCallback(task->onExecutionFailedCallBackInfo_, task->taskId_);
+                }
             }
         }
     }

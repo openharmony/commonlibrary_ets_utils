@@ -44,6 +44,7 @@
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
 using namespace Commonlibrary::Platform;
+using DfxAsyncMode = Common::Helper::AsyncStackHelper::DfxAsyncMode;
 
 extern const std::unordered_map<Priority, napi_event_priority> g_napiPriorityMap;
 enum ExecuteState { NOT_FOUND, WAITING, RUNNING, CANCELED, FINISHED, DELAYED, ENDING, TIMEOUT};
@@ -128,7 +129,11 @@ public:
             AsyncStackHelper::CollectAsyncStack(AsyncStackHelper::ConcurrentAsyncType::ASYNC_TYPE_ARKTS_TASKPOOL));
     }
 
-    ~Task() = default;
+    ~Task()
+    {
+        AsyncStackHelper::ReleaseStackId(GetAsyncStackID());
+        SetAsyncStackID(0);
+    }
 
     static napi_value TaskConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value LongTaskConstructor(napi_env env, napi_callback_info cbinfo);
@@ -352,8 +357,14 @@ public:
         }
         uint64_t id = task->GetAsyncStackID();
         if (id != 0) {
-            prevID_ = AsyncStackHelper::GetStackId();
-            if (prevID_ != id) {
+            mode_ = AsyncStackHelper::GetAsyncStackMode();
+            if (mode_ == DfxAsyncMode::MODE_LAST_STACKTRACE) {
+                prevID_ = AsyncStackHelper::GetStackId();
+                if (prevID_ != id) {
+                    AsyncStackHelper::SetStackId(id);
+                    hasSetStackId_ = true;
+                }
+            } else {
                 AsyncStackHelper::SetStackId(id);
                 hasSetStackId_ = true;
             }
@@ -363,11 +374,16 @@ public:
     ~AsyncStackScope()
     {
         if (hasSetStackId_) {
-            AsyncStackHelper::SetStackId(prevID_);
+            if (mode_ == DfxAsyncMode::MODE_LAST_STACKTRACE) {
+                AsyncStackHelper::SetStackId(prevID_);
+            } else {
+                AsyncStackHelper::SetStackId(0);
+            }
         }
     }
 private:
     bool hasSetStackId_ = false;
+    DfxAsyncMode mode_ = DfxAsyncMode::MODE_LAST_STACKTRACE;
     uint64_t prevID_ = 0U;
 };
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
