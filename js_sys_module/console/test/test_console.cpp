@@ -2390,3 +2390,155 @@ HWTEST_F(NativeEngineTest, ConsoleTest083, testing::ext::TestSize.Level0)
     ASSERT_EQ(napi_typeof(env, res, &valueType), napi_ok);
     ASSERT_EQ(valueType, napi_undefined);
 }
+
+/* @tc.name: ConsoleTest084 - Test console.Dir with function
+ * @tc.desc: Test Dir with function type object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest084, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Dir";
+    napi_value cb = nullptr;
+
+    napi_value testFunc = nullptr;
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH,
+                         ConsoleTest::ConsoleLog<OHOS::JsSysModule::LogLevel::INFO>, nullptr, &testFunc);
+    napi_value argv[] = {testFunc};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest085 - Test console.Dir with object
+ * @tc.desc: Test Dir with object that has constructor name.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest085, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Dir";
+    napi_value cb = nullptr;
+
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    napi_value strVal = StrToNapiValue(env, "test value");
+    napi_set_named_property(env, obj, "key", strVal);
+    napi_value argv[] = {obj};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Dir, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest086 - Test console.Table with non-object
+ * @tc.desc: Test Table with non-object input.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest086, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value strVal = StrToNapiValue(env, "not an object");
+    napi_value argv[] = {strVal};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest087 - Test console.Table with primitive values
+ * @tc.desc: Test Table with object containing primitive values.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest087, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value tabularData = nullptr;
+    napi_create_object(env, &tabularData);
+
+    napi_value num1 = nullptr;
+    napi_create_int32(env, 100, &num1);
+    napi_set_named_property(env, tabularData, "a", num1);
+
+    napi_value num2 = nullptr;
+    napi_create_int32(env, 200, &num2);
+    napi_set_named_property(env, tabularData, "b", num2);
+
+    napi_value argv[] = {tabularData};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest088 - Test console.Table with nested objects
+ * @tc.desc: Test Table with nested object data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest088, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Table";
+    napi_value cb = nullptr;
+
+    napi_value tabularData = nullptr;
+    napi_create_object(env, &tabularData);
+
+    napi_value innerObj1 = nullptr;
+    napi_create_object(env, &innerObj1);
+    napi_value val1 = nullptr;
+    napi_create_int32(env, 10, &val1);
+    napi_set_named_property(env, innerObj1, "x", val1);
+    napi_set_named_property(env, tabularData, "row1", innerObj1);
+
+    napi_value innerObj2 = nullptr;
+    napi_create_object(env, &innerObj2);
+    napi_value val2 = nullptr;
+    napi_create_int32(env, 20, &val2);
+    napi_set_named_property(env, innerObj2, "x", val2);
+    napi_set_named_property(env, tabularData, "row2", innerObj2);
+
+    napi_value argv[] = {tabularData};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Table, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
+
+/* @tc.name: ConsoleTest089 - Test console.Count with number argument
+ * @tc.desc: Test Count with number type argument that needs conversion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ConsoleTest089, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    size_t argc = 1;
+    std::string funcName = "Count";
+    napi_value cb = nullptr;
+
+    napi_value numVal = nullptr;
+    napi_create_int32(env, 123, &numVal);
+    napi_value argv[] = {numVal};
+
+    napi_value res = nullptr;
+    napi_create_function(env, funcName.c_str(), funcName.size(), ConsoleTest::Count, nullptr, &cb);
+    napi_call_function(env, nullptr, cb, argc, argv, &res);
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_undefined);
+}
