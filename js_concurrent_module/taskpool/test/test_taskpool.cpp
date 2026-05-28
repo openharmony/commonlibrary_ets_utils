@@ -2204,14 +2204,13 @@ HWTEST_F(NativeEngineTest, TaskpoolTest131, testing::ext::TestSize.Level0)
     taskManager.RegisterCallback(env, taskId1, cbInfo, "TaskpoolTest131");
     NativeEngineTest::ExecuteOnReceiveDataCallback(resultInfo);
 
-    taskManager.RegisterCallback(env, taskId1, cbInfo, "TaskpoolTest131-1");
-    taskManager.DecreaseSendDataRefCount(env, taskId1);
-
     Task* task2 = new Task();
     uint32_t taskId2 = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(task2));
     task2->taskId_ = taskId2;
 
-    taskManager.RegisterCallback(env, taskId2, cbInfo, "TaskpoolTest131-2");
+    napi_ref ref2 = NapiHelper::CreateReference(env, thisValue, 0);
+    std::shared_ptr<CallbackInfo> cbInfo2 = std::make_shared<CallbackInfo>(env, 1, ref2);
+    taskManager.RegisterCallback(env, taskId2, cbInfo2, "TaskpoolTest131-2");
     taskManager.DecreaseSendDataRefCount(env, taskId2);
     ASSERT_TRUE(true);
 }

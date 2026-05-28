@@ -100,10 +100,6 @@ void Worker::ReleaseWorkerHandles(const uv_async_t* req)
     if (loop != nullptr) {
         uv_stop(loop);
     }
-
-    #if defined(ENABLE_CONCURRENCY_INTEROP)
-        TaskManager::GetInstance().DetachWorkerFromAniVm(worker);
-    #endif
 }
 
 bool Worker::CheckFreeConditions()
@@ -267,6 +263,9 @@ void Worker::ExecuteInThread(const void* data)
     } else {
         HILOG_ERROR("taskpool:: Worker PrepareForWorkerInstance fail");
     }
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    TaskManager::GetInstance().DetachWorkerFromAniVm(worker);
+#endif
     TaskManager::GetInstance().RemoveWorker(worker);
     TaskManager::GetInstance().CountTraceForWorker();
     worker->ReleaseWorkerThreadContent();
