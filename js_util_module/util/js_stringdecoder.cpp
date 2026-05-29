@@ -14,13 +14,11 @@
  */
 
 #include "js_stringdecoder.h"
-#include "tools/ets_error.h"
 #include "util_helper.h"
-
-using namespace OHOS::Tools;
 
 namespace OHOS::Util {
 using namespace Commonlibrary::Platform;
+static const char* ERROR_CODE = "401";
 
 StringDecoder::StringDecoder(const std::string &encoding)
 {
@@ -38,7 +36,7 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     bool result = false;
     napi_is_typedarray(env, src, &result);
     if (!result) {
-        ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+        napi_throw_error(env, "401",
             "Parameter error. The type of Parameter must be Uint8Array or string.");
         return nullptr;
     }
@@ -50,7 +48,7 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     if (limit > 0) {
         arr = new UChar[limit + 1] { 0 };
     } else {
-        ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Error obtaining minimum number of input bytes");
+        napi_throw_error(env, ERROR_CODE, "Error obtaining minimum number of input bytes");
         return nullptr;
     }
     UChar *target = arr;
@@ -60,7 +58,7 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
         FreedMemory(arr);
         std::string err = "decoder error, ";
         err += u_errorName(codeFlag);
-        ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, err.c_str());
+        napi_throw_error(env, ERROR_CODE, err.c_str());
         return nullptr;
     }
     pendingLen_ = ucnv_toUCountPending(conv_, &codeFlag);
@@ -100,7 +98,7 @@ napi_value StringDecoder::End(napi_env env)
     if (U_FAILURE(errorCode)) {
         std::string err = "decoder error, ";
         err += u_errorName(errorCode);
-        ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, err.c_str());
+        napi_throw_error(env, ERROR_CODE, err.c_str());
         return nullptr;
     }
     std::string tepStr = ConvertToString(target, pendingLen_);

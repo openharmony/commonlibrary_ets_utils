@@ -95,8 +95,7 @@ class Base64Helper {
     let newString: string = '';
     let stringLength = resultString.length;
     if (stringLength < chunkSize) {
-      let error = new BusinessError('Parameter error. The parameter length does not meet this encoding format.');
-      throw error;
+      throw new Error('The parameter length does not meet this encoding format.');
     }
     while (i < stringLength && stringLength > chunkSize) {
       let index = i + chunkSize;
@@ -617,8 +616,7 @@ function getMainThreadStackTrace(): string {
 function callbackified(original: Function, ...args: Array<string | number | Function>): void {
   const maybeCb = args.pop();
   if (typeof maybeCb !== 'function') {
-    let error = new BusinessError('Parameter error. maybe is not function');
-    throw error;
+    throw new Error('maybe is not function');
   }
   const cb = (...args: Array<null>) : void => {
     Reflect.apply(maybeCb, this, args);
@@ -799,8 +797,7 @@ class LruBuffer {
   public constructor(capacity?: number) {
     if (capacity !== undefined && capacity !== null) {
       if (capacity <= 0 || capacity % 1 !== 0 || capacity > this.maxNumber) {
-        let error = new BusinessError('Parameter error. data error');
-        throw error;
+        throw new Error('data error');
       }
       this.maxSize = capacity;
     }
@@ -809,8 +806,7 @@ class LruBuffer {
 
   public updateCapacity(newCapacity: number): void {
     if (newCapacity <= 0 || newCapacity % 1 !== 0 || newCapacity > this.maxNumber) {
-      let error = new BusinessError('Parameter error. data error');
-      throw error;
+      throw new Error('data error');
     } else if (this.cache.size > newCapacity) {
       this.changeCapacity(newCapacity);
     }
@@ -820,8 +816,7 @@ class LruBuffer {
 
   public get(key: Object): Object {
     if (key === null) {
-      let error = new BusinessError('Parameter error. key not be null');
-      throw error;
+      throw new Error('key not be null');
     }
     let value: Object;
     if (this.cache.has(key)) {
@@ -850,8 +845,7 @@ class LruBuffer {
 
   public put(key: Object, value: Object): Object {
     if (key === null || value === null) {
-      let error = new BusinessError('Parameter error. key or value not be null');
-      throw error;
+      throw new Error('key or value not be null');
     }
     let former: Object = undefined;
     this.putCount++;
@@ -926,8 +920,7 @@ class LruBuffer {
 
   public remove(key: Object): Object {
     if (key === null) {
-      let error = new BusinessError('Parameter error. key not be null');
-      throw error;
+      throw new Error('key not be null');
     } else if (this.cache.has(key)) {
       let former: Object;
       former = this.cache.get(key);
@@ -1420,8 +1413,7 @@ class RationalNumber {
 
   public getCommonDivisor(number1: number, number2: number): number {
     if (number1 === 0 || number2 === 0) {
-      let error = new BusinessError('Parameter error. Parameter cannot be zero!');
-      throw error;
+      throw new Error('Parameter cannot be zero!');
     }
     let temp: number = 0;
     if (number1 < number2) {
@@ -1514,12 +1506,11 @@ class Scope {
   private readonly _upperLimit: ScopeType;
 
   public constructor(readonly lowerObj: ScopeType, readonly upperObj: ScopeType) {
-    this.checkNullOrUndefined(lowerObj, 'Parameter error. lower limit not be null');
-    this.checkNullOrUndefined(upperObj, 'Parameter error. upper limit not be null');
+    this.checkNull(lowerObj, 'lower limit not be null');
+    this.checkNull(upperObj, 'upper limit not be null');
 
     if (lowerObj.compareTo(upperObj)) {
-      let error = new BusinessError('Parameter error. lower limit must be less than or equal to upper limit');
-      throw error;
+      throw new Error('lower limit must be less than or equal to upper limit');
     }
     this._lowerLimit = lowerObj;
     this._upperLimit = upperObj;
@@ -1542,7 +1533,7 @@ class Scope {
   public contains(x: Scope | ScopeType): boolean {
     let resLower: boolean;
     let resUpper: boolean;
-    this.checkNullOrUndefined(x, 'Parameter error. value must not be null or undefined');
+    this.checkNull(x, 'value must not be null');
     if (x instanceof Scope) {
       resLower = x._lowerLimit.compareTo(this._lowerLimit);
       resUpper = this._upperLimit.compareTo(x._upperLimit);
@@ -1554,7 +1545,7 @@ class Scope {
   }
 
   public clamp(value: ScopeType): ScopeType {
-    this.checkNullOrUndefined(value, 'Parameter error. value must not be null or undefined');
+    this.checkNull(value, 'value must not be null');
     if (!value.compareTo(this._lowerLimit)) {
       return this._lowerLimit;
     } else if (value.compareTo(this._upperLimit)) {
@@ -1572,8 +1563,8 @@ class Scope {
     let mLower: ScopeType;
     let mUpper: ScopeType;
     if (y) {
-      this.checkNullOrUndefined(x, 'Parameter error. lower limit must not be null or undefined');
-      this.checkNullOrUndefined(y, 'Parameter error. upper limit must not be null or undefined');
+      this.checkNull(x, 'lower limit must not be null');
+      this.checkNull(y, 'upper limit must not be null');
       reLower = this._lowerLimit.compareTo(x);
       reUpper = y.compareTo(this._upperLimit);
       if (reLower && reUpper) {
@@ -1584,7 +1575,7 @@ class Scope {
         return new Scope(mLower, mUpper);
       }
     } else {
-      this.checkNullOrUndefined(x, 'Parameter error. scope must not be null or undefined');
+      this.checkNull(x, 'scope must not be null');
       reLower = this._lowerLimit.compareTo(x._lowerLimit);
       reUpper = x._upperLimit.compareTo(this._upperLimit);
       if (!reLower && !reUpper) {
@@ -1608,9 +1599,9 @@ class Scope {
     let mLower: ScopeType;
     let mUpper: ScopeType;
     if (!y) {
-      this.checkNullOrUndefined(x, 'Parameter error. value must not be null or undefined');
+      this.checkNull(x, 'value must not be null');
       if (!(x instanceof Scope)) {
-        this.checkNullOrUndefined(x, 'Parameter error. value must not be null or undefined');
+        this.checkNull(x, 'value must not be null');
         return this.expand(x, x);
       }
       reLower = x._lowerLimit.compareTo(this._lowerLimit);
@@ -1626,8 +1617,8 @@ class Scope {
       }
 
     } else {
-      this.checkNullOrUndefined(x, 'Parameter error. lower limit must not be null or undefined');
-      this.checkNullOrUndefined(y, 'Parameter error. upper limit must not be null or undefined');
+      this.checkNull(x, 'lower limit must not be null');
+      this.checkNull(y, 'upper limit must not be null');
       reLower = x.compareTo(this._lowerLimit);
       reUpper = this._upperLimit.compareTo(y);
       if (reLower && reUpper) {
@@ -1645,10 +1636,9 @@ class Scope {
     return `[${strLower}, ${strUpper}]`;
   }
 
-  public checkNullOrUndefined(o: ScopeType, str: string): void {
-    if (o === null || o === undefined) {
-      let error = new BusinessError(str);
-      throw error;
+  public checkNull(o: ScopeType, str: string): void {
+    if (o === null) {
+      throw new Error(str);
     }
   }
 }
@@ -1666,12 +1656,11 @@ class ScopeHelper {
       throw error;
     }
 
-    this.checkNullOrUndefined(lowerObj, 'Parameter error. lower limit not be null');
-    this.checkNullOrUndefined(upperObj, 'Parameter error. upper limit not be null');
+    this.checkNull(lowerObj, 'lower limit not be null');
+    this.checkNull(upperObj, 'upper limit not be null');
 
     if (lowerObj.compareTo(upperObj)) {
-      let error = new BusinessError('Parameter error. lower limit must be less than or equal to upper limit');
-      throw error;
+      throw new Error('lower limit must be less than or equal to upper limit');
     }
     this._lowerLimit = lowerObj;
     this._upperLimit = upperObj;
@@ -1692,7 +1681,7 @@ class ScopeHelper {
   public contains(value: ScopeType): boolean;
   public contains(scope: ScopeHelper): boolean;
   public contains(x: ScopeHelper | ScopeType): boolean {
-    this.checkNullOrUndefined(x, 'Parameter error. value must not be null or undefined');
+    this.checkNull(x, 'value must not be null');
     if (typeof x !== 'object') {
       let error = new BusinessError(`Parameter error. The type of ${x} must be object or ScopeHelper`);
       throw error;
@@ -1710,7 +1699,7 @@ class ScopeHelper {
   }
 
   public clamp(value: ScopeType): ScopeType {
-    this.checkNullOrUndefined(value, 'Parameter error. value must not be null or undefined');
+    this.checkNull(value, 'value must not be null');
     if (typeof value !== 'object') {
       let error = new BusinessError(`Parameter error. The type of ${value} must be object`);
       throw error;
@@ -1737,8 +1726,8 @@ class ScopeHelper {
     let mLower: ScopeType;
     let mUpper: ScopeType;
     if (y) {
-      this.checkNullOrUndefined(x, 'Parameter error. lower limit must not be null or undefined');
-      this.checkNullOrUndefined(y, 'Parameter error. upper limit must not be null or undefined');
+      this.checkNull(x, 'lower limit must not be null');
+      this.checkNull(y, 'upper limit must not be null');
       if (typeof y !== 'object') {
         let error = new BusinessError(`Parameter error. The type of ${y} must be ScopeType`);
         throw error;
@@ -1753,7 +1742,7 @@ class ScopeHelper {
         return new ScopeHelper(mLower, mUpper);
       }
     } else {
-      this.checkNullOrUndefined(x, 'Parameter error. scope must not be null or undefined');
+      this.checkNull(x, 'scope must not be null');
       reLower = this._lowerLimit.compareTo(x._lowerLimit);
       reUpper = x._upperLimit.compareTo(this._upperLimit);
       if (!reLower && !reUpper) {
@@ -1781,9 +1770,9 @@ class ScopeHelper {
     let mLower: ScopeType;
     let mUpper: ScopeType;
     if (!y) {
-      this.checkNullOrUndefined(x, 'Parameter error. value must not be null or undefined');
+      this.checkNull(x, 'value must not be null');
       if (!(x instanceof ScopeHelper)) {
-        this.checkNullOrUndefined(x, 'Parameter error. value must not be null or undefined');
+        this.checkNull(x, 'value must not be null');
         return this.expand(x, x);
       }
       reLower = x._lowerLimit.compareTo(this._lowerLimit);
@@ -1804,8 +1793,8 @@ class ScopeHelper {
         throw error;
       }
 
-      this.checkNullOrUndefined(x, 'Parameter error. lower limit must not be null or undefined');
-      this.checkNullOrUndefined(y, 'upper limit must not be null or undefined');
+      this.checkNull(x, 'lower limit must not be null');
+      this.checkNull(y, 'upper limit must not be null');
       reLower = x.compareTo(this._lowerLimit);
       reUpper = this._upperLimit.compareTo(y);
       if (reLower && reUpper) {
@@ -1823,10 +1812,9 @@ class ScopeHelper {
     return `[${strLower}, ${strUpper}]`;
   }
 
-  public checkNullOrUndefined(o: ScopeType, str: string): void {
+  public checkNull(o: ScopeType, str: string): void {
     if (o === null) {
-      let error = new BusinessError(str);
-      throw error;
+      throw new Error(str);
     }
   }
 }

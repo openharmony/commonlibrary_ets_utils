@@ -900,7 +900,7 @@ class Writable {
       throw new BusinessError(`Parameter error. The type of ${chunk} must be string or UintArray`, 401);
     }
     if (typeof chunk === 'string' && chunk.length === 0) {
-        throw new BusinessError(`Parameter error. The type of ${chunk} cannot be empty string`, 401);
+      throw new BusinessError(`Parameter error. The type of ${chunk} cannot be empty string`, 401);
     }
     if (this.ending && !this.writing) {
       setTimeout((): void => {
