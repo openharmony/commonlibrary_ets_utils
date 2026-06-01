@@ -48,25 +48,30 @@ static bool GetCollectionFunction(napi_env env, napi_value global, const std::st
     return validFunction;
 }
 
-static void GetBitVectorFunction(napi_env env, napi_value global, napi_value &bitVector)
+static bool GetBitVectorFunction(napi_env env, napi_value global, napi_value &bitVector)
 {
     napi_value arkPrivateClass = nullptr;
     napi_value arkPrivateKey = nullptr;
     std::string arkPrivateStr = "ArkPrivate";
-    NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, arkPrivateStr.c_str(),
-                          arkPrivateStr.size(), &arkPrivateKey));
-    NAPI_CALL_RETURN_VOID(env, napi_get_property(env, global, arkPrivateKey, &arkPrivateClass));
+    NAPI_CALL_BASE(env, napi_create_string_utf8(env, arkPrivateStr.c_str(),
+                          arkPrivateStr.size(), &arkPrivateKey), false);
+    NAPI_CALL_BASE(env, napi_get_property(env, global, arkPrivateKey, &arkPrivateClass), false);
 
     napi_value loadFunction = nullptr;
     napi_value loadKey = nullptr;
     std::string loadStr = "Load";
-    NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, loadStr.c_str(), loadStr.size(), &loadKey));
-    NAPI_CALL_RETURN_VOID(env, napi_get_property(env, arkPrivateClass, loadKey, &loadFunction));
+    NAPI_CALL_BASE(env, napi_create_string_utf8(env, loadStr.c_str(), loadStr.size(), &loadKey), false);
+    NAPI_CALL_BASE(env, napi_get_property(env, arkPrivateClass, loadKey, &loadFunction), false);
 
     napi_value bitVectorIndex = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int32(env, ARK_PRIVATE_BIT_VECTOR_INDEX, &bitVectorIndex));
+    NAPI_CALL_BASE(env, napi_create_int32(env, ARK_PRIVATE_BIT_VECTOR_INDEX, &bitVectorIndex), false);
     napi_value argv[1] = { bitVectorIndex };
-    napi_call_function(env, arkPrivateClass, loadFunction, 1, argv, &bitVector);
+    napi_status status = napi_call_function(env, arkPrivateClass, loadFunction, 1, argv, &bitVector);
+    if (status != napi_ok) {
+        HILOG_ERROR("napi_call_function failed for BitVector.");
+        return false;
+    }
+    return true;
 }
 
 static napi_value InitArkTSCollections(napi_env env, napi_value exports)
@@ -82,7 +87,7 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
     napi_value sendableInt32Array;
     napi_value sendableUint32Array;
     napi_value sendableArrayBuffer;
-    napi_value bitVector;
+    napi_value bitVector = nullptr;
     napi_value sendableUint8ClampedArray;
     napi_value sendableFloat32Array;
 
@@ -125,7 +130,9 @@ static napi_value InitArkTSCollections(napi_env env, napi_value exports)
         return exports;
     }
 
-    GetBitVectorFunction(env, global, bitVector);
+    if (!GetBitVectorFunction(env, global, bitVector)) {
+        return exports;
+    }
 
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_PROPERTY("Array", sendableArrayValue),
