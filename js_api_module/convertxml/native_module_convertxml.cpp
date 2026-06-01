@@ -30,6 +30,7 @@ namespace OHOS::Xml {
     };
 
 using namespace OHOS::Tools;
+static const int32_t ERROR_CODE = 401; // 401 : the parameter type is incorrect
 
     static napi_value ConvertXmlConstructor(napi_env env, napi_callback_info info)
     {
@@ -92,7 +93,7 @@ using namespace OHOS::Tools;
         ConvertXml *convertxml = nullptr;
         napi_unwrap_s(env, thisVar, &convertXmlTypeTag, reinterpret_cast<void**>(&convertxml));
         if (convertxml == nullptr) {
-            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. Parameter verification failed.");
+            ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
             return nullptr;
         }
         convertxml->DealNapiStrValue(env, args[0], strXml);
@@ -123,7 +124,7 @@ using namespace OHOS::Tools;
         ConvertXml *convertxml = nullptr;
         status = napi_unwrap_s(env, thisVar, &convertXmlTypeTag, reinterpret_cast<void**>(&convertxml));
         if (status != napi_ok || convertxml == nullptr) {
-            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Parameter error. Parameter verification failed.");
+            ErrorHelper::ThrowError(env, ERROR_CODE, "Parameter error. Parameter verification failed.");
             napi_close_handle_scope(env, scope);
             return nullptr;
         }

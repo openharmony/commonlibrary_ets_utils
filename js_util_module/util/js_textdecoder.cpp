@@ -18,9 +18,6 @@
 #include "ohos/init_data.h"
 #include "securec.h"
 #include "util_helper.h"
-#include "tools/ets_error.h"
-
-using namespace OHOS::Tools;
 
 namespace OHOS::Util {
     using namespace Commonlibrary::Platform;
@@ -212,7 +209,7 @@ namespace OHOS::Util {
         ucnv_toUnicode(GetConverterPtr(), &target, target + len, &source, source + length, nullptr, flush, &codeFlag);
         if (codeFlag != U_ZERO_ERROR) {
             FreedMemory(arr);
-            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+            napi_throw_error(env, "401",
                 "Parameter error. Please check if the decode data matches the encoding format.");
             return nullptr;
         }
