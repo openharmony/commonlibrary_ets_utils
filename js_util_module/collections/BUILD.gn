@@ -75,5 +75,5 @@ ohos_source_set("collections_static") {
 }
 
 group("collections_packages") {
-  public_deps = [ ":collections" ]
+  deps = [ ":collections" ]
 }

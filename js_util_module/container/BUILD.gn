@@ -179,7 +179,7 @@ foreach(item, container_names) {
 }
 
 group("container_packages") {
-  public_deps = container_libs
+  deps = container_libs
 }
 
 foreach(name, container_names) {

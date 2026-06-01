@@ -67,7 +67,9 @@
                 "openssl",
                 "libxml2",
                 "typescript",
-                "runtime_core"
+                "runtime_core",
+                "ets_frontend",
+                "libuv"
             ],
             "third_party": []
         },
