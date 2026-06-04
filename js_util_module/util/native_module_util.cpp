@@ -1695,60 +1695,13 @@ namespace OHOS::Util {
         return object->End(env, argv);
     }
 
-    static bool GetBooleanProperty(napi_env env, napi_value obj, const char* key, bool defaultVal)
-    {
-        napi_value value = nullptr;
-        napi_status status = napi_get_named_property(env, obj, key, &value);
-        if (status != napi_ok || value == nullptr) {
-            return defaultVal;
-        }
-
-        napi_valuetype type;
-        if (napi_typeof(env, value, &type) != napi_ok) {
-            return defaultVal;
-        }
-        if (type != napi_boolean) {
-            return defaultVal;
-        }
-
-        bool result = defaultVal;
-        if (napi_get_value_bool(env, value, &result) != napi_ok) {
-            return defaultVal;
-        }
-        
-        return result;
-    }
-
-    static int64_t GetInt64Property(napi_env env, napi_value obj, const char* key, int64_t defaultVal)
-    {
-        napi_value value = nullptr;
-        napi_status status = napi_get_named_property(env, obj, key, &value);
-        if (status != napi_ok || value == nullptr) {
-            return defaultVal;
-        }
-
-        napi_valuetype type;
-        if (napi_typeof(env, value, &type) != napi_ok) {
-            return defaultVal;
-        }
-        if (type != napi_number) {
-            return defaultVal;
-        }
-
-        int64_t result = defaultVal;
-        if (napi_get_value_int64(env, value, &result) != napi_ok) {
-            return defaultVal;
-        }
-        return result;
-    }
-
     static napi_value SetMultithreadingDetectionEnabled(napi_env env, napi_callback_info info)
     {
-        size_t requireArgc = 2;
-        size_t argc = 2;
-        napi_value args[2] = {nullptr};
+        size_t requireArgc = 1;
+        size_t argc = 1;
+        napi_value args[1] = {nullptr};
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-        if (argc < 1) {
+        if (argc < requireArgc) {
             napi_throw_error(env, "-1",
                 "Parameter error. SetMultithreadingDetectionEnabled: input parameter count must be > 0.");
             return nullptr;
@@ -1759,30 +1712,10 @@ namespace OHOS::Util {
             return ThrowError(env,
                 "Parameter error. SetMultithreadingDetectionEnabled: input parameter type must be boolean.");
         }
-
-        bool enabled = false;
-        NAPI_CALL(env, napi_get_value_bool(env, args[0], &enabled));
-
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-        bool abort = engine->GetDetectionAbort();
-        int64_t frequency = engine->GetDetectionFrequency();
-        int64_t interval = engine->GetDetectionInterval();
-
-        if (argc >= requireArgc && args[1] != nullptr) {
-            napi_valuetype optionsType;
-            NAPI_CALL(env, napi_typeof(env, args[1], &optionsType));
-            
-            if (optionsType != napi_undefined && optionsType != napi_null) {
-                if (optionsType != napi_object) {
-                    return ThrowError(env,
-                        "Parameter error. SetMultithreadingDetectionEnabled: input parameter type must be options.");
-                }
-                abort = GetBooleanProperty(env, args[1], "abort", abort);
-                frequency = GetInt64Property(env, args[1], "frequency", frequency);
-                interval = GetInt64Property(env, args[1], "interval", interval);
-            }
-        }
-        engine->SetMultithreadingDetectionEnabled(env, enabled, abort, frequency, interval);
+        bool value = false;
+        napi_get_value_bool(env, args[0], &value);
+        engine->SetMultithreadingDetectionEnabled(env, value);
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
         return result;
