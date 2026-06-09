@@ -8715,6 +8715,12 @@ HWTEST_F(NativeEngineTest, TaskpoolTest402, testing::ext::TestSize.Level0)
     task->runningPrintCount_ = 6;
     void* data = static_cast<void*>(task);
     bool flag = NativeEngineTest::PushRunningTaskLog(data);
+
+    Task* task2 = new Task();
+    task2->SetValid(false);
+    task->runningPrintCount_ = 6;
+    void* data2 = static_cast<void*>(task2);
+    flag = NativeEngineTest::PushRunningTaskLog(data2);
     ASSERT_TRUE(flag);
 }
 
@@ -8802,4 +8808,14 @@ HWTEST_F(NativeEngineTest, TaskpoolTest405, testing::ext::TestSize.Level0)
     NativeEngineTest::PeriodicTaskCallback(handle);
     TaskManager::GetInstance().EraseWaitingTaskId(task->taskId_, task->periodicTaskPriority_);
     ASSERT_TRUE(true);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest406, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    NativeEngineTest::NotifyShrinkByInBackground(env);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
 }

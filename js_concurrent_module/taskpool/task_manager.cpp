@@ -64,6 +64,9 @@ static constexpr char ON_START_STR[] = "TaskPoolOnStartTask";
 static constexpr uint32_t UNEXECUTE_TASK_TIME = 60000; // 60000: 1min
 static constexpr std::array<uint32_t, 6> PRINT_FREQUENCY_MAP = {10000, 30000, 60000, 300000, 600000, 1800000};
 static constexpr uint64_t RATIO = 1000;
+static constexpr uint32_t BACKGROUND_IDLE_TIME = 1000; // 1000, 1s
+static constexpr uint32_t BACKGROUND_INTERVAL_TIME = 30000; // 30000, 30s
+static constexpr uint32_t BACKGROUND_DIV = 2;
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -415,9 +418,10 @@ uint32_t TaskManager::GetIdleWorkers()
     return idleCount;
 }
 
-void TaskManager::GetIdleWorkersList(uint32_t step)
+void TaskManager::GetIdleWorkersList(uint32_t step, bool inBackground)
 {
     char buf[4096]; // 4096: buffer for thread info
+    uint32_t idleCount = inBackground ? 1 : IDLE_THRESHOLD;
     for (auto& worker : idleWorkers_) {
 #if defined(ENABLE_TASKPOOL_FFRT)
         if (worker->ffrtTaskHandle_ != nullptr) {
@@ -450,18 +454,21 @@ void TaskManager::GetIdleWorkersList(uint32_t step)
         if (state != 'S' || utime != worker->lastCpuTime_) {
             worker->idleCount_ = 0;
             worker->lastCpuTime_ = utime;
-            continue;
+            if (!inBackground) {
+                continue;
+            }
         }
-        if (++worker->idleCount_ >= IDLE_THRESHOLD) {
+        if (++worker->idleCount_ >= idleCount) {
             freeList_.emplace_back(worker);
         }
     }
 }
 
-void TaskManager::TriggerShrink(uint32_t step)
+void TaskManager::TriggerShrink(uint32_t step, bool inBackground)
 {
-    GetIdleWorkersList(step);
+    GetIdleWorkersList(step, inBackground);
     step = std::min(step, static_cast<uint32_t>(freeList_.size()));
+    uint32_t time = inBackground ? BACKGROUND_IDLE_TIME : static_cast<uint32_t>(MAX_IDLE_TIME);
     uint32_t count = 0;
     for (size_t i = 0; i < freeList_.size(); i++) {
         auto worker = freeList_[i];
@@ -469,7 +476,7 @@ void TaskManager::TriggerShrink(uint32_t step)
             continue;
         }
         auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-        if (idleTime < MAX_IDLE_TIME || worker->HasRunningTasks()) {
+        if (idleTime < time || worker->HasRunningTasks()) {
             continue;
         }
         idleWorkers_.erase(worker);
@@ -488,13 +495,14 @@ uint32_t TaskManager::GetIdleWorkers()
     return idleWorkers_.size();
 }
 
-void TaskManager::TriggerShrink(uint32_t step)
+void TaskManager::TriggerShrink(uint32_t step, bool inBackground)
 {
+    uint32_t time = inBackground ? BACKGROUND_IDLE_TIME : static_cast<uint32_t>(MAX_IDLE_TIME);
     for (uint32_t i = 0; i < step; i++) {
         // try to free the worker that idle time meets the requirement
         auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [](Worker* worker) {
             auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-            return idleTime > MAX_IDLE_TIME && !worker->HasRunningTasks() && !worker->HasLongTask();
+            return idleTime > time && !worker->HasRunningTasks() && !worker->HasLongTask();
         });
         // remove it from all sets
         if (iter != idleWorkers_.end()) {
@@ -691,6 +699,10 @@ void TaskManager::RunTaskManager()
         needChecking_ = false;
         uv_async_send(dispatchHandle_);
     }
+    auto workerEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
+    workerEngine->SetTaskpoolShrinkCallback([this](bool inBackground) {
+        this->NotifyShrinkByInBackground(inBackground);
+    });
     uv_run(loop_, UV_RUN_DEFAULT);
     if (loop_ != nullptr) {
         uv_loop_delete(loop_);
@@ -2061,6 +2073,9 @@ void TaskManager::PushRunningTaskLog()
     {
         std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
         for (auto& [_, task] : runningTasks_) {
+            if (task == nullptr || !task->IsValid()) {
+                continue;
+            }
             diffTime = 0;
             if (IsNeedPrint(now, task->startTime_, task->runningPrintCount_, diffTime)) {
                 task->runningPrintCount_++;
@@ -2144,5 +2159,31 @@ std::string TaskManager::GetPendingMessage(Priority priority, std::string tag)
                 ", duration: " + std::to_string(diffTime / RATIO) + "s";
     }
     return message;
+}
+
+void TaskManager::NotifyShrinkByInBackground(bool inBackground)
+{
+    HILOG_DEBUG("taskpool:: NotifyShrinkByInBackground, inBackground:%{public}d", inBackground);
+    if (!inBackground) {
+        return;
+    }
+    uint64_t nowTime = ConcurrentHelper::GetMilliseconds();
+    if (nowTime - backgroundShrinkTime_ < BACKGROUND_INTERVAL_TIME) {
+        HILOG_DEBUG("taskpool:: NotifyShrinkByInBackground, diff less %{public}s",
+            std::to_string(BACKGROUND_INTERVAL_TIME).c_str());
+        return;
+    }
+    uint32_t minThread = ConcurrentHelper::IsLowMemory() ? 0 : DEFAULT_MIN_THREADS;
+    std::lock_guard<std::recursive_mutex> lock(workersMutex_);
+    uint32_t idleCount = idleWorkers_.size();
+    uint32_t workerCount = workers_.size();
+    if (workerCount <= minThread) {
+        HILOG_DEBUG("taskpool:: NotifyShrinkByInBackground, workerCount:%{public}s, minThread:%{public}s",
+            std::to_string(workerCount).c_str(), std::to_string(minThread).c_str());
+        return;
+    }
+    uint32_t step = std::ceil(idleCount / BACKGROUND_DIV);
+    TriggerShrink(step, inBackground);
+    backgroundShrinkTime_ = nowTime;
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
