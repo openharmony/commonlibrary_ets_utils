@@ -52,7 +52,6 @@ ohos_unittest("test_util_unittest") {
 
   external_deps = [
     "c_utils:utils",
-    "ets_runtime:libark_jsruntime",
     "hilog:libhilog",
     "icu:shared_icuuc",
     "libuv:uv_static",

@@ -150,5 +150,5 @@ ohos_source_set("buffer_static") {
 }
 
 group("buffer_packages") {
-  public_deps = [ ":buffer" ]
+  deps = [ ":buffer" ]
 }

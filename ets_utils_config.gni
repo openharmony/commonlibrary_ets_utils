@@ -43,4 +43,3 @@ generate_js_bytecode_py =
 ets_util_path = "//commonlibrary/ets_utils"
 js_concurrent_module_common =
     "//commonlibrary/ets_utils/js_concurrent_module/common"
-ets_runtime = "//arkcompiler/ets_runtime"
