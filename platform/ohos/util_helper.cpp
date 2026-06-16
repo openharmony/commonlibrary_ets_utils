@@ -94,6 +94,8 @@ namespace Commonlibrary::Platform {
         const UChar *sourceLimit = source + u_strlen(source);
         if (sourceLimit == nullptr) {
             HILOG_ERROR("TextEncoder:: sourceLimit is nullptr");
+            ucnv_close(converter);
+            FreedMemory(targetArray);
             return "";
         }
         ucnv_fromUnicode(converter, &target, targetLimit, &source, sourceLimit, nullptr, true, &codeflag);
