@@ -64,7 +64,6 @@ namespace Commonlibrary::Platform {
             HILOG_ERROR("TextEncoder:: ucnv_open failed !");
             return "";
         }
-
         size_t maxByteSize = static_cast<size_t>(ucnv_getMaxCharSize(converter));
         const UChar *source = originalBuffer;
         size_t limit = maxByteSize * inputSize;
@@ -87,7 +86,6 @@ namespace Commonlibrary::Platform {
             FreedMemory(targetArray);
             return "";
         }
-
         char *target = targetArray;
         const char *targetLimit = targetArray + limit;
         const UChar *sourceLimit = source + u_strlen(source);
@@ -104,7 +102,6 @@ namespace Commonlibrary::Platform {
             FreedMemory(targetArray);
             return "";
         }
-
         buffer = targetArray;
         ucnv_close(converter);
         FreedMemory(targetArray);
