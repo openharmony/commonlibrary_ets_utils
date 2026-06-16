@@ -64,29 +64,30 @@ namespace Commonlibrary::Platform {
             HILOG_ERROR("TextEncoder:: ucnv_open failed !");
             return "";
         }
+
         size_t maxByteSize = static_cast<size_t>(ucnv_getMaxCharSize(converter));
         const UChar *source = originalBuffer;
         size_t limit = maxByteSize * inputSize;
         size_t len = limit * sizeof(char);
         char *targetArray = nullptr;
-        if (limit > 0) {
-            targetArray = new (std::nothrow) char[limit + 1];
-            if (targetArray == nullptr) {
-                HILOG_ERROR("TextEncoder:: UnicodeConversion memory allocation failed, targetArray is nullptr");
-                ucnv_close(converter);
-                return "";
-            }
-            if (memset_s(targetArray, len + sizeof(char), 0, len + sizeof(char)) != EOK) {
-                HILOG_ERROR("TextEncoder:: encode targetArray memset_s failed");
-                ucnv_close(converter);
-                FreedMemory(targetArray);
-                return "";
-            }
-        } else {
+        if (limit == 0) {
             HILOG_ERROR("TextEncoder:: limit is error");
             ucnv_close(converter);
             return "";
         }
+        targetArray = new (std::nothrow) char[limit + 1];
+        if (targetArray == nullptr) {
+            HILOG_ERROR("TextEncoder:: UnicodeConversion memory allocation failed, targetArray is nullptr");
+            ucnv_close(converter);
+            return "";
+        }
+        if (memset_s(targetArray, len + sizeof(char), 0, len + sizeof(char)) != EOK) {
+            HILOG_ERROR("TextEncoder:: encode targetArray memset_s failed");
+            ucnv_close(converter);
+            FreedMemory(targetArray);
+            return "";
+        }
+
         char *target = targetArray;
         const char *targetLimit = targetArray + limit;
         const UChar *sourceLimit = source + u_strlen(source);
@@ -103,6 +104,7 @@ namespace Commonlibrary::Platform {
             FreedMemory(targetArray);
             return "";
         }
+
         buffer = targetArray;
         ucnv_close(converter);
         FreedMemory(targetArray);
