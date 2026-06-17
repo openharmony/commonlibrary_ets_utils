@@ -90,7 +90,7 @@ public:
     uint32_t GetThreadNum();
     uint32_t GetRunningWorkers();
     uint32_t GetTimeoutWorkers();
-    void GetIdleWorkersList(uint32_t step);
+    void GetIdleWorkersList(uint32_t step, bool inBackground = false);
     bool ReadThreadInfo(pid_t tid, char* buf, uint32_t size);
 
     // for get thread info
@@ -188,6 +188,8 @@ public:
 
     LogManager logManager_ {};
 
+    void NotifyShrinkByInBackground(bool inBackground);
+
 private:
     TaskManager();
     ~TaskManager();
@@ -205,7 +207,7 @@ private:
     void CheckForBlockedWorkers();
     template <bool needCheckIdle> void TryExpandWithCheckIdle();
     void NotifyShrink(uint32_t targetNum);
-    void TriggerShrink(uint32_t step);
+    void TriggerShrink(uint32_t step, bool inBackground = false);
     uint32_t ComputeSuitableThreadNum();
     uint32_t ComputeSuitableIdleNum();
     void DispatchAndTryExpandInner();
@@ -312,6 +314,7 @@ private:
 #endif
     std::atomic<bool> isPerformIdle_ = false;
     std::atomic<uint32_t> taskIdSalt_ = 1;
+    std::atomic<uint64_t> backgroundShrinkTime_ {0};
 
     friend class TaskGroupManager;
     friend class NativeEngineTest;

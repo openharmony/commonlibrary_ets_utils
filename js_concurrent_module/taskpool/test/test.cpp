@@ -255,10 +255,15 @@ void NativeEngineTest::TriggerShrink(napi_env env)
     worker->hasLongTask_ = false;
     taskManager.TriggerShrink(step);
 
+    int32_t runningCount = worker->runningCount_;
+    worker->runningCount_ = 1;
+    worker->idlePoint_ = ConcurrentHelper::GetMilliseconds() - MAX_TIMEOUT_TIME;
+    taskManager.TriggerShrink(step);
+    worker->runningCount_ = 0;
+
     taskManager.idleWorkers_.clear();
     taskManager.idleWorkers_.insert(worker);
     taskManager.freeList_.emplace_back(worker);
-    worker->idlePoint_ = ConcurrentHelper::GetMilliseconds() - MAX_TIMEOUT_TIME;
     worker->state_ = WorkerState::IDLE;
     worker->hasLongTask_ = false;
     uv_loop_t* loop = worker->GetWorkerLoop();
@@ -1209,6 +1214,7 @@ bool NativeEngineTest::PrintLogs(void* data)
     taskManager.PrintLogs(nullptr);
     taskManager.RemoveTaskEnqueueTime(task->taskId_);
     taskManager.EraseWaitingTaskId(task->taskId_, task->asyncTaskPriority_);
+    taskManager.runningTasks_.erase(task->taskId_);
     delete task;
     return true;
 }
@@ -1226,8 +1232,10 @@ bool NativeEngineTest::PushRunningTaskLog(void* data)
     TaskManager& taskManager = TaskManager::GetInstance();
     taskManager.StoreTask(task);
     taskManager.GetTaskForPerform(task->taskId_);
+    taskManager.runningTasks_.emplace(1, nullptr);
     taskManager.PushRunningTaskLog();
     taskManager.RemoveTask(task->taskId_);
+    taskManager.runningTasks_.erase(1);
     delete task;
     return true;
 }
@@ -1264,5 +1272,33 @@ void NativeEngineTest::ClearTaskQueue()
 void NativeEngineTest::SetSystemApp(bool flag)
 {
     TaskManager::GetInstance().isSystemApp_ = flag;
+}
+
+void NativeEngineTest::NotifyShrinkByInBackground(napi_env env)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    taskManager.NotifyShrinkByInBackground(false);
+
+    taskManager.workers_.clear();
+    taskManager.NotifyShrinkByInBackground(true);
+
+    Worker* worker1 = reinterpret_cast<Worker*>(WorkerConstructor(env));
+    worker1->workerEnv_ = env;
+    worker1->hasLongTask_ = true;
+    Worker* worker2 = reinterpret_cast<Worker*>(WorkerConstructor(env));
+    worker2->workerEnv_ = env;
+    worker2->hasLongTask_ = true;
+
+    taskManager.workers_.insert(worker1);
+    taskManager.workers_.insert(worker2);
+    taskManager.idleWorkers_.clear();
+    taskManager.idleWorkers_.insert(worker1);
+    taskManager.idleWorkers_.insert(worker2);
+    taskManager.NotifyShrinkByInBackground(true);
+    taskManager.freeList_.clear();
+
+    taskManager.NotifyShrinkByInBackground(true);
+    taskManager.RemoveWorker(worker1);
+    taskManager.RemoveWorker(worker2);
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule

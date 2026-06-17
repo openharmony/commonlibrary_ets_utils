@@ -119,6 +119,7 @@ public:
     static void TestLogMax();
     static void ClearTaskQueue();
     static void SetSystemApp(bool flag);
+    static void NotifyShrinkByInBackground(napi_env env);
 
     class ExceptionScope {
     public:
