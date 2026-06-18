@@ -497,12 +497,11 @@ uint32_t TaskManager::GetIdleWorkers()
 
 void TaskManager::TriggerShrink(uint32_t step, bool inBackground)
 {
-    uint32_t time = inBackground ? BACKGROUND_IDLE_TIME : static_cast<uint32_t>(MAX_IDLE_TIME);
     for (uint32_t i = 0; i < step; i++) {
         // try to free the worker that idle time meets the requirement
         auto iter = std::find_if(idleWorkers_.begin(), idleWorkers_.end(), [](Worker* worker) {
             auto idleTime = ConcurrentHelper::GetMilliseconds() - worker->idlePoint_;
-            return idleTime > time && !worker->HasRunningTasks() && !worker->HasLongTask();
+            return idleTime > MAX_IDLE_TIME && !worker->HasRunningTasks() && !worker->HasLongTask();
         });
         // remove it from all sets
         if (iter != idleWorkers_.end()) {
@@ -699,10 +698,12 @@ void TaskManager::RunTaskManager()
         needChecking_ = false;
         uv_async_send(dispatchHandle_);
     }
+#if defined(OHOS_PLATFORM)
     auto workerEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
     workerEngine->SetTaskpoolShrinkCallback([this](bool inBackground) {
         this->NotifyShrinkByInBackground(inBackground);
     });
+#endif
     uv_run(loop_, UV_RUN_DEFAULT);
     if (loop_ != nullptr) {
         uv_loop_delete(loop_);
@@ -2163,6 +2164,7 @@ std::string TaskManager::GetPendingMessage(Priority priority, std::string tag)
 
 void TaskManager::NotifyShrinkByInBackground(bool inBackground)
 {
+#if defined(OHOS_PLATFORM)
     HILOG_DEBUG("taskpool:: NotifyShrinkByInBackground, inBackground:%{public}d", inBackground);
     if (!inBackground) {
         return;
@@ -2185,5 +2187,6 @@ void TaskManager::NotifyShrinkByInBackground(bool inBackground)
     uint32_t step = std::ceil(idleCount / BACKGROUND_DIV);
     TriggerShrink(step, inBackground);
     backgroundShrinkTime_ = nowTime;
+#endif
 }
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
