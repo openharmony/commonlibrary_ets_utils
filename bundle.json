@@ -69,7 +69,8 @@
                 "typescript",
                 "runtime_core",
                 "ets_frontend",
-                "libuv"
+                "libuv",
+                "node"
             ],
             "third_party": []
         },

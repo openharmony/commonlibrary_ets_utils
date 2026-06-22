@@ -25,6 +25,8 @@ ohos_shared_library("dfx") {
   external_deps = [
     "icu:shared_icuuc",
     "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
   ]
   if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]

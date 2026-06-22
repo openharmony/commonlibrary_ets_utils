@@ -104,6 +104,7 @@ ohos_source_set("stream_static") {
     external_deps = [
       "hilog:libhilog",
       "napi:ace_napi",
+      "node:node_header_notice",
     ]
   }
   subsystem_name = "commonlibrary"

@@ -74,7 +74,11 @@ ohos_shared_library("utils") {
 
   defines = []
   deps = [ ":utils_static" ]
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
+  ]
 
   if (is_ohos) {
     defines += [ "OHOS_PLATFORM" ]
@@ -126,7 +130,11 @@ ohos_source_set("utils_static") {
     ":utils_js",
     "${ets_util_path}/js_sys_module/timer:timer",
   ]
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
+  ]
 
   if (is_arkui_x) {
     include_dirs += [
@@ -152,7 +160,11 @@ ohos_source_set("utils_static") {
       "$sys_module/timer:timer_static",
     ]
 
-    external_deps -= [ "napi:ace_napi" ]
+    external_deps -= [
+      "napi:ace_napi",
+      "node:node_header_notice",
+      "libuv:uv",
+    ]
   } else {
     external_deps += [
       "hilog:libhilog",

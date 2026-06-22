@@ -42,6 +42,7 @@ ohos_unittest("test_process_unittest") {
     "icu:shared_icuuc",
     "libuv:uv",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 }
 

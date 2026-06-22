@@ -135,6 +135,7 @@ ohos_source_set("uri_static") {
     external_deps += [
       "icu:shared_icuuc",
       "napi:ace_napi",
+      "node:node_header_notice",
     ]
   }
 

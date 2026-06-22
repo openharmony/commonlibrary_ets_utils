@@ -90,6 +90,8 @@ ohos_shared_library("taskpool") {
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
   ]
 
   if (ets_utils_stacksize_low_enable) {
@@ -216,6 +218,8 @@ ohos_source_set("taskpool_static") {
       "bounds_checking_function:libsec_shared",
       "hitrace:hitrace_meter",
       "napi:ace_napi",
+      "node:node_header_notice",
+      "libuv:uv",
     ]
     if (is_ohos && is_standard_system && defined(global_parts_info) &&
         defined(global_parts_info.resourceschedule_qos_manager)) {

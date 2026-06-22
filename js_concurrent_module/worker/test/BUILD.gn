@@ -45,6 +45,7 @@ ohos_unittest("test_worker_unittest") {
     "icu:shared_icuuc",
     "libuv:uv",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 
   if (is_ohos && is_standard_system && !is_arkui_x) {

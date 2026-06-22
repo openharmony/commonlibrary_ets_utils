@@ -45,7 +45,11 @@ ohos_shared_library("timer") {
 
   defines = []
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
+  ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps += [ "$hilog_linux" ]
@@ -105,7 +109,11 @@ ohos_source_set("timer_static") {
 
   defines = []
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
+  ]
   if (is_arkui_x) {
     include_dirs += [
       "$plugins_root/hilog/include",

@@ -64,6 +64,8 @@ ohos_shared_library("worker") {
   external_deps = [
     "c_utils:utils",
     "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
   ]
 
   if (is_linux && current_toolchain == host_toolchain) {
@@ -177,6 +179,8 @@ ohos_source_set("worker_static") {
     external_deps += [
       "hitrace:hitrace_meter",
       "napi:ace_napi",
+      "node:node_header_notice",
+      "libuv:uv",
     ]
   }
 

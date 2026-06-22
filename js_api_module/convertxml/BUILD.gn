@@ -142,6 +142,8 @@ ohos_source_set("convertxml_static") {
       "icu:shared_icuuc",
       "libxml2:libxml2",
       "napi:ace_napi",
+      "node:node_header_notice",
+      "libuv:uv",
     ]
   }
 

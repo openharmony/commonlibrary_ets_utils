@@ -57,6 +57,7 @@ ohos_unittest("test_util_unittest") {
     "libuv:uv_static",
     "napi:ace_napi",
     "openssl:libcrypto_shared",
+    "node:node_header_notice",
   ]
 }
 
