@@ -140,6 +140,7 @@ ohos_source_set("fastbuffer_static") {
       "hilog:libhilog",
       "icu:shared_icuuc",
       "napi:ace_napi",
+      "node:node_header_notice",
     ]
   }
   subsystem_name = "commonlibrary"

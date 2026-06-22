@@ -137,6 +137,7 @@ ohos_source_set("url_static") {
       "bounds_checking_function:libsec_shared",
       "icu:shared_icuuc",
       "napi:ace_napi",
+      "node:node_header_notice",
     ]
   }
 

@@ -44,7 +44,11 @@ ohos_shared_library("console") {
 
   deps = []
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
+  ]
 
   if (is_linux && current_toolchain == host_toolchain) {
     deps += [ "$hilog_linux" ]
@@ -95,7 +99,11 @@ ohos_source_set("console_static") {
     "console.cpp",
   ]
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
+  ]
 
   defines = []
 

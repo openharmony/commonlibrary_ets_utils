@@ -46,6 +46,7 @@ ohos_unittest("test_utils_unittest") {
     "hilog:libhilog",
     "libuv:uv",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 }
 

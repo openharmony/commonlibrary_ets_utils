@@ -49,6 +49,7 @@ ohos_unittest("test_taskpool_unittest") {
     "libxml2:libxml2",
     "napi:ace_napi",
     "qos_manager:qos",
+    "node:node_header_notice",
   ]
 
   if (is_ohos && is_standard_system && !is_arkui_x) {

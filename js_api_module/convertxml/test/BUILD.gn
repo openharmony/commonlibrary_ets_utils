@@ -49,6 +49,7 @@ ohos_unittest("test_convertxml_unittest") {
     "libuv:uv",
     "libxml2:libxml2",
     "napi:ace_napi",
+    "node:node_header_notice",
   ]
 }
 
