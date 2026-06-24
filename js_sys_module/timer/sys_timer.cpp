@@ -20,15 +20,14 @@
 #ifdef ENABLE_HITRACE_HELPER_METER
 #include "helper/hitrace_helper.h"
 #endif
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "native_engine/native_container_scope.h"
+#endif
 #include "native_engine/native_engine.h"
 #include "tools/log.h"
 #include "tools/ets_error.h"
 
 using namespace OHOS::Tools;
-
-#ifdef ENABLE_CONTAINER_SCOPE
-using OHOS::Ace::ContainerScope;
-#endif
 
 namespace OHOS::JsSysModule {
 using namespace Commonlibrary::Concurrent::Common;
@@ -182,7 +181,13 @@ void Timer::TimerCallback(uv_timer_t* handle)
     uint32_t tId = callbackInfo->tId_;
     napi_env env = callbackInfo->env_;
 #ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(callbackInfo->containerScopeId_);
+    NativeEngine *scopeEngine = reinterpret_cast<NativeEngine *>(env);
+    NapiContainerScope containerScope(scopeEngine,
+                                      callbackInfo->containerScopeId_, true);
+    if (!containerScope.IsInitialized()) {
+        HILOG_DEBUG(
+            "timer:: InitContainerScopeFunc error when TimerCallback begin");
+    }
 #endif
 #ifdef ENABLE_HITRACE_HELPER_METER
     HITRACE_HELPER_METER_NAME("TimerCallback callbackInfo address = "
@@ -262,7 +267,7 @@ napi_value Timer::SetTimeoutInnerCore(napi_env env, napi_value* argv, size_t arg
         napi_ref callbackRef = Helper::NapiHelper::CreateReference(env, argv[0], 1);
         callbackInfo = new TimerCallbackInfo(env, tId, timeout, callbackRef, repeat, callbackArgc, callbackArgv);
 #ifdef ENABLE_CONTAINER_SCOPE
-        callbackInfo->containerScopeId_ = ContainerScope::CurrentId();
+        callbackInfo->containerScopeId_ = reinterpret_cast<NativeEngine*>(env)->GetContainerScopeIdFunc();
 #endif
         if (timerTable.find(tId) != timerTable.end()) {
             HILOG_ERROR("timerTable occurs error");
