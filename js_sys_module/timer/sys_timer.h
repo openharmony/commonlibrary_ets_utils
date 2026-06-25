@@ -22,9 +22,6 @@
 
 #include "helper/napi_helper.h"
 #include "helper/object_helper.h"
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 

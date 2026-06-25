@@ -52,7 +52,6 @@ chmod 777 ./test_timer_unittest
 | `napi:ace_napi` | N-API bindings for JavaScript engine | All |
 | `hilog:libhilog` | System logging | All |
 | `hitrace:hitrace_meter` | Performance tracing (optional) | OHOS (non-arkui_x) |
-| `ace_engine:ace_container_scope` | Ace framework container scope | OHOS (optional) |
 
 ### External Directory Interactions
 - `../../js_concurrent_module/common/helper/napi_helper.h` - Shared NAPI helper utilities for concurrent modules
