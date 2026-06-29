@@ -73,6 +73,12 @@ gen_obj("stream_abc") {
 stream_sources = [ "native_module_stream.cpp" ]
 
 ohos_shared_library("stream") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   deps = [ ":stream_static" ]
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
@@ -80,6 +86,12 @@ ohos_shared_library("stream") {
 }
 
 ohos_source_set("stream_static") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   include_dirs = [ "include" ]
   sources = stream_sources
 
