@@ -1170,6 +1170,12 @@ bool NativeEngineTest::SetAndTestTaskQueues()
     return true;
 }
 
+bool NativeEngineTest::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum)
+{
+    TaskManager::GetInstance().AddCountTraceForWorkerLog(needLog, threadNum, 1, 1);
+    return true;
+}
+
 bool NativeEngineTest::TriggerTaskTimeoutTimer(napi_env env, void* data)
 {
     Task* task = static_cast<Task*>(data);
@@ -1193,12 +1199,6 @@ bool NativeEngineTest::TriggerTaskGroupTimeoutTimer(napi_env env, void* data)
 bool NativeEngineTest::TaskGroupTimeoutCallback(uv_timer_t* handle)
 {
     TaskPool::TaskGroupTimeoutCallback(handle);
-    return true;
-}
-
-bool NativeEngineTest::AddCountTraceForWorkerLog(bool needLog, int64_t threadNum)
-{
-    TaskManager::GetInstance().AddCountTraceForWorkerLog(needLog, threadNum, 1, 1);
     return true;
 }
 
