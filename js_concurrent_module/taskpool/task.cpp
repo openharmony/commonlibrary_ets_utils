@@ -21,6 +21,9 @@
 #include "sequence_runner_manager.h"
 #include "taskpool.h"
 #include "worker.h"
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "napi/native_node_hybrid_api.h"
+#endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 static constexpr char ONRECEIVEDATA_STR[] = "onReceiveData";
@@ -515,8 +518,23 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     bool defaultClone = false;
     bool defaultTransfer = true;
     std::string errString = "";
-    napi_status status = napi_serialize_inner_with_error(env, argsArray, undefined, undefined, defaultTransfer,
-                                                         defaultClone, &serializationArgs, errString);
+    napi_status status = napi_ok;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_is_hybrid_vm(env, &isHybridVM);
+    }
+    if (isHybridVM) {
+        napi_serialize_hybrid(env, argsArray, undefined, undefined, &serializationArgs);
+        status = (serializationArgs != nullptr) ? napi_ok : napi_generic_failure;
+    } else {
+        status = napi_serialize_inner_with_error(env, argsArray, undefined, undefined, defaultTransfer,
+                                                 defaultClone, &serializationArgs, errString);
+    }
+#else
+    status = napi_serialize_inner_with_error(env, argsArray, undefined, undefined, defaultTransfer,
+                                             defaultClone, &serializationArgs, errString);
+#endif
     if (status != napi_ok || serializationArgs == nullptr) {
         std::string errMessage = "taskpool:: failed to serialize function.\nSerialize error: " + errString;
         HILOG_ERROR("%{public}s in SendData", errMessage.c_str());
@@ -1177,7 +1195,19 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
     AsyncStackScope asyncStackScope(this);
     napi_status status = napi_ok;
     std::string errMessage = "";
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_is_hybrid_vm(env, &isHybridVM);
+    }
+    if (isHybridVM) {
+        status = napi_deserialize_hybrid(env, serializationFunction, func);
+    } else {
+        status = napi_deserialize(env, serializationFunction, func);
+    }
+#else
     status = napi_deserialize(env, serializationFunction, func);
+#endif
     if (!IsGroupFunctionTask()) {
         napi_delete_serialization_data(env, serializationFunction);
     }
@@ -1189,7 +1219,19 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
         return err;
     }
 
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVMArgs = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_is_hybrid_vm(env, &isHybridVMArgs);
+    }
+    if (isHybridVMArgs) {
+        status = napi_deserialize_hybrid(env, serializationArguments, args);
+    } else {
+        status = napi_deserialize(env, serializationArguments, args);
+    }
+#else
     status = napi_deserialize(env, serializationArguments, args);
+#endif
     if (!IsGroupFunctionTask()) {
         napi_delete_serialization_data(env, serializationArguments);
     }
@@ -2006,8 +2048,24 @@ std::tuple<void*, void*> Task::GetSerializeResult(napi_env env, napi_value func,
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
     void* serializationFunction = nullptr;
     std::string errString = "";
-    napi_status status = napi_serialize_inner_with_error(env, func, undefined, undefined, defaultTransfer,
+    napi_status status = napi_ok;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_status hybridStatus = napi_is_hybrid_vm(env, &isHybridVM);
+        if (hybridStatus != napi_ok) { isHybridVM = false; }
+    }
+    if (isHybridVM) {
+        napi_status hybridSerStatus = napi_serialize_hybrid(env, func, undefined, undefined, &serializationFunction);
+        status = (hybridSerStatus == napi_ok && serializationFunction != nullptr) ? napi_ok : napi_generic_failure;
+    } else {
+        status = napi_serialize_inner_with_error(env, func, undefined, undefined, defaultTransfer,
+                                                 defaultCloneSendable, &serializationFunction, errString);
+    }
+#else
+    status = napi_serialize_inner_with_error(env, func, undefined, undefined, defaultTransfer,
                                                          defaultCloneSendable, &serializationFunction, errString);
+#endif
     std::string errMessage = "";
     if (status != napi_ok || serializationFunction == nullptr) {
         errMessage = "taskpool: failed to serialize function.\nSerialize error: " + errString;
@@ -2017,8 +2075,18 @@ std::tuple<void*, void*> Task::GetSerializeResult(napi_env env, napi_value func,
     }
     void* serializationArguments = nullptr;
     errMessage = "";
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    if (isHybridVM) {
+        napi_serialize_hybrid(env, args, transferList, cloneList, &serializationArguments);
+        status = (serializationArguments != nullptr) ? napi_ok : napi_generic_failure;
+    } else {
+        status = napi_serialize_inner_with_error(env, args, transferList, cloneList, defaultTransfer,
+                                                 defaultCloneSendable, &serializationArguments, errString);
+    }
+#else
     status = napi_serialize_inner_with_error(env, args, transferList, cloneList, defaultTransfer,
                                              defaultCloneSendable, &serializationArguments, errString);
+#endif
     if (status != napi_ok || serializationArguments == nullptr) { // LOCV_EXCL_BR_LINE
         errMessage = "taskpool: failed to serialize arguments.\nSerialize error: " + errString;
         HILOG_ERROR("%{public}s", errMessage.c_str());

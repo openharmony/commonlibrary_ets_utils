@@ -20,6 +20,9 @@
 #include "helper/hitrace_helper.h"
 #include "sequence_runner_manager.h"
 #include "task_group_manager.h"
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "napi/native_node_hybrid_api.h"
+#endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -131,7 +134,20 @@ void TaskPool::ExecuteOnReceiveDataCallback(TaskResultInfo* resultInfo)
     auto func = NapiHelper::GetReferenceValue(env, callbackInfo->callbackRef);
     napi_value args;
     napi_value result;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_status hybridStatus = napi_is_hybrid_vm(env, &isHybridVM);
+        if (hybridStatus != napi_ok) { isHybridVM = false; }
+    }
+    if (isHybridVM) {
+        status = napi_deserialize_hybrid(env, resultInfo->serializationArgs, &args);
+    } else {
+        status = napi_deserialize(env, resultInfo->serializationArgs, &args);
+    }
+#else
     status = napi_deserialize(env, resultInfo->serializationArgs, &args);
+#endif
     napi_delete_serialization_data(env, resultInfo->serializationArgs);
     if (status != napi_ok || args == nullptr) {
         std::string errMessage = "taskpool:: failed to serialize function";
@@ -468,7 +484,20 @@ void TaskPool::HandleTaskResultInner(Task* task)
     {
         AsyncStackScope asyncStackScope(task);
         napi_value napiTaskResult = nullptr;
-        napi_status status = napi_deserialize(task->env_, task->result_, &napiTaskResult);
+        napi_status status = napi_ok;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = false;
+        if (ANIHelper::IsConcurrencySupportInterop()) {
+            napi_is_hybrid_vm(task->env_, &isHybridVM);
+        }
+        if (isHybridVM) {
+            status = napi_deserialize_hybrid(task->env_, task->result_, &napiTaskResult);
+        } else {
+            status = napi_deserialize(task->env_, task->result_, &napiTaskResult);
+        }
+#else
+        status = napi_deserialize(task->env_, task->result_, &napiTaskResult);
+#endif
         napi_delete_serialization_data(task->env_, task->result_);
         if (task->IsTimeoutState()) {
             task->success_ = false;

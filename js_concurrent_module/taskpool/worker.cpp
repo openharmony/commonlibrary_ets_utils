@@ -28,6 +28,9 @@
 #include "taskpool.h"
 #include "task_group_manager.h"
 #include "native_engine.h"
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "napi/native_node_hybrid_api.h"
+#endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
@@ -521,7 +524,23 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
     std::string errString = "";
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
     SerializeOptions options(true, false, true);
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_is_hybrid_vm(env, &isHybridVM);
+    }
+    if (isHybridVM) {
+        napi_value undefined = NapiHelper::GetUndefinedValue(env);
+        napi_serialize_hybrid(env, result, undefined, undefined, &resultData);
+        if (resultData == nullptr) {
+            errString = "InterOp serialize failed";
+        }
+    } else {
+        engine->SerializeJSErrorWithError(env, result, options, &resultData, errString);
+    }
+#else
     engine->SerializeJSErrorWithError(env, result, options, &resultData, errString);
+#endif
     if (resultData == nullptr && task->success_) {
         task->success_ = false;
         std::string errMessage = "taskpool: failed to serialize result.\nSerialize error: " + errString;

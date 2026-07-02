@@ -29,6 +29,9 @@
 #ifdef ENABLE_QOS
 #include "qos.h"
 #endif
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "napi/native_node_hybrid_api.h"
+#endif
 
 namespace Commonlibrary::Concurrent::WorkerModule {
 using namespace Commonlibrary::Concurrent::Common::Helper;
@@ -644,11 +647,39 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
         if (transferList == nullptr || !isValidTransfer) {
             return nullptr;
         }
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = false;
+        if (ANIHelper::IsConcurrencySupportInterop()) {
+            napi_is_hybrid_vm(env, &isHybridVM);
+        }
+        if (isHybridVM) {
+            napi_serialize_hybrid(env, argv[0], transferList, undefined, &data);
+            serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
+        } else {
+            serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false,
+                defaultClone, &data, serializeErr);
+        }
+#else
         serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, defaultClone,
                                                           &data, serializeErr);
+#endif
     } else {
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = false;
+        if (ANIHelper::IsConcurrencySupportInterop()) {
+            napi_is_hybrid_vm(env, &isHybridVM);
+        }
+        if (isHybridVM) {
+            napi_serialize_hybrid(env, argv[0], undefined, undefined, &data);
+            serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
+        } else {
+            serializeStatus = napi_serialize_inner_with_error(env, argv[0], undefined, undefined, false,
+                defaultClone, &data, serializeErr);
+        }
+#else
         serializeStatus = napi_serialize_inner_with_error(env, argv[0], undefined, undefined, false, defaultClone,
                                                           &data, serializeErr);
+#endif
     }
     if (serializeStatus != napi_ok || data == nullptr) {
         worker->HostOnMessageErrorInner();
@@ -1034,11 +1065,39 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
         if (transferList == nullptr || !isValidTransfer) {
             return nullptr;
         }
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = false;
+        if (ANIHelper::IsConcurrencySupportInterop()) {
+            napi_is_hybrid_vm(env, &isHybridVM);
+        }
+        if (isHybridVM) {
+            napi_serialize_hybrid(env, argv[0], transferList, undefined, &data);
+            serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
+        } else {
+            serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false,
+                defaultClone, &data, serializeErr);
+        }
+#else
         serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, defaultClone,
                                                           &data, serializeErr);
+#endif
     } else {
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = false;
+        if (ANIHelper::IsConcurrencySupportInterop()) {
+            napi_is_hybrid_vm(env, &isHybridVM);
+        }
+        if (isHybridVM) {
+            napi_serialize_hybrid(env, argv[0], undefined, undefined, &data);
+            serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
+        } else {
+            serializeStatus = napi_serialize_inner_with_error(env, argv[0], undefined, undefined, false,
+                defaultClone, &data, serializeErr);
+        }
+#else
         serializeStatus = napi_serialize_inner_with_error(env, argv[0], undefined, undefined, false, defaultClone,
                                                           &data, serializeErr);
+#endif
     }
 
     if (serializeStatus != napi_ok || data == nullptr) {
@@ -1741,7 +1800,19 @@ void Worker::HostOnMessageInner(WorkerEventPriority priority)
         NAPI_CALL_RETURN_VOID(hostEnv_, status);
         RemoveAtFrontSet(data);
         napi_value result = nullptr;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = false;
+        if (ANIHelper::IsConcurrencySupportInterop()) {
+            napi_is_hybrid_vm(hostEnv_, &isHybridVM);
+        }
+        if (isHybridVM) {
+            status = napi_deserialize_hybrid(hostEnv_, data, &result);
+        } else {
+            status = napi_deserialize(hostEnv_, data, &result);
+        }
+#else
         status = napi_deserialize(hostEnv_, data, &result);
+#endif
         napi_delete_serialization_data(hostEnv_, data);
         if (status != napi_ok || result == nullptr) {
             HostOnMessageErrorInner();
@@ -1829,7 +1900,19 @@ void Worker::HostOnGlobalCallInner()
     }
     napi_value argsArray = nullptr;
     napi_status status = napi_ok;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_is_hybrid_vm(hostEnv_, &isHybridVM);
+    }
+    if (isHybridVM) {
+        status = napi_deserialize_hybrid(hostEnv_, data, &argsArray);
+    } else {
+        status = napi_deserialize(hostEnv_, data, &argsArray);
+    }
+#else
     status = napi_deserialize(hostEnv_, data, &argsArray);
+#endif
     napi_delete_serialization_data(hostEnv_, data);
     if (status != napi_ok || argsArray == nullptr) {
         AddGlobalCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
@@ -1904,7 +1987,20 @@ void Worker::HostOnGlobalCallInner()
     // meaningless to copy sendable object when call globalObject
     bool defaultClone = true;
     bool defaultTransfer = false;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    isHybridVM = false;
+    if (ANIHelper::IsConcurrencySupportInterop()) {
+        napi_is_hybrid_vm(hostEnv_, &isHybridVM);
+    }
+    if (isHybridVM) {
+        napi_serialize_hybrid(hostEnv_, res, undefined, undefined, &data);
+        status = (data != nullptr) ? napi_ok : napi_generic_failure;
+    } else {
+        status = napi_serialize_inner(hostEnv_, res, undefined, undefined, defaultTransfer, defaultClone, &data);
+    }
+#else
     status = napi_serialize_inner(hostEnv_, res, undefined, undefined, defaultTransfer, defaultClone, &data);
+#endif
     if (status != napi_ok || data == nullptr) {
         AddGlobalCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
         globalCallSuccess_ = false;
@@ -2334,7 +2430,19 @@ void Worker::WorkerOnMessageInner()
         uv_call_specify_task(loop);
 
         napi_value result = nullptr;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = false;
+        if (ANIHelper::IsConcurrencySupportInterop()) {
+            napi_is_hybrid_vm(workerEnv_, &isHybridVM);
+        }
+        if (isHybridVM) {
+            status = napi_deserialize_hybrid(workerEnv_, data, &result);
+        } else {
+            status = napi_deserialize(workerEnv_, data, &result);
+        }
+#else
         status = napi_deserialize(workerEnv_, data, &result);
+#endif
         napi_delete_serialization_data(workerEnv_, data);
         if (status != napi_ok || result == nullptr) {
             WorkerOnMessageErrorInner();
