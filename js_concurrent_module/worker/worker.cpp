@@ -1985,8 +1985,7 @@ void Worker::HostOnGlobalCallInner()
     // defautly not transfer
     napi_value undefined = NapiHelper::GetUndefinedValue(hostEnv_);
     // meaningless to copy sendable object when call globalObject
-    bool defaultClone = true;
-    bool defaultTransfer = false;
+    SerializeOptions options(false, true, true);
 #if defined(ENABLE_CONCURRENCY_INTEROP)
     isHybridVM = false;
     if (ANIHelper::IsConcurrencySupportInterop()) {
@@ -1996,10 +1995,10 @@ void Worker::HostOnGlobalCallInner()
         napi_serialize_hybrid(hostEnv_, res, undefined, undefined, &data);
         status = (data != nullptr) ? napi_ok : napi_generic_failure;
     } else {
-        status = napi_serialize_inner(hostEnv_, res, undefined, undefined, defaultTransfer, defaultClone, &data);
+        engine->SerializeJSError(hostEnv_, res, options, &data);
     }
 #else
-    status = napi_serialize_inner(hostEnv_, res, undefined, undefined, defaultTransfer, defaultClone, &data);
+    engine->SerializeJSError(hostEnv_, res, options, &data);
 #endif
     if (status != napi_ok || data == nullptr) {
         AddGlobalCallError(ErrorHelper::ERR_WORKER_SERIALIZATION);
@@ -2529,8 +2528,9 @@ void Worker::HandleUncaughtException(napi_value exception)
         return;
     }
     MessageDataType data = nullptr;
-    napi_value undefined = NapiHelper::GetUndefinedValue(workerEnv_);
-    napi_serialize_inner(workerEnv_, obj, undefined, undefined, false, true, &data);
+    NativeEngine *engine = reinterpret_cast<NativeEngine*>(workerEnv_);
+    SerializeOptions options(false, true, true);
+    engine->SerializeJSError(workerEnv_, obj, options, &data);
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop() || isHostEnvExited_) {
