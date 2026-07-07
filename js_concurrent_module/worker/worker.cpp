@@ -648,10 +648,7 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
             return nullptr;
         }
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-        bool isHybridVM = false;
-        if (ANIHelper::IsConcurrencySupportInterop()) {
-            napi_is_hybrid_vm(env, &isHybridVM);
-        }
+        bool isHybridVM = ANIHelper::IsHybridVM(env);
         if (isHybridVM) {
             napi_serialize_hybrid(env, argv[0], transferList, undefined, &data);
             serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
@@ -665,10 +662,7 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
 #endif
     } else {
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-        bool isHybridVM = false;
-        if (ANIHelper::IsConcurrencySupportInterop()) {
-            napi_is_hybrid_vm(env, &isHybridVM);
-        }
+        bool isHybridVM = ANIHelper::IsHybridVM(env);
         if (isHybridVM) {
             napi_serialize_hybrid(env, argv[0], undefined, undefined, &data);
             serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
@@ -1066,10 +1060,7 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
             return nullptr;
         }
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-        bool isHybridVM = false;
-        if (ANIHelper::IsConcurrencySupportInterop()) {
-            napi_is_hybrid_vm(env, &isHybridVM);
-        }
+        bool isHybridVM = ANIHelper::IsHybridVM(env);
         if (isHybridVM) {
             napi_serialize_hybrid(env, argv[0], transferList, undefined, &data);
             serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
@@ -1083,10 +1074,7 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
 #endif
     } else {
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-        bool isHybridVM = false;
-        if (ANIHelper::IsConcurrencySupportInterop()) {
-            napi_is_hybrid_vm(env, &isHybridVM);
-        }
+        bool isHybridVM = ANIHelper::IsHybridVM(env);
         if (isHybridVM) {
             napi_serialize_hybrid(env, argv[0], undefined, undefined, &data);
             serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
@@ -1801,10 +1789,7 @@ void Worker::HostOnMessageInner(WorkerEventPriority priority)
         RemoveAtFrontSet(data);
         napi_value result = nullptr;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-        bool isHybridVM = false;
-        if (ANIHelper::IsConcurrencySupportInterop()) {
-            napi_is_hybrid_vm(hostEnv_, &isHybridVM);
-        }
+        bool isHybridVM = ANIHelper::IsHybridVM(hostEnv_);
         if (isHybridVM) {
             status = napi_deserialize_hybrid(hostEnv_, data, &result);
         } else {
@@ -1901,10 +1886,7 @@ void Worker::HostOnGlobalCallInner()
     napi_value argsArray = nullptr;
     napi_status status = napi_ok;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    bool isHybridVM = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_is_hybrid_vm(hostEnv_, &isHybridVM);
-    }
+    bool isHybridVM = ANIHelper::IsHybridVM(hostEnv_);
     if (isHybridVM) {
         status = napi_deserialize_hybrid(hostEnv_, data, &argsArray);
     } else {
@@ -1988,10 +1970,7 @@ void Worker::HostOnGlobalCallInner()
     bool defaultClone = true;
     bool defaultTransfer = false;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    isHybridVM = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_is_hybrid_vm(hostEnv_, &isHybridVM);
-    }
+    isHybridVM = ANIHelper::IsHybridVM(hostEnv_);
     if (isHybridVM) {
         napi_serialize_hybrid(hostEnv_, res, undefined, undefined, &data);
         status = (data != nullptr) ? napi_ok : napi_generic_failure;
@@ -2431,10 +2410,7 @@ void Worker::WorkerOnMessageInner()
 
         napi_value result = nullptr;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-        bool isHybridVM = false;
-        if (ANIHelper::IsConcurrencySupportInterop()) {
-            napi_is_hybrid_vm(workerEnv_, &isHybridVM);
-        }
+        bool isHybridVM = ANIHelper::IsHybridVM(workerEnv_);
         if (isHybridVM) {
             status = napi_deserialize_hybrid(workerEnv_, data, &result);
         } else {

@@ -19,8 +19,10 @@
 
 namespace Commonlibrary::Concurrent::Common::Helper {
 std::atomic_bool globalEnableConcurrencyInteropFlag = false;
+std::atomic_bool globalIsHybridVMFlag = false;
 ani_vm* globalAniVm = nullptr;
 std::once_flag g_globalAniVmInitFlag;
+std::once_flag g_globalIsHybridVMInitFlag;
 
 ani_vm* ANIHelper::GetAniVm()
 {
@@ -51,5 +53,19 @@ void ANIHelper::InitializeAniVm()
 bool ANIHelper::IsConcurrencySupportInterop()
 {
     return globalEnableConcurrencyInteropFlag;
+}
+
+bool ANIHelper::IsHybridVM(napi_env env)
+{
+    std::call_once(g_globalIsHybridVMInitFlag, [](napi_env e) {
+        if (IsConcurrencySupportInterop()) {
+            bool isHybridVM = false;
+            napi_status status = napi_is_hybrid_vm(e, &isHybridVM);
+            if (status == napi_ok && isHybridVM) {
+                globalIsHybridVMFlag = true;
+            }
+        }
+    }, env);
+    return globalIsHybridVMFlag;
 }
 } // Commonlibrary::Concurrent::Common::Helper

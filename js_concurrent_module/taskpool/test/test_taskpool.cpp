@@ -20,6 +20,9 @@
 #include "async_runner.h"
 #include "async_runner_manager.h"
 #include "helper/napi_helper.h"
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "helper/hybrid_concurrent_helper.h"
+#endif
 #include "queue.h"
 #include "sequence_runner_manager.h"
 #include "task.h"
@@ -8819,3 +8822,70 @@ HWTEST_F(NativeEngineTest, TaskpoolTest406, testing::ext::TestSize.Level0)
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_EQ(exception, nullptr);
 }
+
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+HWTEST_F(NativeEngineTest, TaskpoolDeserializeElseBranch001, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    globalIsHybridVMFlag = false;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value num = nullptr;
+    napi_create_uint32(env, 42, &num);
+    void* serializationData = nullptr;
+    napi_status status = napi_serialize_inner(env, num, undefined, undefined, true, false, &serializationData);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(serializationData != nullptr);
+    napi_value result = nullptr;
+    status = napi_deserialize(env, serializationData, &result);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(result != nullptr);
+    napi_delete_serialization_data(env, serializationData);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolSerializeElseBranch001, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    globalIsHybridVMFlag = false;
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value str = nullptr;
+    napi_create_string_utf8(env, "hello", NAPI_AUTO_LENGTH, &str);
+    std::string errString = "";
+    void* serializationData = nullptr;
+    napi_status status = napi_serialize_inner_with_error(env, str, undefined, undefined, true, false,
+                                                          &serializationData, errString);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(serializationData != nullptr);
+    napi_value result = nullptr;
+    status = napi_deserialize(env, serializationData, &result);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(result != nullptr);
+    napi_delete_serialization_data(env, serializationData);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolDeserializeViaIsHybridVM001, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ExceptionScope scope(env);
+    globalIsHybridVMFlag = false;
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
+    ASSERT_FALSE(isHybridVM);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value num = nullptr;
+    napi_create_uint32(env, 100, &num);
+    void* serializationData = nullptr;
+    napi_status status = napi_serialize_inner(env, num, undefined, undefined, true, false, &serializationData);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(serializationData != nullptr);
+    napi_value result = nullptr;
+    if (isHybridVM) {
+        status = napi_deserialize_hybrid(env, serializationData, &result);
+    } else {
+        status = napi_deserialize(env, serializationData, &result);
+    }
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(result != nullptr);
+    napi_delete_serialization_data(env, serializationData);
+}
+#endif
