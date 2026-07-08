@@ -1538,6 +1538,7 @@ void Task::ClearDelayedTimers()
             }
             taskMessage = static_cast<TaskMessage*>(t->data);
             deferreds.push_back(taskMessage->deferred);
+            napi_reference_unref(env_, taskRef_, nullptr);
             uv_timer_stop(t);
             uv_close(reinterpret_cast<uv_handle_t*>(t), [](uv_handle_t* handle) {
                 delete (uv_timer_t*)handle;
