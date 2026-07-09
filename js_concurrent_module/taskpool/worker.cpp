@@ -525,11 +525,7 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
     SerializeOptions options(true, false, true);
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    bool isHybridVM = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_is_hybrid_vm(env, &isHybridVM);
-    }
-    if (isHybridVM) {
+    if (ANIHelper::IsHybridVM(env)) {
         napi_value undefined = NapiHelper::GetUndefinedValue(env);
         napi_serialize_hybrid(env, result, undefined, undefined, &resultData);
         if (resultData == nullptr) {

@@ -21,6 +21,9 @@
 
 #include "ark_native_engine.h"
 #include "helper/error_helper.h"
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+#include "helper/hybrid_concurrent_helper.h"
+#endif
 #include "message_queue.h"
 #include "test.h"
 #include "napi/native_api.h"
@@ -7309,3 +7312,52 @@ HWTEST_F(WorkersTest, IsPostTaskAtFrontTest003, testing::ext::TestSize.Level0)
     ClearWorkerHandle(worker);
     Worker_Terminate(env, global);
 }
+
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+HWTEST_F(WorkersTest, WorkerSerializeElseBranch001, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    globalIsHybridVMFlag = false;
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
+    ASSERT_FALSE(isHybridVM);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value str = nullptr;
+    napi_create_string_utf8(env, "test_message", NAPI_AUTO_LENGTH, &str);
+    void* data = nullptr;
+    napi_status status = napi_ok;
+    std::string errString = "";
+    if (isHybridVM) {
+        napi_serialize_hybrid(env, str, undefined, undefined, &data);
+        status = (data != nullptr) ? napi_ok : napi_generic_failure;
+    } else {
+        status = napi_serialize_inner_with_error(env, str, undefined, undefined, false, true, &data, errString);
+    }
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(data != nullptr);
+    napi_delete_serialization_data(env, data);
+}
+
+HWTEST_F(WorkersTest, WorkerDeserializeElseBranch001, testing::ext::TestSize.Level0)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    globalIsHybridVMFlag = false;
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
+    ASSERT_FALSE(isHybridVM);
+    napi_value undefined = NapiHelper::GetUndefinedValue(env);
+    napi_value num = nullptr;
+    napi_create_uint32(env, 42, &num);
+    void* data = nullptr;
+    napi_serialize_inner(env, num, undefined, undefined, false, true, &data);
+    ASSERT_TRUE(data != nullptr);
+    napi_value result = nullptr;
+    napi_status status = napi_ok;
+    if (isHybridVM) {
+        status = napi_deserialize_hybrid(env, data, &result);
+    } else {
+        status = napi_deserialize(env, data, &result);
+    }
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_TRUE(result != nullptr);
+    napi_delete_serialization_data(env, data);
+}
+#endif

@@ -135,11 +135,7 @@ void TaskPool::ExecuteOnReceiveDataCallback(TaskResultInfo* resultInfo)
     napi_value args;
     napi_value result;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    bool isHybridVM = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_status hybridStatus = napi_is_hybrid_vm(env, &isHybridVM);
-        if (hybridStatus != napi_ok) { isHybridVM = false; }
-    }
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
     if (isHybridVM) {
         status = napi_deserialize_hybrid(env, resultInfo->serializationArgs, &args);
     } else {
@@ -486,10 +482,7 @@ void TaskPool::HandleTaskResultInner(Task* task)
         napi_value napiTaskResult = nullptr;
         napi_status status = napi_ok;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-        bool isHybridVM = false;
-        if (ANIHelper::IsConcurrencySupportInterop()) {
-            napi_is_hybrid_vm(task->env_, &isHybridVM);
-        }
+        bool isHybridVM = ANIHelper::IsHybridVM(task->env_);
         if (isHybridVM) {
             status = napi_deserialize_hybrid(task->env_, task->result_, &napiTaskResult);
         } else {

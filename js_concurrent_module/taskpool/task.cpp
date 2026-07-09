@@ -520,10 +520,7 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     std::string errString = "";
     napi_status status = napi_ok;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    bool isHybridVM = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_is_hybrid_vm(env, &isHybridVM);
-    }
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
     if (isHybridVM) {
         napi_serialize_hybrid(env, argsArray, undefined, undefined, &serializationArgs);
         status = (serializationArgs != nullptr) ? napi_ok : napi_generic_failure;
@@ -1196,10 +1193,7 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
     napi_status status = napi_ok;
     std::string errMessage = "";
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    bool isHybridVM = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_is_hybrid_vm(env, &isHybridVM);
-    }
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
     if (isHybridVM) {
         status = napi_deserialize_hybrid(env, serializationFunction, func);
     } else {
@@ -1220,11 +1214,7 @@ napi_value Task::DeserializeValue(napi_env env, napi_value* func, napi_value* ar
     }
 
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    bool isHybridVMArgs = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_is_hybrid_vm(env, &isHybridVMArgs);
-    }
-    if (isHybridVMArgs) {
+    if (isHybridVM) {
         status = napi_deserialize_hybrid(env, serializationArguments, args);
     } else {
         status = napi_deserialize(env, serializationArguments, args);
@@ -2051,11 +2041,7 @@ std::tuple<void*, void*> Task::GetSerializeResult(napi_env env, napi_value func,
     std::string errString = "";
     napi_status status = napi_ok;
 #if defined(ENABLE_CONCURRENCY_INTEROP)
-    bool isHybridVM = false;
-    if (ANIHelper::IsConcurrencySupportInterop()) {
-        napi_status hybridStatus = napi_is_hybrid_vm(env, &isHybridVM);
-        if (hybridStatus != napi_ok) { isHybridVM = false; }
-    }
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
     if (isHybridVM) {
         napi_status hybridSerStatus = napi_serialize_hybrid(env, func, undefined, undefined, &serializationFunction);
         status = (hybridSerStatus == napi_ok && serializationFunction != nullptr) ? napi_ok : napi_generic_failure;
