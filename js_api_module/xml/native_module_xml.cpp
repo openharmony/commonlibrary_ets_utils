@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
+#include "native_module_xml.h"
 #include "js_xml.h"
 #include "js_xml_dynamic.h"
 #include "js_xml_sax.h"
-#include "native_module_xml.h"
 #include "tools/ets_error.h"
 
 extern const char _binary_js_xml_js_start[];

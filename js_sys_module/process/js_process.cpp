@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
+#include "js_process.h"
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <uv.h>
 
-#include "js_process.h"
 #include "process_helper.h"
 namespace OHOS::JsSysModule::Process {
 

@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-
 #include "js_base64.h"
 #include "securec.h"
 #include "tools/log.h"
 #include "tools/ets_error.h"
+#include <cstdio>
 
 #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
 #include <arm_neon.h>
@@ -322,8 +321,8 @@ namespace OHOS::Util {
     #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
         if (g_base64DecodeFunc != nullptr) {
             size_t decodeReadLen = 0;
-            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, retLen, &decodeReadLen,
-                &retLen, options) != EOK) {
+            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, decodeOutLen, &decodeReadLen,
+                &decodeOutLen, options) != EOK) {
                     HILOG_ERROR("Base64::DecodeAchieve result is error");
                     napi_throw_error(env, "-1", "decodeSync: the input string contains unsupported characters");
                     FreeMemory(retDecode);
@@ -813,8 +812,8 @@ namespace OHOS::Util {
     #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
         if (g_base64DecodeFunc != nullptr) {
             size_t decodeReadLen = 0;
-            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, retLen,
-                &decodeReadLen, &retLen, options) != EOK) {
+            if (g_base64DecodeFunc((const unsigned char*)input, inputLen, retDecode, decodeInfo->decodeOutLen,
+                &decodeReadLen, &decodeInfo->decodeOutLen, options) != EOK) {
                 HILOG_ERROR("DecodeAchieves result is error");
                 FreeMemory(retDecode);
                 return nullptr;
