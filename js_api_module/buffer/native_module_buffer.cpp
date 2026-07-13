@@ -1076,6 +1076,11 @@ static void SendEventToArrayBuffer(napi_env env, PromiseInfo *promiseInfo, napi_
     };
     if (napi_send_event(env, task, prio) != napi_status::napi_ok) {
         HILOG_ERROR("Blob:: failed to SendEventToArrayBuffer!");
+        napi_value errorMsg = nullptr;
+        napi_create_string_utf8(env, "Blob:: SendEventToArrayBuffer failed", NAPI_AUTO_LENGTH, &errorMsg);
+        napi_reject_deferred(env, promiseInfo->deferred, errorMsg);
+        napi_delete_reference(env, promiseInfo->blobDataRef);
+        delete promiseInfo;
     }
 }
 
@@ -1116,6 +1121,11 @@ static void SendEventToString(napi_env env, PromiseInfo *promiseInfo, napi_event
     };
     if (napi_send_event(env, task, prio) != napi_status::napi_ok) {
         HILOG_ERROR("Blob:: failed to SendEventToString!");
+        napi_value errorMsg = nullptr;
+        napi_create_string_utf8(env, "Blob:: SendEventToString failed", NAPI_AUTO_LENGTH, &errorMsg);
+        napi_reject_deferred(env, promiseInfo->deferred, errorMsg);
+        napi_delete_reference(env, promiseInfo->blobDataRef);
+        delete promiseInfo;
     }
 }
 static napi_value TextAsync(napi_env env, napi_callback_info info)
