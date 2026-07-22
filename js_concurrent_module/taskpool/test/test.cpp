@@ -1301,4 +1301,11 @@ void NativeEngineTest::NotifyShrinkByInBackground(napi_env env)
     taskManager.RemoveWorker(worker1);
     taskManager.RemoveWorker(worker2);
 }
+
+void NativeEngineTest::EnqueueTask(void* data)
+{
+    ClearTaskQueue();
+    Task* task = static_cast<Task*>(data);
+    TaskManager::GetInstance().taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
