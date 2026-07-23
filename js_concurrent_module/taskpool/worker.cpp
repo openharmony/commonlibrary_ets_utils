@@ -523,7 +523,6 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
     void* resultData = nullptr;
     std::string errString = "";
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-    SerializeOptions options(true, false, true);
 #if defined(ENABLE_CONCURRENCY_INTEROP)
     if (ANIHelper::IsHybridVM(env)) {
         napi_value undefined = NapiHelper::GetUndefinedValue(env);
@@ -532,9 +531,11 @@ void Worker::NotifyTaskResult(napi_env env, Task* task, napi_value result)
             errString = "InterOp serialize failed";
         }
     } else {
+        SerializeOptions options(true, false, true);
         engine->SerializeJSErrorWithError(env, result, options, &resultData, errString);
     }
 #else
+    SerializeOptions options(true, false, true);
     engine->SerializeJSErrorWithError(env, result, options, &resultData, errString);
 #endif
     if (resultData == nullptr && task->success_) {

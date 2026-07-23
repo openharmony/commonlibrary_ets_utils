@@ -1166,8 +1166,19 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     bool defaultClone = true;
     bool defaultTransfer = false;
     std::string serializeErr = "";
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
+    if (isHybridVM) {
+        napi_serialize_hybrid(env, argsArray, undefined, undefined, &data);
+        serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
+    } else {
+        serializeStatus = napi_serialize_inner_with_error(env, argsArray, undefined, undefined, defaultTransfer,
+                                                          defaultClone, &data, serializeErr);
+    }
+#else
     serializeStatus = napi_serialize_inner_with_error(env, argsArray, undefined, undefined, defaultTransfer,
                                                       defaultClone, &data, serializeErr);
+#endif
     if (serializeStatus != napi_ok || data == nullptr) {
         serializeErr = "failed to serialize message.\nSerialize error: " + serializeErr;
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION, serializeErr.c_str());
@@ -1221,7 +1232,16 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     napi_value res = nullptr;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    isHybridVM = ANIHelper::IsHybridVM(env);
+    if (isHybridVM) {
+        serializeStatus = napi_deserialize_hybrid(env, data, &res);
+    } else {
+        serializeStatus = napi_deserialize(env, data, &res);
+    }
+#else
     serializeStatus = napi_deserialize(env, data, &res);
+#endif
     napi_delete_serialization_data(env, data);
     if (serializeStatus != napi_ok || res == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_SERIALIZATION,
@@ -2108,7 +2128,16 @@ void Worker::HostOnErrorInner()
     while (errorQueue_.Dequeue(&data)) {
         AsyncStackScope asyncStackScope(this);
         napi_value result = nullptr;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = ANIHelper::IsHybridVM(hostEnv_);
+        if (isHybridVM) {
+            napi_deserialize_hybrid(hostEnv_, data, &result);
+        } else {
+            napi_deserialize(hostEnv_, data, &result);
+        }
+#else
         napi_deserialize(hostEnv_, data, &result);
+#endif
         napi_delete_serialization_data(hostEnv_, data);
 
         napi_value argv[1] = { result };
@@ -2505,8 +2534,19 @@ void Worker::HandleUncaughtException(napi_value exception)
     }
     MessageDataType data = nullptr;
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(workerEnv_);
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = ANIHelper::IsHybridVM(workerEnv_);
+    if (isHybridVM) {
+        napi_value undefinedValue = NapiHelper::GetUndefinedValue(workerEnv_);
+        napi_serialize_hybrid(workerEnv_, obj, undefinedValue, undefinedValue, &data);
+    } else {
+        SerializeOptions options(false, true, true);
+        engine->SerializeJSError(workerEnv_, obj, options, &data);
+    }
+#else
     SerializeOptions options(false, true, true);
     engine->SerializeJSError(workerEnv_, obj, options, &data);
+#endif
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop() || isHostEnvExited_) {
@@ -2992,8 +3032,19 @@ void Worker::HandleWorkerUncaughtException(napi_env env, napi_value exception)
 
     MessageDataType data = nullptr;
     NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
+    if (isHybridVM) {
+        napi_value undefinedValue = NapiHelper::GetUndefinedValue(env);
+        napi_serialize_hybrid(env, exception, undefinedValue, undefinedValue, &data);
+    } else {
+        SerializeOptions options(false, true, true);
+        engine->SerializeJSError(env, exception, options, &data);
+    }
+#else
     SerializeOptions options(false, true, true);
     engine->SerializeJSError(env, exception, options, &data);
+#endif
     {
         std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
         if (HostIsStop() || isHostEnvExited_) {
@@ -3043,7 +3094,16 @@ void Worker::HostOnAllErrorsInner()
         }
         AsyncStackScope asyncStackScope(this);
         napi_value result = nullptr;
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+        bool isHybridVM = ANIHelper::IsHybridVM(hostEnv_);
+        if (isHybridVM) {
+            napi_deserialize_hybrid(hostEnv_, data, &result);
+        } else {
+            napi_deserialize(hostEnv_, data, &result);
+        }
+#else
         napi_deserialize(hostEnv_, data, &result);
+#endif
         napi_delete_serialization_data(hostEnv_, data);
 
         napi_value argv[1] = { result };
@@ -3230,8 +3290,19 @@ MessageDataType Worker::GetData(napi_env env, size_t argc, napi_value* argv)
     MessageDataType data = nullptr;
     napi_status serializeStatus = napi_ok;
     std::string serializeErr = "";
+#if defined(ENABLE_CONCURRENCY_INTEROP)
+    bool isHybridVM = ANIHelper::IsHybridVM(env);
+    if (isHybridVM) {
+        napi_serialize_hybrid(env, argv[0], transferList, undefined, &data);
+        serializeStatus = (data != nullptr) ? napi_ok : napi_generic_failure;
+    } else {
+        serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, false,
+                                                          &data, serializeErr);
+    }
+#else
     serializeStatus = napi_serialize_inner_with_error(env, argv[0], transferList, undefined, false, false,
                                                       &data, serializeErr);
+#endif
     if (serializeStatus != napi_ok || data == nullptr) {
         WorkerOnMessageErrorInner();
         serializeErr = "failed to serialize message.\nSerialize error: " + serializeErr;
