@@ -207,6 +207,7 @@ private:
     void CheckForBlockedWorkers();
     template <bool needCheckIdle> void TryExpandWithCheckIdle();
     void NotifyShrink(uint32_t targetNum);
+    void TryCreateWorkerForPerformance();
     void TriggerShrink(uint32_t step, bool inBackground = false);
     uint32_t ComputeSuitableThreadNum();
     uint32_t ComputeSuitableIdleNum();
