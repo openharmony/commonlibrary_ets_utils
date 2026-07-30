@@ -49,6 +49,7 @@
         ],
         "deps": {
             "components": [
+                "ability_runtime",
                 "ace_engine",
                 "bounds_checking_function",
                 "napi",
