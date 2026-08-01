@@ -36,7 +36,9 @@
 #include "helper/hitrace_helper.h"
 #include "taskpool.h"
 #include "task_group_manager.h"
+#if !defined(__ARKUI_CROSS__)
 #include "app_image_observer_manager.h"
+#endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
@@ -574,6 +576,8 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
 
 void TaskManager::TryCreateWorkerForPerformance()
 {
+// crossplatform project can not relay AppImageObserverManager
+#if !defined(__ARKUI_CROSS__)
     // Skip worker creation for system app in template process to enable snapshot
     int32_t imageProcessType = OHOS::AppExecFwk::AppImageObserverManager::GetInstance().GetImageProcessType();
     if (IsSystemApp() && imageProcessType == TEMPLATE_PROCESS_TYPE) {
@@ -581,6 +585,9 @@ void TaskManager::TryCreateWorkerForPerformance()
     } else {
         CreateWorkers(hostEnv_);
     }
+#else
+    CreateWorkers(hostEnv_);
+#endif
 }
 
 void TaskManager::TriggerLoadBalance([[maybe_unused]] const uv_timer_t* req)
