@@ -120,6 +120,7 @@ public:
     static void ClearTaskQueue();
     static void SetSystemApp(bool flag);
     static void NotifyShrinkByInBackground(napi_env env);
+    static void EnqueueTask(void* data);
 
     class ExceptionScope {
     public:

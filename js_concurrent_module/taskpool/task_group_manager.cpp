@@ -136,6 +136,7 @@ void TaskGroupManager::CancelGroupTask(napi_env env, uint32_t taskId, TaskGroup*
         reinterpret_cast<NativeEngine*>(env)->DecreaseSubEnvCounter();
         task->DecreaseTaskLifecycleCount();
         TaskManager::GetInstance().DecreaseSendDataRefCount(env, taskId);
+        napi_reference_unref(task->env_, task->taskRef_, nullptr);
         delete task->currentTaskInfo_;
         task->currentTaskInfo_ = nullptr;
         if (group->currentGroupInfo_ != nullptr) {

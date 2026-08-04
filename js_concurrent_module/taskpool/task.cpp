@@ -1746,15 +1746,17 @@ void Task::CancelInner(ExecuteState state)
     ClearDelayedTimers();
     CancelPendingTask(env_);
     ClearTimeoutTimer();
+    std::pair<uint32_t, Priority> pendingInfo = std::make_pair(0, Priority::DEFAULT);
     if (HasDependency()) {
-        TaskManager::GetInstance().ClearDependentTask(taskId_);
+        pendingInfo = TaskManager::GetInstance().ClearDependentTask(taskId_);
     }
     std::list<napi_deferred> deferreds {};
     std::string error = "taskpool:: task has been canceled";
     {
         std::lock_guard<std::recursive_mutex> lock(taskMutex_);
         if (state == ExecuteState::WAITING && currentTaskInfo_ != nullptr &&
-            TaskManager::GetInstance().EraseWaitingTaskId(taskId_, currentTaskInfo_->priority)) {
+            (TaskManager::GetInstance().EraseWaitingTaskId(taskId_, currentTaskInfo_->priority) ||
+            pendingInfo.first != 0)) {
             reinterpret_cast<NativeEngine*>(env_)->DecreaseSubEnvCounter();
             DecreaseTaskLifecycleCount();
             TaskManager::GetInstance().DecreaseSendDataRefCount(env_, taskId_);
