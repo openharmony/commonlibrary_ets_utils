@@ -105,6 +105,7 @@ ohos_shared_library("taskpool") {
       "ENABLE_CONCURRENCY_INTEROP",
     ]
     external_deps += [
+      "ability_runtime:application_image_observer_manager",
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
       "c_utils:utils",
@@ -176,6 +177,7 @@ ohos_source_set("taskpool_static") {
       "ENABLE_CONCURRENCY_INTEROP",
     ]
     external_deps += [
+      "ability_runtime:application_image_observer_manager",
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
       "c_utils:utils",

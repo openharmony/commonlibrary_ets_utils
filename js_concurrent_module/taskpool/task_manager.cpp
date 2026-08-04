@@ -36,6 +36,9 @@
 #include "helper/hitrace_helper.h"
 #include "taskpool.h"
 #include "task_group_manager.h"
+#if !defined(__ARKUI_CROSS__)
+#include "app_image_observer_manager.h"
+#endif
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {
 using namespace OHOS::JsSysModule;
@@ -67,6 +70,7 @@ static constexpr uint64_t RATIO = 1000;
 static constexpr uint32_t BACKGROUND_IDLE_TIME = 1000; // 1000, 1s
 static constexpr uint32_t BACKGROUND_INTERVAL_TIME = 30000; // 30000, 30s
 static constexpr uint32_t BACKGROUND_DIV = 2;
+static constexpr int32_t TEMPLATE_PROCESS_TYPE = 1;
 
 #if defined(ENABLE_TASKPOOL_EVENTHANDLER)
 static const std::map<Priority, OHOS::AppExecFwk::EventQueue::Priority> TASK_EVENTHANDLER_PRIORITY_MAP = {
@@ -560,7 +564,7 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
 
     // Create a worker for performance
     if (!ConcurrentHelper::IsLowMemory() && workers_.empty()) {
-        CreateWorkers(hostEnv_);
+        TryCreateWorkerForPerformance();
     }
     // stop the timer
     if ((workerCount == idleNum && workerCount <= minThread) && timeoutWorkers_.empty() && logManager_.IsEmpty()) {
@@ -568,6 +572,22 @@ void TaskManager::NotifyShrink(uint32_t targetNum)
         uv_timer_stop(balanceTimer_);
         HILOG_DEBUG("taskpool:: timer will be suspended");
     }
+}
+
+void TaskManager::TryCreateWorkerForPerformance()
+{
+// crossplatform project can not relay AppImageObserverManager
+#if !defined(__ARKUI_CROSS__)
+    // Skip worker creation for system app in template process to enable snapshot
+    int32_t imageProcessType = OHOS::AppExecFwk::AppImageObserverManager::GetInstance().GetImageProcessType();
+    if (IsSystemApp() && imageProcessType == TEMPLATE_PROCESS_TYPE) {
+        HILOG_INFO("taskpool:: skip pre create, processType:%{public}d.", imageProcessType);
+    } else {
+        CreateWorkers(hostEnv_);
+    }
+#else
+    CreateWorkers(hostEnv_);
+#endif
 }
 
 void TaskManager::TriggerLoadBalance([[maybe_unused]] const uv_timer_t* req)
@@ -1056,7 +1076,7 @@ void TaskManager::InitTaskManager(napi_env env)
         hostEnv_ = reinterpret_cast<napi_env>(mainThreadEngine);
 
         // Add a reserved thread for taskpool
-        CreateWorkers(hostEnv_);
+        TryCreateWorkerForPerformance();
         // Create a timer to manage worker threads
         std::thread workerManager([this] {this->RunTaskManager();});
         workerManager.detach();
