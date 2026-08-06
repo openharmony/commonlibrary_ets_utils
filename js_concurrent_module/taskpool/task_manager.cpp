@@ -1693,13 +1693,14 @@ uint32_t TaskManager::CalculateTaskId(uint64_t id)
     return static_cast<uint32_t>(taskId);
 }
 
-void TaskManager::ClearDependentTask(uint32_t taskId)
+std::pair<uint32_t, Priority> TaskManager::ClearDependentTask(uint32_t taskId)
 {
     HILOG_DEBUG("taskpool:: task:%{public}s ClearDependentTask", std::to_string(taskId).c_str());
     RemoveDependTaskByTaskId(taskId);
-    DequeuePendingTaskInfo(taskId);
+    auto pendingInfo = DequeuePendingTaskInfo(taskId);
     std::unique_lock<std::shared_mutex> lock(dependentTaskInfosMutex_);
     RemoveDependentTaskByTaskId(taskId);
+    return pendingInfo;
 }
 
 void TaskManager::RemoveDependTaskByTaskId(uint32_t taskId)
@@ -1727,7 +1728,7 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
-        DequeuePendingTaskInfo(*taskIdIter);
+        auto pendingInfo = DequeuePendingTaskInfo(*taskIdIter);
         RemoveDependencyById(taskId, *taskIdIter);
         auto id = *taskIdIter;
         taskIdIter = iter->second.erase(taskIdIter);
@@ -1742,7 +1743,7 @@ void TaskManager::RemoveDependentTaskByTaskId(uint32_t taskId)
             task->currentTaskInfo_ = nullptr;
             task->DecreaseTaskLifecycleCount();
         }
-        if (task->currentTaskInfo_ == nullptr) {
+        if (pendingInfo.first != 0 || task->currentTaskInfo_ == nullptr) {
             reinterpret_cast<NativeEngine*>(task->env_)->DecreaseSubEnvCounter();
             DecreaseSendDataRefCount(task->env_, task->taskId_, task);
             napi_reference_unref(task->env_, task->taskRef_, nullptr);
