@@ -24,6 +24,7 @@ config("worker_public_config") {
 
 ohos_shared_library("worker") {
   branch_protector_ret = "pac_ret"
+  branch_protector_frt = "bti"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -114,6 +115,7 @@ ohos_shared_library("worker") {
 
 ohos_source_set("worker_static") {
   branch_protector_ret = "pac_ret"
+  branch_protector_frt = "bti"
   sanitize = {
     cfi = true
     cfi_cross_dso = true

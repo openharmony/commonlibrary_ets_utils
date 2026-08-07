@@ -23,6 +23,7 @@ config("timer_public_config") {
 
 ohos_shared_library("timer") {
   branch_protector_ret = "pac_ret"
+  branch_protector_frt = "bti"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -88,6 +89,7 @@ ohos_shared_library("timer") {
 
 ohos_source_set("timer_static") {
   branch_protector_ret = "pac_ret"
+  branch_protector_frt = "bti"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
