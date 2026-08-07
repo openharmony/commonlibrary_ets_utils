@@ -753,10 +753,12 @@ void NativeEngineTest::UpdateGroupState(napi_env env)
     napi_value obj = NapiHelper::CreateObject(env);
     SequenceRunner* seqRunner = runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_THREE, "test", UINT32_ONE);
     seqRunner->priority_ = Priority::MEDIUM;
+    runnerManager.StoreRunner(seqRunner->runnerId_, seqRunner);
     runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO, "test", UINT32_ZERO);
     runnerManager.CreateOrGetGlobalRunner(env, obj, SIZE_TWO, "test", UINT32_ONE);
     NativeEngineTest::RemoveGlobalRunner("func");
     NativeEngineTest::RemoveGlobalRunner("test");
+    NativeEngineTest::RemoveRunner(seqRunner->runnerId_);
 }
 
 void NativeEngineTest::ReleaseWorkerHandles(napi_env env)
