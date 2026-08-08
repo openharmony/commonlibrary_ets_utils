@@ -24,6 +24,7 @@ config("console_public_config") {
 
 ohos_shared_library("console") {
   branch_protector_ret = "pac_ret"
+  branch_protector_frt = "bti"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
@@ -84,6 +85,7 @@ ohos_shared_library("console") {
 
 ohos_source_set("console_static") {
   branch_protector_ret = "pac_ret"
+  branch_protector_frt = "bti"
   sanitize = {
     cfi = true
     cfi_cross_dso = true
