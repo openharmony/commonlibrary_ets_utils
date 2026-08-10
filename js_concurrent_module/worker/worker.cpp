@@ -3170,7 +3170,7 @@ napi_value Worker::PostMessageAtFrontToHost(napi_env env, napi_callback_info cbi
     if (argc < NUM_WORKER_ARGS) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "the number of postMessageAtFront parameters must be more than one.");
-        return nullptr;
+        return NapiHelper::GetUndefinedValue(env);
     }
     napi_value* argv = new napi_value[argc];
     ObjectScope<napi_value> scope(argv, true);
@@ -3180,29 +3180,29 @@ napi_value Worker::PostMessageAtFrontToHost(napi_env env, napi_callback_info cbi
     if (worker == nullptr) {
         HILOG_ERROR("worker:: worker is nullptr when PostMessageAtFrontToHost");
         WorkerThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING, "worker is nullptr when postMessageAtFront");
-        return nullptr;
+        return NapiHelper::GetUndefinedValue(env);
     }
 
     if (!worker->IsRunning()) {
         HILOG_DEBUG("worker:: worker is not in running when PostMessageAtFrontToHost.");
-        return nullptr;
+        return NapiHelper::GetUndefinedValue(env);
     }
 
     if (!NapiHelper::IsNumber(env, argv[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "the type of postMessageAtFront second param priority must be number.");
-        return nullptr;
+        return NapiHelper::GetUndefinedValue(env);
     }
     uint32_t priority = NapiHelper::GetUint32Value(env, argv[1]);
     if (priority < static_cast<uint32_t>(WorkerEventPriority::IMMEDIATE) ||
         priority >= static_cast<uint32_t>(WorkerEventPriority::NUMBER)) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
             "priority only supports HIGH, MEDIUM LOW, IDLE.");
-        return nullptr;
+        return NapiHelper::GetUndefinedValue(env);
     }
     MessageDataType data = worker->GetData(env, argc, argv);
     if (data == nullptr) {
-        return nullptr;
+        return NapiHelper::GetUndefinedValue(env);
     }
     worker->PostMessageToHostAtFrontInner(data, static_cast<WorkerEventPriority>(priority));
     return NapiHelper::GetUndefinedValue(env);
