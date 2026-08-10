@@ -26,13 +26,13 @@ void LogManager::PrintLog()
     {
         std::lock_guard<std::mutex> lock(logQueueMutex_);
         size_t count = std::min<size_t>(LOG_PRINT_SIZE, logQueue_.size()); // print LOG_PRINT_SIZE(450) tasks per round
+        size_ -= count;
         outputContainer.reserve(count);
         while (count > 0) {
             outputContainer.push_back(logQueue_.front());
             logQueue_.pop_front();
             count--;
         }
-        size_ -= count;
     }
     for (size_t i = 0; i < outputContainer.size(); i++) {
         HILOG_INFO("taskpool::%{public}s", outputContainer[i].c_str());
