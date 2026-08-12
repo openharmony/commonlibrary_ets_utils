@@ -216,13 +216,16 @@ bool AsyncRunner::CheckExecuteArgs(napi_env env, napi_value napiTask, napi_value
 
 void AsyncRunner::ExecuteTaskImmediately(AsyncRunner* asyncRunner, Task* task)
 {
-    HILOG_DEBUG("taskpool:: task %{public}s in asyncRunner %{public}s immediately.",
-                std::to_string(task->taskId_).c_str(), std::to_string(asyncRunner->runnerId_).c_str());
+    std::string message = " task " + std::to_string(task->taskId_) + " in asyncRunner " +
+                        std::to_string(asyncRunner->runnerId_) + " immediately.";
+    HILOG_DEBUG("taskpool::%{public}s", message.c_str());
     task->IncreaseRefCount();
     TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
     task->UpdateTaskStateToWaiting();
     task->StoreEnqueueTime();
     TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->asyncTaskPriority_);
+    message += " " + task->enqueueTime_;
+    TaskManager::GetInstance().PushLog(message);
 }
 
 bool AsyncRunner::AddTasksToAsyncRunner(AsyncRunner* asyncRunner, Task* task)
@@ -265,6 +268,7 @@ void AsyncRunner::TriggerWaitingTask()
     std::unique_lock<std::shared_mutex> lock(taskMutex_);
     DecreaseRunningCount();
     Task* task = nullptr;
+    std::string message = "";
     while (runningCount_ < runningCapacity_) {
         if (tasks_.empty()) {
             HILOG_DEBUG("taskpool:: asyncRunner %{public}s empty.", std::to_string(runnerId_).c_str());
@@ -276,9 +280,11 @@ void AsyncRunner::TriggerWaitingTask()
         task->IncreaseRefCount();
         TaskManager::GetInstance().IncreaseSendDataRefCount(task->taskId_);
         task->taskState_ = ExecuteState::WAITING;
-        HILOG_DEBUG("taskpool:: Trig task %{public}s in asyncRunner %{public}s.",
-                    std::to_string(task->taskId_).c_str(), std::to_string(runnerId_).c_str());
+        message = " Trig task " + std::to_string(task->taskId_) + " in asyncRunner " + std::to_string(runnerId_);
+        HILOG_DEBUG("taskpool::%{public}s.", message.c_str());
         task->StoreEnqueueTime();
+        message += ". " + task->enqueueTime_;
+        TaskManager::GetInstance().PushLog(message);
         TaskManager::GetInstance().EnqueueTaskId(task->taskId_, task->asyncTaskPriority_);
     }
 }
