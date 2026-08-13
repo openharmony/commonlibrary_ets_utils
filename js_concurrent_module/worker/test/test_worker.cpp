@@ -1215,6 +1215,13 @@ public:
     {
         worker->hostMessageAtFrontQueue_[priority]->Peekqueue(nullptr);
     }
+
+    static void CreateWorkerEnv(Worker* worker, napi_env env)
+    {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        worker->workerEnv_ = workerEnv;
+    }
 protected:
     static thread_local NativeEngine *engine_;
     static thread_local EcmaVM *vm_;
@@ -6732,6 +6739,7 @@ HWTEST_F(WorkersTest, HandleUncaughtExceptionTest002, testing::ext::TestSize.Lev
     UpdateHostState(worker, Worker::HostState::INACTIVE);
     napi_value exception = nullptr;
     napi_create_error(env, nullptr, nullptr, &exception);
+    CreateWorkerEnv(worker, env);
     HandleUncaughtException(worker, exception);
 
     worker->EraseWorker();
@@ -6755,6 +6763,7 @@ HWTEST_F(WorkersTest, HandleUncaughtExceptionTest003, testing::ext::TestSize.Lev
     SetHostEnvExited(worker, true);
     napi_value exception = nullptr;
     napi_create_error(env, nullptr, nullptr, &exception);
+    CreateWorkerEnv(worker, env);
     HandleUncaughtException(worker, exception);
 
     worker->EraseWorker();
@@ -6783,6 +6792,7 @@ HWTEST_F(WorkersTest, HandleUncaughtExceptionTest004, testing::ext::TestSize.Lev
 
     napi_value exception = nullptr;
     napi_create_error(env, nullptr, nullptr, &exception);
+    CreateWorkerEnv(worker, env);
     HandleUncaughtException(worker, exception);
 
     worker->EraseWorker();
@@ -6812,6 +6822,7 @@ HWTEST_F(WorkersTest, HandleUncaughtExceptionTest005, testing::ext::TestSize.Lev
 
     napi_value exception = nullptr;
     napi_create_error(env, nullptr, nullptr, &exception);
+    CreateWorkerEnv(worker, env);
     HandleUncaughtException(worker, exception);
 
     worker->EraseWorker();
@@ -6841,6 +6852,7 @@ HWTEST_F(WorkersTest, HandleUncaughtExceptionTest006, testing::ext::TestSize.Lev
 
     napi_value exception = nullptr;
     napi_create_error(env, nullptr, nullptr, &exception);
+    CreateWorkerEnv(worker, env);
     HandleUncaughtException(worker, exception);
 
     worker->EraseWorker();
