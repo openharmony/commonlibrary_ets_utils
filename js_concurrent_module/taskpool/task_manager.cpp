@@ -1220,11 +1220,14 @@ void TaskManager::NotifyDependencyTaskInfo(uint32_t taskId)
         return;
     }
     for (auto taskIdIter = iter->second.begin(); taskIdIter != iter->second.end();) {
-        auto taskInfo = DequeuePendingTaskInfo(*taskIdIter);
-        RemoveDependencyById(taskId, *taskIdIter);
+        uint32_t dependentTaskId = *taskIdIter;
+        RemoveDependencyById(taskId, dependentTaskId);
         taskIdIter = iter->second.erase(taskIdIter);
-        if (taskInfo.first != 0) {
-            EnqueueTaskId(taskInfo.first, taskInfo.second);
+        if (!IsDependendByTaskId(dependentTaskId)) {
+            auto taskInfo = DequeuePendingTaskInfo(dependentTaskId);
+            if (taskInfo.first != 0) {
+                EnqueueTaskId(taskInfo.first, taskInfo.second);
+            }
         }
     }
 }
