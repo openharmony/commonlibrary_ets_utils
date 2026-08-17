@@ -3620,7 +3620,434 @@ HWTEST_F(NativeEngineTest, stringDecoderEnd004, testing::ext::TestSize.Level0)
     }
     ASSERT_STREQ("", buffer.c_str());
     napi_value result = stringDecoder.End(env);
-    ASSERT_TRUE(result == nullptr);
+    ASSERT_NE(result, nullptr);
+    size_t endBufferSize = 0;
+    napi_get_value_string_utf8(env, result, nullptr, 0, &endBufferSize);
+    std::string endBuffer;
+    endBuffer.resize(endBufferSize);
+    napi_get_value_string_utf8(env, result, endBuffer.data(), endBufferSize + 1, &endBufferSize);
+    ASSERT_STREQ("\xEF\xBF\xBD", endBuffer.c_str());
+}
+
+static napi_value CreateInt8ArrayFromBytes(napi_env env, const unsigned char* bytes, size_t len)
+{
+    void* data = nullptr;
+    napi_value arrayBuffer = nullptr;
+    napi_create_arraybuffer(env, len, &data, &arrayBuffer);
+    if (len > 0 && bytes != nullptr) {
+        if (memcpy_s(data, len, bytes, len) != EOK) {
+            return nullptr;
+        }
+    }
+    napi_value typedArray = nullptr;
+    napi_create_typedarray(env, napi_int8_array, len, arrayBuffer, 0, &typedArray);
+    return typedArray;
+}
+
+static std::string NapiValueToUtf8String(napi_env env, napi_value value)
+{
+    size_t bufferSize = 0;
+    napi_get_value_string_utf8(env, value, nullptr, 0, &bufferSize);
+    std::string buffer;
+    buffer.resize(bufferSize);
+    napi_get_value_string_utf8(env, value, buffer.data(), bufferSize + 1, &bufferSize);
+    return buffer;
+}
+
+static std::string WriteAndGetString(napi_env env, OHOS::Util::StringDecoder& decoder, const unsigned char* bytes,
+                                     size_t len)
+{
+    napi_value input = CreateInt8ArrayFromBytes(env, bytes, len);
+    napi_value result = decoder.Write(env, input);
+    EXPECT_NE(result, nullptr);
+    return NapiValueToUtf8String(env, result);
+}
+
+static std::string EndAndGetString(napi_env env, OHOS::Util::StringDecoder& decoder)
+{
+    napi_value result = decoder.End(env);
+    EXPECT_NE(result, nullptr);
+    return NapiValueToUtf8String(env, result);
+}
+
+static std::string EndWithSrcAndGetString(napi_env env, OHOS::Util::StringDecoder& decoder,
+                                          const unsigned char* bytes, size_t len)
+{
+    napi_value input = CreateInt8ArrayFromBytes(env, bytes, len);
+    napi_value result = decoder.End(env, input);
+    EXPECT_NE(result, nullptr);
+    return NapiValueToUtf8String(env, result);
+}
+
+/**
+ * @tc.name: stringDecoderWriteEndNoUAF001
+ * @tc.desc: Verify End(env) does not use dangling pointer after Write with incomplete sequence.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteEndNoUAF001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char arr[] = {0xE4, 0xBD};
+    std::string writeStr = WriteAndGetString(env, stringDecoder, arr, sizeof(arr));
+    ASSERT_STREQ("", writeStr.c_str());
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("\xEF\xBF\xBD", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteEndNoUAF002
+ * @tc.desc: Verify End(env) works after buffer content modification (no aliasing).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteEndNoUAF002, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char arr[] = {0xE4, 0xBD};
+    void* data = nullptr;
+    napi_value resultBuff = nullptr;
+    napi_create_arraybuffer(env, sizeof(arr), &data, &resultBuff);
+    memcpy_s(data, sizeof(arr), arr, sizeof(arr));
+    napi_value typedArray = nullptr;
+    napi_create_typedarray(env, napi_int8_array, sizeof(arr), resultBuff, 0, &typedArray);
+    stringDecoder.Write(env, typedArray);
+    unsigned char* mutableData = static_cast<unsigned char*>(data);
+    mutableData[0] = 0x00;
+    mutableData[1] = 0x00;
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("\xEF\xBF\xBD", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteEndWithSrc001
+ * @tc.desc: Verify End(src) correctly decodes after incomplete Write.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteEndWithSrc001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char partial[] = {0xE4, 0xBD};
+    std::string writeStr = WriteAndGetString(env, stringDecoder, partial, sizeof(partial));
+    ASSERT_STREQ("", writeStr.c_str());
+    unsigned char rest[] = {0xA0};
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, rest, sizeof(rest));
+    ASSERT_STREQ("\xE4\xBD\xA0", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWrite4ByteSplit001
+ * @tc.desc: Verify 4-byte UTF-8 sequence decoded correctly when split byte-by-byte.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWrite4ByteSplit001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char chunks[4] = {0xF0, 0x9F, 0x98, 0x80};
+    for (int i = 0; i < 3; i++) {
+        WriteAndGetString(env, stringDecoder, &chunks[i], 1);
+    }
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, &chunks[3], 1);
+    ASSERT_EQ(endStr.length(), 4);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[0]), 0xF0);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[1]), 0x9F);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[2]), 0x98);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[3]), 0x80);
+}
+
+/**
+ * @tc.name: stringDecoderWriteAllSplit001
+ * @tc.desc: Verify all split positions of four CJK characters (U+4F60 U+597D U+4E16 U+754C) decode correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteAllSplit001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    const std::string expected = "\xE4\xBD\xA0\xE5\xA5\xBD\xE4\xB8\x96\xE7\x95\x8C";
+    const unsigned char* bytes = reinterpret_cast<const unsigned char*>(expected.data());
+    size_t totalLen = expected.length();
+    for (size_t split = 1; split < totalLen; split++) {
+        OHOS::Util::StringDecoder stringDecoder("utf-8");
+        std::string str1 = WriteAndGetString(env, stringDecoder, bytes, split);
+        std::string str2 = EndWithSrcAndGetString(env, stringDecoder, bytes + split, totalLen - split);
+        ASSERT_STREQ((str1 + str2).c_str(), expected.c_str());
+    }
+}
+
+/**
+ * @tc.name: stringDecoderWriteLargeBuffer001
+ * @tc.desc: Verify large buffer (8192 bytes ASCII) decodes correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteLargeBuffer001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    const size_t bufSize = 8192;
+    std::vector<uint8_t> data(bufSize);
+    for (size_t i = 0; i < bufSize; i++) {
+        data[i] = static_cast<uint8_t>('A' + (i % 26));
+    }
+    std::string str = WriteAndGetString(env, stringDecoder, data.data(), bufSize);
+    ASSERT_EQ(str.length(), bufSize);
+    ASSERT_EQ(str[0], 'A');
+    ASSERT_EQ(str[bufSize - 1], static_cast<char>('A' + ((bufSize - 1) % 26)));
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteTruncatedEnd001
+ * @tc.desc: Verify truncated 3-byte sequence flushed via End(env) produces U+FFFD.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteTruncatedEnd001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char partial[] = {0xE4, 0xBD};
+    WriteAndGetString(env, stringDecoder, partial, sizeof(partial));
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("\xEF\xBF\xBD", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteTruncatedEnd002
+ * @tc.desc: Verify truncated 4-byte sequence flushed via End(env) produces U+FFFD.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteTruncatedEnd002, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char partial[] = {0xF0, 0x9F, 0x98};
+    WriteAndGetString(env, stringDecoder, partial, sizeof(partial));
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("\xEF\xBF\xBD", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteEmptyEnd001
+ * @tc.desc: Verify End(env) returns empty string when no pending bytes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteEmptyEnd001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char data[] = {0x41, 0x42, 0x43};
+    std::string writeStr = WriteAndGetString(env, stringDecoder, data, sizeof(data));
+    ASSERT_STREQ("ABC", writeStr.c_str());
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteMultipleCycles001
+ * @tc.desc: Verify multiple Write+End cycles do not accumulate state.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteMultipleCycles001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char data1[] = {0x41, 0x42};
+    ASSERT_STREQ("AB", WriteAndGetString(env, stringDecoder, data1, 2).c_str());
+    EndAndGetString(env, stringDecoder);
+    unsigned char data2[] = {0x43, 0x44};
+    ASSERT_STREQ("CD", WriteAndGetString(env, stringDecoder, data2, 2).c_str());
+    EndAndGetString(env, stringDecoder);
+    unsigned char data3[] = {0xE4, 0xBD};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, data3, 2).c_str());
+    unsigned char rest[] = {0xA0};
+    ASSERT_STREQ("\xE4\xBD\xA0", EndWithSrcAndGetString(env, stringDecoder, rest, 1).c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteAfterTruncatedEnd001
+ * @tc.desc: Verify Write works correctly after End(env) flushes a truncated sequence.
+ *           Write incomplete [0xE4, 0xBD] -> End(env) -> U+FFFD -> Write "AB" -> "AB".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteAfterTruncatedEnd001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+    unsigned char partial[] = {0xE4, 0xBD};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, partial, sizeof(partial)).c_str());
+    ASSERT_STREQ("\xEF\xBF\xBD", EndAndGetString(env, stringDecoder).c_str());
+    unsigned char data[] = {0x41, 0x42};
+    ASSERT_STREQ("AB", WriteAndGetString(env, stringDecoder, data, sizeof(data)).c_str());
+    unsigned char partial2[] = {0xE5, 0xA5};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, partial2, sizeof(partial2)).c_str());
+    unsigned char rest[] = {0xBD};
+    ASSERT_STREQ("\xE5\xA5\xBD", EndWithSrcAndGetString(env, stringDecoder, rest, sizeof(rest)).c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteGbkPending001
+ * @tc.desc: Verify GBK incomplete 2-byte sequence split across Write and End.
+ *           GBK U+4E2D = 0xD6 0xD0, split into [0xD6] + [0xD0].
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteGbkPending001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("gbk");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0xD6};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, first, 1).c_str());
+    unsigned char rest[] = {0xD0};
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, rest, 1);
+    ASSERT_EQ(endStr.length(), 3);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[0]), 0xE4);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[1]), 0xB8);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[2]), 0xAD);
+}
+
+/**
+ * @tc.name: stringDecoderWriteGbkPending002
+ * @tc.desc: Verify GBK two characters split mid-sequence: U+4E2D U+6587 = 0xD6 0xD0 0xCE 0xC4.
+ *           Write [0xD6 0xD0 0xCE] -> U+4E2D + incomplete U+6587, End [0xC4] -> U+6587.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteGbkPending002, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("gbk");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0xD6, 0xD0, 0xCE};
+    std::string str1 = WriteAndGetString(env, stringDecoder, first, 3);
+    ASSERT_EQ(str1.length(), 3);
+    ASSERT_EQ(static_cast<uint8_t>(str1[0]), 0xE4);
+    ASSERT_EQ(static_cast<uint8_t>(str1[1]), 0xB8);
+    ASSERT_EQ(static_cast<uint8_t>(str1[2]), 0xAD);
+    unsigned char rest[] = {0xC4};
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, rest, 1);
+    ASSERT_EQ(endStr.length(), 3);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[0]), 0xE6);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[1]), 0x96);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[2]), 0x87);
+}
+
+/**
+ * @tc.name: stringDecoderWriteGbkTruncatedEnd001
+ * @tc.desc: Verify GBK truncated 1-byte sequence flushed via End(env) produces U+FFFD.
+ *           Write [0xD6] then End(env) - incomplete, should yield U+FFFD.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteGbkTruncatedEnd001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("gbk");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0xD6};
+    WriteAndGetString(env, stringDecoder, first, 1);
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("\xEF\xBF\xBD", endStr.c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteGb18030Pending001
+ * @tc.desc: Verify GB18030 incomplete 2-byte sequence split across Write and End.
+ *           GB18030 U+4E2D = 0xD6 0xD0, split into [0xD6] + [0xD0].
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteGb18030Pending001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("gb18030");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0xD6};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, first, 1).c_str());
+    unsigned char rest[] = {0xD0};
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, rest, 1);
+    ASSERT_EQ(endStr.length(), 3);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[0]), 0xE4);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[1]), 0xB8);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[2]), 0xAD);
+}
+
+/**
+ * @tc.name: stringDecoderWriteGb18030FourBytePending001
+ * @tc.desc: Verify GB18030 4-byte sequence split across Write and End.
+ *           U+1F600 in GB18030 = 0x94 0x39 0xFC 0x36, split [0x94 0x39] + [0xFC 0x36].
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteGb18030FourBytePending001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("gb18030");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0x94, 0x39};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, first, 2).c_str());
+    unsigned char rest[] = {0xFC, 0x36};
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, rest, 2);
+    ASSERT_EQ(endStr.length(), 4);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[0]), 0xF0);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[1]), 0x9F);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[2]), 0x98);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[3]), 0x80);
+}
+
+/**
+ * @tc.name: stringDecoderWriteUtf16leSurrogatePending001
+ * @tc.desc: Verify UTF-16LE surrogate pair split across Write and End.
+ *           U+1F600 = high surrogate 0xD83D + low surrogate 0xDE00.
+ *           In little-endian UTF-16 bytes: 0x3D 0xD8 0x00 0xDE.
+ *           Split: Write [0x3D 0xD8 0x00] (high surrogate + partial low surrogate) -> no output,
+ *           End [0xDE] -> completes low surrogate -> (U+1F600).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteUtf16leSurrogatePending001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-16le");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0x3D, 0xD8, 0x00};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, first, 3).c_str());
+    unsigned char rest[] = {0xDE};
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, rest, 1);
+    ASSERT_EQ(endStr.length(), 4);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[0]), 0xF0);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[1]), 0x9F);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[2]), 0x98);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[3]), 0x80);
+}
+
+/**
+ * @tc.name: stringDecoderWriteUtf16leSurrogatePending002
+ * @tc.desc: Verify UTF-16LE surrogate pair split between high and low surrogate.
+ *           U+1F600 = 0xD83D 0xDE00, LE bytes: 0x3D 0xD8 0x00 0xDE.
+ *           Split: Write [0x3D 0xD8] (high surrogate) -> no output,
+ *           End [0x00 0xDE] (low surrogate) -> (U+1F600).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteUtf16leSurrogatePending002, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-16le");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0x3D, 0xD8};
+    ASSERT_STREQ("", WriteAndGetString(env, stringDecoder, first, 2).c_str());
+    unsigned char rest[] = {0x00, 0xDE};
+    std::string endStr = EndWithSrcAndGetString(env, stringDecoder, rest, 2);
+    ASSERT_EQ(endStr.length(), 4);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[0]), 0xF0);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[1]), 0x9F);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[2]), 0x98);
+    ASSERT_EQ(static_cast<uint8_t>(endStr[3]), 0x80);
+}
+
+/**
+ * @tc.name: stringDecoderWriteUtf16leSurrogateTruncatedEnd001
+ * @tc.desc: Verify UTF-16LE lone high surrogate flushed via End(env) produces U+FFFD.
+ *           Write [0x3D 0xD8] (high surrogate 0xD83D) then End(env) - no low surrogate.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteUtf16leSurrogateTruncatedEnd001, testing::ext::TestSize.Level0)
+{
+    OHOS::Util::StringDecoder stringDecoder("utf-16le");
+    napi_env env = (napi_env)engine_;
+    unsigned char first[] = {0x3D, 0xD8};
+    WriteAndGetString(env, stringDecoder, first, 2);
+    std::string endStr = EndAndGetString(env, stringDecoder);
+    ASSERT_STREQ("\xEF\xBF\xBD", endStr.c_str());
 }
 
 /**
