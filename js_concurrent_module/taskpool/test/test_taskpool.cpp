@@ -8967,3 +8967,25 @@ HWTEST_F(NativeEngineTest, TaskpoolTest409, testing::ext::TestSize.Level0)
     taskManager.RemoveTask(task->taskId_);
     delete task;
 }
+
+HWTEST_F(NativeEngineTest, TaskpoolTest410, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t result = NativeEngineTest::NotifyDependencyTaskInfoWithRemainingDependency(env);
+    EXPECT_TRUE(result != 0);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}
+
+HWTEST_F(NativeEngineTest, TaskpoolTest411, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ExceptionScope scope(env);
+    uint32_t result = NativeEngineTest::NotifyDependencyTaskInfoWithNoDependency(env);
+    EXPECT_TRUE(result == 0);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_TRUE(exception == nullptr);
+}

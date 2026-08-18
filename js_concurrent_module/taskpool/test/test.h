@@ -121,6 +121,8 @@ public:
     static void SetSystemApp(bool flag);
     static void NotifyShrinkByInBackground(napi_env env);
     static void EnqueueTask(void* data);
+    static uint32_t NotifyDependencyTaskInfoWithRemainingDependency(napi_env env);
+    static uint32_t NotifyDependencyTaskInfoWithNoDependency(napi_env env);
 
     class ExceptionScope {
     public:

@@ -1310,4 +1310,53 @@ void NativeEngineTest::EnqueueTask(void* data)
     Task* task = static_cast<Task*>(data);
     TaskManager::GetInstance().taskQueues_[task->asyncTaskPriority_]->EnqueueTaskId(task->taskId_);
 }
+
+uint32_t NativeEngineTest::NotifyDependencyTaskInfoWithRemainingDependency(napi_env env)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    Task* taskA = new Task();
+    taskA->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(taskA));
+    taskA->env_ = env;
+    uint32_t taskBId = taskA->taskId_ + MAX_TIMEOUT_TIME;
+    uint32_t taskCId = taskA->taskId_ + MAX_TIMEOUT_TIME + 1;
+
+    std::set<uint32_t> dependSet{taskBId, taskCId};
+    taskManager.dependTaskInfos_.emplace(taskA->taskId_, std::move(dependSet));
+    std::set<uint32_t> dependentSet{taskA->taskId_};
+    taskManager.dependentTaskInfos_.emplace(taskBId, std::move(dependentSet));
+    taskManager.EnqueuePendingTaskInfo(taskA->taskId_, Priority::DEFAULT);
+
+    taskManager.NotifyDependencyTaskInfo(taskBId);
+
+    auto taskInfo = taskManager.DequeuePendingTaskInfo(taskA->taskId_);
+
+    taskManager.dependTaskInfos_.erase(taskA->taskId_);
+    delete taskA;
+    return taskInfo.first;
+}
+
+uint32_t NativeEngineTest::NotifyDependencyTaskInfoWithNoDependency(napi_env env)
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    ClearTaskQueue();
+    Task* taskA = new Task();
+    taskA->taskId_ = TaskManager::GetInstance().CalculateTaskId(reinterpret_cast<uint64_t>(taskA));
+    taskA->env_ = env;
+    uint32_t taskBId = taskA->taskId_ + MAX_TIMEOUT_TIME;
+
+    std::set<uint32_t> dependSet{taskBId};
+    taskManager.dependTaskInfos_.emplace(taskA->taskId_, std::move(dependSet));
+    std::set<uint32_t> dependentSet{taskA->taskId_};
+    taskManager.dependentTaskInfos_.emplace(taskBId, std::move(dependentSet));
+    taskManager.EnqueuePendingTaskInfo(taskA->taskId_, Priority::DEFAULT);
+
+    taskManager.NotifyDependencyTaskInfo(taskBId);
+
+    auto taskInfo = taskManager.DequeuePendingTaskInfo(taskA->taskId_);
+
+    taskManager.dependTaskInfos_.erase(taskA->taskId_);
+    delete taskA;
+    ClearTaskQueue();
+    return taskInfo.first;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
