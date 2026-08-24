@@ -31,9 +31,7 @@ public:
     napi_value End(napi_env env);
 private:
     void FreedMemory(UChar *&pData);
-    const char* pend_ {};
-    int pendingLen_ {};
     UConverter* conv_ {};
-    };
+};
 }
 #endif // UTIL_JS_STRINGDECODER_H
