@@ -894,3 +894,54 @@ HWTEST_F(NativeEngineTest, childProcessKillTest002, testing::ext::TestSize.Level
     napi_get_value_bool(env, result, &res);
     ASSERT_FALSE(res);
 }
+
+/**
+ * @tc.name: ProcessManagerKillTest001
+ * @tc.desc: Test processManager kill a running process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessManagerKillTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ProcessManager processManager;
+
+    std::string command("ls; sleep 1");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value pid = childprocess->Getpid(env);
+    napi_value signal = nullptr;
+    napi_create_int32(env, 9, &signal);
+    napi_value result = processManager.Kill(env, pid, signal);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}
+
+/**
+ * @tc.name: ProcessManagerKillTest002
+ * @tc.desc: Test processManager kill with an invalid signal.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessManagerKillTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ProcessManager processManager;
+
+    std::string command("sleep 60");
+    napi_value temp = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &temp);
+
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, temp, nullptr);
+    napi_value pid = childprocess->Getpid(env);
+    napi_value signal = nullptr;
+    napi_create_int32(env, 999, &signal);
+    // The signal 999 is invalid, uv_kill fails and returns false.
+    napi_value result = processManager.Kill(env, signal, pid);
+    childprocess->Close();
+    bool res = false;
+    napi_get_value_bool(env, result, &res);
+    ASSERT_FALSE(res);
+}

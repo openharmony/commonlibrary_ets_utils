@@ -19,6 +19,7 @@ process_sources = [
   "js_childprocess.cpp",
   "js_process.cpp",
   "native_module_process.cpp",
+  "process_report_helper.cpp",
 ]
 
 if (target_os == "ios" || (!is_arkui_x && host_os == "mac")) {
@@ -35,7 +36,16 @@ ohos_shared_library("process") {
     debug = false
   }
   deps = [ ":process_static" ]
-  external_deps = [ "hilog:libhilog" ]
+  external_deps = [
+    "ability_runtime:ability_manager",
+    "c_utils:utils",
+    "hicollie:libhicollie",
+    "hilog:libhilog",
+  ]
+
+  if (is_ohos && is_standard_system && !is_arkui_x) {
+    defines = [ "ENABLE_RECORD" ]
+  }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module"
@@ -84,7 +94,11 @@ ohos_source_set("process_static") {
       "libuv:uv",
     ]
     if (is_standard_system) {
-      external_deps += [ "hilog:libhilog" ]
+      external_deps += [
+        "c_utils:utils",
+        "hilog:libhilog",
+      ]
+      defines = [ "ENABLE_RECORD" ]
     } else {
       external_deps += [
         "c_utils:utils",
@@ -92,10 +106,13 @@ ohos_source_set("process_static") {
       ]
     }
     external_deps += [
+      "ability_runtime:ability_manager",
       "bounds_checking_function:libsec_shared",
+      "hicollie:libhicollie",
       "icu:shared_icuuc",
     ]
   }
+
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 }

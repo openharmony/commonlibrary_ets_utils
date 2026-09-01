@@ -19,6 +19,7 @@
 #include <uv.h>
 
 #include "process_helper.h"
+#include "process_report_helper.h"
 namespace OHOS::JsSysModule::Process {
 
     using namespace Commonlibrary::Platform;
@@ -155,6 +156,7 @@ namespace OHOS::JsSysModule::Process {
                 "Parameter error. process.killinput's Parameter must be number, and from 1 to 64.");
             return nullptr;
         }
+        ProcessReportHelper::RecordAppWithReason(pid, sig, "Process kill");
         bool flag = false;
         int err = uv_kill(pid, sig);
         if (!err) {
@@ -184,6 +186,7 @@ namespace OHOS::JsSysModule::Process {
     {
         int32_t result = 0;
         napi_get_value_int32(env, number, &result);
+        ProcessReportHelper::RecordAppWithReason(static_cast<int32_t>(getpid()), result, "Process exit");
         ProcessExit(result);
     }
 
@@ -562,6 +565,7 @@ namespace OHOS::JsSysModule::Process {
     {
         int32_t result = 0;
         napi_get_value_int32(env, number, &result);
+        ProcessReportHelper::RecordAppWithReason(static_cast<int32_t>(getpid()), result, "ProcessManager exit");
         ProcessExit(result);
     }
 
@@ -577,6 +581,7 @@ namespace OHOS::JsSysModule::Process {
             napi_throw_error(env, "401", "Parameter error. The type of signal must be number,and from 1 to 64.");
             return nullptr;
         }
+        ProcessReportHelper::RecordAppWithReason(pid, sig, "ProcessManager kill");
         bool flag = false;
         int err = uv_kill(pid, sig);
         if (!err) {

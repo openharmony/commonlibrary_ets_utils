@@ -71,7 +71,8 @@
                 "runtime_core",
                 "ets_frontend",
                 "libuv",
-                "node"
+                "node",
+                "hicollie"
             ],
             "third_party": []
         },
