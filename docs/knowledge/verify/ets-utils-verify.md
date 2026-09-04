@@ -67,22 +67,22 @@ chmod 777 ./test_<module>_unittest
 
 ### 各模块测试目标与路径
 
-| 模块 | 构建目标 | 设备路径 |
+| 模块 | 构建目标 | 产物 `<path>`（相对 `out/rk3568/tests/unittest/ets_utils/`） |
 |------|---------|---------|
-| Buffer | `test_buffer_unittest` | `ets_utils/jsapi/buffer/napi/` |
-| ConvertXML | `test_convertxml_unittest` | `ets_utils/jsapi/convertxml/napi/` |
-| URI | `test_uri_unittest` | `ets_utils/js_api_module/uri/` |
-| URL | `test_url_unittest` | `ets_utils/jsapi/url/napi/` |
-| XML | `test_xml_unittest` | `ets_utils/jsapi/xml/napi/` |
-| TaskPool | `test_taskpool_unittest` | `js_concurrent_module/taskpool/` |
-| Worker | `test_worker_unittest` | `js_concurrent_module/worker/` |
-| Concurrent Utils | `test_concurrent_unittest` | `js_concurrent_module/` |
-| Console | `test_console_unittest` | `jssys/console/napi/` |
-| Timer | `test_timer_unittest` | `jssys/timer/napi/` |
-| SysModule | `test_sys_module_unittest` | `js_sys_module/` |
-| Util | `test_util_unittest` | `ets_utils/js_util_module/util/` |
-| JSON | 无独立测试目标 | 测试集成在 util 或 ArkTS 运行时测试套件中 |
-| Concurrent Utils (locks/condition) | `test_concurrent_utils_unittest` | `js_concurrent_module/utils/` |
+| Buffer | `test_buffer_unittest` | `ets_utils/jsapi/buffer/napi` |
+| ConvertXML | `test_convertxml_unittest` | `ets_utils/jsapi/convertxml/napi` |
+| URI | `test_uri_unittest` | `ets_utils/jsapi/uri/napi` |
+| URL | `test_url_unittest` | `ets_utils/jsapi/url/napi` |
+| XML | `test_xml_unittest` | `ets_utils/jsapi/xml/napi` |
+| TaskPool | `test_taskpool_unittest` | `ets_utils/js_concurrent_module/taskpool` |
+| Worker | `test_worker_unittest` | `ets_utils/js_concurrent_module/worker` |
+| 并发公共（common/helper） | `test_concurrent_unittest` | `ets_utils/js_concurrent_module/helper` |
+| 并发工具（locks/condition） | `test_utils_unittest` | `ets_utils/js_concurrent_module/utils` |
+| Console | `test_console_unittest` | `ets_utils/jssys/console/napi` |
+| Timer | `test_timer_unittest` | `ets_utils/jssys/timer/napi` |
+| Process | `test_process_unittest`（定义于 `js_sys_module/test/`） | `ets_utils/js_sys_module/process` |
+| Util | `test_util_unittest` | `ets_utils/jsutil/util/napi` |
+| dfx / fastbuffer / json / stream / collections / container | 无独立单测目标 | 改动后经编译验证与相关集成模块测试覆盖 |
 
 ---
 

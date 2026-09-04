@@ -18,7 +18,7 @@
 commonlibrary_ets_utils/
 ├── base_sdk/              # 基础SDK：BusinessError 定义、Kit 注册与静态/动态分发
 │   ├── ets/               #   @ohos.base.ets — BusinessError<T> 基类
-│   └── transfer/          #   @ohos.transfer.ets — Kit 级方法分发 + 24 个 Kit 注册文件
+│   └── transfer/          #   @ohos.transfer.ets — Kit 级方法分发 + 22 个 Kit 注册文件（另有 registerMain.ets）
 ├── js_api_module/         # 标准 API 模块（6个子模块）
 │   ├── buffer/            #   Buffer / Blob — 二进制数据处理
 │   ├── fastbuffer/        #   FastBuffer — 高性能二进制操作
@@ -42,17 +42,16 @@ commonlibrary_ets_utils/
 │   ├── collections/       #   Sendable 集合（SendableArray/Set/Map, TypedArrays）— NAPI 桥接层
 │   ├── json/              #   JSON 增强：parse(BigInt 三模式)、stringify(循环引用检测)、has()、remove()
 │   └── stream/            #   流框架（Readable/Writable/Duplex/Transform）
-├── platform/              # 跨平台适配层 → 详见下方 platform/ 子路径
-│   ├── ohos/              #   OpenHarmony 平台适配（process_helper、util_helper）
-│   ├── android/           #   Android 平台适配（process_helper、util_helper）
-│   ├── ios/               #   iOS 平台适配
-│   ├── windows/           #   Windows 平台适配
-│   ├── linux/             #   Linux 平台适配
-│   └── mac/               #   macOS 平台适配
+├── platform/              # 跨平台适配层（4 个平台子目录 + 公共头文件；Windows/Linux/Mac 等 ArkUI-X 平台经 default/ + WINDOWS_PLATFORM 等平台宏支持）
+│   ├── ohos/              #   OpenHarmony 平台适配（process_helper、qos_helper、util_helper）
+│   ├── android/           #   Android 平台适配（jni_helper）
+│   ├── ios/               #   iOS 平台适配（process_helper）
+│   ├── default/           #   默认实现（jni/process/qos/util_helper），其余平台复用
+│   └── *.h                #   公共头文件（jni_helper.h、process_helper.h、qos_helper.h、util_helper.h、utils.h）
 ├── tools/                 # 公共工具
 │   ├── ets_error.h        #   全局 BusinessError 构造工具
-│   ├── hilog/             #   HILOG 宏定义（domain/tag 声明）
-│   └── api_helper/        #   ApiHelper 版本判断与平台适配
+│   ├── log.h              #   HILOG 宏定义（domain/tag 声明）
+│   └── common_helper.h    #   ApiHelper 版本判断与公共 NAPI 辅助
 └── bundle.json            # 部件元数据
 ```
 
@@ -97,7 +96,7 @@ commonlibrary_ets_utils/
 | `js_sys_module/process/` | 进程级操作（kill/exit），安全敏感 |
 | `base_sdk/transfer/` | Kit 注册与分发，影响全局启动链路 |
 | `js_api_module/xml/` + `js_api_module/convertxml/` | 依赖 libxml2，内存安全需注意 |
-| `js_util_module/util/plugin/` | hispeed_string_plugin C 代码，性能敏感 |
+| `js_util_module/util/`（hispeed_string_plugin.c） | hispeed_string_plugin C 代码，性能敏感 |
 
 ---
 

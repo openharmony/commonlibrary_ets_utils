@@ -26,7 +26,7 @@ commonlibrary_ets_utils/
 ├── js_concurrent_module/  # 并发：taskpool, worker, utils(locks/ASON/条件变量)
 ├── js_sys_module/         # 系统：console, process, timer, dfx
 ├── js_util_module/        # 工具：util, container, collections, json, stream
-├── platform/              # 跨平台适配（OHOS/Android/iOS/Windows/Linux/Mac）→ 详见 code_map
+├── platform/              # 跨平台适配（仅 ohos/android/ios/default 四个子目录；Windows/Linux/Mac 等经 default + 平台宏支持）→ 详见 code_map
 └── tools/                 # 公共 NAPI 工具、HILOG 宏、ErrorHelper → 详见 code_map
 ```
 
@@ -60,20 +60,20 @@ commonlibrary_ets_utils/
 
 稳定背景知识放在 `docs/knowledge/`。改动前按场景读取对应文件：
 
-| 场景 | 先读 |
-|------|------|
-| 二进制数据处理 | `js_api_module/buffer/CLAUDE.md` → `js_api_module/fastbuffer/CLAUDE.md` |
-| URI/URL 解析 | `js_api_module/uri/CLAUDE.md` → `js_api_module/url/CLAUDE.md` |
-| XML 相关 | `js_api_module/xml/CLAUDE.md` → `js_api_module/convertxml/CLAUDE.md` |
-| 并发编程 | `js_concurrent_module/taskpool/CLAUDE.md` → `js_concurrent_module/worker/CLAUDE.md`、`js_concurrent_module/utils/CLAUDE.md` |
-| 日志与定时器 | `js_sys_module/console/CLAUDE.md` → `js_sys_module/timer/CLAUDE.md` |
-| 进程管理 | `js_sys_module/process/CLAUDE.md` |
-| 诊断维护（DFX/HiTrace/HiCollie） | `js_sys_module/dfx/` |
-| 编解码工具 | `js_util_module/util/CLAUDE.md` |
-| 集合容器 | `js_util_module/container/CLAUDE.md` |
-| Sendable 集合 | `js_util_module/collections/CLAUDE.md` |
-| JSON 解析/序列化（BigInt、循环引用、has/remove） | `js_util_module/json/CLAUDE.md` |
-| 流框架 | `js_util_module/stream/CLAUDE.md` |
+| 编号 | 场景 | 先读 |
+|------|------|------|
+| 1 | 二进制数据处理 | `js_api_module/buffer/CLAUDE.md` → `js_api_module/fastbuffer/CLAUDE.md` |
+| 2 | URI/URL 解析 | `js_api_module/uri/CLAUDE.md` → `js_api_module/url/CLAUDE.md` |
+| 3 | XML 相关 | `js_api_module/xml/CLAUDE.md` → `js_api_module/convertxml/CLAUDE.md` |
+| 4 | 并发编程 | `js_concurrent_module/taskpool/CLAUDE.md` → `js_concurrent_module/worker/CLAUDE.md`、`js_concurrent_module/utils/CLAUDE.md` |
+| 5 | 日志与定时器 | `js_sys_module/console/CLAUDE.md` → `js_sys_module/timer/CLAUDE.md` |
+| 6 | 进程管理 | `js_sys_module/process/CLAUDE.md` |
+| 7 | 诊断维护（DFX/HiTrace/HiCollie） | `js_sys_module/dfx/CLAUDE.md` |
+| 8 | 编解码工具 | `js_util_module/util/CLAUDE.md` |
+| 9 | 集合容器 | `js_util_module/container/CLAUDE.md` |
+| 10 | Sendable 集合 | `js_util_module/collections/CLAUDE.md` |
+| 11 | JSON 解析/序列化（BigInt、循环引用、has/remove） | `js_util_module/json/CLAUDE.md` |
+| 12 | 流框架 | `js_util_module/stream/CLAUDE.md` |
 
 ### 词汇触发路由
 
@@ -144,6 +144,8 @@ commonlibrary_ets_utils/
 - **platform/** 平台适配宏变更 → 确认所有目标平台编译通过
 - **构建产物**（`.abc`、gen_obj `.o`/`.c`）→ 修改源码后重新生成，禁止直接编辑产物
 - **第三方依赖版本升级**（libxml2、openssl、ICU）→ 确认许可证兼容性及全量回归测试
+- **`hisysevent.yaml`** HiSysEvent 事件定义变更 → 确认故障管理/事件统计等下游消费方不受影响
+- **`ets_utils_config.gni`** 全局构建变量与平台依赖（`platform_root`、`hilog_windows/linux/mac/ios/android` 等）→ 确认所有目标平台编译通过
 
 ### Agent 常见错误模式
 
@@ -199,6 +201,26 @@ commonlibrary_ets_utils/
 hdc file send ./out/rk3568/tests/unittest/ets_utils/<path>/test_<module>_unittest /data/local/tmp/
 hdc shell "cd /data/local/tmp && chmod 777 test_<module>_unittest && ./test_<module>_unittest"
 ```
+
+仅以下模块有独立单测目标（勿为其他模块构造不存在的目标）：
+
+| 模块 | 测试目标 | 产物 `<path>`（相对 `out/rk3568/tests/unittest/ets_utils/`） |
+|------|---------|------|
+| Buffer | `test_buffer_unittest` | `ets_utils/jsapi/buffer/napi` |
+| ConvertXML | `test_convertxml_unittest` | `ets_utils/jsapi/convertxml/napi` |
+| URI | `test_uri_unittest` | `ets_utils/jsapi/uri/napi` |
+| URL | `test_url_unittest` | `ets_utils/jsapi/url/napi` |
+| XML | `test_xml_unittest` | `ets_utils/jsapi/xml/napi` |
+| TaskPool | `test_taskpool_unittest` | `ets_utils/js_concurrent_module/taskpool` |
+| 并发公共（common/helper） | `test_concurrent_unittest` | `ets_utils/js_concurrent_module/helper` |
+| 并发工具（locks/condition） | `test_utils_unittest` | `ets_utils/js_concurrent_module/utils` |
+| Worker | `test_worker_unittest` | `ets_utils/js_concurrent_module/worker` |
+| Console | `test_console_unittest` | `ets_utils/jssys/console/napi` |
+| Process | `test_process_unittest`（定义于 `js_sys_module/test/`） | `ets_utils/js_sys_module/process` |
+| Timer | `test_timer_unittest` | `ets_utils/jssys/timer/napi` |
+| Util | `test_util_unittest` | `ets_utils/jsutil/util/napi` |
+
+**无独立单测目标**：dfx、fastbuffer、json、stream、collections、container——改动后以编译验证 + 相关集成模块测试覆盖。
 
 ### 最小验证顺序
 
