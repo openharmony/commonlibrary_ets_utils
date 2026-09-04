@@ -65,7 +65,7 @@ commonlibrary_ets_utils/
 | 二进制数据处理 | `js_api_module/buffer/CLAUDE.md` → `js_api_module/fastbuffer/CLAUDE.md` |
 | URI/URL 解析 | `js_api_module/uri/CLAUDE.md` → `js_api_module/url/CLAUDE.md` |
 | XML 相关 | `js_api_module/xml/CLAUDE.md` → `js_api_module/convertxml/CLAUDE.md` |
-| 并发编程 | `js_concurrent_module/taskpool/CLAUDE.md` → `js_concurrent_module/worker/CLAUDE.md` |
+| 并发编程 | `js_concurrent_module/taskpool/CLAUDE.md` → `js_concurrent_module/worker/CLAUDE.md`、`js_concurrent_module/utils/CLAUDE.md` |
 | 日志与定时器 | `js_sys_module/console/CLAUDE.md` → `js_sys_module/timer/CLAUDE.md` |
 | 进程管理 | `js_sys_module/process/CLAUDE.md` |
 | 诊断维护（DFX/HiTrace/HiCollie） | `js_sys_module/dfx/` |
