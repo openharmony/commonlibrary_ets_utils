@@ -1,4 +1,4 @@
-# ets_utils 代码地图
+# ets_utils Code Map
 
 ## 仓库定位
 
@@ -134,4 +134,4 @@ commonlibrary_ets_utils/
 - `base_sdk/` 编译产物：`base_sdk.abc` 和 `base_transfer.abc` → 安装到 `/system/framework/`（启动 ABC）
 - `collections/` 安装目录：`module/arkts`
 - `json/`, `stream/` 安装目录：`module/util`
-- 其他模块安装目录：各模块默认路径
+- 其它模块安装目录：各模块默认路径

@@ -15,7 +15,7 @@
 
 ---
 
-## 代码地图
+## Code Map
 
 本仓库按功能域划分为 4 大模块目录，优先按这些目录定位问题：
 
@@ -52,7 +52,7 @@ commonlibrary_ets_utils/
 | JSON 解析/序列化 | `js_util_module/json/` | 增强版 JSON（BigInt、循环引用检测、has/remove） |
 | 流框架 | `js_util_module/stream/` | Readable/Writable/Duplex/Transform |
 
-详细代码地图：`docs/knowledge/code_map/ets-utils-code-map.md`
+详细Code Map：`docs/knowledge/code_map/ets-utils-code-map.md`
 
 ---
 
@@ -202,7 +202,7 @@ hdc file send ./out/rk3568/tests/unittest/ets_utils/<path>/test_<module>_unittes
 hdc shell "cd /data/local/tmp && chmod 777 test_<module>_unittest && ./test_<module>_unittest"
 ```
 
-仅以下模块有独立单测目标（勿为其他模块构造不存在的目标）：
+仅以下模块有独立单测目标（勿为其它模块构造不存在的目标）：
 
 | 模块 | 测试目标 | 产物 `<path>`（相对 `out/rk3568/tests/unittest/ets_utils/`） |
 |------|---------|------|

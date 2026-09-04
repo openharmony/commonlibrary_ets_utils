@@ -79,7 +79,7 @@
 
 ## 架构不变量
 
-1. **模块独立性**：每个子模块（buffer, uri, url, xml, etc.）是独立可编译的构建单元，修改一个模块不应影响其他模块的编译
+1. **模块独立性**：每个子模块（buffer, uri, url, xml, etc.）是独立可编译的构建单元，修改一个模块不应影响其它模块的编译
 2. **NAPI 桥接分层**：TypeScript 层定义 Public API，C++ 层通过 NAPI 实现高性能路径，两层之间不交叉调用
 3. **ArkPrivate 快速路径**：container 和 fastbuffer 模块优先使用 `ArkPrivate.Load()` 获取运行时内置实现，仅在没有内置实现时回退到 TS 实现
 4. **Inner Kit 稳定性**：`sys_timer.h`、`console.h`/`log.h`、`worker.h` 是对外暴露的 C/C++ 头文件，其签名不得做不兼容变更
@@ -134,7 +134,7 @@
 |------|------|
 | `libxml2` | XML 和 ConvertXML 模块共用，版本升级需同时验证两个模块 |
 | `icu` | 多个模块使用 `shared_icuuc`，ICU 版本升级需全量回归 |
-| `openssl` | 仅 util 模块使用 `libcrypto_shared`（UUID 生成），不要在其他模块引入 openssl |
+| `openssl` | 仅 util 模块使用 `libcrypto_shared`（UUID 生成），不要在其它模块引入 openssl |
 | `ffrt` | TaskPool 依赖 ffrt 调度，ffrt 行为变更可能影响 TaskPool 的任务执行顺序 |
 | `runtime_core` | TaskPool/Worker 依赖 Ark 运行时（ani、libarkruntime），需与运行时版本保持一致 |
 
