@@ -89,5 +89,5 @@
 | `js_util_module/json/src/json_js.ts` | JSON 模块 Public API（parse/stringify/has/remove 定义） |
 | `js_util_module/json/native_module_json.cpp` | JSON NAPI 模块注册 |
 | `tools/ets_error.h` | 全局 BusinessError 构造工具，修改需确认所有模块错误码格式兼容 |
-| `tools/hilog/` | HILOG 宏定义，修改需确认 Console 模块 domain/tag 约束 |
-| `tools/api_helper/` | ApiHelper 版本判断与平台适配，修改需确认跨模块版本逻辑一致性 |
+| `tools/log.h` | HILOG 宏定义，修改需确认 Console 模块 domain/tag 约束 |
+| `tools/common_helper.h` | ApiHelper 版本判断与平台适配，修改需确认跨模块版本逻辑一致性 |
