@@ -144,7 +144,7 @@ commonlibrary_ets_utils/
 - **platform/** 平台适配宏变更 → 确认所有目标平台编译通过
 - **构建产物**（`.abc`、gen_obj `.o`/`.c`）→ 修改源码后重新生成，禁止直接编辑产物
 - **第三方依赖版本升级**（libxml2、openssl、ICU）→ 确认许可证兼容性及全量回归测试
-- **`hisysevent.yaml`** HiSysEvent 事件定义变更 → 确认故障管理/事件统计等下游消费方不受影响
+- **`hisysevent.yaml`** HiSysEvent 事件定义变更 → 确认下游消费方不受影响（典型消费方：故障管理 hiview、事件统计 hisyseventservice、DFX 上报链路）
 - **`ets_utils_config.gni`** 全局构建变量与平台依赖（`platform_root`、`hilog_windows/linux/mac/ios/android` 等）→ 确认所有目标平台编译通过
 
 ### Agent 常见错误模式
@@ -226,6 +226,8 @@ hdc shell "cd /data/local/tmp && chmod 777 test_<module>_unittest && ./test_<mod
 
 1. 编译验证 → 2. 单元测试 → 3. API 兼容性检查 → 4. 逐项确认 Done 定义
 
+不同任务类型（Buffer/FastBuffer、XML/ConvertXML、并发辅助、Inner Kit、platform、JSON、Collections 等）有额外的验证步骤，按任务类型查阅 `docs/knowledge/verify/ets-utils-verify.md` 中的"按任务类型的额外验证"表。
+
 ### Done 定义
 
 任务完成必须满足：
@@ -263,8 +265,8 @@ hdc shell "cd /data/local/tmp && chmod 777 test_<module>_unittest && ./test_<mod
 
 ### 静态分析
 
-- C++ 代码已通过构建系统启用 CFI 和分支保护（pac_ret）
-- TypeScript 代码通过 tsconfig.json 检查
+- C++ 代码默认通过构建系统启用 CFI 和分支保护（pac_ret），修改后须确认无新增编译告警
+- TypeScript 代码默认通过各模块 `tsconfig.json` 检查，修改后须运行 `tsc --noEmit`（在对应模块目录下）确认无类型错误
 - 如需额外检查：`./build.sh --product-name rk3568 --build-target ets_utils --gn-args="is_clang_check=true"`
 
 详细验证方法：`docs/knowledge/verify/ets-utils-verify.md`
