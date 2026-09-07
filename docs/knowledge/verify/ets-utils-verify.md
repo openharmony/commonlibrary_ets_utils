@@ -151,7 +151,7 @@ chmod 777 ./test_<module>_unittest
 
 如果无法运行构建/测试，必须：
 
-1. 语法检查修改文件（`tsc --noEmit` 或 `clang -fsyntax-only`）
+1. 语法检查修改文件（TS 使用 `tsc --noEmit`；C++ 使用编译器的 `-fsyntax-only` 仅语法检查模式）
 2. 在回复中明确标注"未验证构建"
 3. 列出需要人工验证的项
 
