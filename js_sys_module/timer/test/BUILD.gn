@@ -22,6 +22,7 @@ ohos_unittest("test_timer_unittest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    js_concurrent_module_common,
     "$sys_module/timer",
     ets_util_path,
   ]
@@ -33,7 +34,7 @@ ohos_unittest("test_timer_unittest") {
     "test_timer.cpp",
   ]
 
-  deps = [ "$sys_module/timer:timer" ]
+  deps = [ "$sys_module/timer:timer_static" ]
 
   external_deps = [
     "bounds_checking_function:libsec_shared",

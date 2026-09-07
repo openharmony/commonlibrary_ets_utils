@@ -82,6 +82,10 @@ ohos_shared_library("timer") {
   }
   cflags = [ "-std=c++17" ]
 
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libtimer.map"
+  }
+
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk" ]
   part_name = "ets_utils"
@@ -131,6 +135,8 @@ ohos_source_set("timer_static") {
     if (target_os == "ios") {
       defines += [ "IOS_PLATFORM" ]
     }
+  } else {
+    external_deps += [ "hilog:libhilog" ]
   }
 
   if (!is_mingw && !is_mac && !is_linux && product_name != "ohos-sdk") {

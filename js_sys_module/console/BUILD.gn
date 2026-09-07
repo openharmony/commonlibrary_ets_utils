@@ -78,6 +78,10 @@ ohos_shared_library("console") {
   }
   cflags = [ "-std=c++17" ]
 
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libconsole.map"
+  }
+
   subsystem_name = "commonlibrary"
   innerapi_tags = [ "platformsdk_indirect" ]
   part_name = "ets_utils"
@@ -120,6 +124,8 @@ ohos_source_set("console_static") {
     if (target_os == "ios") {
       defines += [ "IOS_PLATFORM" ]
     }
+  } else {
+    external_deps += [ "hilog:libhilog" ]
   }
 
   subsystem_name = "commonlibrary"

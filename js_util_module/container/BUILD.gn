@@ -164,6 +164,10 @@ template("container_lib") {
     subsystem_name = "commonlibrary"
     part_name = "ets_utils"
     relative_install_dir = "module/util"
+
+    if (is_ohos && target_cpu == "arm64") {
+      version_script = "lib" + name + ".map"
+    }
   }
 }
 

@@ -86,6 +86,9 @@ ohos_shared_library("convertxml") {
   part_name = "ets_utils"
 
   relative_install_dir = "module"
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libconvertxml.map"
+  }
 }
 
 ohos_source_set("convertxml_static") {

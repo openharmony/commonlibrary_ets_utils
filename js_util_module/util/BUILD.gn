@@ -106,6 +106,10 @@ ohos_shared_library("util") {
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module"
+
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libutil.map"
+  }
 }
 
 ohos_source_set("util_static") {

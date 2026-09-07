@@ -84,6 +84,10 @@ ohos_shared_library("json") {
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module/util"
+
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libjson.map"
+  }
 }
 
 ohos_source_set("json_static") {

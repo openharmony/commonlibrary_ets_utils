@@ -28,6 +28,10 @@ ohos_shared_library("collections") {
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module/arkts"
+
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libcollections.map"
+  }
 }
 
 ohos_source_set("collections_static") {
