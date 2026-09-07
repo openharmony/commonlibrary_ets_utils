@@ -21,16 +21,19 @@ if (is_standard_system) {
 ohos_unittest("test_console_unittest") {
   module_out_path = module_output_path
 
-  include_dirs = [ "$sys_module/console" ]
+  include_dirs = [
+    js_concurrent_module_common,
+    "$sys_module/console",
+  ]
 
   cflags = [ "-g3" ]
 
   sources = [
+    "../console.cpp",
+    "$js_concurrent_module_common/helper/napi_helper.cpp",
     "test_ark.cpp",
     "test_console.cpp",
   ]
-
-  deps = [ "$sys_module/console:console" ]
 
   external_deps = [
     "bounds_checking_function:libsec_shared",

@@ -83,6 +83,10 @@ ohos_shared_library("stream") {
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module/util"
+
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libstream.map"
+  }
 }
 
 ohos_source_set("stream_static") {

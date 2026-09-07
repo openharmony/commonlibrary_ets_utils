@@ -107,6 +107,10 @@ ohos_shared_library("utils") {
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
   relative_install_dir = "module/arkts"
+
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libutils.map"
+  }
 }
 
 ohos_source_set("utils_static") {

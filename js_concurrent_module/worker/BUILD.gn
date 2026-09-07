@@ -111,6 +111,10 @@ ohos_shared_library("worker") {
   part_name = "ets_utils"
 
   relative_install_dir = "module"
+
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libworker.map"
+  }
 }
 
 ohos_source_set("worker_static") {

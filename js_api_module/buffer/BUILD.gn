@@ -98,6 +98,9 @@ ohos_shared_library("buffer") {
   part_name = "ets_utils"
 
   relative_install_dir = "module"
+  if (is_ohos && target_cpu == "arm64") {
+    version_script = "libbuffer.map"
+  }
 }
 
 ohos_source_set("buffer_static") {
