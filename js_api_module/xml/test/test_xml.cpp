@@ -2208,6 +2208,10 @@ HWTEST_F(NativeEngineTest, ParseEntityFunc, testing::ext::TestSize.Level0)
     res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
     ASSERT_FALSE(res);
 
+    out = "W#999999999999999999999999";
+    res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
+    ASSERT_TRUE(res);
+
     out = "Work1";
     res = XmlTest::ParseEntityFunc(env, out, "", true, TextEnum::ENTITY_DECL);
     ASSERT_FALSE(res);
