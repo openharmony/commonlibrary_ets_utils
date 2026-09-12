@@ -18,6 +18,7 @@
 #include "test.h"
 #include <codecvt>
 #include <thread>
+#include <chrono>
 #include "ark_native_engine.h"
 #include "commonlibrary/ets_utils/js_util_module/util/native_module_util.h"
 #include "commonlibrary/ets_utils/js_util_module/util/js_base64.h"
@@ -10445,5 +10446,379 @@ HWTEST_F(NativeEngineTest, EnableLocalHandleDetectionTest003, testing::ext::Test
         napi_valuetype resultType = napi_undefined;
         ASSERT_CHECK_CALL(napi_typeof(env, result, &resultType));
         ASSERT_EQ(resultType, napi_undefined);
+    });
+}
+
+/**
+ * @tc.name: GetGlobalHandleCount_001
+ * @tc.desc: Test getGlobalHandleCount returns a number greater than or equal to 0 via N-API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetGlobalHandleCount_001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value getFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "getGlobalHandleCount", &getFunc));
+        ASSERT_NE(getFunc, nullptr);
+
+        napi_valuetype funcType = napi_undefined;
+        ASSERT_CHECK_CALL(napi_typeof(env, getFunc, &funcType));
+        ASSERT_EQ(funcType, napi_function);
+
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, getFunc, 0, nullptr, &result));
+        ASSERT_NE(result, nullptr);
+
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
+
+        double count = -1.0;
+        ASSERT_CHECK_CALL(napi_get_value_double(env, result, &count));
+        ASSERT_GE(count, 0.0);
+    });
+}
+
+/**
+ * @tc.name: GetGlobalHandleCount_002
+ * @tc.desc: Test getGlobalHandleCount returns the same count as the C API napi_get_global_handle_count,
+ *           including the scenario where several napi references are held.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetGlobalHandleCount_002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value getFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "getGlobalHandleCount", &getFunc));
+        ASSERT_NE(getFunc, nullptr);
+
+        size_t baseline = 0;
+        ASSERT_EQ(napi_get_global_handle_count(env, &baseline), napi_ok);
+
+        constexpr size_t refCount = 3;
+        napi_value obj = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+        napi_ref refs[refCount] = {nullptr};
+        for (size_t i = 0; i < refCount; i++) {
+            ASSERT_CHECK_CALL(napi_create_reference(env, obj, 1, &refs[i]));
+        }
+
+        size_t countWithRefs = 0;
+        ASSERT_EQ(napi_get_global_handle_count(env, &countWithRefs), napi_ok);
+        ASSERT_GE(countWithRefs, baseline + refCount);
+
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, getFunc, 0, nullptr, &result));
+        ASSERT_NE(result, nullptr);
+
+        double jsCount = -1.0;
+        ASSERT_CHECK_CALL(napi_get_value_double(env, result, &jsCount));
+        ASSERT_EQ(jsCount, static_cast<double>(countWithRefs));
+
+        for (size_t i = 0; i < refCount; i++) {
+            ASSERT_CHECK_CALL(napi_delete_reference(env, refs[i]));
+        }
+
+        napi_value resultAfterDelete = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, getFunc, 0, nullptr, &resultAfterDelete));
+        ASSERT_NE(resultAfterDelete, nullptr);
+
+        double jsCountAfterDelete = -1.0;
+        ASSERT_CHECK_CALL(napi_get_value_double(env, resultAfterDelete, &jsCountAfterDelete));
+        ASSERT_LE(jsCountAfterDelete, static_cast<double>(countWithRefs));
+    });
+}
+
+/**
+ * @tc.name: GetGlobalHandleCount_003
+ * @tc.desc: Test getGlobalHandleCount propagates the exception instead of returning a value when a pending
+ *           exception exists in the VM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetGlobalHandleCount_003, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value getFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "getGlobalHandleCount", &getFunc));
+        ASSERT_NE(getFunc, nullptr);
+
+        ASSERT_CHECK_CALL(napi_throw_error(env, nullptr, "test pending exception"));
+
+        size_t count = 0;
+        ASSERT_EQ(napi_get_global_handle_count(env, &count), napi_pending_exception);
+
+        napi_value result = nullptr;
+        ASSERT_EQ(napi_call_function(env, arktsvm, getFunc, 0, nullptr, &result), napi_pending_exception);
+        ASSERT_EQ(result, nullptr);
+
+        bool isPending = false;
+        ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isPending));
+        ASSERT_TRUE(isPending);
+
+        napi_value exception = nullptr;
+        ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &exception));
+        ASSERT_NE(exception, nullptr);
+        ASSERT_CHECK_VALUE_TYPE(env, exception, napi_object);
+    });
+}
+
+static void RunGlobalHandleCountInSubRuntime(int loopTimes, bool* ok)
+{
+    napi_env subEnv = nullptr;
+    if (napi_create_ark_runtime(&subEnv) != napi_ok || subEnv == nullptr) {
+        *ok = false;
+        return;
+    }
+    for (int i = 0; i < loopTimes; i++) {
+        size_t count = 0;
+        if (napi_get_global_handle_count(subEnv, &count) != napi_ok) {
+            *ok = false;
+            break;
+        }
+    }
+    napi_destroy_ark_runtime(&subEnv);
+}
+
+static void QuerySubRuntimeGlobalHandleCount(bool* ok, double* cApiCount, double* bridgeCount)
+{
+    napi_env subEnv = nullptr;
+    if (napi_create_ark_runtime(&subEnv) != napi_ok || subEnv == nullptr) {
+        return;
+    }
+    do {
+        napi_value exports = nullptr;
+        if (napi_create_object(subEnv, &exports) != napi_ok) {
+            break;
+        }
+        OHOS::Util::UtilInit(subEnv, exports);
+
+        napi_value arktsvm = nullptr;
+        if (napi_get_named_property(subEnv, exports, ARKTSVM_NAME, &arktsvm) != napi_ok) {
+            break;
+        }
+        napi_value getFunc = nullptr;
+        if (napi_get_named_property(subEnv, arktsvm, "getGlobalHandleCount", &getFunc) != napi_ok) {
+            break;
+        }
+
+        size_t count = 0;
+        if (napi_get_global_handle_count(subEnv, &count) != napi_ok) {
+            break;
+        }
+        *cApiCount = static_cast<double>(count);
+
+        napi_value result = nullptr;
+        if (napi_call_function(subEnv, arktsvm, getFunc, 0, nullptr, &result) != napi_ok
+            || result == nullptr) {
+            break;
+        }
+        double value = -1.0;
+        if (napi_get_value_double(subEnv, result, &value) != napi_ok) {
+            break;
+        }
+        *bridgeCount = value;
+        *ok = true;
+    } while (false);
+    napi_destroy_ark_runtime(&subEnv);
+}
+
+/**
+ * @tc.name: GetGlobalHandleCount_004
+ * @tc.desc: Test concurrent calls: the main thread (VM owner) calls the ArkTS bridge in a loop while a sub thread
+ *           with its own ark runtime calls the C API in a loop. Both sides return valid counts and neither
+ *           interferes with the other.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetGlobalHandleCount_004, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value getFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "getGlobalHandleCount", &getFunc));
+        ASSERT_NE(getFunc, nullptr);
+
+        auto callBridge = [env, arktsvm, getFunc]() -> double {
+            napi_value result = nullptr;
+            if (napi_call_function(env, arktsvm, getFunc, 0, nullptr, &result) != napi_ok || result == nullptr) {
+                return -1.0;
+            }
+            double value = -1.0;
+            if (napi_get_value_double(env, result, &value) != napi_ok) {
+                return -1.0;
+            }
+            return value;
+        };
+
+        double baseline = callBridge();
+        ASSERT_GE(baseline, 0.0);
+
+        constexpr int loopTimes = 100;
+        double mainResults[loopTimes];
+        bool subOk = true;
+        std::thread subThread(RunGlobalHandleCountInSubRuntime, loopTimes, &subOk);
+        for (int i = 0; i < loopTimes; i++) {
+            mainResults[i] = callBridge();
+        }
+        subThread.join();
+
+        ASSERT_TRUE(subOk);
+        for (int i = 0; i < loopTimes; i++) {
+            ASSERT_EQ(mainResults[i], baseline);
+        }
+        ASSERT_EQ(callBridge(), baseline);
+    });
+}
+
+/**
+ * @tc.name: GetGlobalHandleCount_005
+ * @tc.desc: Test getGlobalHandleCount in a sub thread with its own ark runtime: the C API and the ArkTS bridge
+ *           return the same valid count of that VM.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetGlobalHandleCount_005, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        (void)env;
+        bool subOk = false;
+        double cApiCount = -1.0;
+        double bridgeCount = -1.0;
+        std::thread subThread(QuerySubRuntimeGlobalHandleCount, &subOk, &cApiCount, &bridgeCount);
+        subThread.join();
+
+        ASSERT_TRUE(subOk);
+        ASSERT_GE(cApiCount, 0.0);
+        ASSERT_GE(bridgeCount, 0.0);
+        ASSERT_EQ(bridgeCount, cApiCount);
+    });
+}
+
+/**
+ * @tc.name: GetGlobalHandleCount_006
+ * @tc.desc: Test repeated calls without handle churn return a stable count, and creating/deleting napi references
+ *           increases/decreases the count accordingly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetGlobalHandleCount_006, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value getFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "getGlobalHandleCount", &getFunc));
+        ASSERT_NE(getFunc, nullptr);
+
+        auto callBridge = [env, arktsvm, getFunc]() -> double {
+            napi_value result = nullptr;
+            if (napi_call_function(env, arktsvm, getFunc, 0, nullptr, &result) != napi_ok || result == nullptr) {
+                return -1.0;
+            }
+            double value = -1.0;
+            if (napi_get_value_double(env, result, &value) != napi_ok) {
+                return -1.0;
+            }
+            return value;
+        };
+
+        constexpr int loopTimes = 100;
+        double first = callBridge();
+        ASSERT_GE(first, 0.0);
+        for (int i = 0; i < loopTimes; i++) {
+            ASSERT_EQ(callBridge(), first);
+        }
+
+        size_t base = 0;
+        ASSERT_EQ(napi_get_global_handle_count(env, &base), napi_ok);
+
+        constexpr size_t refCount = 5;
+        napi_value obj = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+        napi_ref refs[refCount] = {nullptr};
+        for (size_t i = 0; i < refCount; i++) {
+            ASSERT_CHECK_CALL(napi_create_reference(env, obj, 1, &refs[i]));
+        }
+
+        size_t withRefs = 0;
+        ASSERT_EQ(napi_get_global_handle_count(env, &withRefs), napi_ok);
+        ASSERT_GE(withRefs, base + refCount);
+        ASSERT_EQ(callBridge(), static_cast<double>(withRefs));
+
+        for (size_t i = 0; i < refCount; i++) {
+            ASSERT_CHECK_CALL(napi_delete_reference(env, refs[i]));
+        }
+        ASSERT_LE(callBridge(), static_cast<double>(withRefs));
+    });
+}
+
+/**
+ * @tc.name: GetGlobalHandleCount_007
+ * @tc.desc: Performance observation: call getGlobalHandleCount repeatedly, assert every call succeeds and record
+ *           the per-call duration for baseline reference (no hard threshold).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, GetGlobalHandleCount_007, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value getFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "getGlobalHandleCount", &getFunc));
+        ASSERT_NE(getFunc, nullptr);
+
+        constexpr int callTimes = 1000;
+        auto start = std::chrono::steady_clock::now();
+        for (int i = 0; i < callTimes; i++) {
+            napi_value result = nullptr;
+            ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, getFunc, 0, nullptr, &result));
+            double value = -1.0;
+            ASSERT_CHECK_CALL(napi_get_value_double(env, result, &value));
+            ASSERT_GE(value, 0.0);
+        }
+        auto end = std::chrono::steady_clock::now();
+        auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        double avgUs = static_cast<double>(totalUs) / callTimes;
+        HILOG_INFO("GetGlobalHandleCount_007: %{public}d calls, total %{public}lld us, avg %{public}.3f us/call",
+            callTimes, totalUs, avgUs);
+        ASSERT_GE(avgUs, 0.0);
     });
 }

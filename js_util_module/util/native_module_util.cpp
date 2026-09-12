@@ -1815,6 +1815,18 @@ namespace OHOS::Util {
         return result;
     }
 
+    static napi_value GetGlobalHandleCount(napi_env env, [[maybe_unused]] napi_callback_info info)
+    {
+        size_t count = 0;
+        napi_status status = napi_get_global_handle_count(env, &count);
+        if (status != napi_ok) {
+            return ThrowError(env, "Parameter error. GetGlobalHandleCount: failed to get the global handle count.");
+        }
+        napi_value result = nullptr;
+        NAPI_CALL(env, napi_create_double(env, static_cast<double>(count), &result));
+        return result;
+    }
+
     // Async callback data for GetAllVMHeapMemoryInfo
     struct GetAllVMHeapMemoryInfoData {
         napi_env env;
@@ -2153,6 +2165,7 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("onVMHeapMemoryPressure", OnVMHeapMemoryPressure),
             DECLARE_NAPI_FUNCTION("offVMHeapMemoryPressure", OffVMHeapMemoryPressure),
             DECLARE_NAPI_FUNCTION("setTrackGlobalRef", SetTrackGlobalRef),
+            DECLARE_NAPI_FUNCTION("getGlobalHandleCount", GetGlobalHandleCount),
         };
         NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
                                               sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
