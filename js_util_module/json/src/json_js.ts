@@ -23,8 +23,12 @@ class BusinessError extends Error {
   }
 }
 
+interface ISendable {}
+
 type TransformsFunc = (this: Object, key: string, value: Object) => Object | undefined | null;
 type ReplacerType = (number | string)[] | null | TransformsFunc;
+type SendableTransformer = (this: ISendable, key: string,
+  value: ISendable | undefined | null) => ISendable | undefined | null;
 
 const enum BigIntMode {
   DEFAULT = 0,
@@ -32,14 +36,21 @@ const enum BigIntMode {
   ALWAYS_PARSE_AS_BIGINT = 2,
 }
 
+const enum ParseReturnType {
+  OBJECT = 0,
+  MAP = 1,
+}
+
 interface ParseOptions {
   bigIntMode?: BigIntMode;
+  parseReturnType?: ParseReturnType;
 }
 
 export interface JSON {
   parseBigInt(text: string, reviver?: TransformsFunc, options?: ParseOptions): Object | null;
   stringifyBigInt(value: Object, replacer?: TransformsFunc, space?: string | number): string;
   stringifyBigInt(value: Object, replacer?: (number | string)[] | null, space?: string | number): string;
+  parseSendableV2(text: string, reviver?: SendableTransformer, options?: ParseOptions): ISendable | null;
 }
 
 function parse(text: string, reviver?: TransformsFunc, options?: ParseOptions): Object | null {
@@ -180,8 +191,29 @@ function remove(value: object, key: string): void {
   }
 }
 
+const runtimeJsonAtModuleInit = JSON as unknown as JSON;
+const runtimeParseSendableV2 = runtimeJsonAtModuleInit.parseSendableV2;
+
+function parseSendable(text: string, reviver?: SendableTransformer, options?: ParseOptions): ISendable | null {
+  if (typeof text !== 'string') {
+    let error = new BusinessError(`Parameter error. The type of first param must be string.`);
+    throw error;
+  }
+  if (reviver !== undefined) {
+    let error = new BusinessError(`Parameter error. Reviver only supports undefined currently.`);
+    throw error;
+  }
+  if (typeof runtimeParseSendableV2 !== 'function') {
+    let error = new BusinessError('ParseSendable is not supported.');
+    throw error;
+  }
+
+  return runtimeParseSendableV2(text, reviver, options);
+}
+
 export default {
   parse: parse,
+  parseSendable: parseSendable,
   stringify: stringify,
   has: has,
   remove: remove,
