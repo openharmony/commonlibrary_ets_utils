@@ -1565,3 +1565,503 @@ HWTEST_F(NativeEngineTest, GetLength002, testing::ext::TestSize.Level0)
     unsigned int len = buf->GetLength();
     ASSERT_EQ(len, 3);
 }
+
+/*
+ * Fault-injection helper: allocate a buffer whose real allocation is larger than
+ * the logical length, so out-of-range accesses relative to length_ (which the
+ * detection-only security reporting does not block) still stay inside the real
+ * allocation and cannot corrupt the heap during the test.
+ */
+static OHOS::buffer::Buffer *NewFaultBuffer(unsigned int logicalLen)
+{
+    const unsigned int allocSize = 64; // 64 : real allocation size, bigger than any logical length used here
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    buf->Init(allocSize);
+    for (unsigned int i = 0; i < allocSize; i++) {
+        buf->Set(i, static_cast<uint8_t>(i));
+    }
+    buf->SetLength(logicalLen);
+    return buf;
+}
+
+/**
+ * @tc.name: IsRangeValidTest001
+ * @tc.desc: Check IsRangeValid boundary conditions on empty and non-empty buffers.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, IsRangeValidTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = new OHOS::buffer::Buffer();
+    ASSERT_TRUE(buf->IsRangeValid(0, 0));
+    ASSERT_FALSE(buf->IsRangeValid(0, 1));
+    ASSERT_FALSE(buf->IsRangeValid(1, 0));
+    delete buf;
+    buf = nullptr;
+
+    buf = new OHOS::buffer::Buffer();
+    buf->Init(8);
+    ASSERT_TRUE(buf->IsRangeValid(0, 0));
+    ASSERT_TRUE(buf->IsRangeValid(0, 8));
+    ASSERT_TRUE(buf->IsRangeValid(8, 0));
+    ASSERT_TRUE(buf->IsRangeValid(4, 4));
+    ASSERT_FALSE(buf->IsRangeValid(0, 9));
+    ASSERT_FALSE(buf->IsRangeValid(8, 1));
+    ASSERT_FALSE(buf->IsRangeValid(4, 5));
+    ASSERT_FALSE(buf->IsRangeValid(5, 4));
+    ASSERT_FALSE(buf->IsRangeValid(0, 0xFFFFFFFFU));
+    ASSERT_FALSE(buf->IsRangeValid(0xFFFFFFFFU, 0xFFFFFFFFU));
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: SubBufferFaultTest001
+ * @tc.desc: SubBuffer reports out-of-range views (start > end, start > length, end > length)
+ *           and keeps the original behavior, while a valid view stays unaffected.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, SubBufferFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *src = new OHOS::buffer::Buffer();
+    src->Init(8);
+    for (unsigned int i = 0; i < 8; i++) {
+        src->Set(i, static_cast<uint8_t>(i + 1));
+    }
+
+    // start > end: reported, original flow continues (length underflows).
+    OHOS::buffer::Buffer *dst = new OHOS::buffer::Buffer();
+    dst->SubBuffer(src, 3, 1);
+    ASSERT_EQ(dst->GetByteOffset(), 3);
+    ASSERT_EQ(dst->GetLength(), 4294967294U); // 4294967294 : 1 - 3 underflow of uint32_t
+    delete dst;
+    dst = nullptr;
+
+    // start > source length: reported, original flow continues.
+    dst = new OHOS::buffer::Buffer();
+    dst->SubBuffer(src, 9, 10);
+    ASSERT_EQ(dst->GetByteOffset(), 9);
+    ASSERT_EQ(dst->GetLength(), 1);
+    delete dst;
+    dst = nullptr;
+
+    // end > source length: reported, original flow continues.
+    dst = new OHOS::buffer::Buffer();
+    dst->SubBuffer(src, 0, 9);
+    ASSERT_EQ(dst->GetByteOffset(), 0);
+    ASSERT_EQ(dst->GetLength(), 9);
+    delete dst;
+    dst = nullptr;
+
+    // valid range: no report, normal view.
+    dst = new OHOS::buffer::Buffer();
+    dst->SubBuffer(src, 2, 6);
+    ASSERT_EQ(dst->GetByteOffset(), 2);
+    ASSERT_EQ(dst->GetLength(), 4);
+    ASSERT_EQ(dst->Get(0), 3);
+    ASSERT_EQ(dst->Get(3), 6);
+    delete dst;
+    dst = nullptr;
+    delete src;
+    src = nullptr;
+}
+
+/**
+ * @tc.name: CopyFaultTest001
+ * @tc.desc: Copy reports each out-of-range condition (sEnd < sStart, sStart > source length,
+ *           source span overrun, tStart > target length) and keeps the original behavior;
+ *           a valid copy stays unaffected.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, CopyFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *src = NewFaultBuffer(8);
+    OHOS::buffer::Buffer *dst = NewFaultBuffer(8);
+
+    // sEnd < sStart: reported, original flow continues (clamped by target length).
+    uint32_t res = src->Copy(dst, 0, 2, 0);
+    ASSERT_EQ(res, 8);
+
+    // sStart > source length: reported.
+    res = src->Copy(dst, 0, 9, 10);
+    ASSERT_EQ(res, 1);
+
+    // (sEnd - sStart) > source length - sStart: reported.
+    res = src->Copy(dst, 0, 4, 9);
+    ASSERT_EQ(res, 5);
+
+    // tStart > target length: reported.
+    OHOS::buffer::Buffer *shortDst = NewFaultBuffer(4);
+    res = src->Copy(shortDst, 5, 0, 2);
+    ASSERT_EQ(res, 2);
+    delete shortDst;
+    shortDst = nullptr;
+
+    // valid copy: no report, bytes are copied.
+    res = src->Copy(dst, 0, 0, 4);
+    ASSERT_EQ(res, 4);
+    for (uint32_t i = 0; i < 4; i++) {
+        ASSERT_EQ(dst->Get(i), src->Get(i));
+    }
+    delete src;
+    src = nullptr;
+    delete dst;
+    dst = nullptr;
+}
+
+/**
+ * @tc.name: CompareFaultTest001
+ * @tc.desc: Compare reports invalid source/target ranges and keeps the original behavior;
+ *           valid comparisons return the correct order.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, CompareFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf1 = NewFaultBuffer(4);
+    OHOS::buffer::Buffer *buf2 = NewFaultBuffer(4);
+    OHOS::buffer::Buffer *zeroBuf = NewFaultBuffer(4);
+    for (unsigned int i = 0; i < 64; i++) { // 64 : fill the whole allocation with zero
+        zeroBuf->Set(i, 0);
+    }
+
+    // source range invalid: reported, original flow continues.
+    int res = buf1->Compare(buf2, 0, 0, 5);
+    ASSERT_EQ(res, 0);
+
+    // target range invalid: reported, original flow continues.
+    res = buf1->Compare(buf2, 2, 0, 4);
+    ASSERT_GT(res, 0);
+
+    // valid comparisons: no report, correct order (Compare is memcmp(target, source)).
+    ASSERT_EQ(buf1->Compare(buf2, 0, 0, 4), 0);
+    ASSERT_LT(buf1->Compare(zeroBuf, 0, 0, 4), 0);
+    ASSERT_GT(zeroBuf->Compare(buf1, 0, 0, 4), 0);
+
+    delete buf1;
+    buf1 = nullptr;
+    delete buf2;
+    buf2 = nullptr;
+    delete zeroBuf;
+    zeroBuf = nullptr;
+}
+
+/**
+ * @tc.name: GetAndSetFaultTest001
+ * @tc.desc: Get/Set report an index beyond the buffer length and keep the original behavior.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, GetAndSetFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+
+    // index == length: reported (index-out-of-range), original flow continues.
+    ASSERT_EQ(buf->Get(4), 4);
+
+    // index > length: reported, the write still lands on the raw memory.
+    buf->Set(4, 0xAB);
+    ASSERT_EQ(buf->Get(4), 0xAB);
+
+    // valid index: no report.
+    ASSERT_EQ(buf->Get(0), 0);
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: WriteAndReadInt32FaultTest001
+ * @tc.desc: WriteInt32/ReadInt32/WriteUInt32/ReadUInt32 (BE and LE) report out-of-range offsets
+ *           through ReportFaults and keep the original behavior; boundary-valid offsets are
+ *           not reported.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, WriteAndReadInt32FaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+
+    // offset + 4 > length: reported, the write/read round-trip still works on the raw memory.
+    buf->WriteInt32BE(0x12345678, 4);
+    ASSERT_EQ(buf->ReadInt32BE(4), 0x12345678);
+    buf->WriteInt32LE(-2023406815, 5); // -2023406815 : 0x87654321
+    ASSERT_EQ(buf->ReadInt32LE(5), -2023406815);
+    buf->WriteUInt32BE(-559038737, 6); // -559038737 : 0xDEADBEEF
+    ASSERT_EQ(buf->ReadUInt32BE(6), 0xDEADBEEFU);
+    buf->WriteUInt32LE(-889275714, 7); // -889275714 : 0xCAFEBABE
+    ASSERT_EQ(buf->ReadUInt32LE(7), 0xCAFEBABEU);
+
+    // boundary-valid offset (offset + 4 == length): no report, normal round-trip.
+    buf->WriteInt32BE(0x21436587, 0);
+    ASSERT_EQ(buf->ReadInt32BE(0), 0x21436587);
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: ReadBytesFaultTest001
+ * @tc.desc: ReadBytes reports an out-of-range [offset, offset + length) window and keeps the
+ *           original behavior; zero-length reads are not reported.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, ReadBytesFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+    uint8_t out[8] = {0};
+
+    // offset + length > buffer length: reported, original flow continues.
+    buf->ReadBytes(out, 4, 4);
+    ASSERT_EQ(out[0], 4);
+    ASSERT_EQ(out[1], 5);
+    ASSERT_EQ(out[2], 6);
+    ASSERT_EQ(out[3], 7);
+
+    // valid window: no report.
+    buf->ReadBytes(out, 0, 4);
+    ASSERT_EQ(out[0], 0);
+    ASSERT_EQ(out[3], 3);
+
+    // zero length: early return, not reported.
+    buf->ReadBytes(out, 0, 0);
+    buf->ReadBytes(nullptr, 0, 0);
+    SUCCEED();
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: WriteStringFaultTest001
+ * @tc.desc: WriteString(value, size) reports size beyond the string length or the buffer length
+ *           and keeps the original behavior.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, WriteStringFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+
+    // size > value length: reported, original flow continues.
+    unsigned int res = buf->WriteString(std::string("abc"), 5);
+    ASSERT_EQ(res, 5);
+
+    // size > buffer length: reported, original flow continues.
+    res = buf->WriteString(std::string("abcdef"), 5);
+    ASSERT_EQ(res, 5);
+
+    // valid size: no report.
+    res = buf->WriteString(std::string("abcd"), 4);
+    ASSERT_EQ(res, 4);
+    ASSERT_EQ(buf->Get(0), 'a');
+    ASSERT_EQ(buf->Get(3), 'd');
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: WriteStringOffsetFaultTest001
+ * @tc.desc: WriteString(value, offset, length) reports an out-of-range window through ReportFaults
+ *           and keeps the original behavior.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, WriteStringOffsetFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+
+    // offset + length > buffer length: reported, original flow continues.
+    unsigned int res = buf->WriteString(std::string("abcdef"), 2, 4);
+    ASSERT_EQ(res, 4);
+    ASSERT_EQ(buf->Get(2), 'a');
+    ASSERT_EQ(buf->Get(5), 'd');
+
+    // offset > buffer length: reported, original flow continues.
+    res = buf->WriteString(std::string("abcdef"), 5, 4);
+    ASSERT_EQ(res, 4);
+
+    // valid window: no report.
+    res = buf->WriteString(std::string("abcdef"), 0, 4);
+    ASSERT_EQ(res, 4);
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: FillStringFaultTest001
+ * @tc.desc: FillString/WriteStringLoop report end beyond the buffer length or end < offset and
+ *           keep the original behavior.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FillStringFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+
+    // end > buffer length (utf-8): reported, the loop still fills up to end.
+    buf->FillString(std::string("abc"), 0, 6, "utf-8");
+    ASSERT_EQ(buf->Get(0), 'a');
+    ASSERT_EQ(buf->Get(3), 'a');
+    ASSERT_EQ(buf->Get(5), 'c');
+
+    // end > buffer length (utf16le reaches WriteStringLoop through the u16string overload).
+    buf->FillString(std::string("abc"), 0, 6, "utf16le");
+    ASSERT_EQ(buf->Get(0), 0x61);
+    ASSERT_EQ(buf->Get(1), 0x00);
+    ASSERT_EQ(buf->Get(2), 0x62);
+    ASSERT_EQ(buf->Get(5), 0x00);
+
+    // end < offset: reported, no byte is written.
+    uint8_t before = buf->Get(5);
+    buf->FillString(std::string("abc"), 5, 2, "utf-8");
+    ASSERT_EQ(buf->Get(5), before);
+
+    // valid fill: no report.
+    buf->FillString(std::string("ab"), 0, 4, "utf-8");
+    ASSERT_EQ(buf->Get(0), 'a');
+    ASSERT_EQ(buf->Get(1), 'b');
+    ASSERT_EQ(buf->Get(2), 'a');
+    ASSERT_EQ(buf->Get(3), 'b');
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: SetArrayFaultTest001
+ * @tc.desc: SetArray reports a write overrun (offset beyond the buffer length or array bigger
+ *           than the remaining space) and keeps the original behavior.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, SetArrayFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+
+    // offset > buffer length: reported, original flow continues.
+    std::vector<uint8_t> arr = {1, 2, 3};
+    buf->SetArray(arr, 5);
+    ASSERT_EQ(buf->Get(5), 1);
+    ASSERT_EQ(buf->Get(7), 3);
+
+    // array bigger than the space left from offset: reported, clamped write continues.
+    arr = {1, 2, 3, 4, 5, 6};
+    buf->SetArray(arr, 2);
+    ASSERT_EQ(buf->Get(2), 1);
+    ASSERT_EQ(buf->Get(5), 4);
+
+    // valid write: no report.
+    arr = {9, 9};
+    buf->SetArray(arr, 0);
+    ASSERT_EQ(buf->Get(0), 9);
+    ASSERT_EQ(buf->Get(1), 9);
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: FillBufferFaultTest001
+ * @tc.desc: FillBuffer reports an empty pattern buffer, end beyond the buffer length and
+ *           end < offset, and keeps the original behavior.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FillBufferFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *pattern = new OHOS::buffer::Buffer();
+    pattern->Init(4);
+    const uint8_t patternData[4] = {0xAA, 0xBB, 0xCC, 0xDD};
+    for (unsigned int i = 0; i < 4; i++) {
+        pattern->Set(i, patternData[i]);
+    }
+
+    // empty pattern buffer: reported, returns without writing.
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+    OHOS::buffer::Buffer *emptyPattern = new OHOS::buffer::Buffer();
+    buf->FillBuffer(emptyPattern, 2, 2);
+    ASSERT_EQ(buf->Get(2), 2);
+
+    // end > buffer length: reported, the loop still fills up to end.
+    buf->FillBuffer(pattern, 0, 6);
+    ASSERT_EQ(buf->Get(0), 0xAA);
+    ASSERT_EQ(buf->Get(3), 0xDD);
+    ASSERT_EQ(buf->Get(4), 0xAA);
+    ASSERT_EQ(buf->Get(5), 0xBB);
+
+    // end < offset: reported, no byte is written.
+    buf->FillBuffer(pattern, 5, 2);
+    ASSERT_EQ(buf->Get(5), 0xBB);
+
+    // valid fill: no report.
+    buf->FillBuffer(pattern, 0, 4);
+    ASSERT_EQ(buf->Get(0), 0xAA);
+    ASSERT_EQ(buf->Get(3), 0xDD);
+    delete buf;
+    buf = nullptr;
+    delete emptyPattern;
+    emptyPattern = nullptr;
+    delete pattern;
+    pattern = nullptr;
+}
+
+/**
+ * @tc.name: FillNumberFaultTest001
+ * @tc.desc: FillNumber reports an empty pattern, end beyond the buffer length and end < offset,
+ *           and keeps the original behavior.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, FillNumberFaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+    const std::vector<uint8_t> numbers = {7, 8};
+
+    // empty pattern: reported, returns without writing.
+    buf->FillNumber(std::vector<uint8_t>(), 2, 2);
+    ASSERT_EQ(buf->Get(2), 2);
+
+    // end > buffer length: reported, the loop still fills up to end.
+    buf->FillNumber(numbers, 0, 6);
+    ASSERT_EQ(buf->Get(0), 7);
+    ASSERT_EQ(buf->Get(1), 8);
+    ASSERT_EQ(buf->Get(4), 7);
+    ASSERT_EQ(buf->Get(5), 8);
+
+    // end < offset: reported, no byte is written.
+    buf->FillNumber(numbers, 5, 2);
+    ASSERT_EQ(buf->Get(5), 8);
+
+    // valid fill: no report.
+    const std::vector<uint8_t> singleNumber = {9};
+    buf->FillNumber(singleNumber, 0, 3);
+    ASSERT_EQ(buf->Get(0), 9);
+    ASSERT_EQ(buf->Get(2), 9);
+    delete buf;
+    buf = nullptr;
+}
+
+/**
+ * @tc.name: ToBase64FaultTest001
+ * @tc.desc: ToBase64/ToBase64Url report an out-of-range [start, start + length) window through
+ *           ReportFaults and keep the original behavior; zero length returns early.
+ * @tc.type: FUNC
+ * @tc.require:issueI5J5Z3
+ */
+HWTEST_F(NativeEngineTest, ToBase64FaultTest001, testing::ext::TestSize.Level0)
+{
+    OHOS::buffer::Buffer *buf = NewFaultBuffer(4);
+
+    // start + length > buffer length: reported, original flow continues.
+    ASSERT_STREQ(buf->ToBase64(2, 4).c_str(), "AgMEBQ=="); // bytes {2, 3, 4, 5}
+    // BASE64URL strips the trailing '=' padding.
+    ASSERT_STREQ(buf->ToBase64Url(2, 4).c_str(), "AgMEBQ");
+
+    // valid window: no report.
+    ASSERT_STREQ(buf->ToBase64(0, 3).c_str(), "AAEC"); // bytes {0, 1, 2}
+
+    // zero length: early return, not reported.
+    ASSERT_STREQ(buf->ToBase64(0, 0).c_str(), "");
+    ASSERT_STREQ(buf->ToBase64Url(0, 0).c_str(), "");
+    delete buf;
+    buf = nullptr;
+}

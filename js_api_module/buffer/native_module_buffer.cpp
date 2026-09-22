@@ -20,6 +20,7 @@
 
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
+#include "tools/security_fault_reporter.h"
 
 using namespace std;
 
@@ -364,12 +365,22 @@ static bool InitAnyArrayBuffer(napi_env env, napi_value* argv, Buffer *&buffer)
             freeBufferMemory(buffer);
             return false;
         }
+        if (byteOffset > bufferSize || length > bufferSize - byteOffset) {
+            // The view below exceeds the array buffer. Detection only, the original
+            // flow continues.
+            ReportEtsUtilsSecurityFault("InitAnyArrayBuffer", "out-of-range", byteOffset, length);
+        }
         buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
         return true;
     }
     if (napi_get_arraybuffer_info(env, argv[1], &data, &bufferSize) != napi_ok) {
         freeBufferMemory(buffer);
         return false;
+    }
+    if (byteOffset > bufferSize || length > bufferSize - byteOffset) {
+        // The view below exceeds the array buffer. Detection only, the original flow
+        // continues.
+        ReportEtsUtilsSecurityFault("InitAnyArrayBuffer", "out-of-range", byteOffset, length);
     }
     buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
     return true;

@@ -17,6 +17,7 @@
 #include "securec.h"
 #include "tools/log.h"
 #include "tools/ets_error.h"
+#include "tools/security_fault_reporter.h"
 #include <cstdio>
 
 #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
@@ -65,6 +66,23 @@ namespace OHOS::Util {
             106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120,
             121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95
         };
+
+        void ReportDecodeInputFaults(const char *input, size_t inputLen, size_t decodeOutLen,
+                                     const char *funcName)
+        {
+            size_t equalProbe = 0;
+            if (inputLen >= 1 && *(input + inputLen - 1) == '=') {
+                equalProbe++;
+            }
+            if (inputLen >= TRAGET_TWO && *(input + inputLen - TRAGET_TWO) == '=') {
+                equalProbe++;
+            }
+            if (equalProbe > decodeOutLen) {
+                // DecodeOut in the caller underflows the output length for this padding.
+                // Detection only, the original flow continues.
+                ReportEtsUtilsSecurityFault(funcName, "invalid-padding-underflow", inputLen, equalProbe);
+            }
+        }
     }
 
     /* base64 encode */
@@ -278,6 +296,16 @@ namespace OHOS::Util {
 
     unsigned char *Base64::DecodeAchieve(napi_env env, const char *input, size_t inputLen, Type valueType)
     {
+        if (input == nullptr || inputLen == 0) {
+            // The reads below access input[-1] / input[-2] for empty input. Detection
+            // only, the original flow continues.
+            ReportEtsUtilsSecurityFault("Base64::DecodeAchieve", "null-or-empty-input", inputLen);
+        }
+        if (inputLen > 0 && inputLen < TRAGET_TWO) {
+            // The second padding check below reads input[-1] for a 1-byte input.
+            // Detection only, the original flow continues.
+            ReportEtsUtilsSecurityFault("Base64::DecodeAchieve", "short-input-oob-read", inputLen);
+        }
         retLen = (inputLen / TRAGET_FOUR) * TRAGET_THREE;
         decodeOutLen = retLen;
         size_t equalCount = 0;
@@ -288,6 +316,7 @@ namespace OHOS::Util {
         if (*(input + inputLen - TRAGET_TWO) == '=') {
             equalCount++;
         }
+        ReportDecodeInputFaults(input, inputLen, decodeOutLen, "Base64::DecodeAchieve");
         retLen = DecodeOut(equalCount, retLen);
         if (retLen > 0) {
             retDecode = new (std::nothrow) unsigned char[retLen + 1];
@@ -780,12 +809,23 @@ namespace OHOS::Util {
         decodeInfo->decodeOutLen = retLen;
         size_t equalCount = 0;
         unsigned char *retDecode = nullptr;
+        if (input == nullptr || inputLen == 0) {
+            // The reads below access input[-1] / input[-2] for empty input. Detection
+            // only, the original flow continues.
+            ReportEtsUtilsSecurityFault("Base64::DecodeAchieves", "null-or-empty-input", inputLen);
+        }
+        if (inputLen > 0 && inputLen < TRAGET_TWO) {
+            // The second padding check below reads input[-1] for a 1-byte input.
+            // Detection only, the original flow continues.
+            ReportEtsUtilsSecurityFault("Base64::DecodeAchieves", "short-input-oob-read", inputLen);
+        }
         if (*(input + inputLen - 1) == '=') {
             equalCount++;
         }
         if (*(input + inputLen - TRAGET_TWO) == '=') {
             equalCount++;
         }
+        ReportDecodeInputFaults(input, inputLen, decodeInfo->decodeOutLen, "Base64::DecodeAchieves");
         retLen = DecodeOut(equalCount, retLen, decodeInfo);
         if (retLen > 0) {
             retDecode = new unsigned char[retLen + 1];

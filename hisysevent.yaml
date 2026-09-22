@@ -23,3 +23,15 @@ ARK_FFRT_UV:
   MESSAGE: {type: STRING, desc: Reported information}
   CODE: {type: INT32, desc: Error code}
   WAIT_TIME: {type: STRING, desc: Waiting time}
+
+ARK_SECURITY_FAULT:
+  __BASE: {type: FAULT, level: CRITICAL, desc: Ark security fault event, preserve: true}
+  PID: {type: INT32, desc: pid}
+  TID: {type: INT32, desc: tid}
+  FUNCTION_NAME: {type: STRING, desc: The function name that detected the fault}
+  ERROR_TYPE: {type: STRING, desc: The type of the security fault}
+  OFFSET: {type: INT32, desc: The offset parameter of the fault}
+  LENGTH: {type: INT32, desc: The length parameter of the fault}
+  INDEX: {type: INT32, desc: The index parameter of the fault}
+  INPUT_LENGTH: {type: INT32, desc: The input length of the fault}
+  PADDING_COUNT: {type: INT32, desc: The padding count of the fault}
