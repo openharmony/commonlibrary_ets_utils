@@ -148,6 +148,10 @@ ohos_source_set("buffer_static") {
       "napi:ace_napi",
       "node:node_header_notice",
     ]
+    if (is_ohos && is_standard_system) {
+      defines = [ "ENABLE_ETS_UTILS_HISYSEVENT" ]
+      external_deps += [ "hisysevent:libhisysevent" ]
+    }
   }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"

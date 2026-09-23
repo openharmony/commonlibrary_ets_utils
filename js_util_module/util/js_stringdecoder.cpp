@@ -15,10 +15,28 @@
 
 #include "js_stringdecoder.h"
 #include "util_helper.h"
+#include "tools/security_fault_reporter.h"
 
 namespace OHOS::Util {
 using namespace Commonlibrary::Platform;
 static const char* ERROR_CODE = "401";
+
+static void ReportPendingLengthFaults(const char *source, const char *sourceStart, size_t length, int pendingLen)
+{
+    if (pendingLen < 0 || static_cast<size_t>(pendingLen) > length) {
+        // The pointer computed in the caller runs past the input window for an invalid
+        // pending length. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("StringDecoder::Write", "invalid-pending-length", length, pendingLen);
+    }
+    if (source != sourceStart && static_cast<size_t>(source - sourceStart) >=
+        static_cast<size_t>(pendingLen < 0 ? 0 : pendingLen)) {
+        // pend_ in the caller is computed from the ICU-advanced source pointer (not the
+        // input start), so it runs past the input window and End() later reads out of
+        // bounds from it. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("StringDecoder::Write", "pending-pointer-overrun",
+                                    static_cast<int32_t>(source - sourceStart), pendingLen);
+    }
+}
 
 StringDecoder::StringDecoder(const std::string &encoding)
 {
@@ -42,6 +60,7 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     }
     napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset);
     const char *source = static_cast<char*>(data);
+    const char *sourceStart = source;
     size_t limit = static_cast<size_t>(ucnv_getMinCharSize(conv_)) * length;
     size_t len = limit * sizeof(UChar);
     UChar *arr = nullptr;
@@ -62,6 +81,7 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
         return nullptr;
     }
     pendingLen_ = ucnv_toUCountPending(conv_, &codeFlag);
+    ReportPendingLengthFaults(source, sourceStart, length, pendingLen_);
     pend_ = source + length - pendingLen_;
 
     napi_value resultStr = nullptr;

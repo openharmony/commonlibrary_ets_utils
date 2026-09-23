@@ -15,6 +15,7 @@
 
 #include "js_buffer.h"
 #include "securec.h"
+#include "tools/security_fault_reporter.h"
 
 using namespace std;
 
@@ -121,6 +122,10 @@ void Buffer::SubBuffer(Buffer *tBuf, uint32_t start, uint32_t end)
         HILOG_ERROR("SubBuffer: buffer is nullptr.");
         return;
     }
+    if (start > end || start > tBuf->length_ || end > tBuf->length_) {
+        // The view below exceeds the source buffer. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::SubBuffer", "out-of-range", start, end);
+    }
     this->Init(tBuf->GetRaw(), tBuf->byteOffset_ + start, (end - start));
 }
 
@@ -128,6 +133,11 @@ uint32_t Buffer::Copy(Buffer *tBuf, uint32_t tStart, uint32_t sStart, uint32_t s
 {
     if (tBuf == nullptr) {
         return 0; // 0 : cannot copy anything
+    }
+    if (sEnd < sStart || sStart > length_ || (sEnd - sStart) > length_ - sStart ||
+        tStart > tBuf->length_) {
+        // The copy below runs out of range. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::Copy", "out-of-range", tStart, sEnd - sStart);
     }
     uint8_t *dest = tBuf->raw_ + tBuf->byteOffset_ + tStart;
     uint32_t tLength = tBuf->length_ - tStart;
@@ -156,6 +166,10 @@ int Buffer::Compare(Buffer *tBuf, uint32_t targetStart, uint32_t sourceStart, ui
 {
     if (tBuf == nullptr) {
         return 0;
+    }
+    if (!IsRangeValid(sourceStart, length) || !tBuf->IsRangeValid(targetStart, length)) {
+        // The memcmp below runs out of range. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::Compare", "out-of-range", targetStart, length);
     }
     uint8_t *dest = tBuf->GetRaw() + tBuf->byteOffset_ + targetStart;
     uint8_t *src = this->GetRaw() + this->byteOffset_ + sourceStart;
@@ -208,6 +222,7 @@ uint32_t Buffer::ReadLE(uint32_t bytes)
 
 void Buffer::WriteInt32BE(int32_t value, uint32_t offset)
 {
+    ReportFaults("Buffer::WriteInt32BE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteBE(value, 4);
     // 4 : write 4 bytes
@@ -216,6 +231,7 @@ void Buffer::WriteInt32BE(int32_t value, uint32_t offset)
 
 int32_t Buffer::ReadInt32BE(uint32_t offset)
 {
+    ReportFaults("Buffer::ReadInt32BE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
@@ -224,6 +240,7 @@ int32_t Buffer::ReadInt32BE(uint32_t offset)
 
 void Buffer::WriteInt32LE(int32_t value, uint32_t offset)
 {
+    ReportFaults("Buffer::WriteInt32LE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteLE(value, 4);
     // 4 : write 4 bytes
@@ -232,6 +249,7 @@ void Buffer::WriteInt32LE(int32_t value, uint32_t offset)
 
 int32_t Buffer::ReadInt32LE(uint32_t offset)
 {
+    ReportFaults("Buffer::ReadInt32LE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
@@ -240,6 +258,7 @@ int32_t Buffer::ReadInt32LE(uint32_t offset)
 
 void Buffer::WriteUInt32BE(int32_t value, uint32_t offset)
 {
+    ReportFaults("Buffer::WriteUInt32BE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteBE(value, 4);
     // 4 : write 4 bytes
@@ -248,6 +267,7 @@ void Buffer::WriteUInt32BE(int32_t value, uint32_t offset)
 
 uint32_t Buffer::ReadUInt32BE(uint32_t offset)
 {
+    ReportFaults("Buffer::ReadUInt32BE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
@@ -256,6 +276,7 @@ uint32_t Buffer::ReadUInt32BE(uint32_t offset)
 
 void Buffer::WriteUInt32LE(int32_t value, uint32_t offset)
 {
+    ReportFaults("Buffer::WriteUInt32LE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     WriteLE(value, 4);
     // 4 : write 4 bytes
@@ -264,6 +285,7 @@ void Buffer::WriteUInt32LE(int32_t value, uint32_t offset)
 
 uint32_t Buffer::ReadUInt32LE(uint32_t offset)
 {
+    ReportFaults("Buffer::ReadUInt32LE", "out-of-range", offset);
     // 4 : 4 bytes(i.e 4 * 8 = 32 bits)
     ReadBytes(data_, offset, 4);
     // 4 : read 4 bytes
@@ -272,6 +294,10 @@ uint32_t Buffer::ReadUInt32LE(uint32_t offset)
 
 int32_t Buffer::Get(uint32_t index)
 {
+    if (index >= length_) {
+        // The read below is out of range. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::Get", "index-out-of-range", index, length_);
+    }
     uint8_t value;
     uint32_t count = 1;
     if (memcpy_s(&value, count, raw_ + byteOffset_ + index, count) != EOK) {
@@ -282,6 +308,10 @@ int32_t Buffer::Get(uint32_t index)
 
 void Buffer::Set(uint32_t index, uint8_t value)
 {
+    if (index >= length_) {
+        // The write below is out of range. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::Set", "index-out-of-range", index, length_);
+    }
     WriteByte(value, index);
 }
 
@@ -295,6 +325,7 @@ void Buffer::ReadBytes(uint8_t *data, uint32_t offset, uint32_t length)
         HILOG_DEBUG("Buffer:: ReadBytes size is 0");
         return;
     }
+    ReportFaults("Buffer::ReadBytes", "out-of-range", offset, length);
     if (memcpy_s(data, length, raw_ + byteOffset_ + offset, length) != EOK) {
         HILOG_FATAL("Buffer:: ReadBytes memcpy_s failed");
     }
@@ -319,6 +350,11 @@ void Buffer::WriteByte(uint8_t number, uint32_t offset)
 
 unsigned int Buffer::WriteString(std::string value, unsigned int size)
 {
+    if (size > value.length() || size > length_) {
+        // The write below reads past the string or writes past the buffer. Detection
+        // only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::WriteString", "out-of-range", size, length_);
+    }
     uint8_t *str = const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(value.data()));
     bool isWriteSuccess = WriteBytes(str, size, raw_ + byteOffset_);
     return isWriteSuccess ? size : 0; // 0: write failed
@@ -326,6 +362,7 @@ unsigned int Buffer::WriteString(std::string value, unsigned int size)
 
 unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int length)
 {
+    ReportFaults("Buffer::WriteString(offset,length)", "out-of-range", offset, length);
     uint8_t *str = const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(value.data()));
     bool isWriteSuccess = WriteBytes(str, length, raw_ + byteOffset_ + offset);
     return isWriteSuccess ? length : 0; // 0: write failed
@@ -333,6 +370,11 @@ unsigned int Buffer::WriteString(string value, unsigned int offset, unsigned int
 
 void Buffer::WriteStringLoop(string value, unsigned int offset, unsigned int end, unsigned int length)
 {
+    if (end > length_ || end < offset) {
+        // The loop below writes past the buffer (unsigned underflow of "end - offset"
+        // when end < offset). Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::WriteStringLoop", "out-of-range", offset, end);
+    }
     if (end - offset <= 0 || value.length() == 0) {
         return;
     }
@@ -394,6 +436,14 @@ bool Buffer::WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest)
 
 void Buffer::SetArray(vector<uint8_t> array, unsigned int offset)
 {
+    {
+        unsigned int arrLenProbe = array.size();
+        unsigned int sizeProbe = arrLenProbe <= length_ ? arrLenProbe : length_;
+        if (offset > length_ || sizeProbe > length_ - offset) {
+            // The write below goes out of range. Detection only, the original flow continues.
+            ReportEtsUtilsSecurityFault("Buffer::SetArray", "write-overrun", offset, length_);
+        }
+    }
     unsigned int arrLen = array.size();
     unsigned int size = arrLen <= length_ ? arrLen : length_;
     WriteBytes(array.data(), size, raw_ + byteOffset_ + offset);
@@ -403,6 +453,10 @@ void Buffer::FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end)
 {
     if (buffer == nullptr) {
         return;
+    }
+    if (buffer->GetLength() == 0 || end > length_ || end < offset) {
+        // The loop below writes past the buffer. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::FillBuffer", "out-of-range", offset, end);
     }
     if (end - offset <= 0) {
         return;
@@ -420,6 +474,11 @@ void Buffer::FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end)
 
 void Buffer::FillNumber(vector<uint8_t> numbers, unsigned int offset, unsigned int end)
 {
+    if (numbers.empty() || end > length_ || end < offset) {
+        // The loop below writes past the buffer (or reads an empty pattern). Detection
+        // only, the original flow continues.
+        ReportEtsUtilsSecurityFault("Buffer::FillNumber", "out-of-range", offset, end);
+    }
     if (end - offset <= 0) {
         return;
     }
@@ -490,6 +549,7 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
         HILOG_ERROR("Buffer:: length is illegal");
         return "";
     }
+    ReportFaults("Buffer::ToBase64", "out-of-range", start, length);
     uint8_t *data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
         HILOG_ERROR("Buffer:: memory allocation failed.");
@@ -508,6 +568,7 @@ std::string Buffer::ToBase64Url(uint32_t start, uint32_t length)
         HILOG_ERROR("Buffer:: length is illegal");
         return "";
     }
+    ReportFaults("Buffer::ToBase64Url", "out-of-range", start, length);
     uint8_t *data = new (std::nothrow) uint8_t[length];
     if (data == nullptr) {
         HILOG_ERROR("Buffer:: memory allocation failed.");
@@ -559,5 +620,13 @@ int Buffer::LastIndexOf(const char *data, uint32_t offset, uint32_t len)
     delete[] sData;
     sData = nullptr;
     return result;
+}
+
+void Buffer::ReportFaults(const char *funcName, const char *errorType, uint32_t offset, uint32_t length)
+{
+    if (!IsRangeValid(offset, length)) {
+        // The write below goes out of range. Detection only, the original flow continues.
+        ReportEtsUtilsSecurityFault(funcName, errorType, offset, length);
+    }
 }
 } // namespace OHOS::Buffer

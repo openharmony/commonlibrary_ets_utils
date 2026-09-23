@@ -10395,3 +10395,212 @@ HWTEST_F(NativeEngineTest, GetGlobalHandleCount_007, testing::ext::TestSize.Leve
         ASSERT_GE(avgUs, 0.0);
     });
 }
+
+/* Helpers for the security fault detection tests below. */
+static napi_value CreateUint8ArrayFromBytes(napi_env env, const uint8_t *bytes, size_t length)
+{
+    napi_value arrayBuffer = nullptr;
+    void *data = nullptr;
+    napi_create_arraybuffer(env, length, &data, &arrayBuffer);
+    if (data == nullptr && length > 0) {
+        return nullptr;
+    }
+    if (length > 0 && memcpy_s(data, length, bytes, length) != EOK) {
+        return nullptr;
+    }
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, length, arrayBuffer, 0, &src);
+    return src;
+}
+
+static std::string NapiStringToString(napi_env env, napi_value value)
+{
+    size_t bufferSize = 0;
+    if (napi_get_value_string_utf8(env, value, nullptr, 0, &bufferSize) != napi_ok) {
+        return "";
+    }
+    std::string buffer(bufferSize + 1, '\0');
+    if (bufferSize > 0 &&
+        napi_get_value_string_utf8(env, value, &buffer[0], buffer.size(), &bufferSize) != napi_ok) {
+        return "";
+    }
+    return buffer.substr(0, bufferSize);
+}
+
+/**
+ * @tc.name: decodeSyncShortInputFaultTest001
+ * @tc.desc: DecodeSync with a 1-byte Uint8Array input triggers the short-input-oob-read
+ *           security fault detection and keeps the original failing behavior.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeSyncShortInputFaultTest001, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeSyncShortInputFaultTest001 start");
+    OHOS::Util::Base64 base64;
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void *data = nullptr;
+    size_t arrayBufferSize = 8; // 8 : backing store bigger than the typed array
+    napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
+    ASSERT_NE(data, nullptr);
+    // Fill the backing store so the byte right before the 1-byte typed array, which the
+    // padding probe reads out of range, is a deterministic non-'=' character.
+    ASSERT_EQ(memset_s(data, arrayBufferSize, 'z', arrayBufferSize), EOK);
+    static_cast<uint8_t *>(data)[4] = 'c'; // 4 : byte offset of the 1-byte typed array
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, 1, arrayBuffer, 4, &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    // Detection only: the original flow continues and fails on the degenerate input.
+    ASSERT_EQ(result, nullptr);
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeSyncPaddingFaultTest001
+ * @tc.desc: DecodeSync with a 1-byte '=' Uint8Array input triggers the short-input-oob-read
+ *           and invalid-padding-underflow security fault detections.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeSyncPaddingFaultTest001, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeSyncPaddingFaultTest001 start");
+    OHOS::Util::Base64 base64;
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void *data = nullptr;
+    size_t arrayBufferSize = 8; // 8 : backing store bigger than the typed array
+    napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
+    ASSERT_NE(data, nullptr);
+    ASSERT_EQ(memset_s(data, arrayBufferSize, 'z', arrayBufferSize), EOK);
+    static_cast<uint8_t *>(data)[4] = '='; // 4 : byte offset of the 1-byte typed array
+    napi_value src = nullptr;
+    napi_create_typedarray(env, napi_uint8_array, 1, arrayBuffer, 4, &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    // Detection only: the padding count underflows the output length and the original
+    // flow continues, failing on the degenerate input.
+    ASSERT_EQ(result, nullptr);
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeAchievesFaultTest001
+ * @tc.desc: DecodeAchieves with an empty input, a 1-byte input and a 2-byte "==" input
+ *           triggers the null-or-empty-input / short-input-oob-read /
+ *           invalid-padding-underflow security fault detections.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeAchievesFaultTest001, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeAchievesFaultTest001 start");
+    napi_env env = (napi_env)engine_;
+
+    // Empty input: reported, the padding probes read the two bytes before the input
+    // pointer (both inside the backing buffer), the original flow continues.
+    char emptyBacking[] = "ABcD";
+    OHOS::Util::DecodeInfo emptyInfo = {};
+    emptyInfo.sinputDecode = emptyBacking + 2; // 2 : point into the middle of the backing buffer
+    emptyInfo.slength = 0;
+    emptyInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *emptyResult = OHOS::Util::DecodeAchieves(env, &emptyInfo);
+    ASSERT_NE(emptyResult, nullptr);
+    ASSERT_EQ(emptyInfo.decodeOutLen, 0);
+    delete[] emptyResult;
+
+    // 1-byte input: reported (short-input-oob-read), the original flow continues.
+    char shortBacking[] = "ABcD";
+    OHOS::Util::DecodeInfo shortInfo = {};
+    shortInfo.sinputDecode = shortBacking + 2;
+    shortInfo.slength = 1;
+    shortInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *shortResult = OHOS::Util::DecodeAchieves(env, &shortInfo);
+    ASSERT_NE(shortResult, nullptr);
+    ASSERT_EQ(shortInfo.decodeOutLen, 0);
+    delete[] shortResult;
+
+    // 2-byte "==" input: reported (invalid-padding-underflow), the original flow continues.
+    char paddingBacking[] = "xy==";
+    OHOS::Util::DecodeInfo paddingInfo = {};
+    paddingInfo.sinputDecode = paddingBacking + 2;
+    paddingInfo.slength = 2;
+    paddingInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *paddingResult = OHOS::Util::DecodeAchieves(env, &paddingInfo);
+    ASSERT_NE(paddingResult, nullptr);
+    delete[] paddingResult;
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: stringDecoderPendingLengthFaultTest001
+ * @tc.desc: StringDecoder::Write with pending bytes accumulated from previous chunks bigger
+ *           than the current input length triggers the invalid-pending-length security fault
+ *           detection and keeps decoding correctly afterwards.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderPendingLengthFaultTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("stringDecoderPendingLengthFaultTest001 start");
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+
+    // First leading byte of a 3-byte sequence: pending (1) == length (1).
+    const uint8_t firstChunk[] = {0xE4};
+    napi_value src = CreateUint8ArrayFromBytes(env, firstChunk, sizeof(firstChunk));
+    ASSERT_NE(src, nullptr);
+    ASSERT_STREQ("", NapiStringToString(env, stringDecoder.Write(env, src)).c_str());
+
+    // First continuation byte: pending (2) > length (1), reported by the
+    // detection, the original flow continues.
+    const uint8_t secondChunk[] = {0xBD};
+    src = CreateUint8ArrayFromBytes(env, secondChunk, sizeof(secondChunk));
+    ASSERT_NE(src, nullptr);
+    ASSERT_STREQ("", NapiStringToString(env, stringDecoder.Write(env, src)).c_str());
+
+    // Completing the character keeps the original behavior: correct output.
+    const uint8_t thirdChunk[] = {0xA0}; // 0xA0 completes 你 (0xE4 0xBD 0xA0)
+    src = CreateUint8ArrayFromBytes(env, thirdChunk, sizeof(thirdChunk));
+    ASSERT_NE(src, nullptr);
+    ASSERT_STREQ("你", NapiStringToString(env, stringDecoder.Write(env, src)).c_str());
+
+    // Nothing is pending afterwards, End returns an empty string.
+    ASSERT_STREQ("", NapiStringToString(env, stringDecoder.End(env)).c_str());
+}
+
+/**
+ * @tc.name: stringDecoderWriteCompleteFaultTest001
+ * @tc.desc: StringDecoder::Write with fully consumed input executes the
+ *           pending-pointer-overrun detection branch and still returns the decoded text.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, stringDecoderWriteCompleteFaultTest001, testing::ext::TestSize.Level0)
+{
+    HILOG_INFO("stringDecoderWriteCompleteFaultTest001 start");
+    OHOS::Util::StringDecoder stringDecoder("utf-8");
+    napi_env env = (napi_env)engine_;
+
+    const uint8_t asciiChunk[] = {'a'};
+    napi_value src = CreateUint8ArrayFromBytes(env, asciiChunk, sizeof(asciiChunk));
+    ASSERT_NE(src, nullptr);
+    ASSERT_STREQ("a", NapiStringToString(env, stringDecoder.Write(env, src)).c_str());
+
+    const uint8_t multiChunk[] = {'b', 'c'};
+    src = CreateUint8ArrayFromBytes(env, multiChunk, sizeof(multiChunk));
+    ASSERT_NE(src, nullptr);
+    ASSERT_STREQ("bc", NapiStringToString(env, stringDecoder.Write(env, src)).c_str());
+
+    ASSERT_STREQ("", NapiStringToString(env, stringDecoder.End(env)).c_str());
+}

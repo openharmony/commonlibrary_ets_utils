@@ -75,6 +75,13 @@ public:
         return needRelease_;
     }
 
+    // Pure additive helper used by detection-only reporting: true when
+    // [offset, offset + length) stays inside the buffer.
+    bool IsRangeValid(uint32_t offset, uint32_t length) const
+    {
+        return offset <= length_ && length <= length_ - offset;
+    }
+
 private:
     uint8_t *GetRaw();
     bool WriteBytes(uint8_t *src, unsigned int size, uint8_t *dest);
@@ -87,6 +94,7 @@ private:
     void WriteStringLoop(std::string value, unsigned int offset, unsigned int end, unsigned int length);
     void WriteStringLoop(std::u16string value, unsigned int offset, unsigned int end);
     std::string GetString(std::string value, EncodingType encodingType);
+    void ReportFaults(const char *funcName, const char *errorType, uint32_t offset, uint32_t length = 4); // 4 : 4 bytes
 
     uint8_t *raw_ {nullptr};
     uint8_t data_[4] = {0};
