@@ -14,6 +14,7 @@
  */
 
 #include "js_xml.h"
+#include <charconv>
 #include "securec.h"
 namespace OHOS::xml {
     static const napi_type_tag xmlPullParserTypeTag = {
@@ -896,10 +897,15 @@ namespace OHOS::xml {
         }
         if (strEntity.size() && strEntity[0] == '#') {
             int c = 0;
-            if (strEntity.size() >= 2 && strEntity[1] == 'x') { // 2: number of args
-                c = std::stoi(strEntity.substr(2), nullptr, 16); // 16: number of args 2: number of args
-            } else {
-                c = std::stoi(strEntity.substr(1), nullptr);
+            const size_t valueStart = (strEntity.size() >= 2 && strEntity[1] == 'x') ? 2 : 1;
+            const int base = valueStart == 2 ? 16 : 10;
+            const std::string value = strEntity.substr(valueStart);
+            const char *first = value.data();
+            const char *last = first + value.size();
+            auto result = std::from_chars(first, last, c, base);
+            if (result.ec != std::errc{} || result.ptr != last) {
+                bUnresolved_ = true;
+                return;
             }
             out = "";
             out += static_cast<char>(c);
